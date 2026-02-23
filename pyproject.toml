@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "lens"
 version = "1.0.0"
-description = "Lens"
+description = "Lens: narrative engine with fractal summarization"
 readme = "README.md"
 packages = [{ include = "lens" }]
 
