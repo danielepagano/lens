@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "lens"
+version = "1.0.0"
+description = "Lens"
+readme = "README.md"
+packages = [{ include = "lens" }]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.0"
+uvicorn = { version = "^0.30.0", extras = ["standard"] }
+jinja2 = "^3.1.4"
+python-multipart = "^0.0.9"
+pysbd = "^0.3.4"
+cachetools = "^5.3.0"
+
+[tool.poetry.group.dev.dependencies]
+pyright = "^1.1.390"
+ruff = "^0.7.0"
+poethepoet = "^0.27.0"
+
+[tool.poe.tasks]
+lense = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.main" }
+pyright = "pyright"
+lint = "ruff check . --fix"
+test = "python -m unittest discover -s lens/test -p 'test_*.py'"
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
+
