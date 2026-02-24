@@ -136,8 +136,32 @@ As a side effect of this, to actually change what happened in a significant way,
 ## Operators
 
 Operators manipulate text and structure, and can be controlled by parameters.
-  - All operators leverage the system's ability to produce a working unstaged preview draft before the change is committed. Once the draft is accepted, the change is staged, and the operator is "closed".
-  - Operators may not be one-shot, instead assembling their output in multiple stages by compositing further instructions and other operators; in that case, their state is committed to disk after every step, but it is reflected in a sub-node, acting as a workspace. Only when the operator is closed is the original target of the operator updated. The intermediate node may be considered "disposable" technical output (if it just creates a result) or be a more detailed version of the canon it propagates up (if the node content is summarized).
+
+All operators leverage the system's ability to produce a working unstaged preview draft before a change is committed, which is represented by git unstaged changes. Once the draft is accepted, the change is staged. Lens uses this as a transaction system with full file-system state.
+
+Operators may not be one-shot, instead assembling their output in multiple stages by compositing further instructions and nesting other operator calls; we call these multi-transaction operators. An uncommitted transaction is just unstaged changes, and committing the transaction stages them, completing a logical step in the operator. Because even structure is an operator, we'll have a call-chain of multi-step operators essentially the whole we use Lens, so transactions are more fine-grained than operators. Git commits can happen at any time to finalize any  completed transaction to the repo and/or origin.
+
+Operators can act at the Cursor (like for writing new content) or in any other location (to edit, remember, manipulate structure, etc.). Either way, only one transaction at a time from any operator can be in-progress in Lens.
+
+By design, operators can make changes in one or more of the following ways:  
+  1. In the same node (or knowledge object) they are defined, before their close tag. This has two flavors:
+    1. Single-step: the uncommitted changes contain both opening tag, content, and close tag
+    2. Multi-step: the first step contains the opening tag, but leaves an open tag (this can happen at the cursor only); additional steps need to modify the original tag as well as add content, usually by incrementing a `steps:` counter; this way we know which operator has pending changes without having to search.
+  2. At the cursor, in a narrative sub-node matching their id (if they have an id), while their tag is not closed. Creating the node itself from a parent is an obvious transaction; after that, while the operator continues it will just be appending the node, and we can easily see the unclosed tag at the end of the previous node (no need to modify it).  
+    - Note that once inside a node additional operators will add more transactions; they are the owners of those changes in that case, and the original operator just created the node
+    - As a special case, when a sub-node owned by an operator is closed, that operator may have a closing action (like a summary of the child node), which is itself a transaction, and closes the tag (so owner is clear as well).
+  3. Mutate existing content; to do this, the operator has to proceed as follows:  
+    1. Stage and auto-commit a transaction to "claim" the text to mutate by wrapping it in its tags, then  
+    2. Immediately open a new transaction that includes both the proposed changes and the removal of the tags in the previous step.  
+    3. If the change is no longer wanted, we need to commit a compensating transaction to reverse 1 by removing the claim tags.   
+    - This design allows us to have a deterministic way to see which text has pending changes, and why, and because the pending change removes the tags, we can both leave no trace and know what was being attempted. This also allows a single mutation transaction to could cover multiple tree nodes and knowledge objects at once.  
+    - In some cases we could leave dangling claim tags, but these operators should never leave tags behind, so we can easily grep the entire repo for the tags and remove them later.
+
+With the above design, at any time Lens can look at a repo and immediately know whether any operator transaction is pending, and the change itself gives enough context to know which operator it is. 
+
+Critically, only **one pending transaction can exist per repo**. The purpose of transactions is to allow the user to review, retry and even edit the unstaged changes directly, but also we want to keep moving, so if a user asks for a new transaction while one is pending, we auto-commit the existing transaction by staging all pending changes, and only then we begin a new one.
+
+This means that **all** code that changes any tracked git file in a content repo **must** go through our transactional storage layer, including our knowledge system.
 
 There are several built-in core operators:
 
@@ -185,13 +209,6 @@ This prompt includes, in order (the order matters for attention management):
   - When adding at the Cursor, this is quite easy because it's equivalent to simply the full text of all parent nodes (minus any comments). If operating in the middle, we'd have to trim the tree more carefully with anything that would happen after this.
 - **Current node narrative**. The narrative text before this operator in this node, if any. If adding to Cursor, simply the current node text. 
 - **Instructions based on operator and its configuration** (in natural language, for example the `write` operator has a `prompt` string telling the AI to continue writing in a certain direction, while a `summary` operator tells the AI to summarize the "Current node narrative").
-
-## Git-based Data Lifecycle
-
-There are three persistence levels in Lens:  
-1. Unstaged changes: while an operator is proposing a draft, or a user is manually editing, the changes are simply in the file system, and can easily be discarded to the previous committed or stage state.
-2. Staged: Staged changes are completed operators, and are ready to be committed, although multiple operators are often run before a commit. This is like doing something in a game but not reaching a checkpoint; you can still reset to a known spot.  
-3. Committed: after a checkpoint is triggered, the changes are bundled in a git commit, pushed to origin, and are now persistent (and cloud backed up!).
 
 ## Architecture
 

@@ -13,9 +13,7 @@ app = typer.Typer(invoke_without_command=True)
 def stats() -> None:
     """Count knowledge objects and narrative nodes."""
     root = find_project_root()
-    if root is None:
-        typer.echo("lens stats: no lens.toml found (run 'lens init' first)", err=True)
-        raise typer.Exit(1)
+    assert root is not None
 
     knowledge = root / "knowledge"
     kb_count = (

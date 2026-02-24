@@ -27,14 +27,9 @@ def section(
 ) -> None:
     """Start a section at cursor or close the current section."""
     root = find_project_root()
-    if root is None:
-        typer.echo("lens section: no lens.toml found (run 'lens init' first)", err=True)
-        raise typer.Exit(1)
-
+    assert root is not None
     narrative = get_active_narrative(root)
-    if narrative is None:
-        typer.echo("lens section: no active narrative (run 'lens use <slug>' first)", err=True)
-        raise typer.Exit(1)
+    assert narrative is not None
 
     if end:
         _section_end(narrative)

@@ -12,6 +12,7 @@ from lens.knowledge import KnowledgeStore, parse_id
 
 
 def _make_project(tmp: Path) -> None:
+    (tmp / ".git").mkdir(exist_ok=True)
     (tmp / "lens.toml").write_text("[project]\n")
     (tmp / "knowledge").mkdir()
     (tmp / "knowledge" / "tags.toml").write_text("")

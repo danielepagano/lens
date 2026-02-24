@@ -480,6 +480,7 @@ class TestGetActiveNarrative(unittest.TestCase):
 
 class TestSectionOperator(unittest.TestCase):
     def _make_project(self, tmp: Path) -> None:
+        (tmp / ".git").mkdir(exist_ok=True)
         (tmp / "lens.toml").write_text('[project]\nnarrative = "test"\n')
         narrative = tmp / "narrative" / "test"
         narrative.mkdir(parents=True)

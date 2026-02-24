@@ -13,9 +13,7 @@ app = typer.Typer(no_args_is_help=True)
 
 def _get_store() -> KnowledgeStore:
     root = find_project_root()
-    if root is None:
-        typer.echo("lens kb: no lens.toml found (run 'lens init' first)", err=True)
-        raise typer.Exit(1)
+    assert root is not None
     return KnowledgeStore(root)
 
 
