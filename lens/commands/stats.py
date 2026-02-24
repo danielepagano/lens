@@ -18,7 +18,18 @@ def stats() -> None:
         raise typer.Exit(1)
 
     knowledge = root / "knowledge"
-    kb_count = sum(1 for _ in knowledge.rglob("*.md")) if knowledge.exists() else 0
+    kb_count = (
+        sum(
+            1
+            for p in knowledge.rglob("*.md")
+            if p.name != "_template.md"
+        )
+        if knowledge.exists()
+        else 0
+    )
+    type_count = (
+        sum(1 for d in knowledge.iterdir() if d.is_dir()) if knowledge.exists() else 0
+    )
 
     narrative = root / "narrative"
     trees: list[tuple[str, int]] = []
@@ -28,7 +39,9 @@ def stats() -> None:
                 node_count = sum(1 for _ in d.rglob("*.md"))
                 trees.append((d.name, node_count))
 
-    typer.echo(f"Knowledge objects: {kb_count}")
+    typer.echo("Knowledge Store")
+    typer.echo(f"  Types: {type_count}")
+    typer.echo(f"  Objects: {kb_count}")
     typer.echo("Narrative trees:")
     for name, count in trees:
         typer.echo(f"  {name} ({count} nodes)")

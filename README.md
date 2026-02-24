@@ -72,7 +72,9 @@ Run `lens kb <command> --help` for details.
 ## Development
 
 ```bash
-poe pyright  # Type checking
 poe lint     # Linting
+poe pyright  # Type checking
 poe test     # Run tests
+
+poe check    # All of the above at once!
 ```
