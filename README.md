@@ -53,9 +53,21 @@ lens use my-campaign
 4. Run lens commands!
 
 ```bash
-lens stats # counts objects and lists narratives
+lens stats   # counts objects and lists narratives
+lens kb      # knowledge store commands (see lens kb --help)
 ```
 
+### Knowledge store (`lens kb`)
+
+| Command   | Purpose                          |
+|-----------|----------------------------------|
+| `store`   | Create or update objects         |
+| `template`| Manage type templates            |
+| `tags`    | Add/remove tags on objects       |
+| `delete`  | Delete object and its references |
+| `get`     | Fetch objects (append `!` for linked) |
+
+Run `lens kb <command> --help` for details.
 
 ## Development
 

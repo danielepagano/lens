@@ -31,7 +31,8 @@ Knowledge is simply a key-value store of objects, each with an unique id, plus p
     - Simple strings: `featured`, `active` (for simple search/classification)
     - Key-value pairs: `kind:region`, `act:1` (colon separator; can be used by tools to store simple structure data)
     - Object references: `place.nyc`, `person.amy` (dot separator; creates a directed relationship from one object to another)
-      - We can include an object's direct references when referring to it by adding a `*` after it; so if `person.amy` has a `place.nyc` tag, we can pull nyc's content by saying `person.amy*`.  
+      - We can include an object's direct references when referring to it by adding a `!` after it; so if `person.amy` has a `place.nyc` tag, we can pull nyc's content by saying `person.amy!`.
+      - Dot-tags may reference objects that do not exist yet (e.g. you add `place.nyc` before creating the place); the CLI warns when displaying such invalid dot-tags.
     - Tags cannot contain both colons and dots
     - Tags are stored in `knowledge/tags.toml`, a python dictionary that goes from tag string to the set of strings, which is the set of objects that have that tag; in the case of object reference tags, that is equivalent to that object's back-links.
 
@@ -189,7 +190,8 @@ There are three persistence levels in Lens:
 Lens is purposely simple, and it's designed to be a stateless script. It just needs to have a file system mount, be pointed to a content repo, and have credentials to push to the repo's origin and config/credentials to connect to an OpenAI-compatible chat completion API endpoint. That's it: the server could have a lifecyle only around a single git commit. It may be a good fit for a fly.io sprite or the like.
 
 When using Lens, at the very minimum the user can do three things:  
-  1. Browse, read, and manually edit markdown files. Lens is not needed at all for this, as long as the user follows the structural rules of the storage system. Because we mostly rely on file system for uniqueness and such, this is mostly self-enforcing! The user could make these changes from anywhere, then push what they change.
+  1. Browse, read, and manually edit markdown files. Lens is not needed at all for this, as long as the user follows the structural rules of the storage system. Because we mostly rely on file system for uniqueness and such, this is mostly self-enforcing! The user could make these changes from anywhere, then push what they change.  
+    - The knowledge system is reasonably specialized with its tags, so early on we'll want to create a CLI for manipulating these objects.
   2. Apply operators. Because most operators execute at the cursor, they are trivial to invoke, e.g. `lens write "introduce a suspicious vendor" -pin npc.forgery_guy`; the operator then changes a file on disk that the user can just look at or even modify; they can also change their mind `lens undo` or see if the AI has a better outcome a second time by saying `lens retry`, since the context is unambiguous.  
     - In order for this to work, lens has to be configured, of course, meaning a poe project needs to be activated and an LLM configured. We can do this by simply running lens from within the root of our project, which is identified as such by having a `lens.toml` file, created by `lens init`. Since each lens repo can have multiple narrative trees, one can be selected with `lens use my-slug`, which sets it as the current narrative in `lens.toml`.
     - The `lens.toml` file should not have credentials in it, of course, but it can say the env var names to look for those instead; we assume the current shell environment is authenticated in git
