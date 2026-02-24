@@ -33,14 +33,14 @@ Knowledge is simply a key-value store of objects, each with an unique id, plus p
     - Object references: `place.nyc`, `person.amy` (dot separator; creates a directed relationship from one object to another)
       - We can include an object's direct references when referring to it by adding a `*` after it; so if `person.amy` has a `place.nyc` tag, we can pull nyc's content by saying `person.amy*`.  
     - Tags cannot contain both colons and dots
-    - Tags are stored in a `_tags.toml`, a python dictionary that goes from tag string to the set of strings, which is the set of objects that have that tag; in the case of object reference tags, that is equivalent to that object's back-links.
+    - Tags are stored in `knowledge/tags.toml`, a python dictionary that goes from tag string to the set of strings, which is the set of objects that have that tag; in the case of object reference tags, that is equivalent to that object's back-links.
 
 #### Storage model
 
 ```
 /<project-root>/
   knowledge/
-    _tags.toml         <-- an index of all tags and the object ID's that have that tag (python dict) 
+    tags.toml          <-- an index of all tags and the object ID's that have that tag (python dict) 
     npc/               <-- the object type
       _template.md     <-- optional template for that object type
       forgery_guy.md   <-- filename is object key, file content is object content
@@ -190,7 +190,9 @@ Lens is purposely simple, and it's designed to be a stateless script. It just ne
 
 When using Lens, at the very minimum the user can do three things:  
   1. Browse, read, and manually edit markdown files. Lens is not needed at all for this, as long as the user follows the structural rules of the storage system. Because we mostly rely on file system for uniqueness and such, this is mostly self-enforcing! The user could make these changes from anywhere, then push what they change.
-  2. Apply operators. Because most operators execute at the cursor, they are trivial to invoke, e.g. `lens write "introduce a suspicious vendor" -pin npc.forgery_guy`; the operator then changes a file on disk that the user can just look at or even modify; they can also change their mind `lens undo` or see if the AI has a better outcome a second time by saying `lens retry`, since the context is unambiguous.
+  2. Apply operators. Because most operators execute at the cursor, they are trivial to invoke, e.g. `lens write "introduce a suspicious vendor" -pin npc.forgery_guy`; the operator then changes a file on disk that the user can just look at or even modify; they can also change their mind `lens undo` or see if the AI has a better outcome a second time by saying `lens retry`, since the context is unambiguous.  
+    - In order for this to work, lens has to be configured, of course, meaning a poe project needs to be activated and an LLM configured. We can do this by simply running lens from within the root of our project, which is identified as such by having a `lens.toml` file, created by `lens init`. Since each lens repo can have multiple narrative trees, one can be selected with `lens use my-slug`, which sets it as the current narrative in `lens.toml`.
+    - The `lens.toml` file should not have credentials in it, of course, but it can say the env var names to look for those instead; we assume the current shell environment is authenticated in git
   3. Stage, commit, and push changes; `git` does this.
 
 This is good for development (or developers), but does not scale to, say, using Lens on your phone. To do that we need a more full-featured server allows an UI to do the file browsing and editing, as well as the git operations. 
