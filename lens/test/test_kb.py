@@ -9,144 +9,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 from lens.knowledge import KnowledgeStore, parse_id
-from lens.utils import strip_markdown_comments
 
 
 def _make_project(tmp: Path) -> None:
     (tmp / "lens.toml").write_text("[project]\n")
     (tmp / "knowledge").mkdir()
     (tmp / "knowledge" / "tags.toml").write_text("")
-
-
-class TestStripMarkdownComments(unittest.TestCase):
-    def test_empty_string(self) -> None:
-        self.assertEqual(strip_markdown_comments(""), "")
-
-    def test_preserves_plain_content(self) -> None:
-        text = "Hello world\n\nMore text"
-        self.assertEqual(strip_markdown_comments(text), text)
-
-    def test_strips_single_line_comment(self) -> None:
-        text = "Before\n[ op:write ]: #\nAfter"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("[ op:write ]", result)
-        self.assertIn("Before", result)
-        self.assertIn("After", result)
-
-    def test_strips_minimal_comment(self) -> None:
-        text = "Before\n[x]: #\nAfter"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("[x]", result)
-        self.assertIn("Before", result)
-        self.assertIn("After", result)
-
-    def test_strips_multiline_comment(self) -> None:
-        text = "Before\n[ \n  op:write\n  prompt: hey\n]: #\nAfter"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("op:write", result)
-        self.assertIn("Before", result)
-        self.assertIn("After", result)
-
-    def test_strips_multiline_with_backslash_continuation(self) -> None:
-        text = "Before\n[ \n  prompt: hey you! how about a \\\nmultiline prompt here?\n]: #\nAfter"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("prompt", result)
-        self.assertNotIn("multiline", result)
-        self.assertIn("Before", result)
-        self.assertIn("After", result)
-
-    def test_strips_closing_tag_style(self) -> None:
-        text = "Content\n[/op:write]: #\nMore"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("[/op:write]", result)
-        self.assertIn("Content", result)
-        self.assertIn("More", result)
-
-    def test_strips_section_style(self) -> None:
-        text = "Content\n[section:my_elaborate_aside]: #\nMore"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("section:my_elaborate_aside", result)
-        self.assertIn("Content", result)
-        self.assertIn("More", result)
-
-    def test_strips_comment_at_start(self) -> None:
-        text = "[ front matter ]: #\nVisible content"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("front matter", result)
-        self.assertIn("Visible content", result)
-
-    def test_strips_comment_at_end(self) -> None:
-        text = "Visible content\n[ trailing ]: #"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("trailing", result)
-        self.assertIn("Visible content", result)
-
-    def test_strips_multiple_comments(self) -> None:
-        text = "A\n[ c1 ]: #\nB\n[ c2 ]: #\nC"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("c1", result)
-        self.assertNotIn("c2", result)
-        self.assertIn("A", result)
-        self.assertIn("B", result)
-        self.assertIn("C", result)
-
-    def test_preserves_link_syntax(self) -> None:
-        text = "See [link text](https://example.com) for more."
-        self.assertEqual(strip_markdown_comments(text), text)
-
-    def test_preserves_reference_link_with_url(self) -> None:
-        text = "[id]: http://example.com\nNot a comment"
-        self.assertEqual(strip_markdown_comments(text), text)
-
-    def test_strips_orphaned_comment_end(self) -> None:
-        text = "Content\n]: #\nMore"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("]: #", result)
-        self.assertIn("Content", result)
-        self.assertIn("More", result)
-
-    def test_strips_indented_orphaned_comment_end(self) -> None:
-        text = "Content\n  ]: #\nMore"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("]: #", result)
-        self.assertIn("Content", result)
-        self.assertIn("More", result)
-
-    def test_document_with_only_comments(self) -> None:
-        text = "[ only ]: #\n[ comment ]: #"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("only", result)
-        self.assertNotIn("comment", result)
-        self.assertEqual(result, "")
-
-    def test_comment_with_leading_whitespace(self) -> None:
-        text = "Before\n  [ indented ]: #\nAfter"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("indented", result)
-        self.assertIn("Before", result)
-        self.assertIn("After", result)
-
-    def test_comment_with_trailing_whitespace(self) -> None:
-        text = "Before\n[ comment ]: #  \nAfter"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("comment", result)
-        self.assertIn("Before", result)
-        self.assertIn("After", result)
-
-    def test_preserves_brackets_in_paragraph(self) -> None:
-        text = "Array [0] and [1] are valid."
-        self.assertEqual(strip_markdown_comments(text), text)
-
-    def test_preserves_brackets_on_own_line(self) -> None:
-        text = "[note text]\nMore content"
-        self.assertEqual(strip_markdown_comments(text), text)
-
-    def test_adjacent_comments(self) -> None:
-        text = "[ first ]: #\n[ second ]: #\nContent"
-        result = strip_markdown_comments(text)
-        self.assertNotIn("first", result)
-        self.assertNotIn("second", result)
-        self.assertIn("Content", result)
 
 
 class TestKnowledgeStore(unittest.TestCase):
@@ -305,7 +173,7 @@ class TestKnowledgeStore(unittest.TestCase):
         self.store.store_object("place.nyc", "Visible\n[ hidden ]: #\nMore")
         objs = self.store.get_objects(["place.nyc"])
         self.assertEqual(objs["place.nyc"].text, "Visible\n[ hidden ]: #\nMore")
-        from lens.utils import strip_markdown_comments
+        from lens.annotations import strip_markdown_comments
 
         stripped = strip_markdown_comments(objs["place.nyc"].text)
         self.assertNotIn("[ hidden ]", stripped)

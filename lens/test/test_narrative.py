@@ -9,18 +9,10 @@ from pathlib import Path
 
 from lens.narrative import (
     NarrativeNode,
-    child_keys,
-    child_node,
-    cursor_path_str,
-    find_cursor,
     find_unclosed_cursor_annotation,
-    get_active_narrative,
-    node_exists,
-    node_md_path,
-    parse_annotations,
     parse_segments,
-    structural_warnings,
 )
+from lens.project import get_active_narrative
 
 
 def _make_narrative(tmp: Path, slug: str = "test") -> Path:
@@ -36,7 +28,7 @@ class TestNodeResolution(unittest.TestCase):
             p = Path(tmp)
             narrative = _make_narrative(p)
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            self.assertEqual(node_md_path(node), narrative / "_node.md")
+            self.assertEqual(node.md_path(), narrative / "_node.md")
 
     def test_root_node_no_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -44,7 +36,7 @@ class TestNodeResolution(unittest.TestCase):
             narrative = p / "narrative" / "empty"
             narrative.mkdir(parents=True)
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            self.assertIsNone(node_md_path(node))
+            self.assertIsNone(node.md_path())
 
     def test_leaf_node_md_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -52,7 +44,7 @@ class TestNodeResolution(unittest.TestCase):
             narrative = _make_narrative(p)
             (narrative / "event_1.md").write_text("content")
             node = NarrativeNode(narrative_root=narrative, key_path=("event_1",))
-            self.assertEqual(node_md_path(node), narrative / "event_1.md")
+            self.assertEqual(node.md_path(), narrative / "event_1.md")
 
     def test_folder_node_md_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -61,7 +53,7 @@ class TestNodeResolution(unittest.TestCase):
             (narrative / "event_1").mkdir()
             (narrative / "event_1" / "_node.md").write_text("content")
             node = NarrativeNode(narrative_root=narrative, key_path=("event_1",))
-            self.assertEqual(node_md_path(node), narrative / "event_1" / "_node.md")
+            self.assertEqual(node.md_path(), narrative / "event_1" / "_node.md")
 
     def test_folder_wins_over_leaf(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -71,16 +63,16 @@ class TestNodeResolution(unittest.TestCase):
             (narrative / "event_1" / "_node.md").write_text("folder")
             (narrative / "event_1.md").write_text("leaf")
             node = NarrativeNode(narrative_root=narrative, key_path=("event_1",))
-            self.assertEqual(node_md_path(node), narrative / "event_1" / "_node.md")
+            self.assertEqual(node.md_path(), narrative / "event_1" / "_node.md")
 
     def test_node_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp)
             narrative = _make_narrative(p)
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            self.assertTrue(node_exists(node))
+            self.assertTrue(node.exists())
             missing = NarrativeNode(narrative_root=narrative, key_path=("missing",))
-            self.assertFalse(node_exists(missing))
+            self.assertFalse(missing.exists())
 
 
 class TestChildDiscovery(unittest.TestCase):
@@ -93,7 +85,7 @@ class TestChildDiscovery(unittest.TestCase):
             (narrative / "ch2").mkdir()
             (narrative / "ch2" / "_node.md").write_text("# ch2")
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            self.assertEqual(child_keys(node), ["ch1", "ch2"])
+            self.assertEqual(node.child_keys(), ["ch1", "ch2"])
 
     def test_child_keys_leaf_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -102,7 +94,7 @@ class TestChildDiscovery(unittest.TestCase):
             (narrative / "a.md").write_text("a")
             (narrative / "b.md").write_text("b")
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            self.assertEqual(child_keys(node), ["a", "b"])
+            self.assertEqual(node.child_keys(), ["a", "b"])
 
     def test_child_keys_mixed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -112,7 +104,7 @@ class TestChildDiscovery(unittest.TestCase):
             (narrative / "folder" / "_node.md").write_text("# folder")
             (narrative / "leaf.md").write_text("leaf")
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            self.assertEqual(set(child_keys(node)), {"folder", "leaf"})
+            self.assertEqual(set(node.child_keys()), {"folder", "leaf"})
 
 
 class TestStructuralWarnings(unittest.TestCase):
@@ -124,43 +116,95 @@ class TestStructuralWarnings(unittest.TestCase):
             (narrative / "dup" / "_node.md").write_text("# dup")
             (narrative / "dup.md").write_text("dup leaf")
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            warnings = structural_warnings(node)
+            warnings = node.structural_warnings()
             self.assertIn("both dup/ and dup.md exist; folder wins", warnings)
 
 
-class TestAnnotationParsing(unittest.TestCase):
-    def test_single_line_open(self) -> None:
-        text = "[section:my_aside]: #"
-        anns = parse_annotations(text)
-        self.assertEqual(len(anns), 1)
-        self.assertEqual(anns[0].operator, "section")
-        self.assertEqual(anns[0].id, "my_aside")
-        self.assertFalse(anns[0].closing)
-        self.assertFalse(anns[0].self_closing)
+class TestNodeLeafFolder(unittest.TestCase):
+    def test_root_is_not_leaf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            self.assertFalse(node.is_leaf())
 
-    def test_closing_annotation(self) -> None:
-        text = "[/section:my_aside]: #"
-        anns = parse_annotations(text)
-        self.assertEqual(len(anns), 1)
-        self.assertTrue(anns[0].closing)
-        self.assertEqual(anns[0].operator, "section")
-        self.assertEqual(anns[0].id, "my_aside")
+    def test_leaf_node_is_leaf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "event_1.md").write_text("content")
+            node = NarrativeNode(narrative_root=narrative, key_path=("event_1",))
+            self.assertTrue(node.is_leaf())
 
-    def test_self_closing(self) -> None:
-        text = "[chat:notes/]: #"
-        anns = parse_annotations(text)
-        self.assertEqual(len(anns), 1)
-        self.assertTrue(anns[0].self_closing)
-        self.assertEqual(anns[0].operator, "chat")
-        self.assertEqual(anns[0].id, "notes")
+    def test_folder_node_is_not_leaf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "event_1").mkdir()
+            (narrative / "event_1" / "_node.md").write_text("content")
+            node = NarrativeNode(narrative_root=narrative, key_path=("event_1",))
+            self.assertFalse(node.is_leaf())
 
-    def test_multiline_yaml_params(self) -> None:
-        text = "[write\n  prompt: hello\n  kb_pins:\n    - x.y\n]: #"
-        anns = parse_annotations(text)
-        self.assertEqual(len(anns), 1)
-        self.assertEqual(anns[0].operator, "write")
-        self.assertIn("prompt", anns[0].params)
-        self.assertEqual(anns[0].params.get("prompt"), "hello")
+    def test_to_folder_converts_leaf_to_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "ch1.md").write_text("# ch1\ncontent")
+            node = NarrativeNode(narrative_root=narrative, key_path=("ch1",))
+            self.assertTrue(node.is_leaf())
+            node.to_folder()
+            self.assertFalse(node.is_leaf())
+            self.assertTrue((narrative / "ch1" / "_node.md").exists())
+            self.assertFalse((narrative / "ch1.md").exists())
+            self.assertEqual(
+                (narrative / "ch1" / "_node.md").read_text(),
+                "# ch1\ncontent",
+            )
+
+    def test_to_leaf_converts_folder_to_leaf(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "ch1").mkdir()
+            (narrative / "ch1" / "_node.md").write_text("# ch1\ncontent")
+            node = NarrativeNode(narrative_root=narrative, key_path=("ch1",))
+            self.assertFalse(node.is_leaf())
+            node.to_leaf()
+            self.assertTrue(node.is_leaf())
+            self.assertFalse((narrative / "ch1").exists())
+            self.assertTrue((narrative / "ch1.md").exists())
+            self.assertEqual((narrative / "ch1.md").read_text(), "# ch1\ncontent")
+
+    def test_to_leaf_rejects_if_folder_has_other_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "ch1").mkdir()
+            (narrative / "ch1" / "_node.md").write_text("# ch1")
+            (narrative / "ch1" / "child").mkdir()
+            (narrative / "ch1" / "child" / "_node.md").write_text("# child")
+            node = NarrativeNode(narrative_root=narrative, key_path=("ch1",))
+            with self.assertRaises(ValueError) as ctx:
+                node.to_leaf()
+            self.assertIn("other files", str(ctx.exception))
+
+    def test_to_leaf_rejects_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            with self.assertRaises(ValueError) as ctx:
+                node.to_leaf()
+            self.assertIn("root", str(ctx.exception))
+
+    def test_to_folder_rejects_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            with self.assertRaises(ValueError) as ctx:
+                node.to_folder()
+            self.assertIn("root", str(ctx.exception))
 
 
 class TestSegmentParsing(unittest.TestCase):
@@ -193,6 +237,58 @@ class TestSegmentParsing(unittest.TestCase):
         self.assertIsNone(segs[2].annotation)
         self.assertEqual(segs[2].body.strip(), "trailing text")
 
+    def test_multiple_annotations_with_text_interspersed(self) -> None:
+        text = (
+            "Intro\n\n"
+            "[section:ch1]: #\n"
+            "Body one\n\n"
+            "[/section:ch1]: #\n\n"
+            "Middle\n\n"
+            "[section:ch2]: #\n"
+            "Body two\n\n"
+            "[/section:ch2]: #\n\n"
+            "Outro"
+        )
+        segs = parse_segments(text)
+        self.assertEqual(len(segs), 5)
+        self.assertEqual(segs[0].body.strip(), "Intro")
+        self.assertIsNone(segs[0].annotation)
+        assert segs[1].annotation is not None
+        self.assertEqual(segs[1].annotation.operator, "section")
+        self.assertEqual(segs[1].annotation.id, "ch1")
+        self.assertEqual(segs[1].body.strip(), "Body one")
+        self.assertIsNotNone(segs[1].close)
+        assert segs[1].close is not None
+        self.assertEqual(segs[1].close.operator, "section")
+        self.assertEqual(segs[1].close.id, "ch1")
+        self.assertEqual(segs[2].body.strip(), "Middle")
+        self.assertIsNone(segs[2].annotation)
+        assert segs[3].annotation is not None
+        self.assertEqual(segs[3].annotation.id, "ch2")
+        self.assertEqual(segs[3].body.strip(), "Body two")
+        self.assertIsNotNone(segs[3].close)
+        self.assertEqual(segs[4].body.strip(), "Outro")
+        self.assertIsNone(segs[4].annotation)
+
+    def test_close_must_match_operator_and_id(self) -> None:
+        text = "[section:x]: #\nbody\n[/write:x]: #"
+        segs = parse_segments(text)
+        self.assertEqual(len(segs), 2)
+        assert segs[1].annotation is not None
+        self.assertEqual(segs[1].annotation.operator, "section")
+        self.assertIsNone(segs[1].close)
+
+    def test_unmatched_closing_discarded_starts_new_segment(self) -> None:
+        text = "[section:x]: #\nbody\n[/section:y]: #\n\nafter"
+        segs = parse_segments(text)
+        self.assertEqual(len(segs), 3)
+        assert segs[1].annotation is not None
+        self.assertEqual(segs[1].annotation.id, "x")
+        self.assertIsNone(segs[1].close)
+        self.assertEqual(segs[1].body.strip(), "body")
+        self.assertEqual(segs[2].body.strip(), "after")
+        self.assertIsNone(segs[2].annotation)
+
 
 class TestFindUnclosedCursorAnnotation(unittest.TestCase):
     def test_returns_last_unclosed_only(self) -> None:
@@ -217,7 +313,7 @@ class TestFindCursor(unittest.TestCase):
             p = Path(tmp)
             narrative = _make_narrative(p)
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            cursor = find_cursor(node)
+            cursor = node.find_cursor()
             self.assertEqual(cursor.key_path, ())
 
     def test_cursor_one_level_deep(self) -> None:
@@ -228,7 +324,7 @@ class TestFindCursor(unittest.TestCase):
             (narrative / "ch1").mkdir()
             (narrative / "ch1" / "_node.md").write_text("# ch1\n")
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            cursor = find_cursor(node)
+            cursor = node.find_cursor()
             self.assertEqual(cursor.key_path, ("ch1",))
 
     def test_cursor_two_levels_deep(self) -> None:
@@ -243,7 +339,7 @@ class TestFindCursor(unittest.TestCase):
             (narrative / "ch1" / "ch2").mkdir()
             (narrative / "ch1" / "ch2" / "_node.md").write_text("# ch2\n")
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            cursor = find_cursor(node)
+            cursor = node.find_cursor()
             self.assertEqual(cursor.key_path, ("ch1", "ch2"))
 
     def test_broken_reference_stops_traversal(self) -> None:
@@ -252,7 +348,7 @@ class TestFindCursor(unittest.TestCase):
             narrative = _make_narrative(p)
             (narrative / "_node.md").write_text("# root\n\n[section:missing]: #\n")
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            cursor = find_cursor(node)
+            cursor = node.find_cursor()
             self.assertEqual(cursor.key_path, ())
 
 
@@ -260,9 +356,9 @@ class TestChildNode(unittest.TestCase):
     def test_child_node_construction(self) -> None:
         narrative = Path("/narrative/campaign")
         node = NarrativeNode(narrative_root=narrative, key_path=())
-        child = child_node(node, "event_1")
+        child = node.child_node("event_1")
         self.assertEqual(child.key_path, ("event_1",))
-        grandchild = child_node(child, "scene_2")
+        grandchild = child.child_node("scene_2")
         self.assertEqual(grandchild.key_path, ("event_1", "scene_2"))
 
 
@@ -272,14 +368,14 @@ class TestCursorPathStr(unittest.TestCase):
             narrative_root=Path("/narrative/my-campaign"),
             key_path=(),
         )
-        self.assertEqual(cursor_path_str(node), "my-campaign")
+        self.assertEqual(node.path_str(), "my-campaign")
 
     def test_nested_path(self) -> None:
         node = NarrativeNode(
             narrative_root=Path("/narrative/my-campaign"),
             key_path=("event_1", "scene_2"),
         )
-        self.assertEqual(cursor_path_str(node), "my-campaign / event_1 / scene_2")
+        self.assertEqual(node.path_str(), "my-campaign / event_1 / scene_2")
 
 
 class TestGetActiveNarrative(unittest.TestCase):

@@ -4,15 +4,8 @@ from __future__ import annotations
 
 import typer
 
-from lens.narrative import (
-    NarrativeNode,
-    find_cursor,
-    find_unclosed_cursor_annotation,
-    get_active_narrative,
-    node_md_path,
-    child_keys,
-)
-from lens.project import find_project_root, validate_slug
+from lens.narrative import NarrativeNode, find_unclosed_cursor_annotation
+from lens.project import find_project_root, get_active_narrative, validate_slug
 
 app = typer.Typer(invoke_without_command=True, no_args_is_help=True)
 
@@ -64,12 +57,12 @@ def _section_start(root: NarrativeNode, id: str) -> None:
         )
         raise typer.Exit(1)
 
-    cursor = find_cursor(root)
-    if id in child_keys(cursor):
+    cursor = root.find_cursor()
+    if id in cursor.child_keys():
         typer.echo(f"Error: section '{id}' already exists.", err=True)
         raise typer.Exit(1)
 
-    md_path = node_md_path(cursor)
+    md_path = cursor.md_path()
     if md_path is None:
         typer.echo("Error: cursor node has no content file.", err=True)
         raise typer.Exit(1)
@@ -89,7 +82,7 @@ def _section_start(root: NarrativeNode, id: str) -> None:
 
 
 def _section_end(root: NarrativeNode) -> None:
-    cursor = find_cursor(root)
+    cursor = root.find_cursor()
     if not cursor.key_path:
         typer.echo("lens section --end: no open section to close (cursor at root)", err=True)
         raise typer.Exit(1)
@@ -101,7 +94,7 @@ def _section_end(root: NarrativeNode) -> None:
         key_path=parent_key_path,
     )
 
-    md_path = node_md_path(parent)
+    md_path = parent.md_path()
     if md_path is None:
         typer.echo("Error: parent node has no content file.", err=True)
         raise typer.Exit(1)

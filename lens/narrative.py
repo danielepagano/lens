@@ -2,20 +2,10 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
 
-_ANNOTATION_RE = re.compile(
-    r"^\s*\[(?P<close>/)?(?P<operator>[a-zA-Z_][a-zA-Z0-9_]*)"
-    r"(:(?P<id>[a-zA-Z0-9_-]+))?(?P<self_close>/)?\]:\s*#\s*$"
-)
-_ANNOTATION_OPEN_RE = re.compile(
-    r"^\s*\[(?P<close>/)?(?P<operator>[a-zA-Z_][a-zA-Z0-9_]*)"
-    r"(:(?P<id>[a-zA-Z0-9_-]+))?(?P<self_close>/)?\s*$"
-)
-_ANNOTATION_END_RE = re.compile(r"^\s*\]:\s*#\s*$")
+from lens.annotations import ParsedAnnotation, parse_annotations
 
 
 @dataclass(frozen=True)
@@ -23,16 +13,143 @@ class NarrativeNode:
     narrative_root: Path
     key_path: tuple[str, ...]
 
+    def md_path(self) -> Path | None:
+        if not self.key_path:
+            p = self.narrative_root / "_node.md"
+            return p if p.exists() else None
+        parent_dir = self.narrative_root / "/".join(self.key_path[:-1])
+        key = self.key_path[-1]
+        folder_md = parent_dir / key / "_node.md"
+        leaf_md = parent_dir / f"{key}.md"
+        if folder_md.exists():
+            return folder_md
+        if leaf_md.exists():
+            return leaf_md
+        return None
 
-@dataclass
-class ParsedAnnotation:
-    operator: str
-    id: str | None
-    closing: bool
-    self_closing: bool
-    params: dict[str, Any]
-    line_start: int
-    line_end: int
+    def exists(self) -> bool:
+        return self.md_path() is not None
+
+    def is_folder_node(self) -> bool:
+        if not self.key_path:
+            return True
+        parent_dir = self.narrative_root / "/".join(self.key_path[:-1])
+        key = self.key_path[-1]
+        return (parent_dir / key / "_node.md").exists()
+
+    def is_leaf(self) -> bool:
+        return not self.is_folder_node()
+
+    def to_leaf(self) -> None:
+        """Convert folder node to leaf. Fails if folder has any files besides _node.md."""
+        if not self.key_path:
+            raise ValueError("root node cannot be converted to leaf")
+        parent_dir = self.narrative_root / "/".join(self.key_path[:-1])
+        key = self.key_path[-1]
+        folder_dir = parent_dir / key
+        node_md = folder_dir / "_node.md"
+        leaf_md = parent_dir / f"{key}.md"
+        if not node_md.exists():
+            raise ValueError(f"node {key} does not exist as folder")
+        if leaf_md.exists():
+            raise ValueError(f"node {key} already exists as leaf")
+        for p in folder_dir.iterdir():
+            if p.name != "_node.md":
+                raise ValueError(
+                    "cannot convert to leaf: folder has other files besides _node.md"
+                )
+        content = node_md.read_text()
+        leaf_md.write_text(content)
+        node_md.unlink()
+        folder_dir.rmdir()
+
+    def to_folder(self) -> None:
+        """Convert leaf node to folder."""
+        if not self.key_path:
+            raise ValueError("root node cannot be converted to folder")
+        parent_dir = self.narrative_root / "/".join(self.key_path[:-1])
+        key = self.key_path[-1]
+        leaf_md = parent_dir / f"{key}.md"
+        folder_dir = parent_dir / key
+        node_md = folder_dir / "_node.md"
+        if not leaf_md.exists():
+            raise ValueError(f"node {key} does not exist as leaf")
+        if folder_dir.exists():
+            raise ValueError(f"node {key} already exists as folder")
+        content = leaf_md.read_text()
+        folder_dir.mkdir(parents=True)
+        node_md.write_text(content)
+        leaf_md.unlink()
+
+    def child_keys(self) -> list[str]:
+        md_path = self.md_path()
+        if md_path is None:
+            return []
+        parent = md_path.parent
+        keys: set[str] = set()
+        for p in parent.iterdir():
+            if p.name == "_node.md":
+                continue
+            if p.is_dir():
+                keys.add(p.name)
+            elif p.suffix == ".md":
+                keys.add(p.stem)
+        result: list[str] = []
+        seen: set[str] = set()
+        for k in sorted(keys):
+            if k in seen:
+                continue
+            seen.add(k)
+            if (parent / k).is_dir() and (parent / k / "_node.md").exists():
+                result.append(k)
+            elif (parent / f"{k}.md").exists():
+                result.append(k)
+        return result
+
+    def child_node(self, key: str) -> NarrativeNode:
+        return NarrativeNode(
+            narrative_root=self.narrative_root,
+            key_path=self.key_path + (key,),
+        )
+
+    def structural_warnings(self) -> list[str]:
+        md_path = self.md_path()
+        if md_path is None:
+            return []
+        parent = md_path.parent
+        warnings: list[str] = []
+        for p in parent.iterdir():
+            if p.name == "_node.md":
+                continue
+            if p.is_dir() and p.suffix != ".md":
+                key = p.name
+                leaf = parent / f"{key}.md"
+                if leaf.exists():
+                    warnings.append(
+                        f"both {key}/ and {key}.md exist; folder wins"
+                    )
+        return warnings
+
+    def find_cursor(self) -> NarrativeNode:
+        node = self
+        while True:
+            path = node.md_path()
+            if path is None:
+                return node
+            ann = find_unclosed_cursor_annotation(path.read_text())
+            if ann is None or ann.id is None:
+                return node
+            child = node.child_node(ann.id)
+            if not child.exists():
+                return node
+            node = child
+
+    def path_str(self) -> str:
+        root_name = self.narrative_root.name
+        if not self.key_path:
+            return root_name
+        parts = [root_name] + list(self.key_path)
+        return " / ".join(parts)
 
 
 @dataclass
@@ -49,149 +166,6 @@ class NodeSegment:
     annotation: ParsedAnnotation | None
     body: str
     close: ParsedAnnotation | None
-
-
-def node_md_path(node: NarrativeNode) -> Path | None:
-    if not node.key_path:
-        p = node.narrative_root / "_node.md"
-        return p if p.exists() else None
-    parent_dir = node.narrative_root / "/".join(node.key_path[:-1])
-    key = node.key_path[-1]
-    folder_md = parent_dir / key / "_node.md"
-    leaf_md = parent_dir / f"{key}.md"
-    if folder_md.exists():
-        return folder_md
-    if leaf_md.exists():
-        return leaf_md
-    return None
-
-
-def node_exists(node: NarrativeNode) -> bool:
-    return node_md_path(node) is not None
-
-
-def is_folder_node(node: NarrativeNode) -> bool:
-    if not node.key_path:
-        return True
-    parent_dir = node.narrative_root / "/".join(node.key_path[:-1])
-    key = node.key_path[-1]
-    return (parent_dir / key / "_node.md").exists()
-
-
-def child_keys(node: NarrativeNode) -> list[str]:
-    md_path = node_md_path(node)
-    if md_path is None:
-        return []
-    parent = md_path.parent
-    keys: set[str] = set()
-    for p in parent.iterdir():
-        if p.name == "_node.md":
-            continue
-        if p.is_dir():
-            keys.add(p.name)
-        elif p.suffix == ".md":
-            keys.add(p.stem)
-    result: list[str] = []
-    seen: set[str] = set()
-    for k in sorted(keys):
-        if k in seen:
-            continue
-        seen.add(k)
-        if (parent / k).is_dir() and (parent / k / "_node.md").exists():
-            result.append(k)
-        elif (parent / f"{k}.md").exists():
-            result.append(k)
-    return result
-
-
-def child_node(node: NarrativeNode, key: str) -> NarrativeNode:
-    return NarrativeNode(
-        narrative_root=node.narrative_root,
-        key_path=node.key_path + (key,),
-    )
-
-
-def structural_warnings(node: NarrativeNode) -> list[str]:
-    md_path = node_md_path(node)
-    if md_path is None:
-        return []
-    parent = md_path.parent
-    warnings: list[str] = []
-    for p in parent.iterdir():
-        if p.name == "_node.md":
-            continue
-        if p.is_dir() and p.suffix != ".md":
-            key = p.name
-            leaf = parent / f"{key}.md"
-            if leaf.exists():
-                warnings.append(
-                    f"both {key}/ and {key}.md exist; folder wins"
-                )
-    return warnings
-
-
-def _parse_yaml_params(lines: list[str]) -> dict[str, Any]:
-    if not lines:
-        return {}
-    try:
-        import yaml
-        return dict(yaml.safe_load("\n".join(lines)) or {})
-    except Exception:
-        return {}
-
-
-def parse_annotations(text: str) -> list[ParsedAnnotation]:
-    lines = text.split("\n")
-    result: list[ParsedAnnotation] = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        m = _ANNOTATION_RE.match(line)
-        if m:
-            params_lines: list[str] = []
-            j = i + 1
-            while j < len(lines) and lines[j] and lines[j][0] in " \t":
-                params_lines.append(lines[j])
-                j += 1
-            params = _parse_yaml_params(params_lines) if params_lines else {}
-            result.append(
-                ParsedAnnotation(
-                    operator=m.group("operator"),
-                    id=m.group("id"),
-                    closing=bool(m.group("close")),
-                    self_closing=bool(m.group("self_close")),
-                    params=params,
-                    line_start=i + 1,
-                    line_end=j,
-                )
-            )
-            i = j
-            continue
-        m_open = _ANNOTATION_OPEN_RE.match(line)
-        if m_open and not _ANNOTATION_END_RE.search(line):
-            params_lines = []
-            j = i + 1
-            while j < len(lines) and not _ANNOTATION_END_RE.match(lines[j]):
-                params_lines.append(lines[j])
-                j += 1
-            if j < len(lines):
-                j += 1
-            params = _parse_yaml_params(params_lines) if params_lines else {}
-            result.append(
-                ParsedAnnotation(
-                    operator=m_open.group("operator"),
-                    id=m_open.group("id"),
-                    closing=bool(m_open.group("close")),
-                    self_closing=bool(m_open.group("self_close")),
-                    params=params,
-                    line_start=i + 1,
-                    line_end=j,
-                )
-            )
-            i = j
-            continue
-        i += 1
-    return result
 
 
 def parse_segments(text: str) -> list[NodeSegment]:
@@ -237,13 +211,13 @@ def parse_segments(text: str) -> list[NodeSegment]:
             continue
 
         close_ann: ParsedAnnotation | None = None
+        first_closing_after: ParsedAnnotation | None = None
         for a in annotations:
-            if (
-                a.closing
-                and a.operator == ann.operator
-                and a.id == ann.id
-                and a.line_start > line_1based
-            ):
+            if not a.closing or a.line_start <= line_1based:
+                continue
+            if first_closing_after is None:
+                first_closing_after = a
+            if a.operator == ann.operator and a.id == ann.id:
                 close_ann = a
                 break
 
@@ -258,6 +232,17 @@ def parse_segments(text: str) -> list[NodeSegment]:
                 )
             )
             i = close_ann.line_end
+        elif first_closing_after is not None:
+            body_lines = lines[ann.line_end : first_closing_after.line_start - 1]
+            body = "\n".join(body_lines).rstrip()
+            segments.append(
+                NodeSegment(
+                    annotation=ann,
+                    body=body,
+                    close=None,
+                )
+            )
+            i = first_closing_after.line_end
         else:
             body_lines = lines[ann.line_end :]
             body = "\n".join(body_lines).rstrip()
@@ -282,47 +267,3 @@ def find_unclosed_cursor_annotation(text: str) -> ParsedAnnotation | None:
     if last.close is not None:
         return None
     return last.annotation
-
-
-def find_cursor(root: NarrativeNode) -> NarrativeNode:
-    node = root
-    while True:
-        path = node_md_path(node)
-        if path is None:
-            return node
-        ann = find_unclosed_cursor_annotation(path.read_text())
-        if ann is None or ann.id is None:
-            return node
-        child = child_node(node, ann.id)
-        if not node_exists(child):
-            return node
-        node = child
-
-
-def cursor_path_str(node: NarrativeNode) -> str:
-    root_name = node.narrative_root.name
-    if not node.key_path:
-        return root_name
-    parts = [root_name] + list(node.key_path)
-    return " / ".join(parts)
-
-
-def get_active_narrative(project_root: Path) -> NarrativeNode | None:
-    import tomllib
-
-    lens_toml = project_root / "lens.toml"
-    if not lens_toml.exists():
-        return None
-    with lens_toml.open("rb") as f:
-        config: dict[str, Any] = tomllib.load(f)
-    raw_project = config.get("project")
-    if not isinstance(raw_project, dict):
-        return None
-    project = cast(dict[str, Any], raw_project)
-    narrative = project.get("narrative")
-    if not isinstance(narrative, str) or not narrative.strip():
-        return None
-    narrative_dir = project_root / "narrative" / narrative
-    if not narrative_dir.exists() or not narrative_dir.is_dir():
-        return None
-    return NarrativeNode(narrative_root=narrative_dir, key_path=())

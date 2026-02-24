@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from lens.narrative import cursor_path_str, find_cursor, get_active_narrative
-from lens.project import find_project_root
+from lens.project import find_project_root, get_active_narrative
 
 app = typer.Typer(invoke_without_command=True)
 
@@ -48,7 +47,7 @@ def stats() -> None:
         typer.echo(f"  {name} ({count} nodes)")
     active = get_active_narrative(root) if root else None
     if active is not None:
-        cursor = find_cursor(active)
-        typer.echo(f"    cursor: {cursor_path_str(cursor)}")
+        cursor = active.find_cursor()
+        typer.echo(f"    cursor: {cursor.path_str()}")
     else:
         typer.echo("    cursor: (no active narrative)")

@@ -6,7 +6,7 @@ import typer
 
 from lens.knowledge import KnowledgeObject, KnowledgeStore, parse_id
 from lens.project import find_project_root
-from lens.utils import strip_markdown_comments
+from lens.annotations import strip_markdown_comments
 
 app = typer.Typer(no_args_is_help=True)
 
