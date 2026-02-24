@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -13,6 +12,17 @@ from lens.annotations import (
     parse_front_matter,
     parse_tail_cursor_annotation,
 )
+from lens.storage import Storage
+
+
+def _make_system_storage(near: Path) -> Storage:
+    """Create a system-owned (owner=None) Storage for the project containing *near*.
+
+    ``near`` is already inside a valid project (e.g. the narrative root); we
+    only need to locate the enclosing git repository.
+    """
+    from lens.project import find_git_root_from
+    return Storage(find_git_root_from(near))
 
 
 def _read_tail_cursor_annotation(path: Path) -> ParsedAnnotation | None:
@@ -42,7 +52,7 @@ class NarrativeNode:
     narrative_root: Path
     key_path: tuple[str, ...]
 
-    def md_path(self) -> Path | None:
+    def _find_md_path(self) -> Path | None:
         if not self.key_path:
             p = self.narrative_root / "_node.md"
             return p if p.exists() else None
@@ -56,16 +66,26 @@ class NarrativeNode:
             return leaf_md
         return None
 
+    def md_path(self) -> Path:
+        """Return the markdown file for this node.
+
+        Raises ``FileNotFoundError`` if neither the folder ``_node.md`` nor the
+        leaf ``.md`` file exists on disk.  Use :meth:`exists` when you need a
+        boolean probe without an exception.
+        """
+        path = self._find_md_path()
+        if path is None:
+            raise FileNotFoundError(
+                f"Node '{self.path_str()}' has no content file "
+                f"(expected '{self.narrative_root / (self.key_path[-1] if self.key_path else '_node.md')}')"
+            )
+        return path
+
     def exists(self) -> bool:
-        return self.md_path() is not None
+        return self._find_md_path() is not None
 
     def is_folder_node(self) -> bool:
         if not self.key_path:
-            if not (self.narrative_root / "_node.md").exists():
-                warnings.warn(
-                    f"root node at '{self.narrative_root}' has no _node.md",
-                    stacklevel=2,
-                )
             return True
         parent_dir = self.narrative_root / "/".join(self.key_path[:-1])
         key = self.key_path[-1]
@@ -74,7 +94,7 @@ class NarrativeNode:
     def is_leaf(self) -> bool:
         return not self.is_folder_node()
 
-    def to_leaf(self) -> None:
+    def to_leaf(self, storage: Storage | None = None) -> None:
         """Convert folder node to leaf. Fails if folder has any files besides _node.md."""
         if not self.key_path:
             raise ValueError("root node cannot be converted to leaf")
@@ -93,11 +113,12 @@ class NarrativeNode:
                     "cannot convert to leaf: folder has other files besides _node.md"
                 )
         content = node_md.read_text()
-        leaf_md.write_text(content)
-        node_md.unlink()
-        folder_dir.rmdir()
+        st = storage if storage is not None else _make_system_storage(self.narrative_root)
+        st.write_file(leaf_md, content)
+        st.delete_file(node_md)
+        st.rmdir(folder_dir)
 
-    def to_folder(self) -> None:
+    def to_folder(self, storage: Storage | None = None) -> None:
         """Convert leaf node to folder."""
         if not self.key_path:
             raise ValueError("root node cannot be converted to folder")
@@ -111,15 +132,13 @@ class NarrativeNode:
         if folder_dir.exists():
             raise ValueError(f"node {key} already exists as folder")
         content = leaf_md.read_text()
-        folder_dir.mkdir(parents=True)
-        node_md.write_text(content)
-        leaf_md.unlink()
+        st = storage if storage is not None else _make_system_storage(self.narrative_root)
+        st.mkdir(folder_dir)
+        st.write_file(node_md, content)
+        st.delete_file(leaf_md)
 
     def child_keys(self) -> list[str]:
-        md_path = self.md_path()
-        if md_path is None:
-            return []
-        parent = md_path.parent
+        parent = self.md_path().parent
         keys: set[str] = set()
         for p in parent.iterdir():
             if p.name == "_node.md":
@@ -143,10 +162,7 @@ class NarrativeNode:
         )
 
     def structural_warnings(self) -> list[str]:
-        md_path = self.md_path()
-        if md_path is None:
-            return []
-        parent = md_path.parent
+        parent = self.md_path().parent
         result: list[str] = []
         for p in parent.iterdir():
             if p.name == "_node.md":
@@ -163,10 +179,7 @@ class NarrativeNode:
     def find_cursor(self) -> NarrativeNode:
         node = self
         while True:
-            path = node.md_path()
-            if path is None:
-                return node
-            ann = _read_tail_cursor_annotation(path)
+            ann = _read_tail_cursor_annotation(node.md_path())
             if ann is None or ann.id is None:
                 return node
             child = node.child_node(ann.id)
@@ -183,10 +196,7 @@ class NarrativeNode:
 
     def front_matter(self) -> dict[str, Any]:
         """Parse and return front matter from the node. Empty dict if none or invalid."""
-        path = self.md_path()
-        if path is None:
-            return {}
-        return parse_front_matter(path.read_text())
+        return parse_front_matter(self.md_path().read_text())
 
 
 @dataclass

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -9,6 +10,8 @@ from pathlib import Path
 from typing import Any, cast
 
 import tomli_w
+
+from lens.storage import Storage
 
 _VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
@@ -63,21 +66,38 @@ class KnowledgeObject:
     text: str
     tags: list[str] = field(default_factory=lambda: cast(list[str], []))
 
-    def __repr__(self) -> str:
+    def format(self, *, include_comments: bool = True) -> str:
+        from lens.annotations import strip_markdown_comments
+        text = self.text if include_comments else strip_markdown_comments(self.text)
         lines: list[str] = [f"KB[{self.id!r}]"]
-        indented_text = "  " + self.text.replace("\n", "\n  ")
-        lines.append(indented_text)
+        lines.append("  " + text.replace("\n", "\n  "))
         if self.tags:
             lines.append(f"  TAGS={', '.join(self.tags)}")
         return "\n".join(lines) + "\n"
 
+    def __repr__(self) -> str:
+        return self.format()
+
 
 class KnowledgeStore:
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, storage: Storage | None = None) -> None:
         self._root = root
         self._knowledge = root / "knowledge"
         self._tags_path = self._knowledge / "tags.toml"
         self._tags_cache: tuple[dict[str, set[str]], dict[str, set[str]]] | None = None
+        self._storage = storage
+
+    def _ensure_storage(self) -> Storage:
+        """Return the current Storage instance, creating one lazily if needed.
+
+        ``self._root`` is already the validated project root; we only need to
+        locate the enclosing git repository.
+        """
+        if self._storage is not None:
+            return self._storage
+        from lens.project import find_git_root_from
+        self._storage = Storage(find_git_root_from(self._root))
+        return self._storage
 
     def _object_path(self, type_name: str, key: str) -> Path:
         return self._knowledge / type_name / f"{key}.md"
@@ -117,7 +137,6 @@ class KnowledgeStore:
         obj_to_tags: dict[str, set[str]],
     ) -> None:
         self._tags_cache = (tag_to_objs, obj_to_tags)
-        self._knowledge.mkdir(parents=True, exist_ok=True)
         tags_serial: dict[str, list[str]] = {
             k: sorted(v) for k, v in tag_to_objs.items() if v
         }
@@ -129,8 +148,9 @@ class KnowledgeStore:
             payload["tags"] = tags_serial
         if objects_serial:
             payload["objects"] = objects_serial
-        with self._tags_path.open("wb") as f:
-            tomli_w.dump(cast(Any, payload), f)
+        buf = io.BytesIO()
+        tomli_w.dump(cast(Any, payload), buf)
+        self._ensure_storage().write_file_bytes(self._tags_path, buf.getvalue())
 
     def store_object(
         self,
@@ -150,8 +170,7 @@ class KnowledgeStore:
                 return
             content = ""
 
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
+        self._ensure_storage().write_file(path, content)
 
     def get_template(self, type_name: str) -> str | None:
         path = self._object_path(type_name, "_template")
@@ -163,8 +182,7 @@ class KnowledgeStore:
         if not _is_valid_token(type_name):
             raise ValueError(f"Invalid type format: {type_name}")
         path = self._object_path(type_name, "_template")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content, encoding="utf-8")
+        self._ensure_storage().write_file(path, content)
 
     def get_tags(self, canonical_id: str) -> list[str]:
         _, obj_to_tags = self._load_tags()
@@ -206,6 +224,35 @@ class KnowledgeStore:
             if canonical_id in obj_to_tags:
                 obj_to_tags[canonical_id].discard(tag)
         self._save_tags(tag_to_objs, obj_to_tags)
+
+    def get_objects_with_links(
+        self, raw_ids: list[str]
+    ) -> tuple[list[str], dict[str, KnowledgeObject]]:
+        """Parse IDs (! suffix expands linked objects) and fetch them.
+
+        Returns the ordered list of requested IDs and the full objects dict
+        (which may contain additional linked objects for those marked with !).
+        """
+        ordered: list[str] = []
+        seen: set[str] = set()
+        expand_linked_for: set[str] = set()
+        for raw in raw_ids:
+            linked = raw.endswith("!")
+            cid = raw[:-1] if linked else raw
+            try:
+                parse_id(cid)
+            except ValueError:
+                continue
+            if cid not in seen:
+                ordered.append(cid)
+                seen.add(cid)
+            if linked:
+                expand_linked_for.add(cid)
+        objects = self.get_objects(
+            ordered,
+            expand_linked_for=expand_linked_for if expand_linked_for else None,
+        )
+        return ordered, objects
 
     def get_objects(
         self,
@@ -274,8 +321,7 @@ class KnowledgeStore:
     def delete_object(self, canonical_id: str) -> None:
         type_name, key = parse_id(canonical_id)
         path = self._object_path(type_name, key)
-        if path.exists():
-            path.unlink()
+        self._ensure_storage().delete_file(path)
 
         tag_to_objs, obj_to_tags = self._load_tags()
         for _, tags in list(obj_to_tags.items()):

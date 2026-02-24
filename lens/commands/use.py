@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import io
 import tomllib
 from typing import Any, cast
 
 import tomli_w
 import typer
 
-from lens.project import find_project_root, validate_slug
+from lens.project import find_git_root_from, find_project_root, validate_slug
+from lens.storage import Storage
 
 app = typer.Typer(invoke_without_command=True, no_args_is_help=True)
 
@@ -29,10 +31,14 @@ def use(
         )
         raise typer.Exit(1)
 
-    root = find_project_root()
-    if root is None:
-        typer.echo("lens use: no lens.toml found (run 'lens init' first)", err=True)
+    try:
+        root = find_project_root()
+        git_root = find_git_root_from(root)
+    except RuntimeError as e:
+        typer.echo(f"lens use: {e}", err=True)
         raise typer.Exit(1)
+
+    storage = Storage(git_root)
 
     lens_toml = root / "lens.toml"
     with lens_toml.open("rb") as f:
@@ -45,14 +51,15 @@ def use(
     project["narrative"] = slug
     config["project"] = project
 
-    with lens_toml.open("wb") as f:
-        tomli_w.dump(config, f)
+    buf = io.BytesIO()
+    tomli_w.dump(config, buf)
+    storage.write_file_bytes(lens_toml, buf.getvalue())
 
     narrative_dir = root / "narrative" / slug
-    narrative_dir.mkdir(parents=True, exist_ok=True)
+    storage.mkdir(narrative_dir)
 
     node_path = narrative_dir / "_node.md"
     if not node_path.exists():
-        node_path.write_text(f"# {slug}\n")
+        storage.write_file(node_path, f"# {slug}\n")
 
     typer.echo(f"Using narrative '{slug}'")

@@ -12,11 +12,11 @@ _COMMENT_END = re.compile(r"\]:\s*#\s*$")
 _ORPHANED_COMMENT_END = re.compile(r"^\s*\]:\s*#\s*$")
 _REFERENCE_LINK = re.compile(r"\]:\s*(?!\s*#\s*$)")
 
-_ANNOTATION_RE = re.compile(
+ANNOTATION_RE = re.compile(
     r"^\s*\[(?P<close>/)?(?P<operator>[a-zA-Z_][a-zA-Z0-9_]*)"
     r"(:(?P<id>[a-zA-Z0-9_-]+))?(?P<self_close>/)?\]:\s*#\s*$"
 )
-_ANNOTATION_OPEN_RE = re.compile(
+ANNOTATION_OPEN_RE = re.compile(
     r"^\s*\[(?P<close>/)?(?P<operator>[a-zA-Z_][a-zA-Z0-9_]*)"
     r"(:(?P<id>[a-zA-Z0-9_-]+))?(?P<self_close>/)?\s*$"
 )
@@ -80,7 +80,7 @@ def _try_parse_annotation(
     if start >= len(lines):
         return None
     line = lines[start]
-    m = _ANNOTATION_RE.match(line)
+    m = ANNOTATION_RE.match(line)
     if m:
         params_lines: list[str] = []
         j = start + 1
@@ -97,7 +97,7 @@ def _try_parse_annotation(
             line_start=start + 1,
             line_end=j,
         )
-    m_open = _ANNOTATION_OPEN_RE.match(line)
+    m_open = ANNOTATION_OPEN_RE.match(line)
     if m_open and not _ANNOTATION_END_RE.search(line):
         params_lines = []
         j = start + 1
@@ -183,7 +183,7 @@ def parse_tail_cursor_annotation(text: str) -> ParsedAnnotation | None:
     for line in reversed(text.splitlines()):
         if not line.strip():
             continue
-        m = _ANNOTATION_RE.match(line)
+        m = ANNOTATION_RE.match(line)
         if m and not m.group("close") and not m.group("self_close") and m.group("id"):
             return ParsedAnnotation(
                 operator=m.group("operator"),

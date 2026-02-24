@@ -12,10 +12,23 @@ from lens.knowledge import KnowledgeStore, parse_id
 
 
 def _make_project(tmp: Path) -> None:
-    (tmp / ".git").mkdir(exist_ok=True)
+    subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=tmp, capture_output=True, check=True,
+    )
     (tmp / "lens.toml").write_text("[project]\n")
     (tmp / "knowledge").mkdir()
     (tmp / "knowledge" / "tags.toml").write_text("")
+    subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"],
+        cwd=tmp, capture_output=True, check=True,
+    )
 
 
 class TestKnowledgeStore(unittest.TestCase):

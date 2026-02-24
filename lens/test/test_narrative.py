@@ -23,6 +23,23 @@ def _make_narrative(tmp: Path, slug: str = "test") -> Path:
     return narrative_dir
 
 
+def _init_git(tmp: Path) -> None:
+    subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+
+
 class TestNodeResolution(unittest.TestCase):
     def test_root_node_md_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -37,7 +54,8 @@ class TestNodeResolution(unittest.TestCase):
             narrative = p / "narrative" / "empty"
             narrative.mkdir(parents=True)
             node = NarrativeNode(narrative_root=narrative, key_path=())
-            self.assertIsNone(node.md_path())
+            with self.assertRaises(FileNotFoundError):
+                node.md_path()
 
     def test_leaf_node_md_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -151,6 +169,8 @@ class TestNodeLeafFolder(unittest.TestCase):
             p = Path(tmp)
             narrative = _make_narrative(p)
             (narrative / "ch1.md").write_text("# ch1\ncontent")
+            (p / "lens.toml").write_text("[project]\n")
+            _init_git(p)
             node = NarrativeNode(narrative_root=narrative, key_path=("ch1",))
             self.assertTrue(node.is_leaf())
             node.to_folder()
@@ -168,6 +188,8 @@ class TestNodeLeafFolder(unittest.TestCase):
             narrative = _make_narrative(p)
             (narrative / "ch1").mkdir()
             (narrative / "ch1" / "_node.md").write_text("# ch1\ncontent")
+            (p / "lens.toml").write_text("[project]\n")
+            _init_git(p)
             node = NarrativeNode(narrative_root=narrative, key_path=("ch1",))
             self.assertFalse(node.is_leaf())
             node.to_leaf()
@@ -480,11 +502,24 @@ class TestGetActiveNarrative(unittest.TestCase):
 
 class TestSectionOperator(unittest.TestCase):
     def _make_project(self, tmp: Path) -> None:
-        (tmp / ".git").mkdir(exist_ok=True)
+        subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=tmp, capture_output=True, check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=tmp, capture_output=True, check=True,
+        )
         (tmp / "lens.toml").write_text('[project]\nnarrative = "test"\n')
         narrative = tmp / "narrative" / "test"
         narrative.mkdir(parents=True)
         (narrative / "_node.md").write_text("# test\n")
+        subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"],
+            cwd=tmp, capture_output=True, check=True,
+        )
 
     def test_section_start_creates_folder_and_annotation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -496,7 +531,7 @@ class TestSectionOperator(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.returncode, 0, result.stderr)
             node_md = p / "narrative" / "test" / "_node.md"
             self.assertIn("[section:event_1]: #", node_md.read_text())
             section_dir = p / "narrative" / "test" / "event_1"
@@ -509,13 +544,18 @@ class TestSectionOperator(unittest.TestCase):
             p = Path(tmp)
             self._make_project(p)
             (p / "narrative" / "test" / "_node.md").write_text("# test\nhello!")
+            subprocess.run(["git", "add", "-A"], cwd=p, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "update"],
+                cwd=p, capture_output=True, check=True,
+            )
             result = subprocess.run(
                 ["lens", "section", "ch1"],
                 cwd=p,
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.returncode, 0, result.stderr)
             text = (p / "narrative" / "test" / "_node.md").read_text()
             self.assertIn("hello!\n\n[section:ch1]: #", text)
 
@@ -535,7 +575,7 @@ class TestSectionOperator(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.returncode, 0, result.stderr)
             node_md = p / "narrative" / "test" / "_node.md"
             text = node_md.read_text()
             self.assertIn("[/section:event_1]: #", text)

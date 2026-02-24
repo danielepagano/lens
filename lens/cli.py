@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 import typer
 
 from lens.commands import register_commands
-from lens.project import find_git_root, find_project_root, get_active_narrative
+from lens.operators import register_operators
+from lens.project import get_active_narrative, require_lens_context
 
 app = typer.Typer(
     name="lens",
@@ -21,13 +23,10 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
     sub = ctx.invoked_subcommand
     if sub in (None, "init", "use"):
         return
-    git_root = find_git_root()
-    if git_root is None:
-        typer.echo("lens: not in a git repository", err=True)
-        raise typer.Exit(1)
-    project_root = find_project_root()
-    if project_root is None:
-        typer.echo("lens: no lens.toml found (run 'lens init' first)", err=True)
+    try:
+        _git_root, project_root = require_lens_context(Path.cwd())
+    except RuntimeError as e:
+        typer.echo(f"lens: {e}", err=True)
         raise typer.Exit(1)
     if sub == "section":
         if get_active_narrative(project_root) is None:
@@ -36,6 +35,7 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
 
 
 register_commands(app)
+register_operators(app)
 
 
 def main() -> int:
