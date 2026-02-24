@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import re
+import warnings
 from dataclasses import dataclass
 from typing import Any
+import yaml
 
 _COMMENT_END = re.compile(r"\]:\s*#\s*$")
 _ORPHANED_COMMENT_END = re.compile(r"^\s*\]:\s*#\s*$")
@@ -36,9 +38,9 @@ def _parse_yaml_params(lines: list[str]) -> dict[str, Any]:
     if not lines:
         return {}
     try:
-        import yaml
         return dict(yaml.safe_load("\n".join(lines)) or {})
-    except Exception:
+    except Exception as e:
+        warnings.warn(f"Invalid YAML: {e}", stacklevel=2)
         return {}
 
 
@@ -113,6 +115,28 @@ def _try_parse_annotation(
             line_end=j + 1 if j < end else j,
         )
     return None
+
+
+def parse_front_matter(text: str) -> dict[str, Any]:
+    """Parse front matter from the very beginning of a node. Front matter is a comment (no operator) at the start."""
+    lines = text.split("\n")
+    i = 0
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    if i >= len(lines):
+        return {}
+    block = _is_comment_block(lines, i)
+    if block is None:
+        return {}
+    start, end = block
+    if _try_parse_annotation(lines, start, end) is not None:
+        return {}
+    yaml_lines: list[str] = []
+    for j in range(start + 1, end):
+        if _ANNOTATION_END_RE.match(lines[j]):
+            break
+        yaml_lines.append(lines[j])
+    return _parse_yaml_params(yaml_lines)
 
 
 def strip_markdown_comments(text: str) -> str:

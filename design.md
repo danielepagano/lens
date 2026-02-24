@@ -115,7 +115,7 @@ Now we're just adding content to the original node!
 
 Comments can also be added to knowledge MD files, and they will be skipped when sending details to any AI model; knowledge-centric operators could also be built using this mechanism.
 
-### The Cursor
+#### The Cursor
 
 The narrative system assumes we are forward-appending a narrative tree: that is, there is a single node in the narrative tree that is the current insertion point for new text. When starting the root node, the cursor is at the end of that document, but if we start a sub-node there, the cursor is now at the end of _that_ sub-node (the parent would have an un-closed operator annotation). Once that sub-node is completed, and its result reflected in the parent, then the cursor is again at the end of the parent document. Editing can happen anywhere, but many features are designed to operate specifically at the cursor.
 

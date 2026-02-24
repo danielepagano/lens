@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
 
 from lens.narrative import (
@@ -205,6 +206,79 @@ class TestNodeLeafFolder(unittest.TestCase):
             with self.assertRaises(ValueError) as ctx:
                 node.to_folder()
             self.assertIn("root", str(ctx.exception))
+
+
+class TestFrontMatter(unittest.TestCase):
+    def test_no_front_matter_returns_empty_dict(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "_node.md").write_text("# root\n\nContent")
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            self.assertEqual(node.front_matter(), {})
+
+    def test_valid_front_matter_at_start(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "_node.md").write_text(
+                "[\n"
+                "  kb_pins:\n"
+                "    - place.needle_street\n"
+                "    - place.capital_city\n"
+                "  kb_unpin:\n"
+                "    - front.the_demon_rises\n"
+                "]: #\n\n"
+                "# root\n\nContent"
+            )
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            fm = node.front_matter()
+            self.assertEqual(fm["kb_pins"], ["place.needle_street", "place.capital_city"])
+            self.assertEqual(fm["kb_unpin"], ["front.the_demon_rises"])
+
+    def test_front_matter_not_detected_in_middle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "_node.md").write_text(
+                "# root\n\nContent\n\n"
+                "[\n"
+                "  key: value\n"
+                "]: #\n\n"
+                "More"
+            )
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            self.assertEqual(node.front_matter(), {})
+
+    def test_invalid_yaml_warns_and_returns_empty_dict(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "_node.md").write_text(
+                "[\n"
+                "  invalid: yaml: [\n"
+                "]: #\n\n"
+                "# root"
+            )
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                result = node.front_matter()
+            self.assertEqual(result, {})
+            self.assertGreater(len(w), 0)
+            self.assertIn("YAML", str(w[0].message))
+
+    def test_front_matter_not_annotation_no_section_created(self) -> None:
+        text = (
+            "[\n"
+            "  kb_pins: []\n"
+            "]: #\n\n"
+            "Content"
+        )
+        segs = parse_segments(text)
+        for seg in segs:
+            if seg.annotation is not None:
+                self.assertNotEqual(seg.annotation.operator, "section")
 
 
 class TestSegmentParsing(unittest.TestCase):

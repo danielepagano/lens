@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-from lens.annotations import ParsedAnnotation, parse_annotations
+from lens.annotations import ParsedAnnotation, parse_annotations, parse_front_matter
 
 
 @dataclass(frozen=True)
@@ -150,6 +151,13 @@ class NarrativeNode:
             return root_name
         parts = [root_name] + list(self.key_path)
         return " / ".join(parts)
+
+    def front_matter(self) -> dict[str, Any]:
+        """Parse and return front matter from the node. Empty dict if none or invalid."""
+        path = self.md_path()
+        if path is None:
+            return {}
+        return parse_front_matter(path.read_text())
 
 
 @dataclass

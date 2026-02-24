@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from lens.annotations import parse_annotations, strip_markdown_comments
+from lens.annotations import parse_annotations, parse_front_matter, strip_markdown_comments
 
 
 class TestStripMarkdownComments(unittest.TestCase):
@@ -193,3 +193,19 @@ class TestAnnotationParsing(unittest.TestCase):
     def test_annotations_stripped_like_comments(self) -> None:
         text = "Visible\n[section:ch1]: #\nMore"
         self.assertEqual(strip_markdown_comments(text), "Visible\nMore")
+
+
+class TestFrontMatterParsing(unittest.TestCase):
+    def test_no_front_matter_returns_empty(self) -> None:
+        self.assertEqual(parse_front_matter("# title\ncontent"), {})
+
+    def test_front_matter_only_at_start(self) -> None:
+        text = "Content\n\n[\n  key: value\n]: #"
+        self.assertEqual(parse_front_matter(text), {})
+
+    def test_valid_front_matter_parsed(self) -> None:
+        text = "[\n  kb_pins:\n    - a.b\n    - c.d\n]: #\n\nBody"
+        self.assertEqual(
+            parse_front_matter(text),
+            {"kb_pins": ["a.b", "c.d"]},
+        )

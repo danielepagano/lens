@@ -55,6 +55,7 @@ lens use my-campaign
 ```bash
 lens stats   # counts objects and lists narratives
 lens kb      # knowledge store commands (see lens kb --help)
+lens section # start and end sections
 ```
 
 ### Knowledge store (`lens kb`)
