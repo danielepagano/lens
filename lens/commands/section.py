@@ -62,6 +62,13 @@ def _section_start(root: NarrativeNode, id: str) -> None:
         typer.echo(f"Error: section '{id}' already exists.", err=True)
         raise typer.Exit(1)
 
+    if cursor.is_leaf():
+        try:
+            cursor.to_folder()
+        except ValueError as e:
+            typer.echo(f"Error: could not promote cursor to folder node: {e}", err=True)
+            raise typer.Exit(1)
+
     md_path = cursor.md_path()
     if md_path is None:
         typer.echo("Error: cursor node has no content file.", err=True)

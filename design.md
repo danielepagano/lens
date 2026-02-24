@@ -158,6 +158,7 @@ There are several built-in core operators:
   - For example, one could be talking with an NPC and then ask the operator to update `person.name`: the operator looks at the person template to see what kind of facts this knowledge item tracks, and then gathers what we learned into that object, either by creating it or integrating new knowledge. 
   - The user could apply the operator to the same text towards multiple objects, and only the details relevant to that object would be captured. For example, a scene can be remembered for the city location, market location, and a specific merchant encountered, but not for other merchants or other details.
   - Recalling what is remembered is done by the text generation operators by providing them the IDs of the relevant objects to know about, as we'll see below. 
+- The front-matter (node-level YAML storage) is used to share configuration across the node, and also to child nodes. It can be used by any operator, but initially it will be used to pin/un-pin knowledge items for Context-aware operators (see more below)
 
 Operators are designed to be extended, and more can be created as specializations or hybridizations of the core operators; these allows more specific ways to manage content and interact with the narrative. Examples of operators that could be added:
   - `play` could be like write, but has knowledge of who the player and non-player characters in the story are. It generates text in a way that delegates agency to the player characters (does not write what they think, feel, decide, or do), giving the user the space to make those decisions.
@@ -176,6 +177,7 @@ This prompt includes, in order (the order matters for attention management):
 
 - **System instructions** (operator-specific system prompt; usually static).
 - **Collected knowledge expansions** (all KB items pinned or added, deduped, in priority order from farthest ancestor to nearest node).
+  - We start from the current operator and move upwards toward the narrative root (direct ancestors) to find all pinned knowledge. An un-pin at a lower level than a pin has precedence. This includes when an expanded node (`!`) has a child that removes the node that happened to have been also collected. We remove any duplicates and then we emit the content of nodes from root to child (i.e. the ones pinned in a more nested node go after)
   - Any comments in knowledge are also skipped by this inclusion: this allows those objects to have notes (for example desired character milestones) without the AI pulling them into the prompt as if they were facts.
   - Because knowledge items are meant to mutate, calling the same operator with the same knowledge over time will have different results! Using git allows us to know when this operator was called, and thus what the knowledge state was at the time.
 - **Ancestor narrative** (root → parent), content of each parent node (always strip comment blocks). 
@@ -184,7 +186,7 @@ This prompt includes, in order (the order matters for attention management):
 - **Current node narrative**. The narrative text before this operator in this node, if any. If adding to Cursor, simply the current node text. 
 - **Instructions based on operator and its configuration** (in natural language, for example the `write` operator has a `prompt` string telling the AI to continue writing in a certain direction, while a `summary` operator tells the AI to summarize the "Current node narrative").
 
-## Data Lifecycle
+## Git-based Data Lifecycle
 
 There are three persistence levels in Lens:  
 1. Unstaged changes: while an operator is proposing a draft, or a user is manually editing, the changes are simply in the file system, and can easily be discarded to the previous committed or stage state.
@@ -201,7 +203,7 @@ When using Lens, at the very minimum the user can do three things:
   2. Apply operators. Because most operators execute at the cursor, they are trivial to invoke, e.g. `lens write "introduce a suspicious vendor" -pin npc.forgery_guy`; the operator then changes a file on disk that the user can just look at or even modify; they can also change their mind `lens undo` or see if the AI has a better outcome a second time by saying `lens retry`, since the context is unambiguous.  
     - In order for this to work, lens has to be configured, of course, meaning a poe project needs to be activated and an LLM configured. We can do this by simply running lens from within the root of our project, which is identified as such by having a `lens.toml` file, created by `lens init`. Since each lens repo can have multiple narrative trees, one can be selected with `lens use my-slug`, which sets it as the current narrative in `lens.toml`.
     - The `lens.toml` file should not have credentials in it, of course, but it can say the env var names to look for those instead; we assume the current shell environment is authenticated in git
-  3. Stage, commit, and push changes; `git` does this.
+  3. Stage, commit, and push changes; `git` does this, but common operations can be offered by CLI.
 
 This is good for development (or developers), but does not scale to, say, using Lens on your phone. To do that we need a more full-featured server that allows a UI to do the file browsing and editing, as well as the git operations. 
 

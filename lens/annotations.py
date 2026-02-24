@@ -170,3 +170,29 @@ def parse_annotations(text: str) -> list[ParsedAnnotation]:
             continue
         i += 1
     return result
+
+
+def parse_tail_cursor_annotation(text: str) -> ParsedAnnotation | None:
+    """Check the last non-empty line of text for an open single-line cursor annotation.
+
+    The cursor annotation is always appended as the last line of a node file, so
+    scanning just the tail avoids parsing the entire file. Only single-line open
+    annotations with an id qualify (multi-line or self-closing annotations do not
+    represent an in-progress cursor).
+    """
+    for line in reversed(text.splitlines()):
+        if not line.strip():
+            continue
+        m = _ANNOTATION_RE.match(line)
+        if m and not m.group("close") and not m.group("self_close") and m.group("id"):
+            return ParsedAnnotation(
+                operator=m.group("operator"),
+                id=m.group("id"),
+                closing=False,
+                self_closing=False,
+                params={},
+                line_start=0,
+                line_end=0,
+            )
+        return None
+    return None

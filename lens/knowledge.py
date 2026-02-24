@@ -77,6 +77,7 @@ class KnowledgeStore:
         self._root = root
         self._knowledge = root / "knowledge"
         self._tags_path = self._knowledge / "tags.toml"
+        self._tags_cache: tuple[dict[str, set[str]], dict[str, set[str]]] | None = None
 
     def _object_path(self, type_name: str, key: str) -> Path:
         return self._knowledge / type_name / f"{key}.md"
@@ -84,10 +85,13 @@ class KnowledgeStore:
     def _load_tags(
         self,
     ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+        if self._tags_cache is not None:
+            return self._tags_cache
         tag_to_objs: dict[str, set[str]] = {}
         obj_to_tags: dict[str, set[str]] = {}
         if not self._tags_path.exists():
-            return tag_to_objs, obj_to_tags
+            self._tags_cache = (tag_to_objs, obj_to_tags)
+            return self._tags_cache
         with self._tags_path.open("rb") as f:
             data = tomllib.load(f)
         if "tags" in data and isinstance(data["tags"], dict):
@@ -104,13 +108,15 @@ class KnowledgeStore:
             for tag, objs in tag_to_objs.items():
                 for obj_id in objs:
                     obj_to_tags.setdefault(obj_id, set()).add(tag)
-        return tag_to_objs, obj_to_tags
+        self._tags_cache = (tag_to_objs, obj_to_tags)
+        return self._tags_cache
 
     def _save_tags(
         self,
         tag_to_objs: dict[str, set[str]],
         obj_to_tags: dict[str, set[str]],
     ) -> None:
+        self._tags_cache = (tag_to_objs, obj_to_tags)
         self._knowledge.mkdir(parents=True, exist_ok=True)
         tags_serial: dict[str, list[str]] = {
             k: sorted(v) for k, v in tag_to_objs.items() if v

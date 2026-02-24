@@ -2,11 +2,39 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from lens.annotations import ParsedAnnotation, parse_annotations, parse_front_matter
+from lens.annotations import (
+    ParsedAnnotation,
+    parse_annotations,
+    parse_front_matter,
+    parse_tail_cursor_annotation,
+)
+
+
+def _read_tail_cursor_annotation(path: Path) -> ParsedAnnotation | None:
+    """Read only the tail of a node file to detect an open cursor annotation.
+
+    Seeks to the last 512 bytes so large node files are never fully read just
+    to discover the cursor position.
+    """
+    try:
+        with path.open("rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - 512))
+            raw = f.read()
+    except OSError:
+        return None
+    text = raw.decode("utf-8", errors="replace")
+    if size > 512:
+        nl = text.find("\n")
+        if nl >= 0:
+            text = text[nl + 1:]
+    return parse_tail_cursor_annotation(text)
 
 
 @dataclass(frozen=True)
@@ -33,6 +61,11 @@ class NarrativeNode:
 
     def is_folder_node(self) -> bool:
         if not self.key_path:
+            if not (self.narrative_root / "_node.md").exists():
+                warnings.warn(
+                    f"root node at '{self.narrative_root}' has no _node.md",
+                    stacklevel=2,
+                )
             return True
         parent_dir = self.narrative_root / "/".join(self.key_path[:-1])
         key = self.key_path[-1]
@@ -96,11 +129,7 @@ class NarrativeNode:
             elif p.suffix == ".md":
                 keys.add(p.stem)
         result: list[str] = []
-        seen: set[str] = set()
         for k in sorted(keys):
-            if k in seen:
-                continue
-            seen.add(k)
             if (parent / k).is_dir() and (parent / k / "_node.md").exists():
                 result.append(k)
             elif (parent / f"{k}.md").exists():
@@ -118,7 +147,7 @@ class NarrativeNode:
         if md_path is None:
             return []
         parent = md_path.parent
-        warnings: list[str] = []
+        result: list[str] = []
         for p in parent.iterdir():
             if p.name == "_node.md":
                 continue
@@ -126,10 +155,10 @@ class NarrativeNode:
                 key = p.name
                 leaf = parent / f"{key}.md"
                 if leaf.exists():
-                    warnings.append(
+                    result.append(
                         f"both {key}/ and {key}.md exist; folder wins"
                     )
-        return warnings
+        return result
 
     def find_cursor(self) -> NarrativeNode:
         node = self
@@ -137,7 +166,7 @@ class NarrativeNode:
             path = node.md_path()
             if path is None:
                 return node
-            ann = find_unclosed_cursor_annotation(path.read_text())
+            ann = _read_tail_cursor_annotation(path)
             if ann is None or ann.id is None:
                 return node
             child = node.child_node(ann.id)
@@ -183,6 +212,18 @@ def parse_segments(text: str) -> list[NodeSegment]:
         a.line_start: a for a in annotations
     }
 
+    # Pre-build close indices so each open annotation can find its matching close
+    # in O(1) amortised rather than O(n), keeping the overall loop O(n).
+    closes_by_key: dict[tuple[str, str | None], list[ParsedAnnotation]] = {}
+    all_closes: list[ParsedAnnotation] = []
+    for a in annotations:
+        if a.closing:
+            key: tuple[str, str | None] = (a.operator, a.id)
+            closes_by_key.setdefault(key, []).append(a)
+            all_closes.append(a)
+    close_ptr: dict[tuple[str, str | None], int] = {}
+    all_closes_ptr = 0
+
     segments: list[NodeSegment] = []
     i = 0
 
@@ -218,16 +259,29 @@ def parse_segments(text: str) -> list[NodeSegment]:
             i = ann.line_end
             continue
 
+        # Advance the global closes pointer to find first_closing_after.
+        while (
+            all_closes_ptr < len(all_closes)
+            and all_closes[all_closes_ptr].line_start <= line_1based
+        ):
+            all_closes_ptr += 1
+        first_closing_after = (
+            all_closes[all_closes_ptr] if all_closes_ptr < len(all_closes) else None
+        )
+
+        # Find the first matching close for this annotation using per-key pointer.
+        ann_key: tuple[str, str | None] = (ann.operator, ann.id)
+        closes = closes_by_key.get(ann_key, [])
+        ptr = close_ptr.get(ann_key, 0)
         close_ann: ParsedAnnotation | None = None
-        first_closing_after: ParsedAnnotation | None = None
-        for a in annotations:
-            if not a.closing or a.line_start <= line_1based:
-                continue
-            if first_closing_after is None:
-                first_closing_after = a
-            if a.operator == ann.operator and a.id == ann.id:
-                close_ann = a
+        while ptr < len(closes):
+            if closes[ptr].line_start > line_1based:
+                close_ann = closes[ptr]
+                close_ptr[ann_key] = ptr + 1
                 break
+            ptr += 1
+        else:
+            close_ptr[ann_key] = ptr
 
         if close_ann is not None:
             body_lines = lines[ann.line_end : close_ann.line_start - 1]
