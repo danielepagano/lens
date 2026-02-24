@@ -61,10 +61,18 @@ A unit of narrative is a **node**, which is simply a markdown file with a key un
 
 Semantically, a node represents narrative at a certain level of detail, and at that level of detail it should be readable, cogent, and complete. The levels of detail are arbitrary and need to make sense for the situation: they could be chapters, dates, sessions, encounters, combat rounds, etc. **The key idea is that sections of a node may be results or summaries of child nodes.**
 
-Internally, nodes are annotated using invisible [comments](https://www.markdownguide.org/hacks/#comments) in the form of `[comment]: #`. In order to be properly parsed and hidden, they have to appear on their own line and have an empty line before them; if they are multi-line, they should be indented to avoid problems. Examples:
+Internally, nodes are annotated using invisible [comments](https://www.markdownguide.org/hacks/#comments) in the form of `[text]: #`. In order to be properly parsed and hidden, they have to appear on their own line and have an empty line before them. While users can leave any comment they want, Lens annotations work as follows:  
+  - Each annotation has to start with a known `operator` after the opening bracket, e.g. `[write`. If that is pattern-matched, the annotation is processed by Lens
+  - Each operator annotation can have an ID after the operator, separated by colon, e.g. `[write:rest_1`; this ID has to be a valid filename (not an existing file, it has to follow filename patterns, like knowledge types and keys) and be unique within this node (across any operator types). If the operator uses a sub-node for storage, the node will have this name.
+  - If an operator annotation has no content in the node, it should end with `/`, e.g. `[chat:reflect_about_feelings/]: #`
+  - If an operator does have content in the node (its output), it should have a matching close tag later, e.g. `[write:rest_1]: #` then some lines of text, and empty line, then `[/write:rest_1]: #` (remember, ID is optional if there is no sub-node, in which case it does not have to be included)
+  - Annotations can span multiple lines, but the lines after the first need to be indented by at least one space (two preferred), and be valid YAML; this becomes structured configuration for the operator.
+  - A special annotation called a "front matter" can be included at the beginning of a module without an operator or id, and contain YAML that is available to all operators in the node, and even its sub-nodes (if they query for it)
+
+Examples:
 
 ```markdown
-[ <-- invisible "front matter" section for global settings, used by operators
+[ <-- "front matter" section for node-wide settings, used by operators
   kb_pins: <-- knowledge-aware operators always add this content, even in child nodes!
     - place.needle_street
     - place.capital_city
@@ -72,8 +80,7 @@ Internally, nodes are annotated using invisible [comments](https://www.markdowng
     - front.the_demon_rises 
 ]: #
 
-[ 
-  op:write
+[write
   prompt: hey you! how about a \
 multiline prompt here?
   kb_pins: 
@@ -81,13 +88,12 @@ multiline prompt here?
     - second.key
 ]: #
 
-This was written by the op:write above, which you can't see, but it's good to know!
+This was written by the write operator above, which you can't see, but it's good to know!
 
-[/op:write]: #
+[/write]: #
 This text added by hand! It's good to know when the AI was done.
 
 [section:my_elaborate_aside]: #
-
 This looks like it goes right after the above when rendering, but it's a summary of an elaborate aside in a child node called `my_elaborate_aside`!
 
 [/section:my_elaborate_aside]: #
@@ -98,7 +104,7 @@ Now we're just adding content to the original node!
 The above would just render as
 
 ```markdown
-This was written by the op:write above, which you can't see, but it's good to know!
+This was written by the write operator above, which you can't see, but it's good to know!
 
 This text added by hand! It's good to know when the AI was done.
 
@@ -111,7 +117,7 @@ Comments can also be added to knowledge MD files, and they will be skipped when 
 
 ### The Cursor
 
-The narrative system assumes we are forward-appending a narrative tree: that is, there is a single node in the narrative tree that is the current insertion point for new text. When starting the root node, the cursor is at the end of that document, but if we start a sub-node there, the cursor is now at the end of _that_ sub-node. Once that sub-node is completed, and its result reflected in the parent, then the cursor is again at the end of the parent document. Editing can happen anywhere, but many features are designed to operate specifically at the cursor.
+The narrative system assumes we are forward-appending a narrative tree: that is, there is a single node in the narrative tree that is the current insertion point for new text. When starting the root node, the cursor is at the end of that document, but if we start a sub-node there, the cursor is now at the end of _that_ sub-node (the parent would have an un-closed operator annotation). Once that sub-node is completed, and its result reflected in the parent, then the cursor is again at the end of the parent document. Editing can happen anywhere, but many features are designed to operate specifically at the cursor.
 
 As a side effect of this, to actually change what happened in a significant way, the user needs to "rewind" the narrative by deleting everything after a previous cursor. This can certainly be done for narrative, but a git checkout of that version and a branch or force-push would be better, as it will also restore the knowledge as of that point in time!
 
@@ -141,11 +147,11 @@ There are several built-in core operators:
  - `summarize` summarizes existing text (optionally with instructions on what to emphasize or ignore) to store it in another place (a less-detailed node, a knowledge item, etc.)
    - Summaries are critically important to maintaining the correct continuity over time, so the prompts used can be heavily curated, and the results manually tweaked.
    - Summaries are usually leveraged by other operators, notably `section`.
-- `edit` makes targeted changes to a contiguous text selection using AI (for example, to shorten or correct something). It can also summarize, but the point is that it replaces text, it doesn't put its output in a new place.  
+ - `edit` makes targeted changes to a contiguous text selection using AI (for example, to shorten or correct something). It can also summarize, but the point is that it replaces text, it doesn't put its output in a new place.  
     - Unlike other operators, this is a destructive operation (previous version would be in git history). Note that users can always edit any file themselves (original or summaries) since they are just markdown files; this is an AI-assisted version of that.
- - `section` lets the user create a child node with its own content, which when closed is summarized in the current node; in other words, it breaks narrative into sub-sections, like chapters and scenes. It can be used in two ways:
+ - `section` lets the user create a child node (with a slug unique for this level) with its own content, which when closed is summarized in the current node; in other words, it breaks narrative into sub-sections, like chapters and scenes. It can be used in two ways:
     - A section can be explicitly started with empty content, which just creates a node, for example if we wanted to track a gaming session in its own section and summarize it in the campaign journal above.
-    - Users can also create sections after the fact by selecting a contiguous section of node text that must span whole sub-nodes if any. The selection is placed in a new sub-node, summarized, and the summary placed where the original selection was.  
+    - Users can also create sections "after the fact" by selecting a contiguous section of node text that must span whole sub-nodes if any. The selection is placed in a new sub-node, summarized, and the summary placed where the original selection was.  
       - Because this operation can move sub-nodes in the selected range one level down, it may make large file operations, which are captured in git history.  
       - This feature is important because we don't want the user to always be worried about structure: they should be able to keep adding, then compress sections (like a conversation or a side quest) after the fact to keep the current node at the right level of detail.
 - `remember` integrates some aspects of a given text into a new or existing knowledge object.
@@ -156,9 +162,9 @@ There are several built-in core operators:
 Operators are designed to be extended, and more can be created as specializations or hybridizations of the core operators; these allows more specific ways to manage content and interact with the narrative. Examples of operators that could be added:
   - `play` could be like write, but has knowledge of who the player and non-player characters in the story are. It generates text in a way that delegates agency to the player characters (does not write what they think, feel, decide, or do), giving the user the space to make those decisions.
     - The opposite could also be true, where the user asks the AI to "play as" a character (autonomously or with direction). This allows the user to be the DM and/or players, maintaining that role isolation in the narrative beats. 
-  - `dnd` could be even more specialized than `play` (or be a family of operators), having the user have player characters merely attempt difficult actions using the D&D ruleset, and having a conversation with the AI on what checks could be used (e.g. "Roll a stealth check to try to sneak by the guards"); the human could then roll dice and use RPG character sheets of their player characters; the AI then makes a determination of level of success and moves the narrative forward accordingly. The whole exchange would be in a node, the checks and rolls would be there, but only the result would be part of the narrative (specialized summary)
-  - `chat` could spin up an agentic chat in a sub-node to talk about the current goings-on. This can be used for fun ("that was crazy!"), to explore the feeling of characters off the page (maybe then by remembering the results), to plan what happens next, etc. This would be all non-canon narrative, but still contextually kept in the simulation tree.
-  - `attach` could allow you to attach media within a node 
+  - `dnd` could be even more specialized than `play` (or be a family of operators), having the user have player characters merely attempt difficult actions using the D&D ruleset, and having a conversation with the AI on what checks could be used (e.g. "Roll a stealth check to try to sneak by the guards"); the human could then roll dice and use RPG character sheets of their player characters; the AI then makes a determination of level of success and moves the narrative forward accordingly. The raw exchange (all the checks and rolls) would be in a sub-node, but only the result would be part of the parent narrative (specialized summary)
+  - `chat` could spin up an agentic chat in a sub-node to talk about the current goings-on. This can be used for fun ("that was crazy!"), to explore the feeling of characters off the page (maybe then by remembering the results), to plan what happens next, etc. This would be all non-canon narrative, but still contextually kept in the simulation tree; in other words, it would have a self-closing tag with an id and no content bubbled up, e.g. `[chat:reflections/]: #`.
+  - `attach` could allow you to attach media within a node.
 
 There is no particular reason to keep operators in the main Lens repo: they can also be imported as external packages or even defined in the project repo next to narratives and knowledge objects.
 
