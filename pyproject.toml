@@ -18,6 +18,7 @@ pysbd = "^0.3.4"
 cachetools = "^5.3.0"
 tomli-w = "^1.0.0"
 typer = "^0.16.0"
+pyyaml = "^6.0"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.390"
