@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import os
+import signal
 import tomllib
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
@@ -128,6 +129,25 @@ async def generate(
         async for chunk in generate(messages, project_root):
             print(chunk, end="", flush=True)
     """
+    # Always have a concrete event to check inside the loop.
+    _cancel = cancel_event if cancel_event is not None else asyncio.Event()
+    _interrupted = False
+    _sigint_installed = False
+
+    loop = asyncio.get_running_loop()
+
+    def _handle_sigint() -> None:
+        nonlocal _interrupted
+        _interrupted = True
+        _cancel.set()
+
+    try:
+        loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        _sigint_installed = True
+    except (NotImplementedError, ValueError):
+        # Windows, or called from a non-main thread — skip SIGINT wiring.
+        pass
+
     cfg, verbose = _load_config(project_root, llm_id)
 
     if verbose:
@@ -161,7 +181,7 @@ async def generate(
                     )
 
                 async for line in response.aiter_lines():
-                    if cancel_event is not None and cancel_event.is_set():
+                    if _cancel.is_set():
                         break
 
                     line = line.strip()
@@ -200,7 +220,14 @@ async def generate(
         ) from exc
     except httpx.RequestError as exc:
         raise LLMError(f"LLM request failed: {exc}") from exc
+    finally:
+        if _sigint_installed:
+            loop.remove_signal_handler(signal.SIGINT)
 
     if verbose and response_parts:
         sep = "─" * 60
         logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, "".join(response_parts), sep)
+
+    # Re-raise so CLI callers still see a normal ^C after the connection closes.
+    if _interrupted:
+        raise KeyboardInterrupt
