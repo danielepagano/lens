@@ -7,6 +7,7 @@ Configuration is read from the project's ``lens.toml``. Add one or more
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -111,11 +112,16 @@ async def generate(
     *,
     llm_id: str | None = None,
     stop_sequences: list[str] | None = None,
+    cancel_event: asyncio.Event | None = None,
 ) -> AsyncGenerator[str, None]:
     """Stream text from the configured LLM, yielding content chunks.
 
     Uses the first ``[[llm]]`` entry in ``lens.toml`` unless *llm_id* selects
     a named entry. Raises ``LLMError`` on misconfiguration or API failure.
+
+    Pass an ``asyncio.Event`` as *cancel_event* to abort the stream early.
+    Setting the event causes the loop to break and the underlying HTTP
+    connection to close, telling the server to stop generating.
 
     Usage::
 
@@ -155,6 +161,9 @@ async def generate(
                     )
 
                 async for line in response.aiter_lines():
+                    if cancel_event is not None and cancel_event.is_set():
+                        break
+
                     line = line.strip()
                     if not line or not line.startswith("data: "):
                         continue
