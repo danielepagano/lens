@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import typer
 
-from lens.project import find_project_root, get_active_narrative
+from lens.address import NarrativeAddress
+from lens.project import get_active_narrative, require_lens_context
+from lens.storage import Storage, detect_pending_owner_from_diff
 
 app = typer.Typer(invoke_without_command=True)
 
@@ -12,9 +16,13 @@ app = typer.Typer(invoke_without_command=True)
 @app.callback()
 def stats() -> None:
     """Count knowledge objects and narrative nodes."""
-    root = find_project_root()
-    assert root is not None
+    try:
+        git_root, project_root = require_lens_context(Path.cwd())
+    except RuntimeError as e:
+        typer.echo(f"lens stats: {e}", err=True)
+        raise typer.Exit(1)
 
+    root = project_root
     knowledge = root / "knowledge"
     kb_count = (
         sum(
@@ -43,9 +51,20 @@ def stats() -> None:
     typer.echo("Narrative trees:")
     for name, count in trees:
         typer.echo(f"  {name} ({count} nodes)")
-    active = get_active_narrative(root) if root else None
+
+    active = get_active_narrative(root)
     if active is not None:
-        cursor = active.find_cursor()
-        typer.echo(f"    cursor: {cursor.path_str()}")
+        cursor_addr: NarrativeAddress = active.find_cursor_address()
+        typer.echo(f"Active narrative cursor:  {cursor_addr}")
     else:
-        typer.echo("    cursor: (no active narrative)")
+        typer.echo("Active narrative cursor:  (no active narrative)")
+
+    storage = Storage(git_root)
+    has_pending = storage.has_pending()
+    typer.echo(f"Open transaction:         {'yes' if has_pending else 'no'}")
+    if has_pending:
+        owner = detect_pending_owner_from_diff(storage.diff())
+        if owner is not None:
+            typer.echo(f"Transaction owner:        {owner}")
+        else:
+            typer.echo("Transaction owner:        (non-operator changes)")

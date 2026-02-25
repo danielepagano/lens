@@ -73,7 +73,7 @@ Examples:
 
 ```markdown
 [ <-- "front matter" section for node-wide settings, used by operators
-  kb_pins: <-- knowledge-aware operators always add this content, even in child nodes!
+  kb_pin: <-- knowledge-aware operators always add this content, even in child nodes!
     - place.needle_street
     - place.capital_city
   kb_unpin:  <-- you can un-pin irrelevant parent pins from this sub-tree
@@ -83,7 +83,7 @@ Examples:
 [write
   prompt: hey you! how about a \
 multiline prompt here?
-  kb_pins: 
+  kb_pin: 
     - first.key
     - second.key
 ]: #
@@ -197,18 +197,21 @@ There is no particular reason to keep operators in the main Lens repo: they can 
 
 When you invoke a context-aware operator such as `write` that adds content, the engine uses fractal summarization and knowledge insertion to create a prompt that tries to maximize contextual knowledge.
 
-This prompt includes, in order (the order matters for attention management):
+This sub-system has the following components:  
+  - A pin/un-pin system: this can attach knowledge object ID's to the front matter (just YAML lists of IDs under `kb_pin` and `kb_unpin`)  
+    - A CLI to pin/unpin from a given node helps with this. Defaults to Cursor node, but any other can be targeted
+  - A component that can be given a position in the narrative (default: Cursor), plus an additional set of highest-priority pins/un-pins (operators can collect these in their configuration YAML using the same schema as front matter) and it generates a "crawl" with one or both (as requested) of:  
+    1. Knowledge expansions: all KB items pinned, deduped, in priority order from farthest ancestor to nearest node. It starts from the current operator and moves upwards toward the narrative root (direct ancestors) to find all pinned knowledge. An un-pin at a lower level than a pin has precedence. This un-pin includes items gathered when an expanded node (`!`). We remove any duplicates and then we emit the content of nodes from root to child (i.e. the ones pinned in a more nested node go after). Any comments in knowledge are also skipped by this inclusion: this allows those objects to have notes (for example desired character milestones) without the AI pulling them into the prompt as if they were facts. Result is a list of expanded objects in order, with comments stripped.
+    2. Ancestor narrative: hierarchial parent content (always strip comment blocks). Go upwards from current position, collecting content in node, then up the parent, going up again from where that node was included, and so on until the root. Return in root -> child order. So if you are 3 levels in—let's say semantically you have chapter, scene, and beat—and you are in chapter 3, scene 4, beat 3, the ancestor narrative includes the chapter 1 and 2 summaries, chapter 3 scene 1-3 summaries, and scene 4 beat 1-2 summaries. When adding at the Cursor, this is quite easy because it's equivalent to simply the full text of all parent nodes, but traversal from any position is also possible. Result is a list of segments in order, with comments stripped.
 
-- **System instructions** (operator-specific system prompt; usually static).
-- **Collected knowledge expansions** (all KB items pinned or added, deduped, in priority order from farthest ancestor to nearest node).
-  - We start from the current operator and move upwards toward the narrative root (direct ancestors) to find all pinned knowledge. An un-pin at a lower level than a pin has precedence. This includes when an expanded node (`!`) has a child that removes the node that happened to have been also collected. We remove any duplicates and then we emit the content of nodes from root to child (i.e. the ones pinned in a more nested node go after)
-  - Any comments in knowledge are also skipped by this inclusion: this allows those objects to have notes (for example desired character milestones) without the AI pulling them into the prompt as if they were facts.
-  - Because knowledge items are meant to mutate, calling the same operator with the same knowledge over time will have different results! Using git allows us to know when this operator was called, and thus what the knowledge state was at the time.
-- **Ancestor narrative** (root → parent), content of each parent node (always strip comment blocks). 
-  - This is a "zoomed-out" view, so it's usually summaries. So if you are 3 levels in—let's say semantically you have chapter, scene, and beat—and you are in chapter 3, scene 4, beat 3, the ancestor narrative includes the chapter 1 and 2 summaries, chapter 3 scene 1-3 summaries, and scene 4 beat 1-2 summaries. 
-  - When adding at the Cursor, this is quite easy because it's equivalent to simply the full text of all parent nodes (minus any comments). If operating in the middle, we'd have to trim the tree more carefully with anything that would happen after this.
-- **Current node narrative**. The narrative text before this operator in this node, if any. If adding to Cursor, simply the current node text. 
-- **Instructions based on operator and its configuration** (in natural language, for example the `write` operator has a `prompt` string telling the AI to continue writing in a certain direction, while a `summary` operator tells the AI to summarize the "Current node narrative").
+The result of the crawl is usually meant to be assembled into LLM prompts. These prompt includes, in order (the order matters for attention management):
+
+- **System instructions**: operator-specific system prompt; usually static and in tagged as such, i.e. "You are a fancy author..."
+- **Collected knowledge expansions**: all KB item expansions from crawl.
+- **Ancestor narrative**: parent narrative context from crawl (ancestor and current node). 
+- **Instructions based on operator and its configuration**: in natural language, things like "continue writing the story" or "summarize the following"; many operators have a `prompt` string that is included here to direct the AI to continue writing in a certain direction, summarize certain aspects, and so on. Specialized operators can have quite complex rule sets.
+
+A module also exists to reliably assemble this prompt from crawl outputs into a string that works well.
 
 ## Architecture
 

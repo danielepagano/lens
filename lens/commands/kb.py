@@ -98,7 +98,7 @@ def delete(
 @app.command(no_args_is_help=True)
 def get(
     ids: list[str] = typer.Argument(..., help="Object ID(s); append ! for linked objects"),
-    include_comments: bool = typer.Option(False, "--include-comments", help="Keep markdown comments"),
+    include_comments: bool = typer.Option(True, "--include-comments", help="Keep markdown comments"),
 ) -> None:
     """Fetch and print knowledge objects."""
     kb = _get_store()

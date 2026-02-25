@@ -6,16 +6,13 @@ Transactions map to git working-tree state:
 - Aborting = discarding unstaged changes
 - Checkpoint = stage + git commit
 
-The Storage class is instantiated with an ``owner`` string that identifies
+The Storage class is instantiated with an ``owner`` NarrativeAddress that identifies
 which operator (or system command) is making changes.  On the first write
 operation Storage checks whether any pending unstaged changes belong to a
 *different* owner and, if so, stages them automatically before proceeding.
 
-Owner ID format
-~~~~~~~~~~~~~~~
-- Operators **with** an annotation ID:  ``"{op}:{ann_id}@{file}"``
-- Operators **without** an annotation ID:  ``"{op}@{file}:{line}"``
-- System / non-operator commands: ``None`` (always stages pending first)
+Owner format: NarrativeAddress with operator/op_id/line set as appropriate.
+System / non-operator commands use ``None`` (always stages pending first).
 """
 
 from __future__ import annotations
@@ -25,6 +22,7 @@ import subprocess
 from pathlib import Path
 from typing import ClassVar
 
+from lens.address import NarrativeAddress
 from lens.annotations import ANNOTATION_OPEN_RE, ANNOTATION_RE
 
 _HUNK_HEADER_RE = re.compile(
@@ -32,34 +30,15 @@ _HUNK_HEADER_RE = re.compile(
 )
 
 
-def make_owner_id(
-    operator: str,
-    ann_id: str | None,
-    file: str,
-    line: int | None = None,
-) -> str:
-    """Build the canonical owner string for a transaction.
-
-    With an annotation ID the id is unique within the file, so the line
-    number is unnecessary.  Without an annotation ID the line number is
-    required for disambiguation.
-    """
-    if ann_id is not None:
-        return f"{operator}:{ann_id}@{file}"
-    if line is not None:
-        return f"{operator}@{file}:{line}"
-    return f"{operator}@{file}"
-
-
-def detect_pending_owner_from_diff(diff_text: str) -> str | None:
-    """Parse ``git diff`` output and return the owner string of the first
+def detect_pending_owner_from_diff(diff_text: str) -> NarrativeAddress | None:
+    """Parse ``git diff`` output and return the owner address of the first
     operator annotation found, or ``None`` if no annotation appears."""
     current_file: str | None = None
     new_line = 0
     old_line = 0
 
-    added_owner: str | None = None
-    removed_owner: str | None = None
+    added_owner: NarrativeAddress | None = None
+    removed_owner: NarrativeAddress | None = None
 
     for raw in diff_text.splitlines():
         if raw.startswith("+++ b/"):
@@ -103,9 +82,9 @@ def detect_pending_owner_from_diff(diff_text: str) -> str | None:
 
 def _match_annotation_owner(
     line: str, file: str, line_no: int
-) -> str | None:
+) -> NarrativeAddress | None:
     """If *line* matches an operator annotation open pattern, return the
-    corresponding owner ID string."""
+    corresponding owner address, or ``None`` for non-narrative files."""
     for regex in (ANNOTATION_RE, ANNOTATION_OPEN_RE):
         m = regex.match(line.strip())
         if m is None:
@@ -116,7 +95,13 @@ def _match_annotation_owner(
             continue
         operator: str = m.group("operator")
         ann_id: str | None = m.group("id")
-        return make_owner_id(operator, ann_id, file, line_no)
+        line_arg = line_no if ann_id is None else None
+        try:
+            return NarrativeAddress.from_file_and_annotation(
+                file, operator=operator, op_id=ann_id, line=line_arg
+            )
+        except ValueError:
+            return None
     return None
 
 
@@ -128,13 +113,13 @@ class Storage:
     git_root:
         Path to the repository root (must contain ``.git``).
     owner:
-        Canonical owner string for the caller.  ``None`` for system /
+        NarrativeAddress for the caller.  ``None`` for system /
         non-operator commands (they never continue a pending transaction).
     """
 
     _GIT: ClassVar[str] = "git"
 
-    def __init__(self, git_root: Path, owner: str | None = None) -> None:
+    def __init__(self, git_root: Path, owner: NarrativeAddress | None = None) -> None:
         self._root = git_root
         self._owner = owner
         self._ownership_checked = False

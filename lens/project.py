@@ -7,6 +7,7 @@ import tomllib
 from pathlib import Path
 from typing import Any, cast
 
+from lens.address import NarrativeAddress
 from lens.narrative import NarrativeNode
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
@@ -90,3 +91,21 @@ def get_active_narrative(project_root: Path) -> NarrativeNode | None:
     if not narrative_dir.exists() or not narrative_dir.is_dir():
         return None
     return NarrativeNode(narrative_root=narrative_dir, key_path=())
+
+
+def resolve_address(
+    addr: NarrativeAddress,
+    project_root: Path,
+) -> NarrativeAddress:
+    """Fill in active narrative and resolve /@cursor to actual position."""
+    if addr.narrative is None:
+        active = get_active_narrative(project_root)
+        if active is None:
+            raise ValueError("no active narrative set in lens.toml")
+        addr = addr.with_narrative(active.narrative_root.name)
+    if addr.cursor:
+        assert addr.narrative is not None
+        narrative_root = project_root / "narrative" / addr.narrative
+        root_node = NarrativeNode(narrative_root=narrative_root, key_path=())
+        return root_node.find_cursor_address()
+    return addr

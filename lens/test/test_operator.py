@@ -68,19 +68,22 @@ class TestTagBuilders(unittest.TestCase):
     def test_open_tag_with_id_no_params(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             self.assertEqual(op.build_open_tag("ch1"), "[testop:ch1]: #")
 
     def test_open_tag_without_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             self.assertEqual(op.build_open_tag(), "[testop]: #")
 
     def test_open_tag_with_params(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             tag = op.build_open_tag("ch1", {"prompt": "hello"})
             self.assertIn("[testop:ch1", tag)
             self.assertIn("prompt: hello", tag)
@@ -89,30 +92,36 @@ class TestTagBuilders(unittest.TestCase):
     def test_close_tag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             self.assertEqual(op.build_close_tag("ch1"), "[/testop:ch1]: #")
 
     def test_close_tag_no_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             self.assertEqual(op.build_close_tag(), "[/testop]: #")
 
     def test_self_closing_tag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             self.assertEqual(op.build_self_closing_tag("notes"), "[testop:notes/]: #")
 
 
 class TestOwnerIdConstruction(unittest.TestCase):
     def test_with_id(self) -> None:
-        oid = _TestOp.owner_id("ch1", "narrative/test/_node.md")
-        self.assertEqual(oid, "testop:ch1@narrative/test/_node.md")
+        addr = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+        self.assertEqual(addr.narrative, "test")
+        self.assertEqual(addr.operator, "testop")
+        self.assertEqual(addr.op_id, "ch1")
 
     def test_without_id_with_line(self) -> None:
-        oid = _NoIdOp.owner_id(None, "narrative/test/_node.md", 5)
-        self.assertEqual(oid, "noid@narrative/test/_node.md:5")
+        addr = _NoIdOp.owner_id(None, "narrative/test/_node.md", 5)
+        self.assertEqual(addr.operator, "noid")
+        self.assertEqual(addr.line, 5)
 
 
 # ------------------------------------------------------------------
@@ -123,7 +132,8 @@ class TestAnnotationReading(unittest.TestCase):
     def test_find_my_annotations(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             text = "[testop:ch1]: #\nbody\n\n[/testop:ch1]: #\n[section:x]: #\n"
             anns = op.find_my_annotations(text)
             self.assertEqual(len(anns), 2)
@@ -132,7 +142,8 @@ class TestAnnotationReading(unittest.TestCase):
     def test_find_my_segments(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = _TestOp(Storage(root, owner="testop:ch1@x"), narrative)
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
             text = "[testop:ch1]: #\nbody\n\n[/testop:ch1]: #\n"
             segs = op.find_my_segments(text)
             self.assertEqual(len(segs), 1)

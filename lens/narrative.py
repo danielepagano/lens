@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lens.annotations import (
     ParsedAnnotation,
@@ -13,6 +13,9 @@ from lens.annotations import (
     parse_tail_cursor_annotation,
 )
 from lens.storage import Storage
+
+if TYPE_CHECKING:
+    from lens.address import NarrativeAddress
 
 
 def _make_system_storage(near: Path) -> Storage:
@@ -193,6 +196,19 @@ class NarrativeNode:
             return root_name
         parts = [root_name] + list(self.key_path)
         return " / ".join(parts)
+
+    def to_address(self) -> NarrativeAddress:
+        """Return the canonical NarrativeAddress for this node."""
+        from lens.address import NarrativeAddress
+
+        return NarrativeAddress(
+            narrative=self.narrative_root.name,
+            key_path=self.key_path,
+        )
+
+    def find_cursor_address(self) -> NarrativeAddress:
+        """Return the NarrativeAddress of the current cursor position."""
+        return self.find_cursor().to_address()
 
     def front_matter(self) -> dict[str, Any]:
         """Parse and return front matter from the node. Empty dict if none or invalid."""

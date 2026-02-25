@@ -66,7 +66,7 @@ class KnowledgeObject:
     text: str
     tags: list[str] = field(default_factory=lambda: cast(list[str], []))
 
-    def format(self, *, include_comments: bool = True) -> str:
+    def format(self, *, include_comments: bool = False) -> str:
         from lens.annotations import strip_markdown_comments
         text = self.text if include_comments else strip_markdown_comments(self.text)
         lines: list[str] = [f"KB[{self.id!r}]"]

@@ -7,7 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.storage import Storage, detect_pending_owner_from_diff, make_owner_id
+from lens.address import NarrativeAddress
+from lens.storage import Storage, detect_pending_owner_from_diff
 
 
 def _git(cwd: Path, *args: str) -> str:
@@ -40,24 +41,34 @@ def _init_repo(tmp: Path) -> Path:
     return tmp
 
 
-class TestMakeOwnerId(unittest.TestCase):
+class TestNarrativeAddressOwner(unittest.TestCase):
     def test_with_ann_id(self) -> None:
-        self.assertEqual(
-            make_owner_id("section", "ch1", "narrative/test/_node.md"),
-            "section:ch1@narrative/test/_node.md",
+        addr = NarrativeAddress.from_file_and_annotation(
+            "narrative/test/_node.md",
+            operator="section",
+            op_id="ch1",
         )
+        self.assertEqual(addr.narrative, "test")
+        self.assertEqual(addr.key_path, ())
+        self.assertEqual(addr.operator, "section")
+        self.assertEqual(addr.op_id, "ch1")
 
     def test_without_ann_id_with_line(self) -> None:
-        self.assertEqual(
-            make_owner_id("write", None, "narrative/test/_node.md", 15),
-            "write@narrative/test/_node.md:15",
+        addr = NarrativeAddress.from_file_and_annotation(
+            "narrative/test/_node.md",
+            operator="write",
+            line=15,
         )
+        self.assertEqual(addr.operator, "write")
+        self.assertEqual(addr.line, 15)
 
     def test_without_ann_id_or_line(self) -> None:
-        self.assertEqual(
-            make_owner_id("write", None, "narrative/test/_node.md"),
-            "write@narrative/test/_node.md",
+        addr = NarrativeAddress.from_file_and_annotation(
+            "narrative/test/_node.md",
+            operator="write",
         )
+        self.assertEqual(addr.operator, "write")
+        self.assertIsNone(addr.line)
 
 
 class TestHasPending(unittest.TestCase):
@@ -241,7 +252,9 @@ class TestOwnershipAutoStage(unittest.TestCase):
 
             node.write_text("# test\n\n[section:ch1]: #\n")
 
-            owner = make_owner_id("section", "ch1", "narrative/test/_node.md")
+            owner = NarrativeAddress.from_file_and_annotation(
+                "narrative/test/_node.md", operator="section", op_id="ch1"
+            )
             s = Storage(root, owner=owner)
             s.write_file(root / "narrative" / "test" / "ch1" / "_node.md", "# ch1\n")
             # The original pending change should NOT have been staged
@@ -260,7 +273,9 @@ class TestOwnershipAutoStage(unittest.TestCase):
 
             node.write_text("# test\n\n[section:ch1]: #\n")
 
-            owner = make_owner_id("write", None, "narrative/test/ch1/_node.md", 1)
+            owner = NarrativeAddress.from_file_and_annotation(
+                "narrative/test/ch1/_node.md", operator="write", line=1
+            )
             s = Storage(root, owner=owner)
             ch1 = root / "narrative" / "test" / "ch1" / "_node.md"
             ch1.parent.mkdir(parents=True)
@@ -283,13 +298,18 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
             "+\n"
         )
         owner = detect_pending_owner_from_diff(diff)
-        self.assertEqual(owner, "section:ch1@narrative/test/_node.md")
+        self.assertIsNotNone(owner)
+        assert owner is not None
+        self.assertEqual(owner.narrative, "test")
+        self.assertEqual(owner.key_path, ())
+        self.assertEqual(owner.operator, "section")
+        self.assertEqual(owner.op_id, "ch1")
 
     def test_added_multiline_annotation(self) -> None:
         diff = (
-            "diff --git a/n/_node.md b/n/_node.md\n"
-            "--- a/n/_node.md\n"
-            "+++ b/n/_node.md\n"
+            "diff --git a/narrative/n/_node.md b/narrative/n/_node.md\n"
+            "--- a/narrative/n/_node.md\n"
+            "+++ b/narrative/n/_node.md\n"
             "@@ -1 +1,4 @@\n"
             " # root\n"
             "+[write\n"
@@ -297,13 +317,18 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
             "+]: #\n"
         )
         owner = detect_pending_owner_from_diff(diff)
-        self.assertEqual(owner, "write@n/_node.md:2")
+        self.assertIsNotNone(owner)
+        assert owner is not None
+        self.assertEqual(owner.narrative, "n")
+        self.assertEqual(owner.key_path, ())
+        self.assertEqual(owner.operator, "write")
+        self.assertEqual(owner.line, 2)
 
     def test_removed_annotation_mode3(self) -> None:
         diff = (
-            "diff --git a/n/_node.md b/n/_node.md\n"
-            "--- a/n/_node.md\n"
-            "+++ b/n/_node.md\n"
+            "diff --git a/narrative/n/_node.md b/narrative/n/_node.md\n"
+            "--- a/narrative/n/_node.md\n"
+            "+++ b/narrative/n/_node.md\n"
             "@@ -1,4 +1,2 @@\n"
             " # root\n"
             "-[edit:fix1]: #\n"
@@ -311,13 +336,17 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
             "+new text\n"
         )
         owner = detect_pending_owner_from_diff(diff)
-        self.assertEqual(owner, "edit:fix1@n/_node.md")
+        self.assertIsNotNone(owner)
+        assert owner is not None
+        self.assertEqual(owner.narrative, "n")
+        self.assertEqual(owner.operator, "edit")
+        self.assertEqual(owner.op_id, "fix1")
 
     def test_added_preferred_over_removed(self) -> None:
         diff = (
-            "diff --git a/n/_node.md b/n/_node.md\n"
-            "--- a/n/_node.md\n"
-            "+++ b/n/_node.md\n"
+            "diff --git a/narrative/n/_node.md b/narrative/n/_node.md\n"
+            "--- a/narrative/n/_node.md\n"
+            "+++ b/narrative/n/_node.md\n"
             "@@ -1,4 +1,4 @@\n"
             " # root\n"
             "-[write\n"
@@ -327,10 +356,9 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
             " ]: #\n"
         )
         owner = detect_pending_owner_from_diff(diff)
-        # Added line should be preferred
         self.assertIsNotNone(owner)
         assert owner is not None
-        self.assertTrue(owner.startswith("write@"))
+        self.assertEqual(owner.operator, "write")
 
     def test_no_annotations_returns_none(self) -> None:
         diff = (
@@ -343,14 +371,25 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
         )
         self.assertIsNone(detect_pending_owner_from_diff(diff))
 
+    def test_annotation_in_non_narrative_file_returns_none(self) -> None:
+        diff = (
+            "diff --git a/knowledge/place/nyc.md b/knowledge/place/nyc.md\n"
+            "--- a/knowledge/place/nyc.md\n"
+            "+++ b/knowledge/place/nyc.md\n"
+            "@@ -1 +1,2 @@\n"
+            " content\n"
+            "+[write]: #\n"
+        )
+        self.assertIsNone(detect_pending_owner_from_diff(diff))
+
     def test_empty_diff_returns_none(self) -> None:
         self.assertIsNone(detect_pending_owner_from_diff(""))
 
     def test_close_tag_not_detected_as_owner(self) -> None:
         diff = (
-            "diff --git a/n/_node.md b/n/_node.md\n"
-            "--- a/n/_node.md\n"
-            "+++ b/n/_node.md\n"
+            "diff --git a/narrative/n/_node.md b/narrative/n/_node.md\n"
+            "--- a/narrative/n/_node.md\n"
+            "+++ b/narrative/n/_node.md\n"
             "@@ -3,0 +4,1 @@\n"
             "+[/section:ch1]: #\n"
         )

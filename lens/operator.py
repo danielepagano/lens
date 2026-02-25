@@ -6,7 +6,7 @@ traceable annotation patterns.  Every operator subclass declares a ``name``
 ID is required (``requires_id``).
 
 Operators construct a :class:`~lens.storage.Storage` instance with their
-canonical *owner ID* so that the storage layer can enforce single-pending-
+canonical *owner address* so that the storage layer can enforce single-pending-
 transaction semantics automatically.  The base class provides:
 
 * **Tag builders** – produce well-formed annotation strings.
@@ -25,12 +25,13 @@ from typing import Any, ClassVar
 
 import yaml
 
+from lens.address import NarrativeAddress
 from lens.annotations import (
     ParsedAnnotation,
     parse_annotations,
 )
 from lens.narrative import NarrativeNode, NodeSegment, parse_segments
-from lens.storage import Storage, make_owner_id
+from lens.storage import Storage
 
 
 class Operator(ABC):
@@ -53,7 +54,7 @@ class Operator(ABC):
         self.narrative_root = narrative_root
 
     # ------------------------------------------------------------------
-    # Owner-ID construction
+    # Owner address construction
     # ------------------------------------------------------------------
 
     @classmethod
@@ -62,8 +63,8 @@ class Operator(ABC):
         ann_id: str | None,
         file: str,
         line: int | None = None,
-    ) -> str:
-        """Build the canonical owner string for this operator.
+    ) -> NarrativeAddress:
+        """Build the canonical owner address for this operator.
 
         Parameters
         ----------
@@ -72,14 +73,16 @@ class Operator(ABC):
             ``[section:ch1]``).  ``None`` when the operator does not use
             an ID for this annotation.
         file:
-            File path **relative to the project root** where the
+            File path **relative to the git root** where the
             annotation lives (e.g. ``"narrative/test/_node.md"``).
         line:
             1-based line number.  Required when *ann_id* is ``None`` so
             that two ID-less annotations in the same file can be
             distinguished.
         """
-        return make_owner_id(cls.name, ann_id, file, line)
+        return NarrativeAddress.from_file_and_annotation(
+            file, operator=cls.name, op_id=ann_id, line=line
+        )
 
     # ------------------------------------------------------------------
     # Tag builders
