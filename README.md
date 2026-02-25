@@ -97,6 +97,45 @@ lens pin unblock person.amy            # undo a block
 
 Node addresses follow the format `[<narrative>/]<key>[/<key>...]` or `/@cursor`. Run `lens pin <command> --help` for details.
 
+## LLM Configuration
+
+Lens uses LLM APIs (OpenAI-compatible) for AI operators like `write` and `summarize`. Configure them in your project's `lens.toml`.
+
+### Adding an LLM
+
+Add one or more `[[llm]]` entries. The **first entry is the default**; the rest are only used if explicitly selected by `id`.
+
+```toml
+[[llm]]
+base_url         = "https://api.openai.com/v1"
+model            = "gpt-4o"
+api_key_env      = "OPENAI_API_KEY"   # env var that holds the API key
+temperature      = 0.8                # optional, default 0.8
+timeout_seconds  = 120                # optional, default 120
+
+[[llm]]
+id               = "fast"             # optional name for non-default models
+base_url         = "https://api.openai.com/v1"
+model            = "gpt-4o-mini"
+api_key_env      = "OPENAI_API_KEY"
+```
+
+`api_key_env` names the environment variable that holds the API key — credentials are never stored in `lens.toml`. If the variable is unset at runtime, Lens will report a clear error.
+
+Any OpenAI-compatible endpoint works (e.g. Anthropic via openai-compat proxy, Ollama, Together AI, etc.) — just set `base_url` accordingly.
+
+### Verbose LLM logging
+
+To log full prompts and responses in a human-readable format (useful for debugging operator output), add `verbose_llm = true` to the `[project]` section:
+
+```toml
+[project]
+narrative    = "my-campaign"
+verbose_llm  = true
+```
+
+With this enabled, each LLM call will emit a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` formatted block to the logger at `INFO` level — showing the exact prompt sent and the full response received, with no raw protocol noise.
+
 ## Development
 
 ```bash
