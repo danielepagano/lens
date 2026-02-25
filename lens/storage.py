@@ -3,7 +3,7 @@
 Transactions map to git working-tree state:
 - Pending transaction = unstaged changes (modifications + untracked files)
 - Committing a transaction = git add -A (staging all changes)
-- Aborting = discarding unstaged changes
+- Rolling back = discarding unstaged changes
 - Checkpoint = stage + git commit
 
 The Storage class is instantiated with an ``owner`` NarrativeAddress that identifies
@@ -179,6 +179,34 @@ class Storage:
         )
         return r.stdout
 
+    def detect_pending_owner(self) -> NarrativeAddress | None:
+        """Return the owner of the current pending transaction.
+
+        Checks tracked-file changes via ``git diff`` first, then falls back to
+        scanning untracked ``.md`` files for operator annotations.  The fallback
+        is needed when an operator creates entirely new files (e.g. the section
+        operator promoting a leaf node to a folder), so the annotation never
+        appears in the diff.
+        """
+        owner = detect_pending_owner_from_diff(self.diff())
+        if owner is not None:
+            return owner
+        for rel_path in self.pending_files():
+            if not rel_path.endswith(".md"):
+                continue
+            abs_path = self._root / rel_path
+            if not abs_path.is_file():
+                continue
+            try:
+                text = abs_path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            for lineno, line in enumerate(text.splitlines(), 1):
+                addr = _match_annotation_owner(line, rel_path, lineno)
+                if addr is not None:
+                    return addr
+        return None
+
     # ------------------------------------------------------------------
     # Transaction lifecycle
     # ------------------------------------------------------------------
@@ -193,7 +221,7 @@ class Storage:
         )
         self._ownership_checked = False
 
-    def abort(self) -> None:
+    def rollback(self) -> None:
         """Discard all unstaged changes and remove untracked files."""
         subprocess.run(
             [self._GIT, "checkout", "--", "."],
@@ -269,7 +297,7 @@ class Storage:
         if self._owner is None:
             self.stage_all()
             return
-        pending_owner = detect_pending_owner_from_diff(self.diff())
+        pending_owner = self.detect_pending_owner()
         if pending_owner == self._owner:
             return
         self.stage_all()

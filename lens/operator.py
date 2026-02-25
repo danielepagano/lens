@@ -170,19 +170,19 @@ class Operator(ABC):
         initial_content: str | None = None,
         params: dict[str, Any] | None = None,
     ) -> NarrativeNode:
-        """Create a child node directory and append an open tag to *parent*.
+        """Create a leaf child node and append an open tag to *parent*.
 
-        If *parent* is a leaf node it is promoted to a folder first.
-        Returns the new child :class:`NarrativeNode`.
+        The child is created as a leaf (``{id}.md``). It can be converted
+        to a folder later via :meth:`~lens.narrative.NarrativeNode.to_folder`
+        if needed. If *parent* is a leaf, it is promoted to a folder first
+        (required by the path model for children to exist).
         """
         if parent.is_leaf():
             parent.to_folder(self.storage)
 
         md_path = parent.md_path()
-        child_dir = md_path.parent / id
-        self.storage.mkdir(child_dir)
-        child_md = child_dir / "_node.md"
-        self.storage.write_file(child_md, initial_content or f"# {id}\n")
+        child_md = md_path.parent / f"{id}.md"
+        self.storage.write_file(child_md, initial_content or "")
 
         tag = self.build_open_tag(id, params)
         self.append_to_node(parent, tag + "\n")

@@ -109,14 +109,14 @@ class TestStageAll(unittest.TestCase):
             self.assertIn("new.md", cached)
 
 
-class TestAbort(unittest.TestCase):
+class TestRollback(unittest.TestCase):
     def test_discards_modifications(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = _init_repo(Path(tmp))
             (root / ".gitkeep").write_text("dirty")
             s = Storage(root)
             self.assertTrue(s.has_pending())
-            s.abort()
+            s.rollback()
             self.assertFalse(s.has_pending())
             self.assertEqual((root / ".gitkeep").read_text(), "")
 
@@ -126,7 +126,7 @@ class TestAbort(unittest.TestCase):
             (root / "untracked.md").write_text("hi")
             s = Storage(root)
             self.assertTrue(s.has_pending())
-            s.abort()
+            s.rollback()
             self.assertFalse(s.has_pending())
             self.assertFalse((root / "untracked.md").exists())
 
@@ -394,3 +394,70 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
             "+[/section:ch1]: #\n"
         )
         self.assertIsNone(detect_pending_owner_from_diff(diff))
+
+
+class TestDetectPendingOwner(unittest.TestCase):
+    """Integration tests for Storage.detect_pending_owner().
+
+    These tests cover the untracked-file fallback path that arises when an
+    operator creates entirely new files (e.g. section promoting a leaf node to
+    a folder), so no annotation appears in git diff.
+    """
+
+    def test_tracked_change_detected_via_diff(self) -> None:
+        """Annotation added to an existing tracked file is found via diff."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            node = root / "narrative" / "test" / "_node.md"
+            node.parent.mkdir(parents=True)
+            node.write_text("# test\n")
+            _git(root, "add", "-A")
+            _git(root, "commit", "-m", "track")
+
+            node.write_text("# test\n\n[section:ch1]: #\n")
+
+            s = Storage(root)
+            owner = s.detect_pending_owner()
+            self.assertIsNotNone(owner)
+            assert owner is not None
+            self.assertEqual(owner.operator, "section")
+            self.assertEqual(owner.op_id, "ch1")
+
+    def test_untracked_file_fallback(self) -> None:
+        """Annotation in an untracked file is found when diff is empty.
+
+        Mirrors the section-operator leaf-to-folder promotion: the original
+        leaf .md is deleted (tracked change with no annotation) and the new
+        subtree lives entirely in untracked files.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            leaf = root / "narrative" / "test" / "morning.md"
+            leaf.parent.mkdir(parents=True)
+            leaf.write_text("Some prose.\n")
+            _git(root, "add", "-A")
+            _git(root, "commit", "-m", "track leaf")
+
+            # Simulate leaf-to-folder promotion: delete the tracked leaf,
+            # create the new folder subtree as untracked files.
+            leaf.unlink()
+            folder = root / "narrative" / "test" / "morning"
+            folder.mkdir()
+            (folder / "_node.md").write_text("Some prose.\n\n[section:coffee]: #\n")
+            (folder / "coffee.md").write_text("")
+
+            s = Storage(root)
+            # git diff only sees the deletion of morning.md (no annotation),
+            # so detect_pending_owner must fall back to scanning untracked files.
+            self.assertIsNone(detect_pending_owner_from_diff(s.diff()))
+            owner = s.detect_pending_owner()
+            self.assertIsNotNone(owner)
+            assert owner is not None
+            self.assertEqual(owner.operator, "section")
+            self.assertEqual(owner.op_id, "coffee")
+
+    def test_no_pending_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            s = Storage(root)
+            self.assertIsNone(s.detect_pending_owner())

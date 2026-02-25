@@ -521,7 +521,7 @@ class TestSectionOperator(unittest.TestCase):
             cwd=tmp, capture_output=True, check=True,
         )
 
-    def test_section_start_creates_folder_and_annotation(self) -> None:
+    def test_section_start_creates_leaf_and_annotation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp)
             self._make_project(p)
@@ -534,10 +534,9 @@ class TestSectionOperator(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             node_md = p / "narrative" / "test" / "_node.md"
             self.assertIn("[section:event_1]: #", node_md.read_text())
-            section_dir = p / "narrative" / "test" / "event_1"
-            self.assertTrue(section_dir.is_dir())
-            self.assertTrue((section_dir / "_node.md").exists())
-            self.assertIn("# event_1", (section_dir / "_node.md").read_text())
+            section_md = p / "narrative" / "test" / "event_1.md"
+            self.assertTrue(section_md.exists())
+            self.assertEqual(section_md.read_text(), "")
 
     def test_section_start_adds_blank_line_before_annotation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

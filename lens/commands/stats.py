@@ -8,7 +8,7 @@ import typer
 
 from lens.address import NarrativeAddress
 from lens.project import get_active_narrative, require_lens_context
-from lens.storage import Storage, detect_pending_owner_from_diff
+from lens.storage import Storage
 
 app = typer.Typer(invoke_without_command=True)
 
@@ -63,7 +63,7 @@ def stats() -> None:
     has_pending = storage.has_pending()
     typer.echo(f"Open transaction:         {'yes' if has_pending else 'no'}")
     if has_pending:
-        owner = detect_pending_owner_from_diff(storage.diff())
+        owner = storage.detect_pending_owner()
         if owner is not None:
             typer.echo(f"Transaction owner:        {owner}")
         else:

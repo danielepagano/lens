@@ -166,10 +166,10 @@ class TestMode2Subnode(unittest.TestCase):
 
             child = op.create_subnode(narrative, "ch1")
             self.assertTrue(child.exists())
+            self.assertTrue(child.is_leaf())
             parent_text = narrative.md_path().read_text()  # type: ignore[union-attr]
             self.assertIn("[testop:ch1]: #", parent_text)
-            child_text = child.md_path().read_text()  # type: ignore[union-attr]
-            self.assertIn("# ch1", child_text)
+            self.assertEqual(child.md_path().read_text(), "")  # type: ignore[union-attr]
 
     def test_close_subnode(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -184,7 +184,7 @@ class TestMode2Subnode(unittest.TestCase):
             self.assertIn("Summary of ch1.", parent_text)
             self.assertIn("[/testop:ch1]: #", parent_text)
 
-    def test_create_subnode_promotes_leaf(self) -> None:
+    def test_create_subnode_with_leaf_parent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             leaf_path = root / "narrative" / "test" / "leaf.md"
@@ -195,18 +195,19 @@ class TestMode2Subnode(unittest.TestCase):
                 cwd=root, capture_output=True, check=True,
             )
 
-            leaf_node = NarrativeNode(
+            parent_node = NarrativeNode(
                 narrative_root=narrative.narrative_root,
                 key_path=("leaf",),
             )
-            self.assertTrue(leaf_node.is_leaf())
+            self.assertTrue(parent_node.is_leaf())
 
             owner = _TestOp.owner_id("sub", "narrative/test/leaf/_node.md")
             storage = Storage(root, owner=owner)
-            op = _TestOp(storage, leaf_node)
-            child = op.create_subnode(leaf_node, "sub")
-            self.assertFalse(leaf_node.is_leaf())
+            op = _TestOp(storage, parent_node)
+            child = op.create_subnode(parent_node, "sub")
+            self.assertFalse(parent_node.is_leaf())
             self.assertTrue(child.exists())
+            self.assertTrue(child.is_leaf())
 
 
 # ------------------------------------------------------------------
