@@ -12,7 +12,8 @@ from lens.pinning import KB_PIN, KB_UNPIN
 @dataclass
 class CrawlResult:
     knowledge: list[str]
-    narrative_segments: list[str]
+    previous_summaries: list[str]
+    current_content: str | None
 
 
 def _block(title: str, body: str) -> str:
@@ -118,19 +119,27 @@ def crawl(
             if obj is not None:
                 knowledge_formatted.append(obj.format(include_comments=False))
 
-    narrative_segments: list[str] = []
+    previous_summaries: list[str] = []
+    current_content: str | None = None
     if include_narrative:
-        for anc in ancestors:
+        for anc in ancestors[:-1]:
             if not anc.exists():
                 continue
             text = anc.md_path().read_text(encoding="utf-8")
             stripped = strip_markdown_comments(text)
             if stripped.strip():
-                narrative_segments.append(stripped.strip())
+                previous_summaries.append(stripped.strip())
+        current_node = ancestors[-1]
+        if current_node.exists():
+            text = current_node.md_path().read_text(encoding="utf-8")
+            stripped = strip_markdown_comments(text)
+            if stripped.strip():
+                current_content = stripped.strip()
 
     return CrawlResult(
         knowledge=knowledge_formatted,
-        narrative_segments=narrative_segments,
+        previous_summaries=previous_summaries,
+        current_content=current_content,
     )
 
 
@@ -143,13 +152,23 @@ def assemble_prompt(
 ) -> list[dict[str, str]]:
     sections: list[str] = []
     if result.knowledge:
-        kb_block = _block("KNOWLEDGE", "\n\n".join(result.knowledge))
+        kb_block = _block("RELEVANT KNOWLEDGE", "\n\n".join(result.knowledge))
         if kb_block:
             sections.append(kb_block)
-    if result.narrative_segments:
-        nar_block = _block("NARRATIVE CONTEXT", "\n\n".join(result.narrative_segments))
-        if nar_block:
-            sections.append(nar_block)
+    if result.previous_summaries:
+        prev_block = _block(
+            "PREVIOUS EVENTS SUMMARY",
+            "\n\n".join(result.previous_summaries),
+        )
+        if prev_block:
+            sections.append(prev_block)
+    if result.current_content:
+        cur_block = _block(
+            "CURRENT PASSAGE",
+            result.current_content,
+        )
+        if cur_block:
+            sections.append(cur_block)
     if extra_sections:
         sections.extend(extra_sections)
     task_block = _block("TASK", instruction)

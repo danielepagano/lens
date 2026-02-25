@@ -173,11 +173,13 @@ class TestCrawlNarrative(unittest.TestCase):
                 "# ch1\n\n[write\n  prompt: x\n]: #\n\nChild content.")
             _commit(root)
             r = crawl(node.child_node("ch1"))
-            self.assertEqual(len(r.narrative_segments), 2)
-            self.assertIn("Root content", r.narrative_segments[0])
-            self.assertIn("Child content", r.narrative_segments[1])
-            self.assertNotIn("[write", r.narrative_segments[1])
-            self.assertNotIn("[section", r.narrative_segments[0])
+            self.assertEqual(len(r.previous_summaries), 1)
+            self.assertIn("Root content", r.previous_summaries[0])
+            self.assertIsNotNone(r.current_content)
+            assert r.current_content is not None
+            self.assertIn("Child content", r.current_content)
+            self.assertNotIn("[write", r.current_content)
+            self.assertNotIn("[section", r.previous_summaries[0])
 
     def test_three_levels_root_to_leaf(self) -> None:
         """Root → chapter → scene: crawling from the leaf yields all three segments."""
@@ -193,10 +195,12 @@ class TestCrawlNarrative(unittest.TestCase):
             _commit(root)
             leaf = node.child_node("ch1").child_node("scene1")
             r = crawl(leaf)
-            self.assertEqual(len(r.narrative_segments), 3)
-            self.assertIn("Campaign overview", r.narrative_segments[0])
-            self.assertIn("Chapter one", r.narrative_segments[1])
-            self.assertIn("Scene one prose", r.narrative_segments[2])
+            self.assertEqual(len(r.previous_summaries), 2)
+            self.assertIn("Campaign overview", r.previous_summaries[0])
+            self.assertIn("Chapter one", r.previous_summaries[1])
+            self.assertIsNotNone(r.current_content)
+            assert r.current_content is not None
+            self.assertIn("Scene one prose", r.current_content)
 
     def test_crawl_from_middle_node_excludes_deeper_children(self) -> None:
         """Crawling from a mid-tree node only includes root and that node, not its children."""
@@ -210,10 +214,13 @@ class TestCrawlNarrative(unittest.TestCase):
             _commit(root)
             mid = node.child_node("ch1")
             r = crawl(mid)
-            self.assertEqual(len(r.narrative_segments), 2)
-            self.assertIn("Campaign text", r.narrative_segments[0])
-            self.assertIn("Chapter text", r.narrative_segments[1])
-            self.assertNotIn("Scene text", "\n".join(r.narrative_segments))
+            self.assertEqual(len(r.previous_summaries), 1)
+            self.assertIn("Campaign text", r.previous_summaries[0])
+            self.assertIsNotNone(r.current_content)
+            assert r.current_content is not None
+            self.assertIn("Chapter text", r.current_content)
+            all_text = "\n".join(r.previous_summaries) + (r.current_content or "")
+            self.assertNotIn("Scene text", all_text)
 
     def test_crawl_from_root_only_has_one_segment(self) -> None:
         """Crawling from the root node yields only the root segment."""
@@ -223,8 +230,10 @@ class TestCrawlNarrative(unittest.TestCase):
             _write_node(node.narrative_root / "ch1" / "_node.md", "# ch1\n\nChild text.")
             _commit(root)
             r = crawl(node)
-            self.assertEqual(len(r.narrative_segments), 1)
-            self.assertIn("Root only", r.narrative_segments[0])
+            self.assertEqual(r.previous_summaries, [])
+            self.assertIsNotNone(r.current_content)
+            assert r.current_content is not None
+            self.assertIn("Root only", r.current_content)
 
     def test_comments_stripped_at_all_levels(self) -> None:
         """Front matter, section tags, and write annotations are all stripped across levels."""
@@ -237,11 +246,15 @@ class TestCrawlNarrative(unittest.TestCase):
                 "[\n  kb_pin: []\n]: #\n\n# ch1\n\n[write]: #\n\nChild text.\n\n[/write]: #")
             _commit(root)
             r = crawl(node.child_node("ch1"))
-            for seg in r.narrative_segments:
+            all_segs = r.previous_summaries + ([r.current_content] if r.current_content else [])
+            for seg in all_segs:
                 self.assertNotIn("]: #", seg)
                 self.assertNotIn("kb_pin", seg)
-            self.assertIn("Root text", r.narrative_segments[0])
-            self.assertIn("Child text", r.narrative_segments[1])
+            self.assertEqual(len(r.previous_summaries), 1)
+            self.assertIn("Root text", r.previous_summaries[0])
+            self.assertIsNotNone(r.current_content)
+            assert r.current_content is not None
+            self.assertIn("Child text", r.current_content)
 
     def test_open_cursor_annotation_at_tail_stripped(self) -> None:
         """An unclosed section annotation at the end (the cursor marker) is stripped."""
@@ -252,9 +265,11 @@ class TestCrawlNarrative(unittest.TestCase):
             )
             _commit(root)
             r = crawl(node)
-            self.assertEqual(len(r.narrative_segments), 1)
-            self.assertIn("Root text", r.narrative_segments[0])
-            self.assertNotIn("[section", r.narrative_segments[0])
+            self.assertEqual(r.previous_summaries, [])
+            self.assertIsNotNone(r.current_content)
+            assert r.current_content is not None
+            self.assertIn("Root text", r.current_content)
+            self.assertNotIn("[section", r.current_content)
 
     def test_empty_nodes_skipped(self) -> None:
         """Nodes whose content is entirely comments/whitespace do not produce a segment."""
@@ -264,8 +279,10 @@ class TestCrawlNarrative(unittest.TestCase):
             _write_node(node.narrative_root / "ch1" / "_node.md", "# ch1\n\nChild text.")
             _commit(root)
             r = crawl(node.child_node("ch1"))
-            self.assertEqual(len(r.narrative_segments), 1)
-            self.assertIn("Child text", r.narrative_segments[0])
+            self.assertEqual(r.previous_summaries, [])
+            self.assertIsNotNone(r.current_content)
+            assert r.current_content is not None
+            self.assertIn("Child text", r.current_content)
 
     def test_include_narrative_false_skips_narrative(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -273,7 +290,8 @@ class TestCrawlNarrative(unittest.TestCase):
             node.md_path().write_text("# campaign\n\nSome text.")
             _commit(root)
             r = crawl(node, include_narrative=False)
-            self.assertEqual(r.narrative_segments, [])
+            self.assertEqual(r.previous_summaries, [])
+            self.assertIsNone(r.current_content)
 
 
 class TestCrawlMissingKb(unittest.TestCase):
@@ -292,7 +310,7 @@ class TestCrawlMissingKb(unittest.TestCase):
 
 class TestAssemblePrompt(unittest.TestCase):
     def test_returns_system_and_user_messages(self) -> None:
-        result = CrawlResult(knowledge=[], narrative_segments=[])
+        result = CrawlResult(knowledge=[], previous_summaries=[], current_content=None)
         msgs = assemble_prompt(
             result,
             system_prompt="You are helpful.",
@@ -306,7 +324,7 @@ class TestAssemblePrompt(unittest.TestCase):
         self.assertIn("Do the task.", msgs[1]["content"])
 
     def test_omits_kb_block_when_empty(self) -> None:
-        result = CrawlResult(knowledge=[], narrative_segments=["# test"])
+        result = CrawlResult(knowledge=[], previous_summaries=[], current_content="# test")
         msgs = assemble_prompt(
             result,
             system_prompt="Sys",
@@ -314,19 +332,21 @@ class TestAssemblePrompt(unittest.TestCase):
         )
         self.assertNotIn("KNOWLEDGE", msgs[1]["content"])
 
-    def test_omits_narrative_block_when_empty(self) -> None:
-        result = CrawlResult(knowledge=["KB[place.a]"], narrative_segments=[])
+    def test_omits_narrative_blocks_when_empty(self) -> None:
+        result = CrawlResult(knowledge=["KB[place.a]"], previous_summaries=[], current_content=None)
         msgs = assemble_prompt(
             result,
             system_prompt="Sys",
             instruction="Task",
         )
-        self.assertNotIn("NARRATIVE CONTEXT", msgs[1]["content"])
+        self.assertNotIn("PREVIOUS EVENTS SUMMARY", msgs[1]["content"])
+        self.assertNotIn("CURRENT PASSAGE", msgs[1]["content"])
 
-    def test_includes_kb_and_narrative_when_present(self) -> None:
+    def test_includes_kb_and_current_passage_when_present(self) -> None:
         result = CrawlResult(
             knowledge=["KB['place.a']\n  content"],
-            narrative_segments=["# test\n\nprose"],
+            previous_summaries=[],
+            current_content="# test\n\nprose",
         )
         msgs = assemble_prompt(
             result,
@@ -335,6 +355,23 @@ class TestAssemblePrompt(unittest.TestCase):
         )
         content = msgs[1]["content"]
         self.assertIn("KNOWLEDGE", content)
-        self.assertIn("NARRATIVE CONTEXT", content)
+        self.assertIn("CURRENT PASSAGE", content)
         self.assertIn("place.a", content)
         self.assertIn("prose", content)
+
+    def test_previous_summaries_and_current_passage_use_distinct_blocks(self) -> None:
+        result = CrawlResult(
+            knowledge=[],
+            previous_summaries=["Earlier summary."],
+            current_content="Current prose.",
+        )
+        msgs = assemble_prompt(
+            result,
+            system_prompt="Sys",
+            instruction="Task",
+        )
+        content = msgs[1]["content"]
+        self.assertIn("PREVIOUS EVENTS SUMMARY", content)
+        self.assertIn("CURRENT PASSAGE", content)
+        self.assertIn("Earlier summary.", content)
+        self.assertIn("Current prose.", content)
