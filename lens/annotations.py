@@ -117,6 +117,23 @@ def _try_parse_annotation(
     return None
 
 
+def find_front_matter_span(text: str) -> tuple[int, int] | None:
+    """Return (start_line_0based, end_exclusive_0based) of the front matter comment block, or None."""
+    lines = text.split("\n")
+    i = 0
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    if i >= len(lines):
+        return None
+    block = _is_comment_block(lines, i)
+    if block is None:
+        return None
+    start, end = block
+    if _try_parse_annotation(lines, start, end) is not None:
+        return None
+    return (start, end)
+
+
 def parse_front_matter(text: str) -> dict[str, Any]:
     """Parse front matter from the very beginning of a node. Front matter is a comment (no operator) at the start."""
     lines = text.split("\n")

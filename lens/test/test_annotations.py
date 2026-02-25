@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import unittest
 
-from lens.annotations import parse_annotations, parse_front_matter, strip_markdown_comments
+from lens.annotations import (
+    find_front_matter_span,
+    parse_annotations,
+    parse_front_matter,
+    strip_markdown_comments,
+)
 
 
 class TestStripMarkdownComments(unittest.TestCase):
@@ -209,3 +214,34 @@ class TestFrontMatterParsing(unittest.TestCase):
             parse_front_matter(text),
             {"kb_pins": ["a.b", "c.d"]},
         )
+
+
+class TestFindFrontMatterSpan(unittest.TestCase):
+    def test_returns_none_for_no_front_matter(self) -> None:
+        self.assertIsNone(find_front_matter_span("# title\ncontent"))
+        self.assertIsNone(find_front_matter_span("Content\n\n[\n  key: value\n]: #"))
+
+    def test_returns_span_for_valid_front_matter(self) -> None:
+        text = "[\n  kb_pins:\n    - a.b\n]: #\n\nBody"
+        span = find_front_matter_span(text)
+        self.assertIsNotNone(span)
+        assert span is not None
+        self.assertEqual(span, (0, 4))
+        self.assertEqual(
+            text.split("\n")[span[0] : span[1]],
+            ["[", "  kb_pins:", "    - a.b", "]: #"],
+        )
+
+    def test_skips_leading_blank_lines(self) -> None:
+        text = "\n\n[\n  x: y\n]: #\n\nBody"
+        span = find_front_matter_span(text)
+        self.assertIsNotNone(span)
+        assert span is not None
+        self.assertEqual(span, (2, 5))
+
+    def test_returns_none_for_operator_annotation_at_start(self) -> None:
+        text = "[section:ch1]: #\nbody"
+        self.assertIsNone(find_front_matter_span(text))
+
+    def test_returns_none_for_empty_string(self) -> None:
+        self.assertIsNone(find_front_matter_span(""))

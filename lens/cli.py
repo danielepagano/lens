@@ -28,7 +28,8 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
     except RuntimeError as e:
         typer.echo(f"lens: {e}", err=True)
         raise typer.Exit(1)
-    if sub == "section":
+    _NO_NARRATIVE_NEEDED = ("init", "use", "kb", "pin")
+    if sub not in _NO_NARRATIVE_NEEDED:
         if get_active_narrative(project_root) is None:
             typer.echo("lens: no active narrative (run 'lens use <slug>' first)", err=True)
             raise typer.Exit(1)

@@ -1,0 +1,340 @@
+"""Unit tests for lens.context: crawl and assemble_prompt."""
+
+from __future__ import annotations
+
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+
+from lens.context import CrawlResult, assemble_prompt, crawl
+from lens.narrative import NarrativeNode
+
+
+def _init_repo(tmp: Path) -> Path:
+    subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    (tmp / ".gitkeep").write_text("")
+    subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    return tmp
+
+
+def _make_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNode]:
+    (tmp / "lens.toml").write_text(f'[project]\nnarrative = "{slug}"\n')
+    narrative_dir = tmp / "narrative" / slug
+    narrative_dir.mkdir(parents=True)
+    (narrative_dir / "_node.md").write_text(f"# {slug}\n")
+    kb_dir = tmp / "knowledge"
+    kb_dir.mkdir(exist_ok=True)
+    subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "project"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    node = NarrativeNode(narrative_root=narrative_dir, key_path=())
+    return tmp, node
+
+
+def _add_kb(root: Path, type_name: str, key: str, content: str) -> None:
+    path = root / "knowledge" / type_name / f"{key}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+    subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+    subprocess.run(["git", "commit", "-m", f"kb {type_name}.{key}"], cwd=root, capture_output=True, check=True)
+
+
+class TestCrawlNoPins(unittest.TestCase):
+    def test_empty_knowledge_when_no_pins(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _root, node = _make_project(_init_repo(Path(tmp)))
+            r = crawl(node)
+            self.assertEqual(r.knowledge, [])
+
+
+class TestCrawlPinOrder(unittest.TestCase):
+    def test_pins_from_root_before_child(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "place", "a", "Place A")
+            _add_kb(root, "place", "b", "Place B")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            md = root_node.md_path()
+            md.write_text("[\n  kb_pin:\n    - place.a\n]: #\n\n# test\n")
+            (node.narrative_root / "ch1").mkdir()
+            (node.narrative_root / "ch1" / "_node.md").write_text(
+                "[\n  kb_pin:\n    - place.b\n]: #\n\n# ch1\n"
+            )
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "fm"], cwd=root, capture_output=True, check=True)
+            child = node.child_node("ch1")
+            r = crawl(child)
+            self.assertEqual(len(r.knowledge), 2)
+            self.assertIn("place.a", r.knowledge[0])
+            self.assertIn("place.b", r.knowledge[1])
+
+
+class TestCrawlUnpin(unittest.TestCase):
+    def test_unpin_at_child_cancels_ancestor_pin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "place", "x", "Place X")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            md = root_node.md_path()
+            md.write_text("[\n  kb_pin:\n    - place.x\n]: #\n\n# test\n")
+            (node.narrative_root / "ch1").mkdir()
+            (node.narrative_root / "ch1" / "_node.md").write_text(
+                "[\n  kb_unpin:\n    - place.x\n]: #\n\n# ch1\n"
+            )
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "fm"], cwd=root, capture_output=True, check=True)
+            child = node.child_node("ch1")
+            r = crawl(child)
+            self.assertEqual(r.knowledge, [])
+
+    def test_unpin_at_ancestor_does_not_cancel_descendant_pin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "place", "x", "Place X")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            md = root_node.md_path()
+            md.write_text("[\n  kb_pin:\n    - place.x\n  kb_unpin:\n    - place.x\n]: #\n\n# test\n")
+            (node.narrative_root / "ch1").mkdir()
+            (node.narrative_root / "ch1" / "_node.md").write_text(
+                "[\n  kb_pin:\n    - place.x\n]: #\n\n# ch1\n"
+            )
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "fm"], cwd=root, capture_output=True, check=True)
+            child = node.child_node("ch1")
+            r = crawl(child)
+            self.assertEqual(len(r.knowledge), 1)
+            self.assertIn("place.x", r.knowledge[0])
+
+
+class TestCrawlDedup(unittest.TestCase):
+    def test_same_id_pinned_multiple_levels_appears_once(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "place", "a", "Place A")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            md = root_node.md_path()
+            md.write_text("[\n  kb_pin:\n    - place.a\n]: #\n\n# test\n")
+            (node.narrative_root / "ch1").mkdir()
+            (node.narrative_root / "ch1" / "_node.md").write_text(
+                "[\n  kb_pin:\n    - place.a\n]: #\n\n# ch1\n"
+            )
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "fm"], cwd=root, capture_output=True, check=True)
+            child = node.child_node("ch1")
+            r = crawl(child)
+            self.assertEqual(len(r.knowledge), 1)
+
+
+class TestCrawlExtraPins(unittest.TestCase):
+    def test_extra_pins_override_ancestor_unpins(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "place", "x", "Place X")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            md = root_node.md_path()
+            md.write_text("[\n  kb_unpin:\n    - place.x\n]: #\n\n# test\n")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "fm"], cwd=root, capture_output=True, check=True)
+            r = crawl(node, extra_pins=["place.x"])
+            self.assertEqual(len(r.knowledge), 1)
+
+
+def _write_node(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+
+
+def _commit(root: Path, msg: str = "update") -> None:
+    subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+    subprocess.run(["git", "commit", "-m", msg], cwd=root, capture_output=True, check=True)
+
+
+class TestCrawlNarrative(unittest.TestCase):
+    def test_narrative_segments_root_to_cursor_stripped(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text("# test\n\n[section:ch1]: #\n\nRoot content.")
+            _write_node(node.narrative_root / "ch1" / "_node.md",
+                "# ch1\n\n[write\n  prompt: x\n]: #\n\nChild content.")
+            _commit(root)
+            r = crawl(node.child_node("ch1"))
+            self.assertEqual(len(r.narrative_segments), 2)
+            self.assertIn("Root content", r.narrative_segments[0])
+            self.assertIn("Child content", r.narrative_segments[1])
+            self.assertNotIn("[write", r.narrative_segments[1])
+            self.assertNotIn("[section", r.narrative_segments[0])
+
+    def test_three_levels_root_to_leaf(self) -> None:
+        """Root → chapter → scene: crawling from the leaf yields all three segments."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text(
+                "# campaign\n\n[section:ch1]: #\n\nCampaign overview."
+            )
+            _write_node(node.narrative_root / "ch1" / "_node.md",
+                "# ch1\n\n[section:scene1]: #\n\nChapter one summary.")
+            _write_node(node.narrative_root / "ch1" / "scene1" / "_node.md",
+                "# scene1\n\nScene one prose.")
+            _commit(root)
+            leaf = node.child_node("ch1").child_node("scene1")
+            r = crawl(leaf)
+            self.assertEqual(len(r.narrative_segments), 3)
+            self.assertIn("Campaign overview", r.narrative_segments[0])
+            self.assertIn("Chapter one", r.narrative_segments[1])
+            self.assertIn("Scene one prose", r.narrative_segments[2])
+
+    def test_crawl_from_middle_node_excludes_deeper_children(self) -> None:
+        """Crawling from a mid-tree node only includes root and that node, not its children."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text("# campaign\n\nCampaign text.")
+            _write_node(node.narrative_root / "ch1" / "_node.md",
+                "# ch1\n\nChapter text.")
+            _write_node(node.narrative_root / "ch1" / "scene1" / "_node.md",
+                "# scene1\n\nScene text.")
+            _commit(root)
+            mid = node.child_node("ch1")
+            r = crawl(mid)
+            self.assertEqual(len(r.narrative_segments), 2)
+            self.assertIn("Campaign text", r.narrative_segments[0])
+            self.assertIn("Chapter text", r.narrative_segments[1])
+            self.assertNotIn("Scene text", "\n".join(r.narrative_segments))
+
+    def test_crawl_from_root_only_has_one_segment(self) -> None:
+        """Crawling from the root node yields only the root segment."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text("# campaign\n\nRoot only.")
+            _write_node(node.narrative_root / "ch1" / "_node.md", "# ch1\n\nChild text.")
+            _commit(root)
+            r = crawl(node)
+            self.assertEqual(len(r.narrative_segments), 1)
+            self.assertIn("Root only", r.narrative_segments[0])
+
+    def test_comments_stripped_at_all_levels(self) -> None:
+        """Front matter, section tags, and write annotations are all stripped across levels."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text(
+                "[\n  kb_pin: []\n]: #\n\n# campaign\n\n[section:ch1]: #\n\nRoot text."
+            )
+            _write_node(node.narrative_root / "ch1" / "_node.md",
+                "[\n  kb_pin: []\n]: #\n\n# ch1\n\n[write]: #\n\nChild text.\n\n[/write]: #")
+            _commit(root)
+            r = crawl(node.child_node("ch1"))
+            for seg in r.narrative_segments:
+                self.assertNotIn("]: #", seg)
+                self.assertNotIn("kb_pin", seg)
+            self.assertIn("Root text", r.narrative_segments[0])
+            self.assertIn("Child text", r.narrative_segments[1])
+
+    def test_open_cursor_annotation_at_tail_stripped(self) -> None:
+        """An unclosed section annotation at the end (the cursor marker) is stripped."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text(
+                "# campaign\n\nRoot text.\n\n[section:ch1]: #\n"
+            )
+            _commit(root)
+            r = crawl(node)
+            self.assertEqual(len(r.narrative_segments), 1)
+            self.assertIn("Root text", r.narrative_segments[0])
+            self.assertNotIn("[section", r.narrative_segments[0])
+
+    def test_empty_nodes_skipped(self) -> None:
+        """Nodes whose content is entirely comments/whitespace do not produce a segment."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text("[\n  kb_pin: []\n]: #\n")
+            _write_node(node.narrative_root / "ch1" / "_node.md", "# ch1\n\nChild text.")
+            _commit(root)
+            r = crawl(node.child_node("ch1"))
+            self.assertEqual(len(r.narrative_segments), 1)
+            self.assertIn("Child text", r.narrative_segments[0])
+
+    def test_include_narrative_false_skips_narrative(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            node.md_path().write_text("# campaign\n\nSome text.")
+            _commit(root)
+            r = crawl(node, include_narrative=False)
+            self.assertEqual(r.narrative_segments, [])
+
+
+class TestCrawlMissingKb(unittest.TestCase):
+    def test_missing_objects_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "place", "a", "Place A")
+            md = node.md_path()
+            md.write_text("[\n  kb_pin:\n    - place.a\n    - place.nonexistent\n]: #\n\n# test\n")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "fm"], cwd=root, capture_output=True, check=True)
+            r = crawl(node)
+            self.assertEqual(len(r.knowledge), 1)
+            self.assertIn("place.a", r.knowledge[0])
+
+
+class TestAssemblePrompt(unittest.TestCase):
+    def test_returns_system_and_user_messages(self) -> None:
+        result = CrawlResult(knowledge=[], narrative_segments=[])
+        msgs = assemble_prompt(
+            result,
+            system_prompt="You are helpful.",
+            instruction="Do the task.",
+        )
+        self.assertEqual(len(msgs), 2)
+        self.assertEqual(msgs[0]["role"], "system")
+        self.assertEqual(msgs[0]["content"], "You are helpful.")
+        self.assertEqual(msgs[1]["role"], "user")
+        self.assertIn("TASK", msgs[1]["content"])
+        self.assertIn("Do the task.", msgs[1]["content"])
+
+    def test_omits_kb_block_when_empty(self) -> None:
+        result = CrawlResult(knowledge=[], narrative_segments=["# test"])
+        msgs = assemble_prompt(
+            result,
+            system_prompt="Sys",
+            instruction="Task",
+        )
+        self.assertNotIn("KNOWLEDGE", msgs[1]["content"])
+
+    def test_omits_narrative_block_when_empty(self) -> None:
+        result = CrawlResult(knowledge=["KB[place.a]"], narrative_segments=[])
+        msgs = assemble_prompt(
+            result,
+            system_prompt="Sys",
+            instruction="Task",
+        )
+        self.assertNotIn("NARRATIVE CONTEXT", msgs[1]["content"])
+
+    def test_includes_kb_and_narrative_when_present(self) -> None:
+        result = CrawlResult(
+            knowledge=["KB['place.a']\n  content"],
+            narrative_segments=["# test\n\nprose"],
+        )
+        msgs = assemble_prompt(
+            result,
+            system_prompt="Sys",
+            instruction="Task",
+        )
+        content = msgs[1]["content"]
+        self.assertIn("KNOWLEDGE", content)
+        self.assertIn("NARRATIVE CONTEXT", content)
+        self.assertIn("place.a", content)
+        self.assertIn("prose", content)

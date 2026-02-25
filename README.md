@@ -56,6 +56,7 @@ lens use my-campaign
 lens stats   # counts objects and lists narratives
 lens kb      # knowledge store commands (see lens kb --help)
 lens section # start and end sections
+lens pin     # pin/unpin knowledge objects to nodes (see lens pin --help)
 ```
 
 ### Knowledge store (`lens kb`)
@@ -69,6 +70,32 @@ lens section # start and end sections
 | `get`     | Fetch objects (append `!` for linked) |
 
 Run `lens kb <command> --help` for details.
+
+### Knowledge pins (`lens pin`)
+
+Pins attach knowledge objects to a node's front matter so they are automatically included in AI operator prompts. Unpins cancel pins inherited from ancestor nodes.
+
+| Command    | Purpose                                         |
+|------------|-------------------------------------------------|
+| `add`      | Add to `kb_pin` (include in prompts)            |
+| `remove`   | Remove from `kb_pin`                            |
+| `block`    | Add to `kb_unpin` (cancel an ancestor pin)      |
+| `unblock`  | Remove from `kb_unpin`                          |
+
+All commands take one positional ID and an optional positional node address (default: cursor). Use `-i`/`--id` (repeatable) for multiple IDs, and `--node`/`-n` when combining with `-i`.
+
+```bash
+lens pin add person.amy                            # pin at cursor
+lens pin add person.amy /amy-story                 # pin at specific node
+lens pin add person.amy test-narrative/amy-story   # full address
+lens pin add -i person.amy -i place.city --node /amy-story  # multiple IDs
+
+lens pin block person.amy /amy-story   # suppress an ancestor pin here
+lens pin remove person.amy             # undo a pin
+lens pin unblock person.amy            # undo a block
+```
+
+Node addresses follow the format `[<narrative>/]<key>[/<key>...]` or `/@cursor`. Run `lens pin <command> --help` for details.
 
 ## Development
 
