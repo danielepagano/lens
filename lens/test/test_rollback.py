@@ -127,3 +127,41 @@ class TestCompensatingRollback(unittest.TestCase):
             "narrative/test/_node.md", operator="write", op_id=None, line=5
         )
         self.assertIsNone(inline_owner.op_id)
+
+    def test_check_rollback_status_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_content(root, narrative, "Line one.\nLine two.\nLine three.\n")
+            
+            # Start a mutation (edit)
+            rel_path = "narrative/test/_node.md"
+            self._stage_claim(root, narrative, rel_path, "e1", 2, 2)
+            op = EditOperator(Storage(root), narrative)
+            op.propose_mutation(narrative.md_path(), "e1", "PROPOSED")
+            
+            from lens.core.commands.rollback import check_rollback_status
+            status = check_rollback_status(root)
+            self.assertTrue(status.has_pending)
+            self.assertTrue(status.is_mutation)
+            self.assertIsNotNone(status.owner)
+            assert status.owner is not None
+            self.assertEqual(status.owner.operator, "edit")
+
+    def test_check_rollback_status_section_not_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            
+            # Create a pending transaction for a section (not a mutation)
+            # We can simulate this by instantiating SectionOperator and calling start()
+            from lens.core.operators.section import SectionOperator
+            owner = SectionOperator.owner_id("sec1", "narrative/test/_node.md")
+            op = SectionOperator(Storage(root, owner=owner), narrative)
+            op.start("sec1")
+            
+            from lens.core.commands.rollback import check_rollback_status
+            status = check_rollback_status(root)
+            self.assertTrue(status.has_pending)
+            self.assertFalse(status.is_mutation)
+            self.assertIsNotNone(status.owner)
+            assert status.owner is not None
+            self.assertEqual(status.owner.operator, "section")

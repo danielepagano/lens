@@ -1,15 +1,5 @@
 # Lens Backlog
 
-## DONE - Lens Alpha: Cleaning up the CLI
-
-Goal: Logic isolated from interface concerns and safe for programmatic use.
-A REST API could do everything the current CLI does, without importing anything from `lens/cli`
-
-*   **Decouple CLI**: Extract domain logic from `lens`, `lens/commands/` and `lens/operators/` into `lens/core/` and all CLI interface, including `cli.py` to `lens/cli`. The `lens` CLI command should still work as usual
-*   **Exception-Driven Flow**: Replace `typer.echo` and `sys.exit` in Core with custom exceptions and structured return types, which cause the CLI to echo and exit instead
-*   **Pure Core**: Ensure Core logic is side-effect free (except for explicit FS/Git operations) and isolated from CLI/API concerns.
-*   **Tested Core**: Core tests are tailored to core; logic moved to core still tested. CLI does not need unit tests, it's just interface glue without complex logic.
-
 ## Lens Beta: Getting it to play D&D
 
 *Implement operators and stress-test, refine, and bugfix what we have so far. Find the fun.*

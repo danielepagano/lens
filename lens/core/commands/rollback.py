@@ -27,7 +27,7 @@ def check_rollback_status(cwd: Path) -> RollbackStatus:
     storage = Storage(git_root)
     has_pending = storage.has_pending()
     owner = storage.detect_pending_owner() if has_pending else None
-    is_mutation = owner is not None and owner.op_id is not None
+    is_mutation = owner is not None and owner.operator == "edit"
     return RollbackStatus(has_pending, owner, is_mutation)
 
 def execute_rollback(cwd: Path) -> None:
@@ -38,7 +38,7 @@ def execute_rollback(cwd: Path) -> None:
 
     storage = Storage(git_root)
     owner = storage.detect_pending_owner()
-    is_mutation = owner is not None and owner.op_id is not None
+    is_mutation = owner is not None and owner.operator == "edit"
 
     if is_mutation:
         assert owner is not None
