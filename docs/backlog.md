@@ -1,6 +1,6 @@
 # Lens Backlog
 
-## Lens Alpha: Cleaning up the CLI
+## DONE - Lens Alpha: Cleaning up the CLI
 
 Goal: Logic isolated from interface concerns and safe for programmatic use.
 A REST API could do everything the current CLI does, without importing anything from `lens/cli`
