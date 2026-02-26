@@ -6,10 +6,11 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
+from lens.annotations import parse_annotations
 from lens.narrative import NarrativeNode
-from lens.operator import Operator
+from lens.operator import ContextAwareOperator, Operator
 from lens.storage import Storage
 
 
@@ -314,3 +315,154 @@ class TestMode3Mutation(unittest.TestCase):
             self.assertNotIn("[/testop:fix1]: #", text)
             self.assertIn("line2", text)
             self.assertFalse(storage.has_pending())
+
+
+# ------------------------------------------------------------------
+# ContextAwareOperator helpers
+# ------------------------------------------------------------------
+
+class _ConcreteCAO(ContextAwareOperator):
+    """Minimal concrete ContextAwareOperator for unit testing."""
+    name: ClassVar[str] = "cao"
+    requires_id: ClassVar[bool] = False
+
+    @property
+    def system_prompt(self) -> str:
+        return "System prompt."
+
+    def build_instruction(self, params: dict[str, Any]) -> str:
+        p = params.get("prompt")
+        return f"Do: {p}" if p else "Do it."
+
+
+class TestContextAwareOperatorHelpers(unittest.TestCase):
+
+    # -- Static helpers (no repo needed) --
+
+    def test_ann_line_for_append_ends_with_newline(self) -> None:
+        text = "line1\nline2\n"
+        # split → 3 elements; ends with \n → add 1
+        self.assertEqual(ContextAwareOperator.ann_line_for_append(text), 4)
+
+    def test_ann_line_for_append_no_newline(self) -> None:
+        text = "line1\nline2"
+        # split → 2 elements; no trailing \n → add 2
+        self.assertEqual(ContextAwareOperator.ann_line_for_append(text), 4)
+
+    def test_extract_list_valid(self) -> None:
+        params: dict[str, Any] = {"kb_pin": ["a", "b", "c"]}
+        self.assertEqual(ContextAwareOperator.extract_list(params, "kb_pin"), ["a", "b", "c"])
+
+    def test_extract_list_not_list(self) -> None:
+        params: dict[str, Any] = {"kb_pin": "not-a-list"}
+        self.assertEqual(ContextAwareOperator.extract_list(params, "kb_pin"), [])
+
+    def test_extract_list_missing_key(self) -> None:
+        self.assertEqual(ContextAwareOperator.extract_list({}, "kb_pin"), [])
+
+    # -- Instance helpers (need a real node file) --
+
+    def test_find_open_annotation_found(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            narrative.md_path().write_text("[cao\n  steps: 1\n]: #\n\nGenerated text\n")
+            op = _ConcreteCAO(Storage(root), narrative)
+            ann = op.find_open_annotation(narrative)
+            self.assertIsNotNone(ann)
+            assert ann is not None
+            self.assertEqual(ann.operator, "cao")
+
+    def test_find_open_annotation_not_found(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            op = _ConcreteCAO(Storage(root), narrative)
+            self.assertIsNone(op.find_open_annotation(narrative))
+
+    def test_find_open_annotation_closed_not_returned(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            narrative.md_path().write_text("[cao\n  steps: 1\n]: #\n\nText\n\n[/cao]: #\n")
+            op = _ConcreteCAO(Storage(root), narrative)
+            self.assertIsNone(op.find_open_annotation(narrative))
+
+    def test_write_start(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            owner = _ConcreteCAO.owner_id(None, "narrative/test/_node.md", line=3)
+            op = _ConcreteCAO(Storage(root, owner=owner), narrative)
+            op.write_start(narrative, "[cao\n  steps: 1\n]: #", "Generated text")
+            text = narrative.md_path().read_text()
+            self.assertIn("[cao", text)
+            self.assertIn("steps: 1", text)
+            self.assertIn("Generated text", text)
+
+    def test_write_append(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            narrative.md_path().write_text("[cao\n  steps: 1\n]: #\n\nFirst content\n")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "anno"], cwd=root, capture_output=True, check=True,
+            )
+
+            text = narrative.md_path().read_text()
+            ann = next(
+                (a for a in parse_annotations(text) if a.operator == "cao" and not a.closing),
+                None,
+            )
+            assert ann is not None
+            owner = _ConcreteCAO.owner_id(None, "narrative/test/_node.md", line=ann.line_start)
+            op = _ConcreteCAO(Storage(root, owner=owner), narrative)
+            op.write_append(narrative, ann, "Second content")
+
+            text = narrative.md_path().read_text()
+            self.assertIn("steps: 2", text)
+            self.assertIn("First content", text)
+            self.assertIn("Second content", text)
+
+    def test_write_discard(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            narrative.md_path().write_text("[cao\n  steps: 3\n]: #\n\nContent to remove\n")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "anno"], cwd=root, capture_output=True, check=True,
+            )
+
+            text = narrative.md_path().read_text()
+            ann = next(
+                (a for a in parse_annotations(text) if a.operator == "cao" and not a.closing),
+                None,
+            )
+            assert ann is not None
+            owner = _ConcreteCAO.owner_id(None, "narrative/test/_node.md", line=ann.line_start)
+            op = _ConcreteCAO(Storage(root, owner=owner), narrative)
+            op.write_discard(narrative, ann)
+
+            text = narrative.md_path().read_text()
+            self.assertIn("steps: 0", text)
+            self.assertNotIn("Content to remove", text)
+
+    def test_write_discard_with_updated_params(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            narrative.md_path().write_text("[cao\n  steps: 2\n]: #\n\nOld content\n")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "anno"], cwd=root, capture_output=True, check=True,
+            )
+
+            text = narrative.md_path().read_text()
+            ann = next(
+                (a for a in parse_annotations(text) if a.operator == "cao" and not a.closing),
+                None,
+            )
+            assert ann is not None
+            owner = _ConcreteCAO.owner_id(None, "narrative/test/_node.md", line=ann.line_start)
+            op = _ConcreteCAO(Storage(root, owner=owner), narrative)
+            op.write_discard(narrative, ann, updated_params={"steps": 2, "prompt": "new"})
+
+            text = narrative.md_path().read_text()
+            self.assertIn("steps: 0", text)
+            self.assertIn("new", text)
+            self.assertNotIn("Old content", text)

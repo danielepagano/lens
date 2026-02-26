@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 
@@ -40,6 +41,7 @@ register_operators(app)
 
 
 def main() -> int:
+    logging.basicConfig(level=logging.INFO, stream=sys.stderr, format="%(message)s")
     app()
     return 0
 

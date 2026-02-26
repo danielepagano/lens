@@ -49,10 +49,6 @@ Knowledge is simply a key-value store of objects, each with a unique id, and pro
       needle_street.md
 ```
 
-#### Project templates
-
-It may be quite complex to define a good set of knowledge object types and templates, and sometimes operators may even require certain types. To facilitate this, we can easily define a project template as the set of object type templates, which can be pre-copied to a new project.
-
 ### Narrative Nodes
 
 Narrative simulations are stories or adventures in the world defined in the knowledge. Technically no knowledge is required to use narrative (just read what happened before!) but this limits the ability for an AI to be consistent and accurate about various topics as the narrative evolves.
@@ -163,35 +159,32 @@ Critically, only **one pending transaction can exist per repo**. The purpose of 
 
 This means that **all** code that changes any tracked git file in a content repo **must** go through our transactional storage layer, including our knowledge system.
 
-There are several built-in core operators:
+These are the core built-in core operators:
 
  - `write` generates new text to put in a new place. It can use context text or instructions on which directions to take. This can be used to move narrative forward, but also to generate knowledge, maybe using a template. Of course humans can also write directly.
    - The operator can be called multiple times to try again, or to append additional content to the original response, before it is closed. It is also normal for a human to be able to manually edit the response before it is committed.
    - The usage of this operator (and many others) is tracked in the parent node using a comment block to track that it was triggered, how, and what it created
- - `summarize` summarizes existing text (optionally with instructions on what to emphasize or ignore) to store it in another place (a less-detailed node, a knowledge item, etc.)
-   - Summaries are critically important to maintaining the correct continuity over time, so the prompts used can be heavily curated, and the results manually tweaked.
-   - Summaries are usually leveraged by other operators, notably `section`.
- - `edit` makes targeted changes to a contiguous text selection using AI (for example, to shorten or correct something). It can also summarize, but the point is that it replaces text, it doesn't put its output in a new place.  
+ - `edit` makes targeted changes to a contiguous text selection using AI (for example, to shorten or correct something).  
     - Unlike other operators, this is a destructive operation (previous version would be in git history). Note that users can always edit any file themselves (original or summaries) since they are just markdown files; this is an AI-assisted version of that.
- - `section` lets the user create a child node (with a slug unique for this level) with its own content, which when closed is summarized in the current node; in other words, it breaks narrative into sub-sections, like chapters and scenes. It can be used in two ways:
-    - A section can be explicitly started with empty content, which just creates a node, for example if we wanted to track a gaming session in its own section and summarize it in the campaign journal above.
-    - Users can also create sections "after the fact" by selecting a contiguous section of node text that must span whole sub-nodes if any. The selection is placed in a new sub-node, summarized, and the summary placed where the original selection was.  
+ - `section` lets the user create a child node (with a slug unique for this level) with its own content, which when closed is summarized in parent node using an LLM. It can be used in two ways:
+    - A section can be explicitly started with empty content, which just creates a node, for example if we wanted to track a gaming session in its own section. Once the section is closed, the operator summarizes the entire node and sets it as its output in the original node.
+    - Users can also create sections "after the fact" by selecting a contiguous section of node text that must span whole sub-nodes (if any). The selection is placed in a new sub-node, immediately summarized, and the summary placed where the original selection was.  
       - Because this operation can move sub-nodes in the selected range one level down, it may make large file operations, which are captured in git history.  
       - This feature is important because we don't want the user to always be worried about structure: they should be able to keep adding, then compress sections (like a conversation or a side quest) after the fact to keep the current node at the right level of detail.
-- `remember` integrates some aspects of a given text into a new or existing knowledge object.
-  - For example, one could be talking with an NPC and then ask the operator to update `person.name`: the operator looks at the person template to see what kind of facts this knowledge item tracks, and then gathers what we learned into that object, either by creating it or integrating new knowledge. 
-  - The user could apply the operator to the same text towards multiple objects, and only the details relevant to that object would be captured. For example, a scene can be remembered for the city location, market location, and a specific merchant encountered, but not for other merchants or other details.
-  - Recalling what is remembered is done by the text generation operators by providing them the IDs of the relevant objects to know about, as we'll see below. 
 - The front-matter (node-level YAML storage) is used to share configuration across the node, and also to child nodes. It can be used by any operator, but initially it will be used to pin/un-pin knowledge items for Context-aware operators (see more below)
 
+### Future Operators
+
 Operators are designed to be extended, and more can be created as specializations or hybridizations of the core operators; these allows more specific ways to manage content and interact with the narrative. Examples of operators that could be added:
+  - `remember` could integrate some aspects of a given text into a new or existing knowledge object.
+    - For example, one could be talking with an NPC and then ask the operator to update `person.name`: the operator looks at the person template to see what kind of facts this knowledge item tracks, and then gathers what we learned into that object, either by creating it or integrating new knowledge. 
+    - The user could apply the operator to the same text towards multiple objects, and only the details relevant to that object would be captured. For example, a scene can be remembered for the city location, market location, and a specific merchant encountered, but not for other merchants or other details.
+    - Recalling what is remembered is done by the text generation operators by providing them the IDs of the relevant objects to know about, as we'll see below. 
   - `play` could be like write, but has knowledge of who the player and non-player characters in the story are. It generates text in a way that delegates agency to the player characters (does not write what they think, feel, decide, or do), giving the user the space to make those decisions.
     - The opposite could also be true, where the user asks the AI to "play as" a character (autonomously or with direction). This allows the user to be the DM and/or players, maintaining that role isolation in the narrative beats. 
   - `dnd` could be even more specialized than `play` (or be a family of operators), having the user have player characters merely attempt difficult actions using the D&D ruleset, and having a conversation with the AI on what checks could be used (e.g. "Roll a stealth check to try to sneak by the guards"); the human could then roll dice and use RPG character sheets of their player characters; the AI then makes a determination of level of success and moves the narrative forward accordingly. The raw exchange (all the checks and rolls) would be in a sub-node, but only the result would be part of the parent narrative (specialized summary)
   - `chat` could spin up an agentic chat in a sub-node to talk about the current goings-on. This can be used for fun ("that was crazy!"), to explore the feeling of characters off the page (maybe then by remembering the results), to plan what happens next, etc. This would be all non-canon narrative, but still contextually kept in the simulation tree; in other words, it would have a self-closing tag with an id and no content bubbled up, e.g. `[chat:reflections/]: #`.
   - `attach` could allow you to attach media within a node.
-
-There is no particular reason to keep operators in the main Lens repo: they can also be imported as external packages or even defined in the project repo next to narratives and knowledge objects.
 
 ## Context-aware operator prompt assembly
 
