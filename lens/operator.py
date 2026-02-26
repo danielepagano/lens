@@ -449,7 +449,12 @@ class ContextAwareOperator(Operator):
     # ------------------------------------------------------------------
 
     def find_open_annotation(self, node: NarrativeNode) -> ParsedAnnotation | None:
-        """Return the last unclosed annotation for this operator in the node file."""
+        """Return the last annotation for this operator in the node file.
+
+        Pending state is tracked by git (unstaged changes), not by whether the
+        annotation has a close tag, so this returns the last matching annotation
+        regardless of whether it is open or closed.
+        """
         text = node.md_path().read_text(encoding="utf-8")
         segments = parse_segments(text)
         for seg in reversed(segments):
@@ -457,41 +462,69 @@ class ContextAwareOperator(Operator):
                 continue
             if seg.annotation.operator != self.name:
                 continue
-            if seg.close is None:
-                return seg.annotation
+            return seg.annotation
         return None
 
     def write_start(self, node: NarrativeNode, tag: str, content: str) -> None:
-        """Atomically write an open tag and generated content to the node."""
+        """Atomically write an open tag, generated content, and close tag to the node."""
         md = node.md_path()
         current = md.read_text(encoding="utf-8")
         sep = "\n" if current.endswith("\n") else "\n\n"
+        close_tag = self.build_close_tag(None)
         self.storage.write_file(
-            md, current + sep + tag + "\n\n" + content.rstrip() + "\n"
+            md, current + sep + tag + "\n\n" + content.rstrip() + "\n\n" + close_tag + "\n"
         )
 
     def write_append(
         self, node: NarrativeNode, ann: ParsedAnnotation, new_content: str
     ) -> None:
-        """Increment ``steps``, preserve existing content, append new content."""
+        """Increment ``steps``, preserve existing content, append new content before close tag."""
         md = node.md_path()
         text = md.read_text(encoding="utf-8")
         new_params = dict(ann.params)
         new_params["steps"] = int(ann.params.get("steps", 1)) + 1
         new_tag = self.build_open_tag(ann.id, new_params)
+        close_tag = self.build_close_tag(ann.id)
+
+        close_ann: ParsedAnnotation | None = None
+        for seg in parse_segments(text):
+            if seg.annotation is not None and seg.annotation.line_start == ann.line_start:
+                close_ann = seg.close
+                break
+
         lines = text.split("\n")
         before = lines[: ann.line_start - 1]
-        after_tag = lines[ann.line_end :]
-        rebuilt = (
-            "\n".join(before)
-            + "\n"
-            + new_tag
-            + "\n"
-            + "\n".join(after_tag)
-            + "\n"
-            + new_content.rstrip()
-            + "\n"
-        )
+
+        if close_ann is not None:
+            content_lines = lines[ann.line_end : close_ann.line_start - 1]
+            after_close = lines[close_ann.line_end :]
+            rebuilt = (
+                "\n".join(before)
+                + "\n"
+                + new_tag
+                + "\n"
+                + "\n".join(content_lines)
+                + "\n"
+                + new_content.rstrip()
+                + "\n\n"
+                + close_tag
+                + "\n"
+                + ("\n".join(after_close) if after_close else "")
+            )
+        else:
+            after_tag = lines[ann.line_end :]
+            rebuilt = (
+                "\n".join(before)
+                + "\n"
+                + new_tag
+                + "\n"
+                + "\n".join(after_tag)
+                + "\n"
+                + new_content.rstrip()
+                + "\n\n"
+                + close_tag
+                + "\n"
+            )
         self.storage.write_file(md, rebuilt)
 
     def write_discard(

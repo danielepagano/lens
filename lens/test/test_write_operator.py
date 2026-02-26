@@ -154,7 +154,21 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             self.assertIn("[write", text)
             self.assertIn("steps: 1", text)
             self.assertIn("Generated content", text)
+            self.assertIn("[/write]: #", text)
             self.assertTrue(Storage(root).has_pending())
+
+    def test_run_inline_fresh_close_tag_after_content(self) -> None:
+        """The close tag must appear after the generated content, not before."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            node_file = narrative.find_cursor().md_path()
+
+            _run_inline(root, narrative)
+
+            text = node_file.read_text()
+            content_pos = text.index("Generated content")
+            close_pos = text.index("[/write]: #")
+            self.assertLess(content_pos, close_pos)
 
     def test_run_inline_continue(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -173,6 +187,13 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             self.assertIn("steps: 2", text)
             self.assertIn("Generated content", text)
             self.assertIn("More text", text)
+            self.assertIn("[/write]: #", text)
+            # Only one close tag
+            self.assertEqual(text.count("[/write]: #"), 1)
+            # Both batches precede the close tag
+            close_pos = text.index("[/write]: #")
+            self.assertLess(text.index("Generated content"), close_pos)
+            self.assertLess(text.index("More text"), close_pos)
 
     def test_run_inline_retry(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -191,6 +212,8 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             self.assertIn("Retried content", text)
             self.assertNotIn("Generated content", text)
             self.assertIn("steps: 1", text)
+            self.assertIn("[/write]: #", text)
+            self.assertLess(text.index("Retried content"), text.index("[/write]: #"))
 
     def test_run_inline_update_retry(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -209,6 +232,8 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             self.assertIn("Updated content", text)
             self.assertIn("new direction", text)
             self.assertNotIn("Generated content", text)
+            self.assertIn("[/write]: #", text)
+            self.assertLess(text.index("Updated content"), text.index("[/write]: #"))
 
     def test_run_inline_retry_no_pending_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

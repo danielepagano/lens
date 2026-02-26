@@ -378,12 +378,16 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             op = _ConcreteCAO(Storage(root), narrative)
             self.assertIsNone(op.find_open_annotation(narrative))
 
-    def test_find_open_annotation_closed_not_returned(self) -> None:
+    def test_find_open_annotation_returns_closed(self) -> None:
+        """Closed annotations are returned: pending state is tracked by git, not tag structure."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             narrative.md_path().write_text("[cao\n  steps: 1\n]: #\n\nText\n\n[/cao]: #\n")
             op = _ConcreteCAO(Storage(root), narrative)
-            self.assertIsNone(op.find_open_annotation(narrative))
+            ann = op.find_open_annotation(narrative)
+            self.assertIsNotNone(ann)
+            assert ann is not None
+            self.assertEqual(ann.operator, "cao")
 
     def test_write_start(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -395,11 +399,15 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             self.assertIn("[cao", text)
             self.assertIn("steps: 1", text)
             self.assertIn("Generated text", text)
+            self.assertIn("[/cao]: #", text)
+            self.assertLess(text.index("Generated text"), text.index("[/cao]: #"))
 
     def test_write_append(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            narrative.md_path().write_text("[cao\n  steps: 1\n]: #\n\nFirst content\n")
+            narrative.md_path().write_text(
+                "[cao\n  steps: 1\n]: #\n\nFirst content\n\n[/cao]: #\n"
+            )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
                 ["git", "commit", "-m", "anno"], cwd=root, capture_output=True, check=True,
@@ -419,11 +427,20 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             self.assertIn("steps: 2", text)
             self.assertIn("First content", text)
             self.assertIn("Second content", text)
+            self.assertIn("[/cao]: #", text)
+            # Both batches must appear before the close tag
+            close_pos = text.index("[/cao]: #")
+            self.assertLess(text.index("First content"), close_pos)
+            self.assertLess(text.index("Second content"), close_pos)
+            # Only one close tag
+            self.assertEqual(text.count("[/cao]: #"), 1)
 
     def test_write_discard(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            narrative.md_path().write_text("[cao\n  steps: 3\n]: #\n\nContent to remove\n")
+            narrative.md_path().write_text(
+                "[cao\n  steps: 3\n]: #\n\nContent to remove\n\n[/cao]: #\n"
+            )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
                 ["git", "commit", "-m", "anno"], cwd=root, capture_output=True, check=True,
@@ -442,11 +459,14 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             text = narrative.md_path().read_text()
             self.assertIn("steps: 0", text)
             self.assertNotIn("Content to remove", text)
+            self.assertNotIn("[/cao]: #", text)
 
     def test_write_discard_with_updated_params(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            narrative.md_path().write_text("[cao\n  steps: 2\n]: #\n\nOld content\n")
+            narrative.md_path().write_text(
+                "[cao\n  steps: 2\n]: #\n\nOld content\n\n[/cao]: #\n"
+            )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
                 ["git", "commit", "-m", "anno"], cwd=root, capture_output=True, check=True,
@@ -466,3 +486,4 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             self.assertIn("steps: 0", text)
             self.assertIn("new", text)
             self.assertNotIn("Old content", text)
+            self.assertNotIn("[/cao]: #", text)

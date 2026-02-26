@@ -55,7 +55,7 @@ lens use my-campaign
 ```bash
 lens stats    # count objects and list narratives
 lens kb       # knowledge store (see lens kb --help)
-lens section  # start and end narrative sections
+lens section  # start/end sections, or carve one from existing prose
 lens pin      # pin/unpin knowledge objects to nodes (see lens pin --help)
 lens write    # AI: generate narrative text at the cursor
 lens edit     # AI: rewrite a selected line range
@@ -112,6 +112,24 @@ lens section -e           # shorthand for --end
 
 A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `--end` appends a summary and the closing tag, then moves the cursor back up.
 
+#### After-the-fact sectioning
+
+You can also carve a section out of already-written prose by specifying a line range:
+
+```bash
+lens section intro /chapter-1 10 30
+```
+
+Arguments: `ID ADDRESS START_LINE END_LINE`
+
+- `ID` — key for the new child node (must not already exist).
+- `ADDRESS` — narrative node address (e.g. `/chapter-1`, `my-story/chapter-1`).
+- `START_LINE` / `END_LINE` — 1-based, inclusive line range to extract.
+
+The selected lines are moved into a new child node, an LLM summary is generated, and the range in the parent is replaced with the section annotation block. Any sub-nodes whose annotations fall entirely within the range are moved into the new section as its own children. The operation is one-shot and fully reversible with `lens rollback`.
+
+The range may include complete annotation blocks, but cannot split one — selecting only the opening or closing tag of an annotation (or only part of its content) is an error.
+
 ## AI Operators
 
 AI operators call the configured LLM and write the output into narrative nodes. All operators share these options:
@@ -131,7 +149,7 @@ Streams generated text into the cursor node, appending it inline.
 lens write                          # continue writing (no instruction)
 lens write "focus on the weather"   # write with a specific instruction
 lens write --retry                  # discard and regenerate with the same config
-lens write "new direction" --retry  # discard and regenerate with updated instruction
+lens write "new direction"          # discard and regenerate with updated instruction
 lens write -p person.amy            # pin a knowledge object for this call
 ```
 
@@ -144,7 +162,7 @@ Proposes an LLM rewrite of a specific line range in a node, staging a claim anno
 ```bash
 lens edit /chapter-1 10 20 "make it more tense"
 lens edit /chapter-1 10 20 --retry            # regenerate with same instruction
-lens edit /chapter-1 10 20 "shorter" --retry  # regenerate with new instruction
+lens edit /chapter-1 10 20 "shorter"          # regenerate with new instruction
 lens edit /chapter-1 10 20 "fix it" -p place.inn
 ```
 
