@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import io
 import subprocess
 import tempfile
 import unittest
 import warnings
+from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import Any
+from unittest.mock import patch
 
 from lens.narrative import (
     NarrativeNode,
@@ -14,6 +20,11 @@ from lens.narrative import (
     parse_segments,
 )
 from lens.project import get_active_narrative
+
+
+async def _fake_generate(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+    for chunk in ["Section", " summary."]:
+        yield chunk
 
 
 def _make_narrative(tmp: Path, slug: str = "test") -> Path:
@@ -568,18 +579,26 @@ class TestSectionOperator(unittest.TestCase):
                 capture_output=True,
                 check=True,
             )
-            result = subprocess.run(
-                ["lens", "section", "--end"],
-                cwd=p,
-                capture_output=True,
-                text=True,
+            narrative = get_active_narrative(p)
+            assert narrative is not None
+            from lens.operators.section import SectionOperator
+            from lens.storage import Storage
+            cursor = narrative.find_cursor()
+            key = cursor.key_path[-1]
+            parent = NarrativeNode(
+                narrative_root=narrative.narrative_root,
+                key_path=cursor.key_path[:-1],
             )
-            self.assertEqual(result.returncode, 0, result.stderr)
+            rel = str(parent.md_path().relative_to(p))
+            owner = SectionOperator.owner_id(key, rel)
+            op = SectionOperator(Storage(p, owner=owner), narrative)
+            with patch("lens.operators.section.generate", new=_fake_generate):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    asyncio.run(op.end(p))
             node_md = p / "narrative" / "test" / "_node.md"
             text = node_md.read_text()
             self.assertIn("[/section:event_1]: #", text)
-            self.assertIn("summary placeholder", text)
-            self.assertIn("> _(", text)
+            self.assertIn("Section summary.", text)
 
     def test_section_end_at_root_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

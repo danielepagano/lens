@@ -106,11 +106,11 @@ Sections structure the narrative tree by creating child nodes under the cursor.
 
 ```bash
 lens section intro        # create child node "intro" and open section tag
-lens section --end        # close the current section (appends summary placeholder)
+lens section --end        # close the current section (appends summary to parent)
 lens section -e           # shorthand for --end
 ```
 
-A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `--end` appends a summary placeholder and the closing tag, then moves the cursor back up.
+A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `--end` appends a summary and the closing tag, then moves the cursor back up.
 
 ## AI Operators
 

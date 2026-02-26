@@ -3,23 +3,40 @@
 ``lens section <id>`` creates a child node at the cursor and opens a
 ``[section:id]: #`` annotation in the parent.
 
-``lens section --end`` closes the current section by appending a summary
-placeholder and the closing annotation tag.
+``lens section --end`` closes the current section by generating an LLM summary
+and appending it with the closing annotation tag.
 """
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import ClassVar
 
 import typer
 
+from lens.annotations import strip_markdown_comments
+from lens.context import assemble_prompt, crawl
+from lens.llm import LLMError, generate
 from lens.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.operator import Operator
 from lens.project import get_active_narrative, require_lens_context, validate_slug
 from lens.storage import Storage
 
-SUMMARY_PLACEHOLDER = "> _(summary placeholder — replace with a summary of this section)_"
+SYSTEM_PROMPT = (
+    "You are a skilled editor. Write a concise summary of the provided section,"
+    " preserving the author's voice and style."
+)
+
+SUMMARY_INSTRUCTION_TEMPLATE = (
+    "The section below has just been written and is now being closed.\n"
+    "Write a brief summary that:\n"
+    "- reads fluently as a continuation of the current passage above\n"
+    "- represents the key consequences and outcomes described in the section\n"
+    "- matches the voice and style of the surrounding narrative\n\n"
+    "Output only the summary text — no preamble, no meta-commentary.\n\n"
+    "SECTION TO SUMMARIZE:\n{content}"
+)
 
 
 class SectionOperator(Operator):
@@ -33,8 +50,8 @@ class SectionOperator(Operator):
             raise ValueError(f"section '{id}' already exists")
         self.create_subnode(cursor, id)
 
-    def end(self) -> None:
-        """Close the current section by appending summary + close tag."""
+    async def end(self, project_root: Path, llm_id: str | None = None) -> None:
+        """Close the current section by generating an LLM summary and appending it."""
         cursor = self.narrative_root.find_cursor()
         if not cursor.key_path:
             raise ValueError("no open section to close (cursor at root)")
@@ -50,7 +67,36 @@ class SectionOperator(Operator):
             raise ValueError(
                 f"parent does not have unclosed [section:{key}]: #"
             )
-        self.close_subnode(parent, key, SUMMARY_PLACEHOLDER)
+
+        child_text = cursor.md_path().read_text(encoding="utf-8")
+        child_clean = strip_markdown_comments(child_text).strip()
+
+        crawl_result = crawl(parent)
+        instruction = SUMMARY_INSTRUCTION_TEMPLATE.format(content=child_clean)
+        messages = assemble_prompt(
+            crawl_result,
+            system_prompt=SYSTEM_PROMPT,
+            instruction=instruction,
+        )
+
+        chunks: list[str] = []
+        interrupted = False
+        try:
+            async for chunk in generate(messages, project_root, llm_id=llm_id):
+                print(chunk, end="", flush=True)
+                chunks.append(chunk)
+        except KeyboardInterrupt:
+            interrupted = True
+        print()
+
+        summary = "".join(chunks).strip()
+        if not summary:
+            raise ValueError("LLM returned no summary content")
+
+        self.close_subnode(parent, key, summary)
+
+        if interrupted:
+            raise KeyboardInterrupt
 
 
 # ---------------------------------------------------------------
@@ -72,6 +118,12 @@ def section(
         "-e",
         help="Close the current section",
     ),
+    llm: str | None = typer.Option(
+        None,
+        "--llm",
+        "-l",
+        help="LLM ID to use when closing a section (overrides project default)",
+    ),
 ) -> None:
     """Start a section at cursor or close the current section."""
     try:
@@ -85,7 +137,7 @@ def section(
         raise typer.Exit(1)
 
     if end:
-        _section_end(git_root, narrative)
+        _section_end(git_root, project_root, narrative, llm_id=llm)
     else:
         if id_or_end is None:
             typer.echo("lens section: provide a section ID or use --end / -e", err=True)
@@ -119,7 +171,12 @@ def _section_start(git_root: Path, narrative: NarrativeNode, id: str) -> None:
     typer.echo(f"Started section '{id}'")
 
 
-def _section_end(git_root: Path, narrative: NarrativeNode) -> None:
+def _section_end(
+    git_root: Path,
+    project_root: Path,
+    narrative: NarrativeNode,
+    llm_id: str | None = None,
+) -> None:
     cursor = narrative.find_cursor()
     if not cursor.key_path:
         typer.echo("lens section --end: no open section to close (cursor at root)", err=True)
@@ -137,8 +194,14 @@ def _section_end(git_root: Path, narrative: NarrativeNode) -> None:
     op = SectionOperator(storage, narrative)
 
     try:
-        op.end()
+        asyncio.run(op.end(project_root, llm_id=llm_id))
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
-    typer.echo(f"Closed section '{key}'")
+    except LLMError as e:
+        typer.echo(f"lens section --end: LLM error: {e}", err=True)
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        typer.echo("\nlens section --end: interrupted", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"Closed section '{key}'", err=True)
