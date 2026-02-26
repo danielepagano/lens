@@ -6,16 +6,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from lens.annotations import (
+from lens.core.annotations import (
     ParsedAnnotation,
     parse_annotations,
     parse_front_matter,
     parse_tail_cursor_annotation,
 )
-from lens.storage import Storage
+from lens.core.storage import Storage
 
 if TYPE_CHECKING:
-    from lens.address import NarrativeAddress
+    from lens.core.address import NarrativeAddress
 
 
 def _make_system_storage(near: Path) -> Storage:
@@ -24,7 +24,7 @@ def _make_system_storage(near: Path) -> Storage:
     ``near`` is already inside a valid project (e.g. the narrative root); we
     only need to locate the enclosing git repository.
     """
-    from lens.project import find_git_root_from
+    from lens.core.project import find_git_root_from
     return Storage(find_git_root_from(near))
 
 
@@ -199,7 +199,7 @@ class NarrativeNode:
 
     def to_address(self) -> NarrativeAddress:
         """Return the canonical NarrativeAddress for this node."""
-        from lens.address import NarrativeAddress
+        from lens.core.address import NarrativeAddress
 
         return NarrativeAddress(
             narrative=self.narrative_root.name,

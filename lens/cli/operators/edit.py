@@ -1,65 +1,20 @@
-"""Edit operator: LLM-assisted rewrite of a selected line range.
-
-``lens edit ADDRESS START_LINE END_LINE [PROMPT] [--pin/-p ID]...`` streams
-LLM output as a proposed replacement for lines START_LINE..END_LINE in the
-targeted node, staging a claim annotation to track the transaction.
-
-When called again with ``--retry``:
-- no PROMPT   → regenerate with the same parameters
-- PROMPT given → regenerate with updated instruction
-"""
-
 from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Any, ClassVar
 
 import typer
 
-from lens.address import NarrativeAddress
-from lens.operator import ContextAwareOperator, OperatorError
-from lens.project import get_active_narrative, require_lens_context, resolve_address
-
-# ---------------------------------------------------------------------------
-# Prompt constants
-# ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = (
-    "You are a skilled editor. Rewrite the provided passage following the"
-    " given instructions, preserving the author's voice and style."
-)
-
-INSTRUCTION_TEMPLATE = ("Revise the following passage so it flows from the current passage, "
-    " and following these instructions: '{prompt}'\nPASSAGE TO REVISE:\n{target}")
-
-
-# ---------------------------------------------------------------------------
-# Operator class
-# ---------------------------------------------------------------------------
-
-
-class EditOperator(ContextAwareOperator):
-    name: ClassVar[str] = "edit"
-    requires_id: ClassVar[bool] = True
-
-    @property
-    def system_prompt(self) -> str:
-        return SYSTEM_PROMPT
-
-    def build_instruction(self, params: dict[str, Any]) -> str:
-        return INSTRUCTION_TEMPLATE.format(
-            prompt=params.get("prompt", ""),
-            target=params.get("target", ""),
-        )
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
+from lens.core.address import NarrativeAddress
+from lens.core.operators.edit import EditOperator
+from lens.core.operator import OperatorError
+from lens.core.project import get_active_narrative, require_lens_context, resolve_address
+from lens.core.exceptions import LensException
 
 app = typer.Typer(invoke_without_command=True)
 
+async def _print_token(chunk: str) -> None:
+    print(chunk, end="", flush=True)
 
 @app.callback()
 def edit(
@@ -142,11 +97,16 @@ def edit(
                 unpins=list(unpin),
                 llm_id=llm,
                 retry=retry,
+                on_token=_print_token,
             )
         )
+        print() # ensure final newline
     except OperatorError as e:
         typer.echo(f"lens edit: {e}", err=True)
         raise typer.Exit(1)
-    except Exception as e:
+    except LensException as e:
         typer.echo(f"lens edit: {e}", err=True)
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        print()
         raise typer.Exit(1)

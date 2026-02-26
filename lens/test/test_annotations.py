@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from lens.annotations import (
+from lens.core.annotations import (
     find_front_matter_span,
     parse_annotations,
     parse_front_matter,

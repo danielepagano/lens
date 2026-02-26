@@ -14,12 +14,12 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from lens.narrative import (
+from lens.core.narrative import (
     NarrativeNode,
     find_unclosed_cursor_annotation,
     parse_segments,
 )
-from lens.project import get_active_narrative
+from lens.core.project import get_active_narrative
 
 
 async def _fake_generate(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
@@ -581,8 +581,8 @@ class TestSectionOperator(unittest.TestCase):
             )
             narrative = get_active_narrative(p)
             assert narrative is not None
-            from lens.operators.section import SectionOperator
-            from lens.storage import Storage
+            from lens.core.operators.section import SectionOperator
+            from lens.core.storage import Storage
             cursor = narrative.find_cursor()
             key = cursor.key_path[-1]
             parent = NarrativeNode(
@@ -592,7 +592,7 @@ class TestSectionOperator(unittest.TestCase):
             rel = str(parent.md_path().relative_to(p))
             owner = SectionOperator.owner_id(key, rel)
             op = SectionOperator(Storage(p, owner=owner), narrative)
-            with patch("lens.operators.section.generate", new=_fake_generate):
+            with patch("lens.core.operators.section.generate", new=_fake_generate):
                 with contextlib.redirect_stdout(io.StringIO()):
                     asyncio.run(op.end(p))
             node_md = p / "narrative" / "test" / "_node.md"

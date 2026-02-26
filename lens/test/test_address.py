@@ -7,8 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.address import NarrativeAddress
-from lens.narrative import NarrativeNode
+from lens.core.address import NarrativeAddress
+from lens.core.narrative import NarrativeNode
 
 
 def _make_project(tmp: Path, slug: str = "test") -> Path:

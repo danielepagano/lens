@@ -22,8 +22,8 @@ import subprocess
 from pathlib import Path
 from typing import ClassVar
 
-from lens.address import NarrativeAddress
-from lens.annotations import ANNOTATION_OPEN_RE, ANNOTATION_RE
+from lens.core.address import NarrativeAddress
+from lens.core.annotations import ANNOTATION_OPEN_RE, ANNOTATION_RE
 
 _HUNK_HEADER_RE = re.compile(
     r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@"

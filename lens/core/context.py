@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from lens.annotations import strip_markdown_comments
-from lens.knowledge import KnowledgeStore
-from lens.narrative import NarrativeNode
-from lens.pinning import KB_PIN, KB_UNPIN
+from lens.core.annotations import strip_markdown_comments
+from lens.core.knowledge import KnowledgeStore
+from lens.core.narrative import NarrativeNode
+from lens.core.pinning import KB_PIN, KB_UNPIN
 
 
 @dataclass

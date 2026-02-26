@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import httpx
 
-from lens.llm import LLMError, _load_config, generate  # pyright: ignore[reportPrivateUsage]
+from lens.core.llm import LLMError, _load_config, generate  # pyright: ignore[reportPrivateUsage]
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +250,7 @@ class TestGenerate(unittest.TestCase):
 
     def _run(self, response: _FakeResponse, **kwargs: Any) -> tuple[list[str], _FakeClient]:
         factory, client = _fake_client_cls(response)
-        with patch("lens.llm.httpx.AsyncClient", factory):
+        with patch("lens.core.llm.httpx.AsyncClient", factory):
             chunks = _collect(generate(MESSAGES, self.root, **kwargs))
         return chunks, client
 
@@ -266,7 +266,7 @@ class TestGenerate(unittest.TestCase):
 
     def test_usage_chunk_logged_not_yielded(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("text"), _usage_chunk(10, 5)))
-        with self.assertLogs("lens.llm", level="INFO") as log:
+        with self.assertLogs("lens.core.llm", level="INFO") as log:
             chunks, _ = self._run(resp)
         self.assertEqual(chunks, ["text"])
         usage_logs = [m for m in log.output if "usage" in m.lower()]
@@ -328,7 +328,7 @@ class TestGenerate(unittest.TestCase):
         resp = _FakeResponse(
             lines=["data: not-json", f"data: {json.dumps(_chunk('ok'))}", "data: [DONE]"]
         )
-        with self.assertLogs("lens.llm", level="WARNING") as log:
+        with self.assertLogs("lens.core.llm", level="WARNING") as log:
             chunks, _ = self._run(resp)
         self.assertEqual(chunks, ["ok"])
         self.assertTrue(any("could not decode" in m for m in log.output))
@@ -345,7 +345,7 @@ class TestGenerate(unittest.TestCase):
             "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
         )
         resp = _FakeResponse(lines=_sse(_chunk("narrate"), _chunk(" this")))
-        with self.assertLogs("lens.llm", level="INFO") as log:
+        with self.assertLogs("lens.core.llm", level="INFO") as log:
             self._run(resp)
         combined = "\n".join(log.output)
         self.assertIn("PROMPT", combined)

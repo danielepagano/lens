@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from lens.narrative import NarrativeNode
-from lens.operators.section import SectionOperator
-from lens.storage import Storage
+from lens.core.narrative import NarrativeNode
+from lens.core.operators.section import SectionOperator
+from lens.core.storage import Storage
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +83,7 @@ def _run_section_range(
     storage = Storage(root, owner=owner)
     op = SectionOperator(storage, narrative)
 
-    with patch("lens.operators.section.generate", new=mock):
+    with patch("lens.core.operators.section.generate", new=mock):
         with contextlib.redirect_stdout(io.StringIO()):
             asyncio.run(
                 op.section_range(

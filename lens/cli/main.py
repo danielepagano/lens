@@ -8,9 +8,9 @@ from pathlib import Path
 
 import typer
 
-from lens.commands import register_commands
-from lens.operators import register_operators
-from lens.project import get_active_narrative, require_lens_context
+from lens.cli.commands import register_commands
+from lens.cli.operators import register_operators
+from lens.core.project import get_active_narrative, require_lens_context
 
 app = typer.Typer(
     name="lens",

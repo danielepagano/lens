@@ -7,8 +7,8 @@ import tomllib
 from pathlib import Path
 from typing import Any, cast
 
-from lens.address import NarrativeAddress
-from lens.narrative import NarrativeNode
+from lens.core.address import NarrativeAddress
+from lens.core.narrative import NarrativeNode
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 

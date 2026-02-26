@@ -11,7 +11,7 @@ from typing import Any, cast
 
 import tomli_w
 
-from lens.storage import Storage
+from lens.core.storage import Storage
 
 _VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
@@ -67,7 +67,7 @@ class KnowledgeObject:
     tags: list[str] = field(default_factory=lambda: cast(list[str], []))
 
     def format(self, *, include_comments: bool = False) -> str:
-        from lens.annotations import strip_markdown_comments
+        from lens.core.annotations import strip_markdown_comments
         text = self.text if include_comments else strip_markdown_comments(self.text)
         lines: list[str] = [f"KB[{self.id!r}]"]
         lines.append("  " + text.replace("\n", "\n  "))
@@ -95,7 +95,7 @@ class KnowledgeStore:
         """
         if self._storage is not None:
             return self._storage
-        from lens.project import find_git_root_from
+        from lens.core.project import find_git_root_from
         self._storage = Storage(find_git_root_from(self._root))
         return self._storage
 

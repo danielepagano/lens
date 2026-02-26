@@ -23,19 +23,20 @@ import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, ClassVar
+from collections.abc import Callable, Awaitable
 
 import yaml
 
-from lens.address import NarrativeAddress
-from lens.annotations import (
+from lens.core.address import NarrativeAddress
+from lens.core.annotations import (
     ParsedAnnotation,
     parse_annotations,
     strip_markdown_comments,
 )
-from lens.context import CrawlResult, assemble_prompt, crawl
-from lens.llm import LLMError, generate
-from lens.narrative import NarrativeNode, NodeSegment, parse_segments
-from lens.storage import Storage
+from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.llm import LLMError, generate
+from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
+from lens.core.storage import Storage
 
 
 class OperatorError(Exception):
@@ -425,21 +426,22 @@ class ContextAwareOperator(Operator):
         return result
 
     @staticmethod
-    async def stream_to_stdout(
+    async def stream_output(
         messages: list[dict[str, str]],
         project_root: Path,
         llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> str:
-        """Stream LLM output to stdout and return the full collected text."""
+        """Stream LLM output and return the full collected text."""
         chunks: list[str] = []
         interrupted = False
         try:
             async for chunk in generate(messages, project_root, llm_id=llm_id):
-                print(chunk, end="", flush=True)
+                if on_token:
+                    await on_token(chunk)
                 chunks.append(chunk)
         except KeyboardInterrupt:
             interrupted = True
-        print()
         if interrupted and not chunks:
             return ""
         return "".join(chunks)
@@ -580,6 +582,7 @@ class ContextAwareOperator(Operator):
         unpins: list[str],
         llm_id: str | None,
         retry: bool,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         """Run the inline-appending flow (fresh / continue / retry / update-retry).
 
@@ -640,6 +643,7 @@ class ContextAwareOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         ann_params: dict[str, Any] = {"steps": 1}
         if prompt:
@@ -662,7 +666,7 @@ class ContextAwareOperator(Operator):
         messages = probe_op.build_messages(crawl_result, ann_params)
 
         try:
-            content = await cls.stream_to_stdout(messages, project_root, llm_id)
+            content = await cls.stream_output(messages, project_root, llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -682,6 +686,7 @@ class ContextAwareOperator(Operator):
         cursor: NarrativeNode,
         rel_path: str,
         existing_ann: ParsedAnnotation,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         ann_pins = cls.extract_list(existing_ann.params, "kb_pin")
         ann_unpins = cls.extract_list(existing_ann.params, "kb_unpin")
@@ -694,7 +699,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
-            content = await cls.stream_to_stdout(messages, project_root, ann_llm_id)
+            content = await cls.stream_output(messages, project_root, ann_llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -713,6 +718,7 @@ class ContextAwareOperator(Operator):
         cursor: NarrativeNode,
         rel_path: str,
         existing_ann: ParsedAnnotation,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         ann_pins = cls.extract_list(existing_ann.params, "kb_pin")
         ann_unpins = cls.extract_list(existing_ann.params, "kb_unpin")
@@ -730,7 +736,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
-            content = await cls.stream_to_stdout(messages, project_root, ann_llm_id)
+            content = await cls.stream_output(messages, project_root, ann_llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -753,6 +759,7 @@ class ContextAwareOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         new_params: dict[str, Any] = dict(existing_ann.params)
         if prompt is not None:
@@ -780,7 +787,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, new_params)
 
         try:
-            content = await cls.stream_to_stdout(messages, project_root, eff_llm_id)
+            content = await cls.stream_output(messages, project_root, eff_llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -810,6 +817,7 @@ class ContextAwareOperator(Operator):
         unpins: list[str],
         llm_id: str | None,
         retry: bool,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         """Run the text-replacement flow (fresh / retry / update-retry).
 
@@ -861,6 +869,7 @@ class ContextAwareOperator(Operator):
         unpins: list[str],
         llm_id: str | None,
         params: dict[str, Any],
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         if not params.get("prompt"):
             raise OperatorError("a prompt is required for a fresh edit")
@@ -895,7 +904,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, build_params)
 
         try:
-            content = await cls.stream_to_stdout(messages, project_root, llm_id)
+            content = await cls.stream_output(messages, project_root, llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -924,6 +933,7 @@ class ContextAwareOperator(Operator):
         llm_id: str | None,
         params: dict[str, Any],
         probe_storage: Storage,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         probe_storage.rollback()
 
@@ -967,7 +977,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, effective_params)
 
         try:
-            content = await cls.stream_to_stdout(messages, project_root, llm_id)
+            content = await cls.stream_output(messages, project_root, llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 

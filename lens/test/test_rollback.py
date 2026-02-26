@@ -7,11 +7,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.address import NarrativeAddress
-from lens.commands.rollback import compensating_rollback
-from lens.narrative import NarrativeNode
-from lens.operators.edit import EditOperator
-from lens.storage import Storage
+from lens.core.address import NarrativeAddress
+from lens.core.commands.rollback import compensating_rollback
+from lens.core.narrative import NarrativeNode
+from lens.core.operators.edit import EditOperator
+from lens.core.storage import Storage
 
 
 def _init_repo(tmp: Path) -> Path:

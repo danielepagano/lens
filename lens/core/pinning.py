@@ -7,9 +7,9 @@ from typing import Any, Callable, cast
 
 import yaml
 
-from lens.annotations import find_front_matter_span, parse_front_matter
-from lens.narrative import NarrativeNode
-from lens.storage import Storage
+from lens.core.annotations import find_front_matter_span, parse_front_matter
+from lens.core.narrative import NarrativeNode
+from lens.core.storage import Storage
 
 KB_PIN = "kb_pin"
 KB_UNPIN = "kb_unpin"

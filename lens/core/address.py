@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from lens.narrative import NarrativeNode
+    from lens.core.narrative import NarrativeNode
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 _CURSOR_REF = "/@cursor"
@@ -191,7 +191,7 @@ class NarrativeAddress:
         """Construct NarrativeNode from this address. Requires narrative to be set."""
         if self.narrative is None:
             raise ValueError("cannot resolve node: narrative not set")
-        from lens.narrative import NarrativeNode
+        from lens.core.narrative import NarrativeNode
 
         narrative_dir = project_root / "narrative" / self.narrative
         return NarrativeNode(narrative_root=narrative_dir, key_path=self.key_path)

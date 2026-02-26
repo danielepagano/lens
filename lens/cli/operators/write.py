@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+
+import typer
+
+from lens.core.operators.write import WriteOperator
+from lens.core.operator import OperatorError
+from lens.core.project import get_active_narrative, require_lens_context
+from lens.core.exceptions import LensException
+
+app = typer.Typer(invoke_without_command=True)
+
+async def _print_token(chunk: str) -> None:
+    print(chunk, end="", flush=True)
+
+@app.callback()
+def write(
+    prompt: str | None = typer.Argument(
+        None,
+        help="Writing direction/instruction",
+    ),
+    pin: list[str] = typer.Option(
+        [],
+        "--pin",
+        "-p",
+        help="KB ID to pin for this operator (repeatable)",
+    ),
+    unpin: list[str] = typer.Option(
+        [],
+        "--unpin",
+        "-u",
+        help="KB ID to unpin for this operator (repeatable)",
+    ),
+    llm: str | None = typer.Option(
+        None,
+        "--llm",
+        "-l",
+        help="LLM ID to use (overrides project default)",
+    ),
+    retry: bool = typer.Option(
+        False,
+        "--retry",
+        "-r",
+        help="Discard generated text and regenerate",
+    ),
+) -> None:
+    """Generate narrative text at the cursor."""
+    try:
+        git_root, project_root = require_lens_context(Path.cwd())
+    except RuntimeError as e:
+        typer.echo(f"lens write: {e}", err=True)
+        raise typer.Exit(1)
+
+    narrative = get_active_narrative(project_root)
+    if narrative is None:
+        typer.echo(
+            "lens write: no active narrative (run 'lens use <slug>' first)", err=True
+        )
+        raise typer.Exit(1)
+
+    try:
+        asyncio.run(
+            WriteOperator.run_inline(
+                git_root=git_root,
+                project_root=project_root,
+                narrative=narrative,
+                prompt=prompt,
+                pins=list(pin),
+                unpins=list(unpin),
+                llm_id=llm,
+                retry=retry,
+                on_token=_print_token,
+            )
+        )
+        print() # ensure final newline
+    except OperatorError as e:
+        typer.echo(f"lens write: {e}", err=True)
+        raise typer.Exit(1)
+    except LensException as e:
+        typer.echo(f"lens write: {e}", err=True)
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        print()
+        raise typer.Exit(1)

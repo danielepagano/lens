@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from lens.narrative import NarrativeNode
-from lens.operator import OperatorError
-from lens.operators.edit import EditOperator
-from lens.storage import Storage
+from lens.core.narrative import NarrativeNode
+from lens.core.operator import OperatorError
+from lens.core.operators.edit import EditOperator
+from lens.core.storage import Storage
 
 
 def _init_repo(tmp: Path) -> Path:
@@ -76,7 +76,7 @@ def _run_mutation(
     generate_mock: Any = None,
 ) -> None:
     mock = generate_mock or _fake_generate
-    with patch("lens.operator.generate", new=mock):
+    with patch("lens.core.operator.generate", new=mock):
         with contextlib.redirect_stdout(io.StringIO()):
             with contextlib.redirect_stderr(io.StringIO()):
                 asyncio.run(

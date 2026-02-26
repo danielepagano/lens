@@ -17,18 +17,19 @@ from __future__ import annotations
 import asyncio
 import shutil
 from pathlib import Path
+from collections.abc import Callable, Awaitable
 from typing import ClassVar
 
 import typer
 
-from lens.address import NarrativeAddress
-from lens.annotations import find_front_matter_span, strip_markdown_comments
-from lens.context import CrawlResult, assemble_prompt, crawl
-from lens.llm import LLMError, generate
-from lens.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
-from lens.operator import Operator
-from lens.project import get_active_narrative, require_lens_context, resolve_address, validate_slug
-from lens.storage import Storage
+from lens.core.address import NarrativeAddress
+from lens.core.annotations import find_front_matter_span, strip_markdown_comments
+from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.llm import LLMError, generate
+from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
+from lens.core.operator import Operator
+from lens.core.project import get_active_narrative, require_lens_context, resolve_address, validate_slug
+from lens.core.storage import Storage
 
 SYSTEM_PROMPT = (
     "You are a skilled editor. Write a concise summary of the provided section,"
@@ -57,7 +58,7 @@ class SectionOperator(Operator):
             raise ValueError(f"section '{id}' already exists")
         self.create_subnode(cursor, id)
 
-    async def end(self, project_root: Path, llm_id: str | None = None) -> None:
+    async def end(self, project_root: Path, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None) -> None:
         """Close the current section by generating an LLM summary and appending it."""
         cursor = self.narrative_root.find_cursor()
         if not cursor.key_path:
@@ -115,6 +116,7 @@ class SectionOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         """Create a section after the fact by extracting a line range into a child node.
 

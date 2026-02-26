@@ -17,8 +17,8 @@ from typing import Any, ClassVar
 
 import typer
 
-from lens.operator import ContextAwareOperator, OperatorError
-from lens.project import get_active_narrative, require_lens_context
+from lens.core.operator import ContextAwareOperator, OperatorError
+from lens.core.project import get_active_narrative, require_lens_context
 
 # ---------------------------------------------------------------------------
 # Prompt constants

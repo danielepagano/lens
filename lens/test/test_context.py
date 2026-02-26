@@ -7,8 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.context import CrawlResult, assemble_prompt, crawl
-from lens.narrative import NarrativeNode
+from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.narrative import NarrativeNode
 
 
 def _init_repo(tmp: Path) -> Path:

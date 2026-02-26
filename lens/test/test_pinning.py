@@ -7,10 +7,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.annotations import parse_front_matter
-from lens.narrative import NarrativeNode
-from lens.pinning import KB_PIN, KB_UNPIN, pin, remove_pin, remove_unpin, unpin
-from lens.storage import Storage
+from lens.core.annotations import parse_front_matter
+from lens.core.narrative import NarrativeNode
+from lens.core.pinning import KB_PIN, KB_UNPIN, pin, remove_pin, remove_unpin, unpin
+from lens.core.storage import Storage
 
 
 def _init_repo(tmp: Path) -> Path:

@@ -6,7 +6,7 @@ readme = "README.md"
 packages = [{ include = "lens" }]
 
 [tool.poetry.scripts]
-lens = "lens.cli:main"
+lens = "lens.cli.main:main"
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -27,7 +27,7 @@ ruff = "^0.7.0"
 poethepoet = "^0.27.0"
 
 [tool.poe.tasks]
-lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli" }
+lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
 pyright = "pyright"
 lint = "ruff check . --fix"
 test = "python -m unittest discover -s lens/test -p 'test_*.py'"

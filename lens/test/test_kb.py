@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from lens.knowledge import KnowledgeStore, parse_id
+from lens.core.knowledge import KnowledgeStore, parse_id
 
 
 def _make_project(tmp: Path) -> None:
@@ -187,7 +187,7 @@ class TestKnowledgeStore(unittest.TestCase):
         self.store.store_object("place.nyc", "Visible\n[ hidden ]: #\nMore")
         objs = self.store.get_objects(["place.nyc"])
         self.assertEqual(objs["place.nyc"].text, "Visible\n[ hidden ]: #\nMore")
-        from lens.annotations import strip_markdown_comments
+        from lens.core.annotations import strip_markdown_comments
 
         stripped = strip_markdown_comments(objs["place.nyc"].text)
         self.assertNotIn("[ hidden ]", stripped)
@@ -205,14 +205,14 @@ class TestKbCli(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _run_store(self, id: str, content: str | None = None, use_template: bool = False) -> None:
-        with patch("lens.commands.kb.find_project_root", return_value=self.root):
-            from lens.commands.kb import store
+        with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import store
 
             store(id, content, use_template)
 
     def _run_template(self, type_name: str, content: str | None = None) -> str | None:
-        with patch("lens.commands.kb.find_project_root", return_value=self.root):
-            from lens.commands.kb import template
+        with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import template
             from io import StringIO
             import sys
 
@@ -243,8 +243,8 @@ class TestKbCli(unittest.TestCase):
         add: list[str] | None = None,
         remove: list[str] | None = None,
     ) -> tuple[str, str]:
-        with patch("lens.commands.kb.find_project_root", return_value=self.root):
-            from lens.commands.kb import tags
+        with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import tags
             from io import StringIO
             import sys
 
@@ -258,14 +258,14 @@ class TestKbCli(unittest.TestCase):
                 sys.stdout, sys.stderr = old_stdout, old_stderr
 
     def _run_delete(self, id: str) -> None:
-        with patch("lens.commands.kb.find_project_root", return_value=self.root):
-            from lens.commands.kb import delete
+        with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import delete
 
             delete(id)
 
     def _run_get(self, ids: list[str], include_comments: bool = False) -> str:
-        with patch("lens.commands.kb.find_project_root", return_value=self.root):
-            from lens.commands.kb import get
+        with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import get
             from io import StringIO
             import sys
 
@@ -360,7 +360,7 @@ class TestKbCli(unittest.TestCase):
 
     def test_cli_shows_help_when_required_params_missing(self) -> None:
         result = subprocess.run(
-            ["python", "-m", "lens.cli", "kb", "store"],
+            ["python", "-m", "lens.cli.main", "kb", "store"],
             capture_output=True,
             text=True,
             cwd=self.root,

@@ -8,10 +8,10 @@ import unittest
 from pathlib import Path
 from typing import Any, ClassVar
 
-from lens.annotations import parse_annotations
-from lens.narrative import NarrativeNode
-from lens.operator import ContextAwareOperator, Operator
-from lens.storage import Storage
+from lens.core.annotations import parse_annotations
+from lens.core.narrative import NarrativeNode
+from lens.core.operator import ContextAwareOperator, Operator
+from lens.core.storage import Storage
 
 
 def _init_repo(tmp: Path) -> Path:
