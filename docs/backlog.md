@@ -2,19 +2,13 @@
 
 ## Lens Alpha: Cleaning up the CLI
 
-*Start enforcing strong isolation between core and CLI, and hide git stuff, so we can build a server later*
+Goal: Logic isolated from interface concerns and safe for programmatic use.
+A REST API could do everything the current CLI does, without importing anything from `lens/cli`
 
-### Milestone 1: Core Decoupling & Exception Handling
-*   **Decouple CLI**: Extract domain logic from `lens/commands/` and `lens/operators/` into `lens/core/`.
-*   **Exception-Driven Flow**: Replace `typer.echo` and `sys.exit` in Core with custom exceptions and structured return types.
+*   **Decouple CLI**: Extract domain logic from `lens`, `lens/commands/` and `lens/operators/` into `lens/core/` and all CLI interface, including `cli.py` to `lens/cli`. The `lens` CLI command should still work as usual
+*   **Exception-Driven Flow**: Replace `typer.echo` and `sys.exit` in Core with custom exceptions and structured return types, which cause the CLI to echo and exit instead
 *   **Pure Core**: Ensure Core logic is side-effect free (except for explicit FS/Git operations) and isolated from CLI/API concerns.
-*   *Goal: Logic isolated from interface concerns and safe for programmatic use.*
-
-### Milestone 2: Transaction & Persistence Layer
-*   **Transaction Abstraction**: Create a Core service to report "staged" vs "committed" state without exposing Git-specific terminology.
-*   **Checkpoint API**: Implement "checkpoint" functionality (commit to git and push to origin).
-*   **Raw Editing API**: Expose simple raw file editing API that allows modifying files without breaking transaction state (multiple changes of this type can just be one transaction).
-*   *Goal: Transactional safety and Git operations abstracted into a clean Core service.*
+*   **Tested Core**: Core tests are tailored to core; logic moved to core still tested. CLI does not need unit tests, it's just interface glue without complex logic.
 
 ## Lens Beta: Getting it to play D&D
 
@@ -39,6 +33,12 @@ Operator ideas:
 ## Lens V1 - Web App
 
 *Now I can do this from my phone!*
+
+### Milestone 0: Transaction & Persistence Layer
+*   **Transaction Abstraction**: Create a Core service to report "staged" vs "committed" state without exposing Git-specific terminology.
+*   **Checkpoint API**: Implement "checkpoint" functionality (commit to git and push to origin if origin is set). The idea is that API should not need to call Git.
+*   **Raw Editing API**: Expose simple raw file editing API that allows modifying files without breaking transaction state (multiple changes of this type can just be one transaction). The API should not read or modify files directly, it needs to go through our storage layer.
+*   *Goal: Transactional safety and Git operations abstracted into a clean Core service.*
 
 ### Milestone 1: The `lens serve` CLI & Basic API
 *   **`lens serve`**: Implement the command to launch the server from inside a project repo.
