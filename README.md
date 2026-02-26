@@ -2,6 +2,20 @@
 
 Filesystem-native, forward-only narrative trees and a knowledge store for modular AI-assisted creation with fractal summarization.
 
+## Overview
+
+Lens is a filesystem-native narrative engine designed for collaborative AI-assisted storytelling. It enables the creation of complex "narrative simulations"—prose stories grounded in a persistent knowledge store and structured into a fractal, multi-layered tree.
+
+### Core Concepts
+
+*   **Forward-Only Narrative**: Narrative is created in a forward-only fashion. Once committed, it becomes canon. While the past can be changed via Git history, the system is designed to support the evolution of the story from its current state.
+*   **Fractal Summarization**: The story is hierarchical and fractal. A high-level node can contain a summary of a detailed event, which in turn might contain even more granular beats. This allows the AI to maintain long-term continuity by looking at ancestor summaries (lower resolution for distant facts) while remaining grounded in the immediate context.
+*   **Knowledge Store**: A persistent key-value store of "facts" (places, people, lore) that grounds the narrative. Objects are classified by type and can be interconnected via a flexible tagging system, creating a rich knowledge graph that the AI can traverse.
+*   **Operators & Transactions**: Humans and AIs collaborate using an extensible set of **Operators** (like `write`, `edit`, and `section`).
+    *   **Composable**: Operators are naturally composable. You can open a `section` and, within it, use `write` to generate content or open further nested sections.
+    *   **Transactional**: Every change is a transaction. Lens uses Git's unstaged area as a "preview" state. You can review AI output, retry with new instructions, or use `lens rollback` to discard changes and restore the previous state.
+*   **Git-Backed Storage**: A Lens project is a Git repository. This acts as the database, tracking every change to the narrative and knowledge over time. You can read and edit the Markdown files directly, while Lens provides the automation and structure to manage the complexity.
+
 ## Setup
 
 ```bash

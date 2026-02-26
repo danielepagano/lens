@@ -173,19 +173,6 @@ These are the core built-in core operators:
       - This feature is important because we don't want the user to always be worried about structure: they should be able to keep adding, then compress sections (like a conversation or a side quest) after the fact to keep the current node at the right level of detail.
 - The front-matter (node-level YAML storage) is used to share configuration across the node, and also to child nodes. It can be used by any operator, but initially it will be used to pin/un-pin knowledge items for Context-aware operators (see more below)
 
-### Future Operators
-
-Operators are designed to be extended, and more can be created as specializations or hybridizations of the core operators; these allows more specific ways to manage content and interact with the narrative. Examples of operators that could be added:
-  - `remember` could integrate some aspects of a given text into a new or existing knowledge object.
-    - For example, one could be talking with an NPC and then ask the operator to update `person.name`: the operator looks at the person template to see what kind of facts this knowledge item tracks, and then gathers what we learned into that object, either by creating it or integrating new knowledge. 
-    - The user could apply the operator to the same text towards multiple objects, and only the details relevant to that object would be captured. For example, a scene can be remembered for the city location, market location, and a specific merchant encountered, but not for other merchants or other details.
-    - Recalling what is remembered is done by the text generation operators by providing them the IDs of the relevant objects to know about, as we'll see below. 
-  - `play` could be like write, but has knowledge of who the player and non-player characters in the story are. It generates text in a way that delegates agency to the player characters (does not write what they think, feel, decide, or do), giving the user the space to make those decisions.
-    - The opposite could also be true, where the user asks the AI to "play as" a character (autonomously or with direction). This allows the user to be the DM and/or players, maintaining that role isolation in the narrative beats. 
-  - `dnd` could be even more specialized than `play` (or be a family of operators), having the user have player characters merely attempt difficult actions using the D&D ruleset, and having a conversation with the AI on what checks could be used (e.g. "Roll a stealth check to try to sneak by the guards"); the human could then roll dice and use RPG character sheets of their player characters; the AI then makes a determination of level of success and moves the narrative forward accordingly. The raw exchange (all the checks and rolls) would be in a sub-node, but only the result would be part of the parent narrative (specialized summary)
-  - `chat` could spin up an agentic chat in a sub-node to talk about the current goings-on. This can be used for fun ("that was crazy!"), to explore the feeling of characters off the page (maybe then by remembering the results), to plan what happens next, etc. This would be all non-canon narrative, but still contextually kept in the simulation tree; in other words, it would have a self-closing tag with an id and no content bubbled up, e.g. `[chat:reflections/]: #`.
-  - `attach` could allow you to attach media within a node.
-
 ## Context-aware operator prompt assembly
 
 When you invoke a context-aware operator such as `write` that adds content, the engine uses fractal summarization and knowledge insertion to create a prompt that tries to maximize contextual knowledge.
