@@ -12,13 +12,12 @@ When called again while owning a pending transaction:
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 from typing import Any, ClassVar
 
 import typer
 
 from lens.core.operator import ContextAwareOperator, OperatorError
-from lens.core.project import get_active_narrative, require_lens_context
+from lens.core.project import ProjectSession
 
 # ---------------------------------------------------------------------------
 # Prompt constants
@@ -99,12 +98,12 @@ def write(
 ) -> None:
     """Generate narrative text at the cursor."""
     try:
-        git_root, project_root = require_lens_context(Path.cwd())
+        session = ProjectSession.from_cwd()
     except RuntimeError as e:
         typer.echo(f"lens write: {e}", err=True)
         raise typer.Exit(1)
 
-    narrative = get_active_narrative(project_root)
+    narrative = session.active_narrative
     if narrative is None:
         typer.echo(
             "lens write: no active narrative (run 'lens use <slug>' first)", err=True
@@ -114,8 +113,7 @@ def write(
     try:
         asyncio.run(
             WriteOperator.run_inline(
-                git_root=git_root,
-                project_root=project_root,
+                session=session,
                 narrative=narrative,
                 prompt=prompt,
                 pins=list(pin),

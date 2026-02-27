@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 
 import typer
 
 from lens.core.address import NarrativeAddress
 from lens.core.operators.edit import EditOperator
 from lens.core.operator import OperatorError
-from lens.core.project import get_active_narrative, require_lens_context, resolve_address
+from lens.core.project import ProjectSession, resolve_address
 from lens.core.exceptions import LensException
 
 app = typer.Typer(invoke_without_command=True)
@@ -49,12 +48,12 @@ def edit(
 ) -> None:
     """Rewrite a line range in a narrative node using the LLM."""
     try:
-        git_root, project_root = require_lens_context(Path.cwd())
+        session = ProjectSession.from_cwd()
     except RuntimeError as e:
         typer.echo(f"lens edit: {e}", err=True)
         raise typer.Exit(1)
 
-    narrative = get_active_narrative(project_root)
+    narrative = session.active_narrative
     if narrative is None:
         typer.echo(
             "lens edit: no active narrative (run 'lens use <slug>' first)", err=True
@@ -68,8 +67,8 @@ def edit(
         raise typer.Exit(1)
 
     try:
-        resolved = resolve_address(addr, project_root)
-        target_node = resolved.to_node(project_root)
+        resolved = resolve_address(addr, session.project_root)
+        target_node = resolved.to_node(session.project_root)
     except (ValueError, FileNotFoundError) as e:
         typer.echo(f"lens edit: {e}", err=True)
         raise typer.Exit(1)
@@ -79,14 +78,13 @@ def edit(
         raise typer.Exit(1)
 
     target_md = target_node.md_path()
-    rel_path = str(target_md.relative_to(git_root))
+    rel_path = str(target_md.relative_to(session.git_root))
     ann_id = f"e{start_line}_{end_line}"
 
     try:
         asyncio.run(
             EditOperator.run_mutation(
-                git_root=git_root,
-                project_root=project_root,
+                session=session,
                 node=target_node,
                 rel_path=rel_path,
                 ann_id=ann_id,

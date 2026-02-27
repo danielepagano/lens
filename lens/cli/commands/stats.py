@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
 import typer
 
 from lens.core.commands.stats import get_stats
 from lens.core.exceptions import LensException
+from lens.core.project import ProjectSession
 
 app = typer.Typer(invoke_without_command=True)
 
@@ -12,8 +12,9 @@ app = typer.Typer(invoke_without_command=True)
 def stats() -> None:
     """Count knowledge objects and narrative nodes."""
     try:
-        result = get_stats(Path.cwd())
-    except LensException as e:
+        session = ProjectSession.from_cwd()
+        result = get_stats(session)
+    except (RuntimeError, LensException) as e:
         typer.echo(f"lens stats: {e}", err=True)
         raise typer.Exit(1)
 

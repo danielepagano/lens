@@ -582,6 +582,7 @@ class TestSectionOperator(unittest.TestCase):
             narrative = get_active_narrative(p)
             assert narrative is not None
             from lens.core.operators.section import SectionOperator
+            from lens.core.project import ProjectSession
             from lens.core.storage import Storage
             cursor = narrative.find_cursor()
             key = cursor.key_path[-1]
@@ -594,7 +595,7 @@ class TestSectionOperator(unittest.TestCase):
             op = SectionOperator(Storage(p, owner=owner), narrative)
             with patch("lens.core.operators.section.generate", new=_fake_generate):
                 with contextlib.redirect_stdout(io.StringIO()):
-                    asyncio.run(op.end(p))
+                    asyncio.run(op.end(ProjectSession(p, p)))
             node_md = p / "narrative" / "test" / "_node.md"
             text = node_md.read_text()
             self.assertIn("[/section:event_1]: #", text)

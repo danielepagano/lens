@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
 import typer
 
 from lens.core.commands.rollback import check_rollback_status, execute_rollback
 from lens.core.exceptions import LensException
+from lens.core.project import ProjectSession
 
 app = typer.Typer(invoke_without_command=True)
 
@@ -19,8 +19,9 @@ def rollback(
 ) -> None:
     """Discard the pending transaction, reverting all unstaged changes."""
     try:
-        status = check_rollback_status(Path.cwd())
-    except LensException as e:
+        session = ProjectSession.from_cwd()
+        status = check_rollback_status(session)
+    except (RuntimeError, LensException) as e:
         typer.echo(f"lens rollback: {e}", err=True)
         raise typer.Exit(1)
 
@@ -43,7 +44,7 @@ def rollback(
         typer.confirm("Roll back?", abort=True)
 
     try:
-        execute_rollback(Path.cwd())
+        execute_rollback(session)
         if status.is_mutation:
             typer.echo("Compensating transaction applied.")
         else:

@@ -17,6 +17,7 @@ from lens.core.context import CrawlResult
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.write import WriteOperator
+from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 
@@ -73,8 +74,7 @@ def _run_inline(
             with contextlib.redirect_stderr(io.StringIO()):
                 asyncio.run(
                     WriteOperator.run_inline(
-                        git_root=root,
-                        project_root=root,
+                        session=ProjectSession(root, root),
                         narrative=narrative,
                         prompt=prompt,
                         pins=pins or [],
@@ -241,8 +241,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             with self.assertRaises(OperatorError):
                 asyncio.run(
                     WriteOperator.run_inline(
-                        git_root=root,
-                        project_root=root,
+                        session=ProjectSession(root, root),
                         narrative=narrative,
                         prompt=None,
                         pins=[],

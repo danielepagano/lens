@@ -11,6 +11,7 @@ from lens.core.address import NarrativeAddress
 from lens.core.commands.rollback import compensating_rollback
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.edit import EditOperator
+from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 
@@ -140,7 +141,7 @@ class TestCompensatingRollback(unittest.TestCase):
             op.propose_mutation(narrative.md_path(), "e1", "PROPOSED")
             
             from lens.core.commands.rollback import check_rollback_status
-            status = check_rollback_status(root)
+            status = check_rollback_status(ProjectSession(root, root))
             self.assertTrue(status.has_pending)
             self.assertTrue(status.is_mutation)
             self.assertIsNotNone(status.owner)
@@ -150,16 +151,16 @@ class TestCompensatingRollback(unittest.TestCase):
     def test_check_rollback_status_section_not_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            
+
             # Create a pending transaction for a section (not a mutation)
             # We can simulate this by instantiating SectionOperator and calling start()
             from lens.core.operators.section import SectionOperator
             owner = SectionOperator.owner_id("sec1", "narrative/test/_node.md")
             op = SectionOperator(Storage(root, owner=owner), narrative)
             op.start("sec1")
-            
+
             from lens.core.commands.rollback import check_rollback_status
-            status = check_rollback_status(root)
+            status = check_rollback_status(ProjectSession(root, root))
             self.assertTrue(status.has_pending)
             self.assertFalse(status.is_mutation)
             self.assertIsNotNone(status.owner)

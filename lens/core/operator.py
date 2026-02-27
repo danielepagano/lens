@@ -36,6 +36,7 @@ from lens.core.annotations import (
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.llm import LLMError, generate
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
+from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 
@@ -574,8 +575,7 @@ class ContextAwareOperator(Operator):
     async def run_inline(
         cls,
         *,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         narrative: NarrativeNode,
         prompt: str | None,
         pins: list[str],
@@ -590,9 +590,9 @@ class ContextAwareOperator(Operator):
         """
         cursor = narrative.find_cursor()
         cursor_md = cursor.md_path()
-        rel_path = str(cursor_md.relative_to(git_root))
+        rel_path = str(cursor_md.relative_to(session.git_root))
 
-        probe_storage = Storage(git_root)
+        probe_storage = session.new_storage()
         has_pending = probe_storage.has_pending()
         pending_owner = probe_storage.detect_pending_owner() if has_pending else None
 
@@ -612,30 +612,29 @@ class ContextAwareOperator(Operator):
                 llm_id and llm_id != existing_ann.params.get("llm_id")
             ):
                 await cls._do_update_retry(
-                    git_root, project_root, narrative, cursor, rel_path,
+                    session, narrative, cursor, rel_path,
                     existing_ann, prompt, pins, unpins, llm_id,
                 )
             elif retry:
                 await cls._do_retry(
-                    git_root, project_root, narrative, cursor, rel_path,
+                    session, narrative, cursor, rel_path,
                     existing_ann,
                 )
             else:
                 await cls._do_continue(
-                    git_root, project_root, narrative, cursor, rel_path,
+                    session, narrative, cursor, rel_path,
                     existing_ann,
                 )
         else:
             await cls._do_fresh_inline(
-                git_root, project_root, narrative, cursor, rel_path,
+                session, narrative, cursor, rel_path,
                 prompt, pins, unpins, llm_id,
             )
 
     @classmethod
     async def _do_fresh_inline(
         cls,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         narrative: NarrativeNode,
         cursor: NarrativeNode,
         rel_path: str,
@@ -659,29 +658,28 @@ class ContextAwareOperator(Operator):
         ann_line = cls.ann_line_for_append(current_text)
         owner = cls.owner_id(None, rel_path, line=ann_line)
 
-        probe_op = cls(Storage(git_root), narrative)
+        probe_op = cls(session.new_storage(), narrative)
         tag = probe_op.build_open_tag(None, ann_params)
 
         crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
         messages = probe_op.build_messages(crawl_result, ann_params)
 
         try:
-            content = await cls.stream_output(messages, project_root, llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
         if not content.strip():
             raise OperatorError("no content generated")
 
-        op = cls(Storage(git_root, owner=owner), narrative)
+        op = cls(session.new_storage(owner=owner), narrative)
         op.write_start(cursor, tag, content)
         print(f"Written to {cursor.path_str()}", file=sys.stderr)
 
     @classmethod
     async def _do_continue(
         cls,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         narrative: NarrativeNode,
         cursor: NarrativeNode,
         rel_path: str,
@@ -693,13 +691,13 @@ class ContextAwareOperator(Operator):
         ann_llm_id: str | None = existing_ann.params.get("llm_id")
 
         owner = cls._owner_for_ann(existing_ann, rel_path)
-        op = cls(Storage(git_root, owner=owner), narrative)
+        op = cls(session.new_storage(owner=owner), narrative)
 
         crawl_result = crawl(cursor, extra_pins=ann_pins, extra_unpins=ann_unpins)
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
-            content = await cls.stream_output(messages, project_root, ann_llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -712,8 +710,7 @@ class ContextAwareOperator(Operator):
     @classmethod
     async def _do_retry(
         cls,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         narrative: NarrativeNode,
         cursor: NarrativeNode,
         rel_path: str,
@@ -725,7 +722,7 @@ class ContextAwareOperator(Operator):
         ann_llm_id: str | None = existing_ann.params.get("llm_id")
 
         owner = cls._owner_for_ann(existing_ann, rel_path)
-        op = cls(Storage(git_root, owner=owner), narrative)
+        op = cls(session.new_storage(owner=owner), narrative)
         op.write_discard(cursor, existing_ann)
 
         crawl_result = crawl(cursor, extra_pins=ann_pins, extra_unpins=ann_unpins)
@@ -736,7 +733,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
-            content = await cls.stream_output(messages, project_root, ann_llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -749,8 +746,7 @@ class ContextAwareOperator(Operator):
     @classmethod
     async def _do_update_retry(
         cls,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         narrative: NarrativeNode,
         cursor: NarrativeNode,
         rel_path: str,
@@ -776,7 +772,7 @@ class ContextAwareOperator(Operator):
         eff_llm_id: str | None = new_params.get("llm_id")
 
         owner = cls._owner_for_ann(existing_ann, rel_path)
-        op = cls(Storage(git_root, owner=owner), narrative)
+        op = cls(session.new_storage(owner=owner), narrative)
         op.write_discard(cursor, existing_ann, updated_params=new_params)
 
         crawl_result = crawl(cursor, extra_pins=eff_pins, extra_unpins=eff_unpins)
@@ -787,7 +783,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, new_params)
 
         try:
-            content = await cls.stream_output(messages, project_root, eff_llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -805,8 +801,7 @@ class ContextAwareOperator(Operator):
     async def run_mutation(
         cls,
         *,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         node: NarrativeNode,
         rel_path: str,
         ann_id: str,
@@ -827,7 +822,7 @@ class ContextAwareOperator(Operator):
         owner = cls.owner_id(ann_id, rel_path)
         narrative_root = NarrativeNode(narrative_root=node.narrative_root, key_path=())
 
-        probe_storage = Storage(git_root)
+        probe_storage = session.new_storage()
         has_pending = probe_storage.has_pending()
         pending_owner = probe_storage.detect_pending_owner() if has_pending else None
         is_owner = (pending_owner == owner) if has_pending else False
@@ -841,13 +836,13 @@ class ContextAwareOperator(Operator):
 
         if retry:
             await cls._do_retry_mutation(
-                git_root, project_root, node, narrative_root, file_path,
+                session, node, narrative_root, file_path,
                 rel_path, ann_id, owner, pins, unpins, llm_id, params,
                 probe_storage,
             )
         else:
             await cls._do_fresh_mutation(
-                git_root, project_root, node, narrative_root, file_path,
+                session, node, narrative_root, file_path,
                 rel_path, ann_id, owner, start_line, end_line,
                 pins, unpins, llm_id, params,
             )
@@ -855,8 +850,7 @@ class ContextAwareOperator(Operator):
     @classmethod
     async def _do_fresh_mutation(
         cls,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         node: NarrativeNode,
         narrative_root: NarrativeNode,
         file_path: Path,
@@ -888,7 +882,7 @@ class ContextAwareOperator(Operator):
             "\n".join(lines[: start_line - 1])
         ).strip()
 
-        op = cls(Storage(git_root, owner=owner), narrative_root)
+        op = cls(session.new_storage(owner=owner), narrative_root)
         # params stored in claim tag contain only the prompt, not the target
         # (the target is always recoverable from between the claim tags on retry)
         op.start_mutation(file_path, start_line, end_line, ann_id, params)
@@ -904,7 +898,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, build_params)
 
         try:
-            content = await cls.stream_output(messages, project_root, llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
@@ -920,8 +914,7 @@ class ContextAwareOperator(Operator):
     @classmethod
     async def _do_retry_mutation(
         cls,
-        git_root: Path,
-        project_root: Path,
+        session: ProjectSession,
         node: NarrativeNode,
         narrative_root: NarrativeNode,
         file_path: Path,
@@ -967,7 +960,7 @@ class ContextAwareOperator(Operator):
             raise OperatorError("no prompt found in claim tag and none provided")
         effective_params["target"] = selected_text
 
-        op = cls(Storage(git_root, owner=owner), narrative_root)
+        op = cls(session.new_storage(owner=owner), narrative_root)
         crawl_result = crawl(node, extra_pins=pins, extra_unpins=unpins)
         crawl_result = CrawlResult(
             knowledge=crawl_result.knowledge,
@@ -977,7 +970,7 @@ class ContextAwareOperator(Operator):
         messages = op.build_messages(crawl_result, effective_params)
 
         try:
-            content = await cls.stream_output(messages, project_root, llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 

@@ -7,7 +7,7 @@ import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 import tomli_w
 
@@ -85,24 +85,38 @@ class KnowledgeObject:
 
 
 class KnowledgeStore:
+    _registry: ClassVar[dict[Path, KnowledgeStore]] = {}
+
     def __init__(self, root: Path, storage: Storage | None = None) -> None:
         self._root = root
         self._knowledge = root / "knowledge"
         self._tags_path = self._knowledge / "tags.toml"
         self._tags_cache: tuple[dict[str, set[str]], dict[str, set[str]]] | None = None
-        self._storage = storage
+        self._ext_storage = storage
 
-    def _ensure_storage(self) -> Storage:
-        """Return the current Storage instance, creating one lazily if needed.
+    @classmethod
+    def for_project(cls, project_root: Path, storage: Storage | None = None) -> KnowledgeStore:
+        key = project_root.resolve()
+        if key not in cls._registry:
+            cls._registry[key] = cls(project_root, storage=storage)
+        return cls._registry[key]
 
-        ``self._root`` is already the validated project root; we only need to
-        locate the enclosing git repository.
+    @classmethod
+    def clear_registry(cls) -> None:
+        """Clear all cached instances. Intended for tests."""
+        cls._registry.clear()
+
+    def _write_storage(self) -> Storage:
+        """Return a Storage for KB writes.
+
+        If an external Storage was provided at construction, return it.
+        Otherwise create a fresh one each call so ``_ownership_checked`` is
+        never stale.
         """
-        if self._storage is not None:
-            return self._storage
+        if self._ext_storage is not None:
+            return self._ext_storage
         from lens.core.project import find_git_root_from
-        self._storage = Storage(find_git_root_from(self._root))
-        return self._storage
+        return Storage(find_git_root_from(self._root))
 
     def _object_path(self, type_name: str, key: str) -> Path:
         return self._knowledge / type_name / f"{key}.md"
@@ -155,7 +169,7 @@ class KnowledgeStore:
             payload["objects"] = objects_serial
         buf = io.BytesIO()
         tomli_w.dump(cast(Any, payload), buf)
-        self._ensure_storage().write_file_bytes(self._tags_path, buf.getvalue())
+        self._write_storage().write_file_bytes(self._tags_path, buf.getvalue())
 
     def store_object(
         self,
@@ -175,7 +189,7 @@ class KnowledgeStore:
                 return
             content = ""
 
-        self._ensure_storage().write_file(path, content)
+        self._write_storage().write_file(path, content)
 
     def get_template(self, type_name: str) -> str | None:
         path = self._object_path(type_name.lower(), "_template")
@@ -187,7 +201,7 @@ class KnowledgeStore:
         if not _is_valid_token(type_name):
             raise ValueError(f"Invalid type format: {type_name}")
         path = self._object_path(type_name.lower(), "_template")
-        self._ensure_storage().write_file(path, content)
+        self._write_storage().write_file(path, content)
 
     def get_tags(self, canonical_id: str) -> list[str]:
         _, obj_to_tags = self._load_tags()
@@ -326,7 +340,7 @@ class KnowledgeStore:
     def delete_object(self, canonical_id: str) -> None:
         type_name, key = parse_id(canonical_id)
         path = self._object_path(type_name, key)
-        self._ensure_storage().delete_file(path)
+        self._write_storage().delete_file(path)
 
         tag_to_objs, obj_to_tags = self._load_tags()
         for _, tags in list(obj_to_tags.items()):

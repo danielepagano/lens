@@ -201,10 +201,18 @@ class Storage:
                 text = abs_path.read_text(encoding="utf-8")
             except OSError:
                 continue
+            # Scan for the *last* annotation match: the owner annotation is
+            # always appended at the tail of the file (cursor position), so
+            # earlier annotations (e.g. a previously-closed [write...] block
+            # copied from the old leaf during leaf-to-folder promotion) must
+            # not shadow the real owner annotation at the end.
+            last_addr: NarrativeAddress | None = None
             for lineno, line in enumerate(text.splitlines(), 1):
                 addr = _match_annotation_owner(line, rel_path, lineno)
                 if addr is not None:
-                    return addr
+                    last_addr = addr
+            if last_addr is not None:
+                return last_addr
         return None
 
     # ------------------------------------------------------------------

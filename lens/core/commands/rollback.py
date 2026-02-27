@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from lens.core.annotations import parse_annotations
-from lens.core.project import require_lens_context
+from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.core.exceptions import LensException
 
@@ -18,31 +18,21 @@ class RollbackStatus:
     owner: NarrativeAddress | None
     is_mutation: bool
 
-def check_rollback_status(cwd: Path) -> RollbackStatus:
-    try:
-        git_root, _ = require_lens_context(cwd)
-    except RuntimeError as e:
-        raise LensException(str(e)) from e
-
-    storage = Storage(git_root)
+def check_rollback_status(session: ProjectSession) -> RollbackStatus:
+    storage = session.new_storage()
     has_pending = storage.has_pending()
     owner = storage.detect_pending_owner() if has_pending else None
     is_mutation = owner is not None and owner.operator == "edit"
     return RollbackStatus(has_pending, owner, is_mutation)
 
-def execute_rollback(cwd: Path) -> None:
-    try:
-        git_root, project_root = require_lens_context(cwd)
-    except RuntimeError as e:
-        raise LensException(str(e)) from e
-
-    storage = Storage(git_root)
+def execute_rollback(session: ProjectSession) -> None:
+    storage = session.new_storage()
     owner = storage.detect_pending_owner()
     is_mutation = owner is not None and owner.operator == "edit"
 
     if is_mutation:
         assert owner is not None
-        compensating_rollback(storage, owner, project_root)
+        compensating_rollback(storage, owner, session.project_root)
     else:
         storage.rollback()
 

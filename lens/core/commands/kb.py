@@ -9,7 +9,7 @@ def get_store() -> KnowledgeStore:
         root = find_project_root()
     except RuntimeError as e:
         raise LensException(str(e)) from e
-    return KnowledgeStore(root)
+    return KnowledgeStore.for_project(root)
 
 def kb_store(id: str, content: str | None, use_template: bool) -> None:
     try:

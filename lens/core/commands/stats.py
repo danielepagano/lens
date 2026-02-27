@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from lens.core.address import NarrativeAddress
-from lens.core.project import get_active_narrative, require_lens_context
-from lens.core.storage import Storage
-from lens.core.exceptions import LensException
+from lens.core.project import ProjectSession
 
 @dataclass
 class StatsResult:
@@ -17,13 +14,8 @@ class StatsResult:
     has_pending: bool
     pending_owner: NarrativeAddress | None
 
-def get_stats(cwd: Path) -> StatsResult:
-    try:
-        git_root, project_root = require_lens_context(cwd)
-    except RuntimeError as e:
-        raise LensException(str(e)) from e
-
-    root = project_root
+def get_stats(session: ProjectSession) -> StatsResult:
+    root = session.project_root
     knowledge = root / "knowledge"
     kb_count = (
         sum(1 for p in knowledge.rglob("*.md") if p.name != "_template.md")
@@ -40,10 +32,10 @@ def get_stats(cwd: Path) -> StatsResult:
                 node_count = sum(1 for _ in d.rglob("*.md"))
                 trees.append((d.name, node_count))
 
-    active = get_active_narrative(root)
+    active = session.active_narrative
     cursor_addr = active.find_cursor_address() if active is not None else None
 
-    storage = Storage(git_root)
+    storage = session.new_storage()
     has_pending = storage.has_pending()
     pending_owner = storage.detect_pending_owner() if has_pending else None
 

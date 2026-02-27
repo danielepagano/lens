@@ -16,6 +16,7 @@ from unittest.mock import patch
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.edit import EditOperator
+from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 
@@ -81,8 +82,7 @@ def _run_mutation(
             with contextlib.redirect_stderr(io.StringIO()):
                 asyncio.run(
                     EditOperator.run_mutation(
-                        git_root=root,
-                        project_root=root,
+                        session=ProjectSession(root, root),
                         node=node,
                         rel_path=rel_path,
                         ann_id=ann_id,
@@ -165,8 +165,7 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             with self.assertRaises(OperatorError):
                 asyncio.run(
                     EditOperator.run_mutation(
-                        git_root=root,
-                        project_root=root,
+                        session=ProjectSession(root, root),
                         node=narrative,
                         rel_path=self._REL_PATH,
                         ann_id="e1_1",
@@ -231,8 +230,7 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             with self.assertRaises(OperatorError):
                 asyncio.run(
                     EditOperator.run_mutation(
-                        git_root=root,
-                        project_root=root,
+                        session=ProjectSession(root, root),
                         node=narrative,
                         rel_path=self._REL_PATH,
                         ann_id="e1_1",
@@ -254,8 +252,7 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             with self.assertRaises(OperatorError):
                 asyncio.run(
                     EditOperator.run_mutation(
-                        git_root=root,
-                        project_root=root,
+                        session=ProjectSession(root, root),
                         node=narrative,
                         rel_path=self._REL_PATH,
                         ann_id="e1_1",

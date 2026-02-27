@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.section import SectionOperator
+from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 
@@ -91,7 +92,7 @@ def _run_section_range(
                     id=section_id,
                     start_line=start_line,
                     end_line=end_line,
-                    project_root=root,
+                    session=ProjectSession(root, root),
                     pins=[],
                     unpins=[],
                     llm_id=None,

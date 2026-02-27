@@ -5,10 +5,14 @@ from __future__ import annotations
 import re
 import tomllib
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from lens.core.address import NarrativeAddress
 from lens.core.narrative import NarrativeNode
+
+if TYPE_CHECKING:
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.storage import Storage
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
@@ -91,6 +95,36 @@ def get_active_narrative(project_root: Path) -> NarrativeNode | None:
     if not narrative_dir.exists() or not narrative_dir.is_dir():
         return None
     return NarrativeNode(narrative_root=narrative_dir, key_path=())
+
+
+class ProjectSession:
+    """Single source of truth for a Lens project's shared state.
+
+    Holds (git_root, project_root) and provides:
+    - .kb  — the singleton KnowledgeStore (tags cache persists for the lifetime
+             of this process)
+    - .new_storage(owner)  — factory for per-operation Storage instances
+    """
+
+    def __init__(self, git_root: Path, project_root: Path) -> None:
+        self.git_root = git_root
+        self.project_root = project_root
+        self.active_narrative: NarrativeNode | None = get_active_narrative(project_root)
+
+    @property
+    def kb(self) -> KnowledgeStore:
+        from lens.core.knowledge import KnowledgeStore
+        return KnowledgeStore.for_project(self.project_root)
+
+    def new_storage(self, owner: NarrativeAddress | None = None) -> Storage:
+        """Create a fresh Storage for one operation."""
+        from lens.core.storage import Storage
+        return Storage(self.git_root, owner=owner)
+
+    @classmethod
+    def from_cwd(cls) -> ProjectSession:
+        git_root, project_root = require_lens_context(Path.cwd())
+        return cls(git_root, project_root)
 
 
 def resolve_address(

@@ -44,7 +44,7 @@ def crawl(
     include_narrative: bool = True,
 ) -> CrawlResult:
     project_root = node.narrative_root.parent.parent
-    kb_store = KnowledgeStore(project_root)
+    kb_store = KnowledgeStore.for_project(project_root)
     ancestors = _ancestor_chain(node)
     max_level = len(ancestors) - 1
 

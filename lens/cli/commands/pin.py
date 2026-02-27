@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import typer
 
 from lens.core.commands.pin import (
@@ -11,6 +9,7 @@ from lens.core.commands.pin import (
     pin_unblock,
 )
 from lens.core.exceptions import LensException
+from lens.core.project import ProjectSession
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -24,7 +23,8 @@ def add(
 ) -> None:
     """Add knowledge objects to kb_pin at the target node."""
     try:
-        count, target_path = pin_add(Path.cwd(), id, node_pos, extra_ids, node_opt)
+        session = ProjectSession.from_cwd()
+        count, target_path = pin_add(session, id, node_pos, extra_ids, node_opt)
         typer.echo(f"Pinned {count} object(s) to {target_path}")
     except LensException as e:
         if "invalid ID" in str(e) or "provide at least one" in str(e):
@@ -43,7 +43,8 @@ def remove(
 ) -> None:
     """Remove knowledge objects from kb_pin."""
     try:
-        count, target_path = pin_remove(Path.cwd(), id, node_pos, extra_ids, node_opt)
+        session = ProjectSession.from_cwd()
+        count, target_path = pin_remove(session, id, node_pos, extra_ids, node_opt)
         typer.echo(f"Removed {count} pin(s) from {target_path}")
     except LensException as e:
         if "invalid ID" in str(e) or "provide at least one" in str(e):
@@ -62,7 +63,8 @@ def block(
 ) -> None:
     """Add knowledge objects to kb_unpin (cancel ancestor pins)."""
     try:
-        count, target_path = pin_block(Path.cwd(), id, node_pos, extra_ids, node_opt)
+        session = ProjectSession.from_cwd()
+        count, target_path = pin_block(session, id, node_pos, extra_ids, node_opt)
         typer.echo(f"Blocked {count} object(s) at {target_path}")
     except LensException as e:
         if "invalid ID" in str(e) or "provide at least one" in str(e):
@@ -81,7 +83,8 @@ def unblock(
 ) -> None:
     """Remove knowledge objects from kb_unpin."""
     try:
-        count, target_path = pin_unblock(Path.cwd(), id, node_pos, extra_ids, node_opt)
+        session = ProjectSession.from_cwd()
+        count, target_path = pin_unblock(session, id, node_pos, extra_ids, node_opt)
         typer.echo(f"Unblocked {count} object(s) at {target_path}")
     except LensException as e:
         if "invalid ID" in str(e) or "provide at least one" in str(e):

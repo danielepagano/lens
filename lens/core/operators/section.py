@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import asyncio
 import shutil
-from pathlib import Path
 from collections.abc import Callable, Awaitable
 from typing import ClassVar
 
@@ -28,8 +27,7 @@ from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.llm import LLMError, generate
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator
-from lens.core.project import get_active_narrative, require_lens_context, resolve_address, validate_slug
-from lens.core.storage import Storage
+from lens.core.project import ProjectSession, resolve_address, validate_slug
 
 SYSTEM_PROMPT = (
     "You are a skilled editor. Write a concise summary of the provided section,"
@@ -58,7 +56,7 @@ class SectionOperator(Operator):
             raise ValueError(f"section '{id}' already exists")
         self.create_subnode(cursor, id)
 
-    async def end(self, project_root: Path, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None) -> None:
+    async def end(self, session: ProjectSession, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None) -> None:
         """Close the current section by generating an LLM summary and appending it."""
         cursor = self.narrative_root.find_cursor()
         if not cursor.key_path:
@@ -90,7 +88,7 @@ class SectionOperator(Operator):
         chunks: list[str] = []
         interrupted = False
         try:
-            async for chunk in generate(messages, project_root, llm_id=llm_id):
+            async for chunk in generate(messages, session.project_root, llm_id=llm_id):
                 print(chunk, end="", flush=True)
                 chunks.append(chunk)
         except KeyboardInterrupt:
@@ -112,7 +110,7 @@ class SectionOperator(Operator):
         id: str,
         start_line: int,
         end_line: int,
-        project_root: Path,
+        session: ProjectSession,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
@@ -221,7 +219,7 @@ class SectionOperator(Operator):
         chunks: list[str] = []
         interrupted = False
         try:
-            async for chunk in generate(messages, project_root, llm_id=llm_id):
+            async for chunk in generate(messages, session.project_root, llm_id=llm_id):
                 print(chunk, end="", flush=True)
                 chunks.append(chunk)
         except KeyboardInterrupt:
@@ -337,17 +335,17 @@ def section(
     lens section <id> <address> <start> <end>   section a line range after the fact
     """
     try:
-        git_root, project_root = require_lens_context(Path.cwd())
+        session = ProjectSession.from_cwd()
     except RuntimeError as e:
         typer.echo(f"lens section: {e}", err=True)
         raise typer.Exit(1)
-    narrative = get_active_narrative(project_root)
+    narrative = session.active_narrative
     if narrative is None:
         typer.echo("lens section: no active narrative (run 'lens use <slug>' first)", err=True)
         raise typer.Exit(1)
 
     if end:
-        _section_end(git_root, project_root, narrative, llm_id=llm)
+        _section_end(session, narrative, llm_id=llm)
     elif address is not None or start_line is not None or end_line is not None:
         # After-the-fact range sectioning: all three extra args are required.
         if id_or_end is None or address is None or start_line is None or end_line is None:
@@ -357,8 +355,7 @@ def section(
             )
             raise typer.Exit(1)
         _section_range(
-            git_root,
-            project_root,
+            session,
             narrative,
             id=id_or_end.strip(),
             address=address,
@@ -372,10 +369,10 @@ def section(
         if id_or_end is None:
             typer.echo("lens section: provide a section ID or use --end / -e", err=True)
             raise typer.Exit(1)
-        _section_start(git_root, narrative, id_or_end.strip())
+        _section_start(session, narrative, id_or_end.strip())
 
 
-def _section_start(git_root: Path, narrative: NarrativeNode, id: str) -> None:
+def _section_start(session: ProjectSession, narrative: NarrativeNode, id: str) -> None:
     if not id:
         typer.echo("Error: section ID cannot be empty.", err=True)
         raise typer.Exit(1)
@@ -388,9 +385,9 @@ def _section_start(git_root: Path, narrative: NarrativeNode, id: str) -> None:
 
     cursor = narrative.find_cursor()
     cursor_md = cursor.md_path()
-    rel = str(cursor_md.relative_to(git_root))
+    rel = str(cursor_md.relative_to(session.git_root))
     owner = SectionOperator.owner_id(id, rel)
-    storage = Storage(git_root, owner=owner)
+    storage = session.new_storage(owner=owner)
     op = SectionOperator(storage, narrative)
 
     try:
@@ -402,8 +399,7 @@ def _section_start(git_root: Path, narrative: NarrativeNode, id: str) -> None:
 
 
 def _section_end(
-    git_root: Path,
-    project_root: Path,
+    session: ProjectSession,
     narrative: NarrativeNode,
     llm_id: str | None = None,
 ) -> None:
@@ -418,13 +414,13 @@ def _section_end(
         key_path=parent_key_path,
     )
     parent_md = parent.md_path()
-    rel = str(parent_md.relative_to(git_root))
+    rel = str(parent_md.relative_to(session.git_root))
     owner = SectionOperator.owner_id(key, rel)
-    storage = Storage(git_root, owner=owner)
+    storage = session.new_storage(owner=owner)
     op = SectionOperator(storage, narrative)
 
     try:
-        asyncio.run(op.end(project_root, llm_id=llm_id))
+        asyncio.run(op.end(session, llm_id=llm_id))
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -438,8 +434,7 @@ def _section_end(
 
 
 def _section_range(
-    git_root: Path,
-    project_root: Path,
+    session: ProjectSession,
     narrative: NarrativeNode,
     id: str,
     address: str,
@@ -466,8 +461,8 @@ def _section_range(
         raise typer.Exit(1)
 
     try:
-        resolved = resolve_address(addr, project_root)
-        target_node = resolved.to_node(project_root)
+        resolved = resolve_address(addr, session.project_root)
+        target_node = resolved.to_node(session.project_root)
     except (ValueError, FileNotFoundError) as e:
         typer.echo(f"lens section: {e}", err=True)
         raise typer.Exit(1)
@@ -477,9 +472,9 @@ def _section_range(
         raise typer.Exit(1)
 
     target_md = target_node.md_path()
-    rel_path = str(target_md.relative_to(git_root))
+    rel_path = str(target_md.relative_to(session.git_root))
     owner = SectionOperator.owner_id(id, rel_path)
-    storage = Storage(git_root, owner=owner)
+    storage = session.new_storage(owner=owner)
     op = SectionOperator(storage, narrative)
 
     try:
@@ -489,7 +484,7 @@ def _section_range(
                 id=id,
                 start_line=start_line,
                 end_line=end_line,
-                project_root=project_root,
+                session=session,
                 pins=pins,
                 unpins=unpins,
                 llm_id=llm_id,
