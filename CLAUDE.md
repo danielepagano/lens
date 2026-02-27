@@ -26,6 +26,10 @@ python -m unittest lens.test.test_annotations.TestAnnotations.test_method_name
 poe lens <command>
 ```
 
+## Definition of done
+
+Always run `poe check` before considering a task complete. It runs lint, typecheck, and tests in sequence — all three must pass.
+
 ## Architecture
 
 Lens is a CLI tool for managing AI-assisted narrative creation. A **Lens project** is a Git repository with a `lens.toml`, `narrative/`, and `knowledge/` directory.
