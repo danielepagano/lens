@@ -1,10 +1,21 @@
 # Lens Backlog
 
-## Lens Beta: Getting it to play D&D
+## General Backlog  
+- **Copying and renaming** kb items to new id's (any object type... we're not the template police)
+- **KB Datasets**: a dataset is just a knowledge tree inside Lens itself (not the project... easily more modular one day). Then:
+  - Projects can import zero or more datasets using `lens.toml`
+  - Whenever we `look up` a kb id, we look first in the project, then in any imported data sets (later datasets in the import list win, if a key overlaps, so we can layer knowledge)
+  - Whenever we `save` a kb item, we store it in the project, since datasets are immutable. This lets us safely customize datasets (overwrite and hide original), or use objects within as templates for "more specific than object-type" things (copy a dataset item into project with a different id)
+  - Lens operators can also be tied to dataset (only be activated if the dataset is used). This lets us use a D&D operator that knows how to run combat only if we have the data to back it, and the operator can _rely_ on specific data being present because it's in the source code, so it can self-pin items as needed
+- **Operator skill**: let the LLM switch operators  
+  - Use an LLM API that supports skills and ensure it works
+  - Define a skill to load an operator: type, id (may be optional), parameters for it, whether if the LLM response text is part of the narrative (hand off to this operator now) or is to be dropped (thinking mode without using thinking mode), and whether the original operator should be re-invoked with the added narrative (and maybe further instructions) after that sub-agent is completed (agentic loop)
+  - Create prompt snippets to tell models if/when to call each available operator that makes sense for this feature
+  - Have a response pre-processor for write-like operator that detects skill calls and does the actual operator calling; this can chain multiple LLM calls, so it's effectively an agentic loop and may need safeguards
+- **Tag kb items with `@` mentions in prompts**
+  - In @lens/core/operator.py whenever we are processing a command with pin/unpin and a prompt, look for the following pattern: the character "@", a valid @lens/core/knowledge.py canonical_id (so overall `@`+`_VALUE_PATTERN`+`.`+`_KEY_PATTERN`) and then whitespace or end of line/string. If you match that pattern, take the value after @, validate that the id matches to an object that exists without retrieving it (new knowledge store method?) and if so add the id to the pins of that operator before we perform a context-aware crawl. In other words it's equivalent to saying `--pin <id>` in a CLI command, but can happen organically in the request
 
-*Implement operators and stress-test, refine, and bugfix what we have so far. Find the fun.*
-
-Operator ideas:
+## Operator Backlog  
   - `remember` could integrate some aspects of a given text into a new or existing knowledge object.
     - For example, one could be talking with an NPC and then ask the operator to update `person.name`: the operator looks at the person template to see what kind of facts this knowledge item tracks, and then gathers what we learned into that object, either by creating it or integrating new knowledge. 
     - The user could apply the operator to the same text towards multiple objects, and only the details relevant to that object would be captured. For example, a scene can be remembered for the city location, market location, and a specific merchant encountered, but not for other merchants or other details.
@@ -20,7 +31,7 @@ Operator ideas:
   - `attach` could allow you to attach media within a node: images of characters, maps, reference; you can also use model to look at images and generate text.
     - _Why?_ Mostly useful after web app, just because seems well-rounded, I like making art, and for Nook parity... if I feel like it.
 
-## Lens V1 - Web App
+## Lens Web App Sequencing
 
 *Now I can do this from my phone!*
 
