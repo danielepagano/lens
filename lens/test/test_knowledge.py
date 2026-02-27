@@ -374,6 +374,10 @@ class TestParseId(unittest.TestCase):
         t, k = parse_id("place.nyc")
         self.assertEqual((t, k), ("place", "nyc"))
 
+    def test_valid_id_multi_dot(self) -> None:
+        t, k = parse_id("place.new.york")
+        self.assertEqual((t, k), ("place", "new.york"))
+
     def test_invalid_id(self) -> None:
         with self.assertRaises(ValueError):
             parse_id("invalid")

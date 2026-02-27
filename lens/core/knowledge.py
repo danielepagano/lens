@@ -14,10 +14,15 @@ import tomli_w
 from lens.core.storage import Storage
 
 _VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+$")
 
 
 def _is_valid_token(value: str) -> bool:
     return bool(_VALUE_PATTERN.fullmatch(value))
+
+
+def _is_valid_key(value: str) -> bool:
+    return bool(_KEY_PATTERN.fullmatch(value))
 
 
 def _validate_tag(tag: str) -> bool:
@@ -49,7 +54,7 @@ def parse_id(canonical_id: str, default_type: str | None = None) -> tuple[str, s
 
     if not _is_valid_token(type_part):
         raise ValueError(f"Invalid type format: {type_part}")
-    if not _is_valid_token(key_part):
+    if not _is_valid_key(key_part):
         raise ValueError(f"Invalid key format: {key_part}")
 
     return type_part, key_part
