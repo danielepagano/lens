@@ -86,7 +86,7 @@ lens rollback # discard or compensate a pending operator transaction
 | `delete`  | Delete object and its references |
 | `get`     | Fetch objects (append `!` for linked) |
 
-Run `lens kb <command> --help` for details.
+Run `lens kb <command> --help` for details. Note that all KB ID's an tags normalize to lowercase.
 
 ### Knowledge pins (`lens pin`)
 

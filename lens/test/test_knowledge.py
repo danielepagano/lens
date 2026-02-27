@@ -50,7 +50,7 @@ class TestKnowledgeStore(unittest.TestCase):
         self.assertEqual(path.read_text(), "A big city.")
 
     def test_store_no_content_creates_empty(self) -> None:
-        self.store.store_object("place.nyc", None)
+        self.store.store_object("place.NYC", None)
         path = self.root / "knowledge" / "place" / "nyc.md"
         self.assertTrue(path.exists())
         self.assertEqual(path.read_text(), "")
@@ -70,7 +70,7 @@ class TestKnowledgeStore(unittest.TestCase):
 
     def test_template_create_and_update(self) -> None:
         self.store.set_template("npc", "First template")
-        self.assertEqual(self.store.get_template("npc"), "First template")
+        self.assertEqual(self.store.get_template("NPC"), "First template")
         self.store.set_template("npc", "Updated template")
         self.assertEqual(self.store.get_template("npc"), "Updated template")
 
@@ -83,12 +83,12 @@ class TestKnowledgeStore(unittest.TestCase):
 
     def test_tags_add_remove(self) -> None:
         self.store.store_object("place.nyc", "City")
-        self.store.add_tags("place.nyc", ["featured", "kind:region"])
+        self.store.add_tags("place.NYC", ["FEATURED", "kind:region"])
         self.assertEqual(
             set(self.store.get_tags("place.nyc")),
             {"featured", "kind:region"},
         )
-        self.store.remove_tags("place.nyc", ["featured"])
+        self.store.remove_tags("place.nyc", ["FEATURED"])
         self.assertEqual(set(self.store.get_tags("place.nyc")), {"kind:region"})
 
     def test_tags_persist_across_store(self) -> None:
@@ -377,6 +377,14 @@ class TestParseId(unittest.TestCase):
     def test_valid_id_multi_dot(self) -> None:
         t, k = parse_id("place.new.york")
         self.assertEqual((t, k), ("place", "new.york"))
+
+    def test_valid_id_underscore(self) -> None:
+        t, k = parse_id("place.new_york")
+        self.assertEqual((t, k), ("place", "new_york"))
+
+    def test_valid_id_normalize_case(self) -> None:
+        t, k = parse_id("place.NYC")
+        self.assertEqual((t, k), ("place", "nyc"))
 
     def test_invalid_id(self) -> None:
         with self.assertRaises(ValueError):

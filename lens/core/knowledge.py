@@ -57,11 +57,11 @@ def parse_id(canonical_id: str, default_type: str | None = None) -> tuple[str, s
     if not _is_valid_key(key_part):
         raise ValueError(f"Invalid key format: {key_part}")
 
-    return type_part, key_part
+    return type_part.lower(), key_part.lower()
 
 
 def _canonical_id(type_name: str, key: str) -> str:
-    return f"{type_name}.{key}"
+    return f"{type_name}.{key}".lower()
 
 
 @dataclass
@@ -178,7 +178,7 @@ class KnowledgeStore:
         self._ensure_storage().write_file(path, content)
 
     def get_template(self, type_name: str) -> str | None:
-        path = self._object_path(type_name, "_template")
+        path = self._object_path(type_name.lower(), "_template")
         if not path.exists():
             return None
         return path.read_text(encoding="utf-8")
@@ -186,7 +186,7 @@ class KnowledgeStore:
     def set_template(self, type_name: str, content: str) -> None:
         if not _is_valid_token(type_name):
             raise ValueError(f"Invalid type format: {type_name}")
-        path = self._object_path(type_name, "_template")
+        path = self._object_path(type_name.lower(), "_template")
         self._ensure_storage().write_file(path, content)
 
     def get_tags(self, canonical_id: str) -> list[str]:
@@ -216,18 +216,18 @@ class KnowledgeStore:
         for tag in tags:
             if not _validate_tag(tag):
                 continue
-            tag_to_objs.setdefault(tag, set()).add(canonical_id)
-            obj_to_tags.setdefault(canonical_id, set()).add(tag)
+            tag_to_objs.setdefault(tag.lower(), set()).add(canonical_id.lower())
+            obj_to_tags.setdefault(canonical_id.lower(), set()).add(tag.lower())
         self._save_tags(tag_to_objs, obj_to_tags)
         return None
 
     def remove_tags(self, canonical_id: str, tags: list[str]) -> None:
         tag_to_objs, obj_to_tags = self._load_tags()
         for tag in tags:
-            if tag in tag_to_objs:
-                tag_to_objs[tag].discard(canonical_id)
-            if canonical_id in obj_to_tags:
-                obj_to_tags[canonical_id].discard(tag)
+            if tag.lower() in tag_to_objs:
+                tag_to_objs[tag.lower()].discard(canonical_id.lower())
+            if canonical_id.lower() in obj_to_tags:
+                obj_to_tags[canonical_id.lower()].discard(tag.lower())
         self._save_tags(tag_to_objs, obj_to_tags)
 
     def get_objects_with_links(
