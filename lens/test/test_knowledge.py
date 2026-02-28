@@ -536,6 +536,133 @@ class TestKbCli(unittest.TestCase):
         self.assertIn("ID", result.stdout + result.stderr)
 
 
+class TestKnowledgeDatasets(unittest.TestCase):
+    """Unit tests for KB dataset support (lookup fallback, copy-on-write, etc.)."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp()
+        self.project = Path(self.tmp) / "project"
+        self.dataset = Path(self.tmp) / "dataset"
+        self.project.mkdir()
+        self.dataset.mkdir()
+        _make_project(self.project)
+        # Build a minimal dataset (no git, no Storage needed — read-only).
+        (self.dataset / "knowledge").mkdir()
+        (self.dataset / "knowledge" / "person").mkdir()
+        (self.dataset / "knowledge" / "place").mkdir()
+        (self.dataset / "knowledge" / "person" / "hero.md").write_text("The hero.")
+        (self.dataset / "knowledge" / "place" / "keep.md").write_text("A fortified keep.")
+        import io as _io
+        import tomli_w as _tomli_w
+        tags: dict[str, object] = {
+            "tags": {"protagonist": ["person.hero"]},
+            "objects": {"person.hero": ["protagonist"]},
+        }
+        buf = _io.BytesIO()
+        _tomli_w.dump(tags, buf)
+        (self.dataset / "knowledge" / "tags.toml").write_bytes(buf.getvalue())
+
+        ds_store = KnowledgeStore(self.dataset)
+        self.store = KnowledgeStore(self.project, dataset_stores=[ds_store])
+
+    def tearDown(self) -> None:
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    # --- Lookup / fallback ---
+
+    def test_dataset_item_visible(self) -> None:
+        obj = self.store.get_objects(["person.hero"]).get("person.hero")
+        self.assertIsNotNone(obj)
+        assert obj is not None
+        self.assertEqual(obj.text, "The hero.")
+
+    def test_project_item_visible(self) -> None:
+        self.store.store_object("note.one", "Note content.")
+        obj = self.store.get_objects(["note.one"]).get("note.one")
+        self.assertIsNotNone(obj)
+        assert obj is not None
+        self.assertEqual(obj.text, "Note content.")
+
+    def test_project_shadows_dataset(self) -> None:
+        self.store.store_object("person.hero", "Overridden hero.")
+        obj = self.store.get_objects(["person.hero"]).get("person.hero")
+        self.assertIsNotNone(obj)
+        assert obj is not None
+        self.assertEqual(obj.text, "Overridden hero.")
+
+    def test_dataset_tags_visible(self) -> None:
+        # Tags on a dataset-only item come through the dataset store's get_tags.
+        objs = self.store.get_objects(["person.hero"])
+        obj = objs.get("person.hero")
+        self.assertIsNotNone(obj)
+        assert obj is not None
+        self.assertIn("protagonist", obj.tags)
+
+    def test_store_object_none_treats_dataset_item_as_existing(self) -> None:
+        """store_object(id, None) should be a no-op if the item is in a dataset."""
+        self.store.store_object("person.hero", None)
+        hero_path = self.project / "knowledge" / "person" / "hero.md"
+        self.assertFalse(hero_path.exists(), "dataset item should not be copied on no-content store")
+
+    # --- Copy-on-write ---
+
+    def test_add_tags_triggers_copy_on_write(self) -> None:
+        err = self.store.add_tags("person.hero", ["featured"])
+        self.assertIsNone(err)
+        hero_path = self.project / "knowledge" / "person" / "hero.md"
+        self.assertTrue(hero_path.exists())
+        self.assertEqual(hero_path.read_text(), "The hero.")
+        tags = self.store.get_tags("person.hero")
+        self.assertIn("featured", tags)
+        # Original dataset tags should be preserved in the project copy.
+        self.assertIn("protagonist", tags)
+
+    def test_remove_tags_triggers_copy_on_write(self) -> None:
+        # First make the item visible via copy-on-write via add_tags.
+        self.store.add_tags("person.hero", ["featured"])
+        # Now remove a tag.
+        self.store.remove_tags("person.hero", ["featured"])
+        tags = self.store.get_tags("person.hero")
+        self.assertNotIn("featured", tags)
+
+    # --- Delete semantics ---
+
+    def test_delete_dataset_only_is_noop(self) -> None:
+        keep_path = self.project / "knowledge" / "place" / "keep.md"
+        self.assertFalse(keep_path.exists())
+        self.store.delete_object("place.keep")
+        self.assertFalse(keep_path.exists())
+        # Still visible from dataset.
+        obj = self.store.get_objects(["place.keep"]).get("place.keep")
+        self.assertIsNotNone(obj)
+
+    def test_delete_local_item_works(self) -> None:
+        self.store.store_object("note.tmp", "Temporary.")
+        tmp_path = self.project / "knowledge" / "note" / "tmp.md"
+        self.assertTrue(tmp_path.exists())
+        self.store.delete_object("note.tmp")
+        self.assertFalse(tmp_path.exists())
+
+    # --- copy_object with dataset source ---
+
+    def test_copy_from_dataset_to_project(self) -> None:
+        self.store.copy_object("person.hero", "person.hero2")
+        hero2_path = self.project / "knowledge" / "person" / "hero2.md"
+        self.assertTrue(hero2_path.exists())
+        self.assertEqual(hero2_path.read_text(), "The hero.")
+        # Tags from the dataset source are inherited.
+        tags = self.store.get_tags("person.hero2")
+        self.assertIn("protagonist", tags)
+
+    # --- rename_object with dataset source raises ---
+
+    def test_rename_dataset_item_raises(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            self.store.rename_object("person.hero", "person.hero_renamed")
+        self.assertIn("dataset", str(ctx.exception))
+
+
 class TestParseId(unittest.TestCase):
     def test_valid_id(self) -> None:
         t, k = parse_id("place.nyc")

@@ -90,6 +90,47 @@ lens rollback # discard or compensate a pending operator transaction
 
 Run `lens kb <command> --help` for details. Note that all KB ID's an tags normalize to lowercase.
 
+### KB Datasets
+
+Datasets are read-only knowledge stores bundled with the Lens tool. They let you share common knowledge — rules, templates, world-building lore — across many projects without copying files into each one.
+
+#### Importing a dataset
+
+Add a `datasets` list to the `[project]` section of your `lens.toml`:
+
+```toml
+[project]
+narrative = "my-campaign"
+datasets  = ["testing"]          # one or more dataset names
+```
+
+Datasets are resolved in order: **later entries shadow earlier ones**, and **project-local items always win** over any dataset. So you can import a dataset and safely override individual objects by creating a project-local copy.
+
+#### Lookup and copy-on-write
+
+When Lens looks up a KB object it searches the project first, then each dataset in the order listed (last wins for conflicts). This means you can `lens kb get`, `lens pin add`, or reference any dataset object exactly as if it were a project-local object — no explicit import step required.
+
+Mutating a dataset object (`lens kb tag`, `lens kb add`, etc.) automatically creates a **project-local copy** first and applies the change there. The original dataset file is never modified.
+
+```bash
+# Dataset item "person.hero" becomes visible automatically:
+lens kb get person.hero
+
+# Tagging it creates a local copy in knowledge/person/hero.md:
+lens kb tag person.hero --add featured
+
+# Explicitly copy a dataset item into the project under a new ID:
+lens kb copy person.hero person.custom-hero
+```
+
+Deleting a dataset-only object is a **no-op** — dataset items are immutable from the project's perspective. If you previously created a project-local copy of a dataset object, deleting that local copy is allowed (and will reveal the original dataset version again).
+
+#### Available datasets
+
+| Name | Description |
+|------|-------------|
+| `testing` | Minimal dataset used by the Lens integration test suite. |
+
 ### Knowledge pins (`lens pin`)
 
 Pins attach knowledge objects to a node's front matter so they are automatically included in AI operator prompts. Unpins cancel pins inherited from ancestor nodes.

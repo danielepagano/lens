@@ -1,0 +1,6 @@
+[tags]
+"place.dungeon" = ["person.hero"]
+protagonist = ["person.hero"]
+
+[objects]
+"person.hero" = ["place.dungeon", "protagonist"]

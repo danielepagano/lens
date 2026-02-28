@@ -17,6 +17,15 @@ _VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 _KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+$")
 
 
+def _datasets_root() -> Path:
+    """Return the ``datasets/`` directory bundled with the Lens package.
+
+    Relative to this file (``lens/core/knowledge.py``), the repo/install root
+    is three levels up, and ``datasets/`` lives there.
+    """
+    return Path(__file__).parent.parent.parent / "datasets"
+
+
 def _is_valid_token(value: str) -> bool:
     return bool(_VALUE_PATTERN.fullmatch(value))
 
@@ -87,18 +96,49 @@ class KnowledgeObject:
 class KnowledgeStore:
     _registry: ClassVar[dict[Path, KnowledgeStore]] = {}
 
-    def __init__(self, root: Path, storage: Storage | None = None) -> None:
+    def __init__(
+        self,
+        root: Path,
+        storage: Storage | None = None,
+        dataset_stores: list[KnowledgeStore] | None = None,
+    ) -> None:
         self._root = root
         self._knowledge = root / "knowledge"
         self._tags_path = self._knowledge / "tags.toml"
         self._tags_cache: tuple[dict[str, set[str]], dict[str, set[str]]] | None = None
         self._ext_storage = storage
+        # Ordered list of dataset stores (project items take precedence; among
+        # datasets, later entries in the list shadow earlier ones).
+        self._dataset_stores: list[KnowledgeStore] = dataset_stores or []
+
+    @classmethod
+    def _build_dataset_stores(cls, project_root: Path) -> list[KnowledgeStore]:
+        """Read ``datasets`` from ``lens.toml`` and return read-only stores."""
+        lens_toml = project_root / "lens.toml"
+        if not lens_toml.exists():
+            return []
+        with lens_toml.open("rb") as f:
+            config: dict[str, Any] = tomllib.load(f)
+        raw_project = config.get("project", {})
+        project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+        raw_names = project.get("datasets", [])
+        dataset_names: list[Any] = cast(list[Any], raw_names) if isinstance(raw_names, list) else []
+        ds_root = _datasets_root()
+        stores: list[KnowledgeStore] = []
+        for name in dataset_names:
+            if not isinstance(name, str):
+                continue
+            path = ds_root / str(name)
+            if path.is_dir():
+                stores.append(cls(path, storage=None))
+        return stores
 
     @classmethod
     def for_project(cls, project_root: Path, storage: Storage | None = None) -> KnowledgeStore:
         key = project_root.resolve()
         if key not in cls._registry:
-            cls._registry[key] = cls(project_root, storage=storage)
+            dataset_stores = cls._build_dataset_stores(project_root)
+            cls._registry[key] = cls(project_root, storage=storage, dataset_stores=dataset_stores)
         return cls._registry[key]
 
     @classmethod
@@ -185,7 +225,8 @@ class KnowledgeStore:
             content = template if template is not None else ""
 
         if content is None:
-            if path.exists():
+            # Treat the object as existing if it lives in any dataset too.
+            if path.exists() or self._dataset_store_for(canonical_id) is not None:
                 return
             content = ""
 
@@ -226,6 +267,7 @@ class KnowledgeStore:
         parse_id(canonical_id)
         if self._fetch_one(canonical_id) is None:
             return f"Object '{canonical_id}' does not exist"
+        self._ensure_local(canonical_id)
         tag_to_objs, obj_to_tags = self._load_tags()
         for tag in tags:
             if not _validate_tag(tag):
@@ -236,6 +278,7 @@ class KnowledgeStore:
         return None
 
     def remove_tags(self, canonical_id: str, tags: list[str]) -> None:
+        self._ensure_local(canonical_id)
         tag_to_objs, obj_to_tags = self._load_tags()
         for tag in tags:
             if tag.lower() in tag_to_objs:
@@ -312,7 +355,8 @@ class KnowledgeStore:
 
         return result
 
-    def _fetch_one(self, canonical_id: str) -> KnowledgeObject | None:
+    def _fetch_local(self, canonical_id: str) -> KnowledgeObject | None:
+        """Fetch an object from *this* store only (no dataset fallback)."""
         try:
             type_name, key = parse_id(canonical_id)
         except ValueError:
@@ -323,6 +367,60 @@ class KnowledgeStore:
         text = path.read_text(encoding="utf-8")
         tags = self.get_tags(canonical_id)
         return KnowledgeObject(type=type_name, id=canonical_id, text=text, tags=tags)
+
+    def _fetch_one(self, canonical_id: str) -> KnowledgeObject | None:
+        """Fetch an object, falling back to dataset stores if not found locally.
+
+        Among datasets the *last* entry in the list wins (later datasets shadow
+        earlier ones), matching the import-order precedence rule.
+        """
+        obj = self._fetch_local(canonical_id)
+        if obj is not None:
+            return obj
+        for ds in reversed(self._dataset_stores):
+            obj = ds._fetch_local(canonical_id)
+            if obj is not None:
+                return obj
+        return None
+
+    def _is_local(self, canonical_id: str) -> bool:
+        """Return True if *canonical_id* exists in this store's own knowledge dir."""
+        try:
+            type_name, key = parse_id(canonical_id)
+        except ValueError:
+            return False
+        return self._object_path(type_name, key).exists()
+
+    def _dataset_store_for(self, canonical_id: str) -> KnowledgeStore | None:
+        """Return the dataset store that owns *canonical_id* (last-wins), or None."""
+        for ds in reversed(self._dataset_stores):
+            if ds._fetch_local(canonical_id) is not None:
+                return ds
+        return None
+
+    def _ensure_local(self, canonical_id: str) -> None:
+        """Copy-on-write: if *canonical_id* lives only in a dataset, materialise
+        a project-local copy (including its tags) so that subsequent mutations
+        apply to the project rather than the read-only dataset.
+        """
+        if self._is_local(canonical_id):
+            return
+        ds = self._dataset_store_for(canonical_id)
+        if ds is None:
+            return  # doesn't exist anywhere; let the caller surface the error
+        obj = ds._fetch_local(canonical_id)
+        if obj is None:
+            return
+        type_name, key = parse_id(canonical_id)
+        path = self._object_path(type_name, key)
+        self._ensure_storage().write_file(path, obj.text)
+        if obj.tags:
+            tag_to_objs, obj_to_tags = self._load_tags()
+            cid_lower = canonical_id.lower()
+            for tag in obj.tags:
+                tag_to_objs.setdefault(tag.lower(), set()).add(cid_lower)
+                obj_to_tags.setdefault(cid_lower, set()).add(tag.lower())
+            self._save_tags(tag_to_objs, obj_to_tags)
 
     def _collect_linked_ids(self, objects: dict[str, KnowledgeObject]) -> set[str]:
         linked: set[str] = set()
@@ -338,31 +436,47 @@ class KnowledgeStore:
         return linked
 
     def copy_object(self, source_id: str, target_id: str) -> None:
-        """Copy object to a new ID. Target must be valid and unused; type may differ."""
-        src_type, src_key = parse_id(source_id)
+        """Copy object to a new ID. Target must be valid and unused; type may differ.
+
+        The source may live in a dataset; the copy is always created in this
+        (project) store.
+        """
+        _, src_key = parse_id(source_id)
         tgt_type, tgt_key = parse_id(target_id)
         obj = self._fetch_one(source_id)
         if obj is None:
             raise ValueError(f"Object '{source_id}' does not exist")
         if self._fetch_one(target_id) is not None:
             raise ValueError(f"Object '{target_id}' already exists")
-        src_path = self._object_path(src_type, src_key)
         dst_path = self._object_path(tgt_type, tgt_key)
         storage = self._ensure_storage()
-        storage.copy_file(src_path, dst_path)
+        if self._is_local(source_id):
+            src_type, _ = parse_id(source_id)
+            src_path = self._object_path(src_type, src_key)
+            storage.copy_file(src_path, dst_path)
+        else:
+            storage.write_file(dst_path, obj.text)
         tag_to_objs, obj_to_tags = self._load_tags()
         tgt_id_lower = target_id.lower()
-        for tag in obj_to_tags.get(source_id.lower(), set()):
+        for tag in obj.tags:
             tag_to_objs.setdefault(tag, set()).add(tgt_id_lower)
             obj_to_tags.setdefault(tgt_id_lower, set()).add(tag)
         self._save_tags(tag_to_objs, obj_to_tags)
 
     def rename_object(self, old_id: str, new_id: str) -> None:
-        """Rename object to a new ID. Target must be valid and unused; type may differ."""
+        """Rename object to a new ID. Target must be valid and unused; type may differ.
+
+        Renaming a dataset-only item is not supported; use copy instead.
+        """
         old_type, old_key = parse_id(old_id)
         new_type, new_key = parse_id(new_id)
         if self._fetch_one(old_id) is None:
             raise ValueError(f"Object '{old_id}' does not exist")
+        if not self._is_local(old_id):
+            raise ValueError(
+                f"Object '{old_id}' is from a dataset and cannot be renamed; "
+                "use 'kb copy' to create a project-local copy"
+            )
         if self._fetch_one(new_id) is not None:
             raise ValueError(f"Object '{new_id}' already exists")
         src_path = self._object_path(old_type, old_key)
@@ -381,6 +495,9 @@ class KnowledgeStore:
         self._save_tags(tag_to_objs, obj_to_tags)
 
     def delete_object(self, canonical_id: str) -> None:
+        # Deleting a dataset-only item is a no-op.
+        if not self._is_local(canonical_id):
+            return
         type_name, key = parse_id(canonical_id)
         path = self._object_path(type_name, key)
         self._ensure_storage().delete_file(path)

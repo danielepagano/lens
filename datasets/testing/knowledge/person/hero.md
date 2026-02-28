@@ -1,0 +1,1 @@
+The brave hero of the realm, destined for greatness.

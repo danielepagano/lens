@@ -1,17 +1,17 @@
 # Lens Backlog
 
 ## General Backlog  
-- **KB Datasets**: a dataset is just a knowledge tree inside Lens itself (not the project... easily more modular one day). Then:
-  - Projects can import zero or more datasets using `lens.toml` (new configuration, list of strings)
-  - Whenever we look up a kb id, we look first in the project (as we do now), then in any imported data sets (later datasets in the import list win if a key appears in multiple, so we can layer knowledge)
-  - Whenever we alter a kb item (change content or tags) that is not project-local, instead apply the change to the project (essentially copy the item over and update), since datasets are immutable from a project. This lets us safely customize datasets (overwrite and hide original), or use objects within as templates for "more specific than object-type" things (copy a dataset item into project with a different id). Deleting a datastore kb object is a no-op.
-  - Lens operators can also be tied to dataset (only be activated if the dataset is currently used in the project). This lets us use a D&D operator that knows how to run combat only if we have the data to back it, and the operator can _rely_ on specific data being present because it's in the source code, so it can self-pin items as needed.  
-    - Implement this by simply not loading the CLI operators during typer discovery, as this is a convenience block, not a security one.
-- **Operator skill**: let the LLM switch operators  
-  - Use an LLM API that supports skills and ensure it works
-  - Define a skill to load an operator: type, id (may be optional), parameters for it, whether if the LLM response text is part of the narrative (hand off to this operator now) or is to be dropped (thinking mode without using thinking mode), and whether the original operator should be re-invoked with the added narrative (and maybe further instructions) after that sub-agent is completed (agentic loop)
-  - Create prompt snippets to tell models if/when to call each available operator that makes sense for this feature
-  - Have a response pre-processor for write-like operator that detects skill calls and does the actual operator calling; this can chain multiple LLM calls, so it's effectively an agentic loop and may need safeguards
+- **Operator tools**: let the LLM switch operators  
+  - Define function tools to apply operators. Each tool includes:  
+    - operator slug, unique id (may be optional), and operator parameters schema  
+    - whether the LLM response text is part of the narrative (i.e. "hand off to this operator after what I wrote") or is to be dropped and not stored in narrative node (i.e. "I was just thinking out loud, ignore my response and just call the operator")
+    - whether the current operator should be closed before handing off (e.g. a `section` may remain open, but a `write` would close since it doesn't nest other nodes). If the operator wants to close AND ignore its response, it would generate a self-closing tag (i.e. it was just called for its side-effects)
+  - These are extensible: operators define their own tool definition and (if the current dataset supports the operator) they are added to the request metadata.
+  - The operator also defines a prompt snippet with instructions on what the operator is, so the LLM has context of when to call; these snippet are appended to the system prompt
+  - When a response return, a pre-processor looks for tool calls in the response and  
+    1. Appends or discards the response text based on the related parameter
+    2. Calls the operator, which will add its annotation to the cursor and perform its logic as usual. This system can chain multiple tool and LLM calls, so it's effectively an agentic loop and may need safeguards; for now allow the manually-invoked operator to call another, but further calls require user confirmation with a preview of output so far and what's being called.
+  - Note that there is no "callback" of the original operator, it's always a hand off (not a stack). The original operator cedes control and is done; the child may call a _new_ instance of that operator to wrap things up (it could be part of the request even), but that's it.
 - **Tag kb items with `@` mentions in prompts**
   - In @lens/core/operator.py whenever we are processing a command with pin/unpin and a prompt, look for the following pattern: the character "@", a valid @lens/core/knowledge.py canonical_id (so overall `@`+`_VALUE_PATTERN`+`.`+`_KEY_PATTERN`) and then whitespace or end of line/string. If you match that pattern, take the value after @, validate that the id matches to an object that exists without retrieving it (new knowledge store method?) and if so add the id to the pins of that operator before we perform a context-aware crawl. In other words it's equivalent to saying `--pin <id>` in a CLI command, but can happen organically in the request
 

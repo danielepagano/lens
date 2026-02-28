@@ -29,6 +29,7 @@ from lens.core.commands.kb import kb_add, kb_tag
 from lens.core.commands.pin import pin_add
 from lens.core.commands.rollback import execute_rollback
 from lens.core.commands.use import use_narrative
+from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.edit import EditOperator
 from lens.core.operators.section import SectionOperator
@@ -200,11 +201,13 @@ class TestHappyPath(unittest.TestCase):
         _quiet(init_project)
         _quiet(use_narrative, "story")
 
-        # Patch lens.toml to add the mock LLM entry pointing at our fake server.
+        # Patch lens.toml to add the mock LLM entry and enable the testing dataset.
         lens_toml = self._project_dir / "lens.toml"
         with lens_toml.open("rb") as fh:
             cfg = tomllib.load(fh)
         cfg["llm"] = [{"id": "mock", "base_url": self._server.base_url, "model": "mock"}]
+        if isinstance(cfg.get("project"), dict):
+            cfg["project"]["datasets"] = ["testing"]
         with io.BytesIO() as buf:
             tomli_w.dump(cfg, buf)
             lens_toml.write_bytes(buf.getvalue())
@@ -483,3 +486,128 @@ class TestHappyPath(unittest.TestCase):
         text = node_md.read_text()
         self.assertNotIn("[edit:", text)
         self.assertNotIn("[/edit:", text)
+
+    # ------------------------------------------------------------------
+    # 13 — dataset lookup: items from the "testing" dataset are visible
+    # ------------------------------------------------------------------
+
+    def test_13_dataset_lookup(self) -> None:
+        # The "testing" dataset was activated in test_01_init_and_setup.
+        # Clear registry so the store is rebuilt with datasets from lens.toml.
+        KnowledgeStore.clear_registry()
+        self._rebuild_session()
+        kb = self._session.kb
+
+        # Dataset items are visible even though they are not in the project.
+        hero = kb.get_objects(["person.hero"]).get("person.hero")
+        dungeon = kb.get_objects(["place.dungeon"]).get("place.dungeon")
+        self.assertIsNotNone(hero, "person.hero should be visible from testing dataset")
+        self.assertIsNotNone(dungeon, "place.dungeon should be visible from testing dataset")
+        assert hero is not None
+        assert dungeon is not None
+        self.assertIn("hero", hero.text)
+        self.assertIn("dungeon", dungeon.text)
+
+        # Tags defined in the dataset's tags.toml are surfaced correctly.
+        self.assertIn("protagonist", hero.tags)
+        self.assertIn("place.dungeon", hero.tags)
+
+        # Dataset items should NOT be present as local project files.
+        self.assertFalse(
+            (self._project_dir / "knowledge" / "person" / "hero.md").exists(),
+            "dataset item should not be copied to project on plain read",
+        )
+
+    # ------------------------------------------------------------------
+    # 14 — copy-on-write: mutating a dataset item creates a local copy
+    # ------------------------------------------------------------------
+
+    def test_14_dataset_copy_on_write(self) -> None:
+        kb = self._session.kb
+
+        # Add a tag to the dataset item — this should trigger copy-on-write.
+        err = kb.add_tags("person.hero", ["featured"])
+        self.assertIsNone(err)
+
+        hero_path = self._project_dir / "knowledge" / "person" / "hero.md"
+        self.assertTrue(
+            hero_path.exists(),
+            "copy-on-write should have materialised person.hero in the project",
+        )
+        self.assertIn("hero", hero_path.read_text())
+
+        # The project's tags.toml should carry both the original dataset tags
+        # and the new one.
+        tags = kb.get_tags("person.hero")
+        self.assertIn("featured", tags)
+        self.assertIn("protagonist", tags)
+
+        self._assert_pending()
+        self._checkpoint("dataset: copy-on-write person.hero")
+        self._assert_clean()
+
+    # ------------------------------------------------------------------
+    # 15 — project item shadows dataset item with the same id
+    # ------------------------------------------------------------------
+
+    def test_15_dataset_project_shadows_dataset(self) -> None:
+        kb = self._session.kb
+
+        # Overwrite the local copy of person.hero with different content.
+        kb.store_object("person.hero", "A locally overridden hero.")
+        hero_path = self._project_dir / "knowledge" / "person" / "hero.md"
+        self.assertEqual(hero_path.read_text(), "A locally overridden hero.")
+
+        # The project version should win on lookup.
+        obj = kb.get_objects(["person.hero"]).get("person.hero")
+        self.assertIsNotNone(obj)
+        assert obj is not None
+        self.assertEqual(obj.text, "A locally overridden hero.")
+
+        self._checkpoint("dataset: project shadows dataset item")
+        self._assert_clean()
+
+    # ------------------------------------------------------------------
+    # 16 — delete no-op: deleting a dataset-only item does nothing
+    # ------------------------------------------------------------------
+
+    def test_16_dataset_delete_noop(self) -> None:
+        kb = self._session.kb
+
+        # place.dungeon is dataset-only (never been copied locally).
+        dungeon_path = self._project_dir / "knowledge" / "place" / "dungeon.md"
+        self.assertFalse(dungeon_path.exists())
+
+        # Delete should be a silent no-op.
+        kb.delete_object("place.dungeon")
+        self.assertFalse(dungeon_path.exists())
+
+        # The item is still visible from the dataset after the no-op delete.
+        dungeon = kb.get_objects(["place.dungeon"]).get("place.dungeon")
+        self.assertIsNotNone(dungeon, "dataset item should still be visible after no-op delete")
+
+        # No changes pending (the no-op delete wrote nothing to the project).
+        self._assert_clean()
+
+    # ------------------------------------------------------------------
+    # 17 — copy from dataset to project, then delete local copy
+    # ------------------------------------------------------------------
+
+    def test_17_dataset_copy_then_delete_local(self) -> None:
+        kb = self._session.kb
+
+        # Copy a dataset item into the project under a new id.
+        kb.copy_object("place.dungeon", "place.dungeon_local")
+        local_path = self._project_dir / "knowledge" / "place" / "dungeon_local.md"
+        self.assertTrue(local_path.exists())
+        self.assertIn("dungeon", local_path.read_text())
+        self._assert_pending()
+        self._checkpoint("dataset: copy dungeon to project")
+        self._assert_clean()
+
+        # Deleting the local copy IS allowed (it's a project item now).
+        kb.delete_object("place.dungeon_local")
+        self.assertFalse(local_path.exists())
+        self._assert_pending()
+        self._checkpoint("dataset: delete local copy")
+        self._assert_clean()
