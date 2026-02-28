@@ -16,7 +16,8 @@ from typing import Any, ClassVar
 
 import typer
 
-from lens.core.operator import ContextAwareOperator, OperatorError, OperatorToolDef
+from lens.core.operator import ContextAwareOperator, OperatorError
+from lens.core.tools import OperatorToolDef
 from lens.core.project import ProjectSession
 
 # ---------------------------------------------------------------------------
@@ -79,7 +80,6 @@ WriteOperator.register_as_tool(
             "without stopping for player decisions. Provide 'prompt' to guide what to write."
         ),
         keep_text=True,
-        close_current=True,
     )
 )
 

@@ -22,6 +22,8 @@ from lens.core.narrative import NarrativeNode
 from lens.core.operator import (
     ContextAwareOperator,
     OperatorError,
+)
+from lens.core.tools import (
     OperatorToolDef,
     _TOOL_REGISTRY,  # pyright: ignore[reportPrivateUsage]
     get_tool_registry,
@@ -175,21 +177,19 @@ class TestOperatorToolDef(unittest.TestCase):
             parameters={"type": "object", "properties": {}},
             prompt_snippet="Use this tool.",
             keep_text=True,
-            close_current=False,
         )
         self.assertEqual(tdef.parameters, {"type": "object", "properties": {}})
         self.assertEqual(tdef.prompt_snippet, "Use this tool.")
         self.assertTrue(tdef.keep_text)
-        self.assertFalse(tdef.close_current)
 
     def test_dataclass_equality(self) -> None:
-        a = OperatorToolDef(parameters={}, prompt_snippet="x", keep_text=True, close_current=True)
-        b = OperatorToolDef(parameters={}, prompt_snippet="x", keep_text=True, close_current=True)
+        a = OperatorToolDef(parameters={}, prompt_snippet="x", keep_text=True)
+        b = OperatorToolDef(parameters={}, prompt_snippet="x", keep_text=True)
         self.assertEqual(a, b)
 
     def test_inequality_on_different_fields(self) -> None:
-        a = OperatorToolDef(parameters={}, prompt_snippet="x", keep_text=True, close_current=True)
-        b = OperatorToolDef(parameters={}, prompt_snippet="y", keep_text=True, close_current=True)
+        a = OperatorToolDef(parameters={}, prompt_snippet="x", keep_text=True)
+        b = OperatorToolDef(parameters={}, prompt_snippet="y", keep_text=True)
         self.assertNotEqual(a, b)
 
 
@@ -212,7 +212,6 @@ class TestToolRegistry(unittest.TestCase):
             parameters={"type": "object", "properties": {}},
             prompt_snippet=snippet,
             keep_text=True,
-            close_current=True,
         )
 
     async def _dummy_fn(self, *args: Any) -> None:
@@ -393,12 +392,11 @@ class _WriteOpForTest(ContextAwareOperator):
 
 
 class TestDispatchToolCall(unittest.TestCase):
-    def _tdef(self, keep_text: bool = True, close_current: bool = True) -> OperatorToolDef:
+    def _tdef(self, keep_text: bool = True) -> OperatorToolDef:
         return OperatorToolDef(
             parameters={"type": "object", "properties": {}},
             prompt_snippet="play tool",
             keep_text=keep_text,
-            close_current=close_current,
         )
 
     def _run(self, coro: Any) -> Any:
@@ -634,7 +632,6 @@ class TestRunInlineWithTools(unittest.TestCase):
             parameters={"type": "object", "properties": {}},
             prompt_snippet="dummy tool",
             keep_text=True,
-            close_current=True,
         )
         dummy_registry = {"dummy": (dummy_tdef, AsyncMock(return_value=None))}
         fake_result = GenerateResult(text="written content", tool_call=None, interrupted=False)
@@ -678,7 +675,6 @@ class TestRunInlineWithTools(unittest.TestCase):
             parameters={"type": "object", "properties": {}},
             prompt_snippet="dummy tool",
             keep_text=False,
-            close_current=True,
         )
         dummy_registry = {"dummy": (dummy_tdef, _fake_invoke)}
         fake_result = GenerateResult(

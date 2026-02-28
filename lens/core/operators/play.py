@@ -15,7 +15,8 @@ from typing import Any, ClassVar
 
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import ContextAwareOperator, OperatorError, OperatorToolDef
+from lens.core.operator import ContextAwareOperator, OperatorError
+from lens.core.tools import OperatorToolDef
 from lens.core.project import ProjectSession
 
 # ---------------------------------------------------------------------------
@@ -119,6 +120,5 @@ PlayOperator.register_as_tool(
             "stops for player input. Provide 'prompt' to describe the situation they face."
         ),
         keep_text=True,
-        close_current=True,
     )
 )

@@ -21,7 +21,6 @@ from __future__ import annotations
 import re
 import sys
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
 from collections.abc import Callable, Awaitable
@@ -40,51 +39,11 @@ from lens.core.llm import LLMError, GenerateResult, ToolCall, generate, generate
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
+from lens.core.tools import OperatorToolDef, get_tool_registry, register_operator_tool
 
 _AT_MENTION_RE = re.compile(
     r"@([a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+)(?=\s|$)", re.MULTILINE
 )
-
-
-@dataclass
-class OperatorToolDef:
-    """Descriptor for an operator exposed as an LLM tool."""
-
-    parameters: dict[str, Any]
-    """JSON Schema object describing the operator-specific tool parameters."""
-
-    prompt_snippet: str
-    """Appended to the system prompt; also used as the tool description."""
-
-    keep_text: bool
-    """Default: write the LLM text to the node before dispatching the tool."""
-
-    close_current: bool
-    """Default: close the calling operator's annotation block before handoff."""
-
-
-# Callable type: (args, session, narrative, depth, on_token) -> NarrativeNode | None
-_TOOL_REGISTRY: dict[str, tuple[OperatorToolDef, Any]] = {}
-
-
-def register_operator_tool(
-    name: str,
-    tool_def: OperatorToolDef,
-    invoke_fn: Any,
-) -> None:
-    """Register an operator as an LLM-callable tool.
-
-    Called at module load time by operator submodules. The registry is keyed
-    by operator name. ``invoke_fn`` must be an async callable with signature::
-
-        async (args, session, narrative, depth, on_token) -> NarrativeNode | None
-    """
-    _TOOL_REGISTRY[name] = (tool_def, invoke_fn)
-
-
-def get_tool_registry() -> dict[str, tuple[OperatorToolDef, Any]]:
-    """Return a snapshot of the current tool registry."""
-    return dict(_TOOL_REGISTRY)
 
 
 class OperatorError(Exception):
@@ -823,13 +782,6 @@ class ContextAwareOperator(Operator):
                         "saved to the narrative. If false, it is discarded."
                     ),
                 },
-                "close_current": {
-                    "type": "boolean",
-                    "description": (
-                        "If true (default), the calling operator's annotation block is "
-                        "closed before handing off. If false, it remains open."
-                    ),
-                },
             }
             tools_payload: list[dict[str, Any]] = []
             for n, (tdef, _fn) in available_tools.items():
@@ -926,8 +878,6 @@ class ContextAwareOperator(Operator):
         callback is required and the user must approve before continuing.
         """
         keep_text = bool(tool_call.arguments.get("keep_text", tool_def.keep_text))
-        # close_current is reserved for future write paths; write_start always closes
-        _close_current = bool(tool_call.arguments.get("close_current", tool_def.close_current))
 
         if depth >= 1:
             if on_confirm is None:
@@ -946,21 +896,7 @@ class ContextAwareOperator(Operator):
         if keep_text and text.strip():
             op.write_start(cursor, tag, text)
 
-        new_cursor = await invoke_fn(tool_call.arguments, session, narrative, depth, on_token, on_confirm)
-
-        if new_cursor is not None:
-            await cls.run_inline(
-                session=session,
-                narrative=narrative,
-                prompt=tool_call.arguments.get("prompt") or prompt,
-                pins=pins,
-                unpins=unpins,
-                llm_id=llm_id,
-                on_token=on_token,
-                on_confirm=on_confirm,
-                retry=False,
-                _tool_call_depth=depth + 1,
-            )
+        await invoke_fn(tool_call.arguments, session, narrative, depth, on_token, on_confirm)
 
     @classmethod
     async def _do_continue(
