@@ -4,10 +4,12 @@ import typer
 
 from lens.core.knowledge import KnowledgeObject
 from lens.core.commands.kb import (
-    kb_store,
+    kb_add,
     kb_template,
-    kb_tags,
+    kb_tag,
     kb_delete,
+    kb_copy,
+    kb_rename,
     kb_get,
     check_invalid_tags,
 )
@@ -17,14 +19,14 @@ app = typer.Typer(no_args_is_help=True)
 
 
 @app.command(no_args_is_help=True)
-def store(
+def add(
     id: str = typer.Argument(..., help="Object ID (type.key)"),
     content: str | None = typer.Argument(None, help="Object content (omit to create empty or no-op)"),
     use_template: bool = typer.Option(False, "-t", "--use-template", help="Use template content"),
 ) -> None:
     """Upsert a single knowledge object."""
     try:
-        kb_store(id, content, use_template)
+        kb_add(id, content, use_template)
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -46,14 +48,14 @@ def template(
 
 
 @app.command(no_args_is_help=True)
-def tags(
+def tag(
     id: str = typer.Argument(..., help="Object ID"),
     add: list[str] = typer.Option([], "-a", "--add", help="Tag(s) to add"),
     remove: list[str] = typer.Option([], "-r", "--remove", help="Tag(s) to remove"),
 ) -> None:
     """Manage tags for an object."""
     try:
-        current, invalid = kb_tags(id, add, remove)
+        current, invalid = kb_tag(id, add, remove)
         typer.echo(", ".join(current) if current else "")
         if invalid:
             typer.echo(
@@ -72,6 +74,32 @@ def delete(
     """Delete an object (file, tags, references)."""
     try:
         kb_delete(id)
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(no_args_is_help=True)
+def copy(
+    source_id: str = typer.Argument(..., help="Source object ID (type.key)"),
+    target_id: str = typer.Argument(..., help="Target object ID (must be valid and unused)"),
+) -> None:
+    """Copy an object to a new ID. Target type may differ; directory is created if needed."""
+    try:
+        kb_copy(source_id, target_id)
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(no_args_is_help=True)
+def rename(
+    old_id: str = typer.Argument(..., help="Current object ID"),
+    new_id: str = typer.Argument(..., help="New object ID (must be valid and unused)"),
+) -> None:
+    """Rename an object to a new ID. New type may differ; directory is created if needed."""
+    try:
+        kb_rename(old_id, new_id)
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)

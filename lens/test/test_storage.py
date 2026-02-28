@@ -210,6 +210,21 @@ class TestFileOperations(unittest.TestCase):
             self.assertTrue(dst.exists())
             self.assertEqual(dst.read_text(), "data")
 
+    def test_copy_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            src = root / "subdir" / "source.md"
+            src.parent.mkdir(parents=True)
+            src.write_text("content to copy")
+            _git(root, "add", "-A")
+            _git(root, "commit", "-m", "add")
+            s = Storage(root)
+            dst = root / "other" / "dest.md"
+            s.copy_file(src, dst)
+            self.assertTrue(src.exists())
+            self.assertTrue(dst.exists())
+            self.assertEqual(dst.read_text(), "content to copy")
+
 
 class TestPendingFiles(unittest.TestCase):
     def test_lists_modified_and_untracked(self) -> None:

@@ -286,6 +286,12 @@ class Storage:
         dst.parent.mkdir(parents=True, exist_ok=True)
         src.rename(dst)
 
+    def copy_file(self, src: Path, dst: Path) -> None:
+        """Copy file content from src to dst. Creates parent dirs if needed."""
+        self._ensure_ownership()
+        content = src.read_text(encoding="utf-8")
+        self.write_file(dst, content)
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------

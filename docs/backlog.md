@@ -1,7 +1,6 @@
 # Lens Backlog
 
 ## General Backlog  
-- **Copying and renaming** kb items to new id's (any object type... we're not the template police)
 - **KB Datasets**: a dataset is just a knowledge tree inside Lens itself (not the project... easily more modular one day). Then:
   - Projects can import zero or more datasets using `lens.toml`
   - Whenever we `look up` a kb id, we look first in the project, then in any imported data sets (later datasets in the import list win, if a key overlaps, so we can layer knowledge)

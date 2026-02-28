@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Callable, TypeVar
 
 from lens.core.commands.init import init_project
-from lens.core.commands.kb import kb_store, kb_tags
+from lens.core.commands.kb import kb_add, kb_tag
 from lens.core.commands.pin import pin_add
 from lens.core.commands.rollback import execute_rollback
 from lens.core.commands.use import use_narrative
@@ -228,8 +228,8 @@ class TestHappyPath(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def test_02_kb_objects(self) -> None:
-        _quiet(kb_store, "person.amy", "Amy is the brave protagonist.", False)
-        _quiet(kb_store, "place.forest", "A dark and ancient forest.", False)
+        _quiet(kb_add, "person.amy", "Amy is the brave protagonist.", False)
+        _quiet(kb_add, "place.forest", "A dark and ancient forest.", False)
 
         self.assertTrue((self._project_dir / "knowledge" / "person" / "amy.md").exists())
         self.assertTrue((self._project_dir / "knowledge" / "place" / "forest.md").exists())
@@ -242,7 +242,7 @@ class TestHappyPath(unittest.TestCase):
     def test_03_kb_tags_and_commit(self) -> None:
         import tomllib
 
-        _quiet(kb_tags, "person.amy", ["protagonist"], [])
+        _quiet(kb_tag, "person.amy", ["protagonist"], [])
 
         tags_toml = self._project_dir / "knowledge" / "tags.toml"
         with tags_toml.open("rb") as fh:

@@ -11,7 +11,7 @@ def get_store() -> KnowledgeStore:
         raise LensException(str(e)) from e
     return KnowledgeStore.for_project(root)
 
-def kb_store(id: str, content: str | None, use_template: bool) -> None:
+def kb_add(id: str, content: str | None, use_template: bool) -> None:
     try:
         parse_id(id)
     except ValueError as e:
@@ -26,7 +26,7 @@ def kb_template(type_name: str, content: str | None) -> str | None:
         return None
     return kb.get_template(type_name)
 
-def kb_tags(id: str, add: list[str], remove: list[str]) -> tuple[list[str], list[str]]:
+def kb_tag(id: str, add: list[str], remove: list[str]) -> tuple[list[str], list[str]]:
     try:
         parse_id(id)
     except ValueError as e:
@@ -49,6 +49,32 @@ def kb_delete(id: str) -> None:
         raise LensException(str(e)) from e
     kb = get_store()
     kb.delete_object(id)
+
+
+def kb_copy(source_id: str, target_id: str) -> None:
+    try:
+        parse_id(source_id)
+        parse_id(target_id)
+    except ValueError as e:
+        raise LensException(str(e)) from e
+    kb = get_store()
+    try:
+        kb.copy_object(source_id, target_id)
+    except ValueError as e:
+        raise LensException(str(e)) from e
+
+
+def kb_rename(old_id: str, new_id: str) -> None:
+    try:
+        parse_id(old_id)
+        parse_id(new_id)
+    except ValueError as e:
+        raise LensException(str(e)) from e
+    kb = get_store()
+    try:
+        kb.rename_object(old_id, new_id)
+    except ValueError as e:
+        raise LensException(str(e)) from e
 
 def kb_get(ids: list[str]) -> tuple[list[str], dict[str, KnowledgeObject]]:
     kb = get_store()

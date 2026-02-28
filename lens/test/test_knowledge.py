@@ -120,6 +120,129 @@ class TestKnowledgeStore(unittest.TestCase):
         self.assertIn("featured", data.get("objects", {}).get("person.amy", []))
         self.assertEqual(self.store.get_tags("person.amy"), ["featured"])
 
+    def test_copy_object_same_type(self) -> None:
+        self.store.store_object("place.nyc", "Big city")
+        self.store.add_tags("place.nyc", ["featured"])
+        self.store.copy_object("place.nyc", "place.boston")
+        path = self.root / "knowledge" / "place" / "boston.md"
+        self.assertTrue(path.exists())
+        self.assertEqual(path.read_text(), "Big city")
+        self.assertEqual(set(self.store.get_tags("place.boston")), {"featured"})
+        self.assertEqual(set(self.store.get_tags("place.nyc")), {"featured"})
+
+    def test_copy_object_different_type(self) -> None:
+        self.store.store_object("place.nyc", "NYC content")
+        self.store.copy_object("place.nyc", "person.nyc")
+        path = self.root / "knowledge" / "person" / "nyc.md"
+        self.assertTrue(path.exists())
+        self.assertEqual(path.read_text(), "NYC content")
+
+    def test_copy_object_tag_index_preserved(self) -> None:
+        """Verify tags.toml tag_to_objs and obj_to_tags stay in sync after copy."""
+        import tomllib
+
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        self.store.add_tags("place.nyc", ["featured", "kind:city"])
+        self.store.add_tags("place.boston", ["featured"])
+        self.store.copy_object("place.nyc", "place.la")
+        with (self.root / "knowledge" / "tags.toml").open("rb") as f:
+            data = tomllib.load(f)
+        tags_map = data.get("tags", {})
+        objs_map = data.get("objects", {})
+        self.assertIn("place.nyc", tags_map.get("featured", []))
+        self.assertIn("place.boston", tags_map.get("featured", []))
+        self.assertIn("place.la", tags_map.get("featured", []))
+        self.assertIn("place.nyc", tags_map.get("kind:city", []))
+        self.assertIn("place.la", tags_map.get("kind:city", []))
+        self.assertEqual(set(objs_map.get("place.nyc", [])), {"featured", "kind:city"})
+        self.assertEqual(set(objs_map.get("place.la", [])), {"featured", "kind:city"})
+
+    def test_copy_object_target_exists_raises(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        with self.assertRaises(ValueError) as ctx:
+            self.store.copy_object("place.nyc", "place.boston")
+        self.assertIn("already exists", str(ctx.exception))
+
+    def test_copy_object_source_missing_raises(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            self.store.copy_object("place.missing", "place.new")
+        self.assertIn("does not exist", str(ctx.exception))
+
+    def test_rename_object_same_type(self) -> None:
+        self.store.store_object("place.nyc", "Big city")
+        self.store.add_tags("place.nyc", ["featured"])
+        self.store.rename_object("place.nyc", "place.boston")
+        self.assertFalse((self.root / "knowledge" / "place" / "nyc.md").exists())
+        path = self.root / "knowledge" / "place" / "boston.md"
+        self.assertTrue(path.exists())
+        self.assertEqual(path.read_text(), "Big city")
+        self.assertEqual(set(self.store.get_tags("place.boston")), {"featured"})
+        self.assertEqual(self.store.get_tags("place.nyc"), [])
+
+    def test_rename_object_different_type(self) -> None:
+        self.store.store_object("place.nyc", "NYC content")
+        self.store.add_tags("place.nyc", ["featured"])
+        self.store.rename_object("place.nyc", "person.nyc")
+        self.assertFalse((self.root / "knowledge" / "place" / "nyc.md").exists())
+        path = self.root / "knowledge" / "person" / "nyc.md"
+        self.assertTrue(path.exists())
+        self.assertEqual(path.read_text(), "NYC content")
+        self.assertEqual(set(self.store.get_tags("person.nyc")), {"featured"})
+
+    def test_rename_object_target_exists_raises(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        with self.assertRaises(ValueError) as ctx:
+            self.store.rename_object("place.nyc", "place.boston")
+        self.assertIn("already exists", str(ctx.exception))
+
+    def test_rename_object_source_missing_raises(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            self.store.rename_object("place.missing", "place.new")
+        self.assertIn("does not exist", str(ctx.exception))
+
+    def test_rename_object_tag_index_preserved(self) -> None:
+        """Verify tags.toml tag_to_objs and obj_to_tags stay in sync after rename."""
+        import tomllib
+
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        self.store.add_tags("place.nyc", ["featured", "kind:city"])
+        self.store.add_tags("place.boston", ["featured"])
+        self.store.rename_object("place.nyc", "place.manhattan")
+        with (self.root / "knowledge" / "tags.toml").open("rb") as f:
+            data = tomllib.load(f)
+        tags_map = data.get("tags", {})
+        objs_map = data.get("objects", {})
+        self.assertNotIn("place.nyc", tags_map.get("featured", []))
+        self.assertIn("place.boston", tags_map.get("featured", []))
+        self.assertIn("place.manhattan", tags_map.get("featured", []))
+        self.assertNotIn("place.nyc", tags_map.get("kind:city", []))
+        self.assertIn("place.manhattan", tags_map.get("kind:city", []))
+        self.assertNotIn("place.nyc", objs_map)
+        self.assertEqual(set(objs_map.get("place.manhattan", [])), {"featured", "kind:city"})
+
+    def test_copy_object_leaves_changes_unstaged(self) -> None:
+        """Copy must not stage its changes (single Storage for whole op)."""
+        self.store.store_object("place.nyc", "NYC")
+        self.store.add_tags("place.nyc", ["featured"])
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(["git", "commit", "-m", "base"], cwd=self.root, capture_output=True, check=True)
+        self.store.copy_object("place.nyc", "place.boston")
+        r = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=self.root, capture_output=True, text=True,
+        )
+        self.assertIn("knowledge/place/boston.md", r.stdout)
+        self.assertIn("knowledge/tags.toml", r.stdout)
+        r = subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            cwd=self.root, capture_output=True, text=True,
+        )
+        self.assertNotIn("boston.md", r.stdout)
+
     def test_delete_removes_references_tags_only_file(self) -> None:
         self.store.store_object("note.one", "one")
         self.store.store_object("note.two", "two")
@@ -206,9 +329,9 @@ class TestKbCli(unittest.TestCase):
 
     def _run_store(self, id: str, content: str | None = None, use_template: bool = False) -> None:
         with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
-            from lens.cli.commands.kb import store
+            from lens.cli.commands.kb import add
 
-            store(id, content, use_template)
+            add(id, content, use_template)
 
     def _run_template(self, type_name: str, content: str | None = None) -> str | None:
         with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
@@ -244,7 +367,7 @@ class TestKbCli(unittest.TestCase):
         remove: list[str] | None = None,
     ) -> tuple[str, str]:
         with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
-            from lens.cli.commands.kb import tags
+            from lens.cli.commands.kb import tag
             from io import StringIO
             import sys
 
@@ -252,7 +375,7 @@ class TestKbCli(unittest.TestCase):
             try:
                 out_buf, err_buf = StringIO(), StringIO()
                 sys.stdout, sys.stderr = out_buf, err_buf
-                tags(id, add or [], remove or [])
+                tag(id, add or [], remove or [])
                 return out_buf.getvalue(), err_buf.getvalue()
             finally:
                 sys.stdout, sys.stderr = old_stdout, old_stderr
@@ -262,6 +385,18 @@ class TestKbCli(unittest.TestCase):
             from lens.cli.commands.kb import delete
 
             delete(id)
+
+    def _run_copy(self, source_id: str, target_id: str) -> None:
+        with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import copy
+
+            copy(source_id, target_id)
+
+    def _run_rename(self, old_id: str, new_id: str) -> None:
+        with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import rename
+
+            rename(old_id, new_id)
 
     def _run_get(self, ids: list[str], include_comments: bool = False) -> str:
         with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
@@ -305,6 +440,38 @@ class TestKbCli(unittest.TestCase):
         self._run_tags("place.nyc", add=["featured"])
         self._run_delete("place.nyc")
         self.assertFalse((self.root / "knowledge" / "place" / "nyc.md").exists())
+
+    def test_cli_copy(self) -> None:
+        self._run_store("place.nyc", "City content")
+        self._run_tags("place.nyc", add=["featured"])
+        self._run_copy("place.nyc", "place.boston")
+        path = self.root / "knowledge" / "place" / "boston.md"
+        self.assertTrue(path.exists())
+        self.assertEqual(path.read_text(), "City content")
+
+    def test_cli_copy_different_type(self) -> None:
+        self._run_store("place.nyc", "NYC")
+        self._run_copy("place.nyc", "person.nyc")
+        path = self.root / "knowledge" / "person" / "nyc.md"
+        self.assertTrue(path.exists())
+
+    def test_cli_rename(self) -> None:
+        self._run_store("place.nyc", "City")
+        self._run_rename("place.nyc", "place.boston")
+        self.assertFalse((self.root / "knowledge" / "place" / "nyc.md").exists())
+        self.assertEqual(
+            (self.root / "knowledge" / "place" / "boston.md").read_text(),
+            "City",
+        )
+
+    def test_cli_rename_different_type(self) -> None:
+        self._run_store("place.nyc", "NYC")
+        self._run_rename("place.nyc", "person.nyc")
+        self.assertFalse((self.root / "knowledge" / "place" / "nyc.md").exists())
+        self.assertEqual(
+            (self.root / "knowledge" / "person" / "nyc.md").read_text(),
+            "NYC",
+        )
 
     def test_cli_get(self) -> None:
         self._run_store("place.nyc", "City")
@@ -360,7 +527,7 @@ class TestKbCli(unittest.TestCase):
 
     def test_cli_shows_help_when_required_params_missing(self) -> None:
         result = subprocess.run(
-            ["python", "-m", "lens.cli.main", "kb", "store"],
+            ["python", "-m", "lens.cli.main", "kb", "add"],
             capture_output=True,
             text=True,
             cwd=self.root,

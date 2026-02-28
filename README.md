@@ -80,11 +80,13 @@ lens rollback # discard or compensate a pending operator transaction
 
 | Command   | Purpose                          |
 |-----------|----------------------------------|
-| `store`   | Create or update objects         |
-| `template`| Manage type templates            |
-| `tags`    | Add/remove tags on objects       |
-| `delete`  | Delete object and its references |
+| `add`     | Create or update objects         |
 | `get`     | Fetch objects (append `!` for linked) |
+| `template`| Manage type templates            |
+| `tag`     | Add/remove tags on objects       |
+| `delete`  | Delete object and its references |
+| `copy`    | Copy object to a new ID (any type) |
+| `rename`  | Rename object to a new ID (any type) |
 
 Run `lens kb <command> --help` for details. Note that all KB ID's an tags normalize to lowercase.
 

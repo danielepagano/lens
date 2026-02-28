@@ -106,17 +106,17 @@ class KnowledgeStore:
         """Clear all cached instances. Intended for tests."""
         cls._registry.clear()
 
-    def _write_storage(self) -> Storage:
+    def _ensure_storage(self) -> Storage:
         """Return a Storage for KB writes.
 
         If an external Storage was provided at construction, return it.
         Otherwise create a fresh one each call so ``_ownership_checked`` is
         never stale.
         """
-        if self._ext_storage is not None:
-            return self._ext_storage
-        from lens.core.project import find_git_root_from
-        return Storage(find_git_root_from(self._root))
+        if self._ext_storage is None:
+            from lens.core.project import find_git_root_from
+            self._ext_storage = Storage(find_git_root_from(self._root))
+        return self._ext_storage
 
     def _object_path(self, type_name: str, key: str) -> Path:
         return self._knowledge / type_name / f"{key}.md"
@@ -169,7 +169,7 @@ class KnowledgeStore:
             payload["objects"] = objects_serial
         buf = io.BytesIO()
         tomli_w.dump(cast(Any, payload), buf)
-        self._write_storage().write_file_bytes(self._tags_path, buf.getvalue())
+        self._ensure_storage().write_file_bytes(self._tags_path, buf.getvalue())
 
     def store_object(
         self,
@@ -189,7 +189,7 @@ class KnowledgeStore:
                 return
             content = ""
 
-        self._write_storage().write_file(path, content)
+        self._ensure_storage().write_file(path, content)
 
     def get_template(self, type_name: str) -> str | None:
         path = self._object_path(type_name.lower(), "_template")
@@ -201,7 +201,7 @@ class KnowledgeStore:
         if not _is_valid_token(type_name):
             raise ValueError(f"Invalid type format: {type_name}")
         path = self._object_path(type_name.lower(), "_template")
-        self._write_storage().write_file(path, content)
+        self._ensure_storage().write_file(path, content)
 
     def get_tags(self, canonical_id: str) -> list[str]:
         _, obj_to_tags = self._load_tags()
@@ -337,10 +337,53 @@ class KnowledgeStore:
                     continue
         return linked
 
+    def copy_object(self, source_id: str, target_id: str) -> None:
+        """Copy object to a new ID. Target must be valid and unused; type may differ."""
+        src_type, src_key = parse_id(source_id)
+        tgt_type, tgt_key = parse_id(target_id)
+        obj = self._fetch_one(source_id)
+        if obj is None:
+            raise ValueError(f"Object '{source_id}' does not exist")
+        if self._fetch_one(target_id) is not None:
+            raise ValueError(f"Object '{target_id}' already exists")
+        src_path = self._object_path(src_type, src_key)
+        dst_path = self._object_path(tgt_type, tgt_key)
+        storage = self._ensure_storage()
+        storage.copy_file(src_path, dst_path)
+        tag_to_objs, obj_to_tags = self._load_tags()
+        tgt_id_lower = target_id.lower()
+        for tag in obj_to_tags.get(source_id.lower(), set()):
+            tag_to_objs.setdefault(tag, set()).add(tgt_id_lower)
+            obj_to_tags.setdefault(tgt_id_lower, set()).add(tag)
+        self._save_tags(tag_to_objs, obj_to_tags)
+
+    def rename_object(self, old_id: str, new_id: str) -> None:
+        """Rename object to a new ID. Target must be valid and unused; type may differ."""
+        old_type, old_key = parse_id(old_id)
+        new_type, new_key = parse_id(new_id)
+        if self._fetch_one(old_id) is None:
+            raise ValueError(f"Object '{old_id}' does not exist")
+        if self._fetch_one(new_id) is not None:
+            raise ValueError(f"Object '{new_id}' already exists")
+        src_path = self._object_path(old_type, old_key)
+        dst_path = self._object_path(new_type, new_key)
+        storage = self._ensure_storage()
+        storage.rename(src_path, dst_path)
+        tag_to_objs, obj_to_tags = self._load_tags()
+        old_lower = old_id.lower()
+        new_lower = new_id.lower()
+        tags = obj_to_tags.pop(old_lower, set())
+        for tag in tags:
+            tag_to_objs.get(tag, set()).discard(old_lower)
+            tag_to_objs.setdefault(tag, set()).add(new_lower)
+        if tags:
+            obj_to_tags[new_lower] = tags
+        self._save_tags(tag_to_objs, obj_to_tags)
+
     def delete_object(self, canonical_id: str) -> None:
         type_name, key = parse_id(canonical_id)
         path = self._object_path(type_name, key)
-        self._write_storage().delete_file(path)
+        self._ensure_storage().delete_file(path)
 
         tag_to_objs, obj_to_tags = self._load_tags()
         for _, tags in list(obj_to_tags.items()):
