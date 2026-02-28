@@ -198,6 +198,8 @@ AI operators call the configured LLM and write the output into narrative nodes. 
 | `--llm ID` | `-l` | Override the default LLM |
 | `--retry` | `-r` | Discard current output and regenerate |
 
+You can also pin KB objects inline by mentioning them as `@type.key` in your prompt — `lens write "describe @person.amy arriving at @place.market"` is equivalent to passing `-p person.amy -p place.market`. Only IDs that exist in the knowledge store are resolved; unknown mentions are ignored.
+
 ### `lens write`
 
 Streams generated text into the cursor node, appending it inline.

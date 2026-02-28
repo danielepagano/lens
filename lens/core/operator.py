@@ -34,10 +34,15 @@ from lens.core.annotations import (
     strip_markdown_comments,
 )
 from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, generate
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
+
+_AT_MENTION_RE = re.compile(
+    r"@([a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+)(?=\s|$)", re.MULTILINE
+)
 
 
 class OperatorError(Exception):
@@ -427,6 +432,27 @@ class ContextAwareOperator(Operator):
         return result
 
     @staticmethod
+    def mention_pins(prompt: str | None, project_root: Path) -> list[str]:
+        """Return KB IDs found as ``@type.key`` mentions in *prompt* that exist.
+
+        Only IDs that can be resolved in the knowledge store are returned.
+        Duplicates are deduplicated while preserving first-occurrence order.
+        """
+        if not prompt:
+            return []
+        kb_store = KnowledgeStore.for_project(project_root)
+        found: list[str] = []
+        seen: set[str] = set()
+        for m in _AT_MENTION_RE.finditer(prompt):
+            cid = m.group(1)
+            if cid in seen:
+                continue
+            seen.add(cid)
+            if kb_store.exists(cid):
+                found.append(cid)
+        return found
+
+    @staticmethod
     async def stream_output(
         messages: list[dict[str, str]],
         project_root: Path,
@@ -588,6 +614,10 @@ class ContextAwareOperator(Operator):
 
         Raises :class:`OperatorError` on user-visible failures.
         """
+        mention_pins = cls.mention_pins(prompt, session.project_root)
+        if mention_pins:
+            pins = pins + mention_pins
+
         cursor = narrative.find_cursor()
         cursor_md = cursor.md_path()
         rel_path = str(cursor_md.relative_to(session.git_root))
@@ -818,6 +848,10 @@ class ContextAwareOperator(Operator):
 
         Raises :class:`OperatorError` on user-visible failures.
         """
+        mention_pins = cls.mention_pins(prompt, session.project_root)
+        if mention_pins:
+            pins = pins + mention_pins
+
         file_path = node.md_path()
         owner = cls.owner_id(ann_id, rel_path)
         narrative_root = NarrativeNode(narrative_root=node.narrative_root, key_path=())

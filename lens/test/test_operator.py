@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from lens.core.annotations import parse_annotations
+from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import ContextAwareOperator, Operator
 from lens.core.storage import Storage
@@ -487,3 +488,135 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             self.assertIn("new", text)
             self.assertNotIn("Old content", text)
             self.assertNotIn("[/cao]: #", text)
+
+
+# ------------------------------------------------------------------
+# @mention KB pin extraction
+# ------------------------------------------------------------------
+
+def _make_kb_object(root: Path, canonical_id: str) -> None:
+    """Create a knowledge object file directly (no git required)."""
+    type_name, _, key = canonical_id.partition(".")
+    kb_dir = root / "knowledge" / type_name
+    kb_dir.mkdir(parents=True, exist_ok=True)
+    (kb_dir / f"{key}.md").write_text(f"# {canonical_id}\n")
+
+
+class TestKnowledgeStoreExists(unittest.TestCase):
+    """Tests for the KnowledgeStore.exists() method."""
+
+    def test_exists_returns_true_for_present_object(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            store = KnowledgeStore(root)
+            store.store_object("person.amy", "Amy Pond")
+            self.assertTrue(store.exists("person.amy"))
+
+    def test_exists_returns_false_for_absent_object(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            store = KnowledgeStore(root)
+            self.assertFalse(store.exists("person.nobody"))
+
+    def test_exists_returns_false_for_invalid_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            store = KnowledgeStore(root)
+            self.assertFalse(store.exists("notanid"))
+            self.assertFalse(store.exists(""))
+            self.assertFalse(store.exists(".badkey"))
+
+
+class TestMentionPins(unittest.TestCase):
+    """Tests for ContextAwareOperator.mention_pins()."""
+
+    def test_extracts_valid_existing_mention(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            _make_kb_object(root, "person.amy")
+            pins = ContextAwareOperator.mention_pins(
+                "Write a scene with @person.amy in the market.", root
+            )
+            self.assertEqual(pins, ["person.amy"])
+
+    def test_ignores_nonexistent_mention(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            pins = ContextAwareOperator.mention_pins(
+                "Mention @person.ghost who does not exist.", root
+            )
+            self.assertEqual(pins, [])
+
+    def test_ignores_mention_without_dot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            _make_kb_object(root, "person.amy")
+            pins = ContextAwareOperator.mention_pins(
+                "Email @notype about something.", root
+            )
+            self.assertEqual(pins, [])
+
+    def test_deduplicates_mentions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            _make_kb_object(root, "person.amy")
+            pins = ContextAwareOperator.mention_pins(
+                "@person.amy talks to @person.amy again.", root
+            )
+            self.assertEqual(pins, ["person.amy"])
+
+    def test_extracts_multiple_distinct_mentions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            _make_kb_object(root, "person.amy")
+            _make_kb_object(root, "place.market")
+            pins = ContextAwareOperator.mention_pins(
+                "@person.amy visits @place.market today.", root
+            )
+            self.assertEqual(pins, ["person.amy", "place.market"])
+
+    def test_mention_at_end_of_string(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            _make_kb_object(root, "person.amy")
+            pins = ContextAwareOperator.mention_pins(
+                "Focus on @person.amy", root
+            )
+            self.assertEqual(pins, ["person.amy"])
+
+    def test_mention_at_end_of_line(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            _make_kb_object(root, "person.amy")
+            pins = ContextAwareOperator.mention_pins(
+                "Focus on @person.amy\nAnd continue.", root
+            )
+            self.assertEqual(pins, ["person.amy"])
+
+    def test_none_prompt_returns_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            pins = ContextAwareOperator.mention_pins(None, root)
+            self.assertEqual(pins, [])
+
+    def test_mention_not_followed_by_whitespace_ignored(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            _make_kb_object(root, "person.amy")
+            # comma after mention — not whitespace or EOL, should not match
+            pins = ContextAwareOperator.mention_pins(
+                "About @person.amy,the merchant.", root
+            )
+            self.assertEqual(pins, [])

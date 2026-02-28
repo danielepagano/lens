@@ -391,6 +391,19 @@ class KnowledgeStore:
             return False
         return self._object_path(type_name, key).exists()
 
+    def exists(self, canonical_id: str) -> bool:
+        """Return True if *canonical_id* exists in this store or any dataset store."""
+        try:
+            type_name, key = parse_id(canonical_id)
+        except ValueError:
+            return False
+        if self._object_path(type_name, key).exists():
+            return True
+        for ds in self._dataset_stores:
+            if ds._is_local(canonical_id):
+                return True
+        return False
+
     def _dataset_store_for(self, canonical_id: str) -> KnowledgeStore | None:
         """Return the dataset store that owns *canonical_id* (last-wins), or None."""
         for ds in reversed(self._dataset_stores):

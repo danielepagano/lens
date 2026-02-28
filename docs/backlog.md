@@ -12,8 +12,6 @@
     1. Appends or discards the response text based on the related parameter
     2. Calls the operator, which will add its annotation to the cursor and perform its logic as usual. This system can chain multiple tool and LLM calls, so it's effectively an agentic loop and may need safeguards; for now allow the manually-invoked operator to call another, but further calls require user confirmation with a preview of output so far and what's being called.
   - Note that there is no "callback" of the original operator, it's always a hand off (not a stack). The original operator cedes control and is done; the child may call a _new_ instance of that operator to wrap things up (it could be part of the request even), but that's it.
-- **Tag kb items with `@` mentions in prompts**
-  - In @lens/core/operator.py whenever we are processing a command with pin/unpin and a prompt, look for the following pattern: the character "@", a valid @lens/core/knowledge.py canonical_id (so overall `@`+`_VALUE_PATTERN`+`.`+`_KEY_PATTERN`) and then whitespace or end of line/string. If you match that pattern, take the value after @, validate that the id matches to an object that exists without retrieving it (new knowledge store method?) and if so add the id to the pins of that operator before we perform a context-aware crawl. In other words it's equivalent to saying `--pin <id>` in a CLI command, but can happen organically in the request
 
 ## Operator Backlog  
   - `remember` could integrate some aspects of a given text into a new or existing knowledge object.
