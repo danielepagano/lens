@@ -3,10 +3,10 @@
 ## General Backlog
 - **Dataset-filtered operator registration**: operators should declare which datasets they are relevant to; only applicable operators get included in the tool registry for a given session. Currently all registered operators are offered as tools to every LLM call regardless of context. The design intent (from the original tools spec) was: "if the current dataset supports the operator, they are added to the request metadata." This is not a security filter, but a convenience tag, so the operator exclusion just happens in the CLI availability (command not added to `typer`) and tool insertion (tool is not registered), not in-depth in the code.
 
-- **Hidden AI sections**: to complement current comments not shown to the AI, create comments that are specific for it, i.e. a section type that is included in AI context but hidden from the user in rendered output, and possibly obfuscated in source. Convention: a fenced HTML comment with a `ai:` prefix designating the used, and possible postfix for specific features; to start, we'll have `ai:secret:`, which has obfuscated content stored at rest. Since this is just to prevent accidental peeking, ROT13 encoding is sufficient. Examples of single and multi-line sections.
+- **Hidden AI sections**: to complement current comments not being shown to the AI, create other comments that are specific for AI use, i.e. included in AI context but hidden from the user in rendered output, and possibly obfuscated in source. Convention: a fenced HTML comment with the ai: prefix designating it, and possible postfix for specific features; to start, we'll have `ai:secret:`, which has obfuscated content stored at rest. Since this is just to prevent accidental peeking, ROT13 encoding is sufficient. Examples of single and multi-line sections:
   
   ```markdown
-  <!-- ai: remind the player they can also use intimidation checks against this foe in combat>
+  <!-- ai: remind the player they can also use intimidation checks against this foe in combat -->
 
   <!-- ai:secret:
   [rot13-encoded content here]
@@ -17,19 +17,20 @@
   - Whenever we are about to store LLM output to disk, we do the opposite, looking for new secret sections and encoding them. We leave non-secret comments alone.
   - System prompt preamble should inform the AI about this note-taking (similar to thinking tokens) and secret-making capability.
 
-- **Section operator: auto-write and front matter pin support**: `section` should accept pin/un-pin parameters in its annotation and apply those to the newly created child node's front matter. It should also accept a `chain` parameter which automatically uses the the given operator and parameters (for example to start writing in the new section). This is helpful so both operations are in the same transaction and can be invoked by a single tool call. Make `chain` re-usable parameter like pin/un-pin so we can add it to other operators later.
+- **Improved Section operator: chain and front matter pin support**: `section` should accept pin/un-pin parameters in its annotation and apply those to the newly created child node's front matter. It should also accept a `chain` parameter, which automatically uses the the given operator and parameters (for example to start writing in the new section). chained operators are in the same transaction and can be invoked by a single tool call. Make `chain` re-usable parameter like pin/un-pin so we can add it to other operators later.
   
   ```markdown
   [section:castle-dorn
     chain:
-      play
+      play:
         prompt: party arrives at Castle Dorn; the guards are suspicious
     kb_pin: location.castle-dorn, npc.king-aldric, faction.court!
     kb_unpin: location.capital-city
   ]: #
 
   ```
-  As shown above, the operator itself in the parent will have these parameter captured (as usual), but additionally Lens also adds the pins/unpins to the front matter section of the new node, causing subsequent context assembly for that section to automatically loads appropriate context, lore, secrets, and rules. After the front matter, Lens will also output the annotation for the given chained operator and run it. If that operator also has a chain, this will repeat. This allows concatenation of actions without infinite looping.
+  As shown above, the operator itself in the parent will have these parameter captured (as usual), but additionally Lens also adds the pins/unpins to the front matter section of the new node, causing subsequent context assembly for that section to automatically loads appropriate context, lore, secrets, and rules. 
+  After the front matter, Lens will also output the annotation for the given chained operator and run it (this may have its own pins separately from the front matter, as usual. If that operator also has a chain, this will repeat. This allows concatenation of actions without infinite looping.
 
 ## Operator Backlog
   - `design` — Campaign and world-building operator. A structured conversation for building KB objects before or between sessions. Produces `npc.*`, `location.*`, `faction.*`, and `front.*` objects with both public lore and hidden `dm:` sections (true motivations, secrets, escalation plans). System prompt focuses on building a living world whose elements have their own goals and plans.
