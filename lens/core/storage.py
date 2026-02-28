@@ -253,6 +253,24 @@ class Storage:
             capture_output=True,
         )
 
+    def has_remote(self) -> bool:
+        """Return True if at least one git remote is configured."""
+        r = subprocess.run(
+            [self._GIT, "remote"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+        )
+        return bool(r.stdout.strip())
+
+    def push(self) -> None:
+        """Push the current branch to its upstream (requires remote configured)."""
+        subprocess.run(
+            [self._GIT, "push"],
+            cwd=self._root,
+            check=True,
+        )
+
     # ------------------------------------------------------------------
     # File write operations — all trigger ownership check on first call
     # ------------------------------------------------------------------

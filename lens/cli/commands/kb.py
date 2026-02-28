@@ -15,7 +15,7 @@ from lens.core.commands.kb import (
 )
 from lens.core.exceptions import LensException
 
-app = typer.Typer(no_args_is_help=True)
+app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, get, tag, template, copy, rename, delete).")
 
 
 @app.command(no_args_is_help=True)

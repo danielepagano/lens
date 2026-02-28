@@ -2,10 +2,11 @@
 
 ## General Backlog  
 - **KB Datasets**: a dataset is just a knowledge tree inside Lens itself (not the project... easily more modular one day). Then:
-  - Projects can import zero or more datasets using `lens.toml`
-  - Whenever we `look up` a kb id, we look first in the project, then in any imported data sets (later datasets in the import list win, if a key overlaps, so we can layer knowledge)
-  - Whenever we `save` a kb item, we store it in the project, since datasets are immutable. This lets us safely customize datasets (overwrite and hide original), or use objects within as templates for "more specific than object-type" things (copy a dataset item into project with a different id)
-  - Lens operators can also be tied to dataset (only be activated if the dataset is used). This lets us use a D&D operator that knows how to run combat only if we have the data to back it, and the operator can _rely_ on specific data being present because it's in the source code, so it can self-pin items as needed
+  - Projects can import zero or more datasets using `lens.toml` (new configuration, list of strings)
+  - Whenever we look up a kb id, we look first in the project (as we do now), then in any imported data sets (later datasets in the import list win if a key appears in multiple, so we can layer knowledge)
+  - Whenever we alter a kb item (change content or tags) that is not project-local, instead apply the change to the project (essentially copy the item over and update), since datasets are immutable from a project. This lets us safely customize datasets (overwrite and hide original), or use objects within as templates for "more specific than object-type" things (copy a dataset item into project with a different id). Deleting a datastore kb object is a no-op.
+  - Lens operators can also be tied to dataset (only be activated if the dataset is currently used in the project). This lets us use a D&D operator that knows how to run combat only if we have the data to back it, and the operator can _rely_ on specific data being present because it's in the source code, so it can self-pin items as needed.  
+    - Implement this by simply not loading the CLI operators during typer discovery, as this is a convenience block, not a security one.
 - **Operator skill**: let the LLM switch operators  
   - Use an LLM API that supports skills and ensure it works
   - Define a skill to load an operator: type, id (may be optional), parameters for it, whether if the LLM response text is part of the narrative (hand off to this operator now) or is to be dropped (thinking mode without using thinking mode), and whether the original operator should be re-invoked with the added narrative (and maybe further instructions) after that sub-agent is completed (agentic loop)

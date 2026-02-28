@@ -24,4 +24,4 @@ def _discover_operators() -> Iterator[tuple[str, Typer]]:
 
 def register_operators(main_app: typer.Typer) -> None:
     for name, app in _discover_operators():
-        main_app.add_typer(app, name=name)
+        main_app.add_typer(app, name=name, rich_help_panel="Operators")
