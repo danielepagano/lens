@@ -78,9 +78,143 @@ Being able to leverage the KB as well as operators really gives us a rich toolse
 
 # The Core Lens RPG MVP
 
-Based on the above, it seems that we need:  
-1. Backlog items completion for datasets and operator skill 
+Based on the above, it seems that we need:
+1. Backlog items completion for datasets and operator skill
 2. Essential (2-3) facets for role-playing we can use, each with a focus and skill linkage
 3. Structured testing with some curated kb objects to see how it actually runs
 
 It seems that should help us snowball into usefulness.
+
+---
+
+# Refined MVP Plan
+
+## Design Principles
+
+The player is the mechanical game engine. They roll dice, track HP, run initiative, and resolve combat math — exactly as at a tabletop. The AI is a **narrative GM**: it sets scenes, voices NPCs, negotiates difficulty, directs enemy intent, and keeps the world alive and reactive. It never resolves dice, tracks numbers, or plays the characters. The artifact produced is a Lens narrative tree: a fractal record of the session that is itself interesting to read.
+
+The differentiator is **guided AI narrative with curated, evolving context**. Everything else (mechanical automation, polished UI, encounter balancing tools) is future scope. The MVP goal is to find the rough edges of that core experience and iterate toward something genuinely fun.
+
+## Phase 1: Tech Additions
+
+### 1. Hidden DM sections in KB objects
+
+KB objects (and potentially narrative nodes) need a new section type that is:
+- **Included** in AI context (unlike existing HTML comments, which are stripped)
+- **Hidden** from the user in rendered output (uses HTML comment syntax so it's invisible in any markdown renderer)
+- **Obfuscated** in source so players don't casually read it while editing the file
+
+Proposed convention — a fenced HTML comment with a `dm:` prefix:
+
+```markdown
+<!-- dm:
+[rot13-encoded content here]
+-->
+```
+
+Lens behavior:
+- On context assembly (`assemble_prompt`): decode ROT13, include decoded content inline after the object's public body, wrapped in a clear delimiter so the AI understands its nature (e.g., `[DM PRIVATE — not visible to player: ...]`)
+- On write-back (when `advance` or `design` updates a KB object): re-encode the `dm:` section with ROT13 before saving
+- The AI receives a preamble in its system prompt: content in these blocks is DM planning — the user cannot read it; use it to inform behavior but do not reference it directly
+
+ROT13 is intentionally not secure — it's just enough friction to prevent casual reading during a session. The benefit over a separate `dm.notes.*` namespace is **locality**: the king's secrets live in `npc.king`, the dungeon's traps in `location.dungeon`, and they get loaded automatically whenever the relevant object is pinned. No separate bookkeeping.
+
+### 2. Section operator: front matter pin support
+
+The `section` operator (which creates a child node) should support writing front matter to the newly created node, specifically `kb_pin` and `kb_unpin` lists. This allows the AI to curate its own context per scene:
+
+When the AI creates a new section for "the party arrives at Castle Dorn," it emits:
+
+```
+[section:castle-dorn
+  prompt: party arrives at Castle Dorn to seek an audience with the king
+  pins: location.castle-dorn, npc.king-aldric, faction.court!
+]: #
+```
+
+Lens writes that `kb_pin` list into the new node's front matter. From that point forward, context assembly for that section loads exactly the right lore and hidden DM notes without further instruction. The `!` expansion means linked objects (the king's advisors, the court faction's rivals) also resolve automatically.
+
+This is the mechanism that makes scene-by-scene context curation practical — the AI sets up its own context as it goes.
+
+### 3. Four MVP operators
+
+#### `design` — Campaign and scene planning (planning phase)
+
+A structured conversation operator for building the world before or between sessions. Invoked by the player/DM collaboratively. Produces KB objects with both public lore and hidden `dm:` sections.
+
+System prompt focus: you are building a living world. For each element (NPC, location, faction, front), generate public-facing description *and* hidden DM notes containing: true motivations, secrets, what they would reveal under pressure, how they connect to other elements, what their "plan" is if left alone. Structure outputs so they can be saved directly as KB objects.
+
+Typical outputs:
+- `npc.*` — character with public description + hidden agenda/secrets
+- `location.*` — place with public description + hidden features/traps/DM notes
+- `faction.*` — group with public stance + hidden goals and pressure points
+- `front.*` — active problem/quest with current state + DM escalation plan (what happens if players ignore this)
+
+#### `play` — Narrative GM, home state (play phase)
+
+The primary operator. Narrates the world, voices NPCs as characters (not summaries — actually speaks as them), sets challenges, negotiates difficulty for uncertain actions ("that's going to be hard given the crowd's mood — call it a DC 14 Persuasion, roll it"), and narrates consequences when the player reports their roll. Never resolves dice. Never moves the story past a player decision point without stopping.
+
+System prompt focus: immersive, responsive narrator with player agency as a hard constraint. The player handles all mechanics. When action is uncertain, name the check type and roughly calibrate difficulty, then stop. When the player reports an outcome, narrate consequences and continue. Voice NPCs with their own goals — they push back, lie, get angry, reveal things under pressure.
+
+#### `encounter` — Combat narrator (play phase, sub-node)
+
+A sub-node operator for the duration of a combat encounter. Two phases within one node:
+
+**Setup**: Given the story context and party composition (from pinned PC KB objects), describe the encounter — location, enemies, their goals (not just "attack," but *why*), and what tactical features of the environment matter. This is where encounter balance happens narratively: the AI knows whether this should be a grind, a skirmish, or something to potentially flee from.
+
+**Running**: Player asks "what do the orcs do?" → AI narrates enemy intent and tactics as a narrator directing characters ("the wounded one falls back while the other two try to cut off your retreat") → player resolves mechanically → player reports narrative outcome ("the flanking one is down, the captain is bloodied but still up") → AI responds to that state and plans the next beat. Enemies react to pressure: the one who's losing might break and flee, the leader might shift to a hostage gambit.
+
+Sub-node closes with a brief narrative summary that surfaces to the parent section.
+
+#### `advance` — Between-scene accounting (transition phase)
+
+The operator for the seam between scenes: after a section closes (or when the player takes a long rest, says "we make camp," etc.), `advance` does the GM's off-screen work.
+
+System prompt focus: you are doing GM accounting. Review what just happened. Assess each active front: did this advance it, disrupt it, or resolve it? Update the relevant KB objects (NPC hidden sections — someone was deceived and now suspects the party; a front loses a step because the players destroyed the ritual components). Then set up the next scene: create a section node with appropriate front matter pins, describe the opening situation, and stop for the player to engage.
+
+This operator gives the adversaries their moves. While the player rests, time passes in the world: fronts tick forward, NPCs act on their plans, consequences of earlier choices ripple out. It's where the world feels alive and reactive rather than waiting.
+
+## Campaign Lifecycle
+
+```
+design phase:
+  design → KB objects: locations, factions, NPCs (public lore + hidden dm: sections)
+  design → fronts: active problems with hidden escalation timelines
+
+play phase (repeating):
+  play      → scene narration, NPC voices, skill negotiation
+  encounter → combat sub-nodes as needed (enemy setup + per-turn direction)
+  advance   → close scene, update front states and NPC hidden sections,
+              open next section with curated front matter pins
+
+adventure complete:
+  all fronts reach terminal state (resolved, foiled, or transformed by player choices)
+```
+
+The world has plans. Players have agency. Fronts track the collision between them. No ending is written in advance — the ending emerges from the state of the fronts.
+
+## Sandbox First Steps
+
+1. Create a small D&D 5e campaign KB in a sandbox project:
+   - 3–4 KB objects for core rules references (ability checks, conditions, basic combat)
+   - 2–3 NPCs with public lore and `dm:` hidden agendas
+   - 2 locations with `dm:` notes
+   - 2 fronts (one near-term, one slow-burn)
+   - PC character sheets as KB objects (pinned at session root)
+
+2. Implement `design` and `play` first — the planning conversation and the baseline narration. These can be tested without combat.
+
+3. Add `encounter` once the narrative loop is stable.
+
+4. Add `advance` to close the loop — this is what makes the world feel reactive.
+
+5. Play through a short scenario, find bugs, refine prompts. The prompts can be thin early; the KB objects do most of the work.
+
+## Out of Scope for MVP
+
+- Automated dice rolling or mechanical resolution by the AI
+- Fine-grained combat tracking (HP, initiative order) — player owns this
+- Encrypted (truly secure) DM notes — ROT13 obfuscation is sufficient
+- Multiple concurrent fronts across multiple campaigns
+- Auto-triggering `advance` — player invokes it explicitly ("we take a long rest")
+- NPC sub-agents with isolated context sandboxes (compelling future direction, not now)
