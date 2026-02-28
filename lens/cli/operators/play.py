@@ -4,11 +4,11 @@ import asyncio
 
 import typer
 
-import lens.core.operators.play as _play_ops  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers play tool
+import lens.core.operators.write as _write_ops  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
 from lens.core.operator import OperatorError
-from lens.core.operators.write import WriteOperator
+from lens.core.operators.play import PlayOperator
 from lens.core.project import ProjectSession
 
 app = typer.Typer(invoke_without_command=True)
@@ -17,17 +17,18 @@ app = typer.Typer(invoke_without_command=True)
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
+
 @app.callback()
-def write(
+def play(
     prompt: str | None = typer.Argument(
         None,
-        help="Writing direction/instruction",
+        help="Scene direction or situation for the player-facing moment",
     ),
     pin: list[str] = typer.Option(
         [],
         "--pin",
         "-p",
-        help="KB ID to pin for this operator (repeatable)",
+        help="KB ID to pin for this operator (repeatable); at least one must be tagged 'pc'",
     ),
     unpin: list[str] = typer.Option(
         [],
@@ -48,23 +49,26 @@ def write(
         help="Discard generated text and regenerate",
     ),
 ) -> None:
-    """Generate narrative text at the cursor."""
+    """Narrate a player-agency moment in GM voice, then pause for player response.
+
+    Requires at least one player character (KB object tagged 'pc') to be pinned.
+    """
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:
-        typer.echo(f"lens write: {e}", err=True)
+        typer.echo(f"lens play: {e}", err=True)
         raise typer.Exit(1)
 
     narrative = session.active_narrative
     if narrative is None:
         typer.echo(
-            "lens write: no active narrative (run 'lens use <slug>' first)", err=True
+            "lens play: no active narrative (run 'lens use <slug>' first)", err=True
         )
         raise typer.Exit(1)
 
     try:
         asyncio.run(
-            WriteOperator.run_inline(
+            PlayOperator.run_inline(
                 session=session,
                 narrative=narrative,
                 prompt=prompt,
@@ -76,12 +80,12 @@ def write(
                 on_confirm=confirm_tool_call,
             )
         )
-        print() # ensure final newline
+        print()  # ensure final newline
     except OperatorError as e:
-        typer.echo(f"lens write: {e}", err=True)
+        typer.echo(f"lens play: {e}", err=True)
         raise typer.Exit(1)
     except LensException as e:
-        typer.echo(f"lens write: {e}", err=True)
+        typer.echo(f"lens play: {e}", err=True)
         raise typer.Exit(1)
     except KeyboardInterrupt:
         print()

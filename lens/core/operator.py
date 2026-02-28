@@ -35,10 +35,11 @@ from lens.core.annotations import (
 )
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import LLMError, generate
+from lens.core.llm import LLMError, GenerateResult, ToolCall, generate, generate_with_tools
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
+from lens.core.tools import OperatorToolDef, get_tool_registry, register_operator_tool
 
 _AT_MENTION_RE = re.compile(
     r"@([a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+)(?=\s|$)", re.MULTILINE
@@ -452,6 +453,55 @@ class ContextAwareOperator(Operator):
                 found.append(cid)
         return found
 
+    @classmethod
+    def check_requirements(
+        cls,
+        session: ProjectSession,
+        cursor: NarrativeNode,
+        pins: list[str],
+    ) -> None:
+        """Override to raise :class:`OperatorError` if prerequisites are not met.
+
+        Called at the start of every fresh inline generation. The default
+        implementation imposes no requirements.
+        """
+
+    @classmethod
+    def _make_invoke_fn(cls: type["ContextAwareOperator"]) -> Any:
+        """Return an async invoke_fn that calls this operator's run_inline.
+
+        Used by :meth:`register_as_tool` to create a tool that hands off
+        generation to this operator. The caller's depth is incremented so
+        that nested tool calls beyond the first require user confirmation.
+        """
+        async def _invoke(
+            args: dict[str, Any],
+            session: ProjectSession,
+            narrative: NarrativeNode,
+            depth: int,
+            on_token: Callable[[str], Awaitable[None]] | None,
+            on_confirm: Callable[[str, str], Awaitable[bool]] | None,
+        ) -> None:
+            await cls.run_inline(
+                session=session,
+                narrative=narrative,
+                prompt=args.get("prompt"),
+                pins=[],
+                unpins=[],
+                llm_id=None,
+                retry=False,
+                on_token=on_token,
+                on_confirm=on_confirm,
+                _tool_call_depth=depth + 1,
+            )
+
+        return _invoke
+
+    @classmethod
+    def register_as_tool(cls, tool_def: OperatorToolDef) -> None:
+        """Register this operator in the tool registry as an LLM-callable tool."""
+        register_operator_tool(cls.name, tool_def, cls._make_invoke_fn())
+
     @staticmethod
     async def stream_output(
         messages: list[dict[str, str]],
@@ -609,6 +659,8 @@ class ContextAwareOperator(Operator):
         llm_id: str | None,
         retry: bool,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        _tool_call_depth: int = 0,
+        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
     ) -> None:
         """Run the inline-appending flow (fresh / continue / retry / update-retry).
 
@@ -644,21 +696,27 @@ class ContextAwareOperator(Operator):
                 await cls._do_update_retry(
                     session, narrative, cursor, rel_path,
                     existing_ann, prompt, pins, unpins, llm_id,
+                    on_token=on_token,
                 )
             elif retry:
                 await cls._do_retry(
                     session, narrative, cursor, rel_path,
                     existing_ann,
+                    on_token=on_token,
                 )
             else:
                 await cls._do_continue(
                     session, narrative, cursor, rel_path,
                     existing_ann,
+                    on_token=on_token,
                 )
         else:
             await cls._do_fresh_inline(
                 session, narrative, cursor, rel_path,
                 prompt, pins, unpins, llm_id,
+                on_token=on_token,
+                tool_call_depth=_tool_call_depth,
+                on_confirm=on_confirm,
             )
 
     @classmethod
@@ -673,6 +731,8 @@ class ContextAwareOperator(Operator):
         unpins: list[str],
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        tool_call_depth: int = 0,
+        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
     ) -> None:
         ann_params: dict[str, Any] = {"steps": 1}
         if prompt:
@@ -691,20 +751,152 @@ class ContextAwareOperator(Operator):
         probe_op = cls(session.new_storage(), narrative)
         tag = probe_op.build_open_tag(None, ann_params)
 
+        cls.check_requirements(session, cursor, pins)
+
         crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
-        messages = probe_op.build_messages(crawl_result, ann_params)
 
-        try:
-            content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
-        except LLMError as e:
-            raise OperatorError(f"LLM error: {e}") from e
+        registry = get_tool_registry()
+        available_tools = {n: v for n, v in registry.items() if n != cls.name}
 
+        content: str
+        tool_call: ToolCall | None
+
+        if available_tools:
+            # Augment system prompt with tool snippets
+            augmented_system = probe_op.system_prompt
+            for _n, (tdef, _fn) in available_tools.items():
+                augmented_system += "\n\n" + tdef.prompt_snippet
+
+            messages = assemble_prompt(
+                crawl_result,
+                system_prompt=augmented_system,
+                instruction=probe_op.build_instruction(ann_params),
+            )
+
+            # Build tools payload, injecting handoff-control params into every tool's schema.
+            HANDOFF_PARAMS: dict[str, Any] = {
+                "keep_text": {
+                    "type": "boolean",
+                    "description": (
+                        "If true (default), the text you wrote before calling this tool is "
+                        "saved to the narrative. If false, it is discarded."
+                    ),
+                },
+            }
+            tools_payload: list[dict[str, Any]] = []
+            for n, (tdef, _fn) in available_tools.items():
+                params = dict(tdef.parameters)
+                props: dict[str, Any] = dict(params.get("properties", {}))
+                props.update(HANDOFF_PARAMS)
+                params["properties"] = props
+                tools_payload.append({
+                    "type": "function",
+                    "function": {
+                        "name": n,
+                        "description": tdef.prompt_snippet,
+                        "parameters": params,
+                    },
+                })
+
+            try:
+                result: GenerateResult = await generate_with_tools(
+                    messages,
+                    session.project_root,
+                    llm_id=llm_id,
+                    tools=tools_payload,
+                    on_token=on_token,
+                )
+            except LLMError as e:
+                raise OperatorError(f"LLM error: {e}") from e
+
+            content = result.text
+            tool_call = result.tool_call
+        else:
+            messages = probe_op.build_messages(crawl_result, ann_params)
+            try:
+                content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
+            except LLMError as e:
+                raise OperatorError(f"LLM error: {e}") from e
+            tool_call = None
+
+        # Tool call path
+        if tool_call is not None and tool_call.name in available_tools:
+            tdef, invoke_fn = available_tools[tool_call.name]
+            op = cls(session.new_storage(owner=owner), narrative)
+            await cls._dispatch_tool_call(
+                tool_call=tool_call,
+                text=content,
+                cursor=cursor,
+                op=op,
+                tag=tag,
+                session=session,
+                narrative=narrative,
+                tool_def=tdef,
+                invoke_fn=invoke_fn,
+                llm_id=llm_id,
+                depth=tool_call_depth,
+                on_token=on_token,
+                on_confirm=on_confirm,
+                pins=pins,
+                unpins=unpins,
+                prompt=prompt,
+            )
+            return
+
+        # Normal path (no tool call or unknown tool name)
         if not content.strip():
             raise OperatorError("no content generated")
 
         op = cls(session.new_storage(owner=owner), narrative)
         op.write_start(cursor, tag, content)
         print(f"Written to {cursor.path_str()}", file=sys.stderr)
+
+    @classmethod
+    async def _dispatch_tool_call(
+        cls,
+        *,
+        tool_call: ToolCall,
+        text: str,
+        cursor: NarrativeNode,
+        op: "ContextAwareOperator",
+        tag: str,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        tool_def: OperatorToolDef,
+        invoke_fn: Any,
+        llm_id: str | None,
+        depth: int,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        on_confirm: Callable[[str, str], Awaitable[bool]] | None,
+        pins: list[str],
+        unpins: list[str],
+        prompt: str | None,
+    ) -> None:
+        """Dispatch a tool call produced by the LLM during inline generation.
+
+        At depth 0 the call is automatic. At depth ≥ 1 the ``on_confirm``
+        callback is required and the user must approve before continuing.
+        """
+        keep_text = bool(tool_call.arguments.get("keep_text", tool_def.keep_text))
+
+        if depth >= 1:
+            if on_confirm is None:
+                raise OperatorError(
+                    "tool call at depth > 0 requires an on_confirm callback"
+                )
+            confirmed = await on_confirm(
+                text.strip() or "(no text)",
+                f"{tool_call.name}({tool_call.arguments})",
+            )
+            if not confirmed:
+                if keep_text and text.strip():
+                    op.write_start(cursor, tag, text)
+                return
+
+        if keep_text and text.strip():
+            op.write_start(cursor, tag, text)
+
+        await invoke_fn(tool_call.arguments, session, narrative, depth, on_token, on_confirm)
 
     @classmethod
     async def _do_continue(

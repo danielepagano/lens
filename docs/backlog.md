@@ -1,33 +1,51 @@
 # Lens Backlog
 
-## General Backlog  
-- **Operator tools**: let the LLM switch operators  
-  - Define function tools to apply operators. Each tool includes:  
-    - operator slug, unique id (may be optional), and operator parameters schema  
-    - whether the LLM response text is part of the narrative (i.e. "hand off to this operator after what I wrote") or is to be dropped and not stored in narrative node (i.e. "I was just thinking out loud, ignore my response and just call the operator")
-    - whether the current operator should be closed before handing off (e.g. a `section` may remain open, but a `write` would close since it doesn't nest other nodes). If the operator wants to close AND ignore its response, it would generate a self-closing tag (i.e. it was just called for its side-effects)
-  - These are extensible: operators define their own tool definition and (if the current dataset supports the operator) they are added to the request metadata.
-  - The operator also defines a prompt snippet with instructions on what the operator is, so the LLM has context of when to call; these snippet are appended to the system prompt
-  - When a response return, a pre-processor looks for tool calls in the response and  
-    1. Appends or discards the response text based on the related parameter
-    2. Calls the operator, which will add its annotation to the cursor and perform its logic as usual. This system can chain multiple tool and LLM calls, so it's effectively an agentic loop and may need safeguards; for now allow the manually-invoked operator to call another, but further calls require user confirmation with a preview of output so far and what's being called.
-  - Note that there is no "callback" of the original operator, it's always a hand off (not a stack). The original operator cedes control and is done; the child may call a _new_ instance of that operator to wrap things up (it could be part of the request even), but that's it.
+## General Backlog
+- **Dataset-filtered operator registration**: operators should declare which datasets they are relevant to; only applicable operators get included in the tool registry for a given session. Currently all registered operators are offered as tools to every LLM call regardless of context. The design intent (from the original tools spec) was: "if the current dataset supports the operator, they are added to the request metadata." This is not a security filter, but a convenience tag, so the operator exclusion just happens in the CLI availability (command not added to `typer`) and tool insertion (tool is not registered), not in-depth in the code.
 
-## Operator Backlog  
-  - `remember` could integrate some aspects of a given text into a new or existing knowledge object.
-    - For example, one could be talking with an NPC and then ask the operator to update `person.name`: the operator looks at the person template to see what kind of facts this knowledge item tracks, and then gathers what we learned into that object, either by creating it or integrating new knowledge. 
-    - The user could apply the operator to the same text towards multiple objects, and only the details relevant to that object would be captured. For example, a scene can be remembered for the city location, market location, and a specific merchant encountered, but not for other merchants or other details.
-    - _Why?_ I need targeted changes that are mo sticky than summaries, which are more the narrative than the current state
-  - `play` could be like write, but has knowledge of who the player and non-player characters in the story are (like, use kb tags). It generates text in a way that delegates agency to the player characters (does not write what they think, feel, decide, or do), giving the user the space to make those decisions.
-    - The opposite could also be true, where the user asks the AI to "play as" a character (autonomously or with direction). This allows the user to be the DM and/or players, maintaining that role isolation in the narrative beats. 
-    - _Why?_ This is the baseline "writing style" I need to always occur when I'm not writing open-ended narrative
-  - `dnd` could be even more specialized than `play`, and even be a family of D&D operators: having the user have player characters merely attempt difficult actions using the D&D ruleset, and having a conversation with the AI on what checks could be used (e.g. "Roll a stealth check to try to sneak by the guards"); the human could then roll dice and use RPG character sheets of their player characters; the AI then makes a determination of level of success and moves the narrative forward accordingly. 
-    - The raw exchange (all the checks and rolls) would be in a sub-node, but only the result would be part of the parent narrative (specialized summary)
-    - _Why?_ I believe I have some key insights on this in my old AI DM Manual, but it lacked disciplined context management (I had to hack it with scripts): now I have everything I need to keep the AI focused on what matters: it should work!
+- **Hidden AI sections**: to complement current comments not shown to the AI, create comments that are specific for it, i.e. a section type that is included in AI context but hidden from the user in rendered output, and possibly obfuscated in source. Convention: a fenced HTML comment with a `ai:` prefix designating the used, and possible postfix for specific features; to start, we'll have `ai:secret:`, which has obfuscated content stored at rest. Since this is just to prevent accidental peeking, ROT13 encoding is sufficient. Examples of single and multi-line sections.
+  
+  ```markdown
+  <!-- ai: remind the player they can also use intimidation checks against this foe in combat>
+
+  <!-- ai:secret:
+  [rot13-encoded content here]
+  -->
+  ```
+  Lens behavior:
+  - These sections are passed verbatim to the AI, except that on context assembly (`assemble_prompt`) we do a pass to find `ai:secret:` sections, decode the ROT13, and replace the content with decoded version. We keep the comment format so the AI reflexively knows how to add secretes. This decoding is not added to other places like `kb get` etc.
+  - Whenever we are about to store LLM output to disk, we do the opposite, looking for new secret sections and encoding them. We leave non-secret comments alone.
+  - System prompt preamble should inform the AI about this note-taking (similar to thinking tokens) and secret-making capability.
+
+- **Section operator: auto-write and front matter pin support**: `section` should accept pin/un-pin parameters in its annotation and apply those to the newly created child node's front matter. It should also accept a `chain` parameter which automatically uses the the given operator and parameters (for example to start writing in the new section). This is helpful so both operations are in the same transaction and can be invoked by a single tool call. Make `chain` re-usable parameter like pin/un-pin so we can add it to other operators later.
+  
+  ```markdown
+  [section:castle-dorn
+    chain:
+      play
+        prompt: party arrives at Castle Dorn; the guards are suspicious
+    kb_pin: location.castle-dorn, npc.king-aldric, faction.court!
+    kb_unpin: location.capital-city
+  ]: #
+
+  ```
+  As shown above, the operator itself in the parent will have these parameter captured (as usual), but additionally Lens also adds the pins/unpins to the front matter section of the new node, causing subsequent context assembly for that section to automatically loads appropriate context, lore, secrets, and rules. After the front matter, Lens will also output the annotation for the given chained operator and run it. If that operator also has a chain, this will repeat. This allows concatenation of actions without infinite looping.
+
+## Operator Backlog
+  - `design` — Campaign and world-building operator. A structured conversation for building KB objects before or between sessions. Produces `npc.*`, `location.*`, `faction.*`, and `front.*` objects with both public lore and hidden `dm:` sections (true motivations, secrets, escalation plans). System prompt focuses on building a living world whose elements have their own goals and plans.
+
+  - `play` *(basic version implemented)* — GM-voice narrative that preserves player agency. Implemented; the RPG-focused system prompt refinement (immersive narrator, skill check negotiation, NPC voicing, stop-for-player-input discipline) is part of the RPG operator work.
+
+  - `encounter` — Combat narrator, replaces the earlier `dnd` operator family concept. A sub-node operator covering a full combat encounter in two phases: (1) setup — describe the encounter location, enemies with their goals, and tactically relevant terrain; (2) running — per-request enemy direction ("the wounded one falls back while the other two flank left"), respond to player-reported outcomes, close with a narrative summary that surfaces to the parent section. The player handles all mechanics; the AI narrates enemy intent only.
+
+  - `advance` — Between-scene accounting, replaces the earlier `remember` concept. Triggered explicitly by the player (long rest, "we make camp", scene transition). Reviews what just happened, assesses active fronts (advanced / disrupted / resolved), updates relevant KB objects including their hidden `dm:` sections (NPC suspicions, front state, world changes), then creates the next section node with appropriate front matter pins and an opening situation. Gives adversaries their moves while the player rests.
+
   - `chat` could spin up an agentic chat in a sub-node to talk about the current goings-on. This can be used for fun ("that was crazy!"), to explore the feeling of characters off the page (maybe then by remembering the results), to plan what happens next, etc. This would be all non-canon narrative, but still contextually kept in the simulation tree; in other words, it would have a self-closing tag with an id and no content bubbled up, e.g. `[chat:reflections/]: #`.
     - _Why?_ Maybe adding it as a sub-node won't work because I need to continue it in parallel with content... but that's also not that hard. Not hard to add if needed.
+
   - `attach` could allow you to attach media within a node: images of characters, maps, reference; you can also use model to look at images and generate text.
     - _Why?_ Mostly useful after web app, just because seems well-rounded, I like making art, and for Nook parity... if I feel like it.
+
 
 ## Lens Web App Sequencing
 
