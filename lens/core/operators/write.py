@@ -16,7 +16,7 @@ from typing import Any, ClassVar
 
 import typer
 
-from lens.core.operator import ContextAwareOperator, OperatorError
+from lens.core.operator import ContextAwareOperator, OperatorError, OperatorToolDef
 from lens.core.project import ProjectSession
 
 # ---------------------------------------------------------------------------
@@ -56,6 +56,32 @@ class WriteOperator(ContextAwareOperator):
     def build_instruction(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt")
         return INSTRUCTION_WITH_PROMPT.format(prompt=prompt) if prompt else INSTRUCTION_CONTINUE
+
+
+# ---------------------------------------------------------------------------
+# Tool registration
+# ---------------------------------------------------------------------------
+
+WriteOperator.register_as_tool(
+    OperatorToolDef(
+        parameters={
+            "type": "object",
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "description": "Writing direction or instruction for the narrative continuation",
+                },
+            },
+        },
+        prompt_snippet=(
+            "Use the 'write' tool to continue open narrative — when you need to narrate "
+            "consequences of player actions, describe the world, or advance story events "
+            "without stopping for player decisions. Provide 'prompt' to guide what to write."
+        ),
+        keep_text=True,
+        close_current=True,
+    )
+)
 
 
 # ---------------------------------------------------------------------------

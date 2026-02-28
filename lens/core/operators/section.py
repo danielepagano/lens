@@ -49,12 +49,12 @@ class SectionOperator(Operator):
     name: ClassVar[str] = "section"
     requires_id: ClassVar[bool] = True
 
-    def start(self, id: str) -> None:
+    def start(self, id: str) -> NarrativeNode:
         """Create a child node and open the section annotation."""
         cursor = self.narrative_root.find_cursor()
         if id in cursor.child_keys():
             raise ValueError(f"section '{id}' already exists")
-        self.create_subnode(cursor, id)
+        return self.create_subnode(cursor, id)
 
     async def end(self, session: ProjectSession, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None) -> None:
         """Close the current section by generating an LLM summary and appending it."""

@@ -13,7 +13,7 @@ import logging
 import os
 import signal
 import tomllib
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -94,6 +94,20 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
         ),
         verbose_llm,
     )
+
+
+@dataclass(slots=True)
+class ToolCall:
+    id: str
+    name: str
+    arguments: dict[str, Any]
+
+
+@dataclass(slots=True)
+class GenerateResult:
+    text: str
+    tool_call: ToolCall | None
+    interrupted: bool
 
 
 def _format_messages(messages: list[dict[str, str]]) -> str:
@@ -231,3 +245,153 @@ async def generate(
     # Re-raise so CLI callers still see a normal ^C after the connection closes.
     if _interrupted:
         raise KeyboardInterrupt
+
+
+async def generate_with_tools(
+    messages: list[dict[str, str]],
+    project_root: Path,
+    *,
+    llm_id: str | None = None,
+    tools: list[dict[str, Any]],
+    on_token: Callable[[str], Awaitable[None]] | None = None,
+    cancel_event: asyncio.Event | None = None,
+) -> GenerateResult:
+    """Stream text + optional tool call from the LLM, returning a GenerateResult.
+
+    Adds ``tools`` and ``tool_choice: "auto"`` to the payload. Text chunks and
+    tool call fragments are accumulated separately from the stream. Raises
+    ``LLMError`` on misconfiguration or API failure.
+    """
+    _cancel = cancel_event if cancel_event is not None else asyncio.Event()
+    _interrupted = False
+    _sigint_installed = False
+
+    loop = asyncio.get_running_loop()
+
+    def _handle_sigint() -> None:
+        nonlocal _interrupted
+        _interrupted = True
+        _cancel.set()
+
+    try:
+        loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        _sigint_installed = True
+    except (NotImplementedError, ValueError):
+        pass
+
+    cfg, verbose = _load_config(project_root, llm_id)
+
+    if verbose:
+        logger.info("LLM PROMPT\n%s", _format_messages(messages))
+
+    url = f"{cfg.base_url.rstrip('/')}/chat/completions"
+    payload: dict[str, Any] = {
+        "messages": messages,
+        "temperature": cfg.temperature,
+        "stream": True,
+        "stream_options": {"include_usage": True},
+        "tools": tools,
+        "tool_choice": "auto",
+    }
+    if cfg.model:
+        payload["model"] = cfg.model
+
+    headers: dict[str, str] = {"Accept": "text/event-stream"}
+    if cfg.api_key:
+        headers["Authorization"] = f"Bearer {cfg.api_key}"
+
+    text_chunks: list[str] = []
+    tool_id = ""
+    tool_name = ""
+    tool_args_fragments: list[str] = []
+    got_tool_call = False
+
+    try:
+        async with httpx.AsyncClient(timeout=cfg.timeout_seconds) as client:
+            async with client.stream("POST", url, json=payload, headers=headers) as response:
+                if response.status_code != 200:
+                    body = await response.aread()
+                    raise LLMError(
+                        f"LLM API returned HTTP {response.status_code}: {body.decode()}"
+                    )
+
+                async for line in response.aiter_lines():
+                    if _cancel.is_set():
+                        break
+
+                    line = line.strip()
+                    if not line or not line.startswith("data: "):
+                        continue
+                    data_str = line[6:]
+                    if data_str == "[DONE]":
+                        break
+
+                    try:
+                        data: dict[str, Any] = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        logger.warning("could not decode LLM chunk: %s", data_str)
+                        continue
+
+                    if data.get("usage") is not None:
+                        usage: dict[str, Any] = data["usage"]
+                        logger.info(
+                            "LLM usage — prompt: %s tokens, completion: %s tokens, total: %s tokens",
+                            usage.get("prompt_tokens", "?"),
+                            usage.get("completion_tokens", "?"),
+                            usage.get("total_tokens", "?"),
+                        )
+
+                    choices: list[Any] = data.get("choices") or []
+                    if not choices:
+                        continue
+                    choice = choices[0]
+                    delta = choice.get("delta", {})
+                    finish_reason = choice.get("finish_reason")
+
+                    # Text content
+                    content: str | None = delta.get("content")
+                    if content:
+                        if on_token:
+                            await on_token(content)
+                        text_chunks.append(content)
+
+                    # Tool call fragments
+                    tc_list: list[Any] = delta.get("tool_calls") or []
+                    if tc_list:
+                        tc = tc_list[0]
+                        if tc.get("id"):
+                            tool_id = tc["id"]
+                        fn = tc.get("function", {})
+                        if fn.get("name"):
+                            tool_name = fn["name"]
+                        if fn.get("arguments"):
+                            tool_args_fragments.append(fn["arguments"])
+
+                    if finish_reason == "tool_calls":
+                        got_tool_call = True
+
+    except httpx.TimeoutException as exc:
+        raise LLMError(f"LLM request timed out after {cfg.timeout_seconds}s") from exc
+    except httpx.RequestError as exc:
+        raise LLMError(f"LLM request failed: {exc}") from exc
+    finally:
+        if _sigint_installed:
+            loop.remove_signal_handler(signal.SIGINT)
+
+    if _interrupted:
+        raise KeyboardInterrupt
+
+    tool_call: ToolCall | None = None
+    if got_tool_call and tool_name:
+        raw_args = "".join(tool_args_fragments)
+        try:
+            parsed_args: dict[str, Any] = json.loads(raw_args) if raw_args else {}
+        except json.JSONDecodeError:
+            parsed_args = {}
+        tool_call = ToolCall(id=tool_id, name=tool_name, arguments=parsed_args)
+
+    return GenerateResult(
+        text="".join(text_chunks),
+        tool_call=tool_call,
+        interrupted=False,
+    )
