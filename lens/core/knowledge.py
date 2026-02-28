@@ -8,6 +8,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, cast
+from lens.core.project import datasets_root, get_selected_datasets
 
 import tomli_w
 
@@ -15,15 +16,6 @@ from lens.core.storage import Storage
 
 _VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 _KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+$")
-
-
-def _datasets_root() -> Path:
-    """Return the ``datasets/`` directory bundled with the Lens package.
-
-    Relative to this file (``lens/core/knowledge.py``), the repo/install root
-    is three levels up, and ``datasets/`` lives there.
-    """
-    return Path(__file__).parent.parent.parent / "datasets"
 
 
 def _is_valid_token(value: str) -> bool:
@@ -113,22 +105,12 @@ class KnowledgeStore:
 
     @classmethod
     def _build_dataset_stores(cls, project_root: Path) -> list[KnowledgeStore]:
-        """Read ``datasets`` from ``lens.toml`` and return read-only stores."""
-        lens_toml = project_root / "lens.toml"
-        if not lens_toml.exists():
-            return []
-        with lens_toml.open("rb") as f:
-            config: dict[str, Any] = tomllib.load(f)
-        raw_project = config.get("project", {})
-        project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
-        raw_names = project.get("datasets", [])
-        dataset_names: list[Any] = cast(list[Any], raw_names) if isinstance(raw_names, list) else []
-        ds_root = _datasets_root()
+        """Read selected datasets and return read-only stores for each."""
+        dataset_names = get_selected_datasets(project_root)
+        ds_root = datasets_root()
         stores: list[KnowledgeStore] = []
         for name in dataset_names:
-            if not isinstance(name, str):
-                continue
-            path = ds_root / str(name)
+            path = ds_root / name
             if path.is_dir():
                 stores.append(cls(path, storage=None))
         return stores

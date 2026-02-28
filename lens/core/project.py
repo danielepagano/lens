@@ -17,6 +17,29 @@ if TYPE_CHECKING:
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
+def datasets_root() -> Path:
+    """Return the ``datasets/`` directory bundled with the Lens package."""
+    return Path(__file__).parent.parent.parent / "datasets"
+
+
+def get_selected_datasets(project_root: Path) -> list[str]:
+    """Return the dataset names from ``[project] datasets`` in lens.toml, or [] if unset."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return []
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project", {})
+    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    raw_names = project.get("datasets", [])
+    dataset_names: list[Any] = cast(list[Any], raw_names) if isinstance(raw_names, list) else []
+    result: list[str] = []
+    for name in dataset_names:
+        if isinstance(name, str):
+            result.append(name)
+    return result
+
+
 def find_git_root_from(start: Path) -> Path:
     """Walk up from *start* and return the nearest directory containing ``.git``.
 

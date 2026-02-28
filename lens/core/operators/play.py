@@ -52,6 +52,8 @@ INSTRUCTION_WITH_PROMPT = (
 class PlayOperator(ContextAwareOperator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = False
+    # example operator dataset limiting
+    # limited_to_datasets: ClassVar[list[str]] = ['dnd']
 
     @property
     def system_prompt(self) -> str:

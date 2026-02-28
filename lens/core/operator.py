@@ -24,8 +24,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, ClassVar
 from collections.abc import Callable, Awaitable
-
 import yaml
+
 
 from lens.core.address import NarrativeAddress
 from lens.core.annotations import (
@@ -64,6 +64,9 @@ class Operator(ABC):
 
     requires_id: ClassVar[bool] = True
     """Whether every annotation for this operator must carry an ID."""
+
+    limited_to_datasets: ClassVar[list[str]] = []
+    """If non-empty, only available if one of the given datasets is currently active."""
 
     def __init__(self, storage: Storage, narrative_root: NarrativeNode) -> None:
         self.storage = storage
@@ -500,7 +503,9 @@ class ContextAwareOperator(Operator):
     @classmethod
     def register_as_tool(cls, tool_def: OperatorToolDef) -> None:
         """Register this operator in the tool registry as an LLM-callable tool."""
-        register_operator_tool(cls.name, tool_def, cls._make_invoke_fn())
+        register_operator_tool(
+            cls.name, tool_def, cls._make_invoke_fn(), limited_to_datasets=list(cls.limited_to_datasets)
+        )
 
     @staticmethod
     async def stream_output(
@@ -755,7 +760,7 @@ class ContextAwareOperator(Operator):
 
         crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
 
-        registry = get_tool_registry()
+        registry = get_tool_registry(session.project_root)
         available_tools = {n: v for n, v in registry.items() if n != cls.name}
 
         content: str
@@ -849,7 +854,6 @@ class ContextAwareOperator(Operator):
 
         op = cls(session.new_storage(owner=owner), narrative)
         op.write_start(cursor, tag, content)
-        print(f"Written to {cursor.path_str()}", file=sys.stderr)
 
     @classmethod
     async def _dispatch_tool_call(

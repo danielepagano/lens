@@ -1,7 +1,6 @@
 # Lens Backlog
 
 ## General Backlog
-- **Dataset-filtered operator registration**: operators should declare which datasets they are relevant to; only applicable operators get included in the tool registry for a given session. Currently all registered operators are offered as tools to every LLM call regardless of context. The design intent (from the original tools spec) was: "if the current dataset supports the operator, they are added to the request metadata." This is not a security filter, but a convenience tag, so the operator exclusion just happens in the CLI availability (command not added to `typer`) and tool insertion (tool is not registered), not in-depth in the code.
 
 - **Hidden AI sections**: to complement current comments not being shown to the AI, create other comments that are specific for AI use, i.e. included in AI context but hidden from the user in rendered output, and possibly obfuscated in source. Convention: a fenced HTML comment with the ai: prefix designating it, and possible postfix for specific features; to start, we'll have `ai:secret:`, which has obfuscated content stored at rest. Since this is just to prevent accidental peeking, ROT13 encoding is sufficient. Examples of single and multi-line sections:
   
