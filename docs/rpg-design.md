@@ -51,11 +51,11 @@ That's too slow/overly elaborate for a simple perception check, but we can see t
 Now with Lens, we can do something different than that, because we have sub-nodes. So instead of using thinking mode and going back and forth, we instead hand off the job to another agent in a sub-content, still with different abilities and goals, but directly in charge. We could also use thinking mode, but we try not so we can go faster/cheaper. So the above interaction would work as follows (quoted items do not produce visible output):
 
 - Player: I look for the switch
-> - GM AI: Not automatic success, so let's switch to skill checks mode: `{skill:exploration, context:Player wants to look for the switch, subnode:exploring-room discardRestOfReply:true}`
+> - GM AI: Not automatic success, so let's switch to skill checks mode: `{play:explore-room, prompt:Player wants to look for the switch, discardRestOfReply:true}`
 > - Lens (pattern-matching, not AI): `Detected operator annotation: discarding rest of response and applying exploration operator with the given task plus context` (makes an invisible annotation, which calls the LLM again)
-- GM AI (exploration): You look for the switch, but the room is filled with smoke; roll a perception check with disadvantage because of the smoke. DC 15.
+- GM AI (play): You look for the switch, but the room is filled with smoke; roll a perception check with disadvantage because of the smoke. DC 15.
 - Player: 13
-- GM AI (exploration): The smoke makes it really hard to see anything right now, you need to get closer, or clear the smoke.
+- GM AI (play): The smoke makes it really hard to see anything right now, you need to get closer, or clear the smoke.
 - Player: Roy blows into his palm to summon a gust of wind @spell.wind.gust
 > Lens: detected KB lookup. spell.wind.gust matches an object ID in the D&D dataset, so I'm going to include that KB item together with the rest of the message
 - ...the AI now has both exact spell description and flavor, so it can determine that it would work to clear smoke, but also it alerts nearby enemies to their presence, etc...
@@ -78,83 +78,196 @@ Being able to leverage the KB as well as operators really gives us a rich toolse
 
 # The Core Lens RPG MVP
 
-Based on the above, it seems that we need:
-1. Backlog items completion for datasets and operator skill
-2. Essential (2-3) facets for role-playing we can use, each with a focus and skill linkage
-3. Structured testing with some curated kb objects to see how it actually runs
+## The Player-AI Contract
 
-It seems that should help us snowball into usefulness.
+Before designing operators, the foundational model: **the player is the director; the AI is the author.**
 
-### MVP operators ideas
+The player's input is directorial intent — "Elara tries to get the guard to look away" — not narrative prose. That intent never appears in the story. The AI authors the scene: the approach, the dialog, the guard's reaction, the consequence. Preview, retry, and undo give the player agency over the result without requiring them to write it. Every operator invocation is a direction; every operator output is narrative or world-state.
 
-#### `design` — Campaign and scene planning (planning phase)
+This creates an authority boundary the AI must hold consistently:
 
-A structured conversation operator for building the world before or between sessions. Invoked by the player/DM collaboratively. Produces KB objects with both public lore and hidden `dm:` sections.
+| Player input | AI reads it as |
+|---|---|
+| Character intent ("she tries to convince him") | Direction; AI authors the attempt |
+| Declared outcome ("she convinces him") | Hoped-for result; AI decides if it works or calls for a check |
+| World assertion ("he seems like a corrupt official") | Character impression, if earned; not a world fact until AI confirms |
+| NPC action declared ("he steps aside") | Player expressing hope; AI decides what the NPC does |
 
-System prompt focus: you are building a living world. For each element (NPC, location, faction, front), generate public-facing description *and* hidden DM notes containing: true motivations, secrets, what they would reveal under pressure, how they connect to other elements, what their "plan" is if left alone. Structure outputs so they can be saved directly as KB objects.
+This boundary is structurally identical to prompt injection resistance — the player's input is a user-turn that could attempt to assert world facts, override NPC behavior, or declare success. The AI must decline to follow those overreaches while remaining cooperative. The frame is not suspicion but role clarity: *"You told me what your character intends; I'll author what happens."* A player in good faith will find this resistance produces better fiction than capitulation does, because the resistance is what makes the world feel real.
 
-Typical outputs:
-- `npc.*` — character with public description + hidden agenda/secrets
-- `location.*` — place with public description + hidden features/traps/DM notes
-- `faction.*` — group with public stance + hidden goals and pressure points
-- `front.*` — active problem/quest with current state + DM escalation plan (what happens if players ignore this)
+**The adversarial NPC problem**: The same model must hold when an NPC is actively deceiving, threatening, or harming the player's character. This is not a prompt injection attack — it is exactly what the player came for. The AI must be able to play villains, liars, and monsters with full commitment while both parties understand this is collaborative fiction. Model selection matters here: some models treat in-character adversarial behavior as a safety issue. Lens operators should be tested on models that hold the author/fiction distinction cleanly and treat collaborative storytelling as a safe space by design.
 
-#### `play` — Narrative GM, home state (play phase)
+## How KB Objects Get Updated
 
-The primary operator. Narrates the world, voices NPCs as characters (not summaries — actually speaks as them), sets challenges, negotiates difficulty for uncertain actions ("that's going to be hard given the crowd's mood — call it a DC 14 Persuasion, roll it"), and narrates consequences when the player reports their roll. Never resolves dice. Never moves the story past a player decision point without stopping.
+Two paths, no dedicated KB write primitive:
 
-System prompt focus: immersive, responsive narrator with player agency as a hard constraint. The player handles all mechanics. When action is uncertain, name the check type and roughly calibrate difficulty, then stop. When the player reports an outcome, narrate consequences and continue. Voice NPCs with their own goals — they push back, lie, get angry, reveal things under pressure.
+**`design` output is parsed structurally.** The model emits fenced blocks (YAML or similar) that Lens extracts mechanically into KB files — no tool call, no runtime primitive. The output is not narrative and is optimized for machine parsing, not prose style.
 
-#### `encounter` — Combat narrator (play phase, sub-node)
+**Everything else uses `edit` targeting a KB file.** The `edit` operator already handles targeted AI mutation with a full transaction/diff/review cycle. Pointing it at a KB file rather than a narrative node is sufficient — more controllable than a dedicated primitive, and the user triggers it explicitly. `advance` uses this for front and NPC updates; the background extraction infrastructure uses it at checkpoint.
 
-A sub-node operator for the duration of a combat encounter. Two phases within one node:
+Hidden sections inside KB objects use HTML comments: `<!-- ai:secret: ... -->`. Lens ROT13-encodes them on write, making them non-obvious to casual readers while remaining decodable for GM-mode operators. Public content sits above; secrets sit in the comment:
 
-**Setup**: Given the story context and party composition (from pinned PC KB objects), describe the encounter — location, enemies, their goals (not just "attack," but *why*), and what tactical features of the environment matter. This is where encounter balance happens narratively: the AI knows whether this should be a grind, a skirmish, or something to potentially flee from.
+```markdown
+The mining consortium is running behind on the ore contract.
 
-**Running**: Player asks "what do the orcs do?" → AI narrates enemy intent and tactics as a narrator directing characters ("the wounded one falls back while the other two try to cut off your retreat") → player resolves mechanically → player reports narrative outcome ("the flanking one is down, the captain is bloodied but still up") → AI responds to that state and plans the next beat. Enemies react to pressure: the one who's losing might break and flee, the leader might shift to a hostage gambit.
+<!-- ai:secret:
+True situation: three miners died in a cover-up six weeks ago. The foreman
+will do anything to prevent discovery. Escalation: arrest threats → arson →
+hired violence. Days until the consortium's inspector arrives: 8.
+-->
+```
+
+Mid-campaign world amendments (what `lore` would have handled) are just free chat — the background extraction infrastructure picks up whatever is worth keeping at the next checkpoint.
+
+## Operator Overview
+
+Five operators, each with a distinct cognitive mode, output type, and trigger condition.
+
+| Operator | Mode | Output | Trigger |
+|---|---|---|---|
+| `design` | Session Zero sub-tree | Structured KB objects | Campaign or adventure start |
+| `play` | Home state narration | Prose + roll requests | Default |
+| `converse` | Chat sub-node | Conversation → summary | Long dialogue scene |
+| `encounter` | Combat sub-node | Enemy intent + tactical | Initiative is being tracked |
+| `advance` | Time-passage accounting | KB edits + opening scene | Player explicitly passes time |
+
+## `design` — Session Zero Sub-Tree
+
+A dedicated narrative sub-tree where the conversation *is* the design work and the KB objects are the product. The design narrative is not canon — it is a workspace. Sections open for each phase of world-building; because each phase is a sub-node, any section can be reopened to iterate non-linearly: "let's revisit the factions" just reopens that section and amends the relevant objects.
+
+The output is **not narrative**. The model emits structured fenced blocks that Lens parses and extracts into KB files. This lets the model focus on content rather than prose style, and makes extraction deterministic. Secrets go in `<!-- ai:secret: -->` HTML comments inside the block content.
+
+**System prompt**: Small and static. "You are building a living world. Follow the design dataset. Emit each element as a fenced YAML block with the object ID as a header. Put secrets, true motivations, and escalation plans inside `<!-- ai:secret: -->` comments — never expose these to the player."
+
+**Design dataset**: The procedural knowledge that drives the session zero flow lives not in the system prompt but in KB objects pinned into the design sub-tree: the session zero phase sequence, KB object templates for each type, example adventure core questions with their surface/buried dissonance, guidance on the mid-story pivot and character core questions. The operator drives from this dataset; the system prompt only sets the posture. Different genres or systems have different design datasets without touching operator code.
+
+**What design produces**:
+- `pc.*` — party members with appearance, kit summary, and story triggers
+- `npc.*`, `loc.*`, `faction.*`, `front.*` — world elements with public lore and `<!-- ai:secret: -->` hidden sections
+- `ref.rules` — compact rules reference for the system being played
+- `state.adventure` — campaign premise, tone, modes, act outline; secret section carries core concepts (adventure core question, character core question, mid-story pivot) for advanced play scenarios
+
+The core concepts in the secret section — the buried question a campaign is really asking, a character's unresolved tension, the mid-story twist — are worth capturing because Lens makes them mechanically reliable. They are advanced-play material and should not block an MVP.
+
+**Trigger**: Invoked once at campaign start and again at the start of each new adventure.
+
+## `play` — Home State
+
+The primary operator. Receives directorial intent from the player, authors the scene, maintains the authority model. This is where most time is spent.
+
+**Two modes — not a rigid template**:
+
+*Flow*: Default. The AI narrates freely. The world breathes. NPCs have texture. Scenes develop without requiring stakes at every beat. The AI should hold flow mode for extended stretches — not every paragraph needs pressure, and trying to inject it produces a mechanical, exhausting rhythm.
+
+*Stakes*: When risk is live — something can go wrong, a decision is being forced, a check is warranted. The AI establishes what's at risk, names the check type and DC if needed, and narrates the consequence after the player reports results. The AI never describes outcomes before the roll.
+
+Transitions between modes are driven by the fiction, not by a quota of rolls. Many good scenes never roll anything.
+
+**The authority model in practice**:
+- Player input is character intent; the AI authors the attempt and the world's response
+- World assertions by the player are treated as character impressions, not confirmed facts, until validated through play
+- NPC behavior declared by the player is treated as hoped-for outcome; the AI decides what the NPC actually does
+- Declared success is treated as goal, not result; the AI decides if it works or calls for a check
+- The AI holds these limits while staying cooperative — the resistance is the world working correctly, not the AI working against the player
+
+**System prompt**: Small and static. Posture + authority model + flow/stakes mode description + when to suggest `converse` (long dialogue developing) and `encounter` (initiative is called for).
+
+**Near-permanent KB pins** (via ancestor front matter, not the system prompt):
+- `pc.*` — party objects
+- Active `front.*` objects
+- `ref.rules` — compact rules reference
+- Current `loc.*` — active location
+
+These flow in automatically through the pin hierarchy. The system prompt does not carry world state.
+
+## `converse` — Chat Sub-Node
+
+An explicit "we're in conversation" mode. Long conversations are not information-dense but they are often the best parts of a session — relationship-building, deception, revelation under pressure, negotiation. They need room to breathe without the AI feeling compelled to move the plot forward. `play` has authorial impetus to advance the scene; `converse` has explicit direction to resist that impetus.
+
+Not targeted at a single NPC. The mode covers any conversational scene — one NPC, several, a group council, an interrogation with two suspects in the room. Making it character-specific would be brittle; making it "we're in conversation" gives the player a clear lever they control directly.
+
+**How it works**: Sub-node. The player directs conversational goals ("Elara probes him about the shipment without revealing what she knows"). The AI voices all participants, including the PC's side if the player's direction is high-level. When the node closes, it summarizes as what changed — relationships shifted, information revealed, commitments made — not as a transcript. Consequences that need to land in the fiction go to `play` or `advance` after.
+
+**System prompt**: "You are in a conversation. Voice all participants with their own goals, limits, and things they won't say. The player directs what their character is trying to accomplish. Do not advance the plot or resolve the scene — let the conversation develop. On close, summarize: what changed in relationships, what was revealed, what was decided."
+
+**Trigger**: Player invokes directly when a conversation warrants it, or `play` suggests it when a dialogue is clearly developing depth.
+
+## `encounter` — Combat Sub-Node
+
+A focused sub-node for structured combat. Applies exactly while initiative is being tracked; exits when initiative ends. The rule is that simple.
+
+**Trigger**: The player says "I roll initiative" (or `play` calls for it per the rules reference) and physically invokes `encounter`. The signal is unambiguous and player-enforced. Cinematic or brief violence that doesn't go to initiative stays in `play`.
+
+**Setup phase**: The AI describes the encounter — location, what the enemies are trying to accomplish (not just "attack," but *why they're here and what they want*), and what tactical features of the environment matter. Encounter weight is established narratively here: skirmish, grind, or something to potentially flee from.
+
+**Running phase**: Player describes character actions and reports roll results. The AI narrates enemy intent as a director — "the wounded one falls back, the captain tries to cut off the exit" — intent, not mechanics. Enemies are characters with goals: the one losing may break and run; the leader may pivot to a hostage gambit when cornered. Player-reported outcomes ("the flanking guard is down, the captain is bloodied") drive the AI's next beat.
+
+**Why not `play`**: Context economy. Combat needs enemy KB objects, terrain, and tactical state — not the full campaign graph. The sub-node architecture enforces this focus naturally.
+
+**System prompt**: Minimal. "Direct enemy tactical intent as a narrator. The player handles all mechanics. Respond to player-reported outcomes. Enemies are characters with goals — let them react, adapt, and make decisions under pressure."
 
 Sub-node closes with a brief narrative summary that surfaces to the parent section.
 
-#### `advance` — Between-scene accounting (transition phase)
+## `advance` — Time Passage
 
-The operator for the seam between scenes: after a section closes (or when the player takes a long rest, says "we make camp," etc.), `advance` does the GM's off-screen work.
+The world takes its turn. The player cannot skip time without letting the world move.
 
-System prompt focus: you are doing GM accounting. Review what just happened. Assess each active front: did this advance it, disrupt it, or resolve it? Update the relevant KB objects (NPC hidden sections — someone was deceived and now suspects the party; a front loses a step because the players destroyed the ritual components). Then set up the next scene: create a section node with appropriate front matter pins, describe the opening situation, and stop for the player to engage.
+**Trigger**: The player explicitly invokes when time passes — rest, travel, downtime. "We rest overnight." "We spend three days at the inn." "We ride to the capital." This hands the initiative to the world. What happens during that time is the AI's call: a rest might be interrupted; a journey might have a consequence; downtime might find something changed while the party wasn't watching.
 
-This operator gives the adversaries their moves. While the player rests, time passes in the world: fronts tick forward, NPCs act on their plans, consequences of earlier choices ripple out. It's where the world feels alive and reactive rather than waiting.
+**Fronts as drama, not simulation**: A front KB object establishes an expectation — a threat in motion, a clock running, a plan unfolding. `advance` makes that expectation feel real. Two patterns:
+
+*Story beats*: A front describes what a faction or NPC is working toward in prose. `advance` reads the current state and decides what they've done during the elapsed time, improvising plausibly from what's established. No rules system required — only the established expectation and the elapsed time.
+
+*Rough timers*: A front KB object carries a field like `days_remaining: 8`. `advance` decrements it via an `edit` on the KB file. When it reaches zero, the consequence lands.
+
+The rule: **only plan what's been established**. Everything else the AI improvises as if it had been planned all along. Fronts are dramatic expectations, not state machines. The goal is that consequences feel earned, not that anything was actually simulated.
+
+**What `advance` does**:
+1. Processes the declared time passage
+2. Reviews all active fronts — ticks timers, advances story beats, decides what the world did
+3. Edits KB files directly (front state, NPC hidden notes, timer decrements) via `edit`
+4. Resolves anything that expired or triggered during this time
+5. Opens the next scene: new section with appropriate front matter pins and an opening situation — which the world may have already changed before the player acts
+
+**System prompt**: "Time has passed. Review all active fronts and decide what the world did while the player rested or traveled. Update KB objects. Then set up what they wake up to — the world has been moving."
 
 ## Campaign Lifecycle
 
 ```
 design phase:
-  design → KB objects: locations, factions, NPCs (public lore + hidden dm: sections)
-  design → fronts: active problems with hidden escalation timelines
+  design    → structured KB objects: party, locations, factions, NPCs, fronts, rules ref
+              (fenced block output, parsed by Lens; secrets in <!-- ai:secret: -->)
+  design    → state.adventure: premise, act outline; secret section for core concepts (advanced)
 
 play phase (repeating):
-  play      → scene narration, NPC voices, skill negotiation
-  encounter → combat sub-nodes as needed (enemy setup + per-turn direction)
-  advance   → close scene, update front states and NPC hidden sections,
-              open next section with curated front matter pins
+  play      → scene narration, authority model held, flow and stakes modes
+  converse  → dialogue sub-nodes when conversations need room to breathe
+  encounter → combat sub-nodes while initiative is tracked
+  advance   → player passes time; world moves; fronts tick; KB edits via edit; next scene opens
+
+at each checkpoint (automatic, infrastructure):
+  extraction → cheap model updates opted-in KB objects from committed narrative
+               covers play consequences and any free-form co-author chat
 
 adventure complete:
-  all fronts reach terminal state (resolved, foiled, or transformed by player choices)
+  fronts reach terminal state (resolved, foiled, or transformed by player choices)
+  advance or design opens the next adventure
 ```
 
-The world has plans. Players have agency. Fronts track the collision between them. No ending is written in advance — the ending emerges from the state of the fronts.
+The world has established expectations. The player has directorial agency. `advance` is where they collide. No ending is written in advance.
 
-## Sandbox First Steps
+## First Steps
 
-1. Create a small D&D 5e campaign KB in a sandbox project:
-   - 3–4 KB objects for core rules references (ability checks, conditions, basic combat)
-   - 2–3 NPCs with public lore and `dm:` hidden agendas
-   - 2 locations with `dm:` notes
-   - 2 fronts (one near-term, one slow-burn)
-   - PC character sheets as KB objects (pinned at session root)
+1. Build the **design dataset**: KB objects containing the session zero phase sequence, KB object templates for each type, and example adventure core questions. Pin these into the design sub-tree. This is what drives `design` — not its system prompt.
 
-2. Implement `design` and `play` first — the planning conversation and the baseline narration. These can be tested without combat.
+2. Implement `design` first. Confirm Lens can parse structured fenced block output into KB files and that `<!-- ai:secret: -->` content is ROT13-encoded correctly on extraction.
 
-3. Add `encounter` once the narrative loop is stable.
+3. Implement `play`. Test the authority model: does the AI hold the director/author boundary while staying cooperative? Test flow mode and stakes mode transitions explicitly.
 
-4. Add `advance` to close the loop — this is what makes the world feel reactive.
+4. Add `converse`. Test that conversations stay in conversation mode, resist plot advancement, and produce useful summaries on close.
 
-5. Play through a short scenario, find bugs, refine prompts. The prompts can be thin early; the KB objects do most of the work.
+5. Add `encounter`. Test the setup/running/summary lifecycle and that enemy intent stays narrative, not mechanical.
+
+6. Add `advance`. Test that fronts feel alive and reactive, and that time passage can be interrupted by world events.
+
+7. Play a short scenario end-to-end. The player-AI contract — holding the authority model while making the player feel heard and effective — is the most important thing to get right before anything else.
