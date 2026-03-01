@@ -1,29 +1,75 @@
 # Lens Backlog
 
+## RPG Play Sequencing
+
+### Phase 0: Test Foundation
+- Handcraft a minimal play context — no generation pipeline:
+  - `pc.*` — one or two player characters with appearance, kit, and story hook
+  - `loc.*` — an opening location with actionable features
+  - `npc.*` — one or two NPCs with goals and something they won't say
+  - `ref.rules` — compact rules reference stripped to what a single session needs
+- Write an opening scene brief: characters present, setting established, initial stakes named
+- Pin the objects into the scene's front matter so context assembly pulls them automatically
+- *Goal: a minimal but complete play context to test against*
+
+### Phase 1: Single Scene Play
+- Iterate on `play` system prompt until the authority model holds — the AI authors the world without narrating PC choices or pre-declaring roll outcomes
+- Test flow mode: does the world breathe? Can a scene develop without manufactured pressure every beat?
+- Test stakes mode: does the AI establish risk, call the right check type and DC, and wait for roll results before narrating?
+- *Goal: a single scene that feels like playing an RPG — responsive, surprising, cooperative*
+
+### Phase 2: Weave Skills, Dialogue, and Combat
+- Implement `encounter` and play through a combat in the test scene
+- Implement `converse` and play through a dialogue with an NPC
+- Test that transitions between `play`, `converse`, and `encounter` feel natural — mode switches should be invisible to the fiction
+- *Goal: a scene that can explore, talk, and fight in the same session*
+
+### Phase 3: Connect Two Scenes
+- Implement `advance` — player passes time, world takes its turn, next scene opens
+- Test that active fronts feel alive: something changed while the party wasn't watching
+- *Goal: a two-scene "session" with a world that moves*
+
+### Phase 4: Formalize Setup
+- Build the design dataset KB objects: session zero phase sequence, KB object templates, example adventure questions
+- Implement `design` — now there is a working game to design for; the operator formalizes what play has already revealed about what data matters
+- Run a session zero for a short one-shot and play it through Phases 1–3
+- *Goal: a complete session zero → play pipeline for a small adventure*
+
+### Phase 5: Scale
+- Background KB extraction (see General Backlog)
+- Longer adventures, multi-session fronts, richer faction and NPC networks
+- Let scope grow with demonstrated need
+
+---
+
+## Operator Backlog
+
+- **`play`** *(basic version implemented)* — GM-voice narrative with authority model; flow and stakes modes. See `rpg-design.md`.
+
+- **`encounter`** — Combat sub-node while initiative is tracked; enemy tactical intent as director, player resolves mechanics. See `rpg-design.md`.
+
+- **`converse`** — Dialogue sub-node that resists plot advancement; voices all participants, summarizes on close. See `rpg-design.md`.
+
+- **`advance`** — Time-passage operator; fronts tick, world acts, next scene opens. See `rpg-design.md`.
+
+- **`design`** — Session zero sub-tree; structured KB output parsed by Lens, not narrative prose. See `rpg-design.md`.
+
+- **`agent`** — Freeform chat with optional KB persistence; good for fleshing out lore outside `design`.
+
+- **`attach`** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
+
+---
+
 ## General Backlog
-- **Background KB extraction** *(infrastructure, not a player operator)*  
+
+- **Background KB extraction** *(infrastructure, not a player operator)*
   Faceted context compression: the write-side complement to RAG. A cheap/fast model (8B or equivalent) runs over recently committed narrative and updates opted-in KB objects using per-type extraction instructions. This also replaces any need for a dedicated `lore` operator: mid-campaign world amendments are just free `agent` chat, and extraction at checkpoint makes them stick into the right KB objects. Key design decisions:
     - **Trigger**: checkpoint. Runs when the user commits a checkpoint, which already has the right semantics (deliberate, meaningful boundary). Produces a single transaction with all proposed KB changes for user review — same audit pattern as the `edit` operator.
     - **Opt-in via dot-tag**: an object is eligible for extraction only if it carries a `remember.*` dot-tag (e.g. `remember.person` on `person.alice`). The `remember.person` KB object contains the extraction instructions and template hints for that type. One tag solves both the locking problem (only explicitly opted-in objects are touched) and the hint delivery problem (instructions live in the linked object, not in the object being updated).
-    - **In-narrative signal**: the AI can emit `<!-- ai:remember:type.key -->` as a plain HTML comment in narrative output to flag that a specific object should be queued for extraction at the next checkpoint. This is a deterministic Lens trigger, not a tool call — Lens detects it on parse and queues accordingly. The AI emitting this is saying "something just happened that Alice should probably remember."
+    - **In-narrative signal**: the AI can emit `<!-- ai:remember:type.key -->` as a plain HTML comment in narrative output to flag that a specific object should be queued for extraction at the next checkpoint. This is a deterministic Lens trigger, not a tool call — Lens detects it on parse and queues accordingly.
     - **Diffed, not overwritten**: the cheap model returns a full proposed object; Lens uses git transactions to effectively diff it against the current version and gives a human-reviewable audit trail.
-    - This replaces the need for the expensive narrative model to call a kb tool to remember things — it just produces narrative and signals intent; extraction handles persistence as infrastructure.
 
-## Operator Backlog
-  - `design` — Campaign and world-building operator. Session Zero sub-tree: the conversation is the workspace, KB objects are the product. Produces `pc.*`, `npc.*`, `loc.*`, `faction.*`, `front.*`, `ref.rules`, and `state.adventure` objects. Output is **not narrative** — the model emits structured fenced blocks (YAML or similar) that Lens parses and extracts mechanically into KB files. Public content is plain text within the blocks; secrets and hidden agendas go in `<!-- ai:secret: -->` HTML comments inside the block content (ROT13-encoded by Lens). Driven by a pinned design dataset of KB objects rather than a large system prompt. Sections can be reopened non-linearly to iterate on any phase. See `rpg-design.md` for full spec.
-
-  - `play` *(basic version implemented)* — GM-voice narrative that preserves player agency. Player = director, AI = author; player input is directorial intent, never prose. Two modes: flow (default, world breathes) and stakes (risk is live, check may be called). Authority model holds the director/author boundary cooperatively — same mechanism as prompt injection resistance, applied in good faith. See `rpg-design.md` for full spec.
-
-  - `encounter` — Combat sub-node. Trigger: initiative is being tracked (player invokes explicitly). Setup phase establishes location, enemy goals, and encounter weight. Running phase: AI narrates enemy tactical intent as director ("the wounded one falls back"); player resolves all mechanics and reports outcomes. Sub-node closes with a narrative summary to the parent section. Cinematic violence that doesn't go to initiative stays in `play`.
-
-  - `advance` — Time-passage operator. Triggered explicitly by the player passing time (rest, travel, downtime). Gives the world its turn: fronts tick (story beats advance, rough timers decrement), NPCs act on their plans, consequences of earlier choices land. Updates KB objects via the kb tool call. Creates the next section with appropriate front matter pins and an opening situation. Can interrupt the rest with world events. See `rpg-design.md` for front-as-drama design.
-
-  - `converse` — Explicit characters chat sub-node. Gives the AI strong direction to talk more and not advance the plot — the opposite impetus from `play`. Not targeted at a single NPC; covers any conversational scene (one NPC, several, a council, an interrogation). Player directs conversational goals; AI voices all participants. Summarizes on close as what changed (relationships, information revealed, decisions made), not as a transcript.
-
-  - `agent` just a normal agent chat about whatever with the option to remember what was said into any kb object; good for fleshing out lore outside `design`.
-
-  - `attach` could allow you to attach media within a node: images of characters, maps, reference; you can also use model to look at images and generate text.
-
+---
 
 ## Lens Web App Sequencing
 
