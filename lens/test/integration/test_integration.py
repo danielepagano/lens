@@ -177,8 +177,11 @@ class TestHappyPath(unittest.TestCase):
 
     def tearDown(self) -> None:
         result = getattr(getattr(self, "_outcome", None), "result", None)
-        if result is not None and (result.failures or result.errors):
-            TestHappyPath._keep_dir = True
+        if result is not None:
+            failures = getattr(result, "failures", [])
+            errors = getattr(result, "errors", [])
+            if failures or errors:
+                TestHappyPath._keep_dir = True
 
     # --- Shared helpers ---
 

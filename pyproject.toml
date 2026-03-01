@@ -25,13 +25,20 @@ httpx = "^0.28.1"
 pyright = "^1.1.390"
 ruff = "^0.7.0"
 poethepoet = "^0.27.0"
+pytest = "^8.0.0"
+pytest-xdist = "^3.0.0"
 
 [tool.poe.tasks]
 lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
 pyright = "pyright"
 lint = "ruff check . --fix"
-test = "python -m unittest discover -s lens/test -p 'test_*.py'"
-check = { sequence = ["lint", "pyright", "test"] }
+test = "pytest lens/test -n auto --ignore=lens/test/integration -q"
+test-integration = "pytest lens/test/integration -n 0 -q"
+check = { sequence = ["lint", "pyright", "test", "test-integration"] }
+
+[tool.pytest.ini_options]
+addopts = "-W ignore::SyntaxWarning:pysbd"
+testpaths = ["lens/test"]
 
 [build-system]
 requires = ["poetry-core>=1.9.0"]
