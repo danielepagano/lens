@@ -2,20 +2,57 @@
 
 ## General Backlog
 
-- **Improved Section operator: chain and front matter pin support**: `section` should accept pin/un-pin parameters in its annotation and apply those to the newly created child node's front matter. It should also accept a `chain` parameter, which automatically uses the the given operator and parameters (for example to start writing in the new section). chained operators are in the same transaction and can be invoked by a single tool call. Make `chain` re-usable parameter like pin/un-pin so we can add it to other operators later.
-  
-  ```markdown
-  [section:castle-dorn
-    chain:
-      play:
-        prompt: party arrives at Castle Dorn; the guards are suspicious
-    kb_pin: location.castle-dorn, npc.king-aldric, faction.court!
-    kb_unpin: location.capital-city
-  ]: #
+- **Operator chain support**: Currently, an LLM can call max one other operator via tool call; that operator then may or may not decide to all other tools. This may be too non-deterministic in some cases. Let's improve as follows:  
+  - All operators should accept a `chain` parameter, which automatically calls the given operator and parameters after the current execution is completed. For example section could start writing in a new node. Chained operators are in the same transaction.
+  - Chaining is represented in tool calls, i.e. the value of an `ToolCall.arguments["chain"]` is an instance of `ToolCall`; this can be nested, but like for operators calling each others via LLM calls, the user must confirm if we try to run more than 2 operators per original call. 
+  - Change llm response handler to accept more than one tool call, but if this happens, don't return multiple instances, instead nest the calls into "chain" arguments (this can help if an AI is having trouble nesting the calls). If we see BOTH chain arguments and multiple tool calls, we're in an error state and we can interrupt.
 
-  ```
-  As shown above, the operator itself in the parent will have these parameter captured (as usual), but additionally Lens also adds the pins/unpins to the front matter section of the new node, causing subsequent context assembly for that section to automatically loads appropriate context, lore, secrets, and rules. 
-  After the front matter, Lens will also output the annotation for the given chained operator and run it (this may have its own pins separately from the front matter, as usual. If that operator also has a chain, this will repeat. This allows concatenation of actions without infinite looping.
+Example annotation artifact. In the parent node we could have:
+
+```markdown
+[section:castle-dorn
+  chain:
+    play:
+      prompt: party arrives at Castle Dorn; the guards are suspicious
+]: #
+```
+
+  Which in the child node would create:
+
+```markdown
+[play:
+  prompt: party arrives at Castle Dorn; the guards are suspicious    
+]: #
+
+The party arrives...
+```
+
+  As shown above, the original operator will have the chain parameter captured (as usual), but additionally Lens also adds output the annotation for the given chained operator and run it.
+
+- **Improved Section operator: front matter pin support**: `section` should accept pin/un-pin parameters in its annotation and apply those to the newly created child node's front matter.
+  
+```markdown
+[section:castle-dorn
+  kb_pin: 
+    - location.castle-dorn
+    - faction.dorn-court!
+  kb_unpin: 
+    - location.capital-city
+]: #
+```
+  Which in the child node would create at the beginning of the file:
+
+```markdown
+[
+  kb_pin: 
+    - location.castle-dorn
+    - faction.dorn-court!
+  kb_unpin: 
+    - location.capital-city
+]: #
+```
+
+  Therefore, any operator running in that node will have those items pinned/un-pinned, including anything chained by `section` itself (although chained operators can _also_ have their own pins/un-pins since they take all normal parameters, but those show in that operator annotation, not the front matter).
 
 ## Operator Backlog
   - `design` — Campaign and world-building operator. A structured conversation for building KB objects before or between sessions. Produces `npc.*`, `location.*`, `faction.*`, and `front.*` objects with both public lore and hidden `dm:` sections (true motivations, secrets, escalation plans). System prompt focuses on building a living world whose elements have their own goals and plans.
