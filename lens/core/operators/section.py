@@ -14,19 +14,17 @@ The operation is one-shot and fully reversible via ``lens rollback``.
 
 from __future__ import annotations
 
-import asyncio
 import shutil
 from collections.abc import Callable, Awaitable
 from typing import Any, ClassVar, cast
-
-import typer
 
 from lens.core.address import NarrativeAddress
 from lens.core.annotations import find_front_matter_span, strip_markdown_comments
 from lens.core.knowledge import validate_ids_exist
 from lens.core.context import CrawlResult, crawl
-from lens.core.llm import LLMError, generate_stream
+from lens.core.llm import generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
+from lens.core.chain import ChainSpec
 from lens.core.operator import Operator
 from lens.core.storage import Storage
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
@@ -313,242 +311,93 @@ class SectionOperator(Operator):
         self.storage.write_file(child_dir / "_node.md", selected_text + "\n")
         self.storage.write_file(target_node.md_path(), new_parent_text)
 
-
-# ---------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------
-
-app = typer.Typer(invoke_without_command=True, no_args_is_help=True)
-
-
-@app.callback()
-def section(
-    id_or_end: str | None = typer.Argument(
-        None,
-        help="Section ID to start (alphanumeric, underscores, hyphens)",
-    ),
-    address: str | None = typer.Argument(
-        None,
-        help="Node address for after-the-fact sectioning",
-    ),
-    start_line: int | None = typer.Argument(
-        None,
-        help="First line of range to section (1-based, inclusive)",
-    ),
-    end_line: int | None = typer.Argument(
-        None,
-        help="Last line of range to section (1-based, inclusive)",
-    ),
-    end: bool = typer.Option(
-        False,
-        "--end",
-        "-e",
-        help="Close the current section",
-    ),
-    pin: list[str] = typer.Option(
-        [],
-        "--pin",
-        "-p",
-        help="KB ID to pin for this operator (repeatable)",
-    ),
-    unpin: list[str] = typer.Option(
-        [],
-        "--unpin",
-        "-u",
-        help="KB ID to unpin for this operator (repeatable)",
-    ),
-    llm: str | None = typer.Option(
-        None,
-        "--llm",
-        "-l",
-        help="LLM ID to use (overrides project default)",
-    ),
-) -> None:
-    """Start a section at cursor, close the current section, or section a line range.
-
-    \b
-    lens section <id>                            start section at cursor
-    lens section --end                           close current section
-    lens section <id> <address> <start> <end>   section a line range after the fact
-    """
-    try:
-        session = ProjectSession.from_cwd()
-    except RuntimeError as e:
-        typer.echo(f"lens section: {e}", err=True)
-        raise typer.Exit(1)
-    narrative = session.active_narrative
-    if narrative is None:
-        typer.echo("lens section: no active narrative (run 'lens use <slug>' first)", err=True)
-        raise typer.Exit(1)
-
-    if end:
-        _section_end(session, narrative, llm_id=llm)
-    elif address is not None or start_line is not None or end_line is not None:
-        # After-the-fact range sectioning: all three extra args are required.
-        if id_or_end is None or address is None or start_line is None or end_line is None:
-            typer.echo(
-                "lens section: after-the-fact mode requires: <id> <address> <start_line> <end_line>",
-                err=True,
+    @classmethod
+    async def run_start(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        id: str,
+        pins: list[str] | None = None,
+        unpins: list[str] | None = None,
+        write_prompt: str | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
+    ) -> NarrativeNode:
+        if not validate_slug(id):
+            raise ValueError(f"invalid section ID '{id}' (alphanumeric, underscores, hyphens only)")
+        cursor = narrative.find_cursor()
+        rel = str(cursor.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(id, rel)
+        storage = session.new_storage(owner=owner)
+        op = cls(storage, narrative)
+        child = op.start(id, pins=pins or [], unpins=unpins or [])
+        if write_prompt is not None:
+            chain_spec = ChainSpec(name="write", id=None, arguments={"prompt": write_prompt})
+            await Operator._run_chained_operator(  # pyright: ignore[reportPrivateUsage]
+                chain_spec=chain_spec,
+                storage=storage,
+                session=session,
+                narrative=narrative,
+                depth=0,
+                on_token=on_token,
+                on_confirm=on_confirm,
+                cursor_override=child,
             )
-            raise typer.Exit(1)
-        _section_range(
-            session,
-            narrative,
-            id=id_or_end.strip(),
-            address=address,
-            start_line=start_line,
-            end_line=end_line,
-            pins=list(pin),
-            unpins=list(unpin),
-            llm_id=llm,
-        )
-    else:
-        if id_or_end is None:
-            typer.echo("lens section: provide a section ID or use --end / -e", err=True)
-            raise typer.Exit(1)
-        _section_start(
-            session,
-            narrative,
-            id_or_end.strip(),
-            pins=list(pin),
-            unpins=list(unpin),
-        )
+        return child
 
+    @classmethod
+    async def run_end(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        llm_id: str | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+    ) -> str:
+        cursor = narrative.find_cursor()
+        if not cursor.key_path:
+            raise ValueError("no open section to close (cursor at root)")
+        key = cursor.key_path[-1]
+        parent = NarrativeNode(narrative_root=narrative.narrative_root, key_path=cursor.key_path[:-1])
+        rel = str(parent.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(key, rel)
+        storage = session.new_storage(owner=owner)
+        op = cls(storage, narrative)
+        await op.end(session, llm_id=llm_id, on_token=on_token)
+        return key
 
-def _section_start(
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    id: str,
-    pins: list[str] | None = None,
-    unpins: list[str] | None = None,
-) -> None:
-    if not id:
-        typer.echo("Error: section ID cannot be empty.", err=True)
-        raise typer.Exit(1)
-    if not validate_slug(id):
-        typer.echo(
-            f"Error: invalid section ID '{id}' (alphanumeric, underscores, hyphens only)",
-            err=True,
-        )
-        raise typer.Exit(1)
-
-    cursor = narrative.find_cursor()
-    cursor_md = cursor.md_path()
-    rel = str(cursor_md.relative_to(session.git_root))
-    owner = SectionOperator.owner_id(id, rel)
-    storage = session.new_storage(owner=owner)
-    op = SectionOperator(storage, narrative)
-
-    try:
-        op.start(id, pins=pins or [], unpins=unpins or [])
-    except ValueError as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
-    typer.echo(f"Started section '{id}'")
-
-
-def _section_end(
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    llm_id: str | None = None,
-) -> None:
-    cursor = narrative.find_cursor()
-    if not cursor.key_path:
-        typer.echo("lens section --end: no open section to close (cursor at root)", err=True)
-        raise typer.Exit(1)
-    key = cursor.key_path[-1]
-    parent_key_path = cursor.key_path[:-1]
-    parent = NarrativeNode(
-        narrative_root=narrative.narrative_root,
-        key_path=parent_key_path,
-    )
-    parent_md = parent.md_path()
-    rel = str(parent_md.relative_to(session.git_root))
-    owner = SectionOperator.owner_id(key, rel)
-    storage = session.new_storage(owner=owner)
-    op = SectionOperator(storage, narrative)
-
-    try:
-        asyncio.run(op.end(session, llm_id=llm_id))
-    except ValueError as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
-    except LLMError as e:
-        typer.echo(f"lens section --end: LLM error: {e}", err=True)
-        raise typer.Exit(1)
-    except KeyboardInterrupt:
-        typer.echo("\nlens section --end: interrupted", err=True)
-        raise typer.Exit(1)
-    typer.echo(f"Closed section '{key}'", err=True)
-
-
-def _section_range(
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    id: str,
-    address: str,
-    start_line: int,
-    end_line: int,
-    pins: list[str],
-    unpins: list[str],
-    llm_id: str | None,
-) -> None:
-    if not id:
-        typer.echo("Error: section ID cannot be empty.", err=True)
-        raise typer.Exit(1)
-    if not validate_slug(id):
-        typer.echo(
-            f"Error: invalid section ID '{id}' (alphanumeric, underscores, hyphens only)",
-            err=True,
-        )
-        raise typer.Exit(1)
-
-    try:
-        addr = NarrativeAddress.parse(address)
-    except ValueError as e:
-        typer.echo(f"lens section: invalid address: {e}", err=True)
-        raise typer.Exit(1)
-
-    try:
+    @classmethod
+    async def run_range(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        id: str,
+        address_str: str,
+        start_line: int,
+        end_line: int,
+        pins: list[str] | None = None,
+        unpins: list[str] | None = None,
+        llm_id: str | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+    ) -> None:
+        if not validate_slug(id):
+            raise ValueError(f"invalid section ID '{id}' (alphanumeric, underscores, hyphens only)")
+        addr = NarrativeAddress.parse(address_str)
         resolved = resolve_address(addr, session.project_root)
         target_node = resolved.to_node(session.project_root)
-    except (ValueError, FileNotFoundError) as e:
-        typer.echo(f"lens section: {e}", err=True)
-        raise typer.Exit(1)
-
-    if not target_node.exists():
-        typer.echo(f"lens section: node does not exist: {address}", err=True)
-        raise typer.Exit(1)
-
-    target_md = target_node.md_path()
-    rel_path = str(target_md.relative_to(session.git_root))
-    owner = SectionOperator.owner_id(id, rel_path)
-    storage = session.new_storage(owner=owner)
-    op = SectionOperator(storage, narrative)
-
-    try:
-        asyncio.run(
-            op.section_range(
-                target_node=target_node,
-                id=id,
-                start_line=start_line,
-                end_line=end_line,
-                session=session,
-                pins=pins,
-                unpins=unpins,
-                llm_id=llm_id,
-            )
+        if not target_node.exists():
+            raise ValueError(f"node does not exist: {address_str}")
+        rel_path = str(target_node.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(id, rel_path)
+        storage = session.new_storage(owner=owner)
+        op = cls(storage, narrative)
+        await op.section_range(
+            target_node=target_node, id=id, start_line=start_line, end_line=end_line,
+            session=session, pins=pins or [], unpins=unpins or [],
+            llm_id=llm_id, on_token=on_token,
         )
-    except ValueError as e:
-        typer.echo(f"lens section: {e}", err=True)
-        raise typer.Exit(1)
-    except LLMError as e:
-        typer.echo(f"lens section: LLM error: {e}", err=True)
-        raise typer.Exit(1)
-    except KeyboardInterrupt:
-        typer.echo("\nlens section: interrupted", err=True)
-        raise typer.Exit(1)
-    typer.echo(f"Sectioned lines {start_line}–{end_line} into '{id}'", err=True)
 
 
 # ---------------------------------------------------------------

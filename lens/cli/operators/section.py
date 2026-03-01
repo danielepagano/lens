@@ -5,15 +5,12 @@ import asyncio
 import typer
 
 from lens.cli.options import pin_option, unpin_option
-from lens.core.address import NarrativeAddress
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.narrative import NarrativeNode
-from lens.core.project import ProjectSession, resolve_address, validate_slug
-from lens.core.chain import ChainSpec
+from lens.core.project import ProjectSession
 from lens.core.llm import LLMError
 from lens.core.operators.section import SectionOperator
-from lens.core.operator import Operator
 
 
 app = typer.Typer(no_args_is_help=True)
@@ -60,7 +57,23 @@ def start(
     except LensException as e:
         typer.echo(f"lens section start: {e}", err=True)
         raise typer.Exit(1)
-    _section_start(session, narrative, id.strip(), pins=pin, unpins=unpin, write_prompt=write)
+    try:
+        asyncio.run(SectionOperator.run_start(
+            session=session, narrative=narrative, id=id.strip(),
+            pins=pin, unpins=unpin, write_prompt=write,
+            on_token=_print_token, on_confirm=None,
+        ))
+        print()
+    except ValueError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+    except LLMError as e:
+        typer.echo(f"lens section start --write: LLM error: {e}", err=True)
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        typer.echo("\nlens section start --write: interrupted", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"Started section '{id.strip()}'")
 
 
 @app.command()
@@ -75,7 +88,23 @@ def end(
     """Close the current section (appends LLM summary to parent)."""
     session, narrative = _get_session_and_narrative()
     assert narrative is not None
-    _section_end(session, narrative, llm_id=llm)
+    key: str = ""
+    try:
+        key = asyncio.run(SectionOperator.run_end(
+            session=session, narrative=narrative,
+            llm_id=llm, on_token=_print_token,
+        ))
+        print()
+    except ValueError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+    except LLMError as e:
+        typer.echo(f"lens section end: LLM error: {e}", err=True)
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        typer.echo("\nlens section end: interrupted", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"Closed section '{key}'", err=True)
 
 
 @app.command("range")
@@ -105,169 +134,12 @@ def _range(  # pyright: ignore[reportUnusedFunction]
     except LensException as e:
         typer.echo(f"lens section range: {e}", err=True)
         raise typer.Exit(1)
-    _section_range(
-        session,
-        narrative,
-        id=id.strip(),
-        address=address,
-        start_line=start_line,
-        end_line=end_line,
-        pins=pin,
-        unpins=unpin,
-        llm_id=llm,
-    )
-
-
-def _section_start(
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    id: str,
-    pins: list[str] | None = None,
-    unpins: list[str] | None = None,
-    write_prompt: str | None = None,
-) -> None:
-    if not id:
-        typer.echo("Error: section ID cannot be empty.", err=True)
-        raise typer.Exit(1)
-    if not validate_slug(id):
-        typer.echo(
-            f"Error: invalid section ID '{id}' (alphanumeric, underscores, hyphens only)",
-            err=True,
-        )
-        raise typer.Exit(1)
-
-    cursor = narrative.find_cursor()
-    cursor_md = cursor.md_path()
-    rel = str(cursor_md.relative_to(session.git_root))
-    owner = SectionOperator.owner_id(id, rel)
-    storage = session.new_storage(owner=owner)
-    op = SectionOperator(storage, narrative)
-
     try:
-        child = op.start(id, pins=pins or [], unpins=unpins or [])
-    except ValueError as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
-    typer.echo(f"Started section '{id}'")
-
-    if write_prompt is not None:
-        chain_spec = ChainSpec(name="write", id=None, arguments={"prompt": write_prompt})
-        try:
-            asyncio.run(
-                Operator._run_chained_operator(  # pyright: ignore[reportPrivateUsage]
-                    chain_spec=chain_spec,
-                    storage=storage,
-                    session=session,
-                    narrative=narrative,
-                    depth=0,
-                    on_token=_print_token,
-                    on_confirm=None,
-                    cursor_override=child,
-                )
-            )
-            print()
-        except LLMError as e:
-            typer.echo(f"lens section start --write: LLM error: {e}", err=True)
-            raise typer.Exit(1)
-        except KeyboardInterrupt:
-            typer.echo("\nlens section start --write: interrupted", err=True)
-            raise typer.Exit(1)
-
-
-def _section_end(
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    llm_id: str | None = None,
-) -> None:
-    cursor = narrative.find_cursor()
-    if not cursor.key_path:
-        typer.echo("lens section end: no open section to close (cursor at root)", err=True)
-        raise typer.Exit(1)
-    key = cursor.key_path[-1]
-    parent_key_path = cursor.key_path[:-1]
-    parent = NarrativeNode(
-        narrative_root=narrative.narrative_root,
-        key_path=parent_key_path,
-    )
-    parent_md = parent.md_path()
-    rel = str(parent_md.relative_to(session.git_root))
-    owner = SectionOperator.owner_id(key, rel)
-    storage = session.new_storage(owner=owner)
-    op = SectionOperator(storage, narrative)
-
-    try:
-        asyncio.run(op.end(session, llm_id=llm_id, on_token=_print_token))
-        print()
-    except ValueError as e:
-        typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
-    except LLMError as e:
-        typer.echo(f"lens section end: LLM error: {e}", err=True)
-        raise typer.Exit(1)
-    except KeyboardInterrupt:
-        typer.echo("\nlens section end: interrupted", err=True)
-        raise typer.Exit(1)
-    typer.echo(f"Closed section '{key}'", err=True)
-
-
-def _section_range(
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    id: str,
-    address: str,
-    start_line: int,
-    end_line: int,
-    pins: list[str],
-    unpins: list[str],
-    llm_id: str | None,
-) -> None:
-    if not id:
-        typer.echo("Error: section ID cannot be empty.", err=True)
-        raise typer.Exit(1)
-    if not validate_slug(id):
-        typer.echo(
-            f"Error: invalid section ID '{id}' (alphanumeric, underscores, hyphens only)",
-            err=True,
-        )
-        raise typer.Exit(1)
-
-    try:
-        addr = NarrativeAddress.parse(address)
-    except ValueError as e:
-        typer.echo(f"lens section range: invalid address: {e}", err=True)
-        raise typer.Exit(1)
-
-    try:
-        resolved = resolve_address(addr, session.project_root)
-        target_node = resolved.to_node(session.project_root)
-    except (ValueError, FileNotFoundError) as e:
-        typer.echo(f"lens section: {e}", err=True)
-        raise typer.Exit(1)
-
-    if not target_node.exists():
-        typer.echo(f"lens section range: node does not exist: {address}", err=True)
-        raise typer.Exit(1)
-
-    target_md = target_node.md_path()
-    rel_path = str(target_md.relative_to(session.git_root))
-    owner = SectionOperator.owner_id(id, rel_path)
-    storage = session.new_storage(owner=owner)
-    op = SectionOperator(storage, narrative)
-
-    try:
-        asyncio.run(
-            op.section_range(
-                target_node=target_node,
-                id=id,
-                start_line=start_line,
-                end_line=end_line,
-                session=session,
-                pins=pins,
-                unpins=unpins,
-                llm_id=llm_id,
-                on_token=_print_token,
-            )
-        )
+        asyncio.run(SectionOperator.run_range(
+            session=session, narrative=narrative, id=id.strip(),
+            address_str=address, start_line=start_line, end_line=end_line,
+            pins=pin, unpins=unpin, llm_id=llm, on_token=_print_token,
+        ))
         print()
     except ValueError as e:
         typer.echo(f"lens section range: {e}", err=True)
@@ -278,4 +150,4 @@ def _section_range(
     except KeyboardInterrupt:
         typer.echo("\nlens section range: interrupted", err=True)
         raise typer.Exit(1)
-    typer.echo(f"Sectioned lines {start_line}–{end_line} into '{id}'", err=True)
+    typer.echo(f"Sectioned lines {start_line}–{end_line} into '{id.strip()}'", err=True)

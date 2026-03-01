@@ -32,7 +32,6 @@ from lens.core.commands.use import use_narrative
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.edit import EditOperator
-from lens.cli.operators.section import _section_start  # pyright: ignore[reportPrivateUsage]
 from lens.core.operators.section import SectionOperator
 from lens.core.operators.write import WriteOperator
 from lens.core.project import ProjectSession
@@ -697,7 +696,9 @@ class TestSectionStartWithWriteChain(unittest.TestCase):
         session = self._session
         narrative = session.active_narrative
         assert narrative is not None
-        _quiet(_section_start, session, narrative, "ch1", write_prompt="opening scene")
+        _quiet_async(SectionOperator.run_start(
+            session=session, narrative=narrative, id="ch1", write_prompt="opening scene",
+        ))
         parent = self._project_dir / "narrative" / "story" / "_node.md"
         text = parent.read_text()
         self.assertIn("[section:ch1]: #", text)

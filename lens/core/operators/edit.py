@@ -45,3 +45,7 @@ class EditOperator(Operator):
             prompt=params.get("prompt", ""),
             target=params.get("target", ""),
         )
+
+    @staticmethod
+    def ann_id(start_line: int, end_line: int) -> str:
+        return f"e{start_line}_{end_line}"

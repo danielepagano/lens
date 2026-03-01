@@ -77,7 +77,7 @@ def edit(
 
     target_md = target_node.md_path()
     rel_path = str(target_md.relative_to(session.git_root))
-    ann_id = f"e{start_line}_{end_line}"
+    ann_id = EditOperator.ann_id(start_line, end_line)
 
     try:
         asyncio.run(
