@@ -85,58 +85,7 @@ Based on the above, it seems that we need:
 
 It seems that should help us snowball into usefulness.
 
----
-
-# Refined MVP Plan
-
-## Design Principles
-
-The player is the mechanical game engine. They roll dice, track HP, run initiative, and resolve combat math — exactly as at a tabletop. The AI is a **narrative GM**: it sets scenes, voices NPCs, negotiates difficulty, directs enemy intent, and keeps the world alive and reactive. It never resolves dice, tracks numbers, or plays the characters. The artifact produced is a Lens narrative tree: a fractal record of the session that is itself interesting to read.
-
-The differentiator is **guided AI narrative with curated, evolving context**. Everything else (mechanical automation, polished UI, encounter balancing tools) is future scope. The MVP goal is to find the rough edges of that core experience and iterate toward something genuinely fun.
-
-## Phase 1: Tech Additions
-
-### 1. Hidden DM sections in KB objects
-
-KB objects (and potentially narrative nodes) need a new section type that is:
-- **Included** in AI context (unlike existing HTML comments, which are stripped)
-- **Hidden** from the user in rendered output (uses HTML comment syntax so it's invisible in any markdown renderer)
-- **Obfuscated** in source so players don't casually read it while editing the file
-
-Proposed convention — a fenced HTML comment with a `dm:` prefix:
-
-```markdown
-<!-- dm:
-[rot13-encoded content here]
--->
-```
-
-Lens behavior:
-- On context assembly (`assemble_prompt`): decode ROT13, include decoded content inline after the object's public body, wrapped in a clear delimiter so the AI understands its nature (e.g., `[DM PRIVATE — not visible to player: ...]`)
-- On write-back (when `advance` or `design` updates a KB object): re-encode the `dm:` section with ROT13 before saving
-- The AI receives a preamble in its system prompt: content in these blocks is DM planning — the user cannot read it; use it to inform behavior but do not reference it directly
-
-ROT13 is intentionally not secure — it's just enough friction to prevent casual reading during a session. The benefit over a separate `dm.notes.*` namespace is **locality**: the king's secrets live in `npc.king`, the dungeon's traps in `location.dungeon`, and they get loaded automatically whenever the relevant object is pinned. No separate bookkeeping.
-
-### 2. Section operator: front matter pin support
-
-The `section` operator (which creates a child node) should support writing front matter to the newly created node, specifically `kb_pin` and `kb_unpin` lists. This allows the AI to curate its own context per scene:
-
-When the AI creates a new section for "the party arrives at Castle Dorn," it emits:
-
-```
-[section:castle-dorn
-  prompt: party arrives at Castle Dorn to seek an audience with the king
-  pins: location.castle-dorn, npc.king-aldric, faction.court!
-]: #
-```
-
-Lens writes that `kb_pin` list into the new node's front matter. From that point forward, context assembly for that section loads exactly the right lore and hidden DM notes without further instruction. The `!` expansion means linked objects (the king's advisors, the court faction's rivals) also resolve automatically.
-
-This is the mechanism that makes scene-by-scene context curation practical — the AI sets up its own context as it goes.
-
-### 3. Four MVP operators
+### MVP operators ideas
 
 #### `design` — Campaign and scene planning (planning phase)
 
@@ -209,12 +158,3 @@ The world has plans. Players have agency. Fronts track the collision between the
 4. Add `advance` to close the loop — this is what makes the world feel reactive.
 
 5. Play through a short scenario, find bugs, refine prompts. The prompts can be thin early; the KB objects do most of the work.
-
-## Out of Scope for MVP
-
-- Automated dice rolling or mechanical resolution by the AI
-- Fine-grained combat tracking (HP, initiative order) — player owns this
-- Encrypted (truly secure) DM notes — ROT13 obfuscation is sufficient
-- Multiple concurrent fronts across multiple campaigns
-- Auto-triggering `advance` — player invokes it explicitly ("we take a long rest")
-- NPC sub-agents with isolated context sandboxes (compelling future direction, not now)
