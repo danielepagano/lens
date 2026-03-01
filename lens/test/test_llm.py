@@ -254,15 +254,31 @@ class TestGenerate(unittest.TestCase):
             chunks = _collect(generate(MESSAGES, self.root, **kwargs))
         return chunks, client
 
-    def test_yields_content_chunks(self) -> None:
+    def test_yields_full_content_as_single_chunk(self) -> None:
+        # TODO: this pointless farce will be fixed later
         resp = _FakeResponse(lines=_sse(_chunk("Once"), _chunk(" upon"), _chunk(" a time")))
         chunks, _ = self._run(resp)
-        self.assertEqual(chunks, ["Once", " upon", " a time"])
+        self.assertEqual(chunks, ["Once upon a time"])
 
     def test_concatenated_text_matches_expected(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("Hello"), _chunk(", "), _chunk("world!")))
         chunks, _ = self._run(resp)
         self.assertEqual("".join(chunks), "Hello, world!")
+
+    def test_ai_secret_blocks_encoded_before_returned(self) -> None:
+        resp = _FakeResponse(
+            lines=_sse(
+                _chunk("Text with "),
+                _chunk("<!-- ai:secret:\n"),
+                _chunk("player secret\n"),
+                _chunk("--> more."),
+            )
+        )
+        chunks, _ = self._run(resp)
+        full = "".join(chunks)
+        self.assertIn("<!-- ai:secret:", full)
+        self.assertIn("cynlre frperg", full)
+        self.assertNotIn("player secret", full)
 
     def test_usage_chunk_logged_not_yielded(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("text"), _usage_chunk(10, 5)))

@@ -20,6 +20,8 @@ from typing import Any
 
 import httpx
 
+from lens.core.annotations import encode_ai_secrets
+
 logger = logging.getLogger(__name__)
 
 
@@ -184,6 +186,7 @@ async def generate(
         headers["Authorization"] = f"Bearer {cfg.api_key}"
 
     response_parts: list[str] = []
+    chunks: list[str] = []
 
     try:
         async with httpx.AsyncClient(timeout=cfg.timeout_seconds) as client:
@@ -226,7 +229,7 @@ async def generate(
                         if content:
                             if verbose:
                                 response_parts.append(content)
-                            yield content
+                            chunks.append(content)
 
     except httpx.TimeoutException as exc:
         raise LLMError(
@@ -237,6 +240,10 @@ async def generate(
     finally:
         if _sigint_installed:
             loop.remove_signal_handler(signal.SIGINT)
+
+    # TODO: this makes streaming pointless
+    full_text = "".join(chunks)
+    yield encode_ai_secrets(full_text)
 
     if verbose and response_parts:
         sep = "─" * 60
@@ -306,6 +313,7 @@ async def generate_with_tools(
     tool_args_fragments: list[str] = []
     got_tool_call = False
 
+    # TODO: this streaming is pointless because we don't yield
     try:
         async with httpx.AsyncClient(timeout=cfg.timeout_seconds) as client:
             async with client.stream("POST", url, json=payload, headers=headers) as response:
@@ -390,8 +398,9 @@ async def generate_with_tools(
             parsed_args = {}
         tool_call = ToolCall(id=tool_id, name=tool_name, arguments=parsed_args)
 
+    text = encode_ai_secrets("".join(text_chunks))
     return GenerateResult(
-        text="".join(text_chunks),
+        text=text,
         tool_call=tool_call,
         interrupted=False,
     )

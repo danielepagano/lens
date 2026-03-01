@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from lens.core.annotations import strip_markdown_comments
+from lens.core.annotations import decode_ai_secrets, strip_markdown_comments
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import KB_PIN, KB_UNPIN
 
+SYSTEM_PROMPT_FORMATTING_ADDENDUM = (
+    "\nFORMATTING: you must emit valid Markdown, but do not emit headers as you are inserting a fragment in a document. "
+    "You are allowed to emit HTML comments (<!-- ai: text -->) (starting with ai: is a courtesy annotation); "
+    "these will not be rendered in the Markdown output, but WILL visible to user in edit mode. Use HTML comments for storing intermediate thinking if needed. "
+    "You can also emit comments that will be encoded and not readable by the user, but WILL be visible to future AI calls, these have the format "
+    " <!-- ai:secret: text --> (multi-line text is also allowed). Use the ai:secret: marker to hide secrets that may be more interesting to reveal later in the story.\n"
+)
 
 @dataclass
 class CrawlResult:
@@ -173,8 +180,9 @@ def assemble_prompt(
         sections.extend(extra_sections)
     task_block = _block("TASK", instruction)
     sections.append(task_block or instruction)
+    user_content = decode_ai_secrets("\n\n".join(sections))
 
     return [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "\n\n".join(sections)},
+        {"role": "system", "content": system_prompt + SYSTEM_PROMPT_FORMATTING_ADDENDUM},
+        {"role": "user", "content": user_content},
     ]

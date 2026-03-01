@@ -5,6 +5,8 @@ from __future__ import annotations
 import unittest
 
 from lens.core.annotations import (
+    decode_ai_secrets,
+    encode_ai_secrets,
     find_front_matter_span,
     parse_annotations,
     parse_front_matter,
@@ -245,3 +247,68 @@ class TestFindFrontMatterSpan(unittest.TestCase):
 
     def test_returns_none_for_empty_string(self) -> None:
         self.assertIsNone(find_front_matter_span(""))
+
+
+class TestAiSecrets(unittest.TestCase):
+    def test_decode_single_line_secret(self) -> None:
+        text = "Before\n<!-- ai:secret: uryyb -->\nAfter"
+        result = decode_ai_secrets(text)
+        self.assertIn("hello", result)
+        self.assertIn("<!-- ai:secret:", result)
+        self.assertNotIn("uryyb", result)
+
+    def test_decode_multiline_secret(self) -> None:
+        text = "Before\n<!-- ai:secret:\ngur pbagrag vf frperg\n-->\nAfter"
+        result = decode_ai_secrets(text)
+        self.assertIn("the content is secret", result)
+        self.assertIn("<!-- ai:secret:", result)
+        self.assertNotIn("gur pbagrag", result)
+
+    def test_encode_single_line_secret(self) -> None:
+        text = "Before\n<!-- ai:secret: hello -->\nAfter"
+        result = encode_ai_secrets(text)
+        self.assertIn("uryyb", result)
+        self.assertIn("<!-- ai:secret:", result)
+        self.assertNotIn("hello", result)
+
+    def test_encode_multiline_secret(self) -> None:
+        text = "Before\n<!-- ai:secret:\nthe content is secret\n-->\nAfter"
+        result = encode_ai_secrets(text)
+        self.assertIn("gur pbagrag vf frperg", result)
+        self.assertIn("<!-- ai:secret:", result)
+        self.assertNotIn("the content is secret", result)
+
+    def test_encode_multiline_secret_with_marker_on_new_line(self) -> None:
+        text = "Before\n<!--\nai:secret: the content is secret\n-->\nAfter"
+        result = encode_ai_secrets(text)
+        self.assertIn("gur pbagrag vf frperg", result)
+        self.assertIn("<!-- ai:secret:", result)
+        self.assertNotIn("the content is secret", result)
+
+    def test_decode_encode_roundtrip(self) -> None:
+        encoded = "<!-- ai:secret:\ncynlre frperg vasb\n-->"
+        decoded = decode_ai_secrets(encoded)
+        self.assertIn("player secret info", decoded)
+        re_encoded = encode_ai_secrets(decoded)
+        decoded_again = decode_ai_secrets(re_encoded)
+        self.assertIn("player secret info", decoded_again)
+
+    def test_non_secret_ai_comment_unchanged(self) -> None:
+        text = "<!-- ai: remind the player about intimidation -->"
+        self.assertEqual(decode_ai_secrets(text), text)
+        self.assertEqual(encode_ai_secrets(text), text)
+
+    def test_empty_string_unchanged(self) -> None:
+        self.assertEqual(decode_ai_secrets(""), "")
+        self.assertEqual(encode_ai_secrets(""), "")
+
+    def test_multiple_secret_blocks(self) -> None:
+        text = (
+            "<!-- ai:secret: svefg -->\n"
+            "between\n"
+            "<!-- ai:secret:\nfrpbaq -->"
+        )
+        result = decode_ai_secrets(text)
+        self.assertIn("first", result)
+        self.assertIn("second", result)
+        self.assertIn("between", result)

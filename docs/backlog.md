@@ -2,19 +2,13 @@
 
 ## General Backlog
 
-- **Hidden AI sections**: to complement current comments not being shown to the AI, create other comments that are specific for AI use, i.e. included in AI context but hidden from the user in rendered output, and possibly obfuscated in source. Convention: a fenced HTML comment with the ai: prefix designating it, and possible postfix for specific features; to start, we'll have `ai:secret:`, which has obfuscated content stored at rest. Since this is just to prevent accidental peeking, ROT13 encoding is sufficient. Examples of single and multi-line sections:
-  
-  ```markdown
-  <!-- ai: remind the player they can also use intimidation checks against this foe in combat -->
-
-  <!-- ai:secret:
-  [rot13-encoded content here]
-  -->
-  ```
-  Lens behavior:
-  - These sections are passed verbatim to the AI, except that on context assembly (`assemble_prompt`) we do a pass to find `ai:secret:` sections, decode the ROT13, and replace the content with decoded version. We keep the comment format so the AI reflexively knows how to add secretes. This decoding is not added to other places like `kb get` etc.
-  - Whenever we are about to store LLM output to disk, we do the opposite, looking for new secret sections and encoding them. We leave non-secret comments alone.
-  - System prompt preamble should inform the AI about this note-taking (similar to thinking tokens) and secret-making capability.
+- **Fix or Ditch LLM Streaming**: currently, LLM streaming has two problems:  
+  1. Normal generate cannot stream because it cannot handle encoding partial AI secrets
+  2. Tool generate also does not stream because it's looking for tool calls to put in the response  
+We need to fix both these issues and have a single tool-call-aware streaming generator. To do this, we make a single generate that emits structured events with a "preview" string as well as a final event at the end of the stream. So the AsyncGenerator will emit a type that can have a preview string several times, plus or a more complex "final content" payload only in the last event generated.
+    - The prevent strings are not verbatim LLM output: we need to strip all HTML comments (and therefore and crucially, AI secrets); we can easily strip completed comments if they are fully in chunk, but that's not guaranteed! We also need to detect the beginning of comments (`<!--`) and truncate the preview after that PLUS remember that we're mid-comment; on the following chunk, we strip the beginning of the response until we find an end tag (`-->`) or drop the entire chunk if not present and don't yield a preview event at all; after we see the end tag we flip our "mid-comment" flag and return the rest of the string. We assume that those beginning/end tags are not split across chunks because of how LLM's stream whole tokens (valid assumption?). If for some reason a tag is not closed, the whole Markdown output is compromised, we'll see the full thing at the end anyway, and we can retry or user can manually fix (not our problem during streaming).
+    - To create the final content we accumulate verbatim chunks as they arrive (separately from the preview processing), and also accumulate tool calls (remember, tool calls may be added in the middle of stream and we need to accumulate them, check out the OpenAI API docs until to implement this correctly) and any usage stats (usually only at the end anyway, just keep the last set). Once the server stream ends, we emit this content in our last event (plus the last chunk of preview). Before we return the final response, we can finally encode the AI secrets.
+    - Of course we need to alter our callers to only send the preview to the streaming listener (i.e CLI or SSE preview stream) and then process the final payload as the canonical data to save into storage (currently narrative, later objects too), plus process tool calls to dispatch them
 
 - **Improved Section operator: chain and front matter pin support**: `section` should accept pin/un-pin parameters in its annotation and apply those to the newly created child node's front matter. It should also accept a `chain` parameter, which automatically uses the the given operator and parameters (for example to start writing in the new section). chained operators are in the same transaction and can be invoked by a single tool call. Make `chain` re-usable parameter like pin/un-pin so we can add it to other operators later.
   

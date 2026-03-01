@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.context import CrawlResult, assemble_prompt, crawl, SYSTEM_PROMPT_FORMATTING_ADDENDUM
 from lens.core.narrative import NarrativeNode
 
 
@@ -318,7 +318,7 @@ class TestAssemblePrompt(unittest.TestCase):
         )
         self.assertEqual(len(msgs), 2)
         self.assertEqual(msgs[0]["role"], "system")
-        self.assertEqual(msgs[0]["content"], "You are helpful.")
+        self.assertEqual(msgs[0]["content"], "You are helpful." + SYSTEM_PROMPT_FORMATTING_ADDENDUM)
         self.assertEqual(msgs[1]["role"], "user")
         self.assertIn("TASK", msgs[1]["content"])
         self.assertIn("Do the task.", msgs[1]["content"])
@@ -375,3 +375,22 @@ class TestAssemblePrompt(unittest.TestCase):
         self.assertIn("CURRENT PASSAGE", content)
         self.assertIn("Earlier summary.", content)
         self.assertIn("Current prose.", content)
+
+    def test_ai_secret_sections_decoded_in_prompt(self) -> None:
+        result = CrawlResult(
+            knowledge=[],
+            previous_summaries=[],
+            current_content=(
+                "Visible prose.\n\n"
+                "<!-- ai:secret:\ngur frperg vf va gur pbagrag\n-->"
+            ),
+        )
+        msgs = assemble_prompt(
+            result,
+            system_prompt="Sys",
+            instruction="Continue.",
+        )
+        content = msgs[1]["content"]
+        self.assertIn("the secret is in the content", content)
+        self.assertIn("<!-- ai:secret:", content)
+        self.assertNotIn("gur frperg vf va gur pbagrag", content)

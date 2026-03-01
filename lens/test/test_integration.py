@@ -49,6 +49,10 @@ _LOREM = (
     "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
 )
 
+_EMIT_SECRET_PROMPT = "EMIT_AI_SECRET"
+_SECRET_PLAINTEXT = "the king betrayed everyone"
+_SECRET_ROT13 = "gur xvat orgenlrq rirelbar"
+
 
 class _FakeLLMHandler(BaseHTTPRequestHandler):
     """Serve one fake SSE streaming completion per POST request."""
@@ -60,7 +64,13 @@ class _FakeLLMHandler(BaseHTTPRequestHandler):
             data: dict[str, Any] = json.loads(body) if body else {}
             messages: list[dict[str, Any]] = data.get("messages", [])
             total_chars = sum(len(m.get("content", "")) for m in messages)
-            response_text = f"{_LOREM} [input:{total_chars}]"
+            msg_text = " ".join(m.get("content", "") for m in messages)
+            if _EMIT_SECRET_PROMPT in msg_text:
+                response_text = (
+                    f"{_LOREM}\n\n<!-- ai:secret:\n{_SECRET_PLAINTEXT}\n-->"
+                )
+            else:
+                response_text = f"{_LOREM} [input:{total_chars}]"
 
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -330,6 +340,29 @@ class TestHappyPath(unittest.TestCase):
     def test_07_commit_write(self) -> None:
         self._checkpoint("write: opening passage")
         self._assert_clean()
+
+    def test_07b_emitted_secrets_encoded(self) -> None:
+        """LLM output containing ai:secret: blocks is ROT13-encoded before storage."""
+        self._rebuild_session()
+        session = self._session
+        narrative = session.active_narrative
+        assert narrative is not None
+
+        _quiet_async(WriteOperator.run_inline(
+            session=session,
+            narrative=narrative,
+            prompt=_EMIT_SECRET_PROMPT,
+            pins=[],
+            unpins=[],
+            llm_id="mock",
+            retry=False,
+        ))
+
+        text = narrative.find_cursor().md_path().read_text()
+        self.assertIn("<!-- ai:secret:", text)
+        self.assertIn(_SECRET_ROT13, text)
+        self.assertNotIn(_SECRET_PLAINTEXT, text)
+        self._assert_pending()
 
     # ------------------------------------------------------------------
     # 08 — section start (creates child node, opens annotation)

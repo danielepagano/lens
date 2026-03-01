@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import re
 import warnings
 from dataclasses import dataclass
@@ -21,7 +22,10 @@ ANNOTATION_OPEN_RE = re.compile(
     r"(:(?P<id>[a-zA-Z0-9_-]+))?(?P<self_close>/)?\s*$"
 )
 _ANNOTATION_END_RE = re.compile(r"^\s*\]:\s*#\s*$")
-
+_AI_SECRET_RE = re.compile(
+    r"<!--\s*ai:secret:\s*([\s\S]*?)\s*-->",
+    re.MULTILINE,
+)
 
 @dataclass
 class ParsedAnnotation:
@@ -213,3 +217,27 @@ def parse_tail_cursor_annotation(text: str) -> ParsedAnnotation | None:
             )
         return None
     return None
+
+
+def _rot13(s: str) -> str:
+    return codecs.encode(s, "rot_13")
+
+
+def encode_ai_secrets(text: str) -> str:
+    """ROT13-encode the content inside each <!-- ai:secret:...--> block."""
+
+    def repl(match: re.Match[str]) -> str:
+        content = match.group(1)
+        return f"<!-- ai:secret:\n{_rot13(content)}\n-->"
+
+    return _AI_SECRET_RE.sub(repl, text)
+
+
+def decode_ai_secrets(text: str) -> str:
+    """ROT13-decode the content inside each <!-- ai:secret:...--> block."""
+
+    def repl(match: re.Match[str]) -> str:
+        content = match.group(1)
+        return f"<!-- ai:secret:\n{_rot13(content)}\n-->"
+
+    return _AI_SECRET_RE.sub(repl, text)
