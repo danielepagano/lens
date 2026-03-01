@@ -256,18 +256,16 @@ adventure complete:
 
 The world has established expectations. The player has directorial agency. `advance` is where they collide. No ending is written in advance.
 
-## First Steps
+## Development Path
 
-1. Build the **design dataset**: KB objects containing the session zero phase sequence, KB object templates for each type, and example adventure core questions. Pin these into the design sub-tree. This is what drives `design` — not its system prompt.
+The point of all this is to have fun playing. Everything else — setup infrastructure, design pipelines, KB extraction — is in service of that, and building it before play works is building in a vacuum.
 
-2. Implement `design` first. Confirm Lens can parse structured fenced block output into KB files and that `<!-- ai:secret: -->` content is ROT13-encoded correctly on extraction.
+The path is: get a single scene playing well, then weave skills, dialogue, and combat, then connect two scenes, then formalize setup for something small. Scope grows with demonstrated need.
 
-3. Implement `play`. Test the authority model: does the AI hold the director/author boundary while staying cooperative? Test flow mode and stakes mode transitions explicitly.
+**Play first.** Test data is handcrafted fixture data — a character, a location, an NPC, a compact rules reference. No generation pipeline needed to start. The `design` operator is the last thing to build, not the first: it formalizes something that already works, for a game you already know how to play.
 
-4. Add `converse`. Test that conversations stay in conversation mode, resist plot advancement, and produce useful summaries on close.
+**Iterate in real play.** The authority model, the flow/stakes balance, what KB data is actually useful — these emerge from playing, not from planning. Every operator not yet implemented is a place where `play` has to hold the load for now, and that pressure reveals what each future operator actually needs to do.
 
-5. Add `encounter`. Test the setup/running/summary lifecycle and that enemy intent stays narrative, not mechanical.
+**Connect scenes before scaling.** `advance` is the test for whether the world feels alive between sessions. Get two scenes connected before worrying about longer adventures, more complex fronts, or background extraction infrastructure.
 
-6. Add `advance`. Test that fronts feel alive and reactive, and that time passage can be interrupted by world events.
-
-7. Play a short scenario end-to-end. The player-AI contract — holding the authority model while making the player feel heard and effective — is the most important thing to get right before anything else.
+The player-AI contract — holding the authority model while making the player feel heard and effective — is the most important thing to get right before anything else. See `backlog.md` for concrete phase sequencing.
