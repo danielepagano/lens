@@ -17,10 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from lens.core.llm import FinalPayload, StreamEvent, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import (
-    ContextAwareOperator,
-    OperatorError,
-)
+from lens.core.operator import Operator, OperatorError
 from lens.core.tools import (
     OperatorToolDef,
     _TOOL_REGISTRY,  # pyright: ignore[reportPrivateUsage]
@@ -462,7 +459,7 @@ class TestGenerateWithTools(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
-class _WriteOpForTest(ContextAwareOperator):
+class _WriteOpForTest(Operator):
     name: ClassVar[str] = "write"
     requires_id: ClassVar[bool] = False
 
@@ -511,7 +508,7 @@ class TestDispatchToolCall(unittest.TestCase):
         }
         defaults.update(overrides)
         return self._run(
-            ContextAwareOperator._dispatch_tool_call(**defaults)  # pyright: ignore[reportPrivateUsage]
+            Operator._dispatch_tool_call(**defaults)  # pyright: ignore[reportPrivateUsage]
         )
 
     def test_keep_text_true_writes_content(self) -> None:
@@ -669,7 +666,7 @@ class TestMakeInvokeFn(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
-class _ConcreteWriteOp(ContextAwareOperator):
+class _ConcreteWriteOp(Operator):
     name: ClassVar[str] = "write"
     requires_id: ClassVar[bool] = False
 

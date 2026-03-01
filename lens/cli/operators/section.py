@@ -4,6 +4,7 @@ import asyncio
 
 import typer
 
+from lens.cli.options import pin_option, unpin_option
 from lens.core.address import NarrativeAddress
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -37,18 +38,8 @@ def _get_session_and_narrative() -> tuple[ProjectSession, NarrativeNode | None]:
 def start(
     ctx: typer.Context,
     id: str | None = typer.Argument(None, help="Section ID (alphanumeric, underscores, hyphens)"),
-    pin: list[str] = typer.Option(
-        [],
-        "--pin",
-        "-p",
-        help="KB ID to pin in the new section's front matter (repeatable)",
-    ),
-    unpin: list[str] = typer.Option(
-        [],
-        "--unpin",
-        "-u",
-        help="KB ID to unpin in the new section's front matter (repeatable)",
-    ),
+    pin: list[str] = pin_option("KB ID to pin in the new section's front matter (repeatable)"),
+    unpin: list[str] = unpin_option("KB ID to unpin in the new section's front matter (repeatable)"),
 ) -> None:
     """Create a child node at the cursor and open a section tag."""
     if not id or not id.strip():
@@ -86,18 +77,8 @@ def _range(  # pyright: ignore[reportUnusedFunction]
     address: str | None = typer.Argument(None, help="Node address to section"),
     start_line: int | None = typer.Argument(None, help="First line of range (1-based, inclusive)"),
     end_line: int | None = typer.Argument(None, help="Last line of range (1-based, inclusive)"),
-    pin: list[str] = typer.Option(
-        [],
-        "--pin",
-        "-p",
-        help="KB ID to pin for summary context (repeatable)",
-    ),
-    unpin: list[str] = typer.Option(
-        [],
-        "--unpin",
-        "-u",
-        help="KB ID to unpin for summary context (repeatable)",
-    ),
+    pin: list[str] = pin_option("KB ID to pin for summary context (repeatable)"),
+    unpin: list[str] = unpin_option("KB ID to unpin for summary context (repeatable)"),
     llm: str | None = typer.Option(
         None,
         "--llm",

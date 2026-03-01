@@ -4,6 +4,7 @@ import asyncio
 
 import typer
 
+from lens.cli.options import pin_option, unpin_option
 from lens.core.address import NarrativeAddress
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -22,18 +23,8 @@ def edit(
     start_line: int = typer.Argument(..., help="First line to edit (1-based, inclusive)"),
     end_line: int = typer.Argument(..., help="Last line to edit (1-based, inclusive)"),
     prompt: str | None = typer.Argument(None, help="Editing instruction"),
-    pin: list[str] = typer.Option(
-        [],
-        "--pin",
-        "-p",
-        help="KB ID to pin for this operator (repeatable)",
-    ),
-    unpin: list[str] = typer.Option(
-        [],
-        "--unpin",
-        "-u",
-        help="KB ID to unpin for this operator (repeatable)",
-    ),
+    pin: list[str] = pin_option(),
+    unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(
         None,
         "--llm",

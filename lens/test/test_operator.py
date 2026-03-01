@@ -11,7 +11,7 @@ from typing import Any, ClassVar
 from lens.core.annotations import parse_annotations
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import ContextAwareOperator, Operator
+from lens.core.operator import Operator
 from lens.core.storage import Storage
 
 
@@ -52,14 +52,30 @@ def _make_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNode]:
 
 class _TestOp(Operator):
     """Concrete operator for testing."""
+
     name: ClassVar[str] = "testop"
     requires_id: ClassVar[bool] = True
+
+    @property
+    def system_prompt(self) -> str:
+        return ""
+
+    def build_instruction(self, params: dict[str, Any]) -> str:
+        return ""
 
 
 class _NoIdOp(Operator):
     """Operator that does not require an annotation ID."""
+
     name: ClassVar[str] = "noid"
     requires_id: ClassVar[bool] = False
+
+    @property
+    def system_prompt(self) -> str:
+        return ""
+
+    def build_instruction(self, params: dict[str, Any]) -> str:
+        return ""
 
 
 # ------------------------------------------------------------------
@@ -319,11 +335,11 @@ class TestMode3Mutation(unittest.TestCase):
 
 
 # ------------------------------------------------------------------
-# ContextAwareOperator helpers
+# Operator context helpers (formerly ContextAwareOperator)
 # ------------------------------------------------------------------
 
-class _ConcreteCAO(ContextAwareOperator):
-    """Minimal concrete ContextAwareOperator for unit testing."""
+class _ConcreteCAO(Operator):
+    """Minimal concrete Operator for unit testing context helpers."""
     name: ClassVar[str] = "cao"
     requires_id: ClassVar[bool] = False
 
@@ -343,23 +359,23 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
     def test_ann_line_for_append_ends_with_newline(self) -> None:
         text = "line1\nline2\n"
         # split → 3 elements; ends with \n → add 1
-        self.assertEqual(ContextAwareOperator.ann_line_for_append(text), 4)
+        self.assertEqual(Operator.ann_line_for_append(text), 4)
 
     def test_ann_line_for_append_no_newline(self) -> None:
         text = "line1\nline2"
         # split → 2 elements; no trailing \n → add 2
-        self.assertEqual(ContextAwareOperator.ann_line_for_append(text), 4)
+        self.assertEqual(Operator.ann_line_for_append(text), 4)
 
     def test_extract_list_valid(self) -> None:
         params: dict[str, Any] = {"kb_pin": ["a", "b", "c"]}
-        self.assertEqual(ContextAwareOperator.extract_list(params, "kb_pin"), ["a", "b", "c"])
+        self.assertEqual(Operator.extract_list(params, "kb_pin"), ["a", "b", "c"])
 
     def test_extract_list_not_list(self) -> None:
         params: dict[str, Any] = {"kb_pin": "not-a-list"}
-        self.assertEqual(ContextAwareOperator.extract_list(params, "kb_pin"), [])
+        self.assertEqual(Operator.extract_list(params, "kb_pin"), [])
 
     def test_extract_list_missing_key(self) -> None:
-        self.assertEqual(ContextAwareOperator.extract_list({}, "kb_pin"), [])
+        self.assertEqual(Operator.extract_list({}, "kb_pin"), [])
 
     # -- Instance helpers (need a real node file) --
 
@@ -531,14 +547,14 @@ class TestKnowledgeStoreExists(unittest.TestCase):
 
 
 class TestMentionPins(unittest.TestCase):
-    """Tests for ContextAwareOperator.mention_pins()."""
+    """Tests for Operator.mention_pins()."""
 
     def test_extracts_valid_existing_mention(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
             _make_kb_object(root, "person.amy")
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "Write a scene with @person.amy in the market.", root
             )
             self.assertEqual(pins, ["person.amy"])
@@ -547,7 +563,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "Mention @person.ghost who does not exist.", root
             )
             self.assertEqual(pins, [])
@@ -557,7 +573,7 @@ class TestMentionPins(unittest.TestCase):
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
             _make_kb_object(root, "person.amy")
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "Email @notype about something.", root
             )
             self.assertEqual(pins, [])
@@ -567,7 +583,7 @@ class TestMentionPins(unittest.TestCase):
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
             _make_kb_object(root, "person.amy")
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "@person.amy talks to @person.amy again.", root
             )
             self.assertEqual(pins, ["person.amy"])
@@ -578,7 +594,7 @@ class TestMentionPins(unittest.TestCase):
             KnowledgeStore.clear_registry()
             _make_kb_object(root, "person.amy")
             _make_kb_object(root, "place.market")
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "@person.amy visits @place.market today.", root
             )
             self.assertEqual(pins, ["person.amy", "place.market"])
@@ -588,7 +604,7 @@ class TestMentionPins(unittest.TestCase):
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
             _make_kb_object(root, "person.amy")
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "Focus on @person.amy", root
             )
             self.assertEqual(pins, ["person.amy"])
@@ -598,7 +614,7 @@ class TestMentionPins(unittest.TestCase):
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
             _make_kb_object(root, "person.amy")
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "Focus on @person.amy\nAnd continue.", root
             )
             self.assertEqual(pins, ["person.amy"])
@@ -607,7 +623,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
-            pins = ContextAwareOperator.mention_pins(None, root)
+            pins = Operator.mention_pins(None, root)
             self.assertEqual(pins, [])
 
     def test_mention_not_followed_by_whitespace_ignored(self) -> None:
@@ -616,7 +632,7 @@ class TestMentionPins(unittest.TestCase):
             KnowledgeStore.clear_registry()
             _make_kb_object(root, "person.amy")
             # comma after mention — not whitespace or EOL, should not match
-            pins = ContextAwareOperator.mention_pins(
+            pins = Operator.mention_pins(
                 "About @person.amy,the merchant.", root
             )
             self.assertEqual(pins, [])

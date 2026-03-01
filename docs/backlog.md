@@ -2,8 +2,6 @@
 
 ## General Backlog
 
-- **Unify and simplify operator classes**: Let's drop the distinction between `Operator` and `ContextAwareOperator` and make ALL operators context-aware (so the basic Operator subclass takes in the context-aware features). Try to simplify and streamline the operator code and reduce code duplication, for example we should define the pin/un-pin parameters and their parsing in CLI just once.  
-
 - **Operator chain support**: Currently, an LLM can call max one other operator via tool call; that operator then may or may not decide to all other tools. This may be too non-deterministic in some cases. Let's improve as follows:  
   - All operators should accept a `chain` parameter, which automatically calls the given operator and parameters after the current execution is completed. This is handled by common orchestration code, not by the operator itself; for example, the `section` operator could call `write` to start writing in a new node right after it's created (`section` would still be open), or `write` could open a new section after it was done writing (`write` would be close, since it can't next operators). Chained operators are in the same transaction.
   - Chaining is possible in (and actually designed for) tool calls, i.e. the value of an `ToolCall.arguments["chain"]` is an instance of `ToolCall`; chaining can be nested, but like for operators calling each others via LLM calls, the user must confirm if we try to run more than 2 operators per human-triggered call.

@@ -11,14 +11,10 @@ When called again while owning a pending transaction:
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, ClassVar
 
-import typer
-
-from lens.core.operator import ContextAwareOperator, OperatorError
+from lens.core.operator import Operator
 from lens.core.tools import OperatorToolDef
-from lens.core.project import ProjectSession
 
 # ---------------------------------------------------------------------------
 # Prompt constants
@@ -46,7 +42,7 @@ INSTRUCTION_WITH_PROMPT = (
 # ---------------------------------------------------------------------------
 
 
-class WriteOperator(ContextAwareOperator):
+class WriteOperator(Operator):
     name: ClassVar[str] = "write"
     requires_id: ClassVar[bool] = False
 
@@ -72,6 +68,16 @@ WriteOperator.register_as_tool(
                     "type": "string",
                     "description": "Writing direction or instruction for the narrative continuation",
                 },
+                "kb_pin": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "KB IDs to pin for this call",
+                },
+                "kb_unpin": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "KB IDs to unpin for this call",
+                },
             },
         },
         prompt_snippet=(
@@ -82,75 +88,3 @@ WriteOperator.register_as_tool(
         keep_text=True,
     )
 )
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
-app = typer.Typer(invoke_without_command=True)
-
-
-@app.callback()
-def write(
-    prompt: str | None = typer.Argument(
-        None,
-        help="Writing direction/instruction",
-    ),
-    pin: list[str] = typer.Option(
-        [],
-        "--pin",
-        "-p",
-        help="KB ID to pin for this operator (repeatable)",
-    ),
-    unpin: list[str] = typer.Option(
-        [],
-        "--unpin",
-        "-u",
-        help="KB ID to unpin for this operator (repeatable)",
-    ),
-    llm: str | None = typer.Option(
-        None,
-        "--llm",
-        "-l",
-        help="LLM ID to use (overrides project default)",
-    ),
-    retry: bool = typer.Option(
-        False,
-        "--retry",
-        "-r",
-        help="Discard generated text and regenerate",
-    ),
-) -> None:
-    """Generate narrative text at the cursor."""
-    try:
-        session = ProjectSession.from_cwd()
-    except RuntimeError as e:
-        typer.echo(f"lens write: {e}", err=True)
-        raise typer.Exit(1)
-
-    narrative = session.active_narrative
-    if narrative is None:
-        typer.echo(
-            "lens write: no active narrative (run 'lens use <slug>' first)", err=True
-        )
-        raise typer.Exit(1)
-
-    try:
-        asyncio.run(
-            WriteOperator.run_inline(
-                session=session,
-                narrative=narrative,
-                prompt=prompt,
-                pins=list(pin),
-                unpins=list(unpin),
-                llm_id=llm,
-                retry=retry,
-            )
-        )
-    except OperatorError as e:
-        typer.echo(f"lens write: {e}", err=True)
-        raise typer.Exit(1)
-    except Exception as e:
-        typer.echo(f"lens write: {e}", err=True)
-        raise typer.Exit(1)

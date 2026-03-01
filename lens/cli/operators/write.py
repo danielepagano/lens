@@ -4,6 +4,7 @@ import asyncio
 
 import typer
 
+from lens.cli.options import pin_option, unpin_option
 from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -23,18 +24,8 @@ def write(
         None,
         help="Writing direction/instruction",
     ),
-    pin: list[str] = typer.Option(
-        [],
-        "--pin",
-        "-p",
-        help="KB ID to pin for this operator (repeatable)",
-    ),
-    unpin: list[str] = typer.Option(
-        [],
-        "--unpin",
-        "-u",
-        help="KB ID to unpin for this operator (repeatable)",
-    ),
+    pin: list[str] = pin_option(),
+    unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(
         None,
         "--llm",

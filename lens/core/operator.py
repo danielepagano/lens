@@ -68,6 +68,13 @@ class Operator(ABC):
     limited_to_datasets: ClassVar[list[str]] = []
     """If non-empty, only available if one of the given datasets is currently active."""
 
+    @property
+    @abstractmethod
+    def system_prompt(self) -> str: ...
+
+    @abstractmethod
+    def build_instruction(self, params: dict[str, Any]) -> str: ...
+
     def __init__(self, storage: Storage, narrative_root: NarrativeNode) -> None:
         self.storage = storage
         self.narrative_root = narrative_root
@@ -389,29 +396,8 @@ class Operator(ABC):
         self.storage.write_file(file_path, rebuilt)
         self.storage.stage_all()
 
-
-# ---------------------------------------------------------------------------
-# ContextAwareOperator — LLM-powered abstract intermediate base
-# ---------------------------------------------------------------------------
-
-
-class ContextAwareOperator(Operator):
-    """Abstract intermediate base for operators that stream LLM output.
-
-    Subclasses must implement :attr:`system_prompt` and
-    :meth:`build_instruction`. This class provides all shared I/O helpers
-    and the :meth:`run_inline` / :meth:`run_mutation` flow orchestrators.
-    """
-
-    @property
-    @abstractmethod
-    def system_prompt(self) -> str: ...
-
-    @abstractmethod
-    def build_instruction(self, params: dict[str, Any]) -> str: ...
-
     # ------------------------------------------------------------------
-    # Static helpers
+    # LLM / context-aware static helpers
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -470,7 +456,7 @@ class ContextAwareOperator(Operator):
         """
 
     @classmethod
-    def _make_invoke_fn(cls: type["ContextAwareOperator"]) -> Any:
+    def _make_invoke_fn(cls: type[Operator]) -> Any:
         """Return an async invoke_fn that calls this operator's run_inline.
 
         Used by :meth:`register_as_tool` to create a tool that hands off
@@ -485,12 +471,15 @@ class ContextAwareOperator(Operator):
             on_token: Callable[[str], Awaitable[None]] | None,
             on_confirm: Callable[[str, str], Awaitable[bool]] | None,
         ) -> None:
+            raw = args or {}
+            pins = cls.extract_list(raw, "kb_pin")
+            unpins = cls.extract_list(raw, "kb_unpin")
             await cls.run_inline(
                 session=session,
                 narrative=narrative,
-                prompt=args.get("prompt"),
-                pins=[],
-                unpins=[],
+                prompt=raw.get("prompt"),
+                pins=pins,
+                unpins=unpins,
                 llm_id=None,
                 retry=False,
                 on_token=on_token,
@@ -866,7 +855,7 @@ class ContextAwareOperator(Operator):
         tool_call: ToolCall,
         text: str,
         cursor: NarrativeNode,
-        op: "ContextAwareOperator",
+        op: Operator,
         tag: str,
         session: ProjectSession,
         narrative: NarrativeNode,

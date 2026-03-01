@@ -17,14 +17,14 @@ from __future__ import annotations
 import asyncio
 import shutil
 from collections.abc import Callable, Awaitable
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import typer
 
 from lens.core.address import NarrativeAddress
 from lens.core.annotations import find_front_matter_span, strip_markdown_comments
 from lens.core.knowledge import validate_ids_exist
-from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.context import CrawlResult, crawl
 from lens.core.llm import LLMError, generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator
@@ -51,6 +51,13 @@ SUMMARY_INSTRUCTION_TEMPLATE = (
 class SectionOperator(Operator):
     name: ClassVar[str] = "section"
     requires_id: ClassVar[bool] = True
+
+    @property
+    def system_prompt(self) -> str:
+        return SYSTEM_PROMPT
+
+    def build_instruction(self, params: dict[str, Any]) -> str:
+        return SUMMARY_INSTRUCTION_TEMPLATE.format(content=params.get("content", ""))
 
     def start(
         self,
@@ -96,17 +103,14 @@ class SectionOperator(Operator):
         child_clean = strip_markdown_comments(child_text).strip()
 
         crawl_result = crawl(parent)
-        instruction = SUMMARY_INSTRUCTION_TEMPLATE.format(content=child_clean)
-        messages = assemble_prompt(
-            crawl_result,
-            system_prompt=SYSTEM_PROMPT,
-            instruction=instruction,
-        )
+        messages = self.build_messages(crawl_result, {"content": child_clean})
 
         summary = ""
         interrupted = False
         try:
-            async for event in generate_stream(messages, session.project_root, llm_id=llm_id):
+            async for event in generate_stream(
+                messages, session.project_root, llm_id=llm_id
+            ):
                 if event.preview:
                     if on_token:
                         await on_token(event.preview)
@@ -235,12 +239,7 @@ class SectionOperator(Operator):
             previous_summaries=crawl_result.previous_summaries,
             current_content=passage_before or None,
         )
-        instruction = SUMMARY_INSTRUCTION_TEMPLATE.format(content=child_clean)
-        messages = assemble_prompt(
-            adjusted_crawl,
-            system_prompt=SYSTEM_PROMPT,
-            instruction=instruction,
-        )
+        messages = self.build_messages(adjusted_crawl, {"content": child_clean})
 
         summary = ""
         interrupted = False

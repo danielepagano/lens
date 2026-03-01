@@ -15,7 +15,7 @@ from typing import Any, ClassVar
 
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import ContextAwareOperator, OperatorError
+from lens.core.operator import Operator, OperatorError
 from lens.core.tools import OperatorToolDef
 from lens.core.project import ProjectSession
 
@@ -49,7 +49,7 @@ INSTRUCTION_WITH_PROMPT = (
 # ---------------------------------------------------------------------------
 
 
-class PlayOperator(ContextAwareOperator):
+class PlayOperator(Operator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = False
     # example operator dataset limiting
@@ -112,6 +112,16 @@ PlayOperator.register_as_tool(
                 "prompt": {
                     "type": "string",
                     "description": "Situation or scene direction for the player-facing moment",
+                },
+                "kb_pin": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "KB IDs to pin for this call",
+                },
+                "kb_unpin": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "KB IDs to unpin for this call",
                 },
             },
         },

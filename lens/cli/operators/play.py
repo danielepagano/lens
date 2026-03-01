@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-import lens.core.operators.write as _write_ops  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
+from lens.cli.options import pin_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -25,18 +25,10 @@ def play(
         None,
         help="Scene direction or situation for the player-facing moment",
     ),
-    pin: list[str] = typer.Option(
-        [],
-        "--pin",
-        "-p",
-        help="KB ID to pin for this operator (repeatable); at least one must be tagged 'pc'",
+    pin: list[str] = pin_option(
+        "KB ID to pin (repeatable); at least one must be tagged 'pc'"
     ),
-    unpin: list[str] = typer.Option(
-        [],
-        "--unpin",
-        "-u",
-        help="KB ID to unpin for this operator (repeatable)",
-    ),
+    unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(
         None,
         "--llm",
