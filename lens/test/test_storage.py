@@ -411,6 +411,81 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
         self.assertIsNone(detect_pending_owner_from_diff(diff))
 
 
+class TestTransactionCRUD(unittest.TestCase):
+    """Verify that all file operations (create, update, delete, copy, rename)
+    can be performed inside a single Storage transaction and that the resulting
+    pending_diff / staged_diff correctly reflect the state."""
+
+    def test_full_crud_copy_rename_in_one_transaction(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            s = Storage(root)
+
+            # --- Create (write new file) ---
+            new_file = root / "docs" / "intro.md"
+            s.write_file(new_file, "# Introduction\n")
+            self.assertTrue(new_file.exists())
+
+            # --- Create a second file so we can copy and rename it ---
+            src_file = root / "docs" / "source.md"
+            s.write_file(src_file, "source content\n")
+
+            # All three ops are still unstaged (pending transaction).
+            self.assertTrue(s.has_pending())
+
+            # Stage them (commit the transaction / pending checkpoint).
+            s.stage_all()
+            self.assertFalse(s.has_pending())
+            cached = _git(root, "diff", "--cached", "--name-only")
+            self.assertIn("docs/intro.md", cached)
+            self.assertIn("docs/source.md", cached)
+
+            # Commit so the files are tracked.
+            _git(root, "commit", "-m", "add docs")
+
+            # Re-create Storage for a fresh ownership check.
+            s2 = Storage(root)
+
+            # --- Update (overwrite tracked file) ---
+            s2.write_file(new_file, "# Introduction\n\nUpdated content.\n")
+
+            # --- Copy ---
+            copy_dst = root / "docs" / "copy.md"
+            s2.copy_file(src_file, copy_dst)
+
+            # --- Rename (move) ---
+            rename_dst = root / "docs" / "renamed.md"
+            s2.rename(src_file, rename_dst)
+
+            # src_file gone, copy and renamed exist
+            self.assertFalse(src_file.exists())
+            self.assertTrue(copy_dst.exists())
+            self.assertTrue(rename_dst.exists())
+            self.assertEqual(copy_dst.read_text(), "source content\n")
+            self.assertEqual(rename_dst.read_text(), "source content\n")
+
+            # pending_diff must include the tracked modification AND the
+            # untracked new files (copy + renamed).
+            diff = s2.pending_diff()
+            self.assertIn("Updated content", diff)
+            self.assertIn("docs/copy.md", diff)
+            self.assertIn("docs/renamed.md", diff)
+
+            # staged_diff is empty (nothing staged yet in this transaction).
+            self.assertEqual(s2.staged_diff(), "")
+
+            # --- Delete ---
+            s2.delete_file(copy_dst)
+            self.assertFalse(copy_dst.exists())
+
+            # Stage and verify staged_diff is populated.
+            s2.stage_all()
+            staged = s2.staged_diff()
+            self.assertIn("intro.md", staged)
+            # pending_diff is now empty (everything staged).
+            self.assertEqual(s2.pending_diff(), "")
+
+
 class TestDetectPendingOwner(unittest.TestCase):
     """Integration tests for Storage.detect_pending_owner().
 
