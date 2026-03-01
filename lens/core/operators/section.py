@@ -24,7 +24,7 @@ import typer
 from lens.core.address import NarrativeAddress
 from lens.core.annotations import find_front_matter_span, strip_markdown_comments
 from lens.core.context import CrawlResult, assemble_prompt, crawl
-from lens.core.llm import LLMError, generate
+from lens.core.llm import LLMError, generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator
 from lens.core.project import ProjectSession, resolve_address, validate_slug
@@ -85,24 +85,32 @@ class SectionOperator(Operator):
             instruction=instruction,
         )
 
-        chunks: list[str] = []
+        summary = ""
         interrupted = False
         try:
-            async for chunk in generate(messages, session.project_root, llm_id=llm_id):
-                print(chunk, end="", flush=True)
-                chunks.append(chunk)
+            async for event in generate_stream(messages, session.project_root, llm_id=llm_id):
+                if event.preview:
+                    if on_token:
+                        await on_token(event.preview)
+                    else:
+                        print(event.preview, end="", flush=True)
+                if event.final:
+                    if event.final.interrupted:
+                        interrupted = True
+                        break
+                    summary = event.final.text.strip()
+                    break
         except KeyboardInterrupt:
             interrupted = True
-        print()
+        if on_token is None:
+            print()
 
-        summary = "".join(chunks).strip()
+        if interrupted:
+            raise KeyboardInterrupt
         if not summary:
             raise ValueError("LLM returned no summary content")
 
         self.close_subnode(parent, key, summary)
-
-        if interrupted:
-            raise KeyboardInterrupt
 
     async def section_range(
         self,
@@ -216,17 +224,28 @@ class SectionOperator(Operator):
             instruction=instruction,
         )
 
-        chunks: list[str] = []
+        summary = ""
         interrupted = False
         try:
-            async for chunk in generate(messages, session.project_root, llm_id=llm_id):
-                print(chunk, end="", flush=True)
-                chunks.append(chunk)
+            async for event in generate_stream(messages, session.project_root, llm_id=llm_id):
+                if event.preview:
+                    if on_token:
+                        await on_token(event.preview)
+                    else:
+                        print(event.preview, end="", flush=True)
+                if event.final:
+                    if event.final.interrupted:
+                        interrupted = True
+                        break
+                    summary = event.final.text.strip()
+                    break
         except KeyboardInterrupt:
             interrupted = True
-        print()
+        if on_token is None:
+            print()
 
-        summary = "".join(chunks).strip()
+        if interrupted:
+            raise KeyboardInterrupt
         if not summary:
             raise ValueError("LLM returned no summary content")
 
@@ -272,9 +291,6 @@ class SectionOperator(Operator):
         # Write child node content and updated parent.
         self.storage.write_file(child_dir / "_node.md", selected_text + "\n")
         self.storage.write_file(target_node.md_path(), new_parent_text)
-
-        if interrupted:
-            raise KeyboardInterrupt
 
 
 # ---------------------------------------------------------------

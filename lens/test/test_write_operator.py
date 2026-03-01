@@ -8,12 +8,12 @@ import io
 import subprocess
 import tempfile
 import unittest
-from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
 from lens.core.context import CrawlResult
+from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.write import WriteOperator
@@ -52,9 +52,17 @@ def _make_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNode]:
     return tmp, NarrativeNode(narrative_root=narrative_dir, key_path=())
 
 
-async def _fake_generate(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
     for chunk in ["Generated", " content"]:
-        yield chunk
+        yield StreamEvent(preview=chunk)
+    yield StreamEvent(
+        final=FinalPayload(
+            text="Generated content",
+            tool_call=None,
+            usage=None,
+            interrupted=False,
+        )
+    )
 
 
 def _run_inline(
@@ -68,8 +76,8 @@ def _run_inline(
     retry: bool = False,
     generate_mock: Any = None,
 ) -> None:
-    mock = generate_mock or _fake_generate
-    with patch("lens.core.operator.generate", new=mock):
+    mock = generate_mock or _fake_generate_stream
+    with patch("lens.core.operator.generate_stream", new=mock):
         # Ensure no operator tools are active so tests use the stream_output path.
         with patch("lens.core.operator.get_tool_registry", return_value={}):
             with contextlib.redirect_stdout(io.StringIO()):
@@ -179,9 +187,17 @@ class TestWriteOperatorRunInline(unittest.TestCase):
 
             _run_inline(root, narrative)
 
-            async def _second(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+            async def _second(*args: Any, **kwargs: Any) -> Any:
                 for chunk in ["More", " text"]:
-                    yield chunk
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="More text",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
 
             _run_inline(root, narrative, generate_mock=_second)
 
@@ -204,9 +220,17 @@ class TestWriteOperatorRunInline(unittest.TestCase):
 
             _run_inline(root, narrative)
 
-            async def _retry(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+            async def _retry(*args: Any, **kwargs: Any) -> Any:
                 for chunk in ["Retried", " content"]:
-                    yield chunk
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Retried content",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
 
             _run_inline(root, narrative, retry=True, generate_mock=_retry)
 
@@ -224,9 +248,17 @@ class TestWriteOperatorRunInline(unittest.TestCase):
 
             _run_inline(root, narrative, prompt="original direction")
 
-            async def _updated(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+            async def _updated(*args: Any, **kwargs: Any) -> Any:
                 for chunk in ["Updated", " content"]:
-                    yield chunk
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Updated content",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
 
             _run_inline(root, narrative, prompt="new direction", generate_mock=_updated)
 

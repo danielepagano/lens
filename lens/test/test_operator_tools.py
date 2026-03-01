@@ -1,7 +1,7 @@
 """Unit and integration tests for operator tools.
 
-Covers: ToolCall/GenerateResult, tool registry, generate_with_tools,
-_dispatch_tool_call, PlayOperator requirements, and write↔play tool chain.
+Covers: ToolCall, tool registry, generate_stream, _dispatch_tool_call,
+PlayOperator requirements, and write↔play tool chain.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import lens.core.operators.play  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers play tool
 import lens.core.operators.write  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
-from lens.core.llm import GenerateResult, ToolCall, generate_with_tools
+from lens.core.llm import FinalPayload, StreamEvent, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import (
     ContextAwareOperator,
@@ -63,7 +63,11 @@ def _tool_chunk_first(
             {
                 "delta": {
                     "tool_calls": [
-                        {"id": tool_id, "function": {"name": name, "arguments": args_fragment}}
+                        {
+                            "index": 0,
+                            "id": tool_id,
+                            "function": {"name": name, "arguments": args_fragment},
+                        }
                     ]
                 },
                 "finish_reason": finish_reason,
@@ -76,7 +80,9 @@ def _tool_chunk_cont(args_fragment: str) -> dict[str, Any]:
     return {
         "choices": [
             {
-                "delta": {"tool_calls": [{"function": {"arguments": args_fragment}}]},
+                "delta": {
+                    "tool_calls": [{"index": 0, "function": {"arguments": args_fragment}}]
+                },
                 "finish_reason": None,
             }
         ]
@@ -151,11 +157,14 @@ def _init_repo(tmp: Path) -> Path:
     return tmp
 
 
-def _make_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNode]:
-    (tmp / "lens.toml").write_text(
-        f'[project]\nnarrative = "{slug}"\n\n'
-        '[[llm]]\nbase_url = "https://api.example.com/v1"\nmodel = "test"\n'
-    )
+def _make_project(
+    tmp: Path, slug: str = "test", datasets: list[str] | None = None
+) -> tuple[Path, NarrativeNode]:
+    project = f'[project]\nnarrative = "{slug}"\n'
+    if datasets is not None:
+        project += f'datasets = {json.dumps(datasets)}\n'
+    project += "\n[[llm]]\nbase_url = \"https://api.example.com/v1\"\nmodel = \"test\"\n"
+    (tmp / "lens.toml").write_text(project)
     narrative_dir = tmp / "narrative" / slug
     narrative_dir.mkdir(parents=True)
     (narrative_dir / "_node.md").write_text(f"# {slug}\n")
@@ -296,21 +305,39 @@ class TestGenerateWithTools(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    def _run(self, response: _FakeResponse, **kwargs: Any) -> tuple[GenerateResult, _FakeClient]:
+    def _run(
+        self, response: _FakeResponse, **kwargs: Any
+    ) -> tuple[FinalPayload | None, _FakeClient]:
         factory, client = _fake_client_cls(response)
         tools: list[dict[str, Any]] = kwargs.pop(
             "tools", [{"type": "function", "function": {"name": "play"}}]
         )
+        final: FinalPayload | None = None
+
+        async def _consume() -> None:
+            nonlocal final
+            async for event in generate_stream(
+                MESSAGES, self.root, tools=tools if tools else None, **kwargs
+            ):
+                if event.final:
+                    final = event.final
+                    break
+
         with patch("lens.core.llm.httpx.AsyncClient", factory):
-            result = asyncio.run(generate_with_tools(MESSAGES, self.root, tools=tools, **kwargs))
-        return result, client
+            asyncio.run(_consume())
+        return final, client
 
     def test_text_only_no_tool_call(self) -> None:
         resp = _FakeResponse(
-            lines=_sse(_text_chunk("Once"), _text_chunk(" upon"),
-                       {"choices": [{"delta": {}, "finish_reason": "stop"}]})
+            lines=_sse(
+                _text_chunk("Once"),
+                _text_chunk(" upon"),
+                {"choices": [{"delta": {}, "finish_reason": "stop"}]},
+            )
         )
         result, _ = self._run(resp)
+        self.assertIsNotNone(result)
+        assert result is not None
         self.assertEqual(result.text, "Once upon")
         self.assertIsNone(result.tool_call)
 
@@ -324,6 +351,8 @@ class TestGenerateWithTools(unittest.TestCase):
             )
         )
         result, _ = self._run(resp)
+        self.assertIsNotNone(result)
+        assert result is not None
         self.assertIsNotNone(result.tool_call)
         assert result.tool_call is not None
         self.assertEqual(result.tool_call.name, "play")
@@ -339,6 +368,8 @@ class TestGenerateWithTools(unittest.TestCase):
             )
         )
         result, _ = self._run(resp)
+        self.assertIsNotNone(result)
+        assert result is not None
         self.assertEqual(result.text, "The road narrowed.")
         self.assertIsNotNone(result.tool_call)
 
@@ -347,6 +378,8 @@ class TestGenerateWithTools(unittest.TestCase):
             lines=_sse(_tool_chunk_first("call_1", "play", ""), _finish_tool_calls())
         )
         result, _ = self._run(resp)
+        self.assertIsNotNone(result)
+        assert result is not None
         assert result.tool_call is not None
         self.assertEqual(result.tool_call.arguments, {})
 
@@ -359,18 +392,26 @@ class TestGenerateWithTools(unittest.TestCase):
         self.assertEqual(payload.get("tool_choice"), "auto")
 
     def test_cancel_event_stops_stream(self) -> None:
-        async def _run_cancelled() -> GenerateResult:
+        async def _run_cancelled() -> FinalPayload | None:
             factory, _ = _fake_client_cls(
                 _FakeResponse(lines=_sse(_text_chunk("x"), _text_chunk("y")))
             )
             event = asyncio.Event()
             event.set()
+            final: FinalPayload | None = None
             with patch("lens.core.llm.httpx.AsyncClient", factory):
-                return await generate_with_tools(
+                async for ev in generate_stream(
                     MESSAGES, self.root, tools=[], cancel_event=event
-                )
+                ):
+                    if ev.final:
+                        final = ev.final
+                        break
+            return final
 
         result = asyncio.run(_run_cancelled())
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertTrue(result.interrupted)
         self.assertIsNone(result.tool_call)
 
 
@@ -609,10 +650,18 @@ class TestRunInlineWithTools(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_no_tools_registered_uses_stream_output(self) -> None:
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
+            yield StreamEvent(
+                final=FinalPayload(
+                    text="hello world",
+                    tool_call=None,
+                    usage=None,
+                    interrupted=False,
+                )
+            )
+
         with patch("lens.core.operator.get_tool_registry", return_value={}):
-            with patch.object(
-                _ConcreteWriteOp, "stream_output", new_callable=AsyncMock, return_value="hello world"
-            ):
+            with patch("lens.core.operator.generate_stream", side_effect=_fake_stream):
                 asyncio.run(
                     _ConcreteWriteOp.run_inline(
                         session=self.session,
@@ -627,21 +676,25 @@ class TestRunInlineWithTools(unittest.TestCase):
         cursor = self.narrative.find_cursor()
         self.assertIn("hello world", cursor.md_path().read_text())
 
-    def test_tool_registered_uses_generate_with_tools(self) -> None:
+    def test_tool_registered_uses_generate_stream(self) -> None:
         dummy_tdef = OperatorToolDef(
             parameters={"type": "object", "properties": {}},
             prompt_snippet="dummy tool",
             keep_text=True,
         )
         dummy_registry = {"dummy": (dummy_tdef, AsyncMock(return_value=None))}
-        fake_result = GenerateResult(text="written content", tool_call=None, interrupted=False)
+        fake_final = FinalPayload(
+            text="written content", tool_call=None, usage=None, interrupted=False
+        )
+
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
+            yield StreamEvent(final=fake_final)
 
         with patch("lens.core.operator.get_tool_registry", return_value=dummy_registry):
             with patch(
-                "lens.core.operator.generate_with_tools",
-                new_callable=AsyncMock,
-                return_value=fake_result,
-            ) as mock_gwt:
+                "lens.core.operator.generate_stream",
+                side_effect=_fake_stream,
+            ) as mock_gs:
                 asyncio.run(
                     _ConcreteWriteOp.run_inline(
                         session=self.session,
@@ -653,12 +706,12 @@ class TestRunInlineWithTools(unittest.TestCase):
                         retry=False,
                     )
                 )
-        mock_gwt.assert_called_once()
+        mock_gs.assert_called_once()
         cursor = self.narrative.find_cursor()
         self.assertIn("written content", cursor.md_path().read_text())
 
     def test_tool_call_dispatches_invoke_fn(self) -> None:
-        """When generate_with_tools returns a ToolCall, the matching invoke_fn is called."""
+        """When generate_stream yields a ToolCall in final, the matching invoke_fn is called."""
         invoked: list[dict[str, Any]] = []
 
         async def _fake_invoke(
@@ -677,14 +730,18 @@ class TestRunInlineWithTools(unittest.TestCase):
             keep_text=False,
         )
         dummy_registry = {"dummy": (dummy_tdef, _fake_invoke)}
-        fake_result = GenerateResult(
+        fake_final = FinalPayload(
             text="preamble",
             tool_call=ToolCall(id="c1", name="dummy", arguments={"prompt": "x"}),
+            usage=None,
             interrupted=False,
         )
 
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
+            yield StreamEvent(final=fake_final)
+
         with patch("lens.core.operator.get_tool_registry", return_value=dummy_registry):
-            with patch("lens.core.operator.generate_with_tools", new_callable=AsyncMock, return_value=fake_result):
+            with patch("lens.core.operator.generate_stream", side_effect=_fake_stream):
                 asyncio.run(
                     _ConcreteWriteOp.run_inline(
                         session=self.session,
@@ -711,7 +768,9 @@ class TestWritePlayToolChain(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         tmp = Path(self._tmp.name)
-        self.root, self.narrative = _make_project(_init_repo(tmp))
+        self.root, self.narrative = _make_project(
+            _init_repo(tmp), datasets=PlayOperator.limited_to_datasets
+        )
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
 
         # Create a PC in the knowledge base and tag it
@@ -735,30 +794,32 @@ class TestWritePlayToolChain(unittest.TestCase):
         Simulate: write's LLM returns a tool call for play, then play's LLM
         returns plain text.  Both pieces of content end up in the cursor node.
         """
-        write_result = GenerateResult(
+        write_final = FinalPayload(
             text="The forest was dark and silent.",
             tool_call=ToolCall(
                 id="call_1",
                 name="play",
                 arguments={"prompt": "approach the campfire"},
             ),
+            usage=None,
             interrupted=False,
         )
-        play_result = GenerateResult(
+        play_final = FinalPayload(
             text="Ahead you see a flickering campfire. What do you do?",
             tool_call=None,
+            usage=None,
             interrupted=False,
         )
 
         call_count = 0
 
-        async def _fake_gwt(*args: Any, **kwargs: Any) -> GenerateResult:
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
             nonlocal call_count
             call_count += 1
-            return write_result if call_count == 1 else play_result
+            final = write_final if call_count == 1 else play_final
+            yield StreamEvent(final=final)
 
-        # Patch generate_with_tools globally and bypass play's pc requirement
-        with patch("lens.core.operator.generate_with_tools", side_effect=_fake_gwt):
+        with patch("lens.core.operator.generate_stream", side_effect=_fake_stream):
             with patch.object(PlayOperator, "check_requirements"):
                 asyncio.run(
                     WriteOperator.run_inline(
@@ -779,34 +840,36 @@ class TestWritePlayToolChain(unittest.TestCase):
         self.assertIn("The forest was dark and silent.", content)
         # Play's text was also written
         self.assertIn("flickering campfire", content)
-        # Two generate_with_tools calls were made
         self.assertEqual(call_count, 2)
 
     def test_play_calls_write_tool(self) -> None:
         """Simulate: play's LLM returns a tool call for write, write returns text."""
-        play_result = GenerateResult(
+        play_final = FinalPayload(
             text="You approach the gates of the city.",
             tool_call=ToolCall(
                 id="call_2",
                 name="write",
                 arguments={"prompt": "describe the city interior"},
             ),
+            usage=None,
             interrupted=False,
         )
-        write_result = GenerateResult(
+        write_final = FinalPayload(
             text="Inside the city, merchants hawked their wares.",
             tool_call=None,
+            usage=None,
             interrupted=False,
         )
 
         call_count = 0
 
-        async def _fake_gwt(*args: Any, **kwargs: Any) -> GenerateResult:
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
             nonlocal call_count
             call_count += 1
-            return play_result if call_count == 1 else write_result
+            final = play_final if call_count == 1 else write_final
+            yield StreamEvent(final=final)
 
-        with patch("lens.core.operator.generate_with_tools", side_effect=_fake_gwt):
+        with patch("lens.core.operator.generate_stream", side_effect=_fake_stream):
             with patch.object(PlayOperator, "check_requirements"):
                 asyncio.run(
                     PlayOperator.run_inline(
@@ -829,31 +892,35 @@ class TestWritePlayToolChain(unittest.TestCase):
 
     def test_depth_one_without_confirm_raises(self) -> None:
         """A second-level tool call with no on_confirm callback raises OperatorError."""
-        first_result = GenerateResult(
+        first_final = FinalPayload(
             text="The road continued.",
             tool_call=ToolCall(id="c1", name="play", arguments={"prompt": "x"}),
+            usage=None,
             interrupted=False,
         )
-        # Play also tries to call write — this is depth 1 and should require on_confirm
-        second_result = GenerateResult(
+        second_final = FinalPayload(
             text="Stars appeared overhead.",
             tool_call=ToolCall(id="c2", name="write", arguments={"prompt": "y"}),
+            usage=None,
             interrupted=False,
         )
-        third_result = GenerateResult(text="The end.", tool_call=None, interrupted=False)
+        third_final = FinalPayload(
+            text="The end.", tool_call=None, usage=None, interrupted=False
+        )
 
         call_count = 0
 
-        async def _fake_gwt(*args: Any, **kwargs: Any) -> GenerateResult:
+        async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                return first_result
-            if call_count == 2:
-                return second_result
-            return third_result
+                yield StreamEvent(final=first_final)
+            elif call_count == 2:
+                yield StreamEvent(final=second_final)
+            else:
+                yield StreamEvent(final=third_final)
 
-        with patch("lens.core.operator.generate_with_tools", side_effect=_fake_gwt):
+        with patch("lens.core.operator.generate_stream", side_effect=_fake_stream):
             with patch.object(PlayOperator, "check_requirements"):
                 with self.assertRaises(OperatorError) as ctx:
                     asyncio.run(

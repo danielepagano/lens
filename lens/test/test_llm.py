@@ -13,7 +13,12 @@ from unittest.mock import patch
 
 import httpx
 
-from lens.core.llm import LLMError, _load_config, generate  # pyright: ignore[reportPrivateUsage]
+from lens.core.llm import (
+    LLMError,
+    FinalPayload,
+    _load_config,  # pyright: ignore[reportPrivateUsage]
+    generate_stream,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -26,10 +31,21 @@ MESSAGES: list[dict[str, str]] = [
 ]
 
 
-def _collect(gen: Any) -> list[str]:
-    """Exhaust an async generator and return all yielded chunks."""
-    async def _inner() -> list[str]:
-        return [chunk async for chunk in gen]
+def _collect_events(gen: Any) -> tuple[list[str], FinalPayload | None]:
+    """Exhaust generate_stream and return (previews, final_payload)."""
+    previews: list[str] = []
+    final: FinalPayload | None = None
+
+    async def _inner() -> tuple[list[str], FinalPayload | None]:
+        nonlocal final
+        async for event in gen:
+            if event.preview:
+                previews.append(event.preview)
+            if event.final:
+                final = event.final
+                break
+        return (previews, final)
+
     return asyncio.run(_inner())
 
 
@@ -237,7 +253,7 @@ class TestLoadConfig(unittest.TestCase):
 # generate (streaming) tests
 # ---------------------------------------------------------------------------
 
-class TestGenerate(unittest.TestCase):
+class TestGenerateStream(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
@@ -248,24 +264,33 @@ class TestGenerate(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    def _run(self, response: _FakeResponse, **kwargs: Any) -> tuple[list[str], _FakeClient]:
+    def _run(
+        self, response: _FakeResponse, **kwargs: Any
+    ) -> tuple[list[str], FinalPayload | None, _FakeClient]:
         factory, client = _fake_client_cls(response)
         with patch("lens.core.llm.httpx.AsyncClient", factory):
-            chunks = _collect(generate(MESSAGES, self.root, **kwargs))
-        return chunks, client
+            previews, final = _collect_events(
+                generate_stream(MESSAGES, self.root, **kwargs)
+            )
+        return previews, final, client
 
-    def test_yields_full_content_as_single_chunk(self) -> None:
-        # TODO: this pointless farce will be fixed later
+    def test_yields_previews_then_final(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("Once"), _chunk(" upon"), _chunk(" a time")))
-        chunks, _ = self._run(resp)
-        self.assertEqual(chunks, ["Once upon a time"])
+        previews, final, _ = self._run(resp)
+        self.assertIsNotNone(final)
+        assert final is not None
+        self.assertEqual(final.text, "Once upon a time")
+        self.assertEqual("".join(previews), "Once upon a time")
 
     def test_concatenated_text_matches_expected(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("Hello"), _chunk(", "), _chunk("world!")))
-        chunks, _ = self._run(resp)
-        self.assertEqual("".join(chunks), "Hello, world!")
+        previews, final, _ = self._run(resp)
+        self.assertIsNotNone(final)
+        assert final is not None
+        self.assertEqual(final.text, "Hello, world!")
+        self.assertEqual("".join(previews), "Hello, world!")
 
-    def test_ai_secret_blocks_encoded_before_returned(self) -> None:
+    def test_ai_secret_blocks_encoded_in_final(self) -> None:
         resp = _FakeResponse(
             lines=_sse(
                 _chunk("Text with "),
@@ -274,17 +299,23 @@ class TestGenerate(unittest.TestCase):
                 _chunk("--> more."),
             )
         )
-        chunks, _ = self._run(resp)
-        full = "".join(chunks)
+        previews, final, _ = self._run(resp)
+        self.assertIsNotNone(final)
+        assert final is not None
+        full = final.text
         self.assertIn("<!-- ai:secret:", full)
         self.assertIn("cynlre frperg", full)
         self.assertNotIn("player secret", full)
+        self.assertEqual("".join(previews), "Text with  more.")
 
-    def test_usage_chunk_logged_not_yielded(self) -> None:
+    def test_usage_chunk_logged_not_in_previews(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("text"), _usage_chunk(10, 5)))
         with self.assertLogs("lens.core.llm", level="INFO") as log:
-            chunks, _ = self._run(resp)
-        self.assertEqual(chunks, ["text"])
+            previews, final, _ = self._run(resp)
+        self.assertEqual("".join(previews), "text")
+        self.assertIsNotNone(final)
+        assert final is not None
+        self.assertEqual(final.text, "text")
         usage_logs = [m for m in log.output if "usage" in m.lower()]
         self.assertTrue(usage_logs, "expected usage to be logged")
         self.assertIn("10", usage_logs[0])
@@ -292,12 +323,12 @@ class TestGenerate(unittest.TestCase):
 
     def test_stop_sequences_included_in_payload(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("ok")))
-        _, client = self._run(resp, stop_sequences=["[/write]: #"])
+        _, _, client = self._run(resp, stop_sequences=["[/write]: #"])
         self.assertEqual(client.captured_kwargs.get("json", {}).get("stop"), ["[/write]: #"])
 
     def test_no_stop_sequences_omitted_from_payload(self) -> None:
         resp = _FakeResponse(lines=_sse(_chunk("ok")))
-        _, client = self._run(resp)
+        _, _, client = self._run(resp)
         self.assertNotIn("stop", client.captured_kwargs.get("json", {}))
 
     def test_api_key_sent_as_bearer(self) -> None:
@@ -308,7 +339,7 @@ class TestGenerate(unittest.TestCase):
         os.environ["_LENS_TEST_KEY"] = "sk-test"
         try:
             resp = _FakeResponse(lines=_sse(_chunk("ok")))
-            _, client = self._run(resp)
+            _, _, client = self._run(resp)
         finally:
             os.environ.pop("_LENS_TEST_KEY", None)
         self.assertEqual(
@@ -345,13 +376,13 @@ class TestGenerate(unittest.TestCase):
             lines=["data: not-json", f"data: {json.dumps(_chunk('ok'))}", "data: [DONE]"]
         )
         with self.assertLogs("lens.core.llm", level="WARNING") as log:
-            chunks, _ = self._run(resp)
-        self.assertEqual(chunks, ["ok"])
+            _, final, _ = self._run(resp)
+        self.assertIsNotNone(final)
+        self.assertEqual(final.text if final else "", "ok")
         self.assertTrue(any("could not decode" in m for m in log.output))
 
     def test_config_error_raised_on_first_iteration(self) -> None:
-        # Calling generate() itself doesn't raise — the error surfaces on iteration.
-        gen = generate(MESSAGES, self.root, llm_id="missing-id")
+        gen = generate_stream(MESSAGES, self.root, llm_id="missing-id")
         with self.assertRaises(LLMError):
             asyncio.run(anext(gen))
 

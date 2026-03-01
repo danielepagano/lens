@@ -8,11 +8,11 @@ import io
 import subprocess
 import tempfile
 import unittest
-from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.section import SectionOperator
 from lens.core.project import ProjectSession
@@ -62,9 +62,17 @@ def _commit_content(root: Path, node: NarrativeNode, content: str) -> None:
     )
 
 
-async def _fake_summary(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+async def _fake_summary(*args: Any, **kwargs: Any) -> Any:
     for chunk in ["Section", " summary."]:
-        yield chunk
+        yield StreamEvent(preview=chunk)
+    yield StreamEvent(
+        final=FinalPayload(
+            text="Section summary.",
+            tool_call=None,
+            usage=None,
+            interrupted=False,
+        )
+    )
 
 
 def _run_section_range(
@@ -84,7 +92,7 @@ def _run_section_range(
     storage = Storage(root, owner=owner)
     op = SectionOperator(storage, narrative)
 
-    with patch("lens.core.operators.section.generate", new=mock):
+    with patch("lens.core.operators.section.generate_stream", new=mock):
         with contextlib.redirect_stdout(io.StringIO()):
             asyncio.run(
                 op.section_range(
@@ -571,9 +579,15 @@ class TestSectionRangeRollback(unittest.TestCase):
 class TestSectionRangeEdgeCases(unittest.TestCase):
 
     def test_empty_llm_response_raises(self) -> None:
-        async def _empty(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
-            return
-            yield  # make it an async generator
+        async def _empty(*args: Any, **kwargs: Any) -> Any:
+            yield StreamEvent(
+                final=FinalPayload(
+                    text="",
+                    tool_call=None,
+                    usage=None,
+                    interrupted=False,
+                )
+            )
 
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))

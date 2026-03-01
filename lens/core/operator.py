@@ -35,7 +35,7 @@ from lens.core.annotations import (
 )
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import LLMError, GenerateResult, ToolCall, generate, generate_with_tools
+from lens.core.llm import LLMError, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
@@ -515,18 +515,19 @@ class ContextAwareOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> str:
         """Stream LLM output and return the full collected text."""
-        chunks: list[str] = []
-        interrupted = False
         try:
-            async for chunk in generate(messages, project_root, llm_id=llm_id):
-                if on_token:
-                    await on_token(chunk)
-                chunks.append(chunk)
+            async for event in generate_stream(
+                messages, project_root, llm_id=llm_id, tools=None
+            ):
+                if event.preview and on_token:
+                    await on_token(event.preview)
+                if event.final:
+                    if event.final.interrupted:
+                        return ""
+                    return event.final.text
         except KeyboardInterrupt:
-            interrupted = True
-        if interrupted and not chunks:
             return ""
-        return "".join(chunks)
+        return ""
 
     # ------------------------------------------------------------------
     # Instance helpers
@@ -763,22 +764,19 @@ class ContextAwareOperator(Operator):
         registry = get_tool_registry(session.project_root)
         available_tools = {n: v for n, v in registry.items() if n != cls.name}
 
-        content: str
-        tool_call: ToolCall | None
+        content: str = ""
+        tool_call: ToolCall | None = None
+        interrupted = False
 
         if available_tools:
-            # Augment system prompt with tool snippets
             augmented_system = probe_op.system_prompt
             for _n, (tdef, _fn) in available_tools.items():
                 augmented_system += "\n\n" + tdef.prompt_snippet
-
             messages = assemble_prompt(
                 crawl_result,
                 system_prompt=augmented_system,
                 instruction=probe_op.build_instruction(ann_params),
             )
-
-            # Build tools payload, injecting handoff-control params into every tool's schema.
             HANDOFF_PARAMS: dict[str, Any] = {
                 "keep_text": {
                     "type": "boolean",
@@ -802,27 +800,33 @@ class ContextAwareOperator(Operator):
                         "parameters": params,
                     },
                 })
-
-            try:
-                result: GenerateResult = await generate_with_tools(
-                    messages,
-                    session.project_root,
-                    llm_id=llm_id,
-                    tools=tools_payload,
-                    on_token=on_token,
-                )
-            except LLMError as e:
-                raise OperatorError(f"LLM error: {e}") from e
-
-            content = result.text
-            tool_call = result.tool_call
         else:
             messages = probe_op.build_messages(crawl_result, ann_params)
-            try:
-                content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
-            except LLMError as e:
-                raise OperatorError(f"LLM error: {e}") from e
-            tool_call = None
+            tools_payload = []
+
+        try:
+            async for event in generate_stream(
+                messages,
+                session.project_root,
+                llm_id=llm_id,
+                tools=tools_payload if tools_payload else None,
+            ):
+                if event.preview and on_token:
+                    await on_token(event.preview)
+                if event.final:
+                    if event.final.interrupted:
+                        interrupted = True
+                        break
+                    content = event.final.text
+                    tool_call = event.final.tool_call
+                    break
+        except KeyboardInterrupt:
+            interrupted = True
+        except LLMError as e:
+            raise OperatorError(f"LLM error: {e}") from e
+
+        if interrupted:
+            return
 
         # Tool call path
         if tool_call is not None and tool_call.name in available_tools:
@@ -924,11 +928,13 @@ class ContextAwareOperator(Operator):
 
         try:
             content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token)
+        except KeyboardInterrupt:
+            return
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
         if not content.strip():
-            raise OperatorError("no content generated")
+            return
 
         op.write_append(cursor, existing_ann, content)
         print(f"Continued writing in {cursor.path_str()}", file=sys.stderr)
@@ -960,11 +966,13 @@ class ContextAwareOperator(Operator):
 
         try:
             content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token)
+        except KeyboardInterrupt:
+            return
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
         if not content.strip():
-            raise OperatorError("no content generated")
+            return
 
         op.write_append(cursor, fresh_ann, content)
         print(f"Retried {cls.name} in {cursor.path_str()}", file=sys.stderr)
@@ -1010,11 +1018,13 @@ class ContextAwareOperator(Operator):
 
         try:
             content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token)
+        except KeyboardInterrupt:
+            return
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
         if not content.strip():
-            raise OperatorError("no content generated")
+            return
 
         op.write_append(cursor, fresh_ann, content)
         print(f"Updated and retried {cls.name} in {cursor.path_str()}", file=sys.stderr)
@@ -1129,11 +1139,13 @@ class ContextAwareOperator(Operator):
 
         try:
             content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
+        except KeyboardInterrupt:
+            return
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
         if not content.strip():
-            raise OperatorError("no content generated")
+            return
 
         op.propose_mutation(file_path, ann_id, content)
         print(
@@ -1201,11 +1213,13 @@ class ContextAwareOperator(Operator):
 
         try:
             content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
+        except KeyboardInterrupt:
+            return
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
         if not content.strip():
-            raise OperatorError("no content generated")
+            return
 
         op.propose_mutation(file_path, ann_id, content)
         print(f"Retried edit for {rel_path}", file=sys.stderr)

@@ -8,11 +8,11 @@ import io
 import subprocess
 import tempfile
 import unittest
-from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.edit import EditOperator
@@ -59,9 +59,17 @@ def _commit_node_content(root: Path, node: NarrativeNode, content: str) -> None:
     )
 
 
-async def _fake_generate(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
     for chunk in ["Generated", " content"]:
-        yield chunk
+        yield StreamEvent(preview=chunk)
+    yield StreamEvent(
+        final=FinalPayload(
+            text="Generated content",
+            tool_call=None,
+            usage=None,
+            interrupted=False,
+        )
+    )
 
 
 def _run_mutation(
@@ -76,8 +84,8 @@ def _run_mutation(
     retry: bool = False,
     generate_mock: Any = None,
 ) -> None:
-    mock = generate_mock or _fake_generate
-    with patch("lens.core.operator.generate", new=mock):
+    mock = generate_mock or _fake_generate_stream
+    with patch("lens.core.operator.generate_stream", new=mock):
         with contextlib.redirect_stdout(io.StringIO()):
             with contextlib.redirect_stderr(io.StringIO()):
                 asyncio.run(
@@ -187,9 +195,17 @@ class TestEditOperatorRunMutation(unittest.TestCase):
 
             _run_mutation(root, narrative, self._REL_PATH, "e1_1", 1, 1, prompt="be poetic")
 
-            async def _retry(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+            async def _retry(*args: Any, **kwargs: Any) -> Any:
                 for chunk in ["Retried", " content"]:
-                    yield chunk
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Retried content",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
 
             # No prompt supplied — should recover from the claim tag
             _run_mutation(
@@ -210,9 +226,17 @@ class TestEditOperatorRunMutation(unittest.TestCase):
 
             _run_mutation(root, narrative, self._REL_PATH, "e1_1", 1, 1, prompt="be poetic")
 
-            async def _retry(*args: Any, **kwargs: Any) -> AsyncGenerator[str, None]:
+            async def _retry(*args: Any, **kwargs: Any) -> Any:
                 for chunk in ["Updated", " content"]:
-                    yield chunk
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Updated content",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
 
             _run_mutation(
                 root, narrative, self._REL_PATH, "e1_1", 1, 1,
