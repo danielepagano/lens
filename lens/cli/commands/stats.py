@@ -26,17 +26,20 @@ def stats(
         typer.echo(f"lens stats: {e}", err=True)
         raise typer.Exit(1)
 
+    if result.dataset_name is not None:
+        typer.echo(f"Dataset: {result.dataset_name}")
     typer.echo("Knowledge Store")
     typer.echo(f"  Types: {result.type_count}")
     typer.echo(f"  Objects: {result.kb_count}")
-    typer.echo("Narrative trees:")
-    for name, count in result.trees:
-        typer.echo(f"  {name} ({count} nodes)")
+    if result.dataset_name is None:
+        typer.echo("Narrative trees:")
+        for name, count in result.trees:
+            typer.echo(f"  {name} ({count} nodes)")
 
-    if result.cursor_addr is not None:
-        typer.echo(f"Active narrative cursor:  {result.cursor_addr}")
-    else:
-        typer.echo("Active narrative cursor:  (no active narrative)")
+        if result.cursor_addr is not None:
+            typer.echo(f"Active narrative cursor:  {result.cursor_addr}")
+        else:
+            typer.echo("Active narrative cursor:  (no active narrative)")
 
     typer.echo(f"Open transaction:         {'yes' if result.has_pending else 'no'}")
     if result.has_pending:

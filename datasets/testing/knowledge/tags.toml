@@ -1,6 +1,17 @@
 [tags]
-"place.dungeon" = ["person.hero"]
-protagonist = ["person.hero"]
+"place.dungeon" = [
+    "person.hero",
+    "person.villain",
+]
+protagonist = [
+    "person.hero",
+]
 
 [objects]
-"person.hero" = ["place.dungeon", "protagonist"]
+"person.hero" = [
+    "place.dungeon",
+    "protagonist",
+]
+"person.villain" = [
+    "place.dungeon",
+]

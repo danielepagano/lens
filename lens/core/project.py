@@ -78,6 +78,28 @@ def find_project_root() -> Path:
     )
 
 
+def find_project_root_if_any(start: Path | None = None) -> Path | None:
+    """Walk up from *start* (or CWD) and return the nearest directory containing
+    ``lens.toml``, or ``None`` if none is found.
+    """
+    path = (start or Path.cwd()).resolve()
+    while path != path.parent:
+        if (path / "lens.toml").exists():
+            return path
+        path = path.parent
+    return None
+
+
+def is_dataset_root(project_root: Path) -> bool:
+    """Return True if lens.toml at *project_root* declares a dataset."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return False
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    return "dataset" in config
+
+
 def validate_slug(slug: str) -> bool:
     return bool(_SLUG_PATTERN.fullmatch(slug))
 
