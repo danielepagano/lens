@@ -32,6 +32,7 @@ from lens.core.commands.use import use_narrative
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.edit import EditOperator
+from lens.cli.operators.section import _section_start  # pyright: ignore[reportPrivateUsage]
 from lens.core.operators.section import SectionOperator
 from lens.core.operators.write import WriteOperator
 from lens.core.project import ProjectSession
@@ -647,3 +648,61 @@ class TestHappyPath(unittest.TestCase):
         self._assert_pending()
         self._checkpoint("dataset: delete local copy")
         self._assert_clean()
+
+
+class TestSectionStartWithWriteChain(unittest.TestCase):
+    """Integration test: section start --write chains write after section."""
+
+    _server: _FakeLLMServer
+    _project_dir: Path
+    _orig_cwd: Path
+    _session: ProjectSession
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import tomllib
+        import tomli_w
+
+        cls._server = _FakeLLMServer()
+        cls._server.start()
+        cls._project_dir = Path(tempfile.mkdtemp(prefix="lens_chain_"))
+        cls._orig_cwd = Path.cwd()
+        os.chdir(cls._project_dir)
+        _git(cls._project_dir, "init")
+        _git(cls._project_dir, "config", "user.email", "test@test.com")
+        _git(cls._project_dir, "config", "user.name", "Test")
+        (cls._project_dir / ".gitkeep").write_text("")
+        _git(cls._project_dir, "add", "-A")
+        _git(cls._project_dir, "commit", "-m", "root")
+        _quiet(init_project)
+        _quiet(use_narrative, "story")
+        lens_toml = cls._project_dir / "lens.toml"
+        with lens_toml.open("rb") as fh:
+            cfg = tomllib.load(fh)
+        cfg["llm"] = [{"id": "mock", "base_url": cls._server.base_url, "model": "mock"}]
+        with io.BytesIO() as buf:
+            tomli_w.dump(cfg, buf)
+            lens_toml.write_bytes(buf.getvalue())
+        Storage(cls._project_dir).stage_all()
+        _git(cls._project_dir, "commit", "-m", "init")
+        cls._session = ProjectSession(cls._project_dir, cls._project_dir)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        os.chdir(cls._orig_cwd)
+        cls._server.stop()
+        shutil.rmtree(str(cls._project_dir), ignore_errors=True)
+
+    def test_section_start_with_write_chains_write(self) -> None:
+        session = self._session
+        narrative = session.active_narrative
+        assert narrative is not None
+        _quiet(_section_start, session, narrative, "ch1", write_prompt="opening scene")
+        parent = self._project_dir / "narrative" / "story" / "_node.md"
+        text = parent.read_text()
+        self.assertIn("[section:ch1]: #", text)
+        child_md = self._project_dir / "narrative" / "story" / "ch1.md"
+        self.assertTrue(child_md.exists())
+        child_text = child_md.read_text()
+        self.assertIn("[write", child_text)
+        self.assertIn("Lorem ipsum", child_text)

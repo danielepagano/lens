@@ -10,6 +10,7 @@ from lens.core.annotations import (
     find_front_matter_span,
     parse_annotations,
     parse_front_matter,
+    parse_tail_cursor_annotation,
     strip_markdown_comments,
 )
 
@@ -247,6 +248,37 @@ class TestFindFrontMatterSpan(unittest.TestCase):
 
     def test_returns_none_for_empty_string(self) -> None:
         self.assertIsNone(find_front_matter_span(""))
+
+
+class TestParseTailCursorAnnotation(unittest.TestCase):
+    def test_single_line_open_returns_cursor(self) -> None:
+        ann = parse_tail_cursor_annotation("text\n[section:ch1]: #\n")
+        self.assertIsNotNone(ann)
+        assert ann is not None
+        self.assertEqual(ann.operator, "section")
+        self.assertEqual(ann.id, "ch1")
+
+    def test_multi_line_open_returns_cursor(self) -> None:
+        tail = "[section:ch1\n  kb_pin: [a.b]\n]: #\n"
+        ann = parse_tail_cursor_annotation(tail)
+        self.assertIsNotNone(ann)
+        assert ann is not None
+        self.assertEqual(ann.operator, "section")
+        self.assertEqual(ann.id, "ch1")
+
+    def test_multi_line_with_chain_params_returns_cursor(self) -> None:
+        tail = "[section:ch1\n  chain:\n    write: {}\n]: #\n"
+        ann = parse_tail_cursor_annotation(tail)
+        self.assertIsNotNone(ann)
+        assert ann is not None
+        self.assertEqual(ann.operator, "section")
+        self.assertEqual(ann.id, "ch1")
+
+    def test_returns_none_when_last_line_not_annotation(self) -> None:
+        self.assertIsNone(parse_tail_cursor_annotation("plain text\n"))
+
+    def test_returns_none_for_closing_annotation(self) -> None:
+        self.assertIsNone(parse_tail_cursor_annotation("[/section:ch1]: #\n"))
 
 
 class TestAiSecrets(unittest.TestCase):

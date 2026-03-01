@@ -466,6 +466,19 @@ class TestFindCursor(unittest.TestCase):
             cursor = node.find_cursor()
             self.assertEqual(cursor.key_path, ())
 
+    def test_cursor_with_multi_line_section_annotation(self) -> None:
+        """find_cursor must descend when parent has multi-line [section:id ...]: #."""
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            (narrative / "_node.md").write_text(
+                "# root\n\n[section:ch1\n  kb_pin: [loc.inn]\n]: #\n"
+            )
+            (narrative / "ch1.md").write_text("# ch1\n")
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            cursor = node.find_cursor()
+            self.assertEqual(cursor.key_path, ("ch1",))
+
 
 class TestChildNode(unittest.TestCase):
     def test_child_node_construction(self) -> None:

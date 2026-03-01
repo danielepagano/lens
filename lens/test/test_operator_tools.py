@@ -485,6 +485,7 @@ class TestDispatchToolCall(unittest.TestCase):
     def _make_op(self) -> MagicMock:
         op = MagicMock(spec=_WriteOpForTest)
         op.write_start = MagicMock()
+        op.storage = MagicMock()
         return op
 
     def _dispatch(self, **overrides: Any) -> Any:
@@ -562,7 +563,6 @@ class TestDispatchToolCall(unittest.TestCase):
         on_confirm = AsyncMock(return_value=True)
         invoke_fn = AsyncMock(return_value=None)
         self._dispatch(depth=0, on_confirm=on_confirm, invoke_fn=invoke_fn)
-        # Called with positional args: args, session, narrative, depth, on_token, on_confirm
         call_args = invoke_fn.call_args
         self.assertEqual(call_args.args[5], on_confirm)
 
@@ -760,6 +760,8 @@ class TestRunInlineWithTools(unittest.TestCase):
             depth: int,
             on_token: Any,
             on_confirm: Any,
+            *,
+            storage: Any = None,
         ) -> None:
             invoked.append(args)
 
@@ -975,6 +977,47 @@ class TestWritePlayToolChain(unittest.TestCase):
                         )
                     )
         self.assertIn("on_confirm", str(ctx.exception))
+
+    def test_run_chained_operator_invokes_target(self) -> None:
+        """_run_chained_operator calls the chained operator's invoke_fn."""
+        from lens.core.chain import ChainSpec
+
+        invoked: list[dict[str, Any]] = []
+
+        async def fake_write_invoke(
+            args: dict[str, Any],
+            session: Any,
+            narrative: Any,
+            depth: int,
+            on_token: Any,
+            on_confirm: Any,
+            *,
+            storage: Any = None,
+        ) -> None:
+            invoked.append(args)
+
+        write_tdef = OperatorToolDef(
+            parameters={"type": "object", "properties": {"prompt": {"type": "string"}}},
+            prompt_snippet="write",
+            keep_text=True,
+        )
+        registry = {"write": (write_tdef, fake_write_invoke)}
+        chain_spec = ChainSpec(name="write", id=None, arguments={"prompt": "open the scene"})
+        session = MagicMock(project_root=self.root)
+        with patch("lens.core.operator.get_tool_registry", return_value=registry):
+            asyncio.run(
+                Operator._run_chained_operator(  # pyright: ignore[reportPrivateUsage]
+                    chain_spec=chain_spec,
+                    storage=MagicMock(),
+                    session=session,
+                    narrative=self.narrative,
+                    depth=0,
+                    on_token=None,
+                    on_confirm=None,
+                )
+            )
+        self.assertEqual(len(invoked), 1)
+        self.assertEqual(invoked[0].get("prompt"), "open the scene")
 
 
 if __name__ == "__main__":

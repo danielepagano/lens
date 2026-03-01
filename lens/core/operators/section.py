@@ -17,7 +17,7 @@ from __future__ import annotations
 import asyncio
 import shutil
 from collections.abc import Callable, Awaitable
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 import typer
 
@@ -28,6 +28,7 @@ from lens.core.context import CrawlResult, crawl
 from lens.core.llm import LLMError, generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator
+from lens.core.storage import Storage
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, resolve_address, validate_slug
 from lens.core.tools import OperatorToolDef, register_operator_tool
@@ -64,6 +65,7 @@ class SectionOperator(Operator):
         id: str,
         pins: list[str] | None = None,
         unpins: list[str] | None = None,
+        chain: dict[str, object] | None = None,
     ) -> NarrativeNode:
         """Create a child node and open the section annotation."""
         cursor = self.narrative_root.find_cursor()
@@ -74,6 +76,8 @@ class SectionOperator(Operator):
             params["kb_pin"] = pins
         if unpins:
             params["kb_unpin"] = unpins
+        if chain:
+            params["chain"] = chain
         child = self.create_subnode(cursor, id, params=params if params else None)
         if pins:
             pin_to_node(child, pins, self.storage)
@@ -556,7 +560,8 @@ def _section_invoke(
     args: dict[str, object],
     session: ProjectSession,
     narrative: NarrativeNode,
-) -> None:
+    storage: Storage | None = None,
+) -> NarrativeNode:
     id_val = args.get("id")
     if not isinstance(id_val, str) or not id_val:
         raise ValueError("section tool requires non-empty 'id'")
@@ -577,9 +582,13 @@ def _section_invoke(
     cursor = narrative.find_cursor()
     rel_path = str(cursor.md_path().relative_to(session.git_root))
     owner = SectionOperator.owner_id(id_val, rel_path)
-    storage = session.new_storage(owner=owner)
-    op = SectionOperator(storage, narrative)
-    op.start(id_val, pins=pins, unpins=unpins)
+    st = storage if storage is not None else session.new_storage(owner=owner)
+    op = SectionOperator(st, narrative)
+    raw_chain = args.get("chain")
+    chain_for_ann: dict[str, object] | None = (
+        cast(dict[str, object], raw_chain) if isinstance(raw_chain, dict) else None
+    )
+    return op.start(id_val, pins=pins, unpins=unpins, chain=chain_for_ann)
 
 
 async def _section_tool_invoke(
@@ -589,8 +598,10 @@ async def _section_tool_invoke(
     depth: int,
     on_token: Callable[[str], Awaitable[None]] | None,
     on_confirm: Callable[[str, str], Awaitable[bool]] | None,
-) -> None:
-    _section_invoke(args, session, narrative)
+    *,
+    storage: Storage | None = None,
+) -> NarrativeNode | None:
+    return _section_invoke(args, session, narrative, storage=storage)
 
 
 register_operator_tool(

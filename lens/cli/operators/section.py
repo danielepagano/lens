@@ -10,8 +10,10 @@ from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession, resolve_address, validate_slug
-from lens.core.operators.section import SectionOperator
+from lens.core.chain import ChainSpec
 from lens.core.llm import LLMError
+from lens.core.operators.section import SectionOperator
+from lens.core.operator import Operator
 
 
 app = typer.Typer(no_args_is_help=True)
@@ -40,6 +42,12 @@ def start(
     id: str | None = typer.Argument(None, help="Section ID (alphanumeric, underscores, hyphens)"),
     pin: list[str] = pin_option("KB ID to pin in the new section's front matter (repeatable)"),
     unpin: list[str] = unpin_option("KB ID to unpin in the new section's front matter (repeatable)"),
+    write: str | None = typer.Option(
+        None,
+        "--write",
+        "-w",
+        help="Chain a write operator after section start with this prompt",
+    ),
 ) -> None:
     """Create a child node at the cursor and open a section tag."""
     if not id or not id.strip():
@@ -52,7 +60,7 @@ def start(
     except LensException as e:
         typer.echo(f"lens section start: {e}", err=True)
         raise typer.Exit(1)
-    _section_start(session, narrative, id.strip(), pins=pin, unpins=unpin)
+    _section_start(session, narrative, id.strip(), pins=pin, unpins=unpin, write_prompt=write)
 
 
 @app.command()
@@ -116,6 +124,7 @@ def _section_start(
     id: str,
     pins: list[str] | None = None,
     unpins: list[str] | None = None,
+    write_prompt: str | None = None,
 ) -> None:
     if not id:
         typer.echo("Error: section ID cannot be empty.", err=True)
@@ -135,11 +144,34 @@ def _section_start(
     op = SectionOperator(storage, narrative)
 
     try:
-        op.start(id, pins=pins or [], unpins=unpins or [])
+        child = op.start(id, pins=pins or [], unpins=unpins or [])
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
     typer.echo(f"Started section '{id}'")
+
+    if write_prompt is not None:
+        chain_spec = ChainSpec(name="write", id=None, arguments={"prompt": write_prompt})
+        try:
+            asyncio.run(
+                Operator._run_chained_operator(  # pyright: ignore[reportPrivateUsage]
+                    chain_spec=chain_spec,
+                    storage=storage,
+                    session=session,
+                    narrative=narrative,
+                    depth=0,
+                    on_token=_print_token,
+                    on_confirm=None,
+                    cursor_override=child,
+                )
+            )
+            print()
+        except LLMError as e:
+            typer.echo(f"lens section start --write: LLM error: {e}", err=True)
+            raise typer.Exit(1)
+        except KeyboardInterrupt:
+            typer.echo("\nlens section start --write: interrupted", err=True)
+            raise typer.Exit(1)
 
 
 def _section_end(

@@ -222,7 +222,6 @@ async def generate_stream(
     mid_comment = False
 
     tool_calls_by_index: dict[int, dict[str, Any]] = {}
-    second_tool_call_seen = False
 
     try:
         async with httpx.AsyncClient(timeout=cfg.timeout_seconds) as client:
@@ -270,7 +269,6 @@ async def generate_stream(
                         continue
                     choice = choices[0]
                     delta = choice.get("delta", {})
-                    finish_reason = choice.get("finish_reason")
 
                     content: str | None = delta.get("content")
                     if content:
@@ -285,17 +283,11 @@ async def generate_stream(
                     for tc in tc_list:
                         idx = tc.get("index", 0)
                         if idx not in tool_calls_by_index:
-                            if tool_calls_by_index:
-                                logger.error("Lens supports at most one tool call per turn; ignoring second")
-                                second_tool_call_seen = True
-                                break
                             tool_calls_by_index[idx] = {
                                 "id": "",
                                 "name": "",
                                 "arguments_fragments": [],
                             }
-                        if second_tool_call_seen:
-                            continue
                         acc = tool_calls_by_index[idx]
                         if tc.get("id"):
                             acc["id"] = tc["id"]
@@ -304,10 +296,6 @@ async def generate_stream(
                             acc["name"] = fn["name"]
                         if fn.get("arguments"):
                             acc["arguments_fragments"].append(fn["arguments"])
-
-                    if finish_reason == "tool_calls" and second_tool_call_seen:
-                        _interrupted = True
-                        break
 
     except httpx.TimeoutException as exc:
         raise LLMError(
@@ -323,19 +311,56 @@ async def generate_stream(
     encoded_text = encode_ai_secrets(full_text)
 
     tool_call: ToolCall | None = None
-    if not second_tool_call_seen and tool_calls_by_index:
-        acc = next(iter(tool_calls_by_index.values()))
-        if acc["name"]:
-            raw_args = "".join(acc["arguments_fragments"])
+    fold_error = False
+    if tool_calls_by_index:
+        ordered = [tool_calls_by_index[k] for k in sorted(tool_calls_by_index)]
+        while len(ordered) > 1:
+            last_acc = ordered.pop()
+            prev_acc = ordered[-1]
+            raw_last = "".join(last_acc["arguments_fragments"])
             try:
-                parsed_args: dict[str, Any] = json.loads(raw_args) if raw_args else {}
+                last_args: dict[str, Any] = json.loads(raw_last) if raw_last else {}
             except json.JSONDecodeError:
-                parsed_args = {}
-            tool_call = ToolCall(
-                id=acc["id"],
-                name=acc["name"],
-                arguments=parsed_args,
-            )
+                last_args = {}
+            if prev_acc.get("arguments_parsed") is None:
+                raw_prev = "".join(prev_acc["arguments_fragments"])
+                try:
+                    prev_acc["arguments_parsed"] = (
+                        json.loads(raw_prev) if raw_prev else {}
+                    )
+                except json.JSONDecodeError:
+                    prev_acc["arguments_parsed"] = {}
+            if "chain" in prev_acc["arguments_parsed"]:
+                logger.error(
+                    "Lens folding: previous tool call already has chain; "
+                    "cannot fold multiple tool calls"
+                )
+                fold_error = True
+                _interrupted = True
+                break
+            prev_acc["arguments_parsed"]["chain"] = {
+                "name": last_acc["name"],
+                "id": last_acc["id"] or None,
+                "arguments": last_args,
+            }
+        if not fold_error and ordered:
+            acc = ordered[0]
+            if acc.get("arguments_parsed") is None:
+                raw_args = "".join(acc["arguments_fragments"])
+                try:
+                    parsed_args: dict[str, Any] = (
+                        json.loads(raw_args) if raw_args else {}
+                    )
+                except json.JSONDecodeError:
+                    parsed_args = {}
+            else:
+                parsed_args = acc["arguments_parsed"]
+            if acc["name"]:
+                tool_call = ToolCall(
+                    id=acc["id"],
+                    name=acc["name"],
+                    arguments=parsed_args if isinstance(parsed_args, dict) else {},  # pyright: ignore[reportUnnecessaryIsInstance]
+                )
 
     if verbose and response_parts:
         sep = "─" * 60

@@ -33,6 +33,7 @@ from lens.core.annotations import (
     parse_annotations,
     strip_markdown_comments,
 )
+from lens.core.chain import ChainSpec
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, ToolCall, generate_stream
@@ -470,6 +471,9 @@ class Operator(ABC):
             depth: int,
             on_token: Callable[[str], Awaitable[None]] | None,
             on_confirm: Callable[[str, str], Awaitable[bool]] | None,
+            *,
+            storage: Storage | None = None,
+            cursor: NarrativeNode | None = None,
         ) -> None:
             raw = args or {}
             pins = cls.extract_list(raw, "kb_pin")
@@ -485,6 +489,8 @@ class Operator(ABC):
                 on_token=on_token,
                 on_confirm=on_confirm,
                 _tool_call_depth=depth + 1,
+                _chain_storage=storage,
+                _cursor_override=cursor,
             )
 
         return _invoke
@@ -656,6 +662,8 @@ class Operator(ABC):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         _tool_call_depth: int = 0,
         on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
+        _chain_storage: Storage | None = None,
+        _cursor_override: NarrativeNode | None = None,
     ) -> None:
         """Run the inline-appending flow (fresh / continue / retry / update-retry).
 
@@ -665,7 +673,11 @@ class Operator(ABC):
         if mention_pins:
             pins = pins + mention_pins
 
-        cursor = narrative.find_cursor()
+        cursor = (
+            _cursor_override
+            if _cursor_override is not None
+            else narrative.find_cursor()
+        )
         cursor_md = cursor.md_path()
         rel_path = str(cursor_md.relative_to(session.git_root))
 
@@ -712,6 +724,7 @@ class Operator(ABC):
                 on_token=on_token,
                 tool_call_depth=_tool_call_depth,
                 on_confirm=on_confirm,
+                chain_storage=_chain_storage,
             )
 
     @classmethod
@@ -728,6 +741,7 @@ class Operator(ABC):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         tool_call_depth: int = 0,
         on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
+        chain_storage: Storage | None = None,
     ) -> None:
         ann_params: dict[str, Any] = {"steps": 1}
         if prompt:
@@ -761,6 +775,7 @@ class Operator(ABC):
             augmented_system = probe_op.system_prompt
             for _n, (tdef, _fn) in available_tools.items():
                 augmented_system += "\n\n" + tdef.prompt_snippet
+            augmented_system += "\n\n**Chaining**: To run another operator immediately after this one, use the `chain` parameter: `chain: { name: \"operator_name\", arguments: { ... } }`. All parameters for the chained operator go inside `chain.arguments`; do not put them at the top level of the current tool call."
             messages = assemble_prompt(
                 crawl_result,
                 system_prompt=augmented_system,
@@ -773,6 +788,20 @@ class Operator(ABC):
                         "If true (default), the text you wrote before calling this tool is "
                         "saved to the narrative. If false, it is discarded."
                     ),
+                },
+                "chain": {
+                    "type": "object",
+                    "description": (
+                        "Optional operator to run immediately after this one (same transaction). "
+                        "Structure: { name: \"operator_name\", arguments: { ... } }. "
+                        "The chained operator's parameters belong inside chain.arguments, not at the top level."
+                    ),
+                    "properties": {
+                        "name": {"type": "string", "description": "Operator name (e.g. write, play, section)"},
+                        "id": {"type": "string", "description": "Optional tool call id"},
+                        "arguments": {"type": "object", "description": "Arguments for the chained operator (e.g. prompt for write, id for section)"},
+                    },
+                    "required": ["name", "arguments"],
                 },
             }
             tools_payload: list[dict[str, Any]] = []
@@ -820,7 +849,8 @@ class Operator(ABC):
         # Tool call path
         if tool_call is not None and tool_call.name in available_tools:
             tdef, invoke_fn = available_tools[tool_call.name]
-            op = cls(session.new_storage(owner=owner), narrative)
+            storage = chain_storage if chain_storage is not None else session.new_storage(owner=owner)
+            op = cls(storage, narrative)
             await cls._dispatch_tool_call(
                 tool_call=tool_call,
                 text=content,
@@ -845,7 +875,8 @@ class Operator(ABC):
         if not content.strip():
             raise OperatorError("no content generated")
 
-        op = cls(session.new_storage(owner=owner), narrative)
+        storage = chain_storage if chain_storage is not None else session.new_storage(owner=owner)
+        op = cls(storage, narrative)
         op.write_start(cursor, tag, content)
 
     @classmethod
@@ -893,7 +924,83 @@ class Operator(ABC):
         if keep_text and text.strip():
             op.write_start(cursor, tag, text)
 
-        await invoke_fn(tool_call.arguments, session, narrative, depth, on_token, on_confirm)
+        args_for_op = {k: v for k, v in tool_call.arguments.items() if k != "chain"}
+        chain_spec = ChainSpec.from_dict(tool_call.arguments.get("chain"))
+        if chain_spec is not None and tool_call.name == "section":
+            args_for_op["chain"] = {chain_spec.name: chain_spec.arguments}
+
+        invoke_result = await invoke_fn(
+            args_for_op, session, narrative, depth, on_token, on_confirm,
+            storage=op.storage,
+        )
+
+        chain_cursor: NarrativeNode | None = None
+        if chain_spec is not None and tool_call.name == "section" and isinstance(
+            invoke_result, NarrativeNode
+        ):
+            chain_cursor = invoke_result
+
+        if chain_spec is not None:
+            await cls._run_chained_operator(
+                chain_spec=chain_spec,
+                storage=op.storage,
+                session=session,
+                narrative=narrative,
+                depth=depth,
+                on_token=on_token,
+                on_confirm=on_confirm,
+                cursor_override=chain_cursor,
+            )
+
+    @classmethod
+    async def _run_chained_operator(
+        cls: type[Operator],
+        *,
+        chain_spec: ChainSpec,
+        storage: Storage,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        depth: int,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        on_confirm: Callable[[str, str], Awaitable[bool]] | None,
+        cursor_override: NarrativeNode | None = None,
+    ) -> None:
+        """Run a chained operator, then recursively run any chain in its args."""
+        registry = get_tool_registry(session.project_root)
+        if chain_spec.name not in registry:
+            raise OperatorError(f"chained operator {chain_spec.name!r} not found")
+        _tdef, invoke_fn = registry[chain_spec.name]
+        next_depth = depth + 1
+        if next_depth >= 2 and on_confirm is not None:
+            confirmed = await on_confirm(
+                "(chained)",
+                f"{chain_spec.name}({chain_spec.arguments})",
+            )
+            if not confirmed:
+                return
+        elif next_depth >= 2 and on_confirm is None:
+            raise OperatorError(
+                "chained operator at depth >= 2 requires on_confirm callback"
+            )
+        next_args = dict(chain_spec.arguments)
+        next_chain = ChainSpec.from_dict(next_args.pop("chain", None))
+        invoke_kwargs: dict[str, Any] = {"storage": storage}
+        if cursor_override is not None:
+            invoke_kwargs["cursor"] = cursor_override
+        await invoke_fn(
+            next_args, session, narrative, next_depth, on_token, on_confirm,
+            **invoke_kwargs,
+        )
+        if next_chain is not None:
+            await cls._run_chained_operator(
+                chain_spec=next_chain,
+                storage=storage,
+                session=session,
+                narrative=narrative,
+                depth=next_depth,
+                on_token=on_token,
+                on_confirm=on_confirm,
+            )
 
     @classmethod
     async def _do_continue(

@@ -194,27 +194,58 @@ def parse_annotations(text: str) -> list[ParsedAnnotation]:
 
 
 def parse_tail_cursor_annotation(text: str) -> ParsedAnnotation | None:
-    """Check the last non-empty line of text for an open single-line cursor annotation.
+    """Check the tail of text for an open cursor annotation at the end.
 
-    The cursor annotation is always appended as the last line of a node file, so
-    scanning just the tail avoids parsing the entire file. Only single-line open
-    annotations with an id qualify (multi-line or self-closing annotations do not
-    represent an in-progress cursor).
+    The cursor annotation is always appended at the end of a node file, so
+    scanning just the tail avoids parsing the entire file. Handles both
+    single-line [operator:id]: # and multi-line open annotations with params.
     """
-    for line in reversed(text.splitlines()):
+    lines = text.splitlines()
+    i = len(lines) - 1
+    while i >= 0 and not lines[i].strip():
+        i -= 1
+    if i < 0:
+        return None
+    last_nonempty = lines[i]
+
+    m = ANNOTATION_RE.match(last_nonempty)
+    if m and not m.group("close") and not m.group("self_close") and m.group("id"):
+        return ParsedAnnotation(
+            operator=m.group("operator"),
+            id=m.group("id"),
+            closing=False,
+            self_closing=False,
+            params={},
+            line_start=0,
+            line_end=0,
+        )
+
+    if not _ANNOTATION_END_RE.match(last_nonempty):
+        return None
+
+    for j in range(i - 1, -1, -1):
+        line = lines[j]
         if not line.strip():
             continue
-        m = ANNOTATION_RE.match(line)
-        if m and not m.group("close") and not m.group("self_close") and m.group("id"):
-            return ParsedAnnotation(
-                operator=m.group("operator"),
-                id=m.group("id"),
-                closing=False,
-                self_closing=False,
-                params={},
-                line_start=0,
-                line_end=0,
-            )
+        m_open = ANNOTATION_OPEN_RE.match(line)
+        if m_open and not _ANNOTATION_END_RE.search(line):
+            if (
+                m_open.group("id")
+                and not m_open.group("close")
+                and not m_open.group("self_close")
+            ):
+                return ParsedAnnotation(
+                    operator=m_open.group("operator"),
+                    id=m_open.group("id"),
+                    closing=False,
+                    self_closing=False,
+                    params={},
+                    line_start=0,
+                    line_end=0,
+                )
+            return None
+        if line and line[0] in " \t":
+            continue
         return None
     return None
 

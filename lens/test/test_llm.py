@@ -399,6 +399,39 @@ class TestGenerateStream(unittest.TestCase):
         self.assertIn("RESPONSE", combined)
         self.assertIn("narrate this", combined)
 
+    def test_multiple_tool_calls_folded_into_chain(self) -> None:
+        """When LLM returns two tool calls, they are folded: last becomes chain of first."""
+        tc_section = {
+            "index": 0,
+            "id": "call_1",
+            "function": {"name": "section", "arguments": '{"id":"ch1"}'},
+        }
+        tc_write = {
+            "index": 1,
+            "id": "call_2",
+            "function": {"name": "write", "arguments": '{"prompt":"opening"}'},
+        }
+        chunk = {
+            "choices": [
+                {
+                    "delta": {"tool_calls": [tc_section, tc_write]},
+                    "finish_reason": "tool_calls",
+                }
+            ]
+        }
+        lines = [f"data: {json.dumps(chunk)}", "data: [DONE]"]
+        resp = _FakeResponse(lines=lines)
+        _, final, _ = self._run(resp)
+        self.assertIsNotNone(final)
+        assert final is not None
+        self.assertIsNotNone(final.tool_call)
+        assert final.tool_call is not None
+        self.assertEqual(final.tool_call.name, "section")
+        self.assertIn("chain", final.tool_call.arguments)
+        chain = final.tool_call.arguments["chain"]
+        self.assertEqual(chain.get("name"), "write")
+        self.assertEqual(chain.get("arguments", {}).get("prompt"), "opening")
+
 
 async def anext(gen: Any) -> Any:
     return await gen.__anext__()
