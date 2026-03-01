@@ -67,7 +67,7 @@ lens use my-campaign
 4. Run lens commands!
 
 ```bash
-lens stats    # count objects and list narratives
+lens stats    # count objects and list narratives (-v for transaction diffs)
 lens kb       # knowledge store (see lens kb --help)
 lens section  # start/end sections, or carve one from existing prose
 lens pin      # pin/unpin knowledge objects to nodes (see lens pin --help)

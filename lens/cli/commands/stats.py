@@ -8,12 +8,20 @@ from lens.core.project import ProjectSession
 
 app = typer.Typer(invoke_without_command=True)
 
+
 @app.callback()
-def stats() -> None:
+def stats(
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Show pending transaction diff and staged (checkpoint) diff.",
+    ),
+) -> None:
     """Count knowledge objects and narrative nodes."""
     try:
         session = ProjectSession.from_cwd()
-        result = get_stats(session)
+        result = get_stats(session, verbose=verbose)
     except (RuntimeError, LensException) as e:
         typer.echo(f"lens stats: {e}", err=True)
         raise typer.Exit(1)
@@ -36,3 +44,10 @@ def stats() -> None:
             typer.echo(f"Transaction owner:        {result.pending_owner}")
         else:
             typer.echo("Transaction owner:        (non-operator changes)")
+
+    if verbose:
+        typer.echo("")
+        typer.echo("=== Pending transaction (unstaged + untracked) ===")
+        typer.echo(result.pending_diff if result.pending_diff else "(none)")
+        typer.echo("=== Pending checkpoint (staged) ===")
+        typer.echo(result.staged_diff if result.staged_diff else "(none)")

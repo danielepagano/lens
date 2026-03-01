@@ -75,12 +75,6 @@
 
 *Now I can do this from my phone!*
 
-### Milestone 0: Transaction & Persistence Layer
-*   **Transaction Abstraction**: Create a Core service to report "staged" vs "committed" state without exposing Git-specific terminology.
-*   **Checkpoint API**: Implement "checkpoint" functionality (commit to git and push to origin if origin is set). The idea is that API should not need to call Git.
-*   **Raw Editing API**: Expose simple raw file editing API that allows modifying files without breaking transaction state (multiple changes of this type can just be one transaction). The API should not read or modify files directly, it needs to go through our storage layer.
-*   *Goal: Transactional safety and Git operations abstracted into a clean Core service.*
-
 ### Milestone 1: The `lens serve` CLI & Basic API
 *   **`lens serve`**: Implement the command to launch the server from inside a project repo.
 *   **FastAPI Foundation**: Setup FastAPI with health checks and project loading/validation of `lens.toml`.

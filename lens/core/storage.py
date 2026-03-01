@@ -179,6 +179,49 @@ class Storage:
         )
         return r.stdout
 
+    def staged_diff(self) -> str:
+        """Return the staged diff (``git diff --cached``).
+
+        Represents the *pending checkpoint*: changes staged but not yet committed.
+        """
+        r = subprocess.run(
+            [self._GIT, "diff", "--cached"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+        )
+        return r.stdout
+
+    def pending_diff(self) -> str:
+        """Return the full diff of the pending transaction.
+
+        Combines unstaged tracked-file changes (``git diff``) with untracked
+        files shown as new-file additions (``git diff --no-index /dev/null
+        <file>``).  This gives a complete picture of all un-committed work.
+        """
+        parts: list[str] = [self.diff()]
+        untracked = subprocess.run(
+            [self._GIT, "ls-files", "--others", "--exclude-standard"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+        )
+        for rel_path in untracked.stdout.strip().splitlines():
+            if not rel_path:
+                continue
+            abs_path = self._root / rel_path
+            if not abs_path.is_file():
+                continue
+            r = subprocess.run(
+                [self._GIT, "diff", "--no-index", "--", "/dev/null", rel_path],
+                cwd=self._root,
+                capture_output=True,
+                text=True,
+            )
+            if r.stdout:
+                parts.append(r.stdout)
+        return "".join(parts)
+
     def detect_pending_owner(self) -> NarrativeAddress | None:
         """Return the owner of the current pending transaction.
 

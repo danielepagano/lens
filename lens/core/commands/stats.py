@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lens.core.address import NarrativeAddress
 from lens.core.project import ProjectSession
+
 
 @dataclass
 class StatsResult:
@@ -13,8 +14,12 @@ class StatsResult:
     cursor_addr: NarrativeAddress | None
     has_pending: bool
     pending_owner: NarrativeAddress | None
+    # Populated only when verbose=True
+    pending_diff: str = field(default="")
+    staged_diff: str = field(default="")
 
-def get_stats(session: ProjectSession) -> StatsResult:
+
+def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     root = session.project_root
     knowledge = root / "knowledge"
     kb_count = (
@@ -39,6 +44,12 @@ def get_stats(session: ProjectSession) -> StatsResult:
     has_pending = storage.has_pending()
     pending_owner = storage.detect_pending_owner() if has_pending else None
 
+    pending_diff = ""
+    staged_diff = ""
+    if verbose:
+        pending_diff = storage.pending_diff()
+        staged_diff = storage.staged_diff()
+
     return StatsResult(
         type_count=type_count,
         kb_count=kb_count,
@@ -46,4 +57,6 @@ def get_stats(session: ProjectSession) -> StatsResult:
         cursor_addr=cursor_addr,
         has_pending=has_pending,
         pending_owner=pending_owner,
+        pending_diff=pending_diff,
+        staged_diff=staged_diff,
     )
