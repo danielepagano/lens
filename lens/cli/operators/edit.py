@@ -5,10 +5,11 @@ import asyncio
 import typer
 
 from lens.core.address import NarrativeAddress
+from lens.core.exceptions import LensException
+from lens.core.knowledge import validate_ids_exist
 from lens.core.operators.edit import EditOperator
 from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession, resolve_address
-from lens.core.exceptions import LensException
 
 app = typer.Typer(invoke_without_command=True)
 
@@ -75,6 +76,12 @@ def edit(
 
     if not target_node.exists():
         typer.echo(f"lens edit: node does not exist: {address}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        validate_ids_exist(session.project_root, list(pin) + list(unpin))
+    except LensException as e:
+        typer.echo(f"lens edit: {e}", err=True)
         raise typer.Exit(1)
 
     target_md = target_node.md_path()

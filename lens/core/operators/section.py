@@ -1,12 +1,12 @@
 """Section operator: create and close child narrative nodes.
 
-``lens section <id>`` creates a child node at the cursor and opens a
+``lens section start <id>`` creates a child node at the cursor and opens a
 ``[section:id]: #`` annotation in the parent.
 
-``lens section --end`` closes the current section by generating an LLM summary
+``lens section end`` closes the current section by generating an LLM summary
 and appending it with the closing annotation tag.
 
-``lens section <id> <address> <start_line> <end_line>`` creates a section
+``lens section range <id> <address> <start_line> <end_line>`` creates a section
 "after the fact": the selected line range is moved into a new child node,
 a summary is generated, and the range is replaced with the section annotation.
 The operation is one-shot and fully reversible via ``lens rollback``.
@@ -23,11 +23,14 @@ import typer
 
 from lens.core.address import NarrativeAddress
 from lens.core.annotations import find_front_matter_span, strip_markdown_comments
+from lens.core.knowledge import validate_ids_exist
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.llm import LLMError, generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator
+from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, resolve_address, validate_slug
+from lens.core.tools import OperatorToolDef, register_operator_tool
 
 SYSTEM_PROMPT = (
     "You are a skilled editor. Write a concise summary of the provided section,"
@@ -49,12 +52,27 @@ class SectionOperator(Operator):
     name: ClassVar[str] = "section"
     requires_id: ClassVar[bool] = True
 
-    def start(self, id: str) -> NarrativeNode:
+    def start(
+        self,
+        id: str,
+        pins: list[str] | None = None,
+        unpins: list[str] | None = None,
+    ) -> NarrativeNode:
         """Create a child node and open the section annotation."""
         cursor = self.narrative_root.find_cursor()
         if id in cursor.child_keys():
             raise ValueError(f"section '{id}' already exists")
-        return self.create_subnode(cursor, id)
+        params: dict[str, object] = {}
+        if pins:
+            params["kb_pin"] = pins
+        if unpins:
+            params["kb_unpin"] = unpins
+        child = self.create_subnode(cursor, id, params=params if params else None)
+        if pins:
+            pin_to_node(child, pins, self.storage)
+        if unpins:
+            unpin_at_node(child, unpins, self.storage)
+        return child
 
     async def end(self, session: ProjectSession, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None) -> None:
         """Close the current section by generating an LLM summary and appending it."""
@@ -385,10 +403,22 @@ def section(
         if id_or_end is None:
             typer.echo("lens section: provide a section ID or use --end / -e", err=True)
             raise typer.Exit(1)
-        _section_start(session, narrative, id_or_end.strip())
+        _section_start(
+            session,
+            narrative,
+            id_or_end.strip(),
+            pins=list(pin),
+            unpins=list(unpin),
+        )
 
 
-def _section_start(session: ProjectSession, narrative: NarrativeNode, id: str) -> None:
+def _section_start(
+    session: ProjectSession,
+    narrative: NarrativeNode,
+    id: str,
+    pins: list[str] | None = None,
+    unpins: list[str] | None = None,
+) -> None:
     if not id:
         typer.echo("Error: section ID cannot be empty.", err=True)
         raise typer.Exit(1)
@@ -407,7 +437,7 @@ def _section_start(session: ProjectSession, narrative: NarrativeNode, id: str) -
     op = SectionOperator(storage, narrative)
 
     try:
-        op.start(id)
+        op.start(id, pins=pins or [], unpins=unpins or [])
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -516,3 +546,84 @@ def _section_range(
         typer.echo("\nlens section: interrupted", err=True)
         raise typer.Exit(1)
     typer.echo(f"Sectioned lines {start_line}–{end_line} into '{id}'", err=True)
+
+
+# ---------------------------------------------------------------
+# Tool registration
+# ---------------------------------------------------------------
+
+
+def _section_invoke(
+    args: dict[str, object],
+    session: ProjectSession,
+    narrative: NarrativeNode,
+) -> None:
+    id_val = args.get("id")
+    if not isinstance(id_val, str) or not id_val:
+        raise ValueError("section tool requires non-empty 'id'")
+    raw_pins = args.get("kb_pin")
+    pins: list[str] = (
+        [x for x in raw_pins if isinstance(x, str)]  # pyright: ignore[reportUnknownVariableType]
+        if isinstance(raw_pins, list)
+        else []
+    )
+    raw_unpins = args.get("kb_unpin")
+    unpins: list[str] = (
+        [x for x in raw_unpins if isinstance(x, str)]  # pyright: ignore[reportUnknownVariableType]
+        if isinstance(raw_unpins, list)
+        else []
+    )
+    if pins or unpins:
+        validate_ids_exist(session.project_root, pins + unpins)
+    cursor = narrative.find_cursor()
+    rel_path = str(cursor.md_path().relative_to(session.git_root))
+    owner = SectionOperator.owner_id(id_val, rel_path)
+    storage = session.new_storage(owner=owner)
+    op = SectionOperator(storage, narrative)
+    op.start(id_val, pins=pins, unpins=unpins)
+
+
+async def _section_tool_invoke(
+    args: dict[str, object],
+    session: ProjectSession,
+    narrative: NarrativeNode,
+    depth: int,
+    on_token: Callable[[str], Awaitable[None]] | None,
+    on_confirm: Callable[[str, str], Awaitable[bool]] | None,
+) -> None:
+    _section_invoke(args, session, narrative)
+
+
+register_operator_tool(
+    "section",
+    OperatorToolDef(
+        parameters={
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Section ID (alphanumeric, underscores, hyphens)",
+                },
+                "kb_pin": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "KB IDs to pin in the new section's front matter",
+                },
+                "kb_unpin": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "KB IDs to unpin in the new section's front matter",
+                },
+            },
+            "required": ["id"],
+        },
+        prompt_snippet=(
+            "Use the 'section' tool when starting a new scene, location, or narrative unit. "
+            "Provide 'id' (section key, e.g. castle-dorn). Use 'kb_pin' to pin knowledge objects "
+            "(locations, factions, NPCs) that apply to this section. Use 'kb_unpin' to cancel "
+            "ancestor pins that no longer apply."
+        ),
+        keep_text=True,
+    ),
+    _section_tool_invoke,
+)

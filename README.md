@@ -162,19 +162,29 @@ Node addresses follow the format `[<narrative>/]<key>[/<key>...]` or `/@cursor`.
 Sections structure the narrative tree by creating child nodes under the cursor.
 
 ```bash
-lens section intro        # create child node "intro" and open section tag
-lens section --end        # close the current section (appends summary to parent)
-lens section -e           # shorthand for --end
+lens section start intro   # create child node "intro" and open section tag
+lens section end           # close the current section (appends summary to parent)
 ```
 
-A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `--end` appends a summary and the closing tag, then moves the cursor back up.
+A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `lens section end` appends a summary and the closing tag, then moves the cursor back up.
+
+#### Front matter pins
+
+Use `--pin` and `--unpin` when starting a section to set the child node's front matter. Any operator running in that section (write, play, etc.) will inherit these pins:
+
+```bash
+lens section start castle-dorn -p location.castle-dorn -p faction.dorn-court! -u location.capital-city
+```
+
+- `-p` / `--pin` — KB ID to pin (repeatable). Add `!` to include linked objects.
+- `-u` / `--unpin` — KB ID to unpin (repeatable), cancelling an ancestor pin.
 
 #### After-the-fact sectioning
 
 You can also carve a section out of already-written prose by specifying a line range:
 
 ```bash
-lens section intro /chapter-1 10 30
+lens section range intro /chapter-1 10 30
 ```
 
 Arguments: `ID ADDRESS START_LINE END_LINE`

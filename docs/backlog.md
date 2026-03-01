@@ -2,10 +2,13 @@
 
 ## General Backlog
 
+- **Unify and simplify operator classes**: Let's drop the distinction between `Operator` and `ContextAwareOperator` and make ALL operators context-aware (so the basic Operator subclass takes in the context-aware features). Try to simplify and streamline the operator code and reduce code duplication, for example we should define the pin/un-pin parameters and their parsing in CLI just once.  
+
 - **Operator chain support**: Currently, an LLM can call max one other operator via tool call; that operator then may or may not decide to all other tools. This may be too non-deterministic in some cases. Let's improve as follows:  
-  - All operators should accept a `chain` parameter, which automatically calls the given operator and parameters after the current execution is completed. For example section could start writing in a new node. Chained operators are in the same transaction.
-  - Chaining is represented in tool calls, i.e. the value of an `ToolCall.arguments["chain"]` is an instance of `ToolCall`; this can be nested, but like for operators calling each others via LLM calls, the user must confirm if we try to run more than 2 operators per original call. 
-  - Change llm response handler to accept more than one tool call, but if this happens, don't return multiple instances, instead nest the calls into "chain" arguments (this can help if an AI is having trouble nesting the calls). If we see BOTH chain arguments and multiple tool calls, we're in an error state and we can interrupt.
+  - All operators should accept a `chain` parameter, which automatically calls the given operator and parameters after the current execution is completed. This is handled by common orchestration code, not by the operator itself; for example, the `section` operator could call `write` to start writing in a new node right after it's created (`section` would still be open), or `write` could open a new section after it was done writing (`write` would be close, since it can't next operators). Chained operators are in the same transaction.
+  - Chaining is possible in (and actually designed for) tool calls, i.e. the value of an `ToolCall.arguments["chain"]` is an instance of `ToolCall`; chaining can be nested, but like for operators calling each others via LLM calls, the user must confirm if we try to run more than 2 operators per human-triggered call.
+  - Add a `--write <prompt>` operator to the `section` CLI command that chains `write` after `section` (no pinning); this can be useful for the user to trigger or for testing 
+  - Additionally, change the LLM response handler to accept more than one tool call, but if this happens, don't return multiple instances, instead start from the last call and place its `ToolCall` payload in the `chain` argument of the previous one; if when attempting this that tool call already had a chainZ, we're in an error state and we can interrupt (like we do now if we receive multiple tool calls).
 
 Example annotation artifact. In the parent node we could have:
 
@@ -28,31 +31,6 @@ The party arrives...
 ```
 
   As shown above, the original operator will have the chain parameter captured (as usual), but additionally Lens also adds output the annotation for the given chained operator and run it.
-
-- **Improved Section operator: front matter pin support**: `section` should accept pin/un-pin parameters in its annotation and apply those to the newly created child node's front matter.
-  
-```markdown
-[section:castle-dorn
-  kb_pin: 
-    - location.castle-dorn
-    - faction.dorn-court!
-  kb_unpin: 
-    - location.capital-city
-]: #
-```
-  Which in the child node would create at the beginning of the file:
-
-```markdown
-[
-  kb_pin: 
-    - location.castle-dorn
-    - faction.dorn-court!
-  kb_unpin: 
-    - location.capital-city
-]: #
-```
-
-  Therefore, any operator running in that node will have those items pinned/un-pinned, including anything chained by `section` itself (although chained operators can _also_ have their own pins/un-pins since they take all normal parameters, but those show in that operator annotation, not the front matter).
 
 ## Operator Backlog
   - `design` — Campaign and world-building operator. A structured conversation for building KB objects before or between sessions. Produces `npc.*`, `location.*`, `faction.*`, and `front.*` objects with both public lore and hidden `dm:` sections (true motivations, secrets, escalation plans). System prompt focuses on building a living world whose elements have their own goals and plans.

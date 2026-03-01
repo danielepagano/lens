@@ -8,6 +8,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, cast
+from lens.core.exceptions import LensException
 from lens.core.project import datasets_root, get_selected_datasets
 
 import tomli_w
@@ -506,3 +507,22 @@ class KnowledgeStore:
             del tag_to_objs[canonical_id]
         obj_to_tags.pop(canonical_id, None)
         self._save_tags(tag_to_objs, obj_to_tags)
+
+
+def validate_ids_exist(project_root: Path, ids: list[str]) -> None:
+    """Raise LensException if any id in *ids* does not exist in the knowledge store.
+
+    IDs may include the ! suffix for linked expansion; the base id is checked.
+    """
+    if not ids:
+        return
+    kb = KnowledgeStore.for_project(project_root)
+    missing: list[str] = []
+    for kid in ids:
+        base = kid.rstrip("!")
+        if not kb.exists(base):
+            missing.append(kid)
+    if missing:
+        raise LensException(
+            f"knowledge object(s) do not exist: {', '.join(missing)}"
+        )

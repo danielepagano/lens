@@ -7,6 +7,7 @@ import typer
 import lens.core.operators.write as _write_ops  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
+from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
 from lens.core.operators.play import PlayOperator
 from lens.core.project import ProjectSession
@@ -64,6 +65,12 @@ def play(
         typer.echo(
             "lens play: no active narrative (run 'lens use <slug>' first)", err=True
         )
+        raise typer.Exit(1)
+
+    try:
+        validate_ids_exist(session.project_root, list(pin) + list(unpin))
+    except LensException as e:
+        typer.echo(f"lens play: {e}", err=True)
         raise typer.Exit(1)
 
     try:

@@ -15,8 +15,6 @@ from pathlib import Path
 from typing import Any, ClassVar
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import lens.core.operators.play  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers play tool
-import lens.core.operators.write  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.core.llm import FinalPayload, StreamEvent, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import (
@@ -157,6 +155,14 @@ def _init_repo(tmp: Path) -> Path:
     return tmp
 
 
+def _add_kb(root: Path, type_name: str, key: str, content: str = "") -> None:
+    path = root / "knowledge" / type_name / f"{key}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content or f"{type_name}.{key}")
+    subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+    subprocess.run(["git", "commit", "-m", f"kb {type_name}.{key}"], cwd=root, capture_output=True, check=True)
+
+
 def _make_project(
     tmp: Path, slug: str = "test", datasets: list[str] | None = None
 ) -> tuple[Path, NarrativeNode]:
@@ -287,6 +293,42 @@ class TestWritePlayRegistration(unittest.TestCase):
         available_for_play = {n: v for n, v in registry.items() if n != "play"}
         self.assertNotIn("play", available_for_play)
         self.assertIn("write", available_for_play)
+
+    def test_section_in_registry(self) -> None:
+        self.assertIn("section", get_tool_registry())
+
+    def test_section_tool_def(self) -> None:
+        tdef, _ = get_tool_registry()["section"]
+        self.assertIsInstance(tdef, OperatorToolDef)
+        self.assertTrue(tdef.keep_text)
+        self.assertIn("id", tdef.parameters.get("properties", {}))
+        self.assertIn("required", tdef.parameters)
+        self.assertIn("id", tdef.parameters["required"])
+
+    def test_section_tool_invoke_creates_child_with_pins(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "location", "castle-dorn", "Castle Dorn")
+            _add_kb(root, "faction", "dorn-court", "Dorn Court")
+            _add_kb(root, "location", "capital-city", "Capital City")
+            session = ProjectSession(git_root=root, project_root=root)
+            _, invoke_fn = get_tool_registry()["section"]
+            args = {
+                "id": "castle-dorn",
+                "kb_pin": ["location.castle-dorn", "faction.dorn-court!"],
+                "kb_unpin": ["location.capital-city"],
+            }
+            asyncio.run(
+                invoke_fn(args, session, narrative, depth=0, on_token=None, on_confirm=None)
+            )
+            child_md = root / "narrative" / "test" / "castle-dorn.md"
+            self.assertTrue(child_md.exists())
+            text = child_md.read_text()
+            self.assertIn("kb_pin:", text)
+            self.assertIn("location.castle-dorn", text)
+            self.assertIn("faction.dorn-court!", text)
+            self.assertIn("kb_unpin:", text)
+            self.assertIn("location.capital-city", text)
 
 
 # ---------------------------------------------------------------------------

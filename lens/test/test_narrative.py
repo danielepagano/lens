@@ -545,7 +545,7 @@ class TestSectionOperator(unittest.TestCase):
             p = Path(tmp)
             self._make_project(p)
             result = subprocess.run(
-                ["lens", "section", "event_1"],
+                ["lens", "section", "start", "event_1"],
                 cwd=p,
                 capture_output=True,
                 text=True,
@@ -556,6 +556,42 @@ class TestSectionOperator(unittest.TestCase):
             section_md = p / "narrative" / "test" / "event_1.md"
             self.assertTrue(section_md.exists())
             self.assertEqual(section_md.read_text(), "")
+
+    def test_section_start_with_pins_writes_front_matter_to_child(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            self._make_project(p)
+            kb = p / "knowledge" / "location"
+            kb.mkdir(parents=True)
+            (kb / "castle-dorn.md").write_text("---\ntitle: Castle Dorn\n---\n")
+            (kb / "capital-city.md").write_text("---\ntitle: Capital\n---\n")
+            subprocess.run(["git", "add", "-A"], cwd=p, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "kb"],
+                cwd=p, capture_output=True, check=True,
+            )
+            result = subprocess.run(
+                [
+                    "lens", "section", "start", "castle-dorn",
+                    "--pin", "location.castle-dorn",
+                    "--pin", "location.capital-city!",
+                    "--unpin", "location.capital-city",
+                ],
+                cwd=p,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            node_md = p / "narrative" / "test" / "_node.md"
+            self.assertIn("kb_pin:", node_md.read_text())
+            section_md = p / "narrative" / "test" / "castle-dorn.md"
+            self.assertTrue(section_md.exists())
+            text = section_md.read_text()
+            self.assertIn("kb_pin:", text)
+            self.assertIn("location.castle-dorn", text)
+            self.assertIn("location.capital-city!", text)
+            self.assertIn("kb_unpin:", text)
+            self.assertIn("location.capital-city", text)
 
     def test_section_start_adds_blank_line_before_annotation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -568,7 +604,7 @@ class TestSectionOperator(unittest.TestCase):
                 cwd=p, capture_output=True, check=True,
             )
             result = subprocess.run(
-                ["lens", "section", "ch1"],
+                ["lens", "section", "start", "ch1"],
                 cwd=p,
                 capture_output=True,
                 text=True,
@@ -582,7 +618,7 @@ class TestSectionOperator(unittest.TestCase):
             p = Path(tmp)
             self._make_project(p)
             subprocess.run(
-                ["lens", "section", "event_1"],
+                ["lens", "section", "start", "event_1"],
                 cwd=p,
                 capture_output=True,
                 check=True,
@@ -614,7 +650,7 @@ class TestSectionOperator(unittest.TestCase):
             p = Path(tmp)
             self._make_project(p)
             result = subprocess.run(
-                ["lens", "section", "--end"],
+                ["lens", "section", "end"],
                 cwd=p,
                 capture_output=True,
                 text=True,

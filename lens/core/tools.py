@@ -1,18 +1,32 @@
 """Tool registry for LLM-callable Lens operators.
 
 Operators register themselves via :func:`register_operator_tool` at module
-load time (called by :meth:`~lens.core.operator.ContextAwareOperator.register_as_tool`).
-The registry is consulted by :class:`~lens.core.operator.ContextAwareOperator`
-to build the tools payload for LLM calls and to dispatch tool-call responses.
+load time. The registry loads all tool-registering operator modules on first
+access so no external code needs to import them for side effects.
 """
 
 from __future__ import annotations
 
+import importlib
+import pkgutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from lens.core.project import get_selected_datasets
+
+_tools_loaded = False
+
+
+def _ensure_tools_loaded() -> None:
+    global _tools_loaded
+    if not _tools_loaded:
+        import lens.core.operators as operators_pkg
+        for _importer, modname, _ in pkgutil.iter_modules(
+            operators_pkg.__path__, operators_pkg.__name__ + "."
+        ):
+            importlib.import_module(modname)
+        _tools_loaded = True
 
 
 def operator_applies_to_session(selected: list[str], limited: list[str]) -> bool:
@@ -70,6 +84,7 @@ def get_tool_registry(project_root: Path | None = None) -> dict[str, tuple[Opera
     operators whose limited_to_datasets (if non-empty) does not intersect with
     get_selected_datasets(project_root).
     """
+    _ensure_tools_loaded()
     if project_root is None:
         return {n: (tdef, fn) for n, (tdef, fn, _) in _TOOL_REGISTRY.items()}
     selected = get_selected_datasets(project_root)
