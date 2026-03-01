@@ -600,6 +600,7 @@ async def _section_tool_invoke(
     on_confirm: Callable[[str, str], Awaitable[bool]] | None,
     *,
     storage: Storage | None = None,
+    cursor: NarrativeNode | None = None,
 ) -> NarrativeNode | None:
     return _section_invoke(args, session, narrative, storage=storage)
 

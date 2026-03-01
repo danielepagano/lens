@@ -266,9 +266,4 @@ def encode_ai_secrets(text: str) -> str:
 
 def decode_ai_secrets(text: str) -> str:
     """ROT13-decode the content inside each <!-- ai:secret:...--> block."""
-
-    def repl(match: re.Match[str]) -> str:
-        content = match.group(1)
-        return f"<!-- ai:secret:\n{_rot13(content)}\n-->"
-
-    return _AI_SECRET_RE.sub(repl, text)
+    return encode_ai_secrets(text)
