@@ -39,12 +39,88 @@ This boundary is structurally identical to prompt injection resistance — the p
 
 ## RPG Objects
 
-> TODO: complete and refine this section
+The design principle: **small, focused objects that compose via dot-tags**. The `!` expansion is essentially free — a dot-tagged object is pulled when you expand its referrer — so breaking down a monolith costs nothing and gains selective pinning. A monolithic `ref.rules` or `state.adventure` that's always in context regardless of scene type is wasteful and brittle. Split by situation; let each operator pin what it needs.
 
-- `pc.*` — party members with appearance, kit summary, and story triggers
-- `npc.*`, `loc.*`, `faction.*`, `front.*` — world elements with public lore and `<!-- ai:secret: -->` hidden sections
-- `ref.rules` — compact rules reference for the system being played
-- `state.adventure` — campaign premise, tone, modes, act outline; secret section carries core concepts (adventure core question, character core question, mid-story pivot) for advanced play scenarios
+### ref.* — Rules Reference
+
+Not one object. One object per situation type. Each operator pins only what it needs; rules irrelevant to the current scene stay out of context.
+
+| Object | Pinned by | Content |
+|---|---|---|
+| `ref.core` | All operators; always present | D20 fundamentals: when to call a test, the three test types, DC table, proficiency, skill list, consequences beyond pass/fail |
+| `ref.combat` | `encounter` operator | Initiative, action economy (move/action/bonus/reaction), making attacks, cover, mobs shortcut, chases. Dot-tagged → `ref.conditions` |
+| `ref.conditions` | Via `ref.combat!` expansion | Full conditions reference (Blinded, Charmed, Frightened, Grappled, Invisible, Paralyzed, Prone, Restrained, Stunned, Unconscious). Not directly pinned; always arrives with combat via `!` |
+| `ref.social` | `converse`; `play` in social scenes | NPC attitudes (Friendly/Indifferent/Hostile), Influence action, when to call vs. skip checks |
+| `ref.exploration` | `play` in exploration scenes | Vision and light, hiding, travel pace, hazards (falling, suffocation, extreme conditions), environmental effects |
+| `ref.spells` | Any session with active spellcasters | Concentration rules, spell components, casting time types, saving throw mechanics for spells |
+| `ref.recovery` | `advance` operator | Short rest (hit dice), long rest (full recovery), Exhaustion levels and effects, downtime activities |
+
+`ref.combat` carries a dot-tag to `ref.conditions` — so any node that pins `ref.combat!` gets conditions for free. No separate pin needed. Same pattern for any rules object that always implies another.
+
+The content for all of these already exists in `dnd-2024-rules.md`. Creating these objects is a copy-and-trim operation, not new writing.
+
+### state.* — Campaign State
+
+Not one `state.adventure` kitchen sink. Each piece has its own lifecycle and its own consumers.
+
+| Object | Updated by | Pinned by | Content |
+|---|---|---|---|
+| `state.campaign` | Session Zero; rare amendments | Root node front matter (always present) | Tone, genre, setting frame, player preferences (primary/secondary focus), content boundaries (lines, veils), previous adventures (brief) |
+| `state.adventure` | `design`; `advance` at adventure end | Root node front matter | Current adventure title, elevator pitch (player-facing), act/phase outline referencing front IDs. `<!-- ai:secret: -->`: adventure core question, character core question, mid-story twist. Dot-tagged to central fronts and hub location |
+| `state.progress` | `advance` | Root node front matter (always present) | Current act/phase, active fronts (one line each by ID), recent changes (pruned when stale) |
+| `state.scene` | `play`; `advance` on scene open | `play`, `encounter`, `converse` (always) | Current scene: label, goal, stakes, situation (who's here, where, immediate pressure), likely directions. Overwritten when scene focus shifts |
+| `state.timeline` | `advance` | `advance` (always); `play` optionally | Current in-world date/time, time scheme (what a "day" means in this campaign), time-sensitive pressures with countdown |
+
+`state.campaign` and `state.adventure` are slow-moving; pin them once in the root front matter. `state.scene` and `state.progress` are fast-moving and small; they're in context every turn of play. `state.timeline` is only critical for `advance` — pin it there, not everywhere.
+
+The secret DM material — adventure core question, character core question, mid-story twist — lives inside `state.adventure` behind `<!-- ai:secret: -->`. It is in context for the AI but never in player-visible narrative output. This is advanced-play material and is not required for an MVP session.
+
+### pc.* — Player Characters
+
+One object per PC. The party relationship is handled by dot-tags between PC objects — no separate `state.party` blob needed.
+
+Content per object:
+- Name, pronouns, species, appearance (what an NPC sees at a glance)
+- Alignment and background (key backstory in two sentences)
+- Core kit: main weapons/spells/tools, key skills and standout features — enough for the AI to know capabilities without a full stat block
+- Story triggers: ideals, bonds, flaws, fears — hooks the AI uses in narration
+
+Tags: dot-tag to companion PCs, home `loc.*`, affiliated `faction.*`. If `pc.elara` and `pc.mira` are companions, each is dot-tagged to the other — `pc.elara!` pulls both. Pin the lead PC with `!` and companions arrive.
+
+What is **not** in `pc.*`: HP, spell slots, exact modifiers, inventory. The player tracks those. The AI needs to know *what the character is* and *what they're capable of*, not their current resource state.
+
+### npc.*, loc.*, faction.*, front.*, thing.* — World Objects
+
+These are already well-specified in `ai_dm_knowledge.md` and don't change. Small, focused, one object per entity. Key reminders:
+
+- **Secrets in `<!-- ai:secret: -->`** — hidden agenda, true motivations, escalation plans. The AI holds them without revealing them to the player.
+- **Dot-tag the graph** — `npc.captain` tagged with `faction.city_watch` and `loc.barracks` means both arrive when `npc.captain!` is expanded. Tag generously; retrieval is free.
+- **Don't over-design up front** — create objects when you need them, not in anticipation. An NPC that appears briefly doesn't need a full object until they recur.
+- **`front.*` drives `advance`** — fronts are the world's turn. Each one either has a prose description of what the faction/threat is working toward, or carries a `days_remaining` field (or both). `advance` reads and updates these.
+
+### design.* — Design Dataset
+
+The knowledge that drives the `design` operator lives in KB objects, not in the system prompt. This keeps the operator code stable while allowing different genres and systems to swap in different datasets.
+
+| Object | Content |
+|---|---|
+| `design.process` | Session zero phase sequence (Surveys → Pitch → Core Concepts → World Seed → Recap), gate conditions for each phase, survey text verbatim |
+| `design.craft` | Adventure core question guidance: dissonance requirement, examples of surface/buried pairs, character core question patterns, mid-story twist placement |
+| `design.templates` | KB object templates for each type: what a good `npc.*`, `loc.*`, `faction.*`, `front.*` contains; the AI fills these from player input |
+
+These objects are pinned only in the `design` sub-tree. They never appear in play context. Different genres (horror, sci-fi, historical) or systems (PbtA, OSR, D&D) swap `design.*` datasets without touching operator code.
+
+### Summary: What Gets Pinned Where
+
+| Context | Objects in scope |
+|---|---|
+| All play | `ref.core`, `state.campaign`, `state.adventure`, `state.progress`, `state.scene`, `pc.*` (lead + companions via `!`) |
+| `play` (exploration) | + `ref.exploration`, relevant `loc.*`, `npc.*`, `front.*` |
+| `play` (social) | + `ref.social`, relevant `npc.*`, `faction.*` |
+| `encounter` | + `ref.combat` (pulls `ref.conditions` via `!`), relevant `npc.*` (enemies), `loc.*` (terrain) |
+| `converse` | + `ref.social`, NPC objects for all participants |
+| `advance` | + `ref.recovery`, `state.timeline`, all active `front.*` |
+| `design` | + `design.process`, `design.craft`, `design.templates` |
 
 The core concepts in the secret section — the buried question a campaign is really asking, a character's unresolved tension, the mid-story twist — are worth capturing because Lens makes them mechanically reliable. They are advanced-play material and should not block an MVP.
 
