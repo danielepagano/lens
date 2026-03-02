@@ -252,16 +252,19 @@ async def generate_stream(
 
                     if data.get("usage") is not None:
                         raw_usage: dict[str, Any] = data["usage"]
+                        prompt_details: dict[str, Any] = raw_usage.get("prompt_tokens_details") or {}
                         usage = {
                             "prompt_tokens": int(raw_usage.get("prompt_tokens", 0)),
                             "completion_tokens": int(raw_usage.get("completion_tokens", 0)),
                             "total_tokens": int(raw_usage.get("total_tokens", 0)),
+                            "cached_tokens": int(prompt_details.get("cached_tokens", 0)),
                         }
                         logger.info(
-                            "\n\nLLM usage — prompt: %s tokens, completion: %s tokens, total: %s tokens",
+                            "\n\nLLM usage — prompt: %s tokens, completion: %s tokens, total: %s tokens, cached: %s tokens",
                             usage.get("prompt_tokens", "?"),
                             usage.get("completion_tokens", "?"),
                             usage.get("total_tokens", "?"),
+                            usage.get("cached_tokens", "?"),
                         )
 
                     choices: list[Any] = data.get("choices") or []

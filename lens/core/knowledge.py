@@ -277,8 +277,8 @@ class KnowledgeStore:
     ) -> tuple[list[str], dict[str, KnowledgeObject]]:
         """Parse IDs (! suffix expands linked objects) and fetch them.
 
-        Returns the ordered list of requested IDs and the full objects dict
-        (which may contain additional linked objects for those marked with !).
+        Returns the ordered list of all IDs (explicit + linked, in pinning order)
+        and the full objects dict for lookup.
         """
         ordered: list[str] = []
         seen: set[str] = set()
@@ -299,7 +299,8 @@ class KnowledgeStore:
             ordered,
             expand_linked_for=expand_linked_for if expand_linked_for else None,
         )
-        return ordered, objects
+        ordered_ids = list(objects.keys())
+        return ordered_ids, objects
 
     def get_objects(
         self,
@@ -332,7 +333,7 @@ class KnowledgeStore:
         if to_expand and result:
             subset = {k: v for k, v in result.items() if k in to_expand}
             linked = self._collect_linked_ids(subset)
-            missing = linked - result.keys()
+            missing = [x for x in linked if x not in result]
             for cid in missing:
                 obj = self._fetch_one(cid)
                 if obj is not None:
@@ -428,15 +429,17 @@ class KnowledgeStore:
                 obj_to_tags.setdefault(cid_lower, set()).add(tag.lower())
             self._save_tags(tag_to_objs, obj_to_tags)
 
-    def _collect_linked_ids(self, objects: dict[str, KnowledgeObject]) -> set[str]:
-        linked: set[str] = set()
+    def _collect_linked_ids(self, objects: dict[str, KnowledgeObject]) -> list[str]:
+        linked: list[str] = []
         for obj in objects.values():
             for tag in obj.tags:
                 if "." not in tag:
                     continue
                 try:
                     type_part, key_part = parse_id(tag)
-                    linked.add(_canonical_id(type_part, key_part))
+                    cid = _canonical_id(type_part, key_part)
+                    if cid not in linked:
+                        linked.append(cid)
                 except ValueError:
                     continue
         return linked

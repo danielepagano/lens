@@ -176,6 +176,3 @@ def get(
     for cid in ordered_ids:
         if cid in objects:
             _print(objects[cid])
-    for cid, obj in objects.items():
-        if cid not in ordered_ids:
-            _print(obj)

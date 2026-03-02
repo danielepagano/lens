@@ -90,6 +90,26 @@ class TestCrawlPinOrder(unittest.TestCase):
             self.assertIn("place.a", r.knowledge[0])
             self.assertIn("place.b", r.knowledge[1])
 
+    def test_linked_expansion_preserves_pinning_order(self) -> None:
+        """Crawl with ! pin: explicit id before linked, and pinning order across levels."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "place", "market", "The market")
+            _add_kb(root, "person", "amy", "Amy")
+            from lens.core.knowledge import KnowledgeStore
+            kb = KnowledgeStore.for_project(root)
+            kb.add_tags("person.amy", ["place.market"])
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - person.amy!\n]: #\n\n# test\n"
+            )
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "fm"], cwd=root, capture_output=True, check=True)
+            r = crawl(node)
+            self.assertEqual(len(r.knowledge), 2)
+            self.assertIn("person.amy", r.knowledge[0])
+            self.assertIn("place.market", r.knowledge[1])
+
 
 class TestCrawlUnpin(unittest.TestCase):
     def test_unpin_at_child_cancels_ancestor_pin(self) -> None:
@@ -443,6 +463,20 @@ class TestCrawlResultFromPins(unittest.TestCase):
             self.assertGreaterEqual(len(r.knowledge), 1)
             ids_found = [s for s in r.knowledge if "person.amy" in s or "place.market" in s]
             self.assertGreater(len(ids_found), 0)
+
+    def test_linked_expansion_order_deterministic(self) -> None:
+        """Knowledge from linked expansion follows ordered_ids: explicit first, then linked."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "person", "amy", "Amy")
+            _add_kb(root, "place", "market", "The market")
+            from lens.core.knowledge import KnowledgeStore
+            kb = KnowledgeStore.for_project(root)
+            kb.add_tags("person.amy", ["place.market"])
+            r = crawl_result_from_pins(root, ["person.amy!"], [])
+            self.assertEqual(len(r.knowledge), 2)
+            self.assertIn("person.amy", r.knowledge[0])
+            self.assertIn("place.market", r.knowledge[1])
 
 
 class TestAssemblePromptKbEdit(unittest.TestCase):

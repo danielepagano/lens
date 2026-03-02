@@ -297,6 +297,17 @@ class TestKnowledgeStore(unittest.TestCase):
         self.assertIn("place.nyc", objs)
         self.assertIn("person.amy", objs)
 
+    def test_get_objects_with_links_returns_ordered_ids(self) -> None:
+        """ordered_ids is deterministic: explicit first, then linked in discovery order."""
+        self.store.store_object("place.market", "The market")
+        self.store.store_object("person.amy", "Amy")
+        self.store.add_tags("person.amy", ["place.market"])
+        ordered_ids, objects = self.store.get_objects_with_links(["person.amy!"])
+        self.assertEqual(ordered_ids, ["person.amy", "place.market"])
+        self.assertEqual(len(objects), 2)
+        for cid in ordered_ids:
+            self.assertIn(cid, objects)
+
     def test_get_invalid_dot_tags(self) -> None:
         self.store.store_object("person.amy", "Amy")
         self.store.add_tags("person.amy", ["place.nyc", "featured"])

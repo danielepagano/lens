@@ -7,7 +7,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from lens.core.annotations import decode_ai_secrets, strip_markdown_comments
-from lens.core.knowledge import KnowledgeStore
+from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import KB_PIN, KB_UNPIN
 
@@ -111,21 +111,22 @@ def crawl(
     knowledge_formatted: list[str] = []
     if include_kb:
         effective_ids: list[str] = []
+        all_objects: dict[str, KnowledgeObject] = {}
         for _lev, raw in ordered_base:
             base = raw.rstrip("!")
             if not raw.endswith("!"):
                 effective_ids.append(base)
+                objs = kb_store.get_objects([base])
+                all_objects.update(objs)
             else:
-                ordered_sub, objects = kb_store.get_objects_with_links([base + "!"])
-                for cid in ordered_sub:
-                    if cid not in all_unpinned:
-                        effective_ids.append(cid)
-                for cid in objects:
+                ordered_ids, objects = kb_store.get_objects_with_links([base + "!"])
+                for cid in ordered_ids:
                     if cid not in all_unpinned and cid not in effective_ids:
                         effective_ids.append(cid)
+                all_objects.update(objects)
 
         for cid in effective_ids:
-            obj = kb_store.get_objects([cid]).get(cid)
+            obj = all_objects.get(cid)
             if obj is not None:
                 knowledge_formatted.append(obj.format(include_comments=False))
 
@@ -154,6 +155,7 @@ def crawl(
 
 
 def _sections_from_crawl_result(result: CrawlResult) -> list[str]:
+    # The middle of the context receives the lowest attention, so we try to put old story there
     sections: list[str] = []
     if result.knowledge:
         kb_block = _block("RELEVANT KNOWLEDGE", "\n\n".join(result.knowledge))
@@ -193,11 +195,8 @@ def crawl_result_from_pins(
             surviving_raw.append(raw)
 
     kb_store = KnowledgeStore.for_project(project_root)
-    ordered, objects = kb_store.get_objects_with_links(surviving_raw)
-    effective_ids = [cid for cid in ordered if cid.lower() not in unpinned_bases]
-    for cid in objects:
-        if cid not in effective_ids and cid.lower() not in unpinned_bases:
-            effective_ids.append(cid)
+    ordered_ids, objects = kb_store.get_objects_with_links(surviving_raw)
+    effective_ids = [cid for cid in ordered_ids if cid.lower() not in unpinned_bases]
 
     knowledge_formatted: list[str] = []
     for cid in effective_ids:
