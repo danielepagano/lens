@@ -46,7 +46,7 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
     with lens_toml.open("rb") as f:
         config: dict[str, Any] = tomllib.load(f)
 
-    verbose_llm: bool = bool(config.get("project", {}).get("verbose_llm", False))
+    verbose_llm: bool = bool(config.get("project", {}).get("verbose_llm", False)) or bool(config.get("dataset", {}).get("verbose_llm", False))
 
     llm_list: list[dict[str, Any]] = config.get("llm", [])
     if not llm_list:
@@ -258,7 +258,7 @@ async def generate_stream(
                             "total_tokens": int(raw_usage.get("total_tokens", 0)),
                         }
                         logger.info(
-                            "LLM usage — prompt: %s tokens, completion: %s tokens, total: %s tokens",
+                            "\n\nLLM usage — prompt: %s tokens, completion: %s tokens, total: %s tokens",
                             usage.get("prompt_tokens", "?"),
                             usage.get("completion_tokens", "?"),
                             usage.get("total_tokens", "?"),

@@ -12,16 +12,17 @@ from lens.core.operators.edit import EditOperator
 from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession, resolve_address
 
-app = typer.Typer(invoke_without_command=True)
+app = typer.Typer(invoke_without_command=True, no_args_is_help=True)
 
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
 @app.callback()
 def edit(
-    address: str = typer.Argument(..., help="Narrative node address"),
-    start_line: int = typer.Argument(..., help="First line to edit (1-based, inclusive)"),
-    end_line: int = typer.Argument(..., help="Last line to edit (1-based, inclusive)"),
+    ctx: typer.Context,
+    address: str | None = typer.Argument(None, help="Narrative node address"),
+    start_line: int | None = typer.Argument(None, help="First line to edit (1-based, inclusive)"),
+    end_line: int | None = typer.Argument(None, help="Last line to edit (1-based, inclusive)"),
     prompt: str | None = typer.Argument(None, help="Editing instruction"),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
@@ -39,6 +40,9 @@ def edit(
     ),
 ) -> None:
     """Rewrite a line range in a narrative node using the LLM."""
+    if address is None or start_line is None or end_line is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit(0)
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:

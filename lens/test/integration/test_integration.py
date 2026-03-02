@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Callable, TypeVar
 
 from lens.core.commands.init import init_project
-from lens.core.commands.kb import kb_add, kb_tag
+from lens.core.commands.kb import kb_add, kb_edit, kb_tag
 from lens.core.commands.pin import pin_add
 from lens.core.commands.rollback import execute_rollback
 from lens.core.commands.use import use_narrative
@@ -267,6 +267,19 @@ class TestHappyPath(unittest.TestCase):
 
         self._checkpoint("kb: add characters and places")
         self._assert_clean()
+
+    # ------------------------------------------------------------------
+    # 03b — kb edit: create new object with AI
+    # ------------------------------------------------------------------
+
+    def test_03b_kb_edit(self) -> None:
+        _quiet(kb_edit, "person.villain", "Create a villain character", pins=[], unpins=[], llm_id="mock")
+
+        path = self._project_dir / "knowledge" / "person" / "villain.md"
+        self.assertTrue(path.exists())
+        text = path.read_text()
+        self.assertIn("Lorem ipsum", text)
+        self._assert_pending()
 
     # ------------------------------------------------------------------
     # 04 — pin KB object to cursor node, commit

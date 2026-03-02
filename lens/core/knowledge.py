@@ -213,6 +213,8 @@ class KnowledgeStore:
                 return
             content = ""
 
+        if self.exists(canonical_id) and not self._is_local(canonical_id):
+            self._ensure_local(canonical_id)
         self._ensure_storage().write_file(path, content)
 
     def get_template(self, type_name: str) -> str | None:
@@ -393,6 +395,14 @@ class KnowledgeStore:
             if ds._fetch_local(canonical_id) is not None:
                 return ds
         return None
+
+    def ensure_local_copy(self, canonical_id: str) -> None:
+        """Materialize a project-local copy if the object exists only in a dataset.
+
+        No-op if the object is already local or does not exist. Use before
+        mutating dataset objects so the change is written to the project.
+        """
+        self._ensure_local(canonical_id)
 
     def _ensure_local(self, canonical_id: str) -> None:
         """Copy-on-write: if *canonical_id* lives only in a dataset, materialise

@@ -166,3 +166,49 @@ class TestDatasetCLI(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 1)
         self.assertIn("edit is not available in dataset mode", result.stderr)
+
+
+class TestKbEditCLI(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp()
+        self.root = Path(self.tmp)
+        self.dataset_dir = _make_dataset_in_repo(self.root)
+
+    def tearDown(self) -> None:
+        import shutil
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_edit_help(self) -> None:
+        result = subprocess.run(
+            _LENS_CMD + ["kb", "edit", "--help"],
+            cwd=self.dataset_dir,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0)
+        out = result.stdout
+        self.assertIn("--context", out)
+        self.assertIn("--pin", out)
+        self.assertIn("--unpin", out)
+        self.assertIn("--include-template", out)
+        self.assertIn("--llm", out)
+
+    def test_edit_missing_args_shows_help(self) -> None:
+        result = subprocess.run(
+            _LENS_CMD + ["kb", "edit"],
+            cwd=self.dataset_dir,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("edit", result.stdout + result.stderr)
+
+    def test_edit_dataset_mode_context_rejected(self) -> None:
+        result = subprocess.run(
+            _LENS_CMD + ["kb", "edit", "person.hero", "update", "--context", "/foo"],
+            cwd=self.dataset_dir,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("not available in dataset mode", result.stderr)

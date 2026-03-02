@@ -7,7 +7,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.core.context import CrawlResult, assemble_prompt, crawl, SYSTEM_PROMPT_FORMATTING_ADDENDUM
+from lens.core.context import (
+    CrawlResult,
+    assemble_prompt,
+    assemble_prompt_kb_edit,
+    crawl,
+    crawl_result_from_pins,
+    SYSTEM_PROMPT_FORMATTING_ADDENDUM,
+)
 from lens.core.narrative import NarrativeNode
 
 
@@ -394,3 +401,120 @@ class TestAssemblePrompt(unittest.TestCase):
         self.assertIn("the secret is in the content", content)
         self.assertIn("<!-- ai:secret:", content)
         self.assertNotIn("gur frperg vf va gur pbagrag", content)
+
+
+class TestCrawlResultFromPins(unittest.TestCase):
+    def test_empty_pins_returns_empty_knowledge(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _node = _make_project(_init_repo(Path(tmp)))
+            r = crawl_result_from_pins(root, [], [])
+            self.assertEqual(r.knowledge, [])
+            self.assertEqual(r.previous_summaries, [])
+            self.assertIsNone(r.current_content)
+
+    def test_pins_resolved_with_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "person", "amy", "Amy is a hero.")
+            r = crawl_result_from_pins(root, ["person.amy"], [])
+            self.assertEqual(len(r.knowledge), 1)
+            self.assertIn("person.amy", r.knowledge[0])
+            self.assertIn("Amy is a hero", r.knowledge[0])
+
+    def test_unpin_excludes_item(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "person", "amy", "Amy")
+            _add_kb(root, "place", "x", "Place X")
+            r = crawl_result_from_pins(root, ["person.amy", "place.x"], ["place.x"])
+            self.assertEqual(len(r.knowledge), 1)
+            self.assertIn("person.amy", r.knowledge[0])
+            self.assertNotIn("place.x", r.knowledge[0])
+
+    def test_linked_expansion(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "person", "amy", "Amy")
+            _add_kb(root, "place", "market", "The market")
+            from lens.core.knowledge import KnowledgeStore
+            kb = KnowledgeStore.for_project(root)
+            kb.add_tags("person.amy", ["place.market"])
+            r = crawl_result_from_pins(root, ["person.amy!"], [])
+            self.assertGreaterEqual(len(r.knowledge), 1)
+            ids_found = [s for s in r.knowledge if "person.amy" in s or "place.market" in s]
+            self.assertGreater(len(ids_found), 0)
+
+
+class TestAssemblePromptKbEdit(unittest.TestCase):
+    def test_new_item_includes_template_when_provided(self) -> None:
+        result = CrawlResult(knowledge=[], previous_summaries=[], current_content=None)
+        msgs = assemble_prompt_kb_edit(
+            result,
+            "Create a person",
+            existing_content=None,
+            template_content="Name:\nDescription:",
+            include_template=False,
+        )
+        self.assertIn("RESULT TEMPLATE", msgs[1]["content"])
+        self.assertIn("Name:", msgs[1]["content"])
+
+    def test_existing_item_excludes_template_without_flag(self) -> None:
+        result = CrawlResult(knowledge=[], previous_summaries=[], current_content=None)
+        msgs = assemble_prompt_kb_edit(
+            result,
+            "Update the description",
+            existing_content="Old content",
+            template_content="Template here",
+            include_template=False,
+        )
+        self.assertNotIn("RESULT TEMPLATE", msgs[1]["content"])
+        self.assertIn("CURRENT TEXT", msgs[1]["content"])
+
+    def test_existing_item_includes_template_with_flag(self) -> None:
+        result = CrawlResult(knowledge=[], previous_summaries=[], current_content=None)
+        msgs = assemble_prompt_kb_edit(
+            result,
+            "Edit",
+            existing_content="Current",
+            template_content="Template",
+            include_template=True,
+        )
+        self.assertIn("RESULT TEMPLATE", msgs[1]["content"])
+        self.assertIn("CURRENT TEXT", msgs[1]["content"])
+
+    def test_crawl_sections_preserved(self) -> None:
+        result = CrawlResult(
+            knowledge=["KB['x']\n  data"],
+            previous_summaries=["Summary"],
+            current_content="Passage",
+        )
+        msgs = assemble_prompt_kb_edit(result, "Edit", existing_content="Item")
+        content = msgs[1]["content"]
+        self.assertIn("RELEVANT KNOWLEDGE", content)
+        self.assertIn("PREVIOUS EVENTS SUMMARY", content)
+        self.assertIn("CURRENT PASSAGE", content)
+        self.assertIn("Summary", content)
+        self.assertIn("Passage", content)
+
+    def test_current_kb_item_block_when_existing(self) -> None:
+        result = CrawlResult(knowledge=[], previous_summaries=[], current_content=None)
+        msgs = assemble_prompt_kb_edit(
+            result,
+            "Edit",
+            existing_content="Existing KB content",
+            template_content=None,
+            include_template=False,
+        )
+        self.assertIn("CURRENT TEXT", msgs[1]["content"])
+        self.assertIn("Existing KB content", msgs[1]["content"])
+
+    def test_decodes_secrets_in_user_content(self) -> None:
+        result = CrawlResult(
+            knowledge=["KB['x']\n  <!-- ai:secret:\ngur frperg\n-->"],
+            previous_summaries=[],
+            current_content=None,
+        )
+        msgs = assemble_prompt_kb_edit(result, "Edit", existing_content="X")
+        content = msgs[1]["content"]
+        self.assertIn("the secret", content)
+        self.assertNotIn("gur frperg", content)

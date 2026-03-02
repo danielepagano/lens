@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from dataclasses import dataclass
+
 from lens.core.annotations import decode_ai_secrets, strip_markdown_comments
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import KB_PIN, KB_UNPIN
 
 SYSTEM_PROMPT_FORMATTING_ADDENDUM = (
-    "\nFORMATTING: you must emit valid Markdown, but do not emit headers as you are inserting a fragment in a document. "
+    "\nFORMATTING: you must emit valid Markdown, and do not emit headers as you are inserting a fragment in a document. "
     "You are allowed to emit HTML comments (<!-- ai: text -->) (starting with ai: is a courtesy annotation); "
     "these will not be rendered in the Markdown output, but WILL be visible to user in edit mode. Use HTML comments for storing intermediate thinking if needed. "
     "You can also emit comments that will be encoded and not readable by the user, but WILL be visible to future AI calls, these have the format "
@@ -27,7 +30,7 @@ def _block(title: str, body: str) -> str:
     body_stripped = body.strip()
     if not body_stripped:
         return ""
-    return f"--- BEGIN {title} ---\n{body_stripped}\n--- END {title} ---"
+    return f"--- begin {title} ---\n{body_stripped}\n--- end {title} ---"
 
 
 def _ancestor_chain(node: NarrativeNode) -> list[NarrativeNode]:
@@ -150,13 +153,7 @@ def crawl(
     )
 
 
-def assemble_prompt(
-    result: CrawlResult,
-    *,
-    system_prompt: str,
-    instruction: str,
-    extra_sections: list[str] | None = None,
-) -> list[dict[str, str]]:
+def _sections_from_crawl_result(result: CrawlResult) -> list[str]:
     sections: list[str] = []
     if result.knowledge:
         kb_block = _block("RELEVANT KNOWLEDGE", "\n\n".join(result.knowledge))
@@ -176,6 +173,104 @@ def assemble_prompt(
         )
         if cur_block:
             sections.append(cur_block)
+    return sections
+
+
+def crawl_result_from_pins(
+    project_root: Path,
+    pins: list[str],
+    unpins: list[str],
+) -> CrawlResult:
+    unpinned_bases = {u.rstrip("!").lower() for u in unpins}
+    surviving_raw: list[str] = []
+    seen_base: set[str] = set()
+    for raw in pins:
+        base = raw.rstrip("!").lower()
+        if base in unpinned_bases:
+            continue
+        if base not in seen_base:
+            seen_base.add(base)
+            surviving_raw.append(raw)
+
+    kb_store = KnowledgeStore.for_project(project_root)
+    ordered, objects = kb_store.get_objects_with_links(surviving_raw)
+    effective_ids = [cid for cid in ordered if cid.lower() not in unpinned_bases]
+    for cid in objects:
+        if cid not in effective_ids and cid.lower() not in unpinned_bases:
+            effective_ids.append(cid)
+
+    knowledge_formatted: list[str] = []
+    for cid in effective_ids:
+        obj = objects.get(cid) or kb_store.get_objects([cid]).get(cid)
+        if obj is not None:
+            knowledge_formatted.append(obj.format(include_comments=False))
+
+    return CrawlResult(
+        knowledge=knowledge_formatted,
+        previous_summaries=[],
+        current_content=None,
+    )
+
+
+def _build_kb_edit_system_prompt(
+    existing_content: str | None,
+    template_content: str | None,
+    include_template: bool,
+) -> str:
+    is_new = existing_content is None
+    has_template = bool(template_content and (include_template or is_new))
+
+    if is_new:
+        action = "Create text"
+    else:
+        action = "Edit CURRENT TEXT"
+
+    parts = [f"{action} following the INSTRUCTIONS. "]
+    if has_template:
+        parts.append("Follow the structure in RESULT TEMPLATE. ")
+    parts.append("Emit only the final text, no meta-commentary.")
+    return " ".join(parts)
+
+
+def assemble_prompt_kb_edit(
+    result: CrawlResult,
+    instruction: str,
+    *,
+    existing_content: str | None = None,
+    template_content: str | None = None,
+    include_template: bool = False,
+) -> list[dict[str, str]]:
+    is_new = existing_content is None
+    sections = _sections_from_crawl_result(result)
+    if existing_content:
+        kb_item_block = _block("CURRENT TEXT", existing_content)
+        if kb_item_block:
+            sections.append(kb_item_block)
+    if template_content and (include_template or is_new):
+        tpl_block = _block("RESULT TEMPLATE", template_content)
+        if tpl_block:
+            sections.append(tpl_block)
+    task_block = _block("INSTRUCTIONS", instruction)
+    sections.append(task_block or instruction)
+    user_content = decode_ai_secrets("\n\n".join(sections))
+
+    system_prompt = _build_kb_edit_system_prompt(
+        existing_content, template_content, include_template
+    )
+    return [
+        {"role": "system", "content": system_prompt + SYSTEM_PROMPT_FORMATTING_ADDENDUM},
+        {"role": "user", "content": user_content},
+    ]
+
+
+def assemble_prompt(
+    result: CrawlResult,
+    *,
+    system_prompt: str,
+    instruction: str,
+    extra_sections: list[str] | None = None,
+) -> list[dict[str, str]]:
+    sections = _sections_from_crawl_result(result)
     if extra_sections:
         sections.extend(extra_sections)
     task_block = _block("TASK", instruction)

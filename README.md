@@ -72,7 +72,7 @@ lens kb         # knowledge store (see lens kb --help)
 lens section    # start/end sections, or carve one from existing prose
 lens pin        # pin/unpin knowledge objects to nodes (see lens pin --help)
 lens write      # AI: generate narrative text at the cursor
-lens edit       # AI: rewrite a selected line range
+lens edit       # AI: rewrite a selected line range in narrative
 lens rollback   # discard or compensate a pending operator transaction
 lens commit     # commit the transaction (i.e. stage all files)
 lens checkpoint # commit committed changes; tries to push, optional commit message
@@ -83,6 +83,7 @@ lens checkpoint # commit committed changes; tries to push, optional commit messa
 | Command   | Purpose                          |
 |-----------|----------------------------------|
 | `add`     | Create or update objects         |
+| `edit`    | AI: edit or create objects       |
 | `get`     | Fetch objects (append `!` for linked) |
 | `template`| Manage type templates            |
 | `tag`     | Add/remove tags on objects       |
@@ -90,7 +91,24 @@ lens checkpoint # commit committed changes; tries to push, optional commit messa
 | `copy`    | Copy object to a new ID (any type) |
 | `rename`  | Rename object to a new ID (any type) |
 
-Run `lens kb <command> --help` for details. Note that all KB ID's an tags normalize to lowercase.
+Run `lens kb <command> --help` for details. Note that all KB IDs and tags normalize to lowercase.
+
+#### `lens kb edit`
+
+Edit or create a knowledge object using AI. Works on existing objects (including dataset items — copy-on-write applies) or creates new ones from scratch.
+
+```bash
+lens kb edit person.hero "add a dark secret"
+lens kb edit person.hero "make them more mysterious" -p place.castle
+lens kb edit person.new-npc "describe a weary traveler" -t
+```
+
+Arguments: `ID INSTRUCTION`
+
+- `ID` — object ID (e.g. `person.hero`). Creates the object if it does not exist.
+- `INSTRUCTION` — AI instructions for what to write or change.
+
+Options: `-p`/`--pin`, `-u`/`--unpin`, `-c`/`--context` (narrative address to crawl for context), `-t`/`--include-template` (include type template in prompt), `-l`/`--llm`. `--context` is not available in dataset mode.
 
 ### KB Datasets
 
@@ -112,7 +130,7 @@ Datasets are resolved in order: **later entries shadow earlier ones**, and **pro
 
 When Lens looks up a KB object it searches the project first, then each dataset in the order listed (last wins for conflicts). This means you can `lens kb get`, `lens pin add`, or reference any dataset object exactly as if it were a project-local object — no explicit import step required.
 
-Mutating a dataset object (`lens kb tag`, `lens kb add`, etc.) automatically creates a **project-local copy** first and applies the change there. The original dataset file is never modified.
+Mutating a dataset object (`lens kb tag`, `lens kb add`, `lens kb edit`, etc.) automatically creates a **project-local copy** first and applies the change there. The original dataset file is never modified.
 
 ```bash
 # Dataset item "person.hero" becomes visible automatically:

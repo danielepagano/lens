@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import typer
 
-from lens.core.knowledge import KnowledgeObject
+from lens.cli.options import pin_option, unpin_option
+from lens.core.knowledge import KnowledgeObject, validate_ids_exist
 from lens.core.commands.kb import (
     kb_add,
+    kb_edit,
     kb_template,
     kb_tag,
     kb_delete,
@@ -14,8 +16,9 @@ from lens.core.commands.kb import (
     check_invalid_tags,
 )
 from lens.core.exceptions import LensException
+from lens.core.project import find_project_root
 
-app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, get, tag, template, copy, rename, delete).")
+app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete).")
 
 
 @app.command(no_args_is_help=True)
@@ -102,6 +105,49 @@ def rename(
         kb_rename(old_id, new_id)
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(no_args_is_help=True)
+def edit(
+    id: str = typer.Argument(..., help="Object ID (type.key); creates if new"),
+    instruction: str = typer.Argument(..., help="AI instructions for what to write/change"),
+    context: str | None = typer.Option(None, "--context", "-c", help="Narrative address to crawl for context (not available in dataset mode)"),
+    include_template: bool = typer.Option(False, "--include-template", "-t", help="Include type template in prompt"),
+    pin: list[str] = pin_option(),
+    unpin: list[str] = unpin_option(),
+    llm: str | None = typer.Option(None, "--llm", "-l", help="LLM ID to use"),
+) -> None:
+    """Edit or create a knowledge object using AI."""
+    if not instruction or not instruction.strip():
+        typer.echo("Error: INSTRUCTION is required (AI instructions for what to write/change)", err=True)
+        typer.echo("Example: lens kb edit person.hero 'add a dark secret'", err=True)
+        raise typer.Exit(1)
+    try:
+        project_root = find_project_root()
+        validate_ids_exist(project_root, list(pin) + list(unpin))
+    except (RuntimeError, LensException) as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+    try:
+        def _print_token(chunk: str) -> None:
+            print(chunk, end="", flush=True)
+        kb_edit(
+            id,
+            instruction,
+            context_address=context,
+            pins=list(pin),
+            unpins=list(unpin),
+            include_template=include_template,
+            llm_id=llm,
+            on_token=_print_token,
+        )
+        print()
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        print()
         raise typer.Exit(1)
 
 

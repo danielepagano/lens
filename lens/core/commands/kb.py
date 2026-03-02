@@ -1,8 +1,19 @@
 from __future__ import annotations
 
-from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
-from lens.core.project import find_project_root
+import asyncio
+from collections.abc import Callable
+
+from lens.core.address import NarrativeAddress
+from lens.core.context import (
+    assemble_prompt_kb_edit,
+    crawl,
+    crawl_result_from_pins,
+)
 from lens.core.exceptions import LensException
+from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
+from lens.core.llm import LLMError, generate_stream
+from lens.core.project import find_project_root, is_dataset_root, resolve_address
+
 
 def get_store() -> KnowledgeStore:
     try:
@@ -83,3 +94,84 @@ def kb_get(ids: list[str]) -> tuple[list[str], dict[str, KnowledgeObject]]:
 def check_invalid_tags(tags: list[str]) -> list[str]:
     kb = get_store()
     return kb.get_invalid_dot_tags(tags)
+
+
+def kb_edit(
+    id: str,
+    instruction: str,
+    *,
+    context_address: str | None = None,
+    pins: list[str] | None = None,
+    unpins: list[str] | None = None,
+    include_template: bool = False,
+    llm_id: str | None = None,
+    on_token: Callable[[str], None] | None = None,
+) -> None:
+    if not instruction or not instruction.strip():
+        raise LensException("instruction is required (AI instructions for what to write/change)")
+
+    try:
+        type_name, key = parse_id(id)
+    except ValueError as e:
+        raise LensException(str(e)) from e
+    if key == "_template":
+        raise LensException("kb edit targets object ids, not templates; use 'lens kb template'")
+
+    project_root = find_project_root()
+    if is_dataset_root(project_root) and context_address is not None:
+        raise LensException("--context is not available in dataset mode")
+
+    kb_store = KnowledgeStore.for_project(project_root)
+    pins_list = pins or []
+    unpins_list = unpins or []
+
+    if context_address is not None:
+        addr = NarrativeAddress.parse(context_address)
+        resolved = resolve_address(addr, project_root)
+        node = resolved.to_node(project_root)
+        if not node.exists():
+            raise LensException(f"context node does not exist: {context_address}")
+        crawl_result = crawl(node, extra_pins=pins_list, extra_unpins=unpins_list)
+    else:
+        crawl_result = crawl_result_from_pins(project_root, pins_list, unpins_list)
+
+    objs = kb_store.get_objects([id])
+    existing_obj = objs.get(id)
+    existing_content = existing_obj.text if existing_obj else None
+
+    template_content: str | None = None
+    if include_template or existing_content is None:
+        template_content = kb_store.get_template(type_name)
+
+    messages = assemble_prompt_kb_edit(
+        crawl_result,
+        instruction,
+        existing_content=existing_content,
+        template_content=template_content,
+        include_template=include_template,
+    )
+
+    async def _run() -> str:
+        full_text = ""
+        try:
+            async for event in generate_stream(
+                messages,
+                project_root,
+                llm_id=llm_id,
+            ):
+                if event.preview and on_token:
+                    on_token(event.preview)
+                if event.final:
+                    if event.final.interrupted:
+                        return ""
+                    full_text = event.final.text
+                    break
+        except LLMError as e:
+            raise LensException(str(e)) from e
+        return full_text
+
+    content = asyncio.run(_run())
+    if not content.strip():
+        return
+
+    kb_store.store_object(id, content)
