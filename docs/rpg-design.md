@@ -39,64 +39,47 @@ This boundary is structurally identical to prompt injection resistance — the p
 
 ## RPG Objects
 
-The design principle: **small, focused objects that compose via dot-tags**. The `!` expansion is essentially free — a dot-tagged object is pulled when you expand its referrer — so breaking down a monolith costs nothing and gains selective pinning. A monolithic `ref.rules` or `state.adventure` that's always in context regardless of scene type is wasteful and brittle. Split by situation; let each operator pin what it needs.
+The design principle: **small, focused objects that compose via dot-tags**. The `!` expansion is kind of free (a dot-tagged object is pulled when you expand its referrer), but having chaining objects may not be as congruent of a read than a single text, if we do it carefully. But overall breaking down a monolith costs little and gains selective pinning (if it ever makes sense). 
 
-### ref.* — Rules Reference
+### Rules Reference
 
-Not one object. One object per situation type. Each operator pins only what it needs; rules irrelevant to the current scene stay out of context.
+Follow these principles:  
+ 1. About one object per situation type. Each operator pins only what it needs; rules irrelevant to the current scene stay out of context. Although some duplication is fine to optimize pins, and if a section would be just a few tokens, easy to just put in the core.
+ 2. We don't need to have all the rules, because the AI does not play the entire game as an engine. The entire extracted ruleset seems to be about 10k tokens, which would be a heavy tax; remove anything we don't plan the AI to care about, even if it's a D&D rule, if either the player does it, or it's not relevant to the kind of games and situations that will present in this format.
+ 3. The text of all the rules need to be massaged to work for an LLM prompt, and also to adhere and reinforce the Player-AI contract at all times. We can't just talk about combat without keeping in mind that combat happens outside of Les, otherwise the AI will immediately try to simulate it... heck, even models that help we write the rules constantly drift into running simulation. Another example is how the AI talks as the players: that can actually be reinforced in several places and would may get confusing if we don't edit the text to account for that.
 
-| Object | Pinned by | Content |
-|---|---|---|
-| `ref.core` | All operators; always present | D20 fundamentals: when to call a test, the three test types, DC table, proficiency, skill list, consequences beyond pass/fail |
-| `ref.combat` | `encounter` operator | Initiative, action economy (move/action/bonus/reaction), making attacks, cover, mobs shortcut, chases. Dot-tagged → `ref.conditions` |
-| `ref.conditions` | Via `ref.combat!` expansion | Full conditions reference (Blinded, Charmed, Frightened, Grappled, Invisible, Paralyzed, Prone, Restrained, Stunned, Unconscious). Not directly pinned; always arrives with combat via `!` |
-| `ref.social` | `converse`; `play` in social scenes | NPC attitudes (Friendly/Indifferent/Hostile), Influence action, when to call vs. skip checks |
-| `ref.exploration` | `play` in exploration scenes | Vision and light, hiding, travel pace, hazards (falling, suffocation, extreme conditions), environmental effects |
-| `ref.spells` | Any session with active spellcasters | Concentration rules, spell components, casting time types, saving throw mechanics for spells |
-| `ref.recovery` | `advance` operator | Short rest (hit dice), long rest (full recovery), Exhaustion levels and effects, downtime activities |
+So, to develop `ref` objects:  
+ - Develop and edited version of 2024 rules that is matches and reinforces how we play in Lens; see how big it is
+ - Actually carve out any rules that _definitely_ will not come up in certain situations... this is actually quite difficult because most things can happen at any time... conditions can be applied during explorations and social skills can apply in combat. If we don't find any, the breakdown doesn't really do anything, and we need to aim at simplifying more than sectioning. Remember that any model smart enough to run this has at least a passing familiarity with D&D, so being overly specific may be unnecessary, we just need to focus attention to already-known facts. If the AI is _really_ wrong about something, you can always paste the rules!
+ - Reference materials are slightly different. These are lists of items, spells, class features etc. that are only relevant if in play, and even then may not be _that_ relevant. We could, for example, include the spells known to a character as one-lines in their object, but I fear this will just tempt the AI to make the character _do those things_, particularly if for NPC do want for the AI to know and select from abilities. So I think for character we should include things that are cosmetic and passive (like armor) that help with descriptions, but then if a player wants to cast a spell they can just do so, resolve things like attacks or saves, and mostly move on... unless they want flavor. So if you dramatically want to cast a spell in/out of combat, or use a Detect spell, or Fly, etc. that changes the narrative, you simply `@` the spell and the AI will show your character casting it. This is kind of fun, makes playing your character just a little crunchy!
+ - Using tags: you cast `@spell.fly`, but later the AI may forget you are flying (maybe it's a different scene and this fact may literally be lost in the summaries), so now you have to rollback and add to your prompt that you are flying (and the AI doesn't even see your past prompts!). We don't want to micro-manage editing objects all the time for that, but what if we used tags? This would be 100% on the user to start with, but saying `kb tag pc.alice -a speed:flying60 -a status:invisible` is not super-hard and can be even easier with a UI; in fact, we could do that cleanly when importing stat blocks (`resistance:poison`) _and_ we could write the rules themselves to say these are tag-formatted.  
+  - Note that we definitely will NOT have instances of object for all the stuff we encounter! Recurring NPCs sure, but definitely not the hundreds of monsters you slay, and certainly not so you can track conditions on them... that has to be done fully by the player, or in the narrative. Again, we're not a simulation, we're a narrative aid.
 
-`ref.combat` carries a dot-tag to `ref.conditions` — so any node that pins `ref.combat!` gets conditions for free. No separate pin needed. Same pattern for any rules object that always implies another.
+### About Campaign State
 
-The content for all of these already exists in `dnd-2024-rules.md`. Creating these objects is a copy-and-trim operation, not new writing.
+Tracking state in object feels attractive, but it's often a trap. By definition, what is happening in the story is what the narrative tree is supposed to track, so that "state" in object mostly how it affects named instances of things we track, which are essentially locations, people, and groups of people (factions). We can also add "fronts" just for the ease of narrative cohesion because quests can be unruly things. These objects can also track _what hasn't happened yet_ in the form of secrets (and very specific wording!), which the AI can use to make things move forward. 
 
-### state.* — Campaign State
+So, in summary, what do we need?
+  1. We track the things and people we care about, and some of them have secrets and plans to discover. If we need something fuzzy we use a front.
+  2. We will still want a general setting object that pinned to our narrative root: something small that captures tone, genre, setting frame, etc. By definition this is _not_ state, because it does not change! It could be something like `world.setting` and we could have a nice template to make sure we capture the key things every time.
 
-Not one `state.adventure` kitchen sink. Each piece has its own lifecycle and its own consumers.
+That's it? Other possible objects and why they are not needed in Lens:  
+  - `state.adventure` to track the adventure arc... but actually that's boring because we don't know what players will do. If there is a threat with an arc and even twists, just make a front.
+  - Things like `state.progress`, `state.scene`, `state.timeline` etc. The narrative is our progress, tracks scenes, and shows time passing. If we REALLY want to track every single long rest because every day matters in a story... that's a front that tells you why it cares so much. This is not a simulation.
 
-| Object | Updated by | Pinned by | Content |
-|---|---|---|---|
-| `state.campaign` | Session Zero; rare amendments | Root node front matter (always present) | Tone, genre, setting frame, player preferences (primary/secondary focus), content boundaries (lines, veils), previous adventures (brief) |
-| `state.adventure` | `design`; `advance` at adventure end | Root node front matter | Current adventure title, elevator pitch (player-facing), act/phase outline referencing front IDs. `<!-- ai:secret: -->`: adventure core question, character core question, mid-story twist. Dot-tagged to central fronts and hub location |
-| `state.progress` | `advance` | Root node front matter (always present) | Current act/phase, active fronts (one line each by ID), recent changes (pruned when stale) |
-| `state.scene` | `play`; `advance` on scene open | `play`, `encounter`, `converse` (always) | Current scene: label, goal, stakes, situation (who's here, where, immediate pressure), likely directions. Overwritten when scene focus shifts |
-| `state.timeline` | `advance` | `advance` (always); `play` optionally | Current in-world date/time, time scheme (what a "day" means in this campaign), time-sensitive pressures with countdown |
+### Player Characters
 
-`state.campaign` and `state.adventure` are slow-moving; pin them once in the root front matter. `state.scene` and `state.progress` are fast-moving and small; they're in context every turn of play. `state.timeline` is only critical for `advance` — pin it there, not everywhere.
+One object per PC.
 
-The secret DM material — adventure core question, character core question, mid-story twist — lives inside `state.adventure` behind `<!-- ai:secret: -->`. It is in context for the AI but never in player-visible narrative output. This is advanced-play material and is not required for an MVP session.
+Content per object is just enough to get the AI to talk about the character and talk _as_ the character (represent them):
+- Name, pronouns, species, appearance, how they talk, etc (what others see)
+- Alignment and what they are about/struggle with internally (what motivates them, what close people end up seeting)
+- Core kit: the key passive things that make a difference in how the character does things in general (like darkvision), but only a very vague description things like weapons/spells/tools, because we want the player to surface them. Like D&D, we're assuming people don't cheat... their loss if they do.
+- Story triggers: ideals, bonds, flaws, fears — hooks the AI uses in narration; a bit of a surprise engine, although this may be a bad idea because AIs have no patience
 
-### pc.* — Player Characters
+### Stuff We Care About
 
-One object per PC. The party relationship is handled by dot-tags between PC objects — no separate `state.party` blob needed.
-
-Content per object:
-- Name, pronouns, species, appearance (what an NPC sees at a glance)
-- Alignment and background (key backstory in two sentences)
-- Core kit: main weapons/spells/tools, key skills and standout features — enough for the AI to know capabilities without a full stat block
-- Story triggers: ideals, bonds, flaws, fears — hooks the AI uses in narration
-
-Tags: dot-tag to companion PCs, home `loc.*`, affiliated `faction.*`. If `pc.elara` and `pc.mira` are companions, each is dot-tagged to the other — `pc.elara!` pulls both. Pin the lead PC with `!` and companions arrive.
-
-What is **not** in `pc.*`: HP, spell slots, exact modifiers, inventory. The player tracks those. The AI needs to know *what the character is* and *what they're capable of*, not their current resource state.
-
-### npc.*, loc.*, faction.*, front.*, thing.* — World Objects
-
-These are already well-specified in `ai_dm_knowledge.md` and don't change. Small, focused, one object per entity. Key reminders:
-
-- **Secrets in `<!-- ai:secret: -->`** — hidden agenda, true motivations, escalation plans. The AI holds them without revealing them to the player.
-- **Dot-tag the graph** — `npc.captain` tagged with `faction.city_watch` and `loc.barracks` means both arrive when `npc.captain!` is expanded. Tag generously; retrieval is free.
-- **Don't over-design up front** — create objects when you need them, not in anticipation. An NPC that appears briefly doesn't need a full object until they recur.
-- **`front.*` drives `advance`** — fronts are the world's turn. Each one either has a prose description of what the faction/threat is working toward, or carries a `days_remaining` field (or both). `advance` reads and updates these.
+These are already well-specified in `ai_dm_knowledge.md` as a starting point.
 
 ### design.* — Design Dataset
 
