@@ -3,13 +3,8 @@
 ## RPG Play Sequencing
 
 ### Phase 0: Foundations
-- Craft the `play` prompt and and the `ref` D&D rule objects in `dnd` dataset to complement it
-- Finalize a first set of the kind of objects we want and their templates=, then make examples:
-  - `pc.*` — one or two player characters with appearance, kit, and story hook
-  - `loc.*` — an opening location with actionable features
-  - `npc.*` — one or two NPCs with goals and something they won't say
-  - `ref.rules` — compact rules reference stripped to what a single session needs
-- Play
+- Craft the `play` prompt and and the D&D rule templates and reference objects in the `dnd`
+- Test it out!
 - *Goal: a minimal but complete play context to test against*
 
 ### Phase 1: Single Scene Play
@@ -40,21 +35,9 @@
 - Longer adventures, multi-session fronts, richer faction and NPC networks
 - Let scope grow with demonstrated need
 
----
-
-## Operator Backlog
-
-- **`play`** *(basic version implemented)* — GM-voice narrative with authority model; flow and stakes modes. See `rpg-design.md`.
-- **`encounter`** — Combat sub-node while initiative is tracked; enemy tactical intent as director, player resolves mechanics. See `rpg-design.md`.
-- **`converse`** — Dialogue sub-node that resists plot advancement; voices all participants, summarizes on close. See `rpg-design.md`.
-- **`advance`** — Time-passage operator; fronts tick, world acts, next scene opens. See `rpg-design.md`.
-- **`design`** — Session zero sub-tree; structured KB output parsed by Lens, not narrative prose. See `rpg-design.md`.
-- **`agent`** — Freeform chat with optional KB persistence; good for fleshing out lore outside `design`.
-- **`attach`** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
-
----
-
 ## General Backlog
+
+- **`attach` Operator** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
 
 - **Structured KB extraction**: define how to put multiple KB objects in a markdown file, with keys and tags and secrets, and reliably parse them in the KB store. This is used by the `design` operator, but also can be useful for tools and AIs to create reference data in bulk. Why not just create objects md files directly? Two reasons: tags need to be managed, and secrets needs to be encoded, and don't want AI to do either of those. Sure we can have "KB object precursors" with structured data for tags and secrets to encode, but that's more tools. In `design` we want the narrative nodes to define things, and because they come out of a narrative AI, the secrets are already encoded and we can copy them to KB verbatim without the user ever seeing them (unless they have verbose llm logging on for testing). If we want a tool outside of Lens to create these files, they would have no secrets, which is certainly the case for our reference data... and if we want them to have secret we have the code to encode the stuff anyway. So, these markdown documents need:  
   - Objects interspersed with other stuff we're not saving... discussions and thinking
