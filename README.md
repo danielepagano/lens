@@ -80,11 +80,12 @@ lens checkpoint # commit committed changes; tries to push, optional commit messa
 
 ### Knowledge store (`lens kb`)
 
-| Command   | Purpose                          |
+| Command    | Purpose                          |
 |-----------|----------------------------------|
 | `add`     | Create or update objects         |
 | `edit`    | AI: edit or create objects       |
 | `get`     | Fetch objects (append `+` for directly linked, `++` for full tree traversal) |
+| `with-tag`| List/expand objects by tag; optionally recurse via dot-tags |
 | `template`| Manage type templates            |
 | `tag`     | Add/remove tags on objects       |
 | `delete`  | Delete object and its references |
@@ -109,6 +110,23 @@ Arguments: `ID INSTRUCTION`
 - `INSTRUCTION` — AI instructions for what to write or change.
 
 Options: `-p`/`--pin`, `-u`/`--unpin`, `-c`/`--context` (narrative address to crawl for context), `-t`/`--include-template` (include type template in prompt), `-l`/`--llm`. `--context` is not available in dataset mode.
+
+#### `lens kb with-tag`
+
+Back-traverse the tag index to see which objects have a given tag, and optionally walk “up” a location/map hierarchy.
+
+```bash
+lens kb with-tag loc.kingdom                # IDs of objects tagged with loc.kingdom
+lens kb with-tag loc.kingdom -e             # Print full objects instead of IDs
+lens kb with-tag loc.kingdom -r             # Breadth-first over dot-tags (e.g. kingdom → cities → taverns)
+lens kb with-tag loc.kingdom -r -e          # Same as above, but print objects layer by layer
+lens kb with-tag loc.kingdom -r -e -s       # Only follow/print IDs whose type matches the starting tag (loc.*)
+```
+
+- Base form prints object IDs that have the tag.
+- `-e/--expand` prints objects in the same `KB['id']` format as `lens kb get`.
+- `-r/--recurse` follows dot-tags from objects (and object IDs used as tags, e.g. for Up-style location maps) breadth-first, avoiding cycles.
+- `-s/--same-type` filters by object type when the starting tag is a dot-tag: root IDs and recursive layers include only IDs whose type matches. For non-dot tags, `-s` is ignored.
 
 ### KB Datasets
 

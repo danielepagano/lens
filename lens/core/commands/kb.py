@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from lens.core.address import NarrativeAddress
 from lens.core.context import (
@@ -90,6 +91,64 @@ def kb_rename(old_id: str, new_id: str) -> None:
 def kb_get(ids: list[str]) -> tuple[list[str], dict[str, KnowledgeObject]]:
     kb = get_store()
     return kb.get_objects_with_links(ids)
+
+
+@dataclass
+class WithTagResult:
+    ids: list[str]
+    layers: list[tuple[str, list[str]]] | None = None
+    objects: dict[str, KnowledgeObject] | None = None
+
+
+def _filter_ids_by_tag_type(ids: list[str], tag: str) -> list[str]:
+    if "." not in tag:
+        return ids
+    try:
+        want_type, _ = parse_id(tag)
+    except ValueError:
+        return ids
+    out: list[str] = []
+    for oid in ids:
+        if "." not in oid:
+            continue
+        try:
+            t, _ = parse_id(oid)
+        except ValueError:
+            continue
+        if t == want_type:
+            out.append(oid)
+    return out
+
+
+def kb_with_tag(
+    tag: str,
+    *,
+    expand: bool,
+    recurse: bool,
+    same_type_only: bool = False,
+) -> WithTagResult:
+    kb = get_store()
+    if not recurse:
+        ids = kb.get_ids_with_tag(tag)
+        if same_type_only:
+            ids = _filter_ids_by_tag_type(ids, tag)
+        if not expand:
+            return WithTagResult(ids=ids)
+        objects = kb.get_objects(ids)
+        return WithTagResult(ids=ids, objects=objects)
+    root_ids, layers = kb.traverse_by_dot_tags(tag, same_type_only=same_type_only)
+    seen: set[str] = set()
+    all_ids: list[str] = list(root_ids)
+    for _, child_ids in layers:
+        for cid in child_ids:
+            if cid not in seen:
+                seen.add(cid)
+                all_ids.append(cid)
+    if not expand:
+        return WithTagResult(ids=root_ids, layers=layers)
+    objects = kb.get_objects(all_ids)
+    return WithTagResult(ids=root_ids, layers=layers, objects=objects)
+
 
 def check_invalid_tags(tags: list[str]) -> list[str]:
     kb = get_store()

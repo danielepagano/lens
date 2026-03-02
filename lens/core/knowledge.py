@@ -234,6 +234,107 @@ class KnowledgeStore:
         _, obj_to_tags = self._load_tags()
         return sorted(obj_to_tags.get(canonical_id, set()))
 
+    def get_ids_with_tag(self, tag: str) -> list[str]:
+        """Return object IDs that have the given tag, from tags.toml [tags] index."""
+        tag_to_objs, _ = self._load_tags()
+        objs = tag_to_objs.get(tag.lower(), set())
+        return sorted(objs)
+
+    def traverse_by_dot_tags(
+        self,
+        starting_tag: str,
+        *,
+        same_type_only: bool = False,
+    ) -> tuple[list[str], list[tuple[str, list[str]]]]:
+        """BFS over tags: start with tag, get objects; follow dot-tags from those objects.
+
+        Returns (root_ids, layers). Root_ids are objects with the starting tag (filtered by
+        type if same_type_only). Layers are (tag, child_ids) for tags discovered by following
+        dot-tags from objects. Each tag visited at most once; cycles avoided via visited_tags.
+        """
+        tag_to_objs, obj_to_tags = self._load_tags()
+        start_lower = starting_tag.lower()
+        root_ids = sorted(tag_to_objs.get(start_lower, set()))
+
+        starting_type: str | None = None
+        if same_type_only and "." in starting_tag:
+            try:
+                starting_type, _ = parse_id(starting_tag)
+            except ValueError:
+                pass
+
+        def _filter_ids_by_type(ids: list[str]) -> list[str]:
+            if starting_type is None:
+                return ids
+            out: list[str] = []
+            for oid in ids:
+                if "." not in oid:
+                    continue
+                try:
+                    t, _ = parse_id(oid)
+                except ValueError:
+                    continue
+                if t == starting_type:
+                    out.append(oid)
+            return out
+
+        def _next_tags_from_ids(ids: list[str]) -> list[str]:
+            out: list[str] = []
+            seen: set[str] = set()
+            for oid in ids:
+                for tag in obj_to_tags.get(oid.lower(), set()):
+                    if "." not in tag:
+                        continue
+                    if same_type_only and starting_type is not None:
+                        try:
+                            t, _ = parse_id(tag)
+                        except ValueError:
+                            continue
+                        if t != starting_type:
+                            continue
+                    t_lower = tag.lower()
+                    if t_lower not in seen:
+                        seen.add(t_lower)
+                        out.append(tag)
+                oid_lower = oid.lower()
+                if "." in oid and oid_lower not in seen and oid_lower in tag_to_objs:
+                    if same_type_only and starting_type is not None:
+                        try:
+                            t, _ = parse_id(oid)
+                        except ValueError:
+                            pass
+                        else:
+                            if t == starting_type:
+                                seen.add(oid_lower)
+                                out.append(oid)
+                    else:
+                        seen.add(oid_lower)
+                        out.append(oid)
+            return out
+
+        if same_type_only and starting_type is not None:
+            root_ids = _filter_ids_by_type(root_ids)
+
+        layers: list[tuple[str, list[str]]] = []
+        visited_tags: set[str] = {start_lower}
+        queue: deque[str] = deque(_next_tags_from_ids(root_ids))
+
+        while queue:
+            t = queue.popleft()
+            t_lower = t.lower()
+            if t_lower in visited_tags:
+                continue
+            visited_tags.add(t_lower)
+            child_ids = sorted(tag_to_objs.get(t_lower, set()))
+            if same_type_only and starting_type is not None:
+                child_ids = _filter_ids_by_type(child_ids)
+            layers.append((t, child_ids))
+            for next_tag in _next_tags_from_ids(child_ids):
+                if next_tag.lower() not in visited_tags:
+                    queue.append(next_tag)
+
+        return root_ids, layers
+
     def get_invalid_dot_tags(self, tags: list[str]) -> list[str]:
         """Return dot-tags that reference non-existent objects."""
         invalid: list[str] = []

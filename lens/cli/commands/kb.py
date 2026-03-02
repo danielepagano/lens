@@ -13,12 +13,13 @@ from lens.core.commands.kb import (
     kb_copy,
     kb_rename,
     kb_get,
+    kb_with_tag,
     check_invalid_tags,
 )
 from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
 
-app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete).")
+app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete, with-tag).")
 
 
 @app.command(no_args_is_help=True)
@@ -179,3 +180,68 @@ def get(
     for cid in ordered_ids:
         if cid in objects:
             _print(objects[cid])
+
+
+@app.command("with-tag", no_args_is_help=True)
+def with_tag(
+    tag: str = typer.Argument(..., help="Tag to query (string or dot-tag)"),
+    expand: bool = typer.Option(False, "-e", "--expand", help="Print full objects instead of IDs"),
+    recurse: bool = typer.Option(False, "-r", "--recurse", help="Recursively follow dot-tags and list children"),
+    same_type_only: bool = typer.Option(
+        False,
+        "-s",
+        "--same-type",
+        help="Filter by object type when starting tag is a dot-tag",
+    ),
+) -> None:
+    """List object IDs with a tag; optionally expand or recurse by dot-tags (map-style back-traversal)."""
+    try:
+        result = kb_with_tag(
+            tag,
+            expand=expand,
+            recurse=recurse,
+            same_type_only=same_type_only,
+        )
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    def _print_obj(obj: KnowledgeObject) -> None:
+        typer.echo(obj.format(include_comments=True))
+        if obj.tags:
+            try:
+                invalid = check_invalid_tags(obj.tags)
+                if invalid:
+                    typer.echo(f"  (invalid dot-tag: {', '.join(invalid)} does not exist)")
+            except LensException:
+                pass
+
+    if not recurse:
+        if not expand:
+            for cid in result.ids:
+                typer.echo(cid)
+        else:
+            for cid in result.ids:
+                if result.objects and cid in result.objects:
+                    _print_obj(result.objects[cid])
+    else:
+        if not expand:
+            if result.ids or result.layers:
+                typer.echo(f"# Objects with tag {tag!r}")
+                for cid in result.ids:
+                    typer.echo(cid)
+            if result.layers:
+                for parent_tag, child_ids in result.layers:
+                    typer.echo(f"\n## Children of tag {parent_tag!r}")
+                    for cid in child_ids:
+                        typer.echo(cid)
+        else:
+            for cid in result.ids:
+                if result.objects and cid in result.objects:
+                    _print_obj(result.objects[cid])
+            if result.layers and result.objects:
+                for parent_tag, child_ids in result.layers:
+                    typer.echo(f"\n# From tag {parent_tag!r}")
+                    for cid in child_ids:
+                        if cid in result.objects:
+                            _print_obj(result.objects[cid])
