@@ -639,10 +639,17 @@ class KnowledgeStore:
         else:
             storage.write_file(dst_path, obj.text)
         tag_to_objs, obj_to_tags = self._load_tags()
+        src_id_lower = source_id.lower()
         tgt_id_lower = target_id.lower()
         for tag in obj.tags:
-            tag_to_objs.setdefault(tag, set()).add(tgt_id_lower)
-            obj_to_tags.setdefault(tgt_id_lower, set()).add(tag)
+            t_lower = tag.lower()
+            tag_to_objs.setdefault(t_lower, set()).add(tgt_id_lower)
+            obj_to_tags.setdefault(tgt_id_lower, set()).add(t_lower)
+        if src_id_lower in tag_to_objs:
+            objs_with_src_as_tag = tag_to_objs[src_id_lower]
+            tag_to_objs.setdefault(tgt_id_lower, set()).update(objs_with_src_as_tag)
+            for oid in objs_with_src_as_tag:
+                obj_to_tags.setdefault(oid, set()).add(tgt_id_lower)
         self._save_tags(tag_to_objs, obj_to_tags)
 
     def rename_object(self, old_id: str, new_id: str) -> None:
@@ -668,12 +675,25 @@ class KnowledgeStore:
         tag_to_objs, obj_to_tags = self._load_tags()
         old_lower = old_id.lower()
         new_lower = new_id.lower()
+
         tags = obj_to_tags.pop(old_lower, set())
-        for tag in tags:
-            tag_to_objs.get(tag, set()).discard(old_lower)
+        tags_normalized = {t.lower() for t in tags}
+        for tag in tags_normalized:
+            tag_to_objs.setdefault(tag, set()).discard(old_lower)
             tag_to_objs.setdefault(tag, set()).add(new_lower)
-        if tags:
-            obj_to_tags[new_lower] = tags
+        if tags_normalized:
+            obj_to_tags[new_lower] = {
+                new_lower if t == old_lower else t for t in tags_normalized
+            }
+
+        if old_lower in tag_to_objs:
+            objs_with_old_as_tag = tag_to_objs.pop(old_lower)
+            tag_to_objs.setdefault(new_lower, set()).update(objs_with_old_as_tag)
+            for oid in objs_with_old_as_tag:
+                if oid != old_lower and oid in obj_to_tags:
+                    obj_to_tags[oid].discard(old_lower)
+                    obj_to_tags[oid].add(new_lower)
+
         self._save_tags(tag_to_objs, obj_to_tags)
 
     def delete_object(self, canonical_id: str) -> None:

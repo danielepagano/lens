@@ -106,13 +106,16 @@ Geography is important and fractal, we'll need to know the region we're in and s
 Critically, We only want to create objects for places that _matter_, so somewhere we're at for a while, or somewhere we're returning to. In a social game, maybe every room in a mansion has a record, in other adventures just the overland we travel, and then a bunch of places we visit and remember only in narrative summaries, if at all.
 
 If want to store places so we can return to them, we will need to find them again later! Therefore, we need a map.
-A map is just a tree, so all we need to do is link locations, expand the graph, and we have a "map". If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule). So each location should link to its parent location, and we can use a recursive tag traversal of the root location to make a map (e.g. `lens kb with-tag loc.kingdom --recurse --expand --same-type` to get all the locations in the kingdom)
+A map is just a tree, so all we need to do is link locations, expand the graph, and we have a "map". If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule). So each location should link to its parent location, and we can use a recursive tag traversal of the root location to make a map (e.g. `lens kb with-tag loc.kingdom --recurse --expand --same-type` to get all the locations in the kingdom). Template:
 
-- Where, scale, name
+```markdown
+- Name and type of location, can also contextualize in terms of scale and distance to other places
+- Other details 
 - Sensory feel: looks, sounds, smells
 - Social feel: who is usually here, mood
 - Why it matters: dangers, opportunities, adventure relevance
 - Tensions or secrets for the DM
+```
 
 **Tags:** city, village, inn, dungeon, wilderness, temple, fortress; dot-tags to `loc.*`, `faction.*`, `front.*`.
 

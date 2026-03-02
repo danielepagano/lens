@@ -130,12 +130,25 @@ class TestKnowledgeStore(unittest.TestCase):
         self.assertEqual(set(self.store.get_tags("place.boston")), {"featured"})
         self.assertEqual(set(self.store.get_tags("place.nyc")), {"featured"})
 
+    def test_copy_object_when_source_used_as_tag(self) -> None:
+        """When source ID is used as a tag by others, copy adds target as that tag for them."""
+        self.store.store_object("loc.kingdom", "The kingdom.")
+        self.store.store_object("place.city_a", "City A.")
+        self.store.store_object("place.city_b", "City B.")
+        self.store.add_tags("place.city_a", ["loc.kingdom", "place.city_b"])
+        self.store.add_tags("place.city_b", ["loc.kingdom", "place.city_a"])
+        self.store.copy_object("loc.kingdom", "loc.realm")
+        self.assertEqual(set(self.store.get_tags("place.city_a")), {"loc.kingdom", "loc.realm", "place.city_b"})
+        self.assertEqual(set(self.store.get_tags("place.city_b")), {"loc.kingdom", "loc.realm", "place.city_a"})
+
     def test_copy_object_different_type(self) -> None:
         self.store.store_object("place.nyc", "NYC content")
+        self.store.add_tags("place.nyc", ["featured", "kind:city"])
         self.store.copy_object("place.nyc", "person.nyc")
         path = self.root / "knowledge" / "person" / "nyc.md"
         self.assertTrue(path.exists())
         self.assertEqual(path.read_text(), "NYC content")
+        self.assertEqual(set(self.store.get_tags("person.nyc")), {"featured", "kind:city"})
 
     def test_copy_object_tag_index_preserved(self) -> None:
         """Verify tags.toml tag_to_objs and obj_to_tags stay in sync after copy."""
@@ -223,6 +236,19 @@ class TestKnowledgeStore(unittest.TestCase):
         self.assertIn("place.manhattan", tags_map.get("kind:city", []))
         self.assertNotIn("place.nyc", objs_map)
         self.assertEqual(set(objs_map.get("place.manhattan", [])), {"featured", "kind:city"})
+
+    def test_rename_object_dot_tag_updated(self) -> None:
+        """When object ID is used as a dot-tag by others, rename updates all references."""
+        self.store.store_object("loc.kingdom", "The kingdom.")
+        self.store.store_object("loc.city_a", "City A.")
+        self.store.store_object("loc.city_b", "City B.")
+        self.store.add_tags("loc.city_a", ["loc.kingdom"])
+        self.store.add_tags("loc.city_b", ["loc.kingdom"])
+        self.store.rename_object("loc.kingdom", "loc.realm")
+        self.assertEqual(set(self.store.get_tags("loc.city_a")), {"loc.realm"})
+        self.assertEqual(set(self.store.get_tags("loc.city_b")), {"loc.realm"})
+        self.assertEqual(self.store.get_ids_with_tag("loc.realm"), ["loc.city_a", "loc.city_b"])
+        self.assertEqual(self.store.get_ids_with_tag("loc.kingdom"), [])
 
     def test_copy_object_leaves_changes_unstaged(self) -> None:
         """Copy must not stage its changes (single Storage for whole op)."""
@@ -531,21 +557,29 @@ class TestKbCli(unittest.TestCase):
         path = self.root / "knowledge" / "place" / "boston.md"
         self.assertTrue(path.exists())
         self.assertEqual(path.read_text(), "City content")
+        store = KnowledgeStore.for_project(self.root)
+        self.assertEqual(set(store.get_tags("place.boston")), {"featured"})
 
     def test_cli_copy_different_type(self) -> None:
         self._run_store("place.nyc", "NYC")
+        self._run_tags("place.nyc", add=["featured"])
         self._run_copy("place.nyc", "person.nyc")
         path = self.root / "knowledge" / "person" / "nyc.md"
         self.assertTrue(path.exists())
+        store = KnowledgeStore.for_project(self.root)
+        self.assertEqual(set(store.get_tags("person.nyc")), {"featured"})
 
     def test_cli_rename(self) -> None:
         self._run_store("place.nyc", "City")
+        self._run_tags("place.nyc", add=["featured"])
         self._run_rename("place.nyc", "place.boston")
         self.assertFalse((self.root / "knowledge" / "place" / "nyc.md").exists())
         self.assertEqual(
             (self.root / "knowledge" / "place" / "boston.md").read_text(),
             "City",
         )
+        store = KnowledgeStore.for_project(self.root)
+        self.assertEqual(set(store.get_tags("place.boston")), {"featured"})
 
     def test_cli_rename_different_type(self) -> None:
         self._run_store("place.nyc", "NYC")
@@ -668,8 +702,8 @@ class TestKnowledgeDatasets(unittest.TestCase):
         import io as _io
         import tomli_w as _tomli_w
         tags: dict[str, object] = {
-            "tags": {"protagonist": ["person.hero"]},
-            "objects": {"person.hero": ["protagonist"]},
+            "tags": {"place.dungeon": ["person.hero"], "protagonist": ["person.hero"]},
+            "objects": {"person.hero": ["place.dungeon", "protagonist"]},
         }
         buf = _io.BytesIO()
         _tomli_w.dump(tags, buf)
@@ -764,9 +798,8 @@ class TestKnowledgeDatasets(unittest.TestCase):
         hero2_path = self.project / "knowledge" / "person" / "hero2.md"
         self.assertTrue(hero2_path.exists())
         self.assertEqual(hero2_path.read_text(), "The hero.")
-        # Tags from the dataset source are inherited.
         tags = self.store.get_tags("person.hero2")
-        self.assertIn("protagonist", tags)
+        self.assertEqual(set(tags), {"place.dungeon", "protagonist"})
 
     # --- rename_object with dataset source raises ---
 
