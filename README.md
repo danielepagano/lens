@@ -84,7 +84,7 @@ lens checkpoint # commit committed changes; tries to push, optional commit messa
 |-----------|----------------------------------|
 | `add`     | Create or update objects         |
 | `edit`    | AI: edit or create objects       |
-| `get`     | Fetch objects (append `!` for linked) |
+| `get`     | Fetch objects (append `+` for directly linked, `++` for full tree traversal) |
 | `template`| Manage type templates            |
 | `tag`     | Add/remove tags on objects       |
 | `delete`  | Delete object and its references |
@@ -193,10 +193,10 @@ A section creates a `[section:id]: #` annotation in the parent node and moves th
 Use `--pin` and `--unpin` when starting a section to set the child node's front matter. Any operator running in that section (write, play, etc.) will inherit these pins:
 
 ```bash
-lens section start castle-dorn -p location.castle-dorn -p faction.dorn-court! -u location.capital-city
+lens section start castle-dorn -p location.castle-dorn -p faction.dorn-court+ -u location.capital-city
 ```
 
-- `-p` / `--pin` — KB ID to pin (repeatable). Add `!` to include linked objects.
+- `-p` / `--pin` — KB ID to pin (repeatable). Add `+` to include linked objects, or `++` for a full breadth-first traversal of linked objects.
 - `-u` / `--unpin` — KB ID to unpin (repeatable), cancelling an ancestor pin.
 
 #### After-the-fact sectioning

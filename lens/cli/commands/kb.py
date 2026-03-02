@@ -153,7 +153,10 @@ def edit(
 
 @app.command(no_args_is_help=True)
 def get(
-    ids: list[str] = typer.Argument(..., help="Object ID(s); append ! for linked objects"),
+    ids: list[str] = typer.Argument(
+        ...,
+        help="Object ID(s); append + for one-hop linked objects, or ++ for full linked traversal",
+    ),
     include_comments: bool = typer.Option(True, "--include-comments", help="Keep markdown comments"),
 ) -> None:
     """Fetch and print knowledge objects."""

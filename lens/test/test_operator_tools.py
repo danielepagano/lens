@@ -312,7 +312,7 @@ class TestWritePlayRegistration(unittest.TestCase):
             _, invoke_fn = get_tool_registry()["section"]
             args = {
                 "id": "castle-dorn",
-                "kb_pin": ["location.castle-dorn", "faction.dorn-court!"],
+                "kb_pin": ["location.castle-dorn", "faction.dorn-court+"],
                 "kb_unpin": ["location.capital-city"],
             }
             asyncio.run(
@@ -323,7 +323,7 @@ class TestWritePlayRegistration(unittest.TestCase):
             text = child_md.read_text()
             self.assertIn("kb_pin:", text)
             self.assertIn("location.castle-dorn", text)
-            self.assertIn("faction.dorn-court!", text)
+            self.assertIn("faction.dorn-court+", text)
             self.assertIn("kb_unpin:", text)
             self.assertIn("location.capital-city", text)
 

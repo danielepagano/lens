@@ -90,7 +90,7 @@ class PlayOperator(Operator):
 
         kb = KnowledgeStore.for_project(session.project_root)
         for pin_id in all_pins:
-            base = pin_id.rstrip("!")
+            base = pin_id.rstrip("+")
             if "pc" in kb.get_tags(base):
                 return
 

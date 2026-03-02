@@ -587,7 +587,7 @@ class TestSectionOperator(unittest.TestCase):
                 [
                     "lens", "section", "start", "castle-dorn",
                     "--pin", "location.castle-dorn",
-                    "--pin", "location.capital-city!",
+                    "--pin", "location.capital-city+",
                     "--unpin", "location.capital-city",
                 ],
                 cwd=p,
@@ -602,7 +602,7 @@ class TestSectionOperator(unittest.TestCase):
             text = section_md.read_text()
             self.assertIn("kb_pin:", text)
             self.assertIn("location.castle-dorn", text)
-            self.assertIn("location.capital-city!", text)
+            self.assertIn("location.capital-city+", text)
             self.assertIn("kb_unpin:", text)
             self.assertIn("location.capital-city", text)
 

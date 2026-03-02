@@ -204,7 +204,7 @@ Summarize: setting frame, first adventure premise in player-facing terms, vibe, 
 
 ## 4. Knowledge Store Templates
 
-Use these as templates for Lens KB objects. Dot-tags create a knowledge graph and enable pinning with `!` expansion.
+Use these as templates for Lens KB objects. Dot-tags create a knowledge graph and enable pinning with `+` expansion.
 
 ### Location (`loc.*`)
 

@@ -302,9 +302,81 @@ class TestKnowledgeStore(unittest.TestCase):
         self.store.store_object("place.market", "The market")
         self.store.store_object("person.amy", "Amy")
         self.store.add_tags("person.amy", ["place.market"])
-        ordered_ids, objects = self.store.get_objects_with_links(["person.amy!"])
+        ordered_ids, objects = self.store.get_objects_with_links(["person.amy+"])
         self.assertEqual(ordered_ids, ["person.amy", "place.market"])
         self.assertEqual(len(objects), 2)
+        for cid in ordered_ids:
+            self.assertIn(cid, objects)
+
+    def test_get_objects_with_links_onehop_does_not_recurse(self) -> None:
+        self.store.store_object("note.root", "Root")
+        self.store.store_object("note.mid", "Mid")
+        self.store.store_object("note.leaf", "Leaf")
+        self.store.add_tags("note.root", ["note.mid"])
+        self.store.add_tags("note.mid", ["note.leaf"])
+
+        ordered_ids, objects = self.store.get_objects_with_links(["note.root+"])
+
+        self.assertEqual(ordered_ids, ["note.root", "note.mid"])
+        self.assertIn("note.root", objects)
+        self.assertIn("note.mid", objects)
+        self.assertNotIn("note.leaf", objects)
+
+    def test_get_objects_with_links_recursive_bfs_linear(self) -> None:
+        self.store.store_object("note.root", "Root")
+        self.store.store_object("note.mid", "Mid")
+        self.store.store_object("note.leaf", "Leaf")
+        self.store.add_tags("note.root", ["note.mid"])
+        self.store.add_tags("note.mid", ["note.leaf"])
+
+        ordered_ids, objects = self.store.get_objects_with_links(["note.root++"])
+
+        self.assertEqual(ordered_ids, ["note.root", "note.mid", "note.leaf"])
+        for cid in ordered_ids:
+            self.assertIn(cid, objects)
+
+    def test_get_objects_with_links_recursive_bfs_branching(self) -> None:
+        self.store.store_object("note.root", "Root")
+        self.store.store_object("note.a", "A")
+        self.store.store_object("note.b", "B")
+        self.store.store_object("note.c", "C")
+        self.store.store_object("note.d", "D")
+        self.store.add_tags("note.root", ["note.b", "note.a"])
+        self.store.add_tags("note.a", ["note.c"])
+        self.store.add_tags("note.b", ["note.d"])
+
+        ordered_ids, _ = self.store.get_objects_with_links(["note.root++"])
+
+        self.assertEqual(ordered_ids, ["note.root", "note.a", "note.b", "note.c", "note.d"])
+
+    def test_get_objects_with_links_recursive_bfs_cycle_safe(self) -> None:
+        self.store.store_object("note.a", "A")
+        self.store.store_object("note.b", "B")
+        self.store.store_object("note.c", "C")
+        self.store.add_tags("note.a", ["note.b"])
+        self.store.add_tags("note.b", ["note.c"])
+        self.store.add_tags("note.c", ["note.a"])
+
+        ordered_ids, objects = self.store.get_objects_with_links(["note.a++"])
+
+        self.assertEqual(ordered_ids, ["note.a", "note.b", "note.c"])
+        self.assertEqual(len(set(ordered_ids)), 3)
+        for cid in ordered_ids:
+            self.assertIn(cid, objects)
+
+    def test_get_objects_with_links_recursive_and_onehop_dedup(self) -> None:
+        self.store.store_object("note.root", "Root")
+        self.store.store_object("note.mid", "Mid")
+        self.store.store_object("note.leaf", "Leaf")
+        self.store.store_object("note.other", "Other")
+        self.store.add_tags("note.root", ["note.mid"])
+        self.store.add_tags("note.mid", ["note.leaf"])
+        self.store.add_tags("note.other", ["note.leaf"])
+
+        ordered_ids, objects = self.store.get_objects_with_links(["note.root++", "note.other+"])
+
+        self.assertEqual(set(ordered_ids), {"note.root", "note.other", "note.mid", "note.leaf"})
+        self.assertEqual(len(ordered_ids), len(set(ordered_ids)))
         for cid in ordered_ids:
             self.assertIn(cid, objects)
 
@@ -515,11 +587,41 @@ class TestKbCli(unittest.TestCase):
         self._run_store("place.nyc", "NYC")
         self._run_store("person.amy", "Amy")
         self._run_tags("person.amy", add=["place.nyc"])
-        out = self._run_get(["person.amy!"])
+        out = self._run_get(["person.amy+"])
         self.assertIn("person.amy", out)
         self.assertIn("place.nyc", out)
         self.assertIn("NYC", out)
         self.assertIn("Amy", out)
+
+    def test_cli_get_recursive_linked_objects(self) -> None:
+        self._run_store("note.root", "Root")
+        self._run_store("note.mid", "Mid")
+        self._run_store("note.leaf", "Leaf")
+        self._run_tags("note.root", add=["note.mid"])
+        self._run_tags("note.mid", add=["note.leaf"])
+
+        out = self._run_get(["note.root++"])
+
+        self.assertIn("KB['note.root']", out)
+        self.assertIn("KB['note.mid']", out)
+        self.assertIn("KB['note.leaf']", out)
+        self.assertEqual(out.count("KB['note.root']"), 1)
+        self.assertEqual(out.count("KB['note.mid']"), 1)
+        self.assertEqual(out.count("KB['note.leaf']"), 1)
+
+    def test_cli_get_recursive_cycle_prints_once(self) -> None:
+        self._run_store("note.a", "A")
+        self._run_store("note.b", "B")
+        self._run_store("note.c", "C")
+        self._run_tags("note.a", add=["note.b"])
+        self._run_tags("note.b", add=["note.c"])
+        self._run_tags("note.c", add=["note.a"])
+
+        out = self._run_get(["note.a++"])
+
+        self.assertEqual(out.count("KB['note.a']"), 1)
+        self.assertEqual(out.count("KB['note.b']"), 1)
+        self.assertEqual(out.count("KB['note.c']"), 1)
 
     def test_cli_get_invalid_dot_tag_warning(self) -> None:
         self._run_store("person.amy", "Amy")

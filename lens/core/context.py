@@ -80,17 +80,17 @@ def crawl(
                 if isinstance(item, str):
                     unpins_list.append(item)
         for kid in unpins_list:
-            unpin_levels.setdefault(kid.rstrip("!"), set()).add(level)
+            unpin_levels.setdefault(kid.rstrip("+"), set()).add(level)
 
     extra_level = max_level + 1
     for kid in extra_pins or []:
         all_pins.append((extra_level, kid))
     for kid in extra_unpins or []:
-        base = kid.rstrip("!")
+        base = kid.rstrip("+")
         unpin_levels.setdefault(base, set()).add(extra_level)
 
     def pin_survives(level: int, raw_id: str) -> bool:
-        base = raw_id.rstrip("!")
+        base = raw_id.rstrip("+")
         unpins = unpin_levels.get(base, set())
         return not any(u >= level for u in unpins)
 
@@ -101,7 +101,7 @@ def crawl(
     seen_base: set[str] = set()
     ordered_base: list[tuple[int, str]] = []
     for lev, raw in surviving:
-        base = raw.rstrip("!")
+        base = raw.rstrip("+")
         if base not in seen_base:
             seen_base.add(base)
             ordered_base.append((lev, raw))
@@ -113,13 +113,13 @@ def crawl(
         effective_ids: list[str] = []
         all_objects: dict[str, KnowledgeObject] = {}
         for _lev, raw in ordered_base:
-            base = raw.rstrip("!")
-            if not raw.endswith("!"):
+            base = raw.rstrip("+")
+            if not raw.endswith("+"):
                 effective_ids.append(base)
                 objs = kb_store.get_objects([base])
                 all_objects.update(objs)
             else:
-                ordered_ids, objects = kb_store.get_objects_with_links([base + "!"])
+                ordered_ids, objects = kb_store.get_objects_with_links([raw])
                 for cid in ordered_ids:
                     if cid not in all_unpinned and cid not in effective_ids:
                         effective_ids.append(cid)
@@ -183,11 +183,11 @@ def crawl_result_from_pins(
     pins: list[str],
     unpins: list[str],
 ) -> CrawlResult:
-    unpinned_bases = {u.rstrip("!").lower() for u in unpins}
+    unpinned_bases = {u.rstrip("+").lower() for u in unpins}
     surviving_raw: list[str] = []
     seen_base: set[str] = set()
     for raw in pins:
-        base = raw.rstrip("!").lower()
+        base = raw.rstrip("+").lower()
         if base in unpinned_bases:
             continue
         if base not in seen_base:

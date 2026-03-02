@@ -37,28 +37,41 @@ This boundary is structurally identical to prompt injection resistance — the p
 
 **The adversarial NPC problem**: The same model must hold when an NPC is actively deceiving, threatening, or harming the player's character. This is not a prompt injection attack — it is exactly what the player came for. The AI must be able to play villains, liars, and monsters with full commitment while both parties understand this is collaborative fiction. Model selection matters here: some models treat in-character adversarial behavior as a safety issue. Lens operators should be tested on models that hold the author/fiction distinction cleanly and treat collaborative storytelling as a safe space by design.
 
+## Planning VS Play
+
+The key design impetus of Lens is to curate and constrain the knowledge set and instructions given to the AI, so it can behave while not needing to be too smart or use too many tokens. The system should _just barely_ work on a local 8b model with ~12k tokens context, and run like the wind on something a little more capable but still cheap. Hierarchical/fractal summarization makes this already possible with just a bit of user discipline with sections, but when running D&D we have both a large ruleset (baseline knowledge corpus) and demand more of the AI in terms of prompt compliance. We therefore need all the tricks we can to keep context and prompts small and focused.
+
+To this extent, we divide our experience in two alternating phases:  
+  - **Planning**: during planning we don't directly generate narrative, we instead reflect on the current state using various methods and with various goals (possibly over multiple LLM calls) with the effect of creating and changing KB objects instead. This can be done directly by the user, with LLM assistance, or by the AI autonomously (depending on the task). Planning can occur in a separate narrative for pre-story or orthogonal changes, or within a narrative tree (aware of our place in the story) to remember changes, add plans, etc. In-narrative planning is usually self-closing, unless we want to immediately surface some details, for example a cutaway to another place, a dream, etc.
+  - **Play**: When we play we don't really worry about changing KB objects, we just go! The user can always change objects directly during play, but it's not something the LLM tries to do. Play-rhythm planning, like maybe regularly advancing time and doing some planning during a rest, could be triggered by play regularly, but it's a prompt or internal Lens mechanism. Auto-section summarization is similar to this, although it affects the parent narrative, not KB objects.
+
 ## RPG Objects
 
-The design principle: **small, focused objects that compose via dot-tags**. The `!` expansion is kind of free (a dot-tagged object is pulled when you expand its referrer), but having chaining objects may not be as congruent of a read than a single text, if we do it carefully. But overall breaking down a monolith costs little and gains selective pinning (if it ever makes sense). 
+The design principle: **small, focused objects that compose via dot-tags**. The `+` expansion is kind of free (a dot-tagged object is pulled when you expand its referrer), but  chaining objects disrupts the contextual flow so it should be done cleanly and not unnecessarily. For example breaking down the list of conditions into a sub-object that is always included doesn't really help... just keep the list near the rule that needs it! Breaking down a subset of rules that make sense by themselves may be more useful. 
 
 ### Rules Reference
 
 Follow these principles:  
  1. About one object per situation type, ideally. Each operator pins only what it needs; rules irrelevant to the current scene stay out of context. Although some duplication is fine to optimize pins, and if an unnecessary section would be just a few tokens, easier to just put in the core.
- 2. We don't need to have all the rules in the sumtotal of our ref, because the AI _does not play the entire game_ (not an engine). The entire extracted ruleset seems to be about 10k tokens, which would be a heavy tax, do we need to remove anything we don't plan the AI to need to care about, even if it's a D&D rule, in the cases whether either the player does it, or it's not relevant to the kind of games/situations that will present themselves in this format.
- 3. The text of all the rules need to be massaged to work for an LLM prompt, and also to adhere and reinforce the Player-AI contract at all times. We can't state combat rules without keeping in mind that combat happens outside of Lens, otherwise the AI will immediately try to run combat (heck, even models that helped we write some of these docs constantly try to drift the design into being a simulation). Another key aspect specific to Lens is how the AI talks as the players: that aspect can actually be reinforced in several places and would may get confusing if we don't edit the text to account for that. In other words, we need to reiforce our principles whenever we can.
+ 2. We don't need to have all the rules in the sum-total of our ref, because the AI _does not play the entire game_ (not an engine). The entire extracted ruleset seems to be about 10k tokens, which would be a heavy tax, do we need to remove anything we don't plan the AI to need to care about, even if it's a D&D rule, in the cases whether either the player does it, or it's not relevant to the kind of games/situations that will present themselves in this format.
+ 3. The text of all the rules need to be massaged to work for an LLM prompt, and also to adhere and reinforce the Player-AI contract at all times. We can't state combat rules without keeping in mind that combat happens outside of Lens, otherwise the AI will immediately try to run combat (heck, even models that helped we write some of these docs constantly try to drift the design into being a simulation). Another key aspect specific to Lens is how the AI talks as the players: that aspect can actually be reinforced in several places and would may get confusing if we don't edit the text to account for that. In other words, we need to reinforce our principles whenever we can.
 
-So, to develop the `ref` objects:  
- - Develop an edited version of 2024 rules that adheres with and reinforces how we play in Lens and the specific roles and responsiblities of the human VS the AI, which is different compared to normal tables. Only remove anything that is definitely something Lens will never care about (possibly nothing), and keep it as our baseline.
- - Now assume the above is a monolithic core, and start carving out any rules that _definitely_ will not need to be known in certain situations... this is actually quite difficult because most things can happen at any time: conditions can be applied during exploration, social skills can apply in combat, etc (this not just about breaking down the object, it's what we would NOT have in core).
- - It's possible that we actually don't find anything to remove, in which case we need to aim for simplification instead of splitting. Remember that any model smart enough to run this has at least a passing familiarity with D&D, so being overly specific sbout rules may be unnecessary. And if we over-simplify and the AI ends up neing wrong about something, we can not care, or provide it a rule reference.
- - Reference materials are slightly different than rules proper. These are lists of items, spells, maybe class features etc. that are only relevant if in play, and even then they may not be that relevant in narrative. We may be tempted to, for example, include the spells known to a character as compact mentiones in their object, but I fear this will just tempt the AI to make the character _do those things_, because we gave it option. Note that for NPC we DO want the AI to know and select from the stat block's abilities, although more in a narrative way. So I think for character we should include things that are cosmetic and passive (like characteristics and armor) that help with flavor and descriptions, but then if a player wants to cast a spell they can just do so, resolve things like attacks or saves, and mostly move on... unless they want it to be part of the narrative (particularly out of combat, using a Detect spell, or Fly, etc.); here the user can simply `@` the spell and the AI will get the details and show the character casting it. This is kind of fun, makes playing your character just a little crunchy! So, we want:
-   - A spell per KB object; easy enough to include full details since they are include sparingly and the details matter often
-   - Magic items and equipment are only relevant if in play, but the question is: how do players find anything? The AI needs to find items to let the players find them. This is a problem during design, not play, so not a ref problem.
-   - Stat blocks (monsters) are similarly a design problem, but a little more dynamic. Design could pre-select groups of them and maybe a simple tool could be made to balance and encounter for a situation based on the possible monsters in relative priority order. The AI does not need all the details for a stat block since it doesn't run combat, but it would actually be helpful to have those handy for the player so they can use them as reference!
-   - Character building blokcs (species, classes, backgrounds, and feats) are not needed by this (and barely by real DM's) 
- - Using tags. So, you cast `@spell.fly`, but later the AI forgets you are flying or who is flying and not flying (maybe it's a different scene and this fact may literally be lost in the summaries), so now you have to rollback and add to your prompt that you are flying (and the AI doesn't even see your past prompts!). We don't want to micro-manage editing objects all the time for that, but what if we used tags for things like conditions or generally single-word mechanical rules applied to a character? This would be 100% on the user to track (when things apply and get removed is quite complicated) but even then saying `kb tag pc.alice -a speed:flying -a status:invisible` is not super-hard, and because these are all rules, the words are limited and easy to auto-complete in a UI. In fact, we could do that cleanly when importing stat blocks (`resistance:poison`) _and_ we could write the rules themselves to say these are tag-formatted.  
-   - Note that we definitely will NOT have instances of objects for all the stuff we encounter! Recurring NPCs sure, but definitely not the hundreds of monsters players slay, and certainly we have no interest in tracking conditions on them: that has to be done fully by the player, and at most be reflected in the narrative. Again, we're not a simulation, we're a structured narrative aid.
+We'll have actual rule object in a `rules` type, while references need to be easy to address, so things like `spell` and `item` work best.
+
+To develop these objects:  
+ 1. Develop an edited version of 2024 rules that adheres with and reinforces how we play in Lens and the specific roles and responsibilities of the human VS the AI, which is different compared to normal tables. Only remove anything that is definitely something Lens will never care about (possibly nothing), and keep it as our baseline.
+ 2. Now assume the above is a monolithic core, and start carving out any rules that _definitely_ will not need to be known in certain situations... this is actually quite difficult because most things can happen at any time: conditions can be applied during exploration, social skills can apply in combat, etc (this not just about breaking down the object, it's what we would NOT have in core).
+   - It's possible that we actually don't find anything to remove, in which case we need to aim for simplification instead of splitting. Remember that any model smart enough to run this has at least a passing familiarity with D&D, so being overly specific about rules may be unnecessary. And if we over-simplify and the AI ends up being wrong about something, we can not care, or provide it a rule reference.
+ 3. Reference materials are slightly different than rules proper. These are lists of items, spells, maybe class features etc. that are only relevant if in play, and even then they may not be that relevant in narrative. We may be tempted to, for example, include the spells known to a character as compact mentions in their object, but I fear this will just tempt the AI to make the character _do those things_, because we gave it option. Note that for NPC we DO want the AI to know and select from the stat block's abilities, although more in a narrative way. So I think for character we should include things that are cosmetic and passive (like characteristics and armor) that help with flavor and descriptions, but then if a player wants to cast a spell they can just do so, resolve things like attacks or saves, and mostly move on... unless they want it to be part of the narrative (particularly out of combat, using a Detect spell, or Fly, etc.); here the user can simply `@` the spell and the AI will get the details and show the character casting it. This is kind of fun, makes playing your character just a little crunchy! So, we want:
+   - A spell per KB object; easy enough to include full details since they are include sparingly and the details matter often. We just have all the spells in our kb and mention/link them as needed
+   - Magic items and equipment are only relevant if in play, but the question is: how do players find anything? The AI needs to know which items to include let the players find them, which is a planning problem. The item then ends up in the PC's inventory, so we actually don't need to track it anymore! So this is not a KB problem.
+   - Stat blocks (monsters) are similar a design problem as a spell, but a little more dynamic. Planning needs to find monsters by environment, CR, and fit, which can be done with a specialized prompt fed various tables; this first phase could then pass items to a tool that balances encounters by CR if we don't trust the AI to do this. Eventually the stat blocks go in an encounter, but the AI does not need all the details for a stat block, because it doesn't run combat! On the other hand, it may actually be helpful to have the stat blocks handy for the player since they do have to run combat.. this vastly depends on how the player runs combat (VTT, theater of the mind and notes, etc.) so it's really not a KB problem.
+   - Character building blocks (species, classes, backgrounds, and feats) are not needed by Lens KB (and barely by real DM's) 
+
+#### Using tags
+
+So, you cast `@spell.fly` and you fly, but later the AI forgets you are flying or who is flying and not flying (maybe it's a different scene and this fact may literally be lost in the summaries), so now you have to rollback and add to your prompt that "remember I was are flying" and the AI doesn't even see your past prompts, so this may become endemic and not fun. We don't want to manage state nor micro-manage editing objects all the time for that, but what if we used tags for "micro-state", things like conditions or roughly single-word mechanical rules applied to a character? This like putting condition rings on your mini, and would be mostly on the user to track (when things actually do apply and get removed is quite complicated... we have counter-spells, saving throws, concentration checks, durations...) but even then saying `kb tag pc.alice -a speed:flying -a concentrating` is not super-hard, and because these are all rules, the words are limited and easy to auto-complete in a UI. Now the AI and the user can both know you are flying and concentrating (tricky to remember at the table!). 
+   - Note that we definitely will NOT have instances of objects for all the stuff we encounter! Recurring NPCs sure, but definitely not the hundreds of monsters players will slay over time, and certainly we have no interest in tracking conditions on them: that has to be done fully by the player, and they can just say "goblin 3 is restrained" and now the local narrative says that... but it's very temporary. The tags are more useful out of combat for narrative purpose, it's absolutely not necessary to say we're concentrating every time to cast Guidance etc. Again, Lens is NOT a simulation, it's a structured narrative aid.
 
 ### About Campaign State
 
@@ -74,17 +87,80 @@ That's it? Other possible objects and why they are not needed in Lens:
 
 ### Player Characters
 
-One object per PC.
+One object per PC. We should have a template and guidance, but it's the job of the user to fill this in, since it's their avatar and they have their character sheet.
 
 Content per object is just enough to get the AI to talk about the character and talk _as_ the character (represent them):
-- Name, pronouns, species, appearance, how they talk, etc (what others see)
-- Alignment and what they are about/struggle with internally (what motivates them, what close people end up seeting)
-- Core kit: the key passive things that make a difference in how the character does things in general (like darkvision), but only a very vague description things like weapons/spells/tools, because we want the player to surface them. Like D&D, we're assuming people don't cheat... their loss if they do.
-- Story triggers: ideals, bonds, flaws, fears — hooks the AI uses in narration; a bit of a surprise engine, although this may be a bad idea because AIs have no patience
+- How we identify and attribute to them in the narrative: names, nicknames, etc
+- What others see: name, pronouns, species, appearance, visible kit, mannerism, how they talk, etc.
+- A peek at what's inside: relevant background, goals, motivations, personal struggles; nothing too deep (the player can keep the deep stuff in hidden comments to bring up as well), but enough to flavor their interactions
+- How they solve problems: strengths and weaknesses, key passive things that make a difference in how the character does interfaces with the world that matter to the DM (like high passive perception, darkvision, movement speeds, etc.); only include very general and non-actionable descriptions of weapons/spells/tools, because we want the player to surface their usage, we don't want the AI to volunteer them (and it will if they are present). Like D&D, we're assuming people don't cheat... their loss if they do.
+- Story triggers: ideals, bonds, flaws, fears: hooks the AI can use in narration, like a bit of a surprise engine. Note however that we need to optimize these objects for play, NOT planning. It would be quite worthwhile to a planning-time object for a player that helps the AI design quest lines and problems, but the play AI will have no patience and try to "use" this information at inopportune time, like "hey you said this character has green eyes, so let me mention green eyes every time they are mentioned" (ugh)
 
-### Stuff We Care About
+### Other Stuff We Care About
 
-These are already well-specified in `ai_dm_knowledge.md` as a starting point.
+We'll want to track the following other object types in an adventure:
+
+#### Location (`loc.*`)
+
+Geography is important and fractal, we'll need to know the region we're in and sometimes the city, or even the tavern or someone's room, if for some reason that matters.
+Critically, We only want to create objects for places that _matter_, so somewhere we're at for a while, or somewhere we're returning to. In a social game, maybe every room in a mansion has a record, in other adventures just the overland we travel, and then a bunch of places we visit and remember only in narrative summaries, if at all.
+
+If want to store places so we can return to them, we will need to find them again later! Therefore, we need a map.
+A map is just a tree, and we have those, so all we need to do is link locations in a graph, expand the graph, and we have a map. If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule).
+
+- Where, scale, name
+- Sensory feel: looks, sounds, smells
+- Social feel: who is usually here, mood
+- Why it matters: dangers, opportunities, adventure relevance
+- Tensions or secrets for the DM
+
+**Tags:** city, village, inn, dungeon, wilderness, temple, fortress; dot-tags to `loc.*`, `faction.*`, `front.*`.
+
+#### NPC (`npc.*`)
+
+NPCs always have a **stance or commentary** on the adventure core question.
+
+- Physical description and mannerisms
+- How they talk and behave
+- Current attitude toward the party
+- Short-term goals
+- Longer-term agenda or secret (DM-side)
+
+**Tags:** ally, villain, contact, patron, rival; dot-tags to `loc.*`, `faction.*`, `front.*`.
+
+#### Faction (`faction.*`)
+
+- Who they are and what they believe or want
+- How they operate (methods, subtlety or brutality)
+- Where they are strongest
+- How they feel about the party
+- Ongoing plans or operations
+
+**Tags:** cult, guild, noble, military, criminal; dot-tags to `loc.*`, `front.*`.
+
+#### Front (`front.*`)
+
+- Problem: one or two sentences
+- Stakes if ignored
+- Known to PCs: what the party believes
+- Secret truth (DM-side)
+- Phases or beats: how it might escalate
+- Current phase
+- Possible resolutions
+
+Treat front contents as **canon**; if you change your mind, explicitly update the object.
+
+**Tags:** active, resolved, dormant, war, curse, intrigue, dungeon, investigation; dot-tags to `loc.*`, `faction.*`.
+
+#### Thing (`thing.*`)
+
+- Evocative description
+- What it does in fiction
+- Rough mechanical impact
+- Who wants it and why
+- How it might change hands or be destroyed
+
+**Tags:** artifact, weapon, relic, key, cursed; dot-tags to `loc.*`, `front.*`, `faction.*`.
 
 ### design.* — Design Dataset
 
@@ -102,10 +178,10 @@ These objects are pinned only in the `design` sub-tree. They never appear in pla
 
 | Context | Objects in scope |
 |---|---|
-| All play | `ref.core`, `state.campaign`, `state.adventure`, `state.progress`, `state.scene`, `pc.*` (lead + companions via `!`) |
+| All play | `ref.core`, `state.campaign`, `state.adventure`, `state.progress`, `state.scene`, `pc.*` (lead + companions via `+`) |
 | `play` (exploration) | + `ref.exploration`, relevant `loc.*`, `npc.*`, `front.*` |
 | `play` (social) | + `ref.social`, relevant `npc.*`, `faction.*` |
-| `encounter` | + `ref.combat` (pulls `ref.conditions` via `!`), relevant `npc.*` (enemies), `loc.*` (terrain) |
+| `encounter` | + `ref.combat` (pulls `ref.conditions` via `+`), relevant `npc.*` (enemies), `loc.*` (terrain) |
 | `converse` | + `ref.social`, NPC objects for all participants |
 | `advance` | + `ref.recovery`, `state.timeline`, all active `front.*` |
 | `design` | + `design.process`, `design.craft`, `design.templates` |

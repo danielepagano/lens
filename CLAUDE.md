@@ -82,7 +82,7 @@ Closing tags: `[/section:ch1]: #`. Self-closing: `[section:ch1/]: #`.
 
 **Context assembly** (`context.py`): `crawl()` collects `kb_pin`/`kb_unpin` from ancestor front matters (walking from root to cursor), resolves linked KB objects, then passes everything to `assemble_prompt()` which formats `[RELEVANT KNOWLEDGE]`, `[PREVIOUS EVENTS SUMMARY]`, `[CURRENT PASSAGE]`, and `[TASK]` blocks into `[system, user]` messages.
 
-**KnowledgeStore** (`knowledge.py`): flat key-value store at `knowledge/{type}/{key}.md`. IDs are dot-separated lowercase (`person.amy`). Tags stored in `knowledge/tags.toml` with bidirectional index. The `!` suffix on an ID in a pin expands to linked objects (those sharing a dot-tag pointing to another KB object).
+**KnowledgeStore** (`knowledge.py`): flat key-value store at `knowledge/{type}/{key}.md`. IDs are dot-separated lowercase (`person.amy`). Tags stored in `knowledge/tags.toml` with bidirectional index. The `+` suffix on an ID in a pin expands to linked objects (those sharing a dot-tag pointing to another KB object).
 
 ### LLM configuration
 

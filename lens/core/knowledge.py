@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import re
 import tomllib
+from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, cast
@@ -275,31 +276,69 @@ class KnowledgeStore:
     def get_objects_with_links(
         self, raw_ids: list[str]
     ) -> tuple[list[str], dict[str, KnowledgeObject]]:
-        """Parse IDs (! suffix expands linked objects) and fetch them.
+        """Parse IDs (+ suffix expands linked objects) and fetch them.
 
         Returns the ordered list of all IDs (explicit + linked, in pinning order)
         and the full objects dict for lookup.
         """
-        ordered: list[str] = []
+        ordered_roots: list[str] = []
         seen: set[str] = set()
-        expand_linked_for: set[str] = set()
+        onehop_expand: set[str] = set()
+        recursive_expand: set[str] = set()
+
         for raw in raw_ids:
-            linked = raw.endswith("!")
-            cid = raw[:-1] if linked else raw
+            recursive = raw.endswith("++")
+            onehop = (not recursive) and raw.endswith("+")
+            base = raw[:-2] if recursive else (raw[:-1] if onehop else raw)
             try:
-                parse_id(cid)
+                type_part, key_part = parse_id(base)
             except ValueError:
                 continue
+            cid = _canonical_id(type_part, key_part)
+
             if cid not in seen:
-                ordered.append(cid)
+                ordered_roots.append(cid)
                 seen.add(cid)
-            if linked:
-                expand_linked_for.add(cid)
-        objects = self.get_objects(
-            ordered,
-            expand_linked_for=expand_linked_for if expand_linked_for else None,
-        )
-        ordered_ids = list(objects.keys())
+
+            if recursive:
+                recursive_expand.add(cid)
+            elif onehop:
+                onehop_expand.add(cid)
+
+        objects = self.get_objects(ordered_roots)
+        ordered_ids: list[str] = list(objects.keys())
+        visited: set[str] = set(ordered_ids)
+
+        # Expand one hop for roots explicitly marked with "+", but not "++".
+        if onehop_expand and objects:
+            subset: dict[str, KnowledgeObject] = {
+                cid: objects[cid]
+                for cid in ordered_roots
+                if cid in objects and cid in onehop_expand
+            }
+            for linked_id in self._collect_linked_ids(subset):
+                if linked_id in visited:
+                    continue
+                visited.add(linked_id)
+                linked_obj = self._fetch_one(linked_id)
+                if linked_obj is None:
+                    continue
+                objects[linked_id] = linked_obj
+                ordered_ids.append(linked_id)
+
+        # Recursively expand for roots explicitly marked with "++".
+        if recursive_expand and objects:
+            roots = [
+                cid for cid in ordered_roots if cid in objects and cid in recursive_expand
+            ]
+            if roots:
+                self._expand_linked_bfs(
+                    ordered_ids=ordered_ids,
+                    objects=objects,
+                    visited=visited,
+                    roots=roots,
+                )
+
         return ordered_ids, objects
 
     def get_objects(
@@ -444,6 +483,39 @@ class KnowledgeStore:
                     continue
         return linked
 
+    def _expand_linked_bfs(
+        self,
+        *,
+        ordered_ids: list[str],
+        objects: dict[str, KnowledgeObject],
+        visited: set[str],
+        roots: list[str],
+    ) -> None:
+        queue: deque[str] = deque(roots)
+        expanded: set[str] = set()
+
+        while queue:
+            cid = queue.popleft()
+            if cid in expanded:
+                continue
+            expanded.add(cid)
+
+            obj = objects.get(cid)
+            if obj is None:
+                continue
+
+            for linked_id in self._collect_linked_ids({cid: obj}):
+                if linked_id not in visited:
+                    visited.add(linked_id)
+                    linked_obj = self._fetch_one(linked_id)
+                    if linked_obj is None:
+                        continue
+                    objects[linked_id] = linked_obj
+                    ordered_ids.append(linked_id)
+
+                if linked_id in objects and linked_id not in expanded:
+                    queue.append(linked_id)
+
     def copy_object(self, source_id: str, target_id: str) -> None:
         """Copy object to a new ID. Target must be valid and unused; type may differ.
 
@@ -525,14 +597,14 @@ class KnowledgeStore:
 def validate_ids_exist(project_root: Path, ids: list[str]) -> None:
     """Raise LensException if any id in *ids* does not exist in the knowledge store.
 
-    IDs may include the ! suffix for linked expansion; the base id is checked.
+    IDs may include the + suffix for linked expansion; the base id is checked.
     """
     if not ids:
         return
     kb = KnowledgeStore.for_project(project_root)
     missing: list[str] = []
     for kid in ids:
-        base = kid.rstrip("!")
+        base = kid.rstrip("+")
         if not kb.exists(base):
             missing.append(kid)
     if missing:
