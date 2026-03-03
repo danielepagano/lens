@@ -84,6 +84,7 @@ lens checkpoint # commit committed changes; tries to push, optional commit messa
 |-----------|----------------------------------|
 | `add`     | Create or update objects         |
 | `edit`    | AI: edit or create objects       |
+| `extract` | Bulk-import objects from a structured markdown file |
 | `get`     | Fetch objects (append `+` for directly linked, `++` for full tree traversal) |
 | `with-tag`| List/expand objects by tag; optionally recurse via dot-tags |
 | `template`| Manage type templates            |
@@ -93,6 +94,45 @@ lens checkpoint # commit committed changes; tries to push, optional commit messa
 | `rename`  | Rename object to a new ID (any type) |
 
 Run `lens kb <command> --help` for details. Note that all KB IDs and tags normalize to lowercase.
+
+#### `lens kb extract`
+
+Bulk-import KB objects from a structured markdown file in a **single git transaction**. Useful for seeding reference data, importing AI-generated batches, or bootstrapping a campaign from notes.
+
+````bash
+lens kb extract objects.md
+````
+
+The file may contain any text. KB objects are defined in fenced blocks tagged with `kb`. Each block must have a YAML front matter section (delimited by `---`) with an `id` field and an optional `tags` list. Everything after the closing `---` is the object content. Content between blocks is ignored.
+
+````markdown
+# My campaign notes (ignored)
+
+```kb
+---
+id: person.alice
+tags:
+  - character
+  - faction.rebels
+---
+Alice is a rebel fighter who joined the cause at age 17.
+<!-- ai:secret: She is a double agent. -->
+```
+
+Some thinking (ignored)...
+
+```kb
+---
+id: location.hq
+---
+The rebel headquarters, hidden in an abandoned warehouse.
+```
+````
+
+- **Inserts** create new objects; **updates** overwrite existing object content.
+- Tags are **additive**: new tags are added to any already on the object.
+- Blocks with missing `id` or parse errors are skipped and reported as warnings.
+- All writes use a single `Storage` instance — they land as one pending transaction reviewable with `git diff`.
 
 #### `lens kb edit`
 
