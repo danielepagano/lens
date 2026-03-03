@@ -19,6 +19,7 @@ from lens.core.commands.kb import (
 )
 from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
+from pathlib import Path
 
 app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete, with-tag, extract).")
 
@@ -248,18 +249,44 @@ def with_tag(
                             _print_obj(result.objects[cid])
 
 
+def _collect_markdown_files(root: Path) -> list[str]:
+    """Return .md files under *root* in depth-first lexicographical order."""
+    files: list[str] = []
+
+    def _walk(dir_path: Path) -> None:
+        entries = sorted(dir_path.iterdir(), key=lambda p: p.name)
+        for entry in entries:
+            if entry.is_file() and entry.suffix == ".md":
+                files.append(str(entry))
+        for entry in entries:
+            if entry.is_dir():
+                _walk(entry)
+
+    _walk(root)
+    return files
+
+
 @app.command(no_args_is_help=True)
 def extract(
-    file: str = typer.Argument(..., help="Markdown file containing ```kb blocks"),
+    path: str = typer.Argument(..., help="Markdown file or folder containing ```kb blocks"),
 ) -> None:
-    """Extract and upsert KB objects from a structured markdown file (single transaction).
+    """Extract and upsert KB objects from structured markdown (single transaction).
 
     Each ```kb block must contain YAML front matter (delimited by ---) with an
     'id' field and an optional 'tags' list. The block body becomes the object content.
-    Content between blocks is ignored.
+    Content between blocks is ignored. When given a folder, all .md files within
+    it (and its sub-folders) are processed in depth-first lexicographical order.
     """
     try:
-        result = kb_extract(file)
+        p = Path(path)
+        if p.is_file():
+            file_paths = [str(p)]
+        elif p.is_dir():
+            file_paths = _collect_markdown_files(p)
+        else:
+            raise LensException(f"file not found: {path}")
+
+        result = kb_extract(file_paths)
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)

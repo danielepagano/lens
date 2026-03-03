@@ -271,7 +271,7 @@ def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
     Returns ``(entries, errors)`` where errors are human-readable messages for
     blocks that could not be parsed (missing front matter, missing id, etc.).
     """
-    entries: list[KbExtractEntry] = []
+    entries_by_id: dict[str, KbExtractEntry] = {}
     errors: list[str] = []
     lines = text.splitlines()
     i = 0
@@ -328,30 +328,36 @@ def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
             else []
         )
 
-        entries.append(
-            KbExtractEntry(
-                id=raw_id.strip(),
-                tags=tags,
-                content="\n".join(content_lines),
-                source_line=open_line,
-            )
+        entry = KbExtractEntry(
+            id=raw_id.strip(),
+            tags=tags,
+            content="\n".join(content_lines),
+            source_line=open_line,
         )
+        # Later blocks for the same id overwrite earlier ones entirely
+        entries_by_id[entry.id] = entry
 
-    return entries, errors
+    return list(entries_by_id.values()), errors
 
 
-def kb_extract(file_path: str) -> KbExtractResult:
-    """Parse *file_path* for ```kb blocks and upsert them into the KB store.
+def kb_extract(file_paths: list[str]) -> KbExtractResult:
+    """Parse *file_paths* for ```kb blocks and upsert them into the KB store.
 
     All writes go through the KnowledgeStore singleton, which uses a single
     lazily-created Storage — so all changes land as one pending git transaction.
     """
-    path = Path(file_path)
-    if not path.exists():
-        raise LensException(f"file not found: {file_path}")
+    if not file_paths:
+        return KbExtractResult()
 
-    text = path.read_text(encoding="utf-8")
-    entries, parse_errors = parse_kb_fences(text)
+    texts: list[str] = []
+    for file_path in file_paths:
+        path = Path(file_path)
+        if not path.exists() or not path.is_file():
+            raise LensException(f"file not found: {file_path}")
+        texts.append(path.read_text(encoding="utf-8"))
+
+    combined_text = "\n".join(texts)
+    entries, parse_errors = parse_kb_fences(combined_text)
 
     result = KbExtractResult(errors=list(parse_errors))
 

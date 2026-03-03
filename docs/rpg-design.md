@@ -215,21 +215,18 @@ As we discussed above, we want to cleanly separate "Planning VS Play", so each R
 | `encounter` | Plan | Aid player in running combat | Rolled initiative |
 | `advance` | Plan | Mini-design to update KBs that need it | Player explicitly passes time |
 
->---
-> GOT THIS FAR EDITING
->---
+### Create and Refine Knowledge For Your Game with `design` 
 
-### Create Knowledge For Your Game with `design` 
+A dedicated narrative sub-tree where the conversation is not story, it's collaborative design workspace, with KB objects changes are the product. We can start from a dedicate narrative tree, or create a self-closing tag anywhere in the narrative so we have the story so far. Sub-sections may open for dedicated sub-tasks with specialized prompts.
 
-A dedicated narrative sub-tree where the conversation *is* the design work and the KB objects are the product. The design narrative is not canon — it is a workspace. Sections may open for each phase of world-building; because each phase is a sub-node, any section can be reopened to iterate non-linearly: "let's revisit the factions" just reopens that section and amends the relevant objects.
+The model emits certainly emits discursive text and collects answers from the user, but the replies also include fenced blocks compliant with the `kb extract` command format. This lets the model focus on content rather than prose style, and makes extraction deterministic. Secrets work because they are encoded as they come out of the LLM.
 
-The output is **not narrative**. The model emits certainly emits discursive text and collects answers from the user, but the replies also include fenced blocks that Lens parses and extracts into KB files (format is just id, text, and any tags). This lets the model focus on content rather than prose style, and makes extraction deterministic. Secrets go in `<!-- ai:secret: -->` HTML comments inside the block content. Experiment to find what fencing/format works well, maybe yaml, or maybe we use markdown blocks with a way to pull out id's and tags.
+#### Design objects
+The bulk of the knowledge that drives the design flow lives not in the system prompt but in `design` KB objects that can be pinned into the design sub-tree. The root prompt has a knowledge of what they are and what's in them, and then asks the user what they want to do: a session zero phase sequence, create or refine objects like locations and factions, create example adventure hooks, plan encounters, etc. 
 
-**System prompt**: Small and static, paired to a root node in a design dataset. Instruct to follow a strategy (it unfolds in the sub-sections), templates, and store secrets, true motivations, and escalation plans inside `<!-- ai:secret: -->` comments in the objects (because the secrets are emitted in a narrative, they'll be already obscured in the kb fenced blocked and can be then copied verbatim without the user ever seeing the clear version)
+The operator then creates sub-sections that have that type of design task pinned in their front matter, and can even chain a write operator from what the user asked to do to get the section content started without repetition. When the user is done, we simply call `kb extract` on that design sub-folder and import all the knowledge created! The user can of course skip the chat and create a design operator already pointed to a specific design object, and get going right away.
 
-**Design dataset**: The procedural knowledge that drives the design flow lives not in the system prompt but in KB objects pinned into the design sub-tree: the session zero phase sequence, object templates, example adventure core questions with their surface/buried dissonance, guidance on the mid-story pivot and character core questions. The operator drives from this dataset; the system prompt only sets the posture. Different genres or systems have different design datasets without touching operator code.
-
-**Trigger**: Invoked as needed with dedicated operator.
+The set of design objects will evolve over and refine over time, and they are best created as needed.
 
 ### Play General Scenes with `play`
 
@@ -250,7 +247,7 @@ Transitions between modes are driven by the fiction, not by a quota of rolls. Th
 - Declared success is treated as goal, not result; the AI decides if it works or calls for a check
 - The AI holds these limits while staying cooperative — the resistance is the world working correctly, not the AI working against the player
 
-**System prompt**: Critical to get right. Posture + authority model + flow/stakes mode description + when to suggest `converse` (long dialogue developing) and `encounter` (initiative is called for).
+**System prompt idea**: Critical to get right. Posture + authority model + flow/stakes mode description + when to suggest `converse` (long dialogue developing) and `encounter` (initiative is called for).
 
 ## Chat with NPC's (or among PC's) with `converse`
 
@@ -260,7 +257,7 @@ Not targeted at a single NPC. The mode covers any conversational scene — one N
 
 **How it works**: Sub-node. The player directs conversational goals ("Elara probes him about the shipment without revealing what she knows"). The AI voices all participants, including the PC's side if the player's direction is high-level. When the node closes, it summarizes as what changed — relationships shifted, information revealed, commitments made — not as a transcript. Consequences that need to land in the fiction go to `play` or `advance` after.
 
-**System prompt**: "You are in a conversation. Voice all participants with their own goals, limits, and things they won't say. The player directs what their character is trying to accomplish. Do not advance the plot or resolve the scene — let the conversation develop. On close, summarize: what changed in relationships, what was revealed, what was decided."
+**System prompt idea**: "You are in a conversation. Voice all participants with their own goals, limits, and things they won't say. The player directs what their character is trying to accomplish. Do not advance the plot or resolve the scene — let the conversation develop. On close, summarize: what changed in relationships, what was revealed, what was decided."
 
 **Trigger**: Player invokes directly when a conversation warrants it, or `play` suggests it when a dialogue is clearly developing depth.
 
@@ -268,78 +265,48 @@ Not targeted at a single NPC. The mode covers any conversational scene — one N
 
 A focused sub-node for structured combat. Applies exactly while initiative is being tracked; exits when initiative ends. The rule is that simple.
 
-**Trigger**: The player says "I roll initiative" (or `play` calls for it per the rules reference) and physically invokes `encounter`. The signal is unambiguous and player-enforced. Cinematic or brief violence that doesn't go to initiative stays in `play`.
+**Trigger**: Operator, can be called by the player or DM when initiative is rolled.
 
-**Setup phase**: The AI describes the encounter — location, what the enemies are trying to accomplish (not just "attack," but *why they're here and what they want*), and what tactical features of the environment matter. Encounter weight is established narratively here: skirmish, grind, or something to potentially flee from.
+**Setup phase**: The AI describes the encounter — location, what the enemies are trying to accomplish (not fine-grained or "attack," but tactics, and why they're here and what they want... could be just hungry zombies too), and what tactical features of the environment matter. Encounter weight is established narratively here: skirmish, grind, or something to potentially flee from.
 
-**Running phase**: Player describes character actions and reports roll results. The AI narrates enemy intent as a director — "the wounded one falls back, the captain tries to cut off the exit" — intent, not mechanics. Enemies are characters with goals: the one losing may break and run; the leader may pivot to a hostage gambit when cornered. Player-reported outcomes ("the flanking guard is down, the captain is bloodied") drive the AI's next beat.
+**Running phase**: Player describes character actions and reports outcomes. The player actually controls everyone, but the AI is charged to state enemy intent as a director before they act (e.g. "the wounded one falls back, the captain tries to cut off the exit"). The AI will know the skills, powers, and strengths of enemies via stat blocks, and will need to use those facts: casters evade and fire, pack hunters swarm, flyers swoop, etc. Enemies are also characters with goals: a bandit losing may break and run, while the leader may pivot to a hostage gambit when cornered; cultists will sacrifice themselves to complete the ritual; and so on. Player-reported outcomes ("the flanking guard is down, the captain is bloodied") drive the AI's next beat.
 
 **Why not `play`**: Context economy. Combat needs enemy KB objects, terrain, and tactical state — not the full campaign graph. The sub-node architecture enforces this focus naturally.
 
-**System prompt**: Minimal. "Direct enemy tactical intent as a narrator. The player handles all mechanics. Respond to player-reported outcomes. Enemies are characters with goals — let them react, adapt, and make decisions under pressure."
+**System prompt idea**: Something like "Direct enemy tactical intent as a narrator. The player handles all mechanics. Respond to player-reported outcomes. Enemies are characters with goals — let them react, adapt, and make decisions under pressure." but probably more complex so that the AI is smart and respects boundaries.
 
-Sub-node closes with a brief narrative summary that surfaces to the parent section.
+Sub-node closes with a specialized summary that surfaces to the parent section, focusing on outcome and the state of survivors.
 
 ## Pass The Time with `advance` 
 
-The world takes its turn. The player cannot skip time without letting the world move.
+The world takes its turn the player skips time. This is a lot of like `design`, but specifically designed to update `front` objects in targeted ways; it will also pick up at least one level of objects linked to each front, for context.
 
-> TODO: tag `advance` to advanceable objects?
+**Trigger**: The player explicitly invokes when time passes — rest, travel, downtime. "We rest overnight." "We spend three days at the inn." "We ride to the capital." This hands the initiative to the world. What happens during that time is the AI's call: a rest might be interrupted; a journey might have a consequence; downtime might find something changed while the party wasn't watching. 
 
-**Trigger**: The player explicitly invokes when time passes — rest, travel, downtime. "We rest overnight." "We spend three days at the inn." "We ride to the capital." This hands the initiative to the world. What happens during that time is the AI's call: a rest might be interrupted; a journey might have a consequence; downtime might find something changed while the party wasn't watching.
+### Guidelines
 
-**Fronts as drama, not simulation**: A front KB object establishes an expectation — a threat in motion, a clock running, a plan unfolding. `advance` makes that expectation feel real. Two patterns:
+- **Fronts as drama, not simulation**: A front KB object establishes an expectation — a threat in motion, a clock running, a plan unfolding. `advance` makes that expectation feel real. Two patterns:
+- *Story beats*: A front describes what a faction or NPC is working toward in prose. `advance` reads the current state and decides what they've done during the elapsed time, improvising plausibly from what's established. No rules system required — only the established expectation and the elapsed time.
+- *Clocks and Timers*: A front KB object may carry a note like `Days remaining: 8` or `Number of council members convinced by the enemy: 3 out of 7 (every day there's a 10% chance another one turns)`. `advance` instructs the AI to notice such elements and increment/decrement timers and clocks in a way that makes sense. Each of these carries a consequence.
+- **Only plan what's been established**. Everything else the AI improvises as if it had been planned all along. Fronts are dramatic expectations, not state machines. The goal is that consequences feel earned, not that anything was actually simulated. This is why we only update fronts... they are the kind of objects that advance.
 
-*Story beats*: A front describes what a faction or NPC is working toward in prose. `advance` reads the current state and decides what they've done during the elapsed time, improvising plausibly from what's established. No rules system required — only the established expectation and the elapsed time.
+### Mechanics
 
-*Rough timers*: A front KB object carries a field like `days_remaining: 8`. `advance` decrements it via an `edit` on the KB file. When it reaches zero, the consequence lands.
+**How much do we advance?**: The operator needs to maintain its own object, `state.advance`, with a log of every time it was called. Each entry contains:  
+ - The narrative address where it was called
+ - How long it estimates has passed since the last "advance" call (or the beginning of the narrative). To do this it has to crawl backwards from the current narrative address to the previous one, collect text and summaries, and... just make its best guess. Players are supposed to advance as they rest daily, so this should not be too hard.
+ - How long the operator itself is adding to the clock. This is at most what was asked for by the player (like sleeping overnight) but could be less (one the third day of a week-long trip, something happens and advance stops there; the player will have to advance again to complete the trip once that's resolved). This lets the operator "catch up" as much as necessary regardless how often it's called.
 
-The rule: **only plan what's been established**. Everything else the AI improvises as if it had been planned all along. Fronts are dramatic expectations, not state machines. The goal is that consequences feel earned, not that anything was actually simulated.
-
-**What `advance` does**:
-1. Processes the declared time passage
-2. Reviews all active fronts — ticks timers, advances story beats, decides what the world did
-3. Edits KB files directly (front state, NPC hidden notes, timer decrements) via `edit`
-4. Resolves anything that expired or triggered during this time
-5. Opens the next scene: new section with appropriate front matter pins and an opening situation — which the world may have already changed before the player acts
-
-**System prompt**: "Time has passed. Review all active fronts and decide what the world did while the player rested or traveled. Update KB objects. Then set up what they wake up to — the world has been moving."
-
-## Campaign Lifecycle
-
-```
-design phase:
-  design    → structured KB objects: party, locations, factions, NPCs, fronts, rules ref
-              (fenced block output, parsed by Lens; secrets in <!-- ai:secret: -->)
-  design    → state.adventure: premise, act outline; secret section for core concepts (advanced)
-
-play phase (repeating):
-  play      → scene narration, authority model held, flow and stakes modes
-  converse  → dialogue sub-nodes when conversations need room to breathe
-  encounter → combat sub-nodes while initiative is tracked
-  advance   → player passes time; world moves; fronts tick; KB edits via edit; next scene opens
-
-at each checkpoint (automatic, infrastructure):
-  extraction → cheap model updates opted-in KB objects from committed narrative
-               covers play consequences and any free-form co-author chat
-
-adventure complete:
-  fronts reach terminal state (resolved, foiled, or transformed by player choices)
-  advance or design opens the next adventure
-```
-
-The world has established expectations. The player has directorial agency. `advance` is where they collide. No ending is written in advance.
-
-## Development Path
-
-The point of all this is to have fun playing. Everything else — setup infrastructure, design pipelines, KB extraction — is in service of that, and building it before play works is building in a vacuum.
-
-The path is: get a single scene playing well, then weave skills, dialogue, and combat, then connect two scenes, then formalize setup for something small. Scope grows with demonstrated need.
-
-**Play first.** Test data is handcrafted fixture data — a character, a location, an NPC, a compact rules reference. No generation pipeline needed to start. The `design` operator is the last thing to build, not the first: it formalizes something that already works, for a game you already know how to play.
-
-**Iterate in real play.** The authority model, the flow/stakes balance, what KB data is actually useful — these emerge from playing, not from planning. Every operator not yet implemented is a place where `play` has to hold the load for now, and that pressure reveals what each future operator actually needs to do.
-
-**Connect scenes before scaling.** `advance` is the test for whether the world feels alive between sessions. Get two scenes connected before worrying about longer adventures, more complex fronts, or background extraction infrastructure.
-
-The player-AI contract — holding the authority model while making the player feel heard and effective — is the most important thing to get right before anything else. See `backlog.md` for concrete phase sequencing.
+**How does it run**:
+1. Loads fronts+ and its own state
+2. Performs a crawl to the previous `advance` and collects narrative
+3. Generates a "luck roll", a random number from 1 to 100 for every front and for the current "rest period"; these are passed as metadata to the AI, which can use them to determine how some clocks advance, or reference encounter tables!
+4. Calls the AI with all the above with a prompt to:
+  - Estimates time passed since the last advance by looking at the narrative crawl result
+  - Decides if the requested rest period will be completed in full or not; this is the MAX time that will pass
+  - Reviews all active fronts and decides what happens in each
+  - Decides whether some event in a front actually interrupts the advance (war broke out, stop hanging out at the inn!) and finalized time that passed
+  - Generates `kc extract` style blocks to edit fronts
+  - Generates a line to append to the state log (Lens will only look at the last line anyway) 
+  - Closes and returns to parent, generating a summary of anything the players would have heard about
+  - Emits a follow-up operator to determines how to continue the story: PC's wake up, a messenger arrives, wolfs attack the camp, etc.

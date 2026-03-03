@@ -213,6 +213,34 @@ Line three.
         self.assertEqual(errors, [])
         self.assertEqual(entries[0].content, "Line one.\nLine two.\nLine three.")
 
+    def test_duplicate_id_last_block_wins_single_entry(self) -> None:
+        text = """\
+```kb
+---
+id: npc.hero
+tags:
+  - first-tag
+---
+First version.
+```
+
+```kb
+---
+id: npc.hero
+tags:
+  - second-tag
+---
+Second version.
+```"""
+        entries, errors = self._parse(text)
+        self.assertEqual(errors, [])
+        # Only the last block for a given id should remain
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(entry.id, "npc.hero")
+        self.assertEqual(entry.tags, ["second-tag"])
+        self.assertEqual(entry.content, "Second version.")
+
 
 # ---------------------------------------------------------------------------
 # Core integration tests — require a temp git project
@@ -237,6 +265,56 @@ class TestKbExtract(unittest.TestCase):
         p.write_text(content, encoding="utf-8")
         return str(p)
 
+    def test_multi_file_extract_inserts_all_objects(self) -> None:
+        path1 = self._write_md("one.md", """\
+```kb
+---
+id: person.alice
+---
+Alice.
+```""")
+        path2 = self._write_md("two.md", """\
+```kb
+---
+id: person.bob
+---
+Bob.
+```""")
+        result = kb_extract([path1, path2])
+        self.assertEqual(result.errors, [])
+        self.assertEqual(sorted(result.inserted), ["person.alice", "person.bob"])
+        self.assertEqual(result.updated, [])
+        self.assertTrue((self.root / "knowledge" / "person" / "alice.md").exists())
+        self.assertTrue((self.root / "knowledge" / "person" / "bob.md").exists())
+
+    def test_multi_file_duplicate_id_last_file_wins(self) -> None:
+        path1 = self._write_md("first.md", """\
+```kb
+---
+id: npc.hero
+tags:
+  - first-tag
+---
+First version.
+```""")
+        path2 = self._write_md("second.md", """\
+```kb
+---
+id: npc.hero
+tags:
+  - second-tag
+---
+Second version.
+```""")
+        result = kb_extract([path1, path2])
+        self.assertEqual(result.errors, [])
+        obj_path = self.root / "knowledge" / "npc" / "hero.md"
+        self.assertTrue(obj_path.exists())
+        self.assertEqual(obj_path.read_text(), "Second version.")
+        store = KnowledgeStore(self.root)
+        tags = store.get_tags("npc.hero")
+        self.assertEqual(tags, ["second-tag"])
+
     def test_insert_single_object(self) -> None:
         path = self._write_md("objects.md", """\
 ```kb
@@ -248,7 +326,7 @@ tags:
 Alice is a rebel.
 ```
 """)
-        result = kb_extract(path)
+        result = kb_extract([path])
         self.assertEqual(result.errors, [])
         self.assertEqual(result.inserted, ["person.alice"])
         self.assertEqual(result.updated, [])
@@ -272,7 +350,7 @@ id: person.bob
 Bob.
 ```
 """)
-        result = kb_extract(path)
+        result = kb_extract([path])
         self.assertEqual(result.errors, [])
         self.assertEqual(sorted(result.inserted), ["person.alice", "person.bob"])
         self.assertEqual(result.updated, [])
@@ -296,7 +374,7 @@ id: person.alice
 New content.
 ```
 """)
-        result = kb_extract(path)
+        result = kb_extract([path])
         self.assertEqual(result.errors, [])
         self.assertEqual(result.inserted, [])
         self.assertEqual(result.updated, ["person.alice"])
@@ -315,7 +393,7 @@ tags:
 The hero.
 ```
 """)
-        result = kb_extract(path)
+        result = kb_extract([path])
         self.assertEqual(result.errors, [])
         kb = KnowledgeStore(self.root)
         tags = kb.get_tags("npc.hero")
@@ -341,7 +419,7 @@ tags:
 New content.
 ```
 """)
-        result = kb_extract(path)
+        result = kb_extract([path])
         self.assertEqual(result.errors, [])
         kb2 = KnowledgeStore(self.root)
         tags = kb2.get_tags("npc.hero")
@@ -350,7 +428,7 @@ New content.
 
     def test_file_not_found_raises(self) -> None:
         with self.assertRaises(LensException) as ctx:
-            kb_extract("/nonexistent/path/objects.md")
+            kb_extract(["/nonexistent/path/objects.md"])
         self.assertIn("file not found", str(ctx.exception))
 
     def test_invalid_id_skipped_with_error(self) -> None:
@@ -369,14 +447,14 @@ id: person.valid
 Valid content.
 ```
 """)
-        result = kb_extract(path)
+        result = kb_extract([path])
         self.assertEqual(len(result.errors), 1)
         self.assertIn("invalid id", result.errors[0])
         self.assertEqual(result.inserted, ["person.valid"])
 
     def test_no_blocks_returns_empty_result(self) -> None:
         path = self._write_md("empty.md", "Just plain text, no kb blocks.")
-        result = kb_extract(path)
+        result = kb_extract([path])
         self.assertEqual(result.errors, [])
         self.assertEqual(result.inserted, [])
         self.assertEqual(result.updated, [])
@@ -406,7 +484,7 @@ Bob.
             ["git", "commit", "-m", "add multi"],
             cwd=self.root, capture_output=True, check=True,
         )
-        kb_extract(path)
+        kb_extract([path])
         # Check that changes are unstaged (pending)
         r = subprocess.run(
             ["git", "diff", "--name-only"],
@@ -419,6 +497,35 @@ Bob.
         all_pending = r.stdout.strip() + "\n" + untracked.stdout.strip()
         self.assertIn("alice.md", all_pending)
         self.assertIn("bob.md", all_pending)
+
+    def test_duplicate_blocks_single_file_last_wins_without_tag_merge(self) -> None:
+        path = self._write_md("dupes.md", """\
+```kb
+---
+id: npc.hero
+tags:
+  - first-tag
+---
+First version.
+```
+
+```kb
+---
+id: npc.hero
+tags:
+  - second-tag
+---
+Second version.
+```
+""")
+        result = kb_extract([path])
+        self.assertEqual(result.errors, [])
+        obj_path = self.root / "knowledge" / "npc" / "hero.md"
+        self.assertTrue(obj_path.exists())
+        self.assertEqual(obj_path.read_text(), "Second version.")
+        store = KnowledgeStore(self.root)
+        tags = store.get_tags("npc.hero")
+        self.assertEqual(tags, ["second-tag"])
 
 
 if __name__ == "__main__":

@@ -436,6 +436,23 @@ class TestKbCli(unittest.TestCase):
 
         shutil.rmtree(self.tmp, ignore_errors=True)
 
+    def _run_extract(self, path: str) -> str:
+        from io import StringIO
+        import sys
+        from unittest.mock import patch as _patch
+
+        with _patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+            from lens.cli.commands.kb import extract
+
+            old_stdout, old_stderr = sys.stdout, sys.stderr
+            try:
+                out_buf, err_buf = StringIO(), StringIO()
+                sys.stdout, sys.stderr = out_buf, err_buf
+                extract(path)
+                return out_buf.getvalue() + err_buf.getvalue()
+            finally:
+                sys.stdout, sys.stderr = old_stdout, old_stderr
+
     def _run_store(self, id: str, content: str | None = None, use_template: bool = False) -> None:
         with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
             from lens.cli.commands.kb import add
@@ -681,6 +698,95 @@ class TestKbCli(unittest.TestCase):
         )
         self.assertIn("Usage", result.stdout + result.stderr)
         self.assertIn("ID", result.stdout + result.stderr)
+
+    def test_cli_extract_directory_multi_file_single_transaction(self) -> None:
+        # Build nested directory with multiple .md files
+        sub = self.root / "notes" / "chapter1"
+        sub.mkdir(parents=True, exist_ok=True)
+        top_file = self.root / "notes" / "top.md"
+        top_file.write_text(
+            """\
+```kb
+---
+id: person.alice
+---
+Alice.
+```""",
+            encoding="utf-8",
+        )
+        sub_file = sub / "child.md"
+        sub_file.write_text(
+            """\
+```kb
+---
+id: person.bob
+---
+Bob.
+```""",
+            encoding="utf-8",
+        )
+
+        out = self._run_extract(str(self.root / "notes"))
+        self.assertIn("Inserted:", out)
+
+        # At least some writes should be pending in a single transaction
+        r = subprocess.run(
+            ["git", "diff", "--name-only"],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+        )
+        untracked = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+        )
+        all_pending = r.stdout.strip() + "\n" + untracked.stdout.strip()
+        self.assertTrue("alice.md" in all_pending or "bob.md" in all_pending)
+
+    def test_cli_extract_directory_duplicate_id_last_visited_wins(self) -> None:
+        base = self.root / "notes2"
+        left = base / "a"
+        right = base / "b"
+        left.mkdir(parents=True, exist_ok=True)
+        right.mkdir(parents=True, exist_ok=True)
+
+        # Lexicographical directory order: "a" then "b"; within each,
+        # files are sorted by name.
+        (left / "hero.md").write_text(
+            """\
+```kb
+---
+id: npc.hero
+tags:
+  - first-tag
+---
+First version.
+```""",
+            encoding="utf-8",
+        )
+        (right / "hero.md").write_text(
+            """\
+```kb
+---
+id: npc.hero
+tags:
+  - second-tag
+---
+Second version.
+```""",
+            encoding="utf-8",
+        )
+
+        self._run_extract(str(base))
+
+        obj_path = self.root / "knowledge" / "npc" / "hero.md"
+        self.assertTrue(obj_path.exists())
+        self.assertEqual(obj_path.read_text(), "Second version.")
+        store = KnowledgeStore.for_project(self.root)
+        tags = store.get_tags("npc.hero")
+        self.assertEqual(tags, ["second-tag"])
 
 
 class TestKnowledgeDatasets(unittest.TestCase):
