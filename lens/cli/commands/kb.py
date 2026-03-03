@@ -7,6 +7,7 @@ from lens.core.knowledge import KnowledgeObject, validate_ids_exist
 from lens.core.commands.kb import (
     kb_add,
     kb_edit,
+    kb_extract,
     kb_template,
     kb_tag,
     kb_delete,
@@ -19,7 +20,7 @@ from lens.core.commands.kb import (
 from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
 
-app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete, with-tag).")
+app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete, with-tag, extract).")
 
 
 @app.command(no_args_is_help=True)
@@ -245,3 +246,32 @@ def with_tag(
                     for cid in child_ids:
                         if cid in result.objects:
                             _print_obj(result.objects[cid])
+
+
+@app.command(no_args_is_help=True)
+def extract(
+    file: str = typer.Argument(..., help="Markdown file containing ```kb blocks"),
+) -> None:
+    """Extract and upsert KB objects from a structured markdown file (single transaction).
+
+    Each ```kb block must contain YAML front matter (delimited by ---) with an
+    'id' field and an optional 'tags' list. The block body becomes the object content.
+    Content between blocks is ignored.
+    """
+    try:
+        result = kb_extract(file)
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    for err in result.errors:
+        typer.echo(f"Warning: {err}", err=True)
+
+    if result.inserted:
+        typer.echo(f"Inserted: {', '.join(result.inserted)}")
+    if result.updated:
+        typer.echo(f"Updated: {', '.join(result.updated)}")
+    if not result.inserted and not result.updated:
+        typer.echo("No objects processed.")
+    if result.errors and not result.inserted and not result.updated:
+        raise typer.Exit(1)

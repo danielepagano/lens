@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, cast
+
+import yaml
 
 from lens.core.address import NarrativeAddress
 from lens.core.context import (
@@ -234,3 +239,143 @@ def kb_edit(
         return
 
     kb_store.store_object(id, content)
+
+
+# ---------------------------------------------------------------------------
+# Structured KB extraction
+# ---------------------------------------------------------------------------
+
+_FENCE_OPEN_RE = re.compile(r"^```kb\s*$")
+_FENCE_CLOSE_RE = re.compile(r"^```\s*$")
+
+
+@dataclass
+class KbExtractEntry:
+    id: str
+    tags: list[str] = field(default_factory=lambda: cast(list[str], []))
+    content: str = ""
+    source_line: int = 0  # 1-based line of the opening fence
+
+
+@dataclass
+class KbExtractResult:
+    inserted: list[str] = field(default_factory=lambda: cast(list[str], []))
+    updated: list[str] = field(default_factory=lambda: cast(list[str], []))
+    errors: list[str] = field(default_factory=lambda: cast(list[str], []))
+
+
+def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
+    """Parse ```kb ... ``` blocks from *text*.
+
+    Returns ``(entries, errors)`` where errors are human-readable messages for
+    blocks that could not be parsed (missing front matter, missing id, etc.).
+    """
+    entries: list[KbExtractEntry] = []
+    errors: list[str] = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        if not _FENCE_OPEN_RE.match(lines[i]):
+            i += 1
+            continue
+        open_line = i + 1  # 1-based
+        i += 1
+        block: list[str] = []
+        while i < len(lines) and not _FENCE_CLOSE_RE.match(lines[i]):
+            block.append(lines[i])
+            i += 1
+        i += 1  # skip closing fence (or advance past EOF)
+
+        # Locate the two '---' delimiters for front matter.
+        dash_indices: list[int] = [
+            j for j, ln in enumerate(block) if ln.strip() == "---"
+        ]
+        if len(dash_indices) < 2:
+            errors.append(
+                f"line {open_line}: kb block has no valid front matter (need two '---' lines)"
+            )
+            continue
+
+        fm_start = dash_indices[0] + 1
+        fm_end = dash_indices[1]
+        fm_text = "\n".join(block[fm_start:fm_end])
+        content_lines = block[fm_end + 1 :]
+        # Strip a single leading blank line from content (common after closing ---)
+        if content_lines and content_lines[0].strip() == "":
+            content_lines = content_lines[1:]
+
+        try:
+            fm_raw: Any = yaml.safe_load(fm_text)
+        except yaml.YAMLError as exc:
+            errors.append(f"line {open_line}: YAML parse error in front matter: {exc}")
+            continue
+
+        if not isinstance(fm_raw, dict):
+            errors.append(f"line {open_line}: front matter must be a YAML mapping")
+            continue
+
+        fm = cast(dict[str, Any], fm_raw)
+        raw_id = fm.get("id")
+        if not raw_id or not isinstance(raw_id, str):
+            errors.append(f"line {open_line}: kb block is missing required 'id' field")
+            continue
+
+        raw_tags = fm.get("tags", [])
+        tags: list[str] = (
+            [str(t) for t in cast(list[Any], raw_tags)]
+            if isinstance(raw_tags, list)
+            else []
+        )
+
+        entries.append(
+            KbExtractEntry(
+                id=raw_id.strip(),
+                tags=tags,
+                content="\n".join(content_lines),
+                source_line=open_line,
+            )
+        )
+
+    return entries, errors
+
+
+def kb_extract(file_path: str) -> KbExtractResult:
+    """Parse *file_path* for ```kb blocks and upsert them into the KB store.
+
+    All writes go through the KnowledgeStore singleton, which uses a single
+    lazily-created Storage — so all changes land as one pending git transaction.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise LensException(f"file not found: {file_path}")
+
+    text = path.read_text(encoding="utf-8")
+    entries, parse_errors = parse_kb_fences(text)
+
+    result = KbExtractResult(errors=list(parse_errors))
+
+    if not entries:
+        return result
+
+    kb = get_store()
+
+    for entry in entries:
+        try:
+            parse_id(entry.id)
+        except ValueError as e:
+            result.errors.append(
+                f"line {entry.source_line}: invalid id '{entry.id}': {e}"
+            )
+            continue
+
+        is_new = not kb.exists(entry.id)
+        kb.store_object(entry.id, entry.content)
+
+        if entry.tags:
+            err = kb.add_tags(entry.id, entry.tags)
+            if err:
+                result.errors.append(f"line {entry.source_line}: {err}")
+
+        (result.inserted if is_new else result.updated).append(entry.id)
+
+    return result
