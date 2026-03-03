@@ -18,7 +18,8 @@ from lens.core.context import (
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
 from lens.core.llm import LLMError, generate_stream
-from lens.core.project import find_project_root, is_dataset_root, resolve_address
+from lens.core.project import find_git_root_from, find_project_root, is_dataset_root, resolve_address
+from lens.core.storage import Storage
 
 
 def get_store() -> KnowledgeStore:
@@ -357,8 +358,10 @@ def kb_extract(file_path: str) -> KbExtractResult:
     if not entries:
         return result
 
-    kb = get_store()
-
+    root = find_project_root()
+    git_root = find_git_root_from(root)
+    storage = Storage(git_root)
+    kb = KnowledgeStore.for_project(root, storage=storage)
     for entry in entries:
         try:
             parse_id(entry.id)

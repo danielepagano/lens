@@ -120,9 +120,12 @@ class KnowledgeStore:
     @classmethod
     def for_project(cls, project_root: Path, storage: Storage | None = None) -> KnowledgeStore:
         key = project_root.resolve()
+        if storage is not None:
+            dataset_stores = cls._build_dataset_stores(project_root)
+            return cls(project_root, storage=storage, dataset_stores=dataset_stores)
         if key not in cls._registry:
             dataset_stores = cls._build_dataset_stores(project_root)
-            cls._registry[key] = cls(project_root, storage=storage, dataset_stores=dataset_stores)
+            cls._registry[key] = cls(project_root, storage=None, dataset_stores=dataset_stores)
         return cls._registry[key]
 
     @classmethod

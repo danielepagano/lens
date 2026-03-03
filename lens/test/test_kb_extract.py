@@ -398,6 +398,14 @@ id: person.bob
 Bob.
 ```
 """)
+        subprocess.run(
+            ["git", "add", "multi.md"],
+            cwd=self.root, capture_output=True, check=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "add multi"],
+            cwd=self.root, capture_output=True, check=True,
+        )
         kb_extract(path)
         # Check that changes are unstaged (pending)
         r = subprocess.run(
