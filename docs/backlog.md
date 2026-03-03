@@ -39,12 +39,6 @@
 
 - **`attach` Operator** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
 
-- **Structured KB extraction**: define how to put multiple KB objects in a markdown file, with keys and tags and secrets, and reliably parse them in the KB store. This is used by the `design` operator, but also can be useful for tools and AIs to create reference data in bulk. Why not just create objects md files directly? Two reasons: tags need to be managed, and secrets needs to be encoded, and don't want AI to do either of those. Sure we can have "KB object precursors" with structured data for tags and secrets to encode, but that's more tools. In `design` we want the narrative nodes to define things, and because they come out of a narrative AI, the secrets are already encoded and we can copy them to KB verbatim without the user ever seeing them (unless they have verbose llm logging on for testing). If we want a tool outside of Lens to create these files, they would have no secrets, which is certainly the case for our reference data... and if we want them to have secret we have the code to encode the stuff anyway. So, these markdown documents need:  
-  - Objects interspersed with other stuff we're not saving... discussions and thinking
-  - Each object needs the md payload, object ID, and tags. That's it.
-  - Using html comments cannot break the container of the object.
-  - Possible solution: fenced markdown block with front matter we parse and strip?
-
 - **Background KB extraction** *(infrastructure, not a player operator)*
   Faceted context compression: the write-side complement to RAG. A cheap/fast model (8B or equivalent) runs over recently committed narrative and updates opted-in KB objects using per-type extraction instructions. This also replaces any need for a dedicated `lore` operator: mid-campaign world amendments are just free `agent` chat, and extraction at checkpoint makes them stick into the right KB objects. Key design decisions:
     - **Trigger**: checkpoint. Runs when the user commits a checkpoint, which already has the right semantics (deliberate, meaningful boundary). Produces a single transaction with all proposed KB changes for user review — same audit pattern as the `edit` operator.
