@@ -37,8 +37,8 @@
 
 ## General Backlog
 
+- Add a role marker so we know which character is acting?
 - **`attach` Operator** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
-
 - **Background KB extraction** *(infrastructure, not a player operator)*
   Faceted context compression: the write-side complement to RAG. A cheap/fast model (8B or equivalent) runs over recently committed narrative and updates opted-in KB objects using per-type extraction instructions. This also replaces any need for a dedicated `lore` operator: mid-campaign world amendments are just free `agent` chat, and extraction at checkpoint makes them stick into the right KB objects. Key design decisions:
     - **Trigger**: checkpoint. Runs when the user commits a checkpoint, which already has the right semantics (deliberate, meaningful boundary). Produces a single transaction with all proposed KB changes for user review — same audit pattern as the `edit` operator.

@@ -43,7 +43,7 @@ The key design impetus of Lens is to curate and constrain the knowledge set and 
 
 To this extent, we divide our experience in two alternating phases:  
   - **Planning**: during planning we don't directly generate narrative, we instead reflect on the current state using various methods and with various goals (possibly over multiple LLM calls) with the effect of creating and changing KB objects instead. This can be done directly by the user, with LLM assistance, or by the AI autonomously (depending on the task). Planning can occur in a separate narrative tree for pre-adventure setup, or within a narrative tree (and thus aware of the place in the story) to remember changes, add plans, etc. In-narrative planning may also some details or generate an operator call ("in the morning, you were awakened by...").
-  - **Play**: The AI does not update KB objects during normal play, it's too specific of a task. The user can always change objects directly, but it's not something the LLM tries to do, it just focuses on executing. We do what to have triggers and mechanics to switch to planning, however.
+  - **Play**: The AI does not update KB objects during normal play, it's too specific of a task. The user can always change objects directly, but it's not something the LLM tries to do, it just focuses on executing. We do what to have triggers and mechanics to switch to planning, however. When we do play, the player may be controlling multiple characters; they need to specify who is acting as if there were multiple people talking at the table. They can 100% just say "Elara wants to..." but it may be more fun for them to pick a character and talk first person: it's where the "Role" part of roleplay comes out. This is orthogonal to operators, so it needs to be supported by Lens, but it's also quite simple because all it does is adds a character marker to the request. 
 
 ## RPG Objects Design
 
@@ -259,7 +259,7 @@ The primary operator. Receives directorial intent from the player, authors the s
 
 *Stakes*: When risk is live — something can go wrong, a decision is being forced, a check is warranted. The AI establishes what's at risk, names the check type and DC if needed, and narrates the consequence after the player reports results. The AI never describes outcomes before the roll.
 
-Transitions between modes are driven by the fiction, not by a quota of rolls. The mode is not a piece of data, is a continuum to balance. 
+Transitions between modes are fluid, driven by the fiction. The mode is not a piece of data, is a continuum to balance. 
 
 **The authority model in practice**:
 - Player input is character intent; the AI authors the attempt and the world's response
@@ -268,7 +268,7 @@ Transitions between modes are driven by the fiction, not by a quota of rolls. Th
 - Declared success is treated as goal, not result; the AI decides if it works or calls for a check
 - The AI holds these limits while staying cooperative — the resistance is the world working correctly, not the AI working against the player
 
-**System prompt idea**: Critical to get right. Posture + authority model + flow/stakes mode description + when to suggest `converse` (long dialogue developing) and `encounter` (initiative is called for).
+**System prompt idea**: Critical to get right. Posture + authority model + flow/stakes mode description + when to suggest `converse` (long dialogue developing) and `encounter` (initiative is called for). Knows the to call for a `design` session.
 
 ## Chat with NPC's (or among PC's) with `converse`
 
@@ -327,7 +327,7 @@ The world takes its turn the player skips time. This is a lot of like `design`, 
   - Decides if the requested rest period will be completed in full or not; this is the MAX time that will pass
   - Reviews all active fronts and decides what happens in each
   - Decides whether some event in a front actually interrupts the advance (war broke out, stop hanging out at the inn!) and finalized time that passed
-  - Generates `kc extract` style blocks to edit fronts
+  - Generates `kb extract` style blocks to edit fronts
   - Generates a line to append to the state log (Lens will only look at the last line anyway) 
   - Closes and returns to parent, generating a summary of anything the players would have heard about
   - Emits a follow-up operator to determines how to continue the story: PC's wake up, a messenger arrives, wolfs attack the camp, etc.
