@@ -203,13 +203,13 @@ Break longer trips into 2–3 stages, each with one challenge type (encounter, f
 
 ### Starting Combat
 
-Combat starts when — and only when — you say it does. Don't let players roll Initiative by fiat; some class features trigger on Initiative rolls. If a character initiates hostilities (casting a spell, making an attack), give them Advantage on their Initiative roll.
+Combat starts when the fiction demands it. If a character initiates hostilities (casting a spell, making an attack), give them Advantage on their Initiative roll.
 
 ### Initiative
 
 Roll 1d20 + Dexterity modifier. Higher result acts first. **You cannot delay your turn** — if a player wants to act later in response to something, they take the Ready action. Ties: DM decides (or use Dex score as tiebreaker, or act simultaneously).
 
-**Surprise (2024):** A creature that doesn't notice combat beginning has **Disadvantage on its Initiative roll**. Surprise is not a skipped turn — just a disadvantaged roll.
+**Surprise:** A creature that doesn't notice combat beginning has **Disadvantage on its Initiative roll**. Surprise is not a skipped turn — just a disadvantaged roll.
 
 ### On Each Turn
 
@@ -276,7 +276,7 @@ Use chase rules instead of normal movement (which makes chases mechanical and pr
 
 ### Hit Points
 
-HP represents durability and will to live. Loss has **no mechanical effect on capabilities** until HP reaches 0. **Bloodied (2024)**: at or below half HP maximum — narrate it visibly; some monster abilities trigger on this state.
+HP represents durability and will to live. Loss has **no mechanical effect on capabilities** until HP reaches 0. **Bloodied**: at or below half HP maximum — narrate it visibly; some monster abilities trigger on this state.
 
 ### Damage Rolls
 
@@ -358,20 +358,9 @@ Conditions are binary (you have it or you don't) except Exhaustion. Multiple app
 
 **Restrained**: Speed = 0. Your attacks: Disadvantage. Attacks against you: Advantage. Disadvantage on Dex saves.
 
-**Stunned**: Has Incapacitated. Speed = 0. Auto-fail Str and Dex saves. Attacks against you: Advantage. Note: Stunned no longer prevents movement in 2024 rules — Speed 0 still pins the creature in practice, but Paralyzed is the harder version (all close hits are Crits).
+**Stunned**: Has Incapacitated. Speed = 0. Auto-fail Str and Dex saves. Attacks against you: Advantage. Stunned does not prevent movement: speed 0 still pins the creature in practice, but Paralyzed is the harder version (all close hits are Crits).
 
 **Unconscious**: Has Incapacitated. Speed = 0. Falls Prone. Auto-fail Str and Dex saves. Attacks against you: Advantage. **All hits within 5 feet are Critical Hits.** Unaware of surroundings.
-
-### Fear and Mental Stress
-
-Use the **Frightened condition** as the baseline for supernatural fear. Wisdom saving throw; calibrate DC by situation:
-
-- DC 10: Harmless apparition in a sarcophagus
-- DC 15: Magical trap creates illusory manifestation of greatest fear
-- DC 20: Party faces a CR 13+ undead for the first time
-- DC 25: Witnessing a god's true form
-
-**Mental Stress**: For psychically or cosmically overwhelming encounters, consider a short-term mental stress effect (lasting minutes to hours) in addition to or instead of Frightened. Discuss with players before using these mechanics — they can be uncomfortable.
 
 ## Resting
 

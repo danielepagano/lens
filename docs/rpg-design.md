@@ -57,12 +57,9 @@ We need to design two kinds of objects:
 
 We want the core set for playing D&D or doing planning tasks, then try to split them by situation type. Operators pin the base plus any additional rules they need. We do NOT need all the rules of D&D in our rules corpus, because the AI _does not play the entire game_ (it's not an game engine). In particular all the rules for creating player characters don't belong here. So to create a ruleset we will proceed in progressive steps, keeping the artifact for each version in case we need to change our approach later. 
 
-Steps to create `rules` objects:  
-
-  1. Have a capable LLM **extract** the text from rule-books and "orient it" towards being an LLM prompt without excessive discourse, art, or play examples. Cut out whole chapters at this point if they are irrelevant, such as Character creation, and any chapter that has chunky reference materials like spells or items that we can just reference directly.
-  2. Do a finer-grain pass to **remove** anything we don't plan the AI to need to care about, so things the player always does, or it's not relevant to the kind of games/situations that will present themselves in this format. We should remember that any model smart enough to run this is already trained on a lot of RPGs, particularly D&D (mostly 2014 rules), so being overly specific about all rules may be unnecessary. So this pass should also simplify to target "an expert" VS "someone who never played an RPG". This step may change little, but it can be tuned to target a token count.
-  3. Given how we plan operators to functions, start **carving out** any rules that _definitely_ will NOT need to be known in certain situations from this monolith doc. This is actually quite difficult because most things can happen at any time: conditions can be applied during exploration, social skills can apply in combat, etc (this not just about breaking down the object, it's what we would NOT have in core). If we find these sets, split them off. What remains is the core, which is assumed to be referenced by all sub-sets.
-  4. **Edit** the rules for Lens interactions, reinforcing the Player-AI contract and how our operators at used. We can't state combat rules without keeping in mind that combat mostly happens outside of Lens by the user, otherwise the AI will immediately try to run combat. Since the rules are already split in that dimension, this should work naturally. Another key aspect specific to Lens is how the AI talks as the players: that aspect may actually be reinforced in some places, or rules may get confusing if we don't edit the text to account for that. This draft may need to be fine-tuned over time for effectiveness.
+We create two core rule objects:  
+  - `rules.engagement`: our AI-player contract (ruleset-agnostic)
+  - `rules.dnd`: D&D 2024 rules; like a compressed SRD without stuff we don't need (character creation, reference tables, etc) in the form of a prompt.
 
 #### Reference Objects
 
