@@ -1,12 +1,6 @@
 # D&D 2024 Rules Reference for AI DM
 
-> Mechanical foundation for AI operator prompts and KB entries.
-> Sources: *Player's Handbook* 2024, *Dungeon Master's Guide* 2024, Sage Advice Compendium 2024.
-> Voice: instructions to a model. No character creation, spell lists, feat catalogs, item catalogs, or adventure/campaign design.
-
----
-
-## Part 1: The D20 System
+## The D20 System
 
 ### When to Call a D20 Test
 
@@ -41,7 +35,7 @@ Roll 1d20 + ability modifier + Proficiency Bonus (if applicable) vs. DC or AC.
 - One source of each **exactly cancels** regardless of count — roll one d20.
 - Advantage/Disadvantage applies *after* any reroll — the reroll replaces one die, not both.
 
-**Heroic Inspiration (2024):** Spend to reroll any single die immediately after rolling; must use the new result. Can't stockpile — give excess to another PC.
+**Heroic Inspiration:** Spend to reroll any single die immediately after rolling; must use the new result. Can't stockpile — give excess to another PC.
 
 ### Difficulty Classes
 
@@ -104,9 +98,7 @@ When an effect causes harm outside normal rules:
 - Nuisance (minor hazard, brief exposure): 1d10 (levels 1–4), 2d10 (5–10), 4d10 (11–16), 10d10 (17–20)
 - Deadly (significant threat, could kill): 2d10 (1–4), 4d10 (5–10), 10d10 (11–16), 18d10 (17–20)
 
----
-
-## Part 2: Actions, Bonus Actions, Reactions
+## Actions, Bonus Actions, Reactions
 
 ### The Action Economy
 
@@ -134,9 +126,7 @@ Each turn: **move** (up to Speed) + **one Action** + **one Bonus Action** (if av
 
 **Opportunity Attack (Reaction):** When a creature you can see **voluntarily leaves your reach** using its action, Bonus Action, Reaction, or Speed — make one melee attack against it. Does *not* trigger on teleportation, involuntary movement, or Disengage. If a readied Reaction and an OA opportunity arise simultaneously, choosing the OA consumes your Reaction and the readied action is lost.
 
----
-
-## Part 3: Social Interaction
+## Social Interaction
 
 ### NPC Attitudes
 
@@ -154,9 +144,7 @@ Balance free roleplaying with ability checks — don't call for checks on every 
 
 Cha (Deception, Intimidation, Performance, or Persuasion) or Wis (Animal Handling) check. On success, attitude shifts one step toward Friendly or NPC complies with a reasonable request. On failure, don't slam the door — offer partial results, complications, or a changed approach that might work.
 
----
-
-## Part 4: Exploration
+## Exploration
 
 ### Vision and Light
 
@@ -211,9 +199,7 @@ Break longer trips into 2–3 stages, each with one challenge type (encounter, f
 - **Dead Magic Zone**: As Antimagic Field spell — all magic ceases within (typically ≤300 ft diameter).
 - **Wild Magic Zone**: Spellcasting triggers a Wild Magic surge.
 
----
-
-## Part 5: Combat
+## Combat
 
 ### Starting Combat
 
@@ -235,14 +221,6 @@ In any order: **move** (up to Speed, can split before/after actions) + **one Act
 - **Dropping Prone**: Free. Standing up costs half your Speed.
 - **Passing through spaces**: You can move through an ally's, Incapacitated creature's, Tiny creature's, or a creature 2+ sizes different from yours. You cannot willingly **end** your move in another creature's space.
 - **Diagonal movement (grid)**: Count every other diagonal as 2 squares (1–2–1–2 rule), or each as 1 for simplicity — decide consistently.
-
-### Creature Sizes
-
-- Tiny: 2.5 × 2.5 ft (¼ square)
-- Small / Medium: 5 × 5 ft (1 square)
-- Large: 10 × 10 ft (2 × 2 squares)
-- Huge: 15 × 15 ft (3 × 3 squares)
-- Gargantuan: 20 × 20 ft or larger (4 × 4 squares+)
 
 ### Making an Attack
 
@@ -284,15 +262,6 @@ Melee weapons without the Thrown property have Disadvantage unless the attacker 
 - **Hasten certain outcomes** — if victory is clearly inevitable and combat is dragging, simply have the last monster drop.
 - **Adjust difficulty via fiction**, not dice: have monsters flee when bloodied, call in reinforcements, change terrain, or switch tactics entirely.
 
-### Mobs
-
-When running large groups of identical monsters:
-
-- Use **average damage** from the stat block instead of rolling.
-- If a spell/attack reduces a monster to a handful of HP, assume it's eliminated.
-- **Divide into mobs of 5–8** identical creatures; spread their turns between character turns. Never more mobs than characters.
-- **Average results without rolling**: Find the minimum roll needed to succeed, find the percentage of d20 rolls at or above that number, apply that fraction to the mob count. (E.g., 10 orcs need 15+; ~30% of rolls are 15+; ~3 succeed.)
-
 ### Chases
 
 Use chase rules instead of normal movement (which makes chases mechanical and predictable):
@@ -303,9 +272,7 @@ Use chase rules instead of normal movement (which makes chases mechanical and pr
 - The quarry **escapes** when: distance exceeds pursuit range; out of sight for 3 consecutive rounds (requires 3 consecutive DC 15 Perception or Survival checks to reacquire); or they enter a space the pursuer can't follow.
 - The pursuer **catches up** when distance closes to melee reach.
 
----
-
-## Part 6: Damage and Healing
+## Damage and Healing
 
 ### Hit Points
 
@@ -355,9 +322,7 @@ Restores current HP up to (not exceeding) maximum. Cannot heal a dead creature.
 
 Separate pool. Damage depletes Temp HP first, then HP. **Do not stack** — take the higher of existing vs. new grant. Healing does not restore Temp HP. Not real HP — spells/features that trigger on healing do not trigger from Temp HP.
 
----
-
-## Part 7: Conditions
+## Conditions
 
 Conditions are binary (you have it or you don't) except Exhaustion. Multiple applications of the same condition share the longest duration — effects don't compound. To remove a condition: meet its counter (stand up for Prone, end Concentration for Incapacitated via that route) or let the effect expire.
 
@@ -408,16 +373,8 @@ Use the **Frightened condition** as the baseline for supernatural fear. Wisdom s
 
 **Mental Stress**: For psychically or cosmically overwhelming encounters, consider a short-term mental stress effect (lasting minutes to hours) in addition to or instead of Frightened. Discuss with players before using these mechanics — they can be uncomfortable.
 
----
-
-## Part 8: Resting
+## Resting
 
 **Short Rest**: At least 1 hour of light activity. Spend any number of Hit Dice (roll each + Con modifier) to regain HP. Must have at least 1 HP to begin. DM controls pacing by controlling when safe downtime is available.
 
 **Long Rest**: At least 8 hours (6 hours sleep, no more than 2 hours light activity). Must have at least 1 HP to begin. Cannot start another Long Rest until 16 hours have passed. On completion: all lost HP restored; all spent Hit Dice restored; Exhaustion reduced by 1; most class features recharge. Features that recharge "per day" recharge on a Long Rest, not at midnight.
-
----
-
-## Part 9: NPCs
-
-NPCs have an attitude (Friendly/Indifferent/Hostile), one or two personality adjectives, and a secret goal. Their full details are managed as KB objects.
