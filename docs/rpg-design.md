@@ -284,9 +284,9 @@ Not targeted at a single NPC. The mode covers any conversational scene — one N
 
 ## Roll initiative! It's an `encounter`
 
-A focused sub-node for structured combat. Applies exactly while initiative is being tracked; exits when initiative ends. The rule is that simple.
+A focused sub-node for structured combat. Applies exactly while initiative is being tracked; exits when initiative ends.
 
-**Trigger**: Operator, can be called by the player or DM when initiative is rolled.
+**Trigger**: Operator, can be called by the player or DM when initiative is rolled. However, the AI needs to have sufficient mechanical content to offer a meaningful encounter. Calling the `design` operator for this task may be required before the encounter can start if it was not planned.
 
 **Setup phase**: The AI describes the encounter — location, what the enemies are trying to accomplish (not fine-grained or "attack," but tactics, and why they're here and what they want... could be just hungry zombies too), and what tactical features of the environment matter. Encounter weight is established narratively here: skirmish, grind, or something to potentially flee from.
 
