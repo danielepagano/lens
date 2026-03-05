@@ -73,6 +73,22 @@ Run this first to verify everything is wired up before a long extraction run.
 
 ---
 
+### `ddb parse`
+
+Loads a URL in the connected Chrome tab, runs a parser (spell, equipment, item, monster, or list), and pretty-prints the result as JSON. Useful for testing parsers against live pages.
+
+```bash
+# Spell page with spell parser (should succeed)
+ddb parse --parser spell --url "https://www.dndbeyond.com/spells/2618909-fly"
+
+# Same spell URL with equipment parser (should fail — wrong page shape)
+ddb parse --parser equipment --url "https://www.dndbeyond.com/spells/2618909-fly"
+```
+
+Sample D&D Beyond URLs can be taken from the `[source: ...]` lines in `datasets/dnd/knowledge/spell/*.md` (e.g. `fly.md`, `fireball.md`). For list pages use a URL like `https://www.dndbeyond.com/spells?filter-source=<id>` with `--parser list`.
+
+---
+
 ### `ddb sources`
 
 Lists all known sources from `config/sources.json`.

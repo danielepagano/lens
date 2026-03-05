@@ -1,0 +1,36 @@
+**Cultist Hierophant** · Medium Or Small Humanoid, Neutral
+
+**AC** 16 · **HP** 144 · **Speed** 30 ft.
+
+| STR | DEX | CON | INT | WIS | CHA |
+|-----|-----|-----|-----|-----|-----|
+| 14 (+2) | 18 (+4) | 18 (+4) | 13 (+1) | 16 (+3) | 20 (+5) |
+
+**Skills** Perception +7, Persuasion +9, Religion +5
+**Senses** Passive Perception 17
+**Languages** Celestial, Common
+**CR** 10
+
+---
+**Actions**
+
+Multiattack. The cultist makes three attacks, using Pact Blade or Radiant Ray in any combination.
+
+Pact Blade. Melee Attack Roll: +9, reach 5 ft. Hit: 12 (2d6 + 5) Slashing damage plus 18 (4d8) Radiant damage.
+
+Radiant Ray. Ranged Attack Roll: +9, range 120 ft. Hit: 31 (4d12 + 5) Radiant damage.
+
+Spellcasting. The cultist casts one of the following spells, using Charisma as the spellcasting ability (spell save DC 17):
+
+At Will: Thaumaturgy 1/Day Each: Jallarzi’s Storm of Radiance (level 7 version), Mass Suggestion
+
+---
+**Description**
+
+Cultist hierophants are leaders who oversee the lives of their underlings, dictate the edicts of the cult, and interpret their patron’s will. They possess supernatural powers gained from the cult’s patron, supernatural sources, or the power of their own fanaticism. These leaders know their cult’s deepest secrets and often control strange relics, mystical sites, and monstrous servants.
+
+Cultists use magic and extreme measures to spread radical beliefs. Some privately pursue esoteric secrets, while others form shadowy cabals seeking to bring about terrifying ends. Cultists often follow obscure mystical traditions or obsess over interpretations of ancient prophecies. They might worship supernatural patrons—deities, otherworldly creatures, manipulative alien minds, or stranger forces. Roll on or choose a result from the Cultist Agendas table to inspire what a cultist seeks to achieve.
+
+Cults often identify with symbols that exemplify their beliefs. Such symbols might mark objects important to the cult, as well as the dress and bodies of cultists themselves. These symbols might be broadly understandable, or they might have meaning only to cultists. Roll twice on or choose results from the Cult Symbols table to inspire a cult’s icons.
+
+[source: https://www.dndbeyond.com/monsters/5194955-cultist-hierophant]: #

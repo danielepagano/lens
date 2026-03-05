@@ -16,7 +16,15 @@ import { MonsterExtractor } from "./extractors/monsters.js";
 import { ItemExtractor } from "./extractors/items.js";
 import { EquipmentExtractor } from "./extractors/equipment.js";
 import type { ListExtractor } from "./extractors/base.js";
-import { extractListItems } from "./parsers/list-page.js";
+import {
+  extractListItems,
+  parseListPage,
+  type ContentType,
+} from "./parsers/list-page.js";
+import { parseSpellPage } from "./parsers/spell-page.js";
+import { parseEquipmentPage } from "./parsers/equipment-page.js";
+import { parseItemPage } from "./parsers/item-page.js";
+import { parseMonsterPage } from "./parsers/monster-page.js";
 
 const program = new Command();
 
@@ -50,6 +58,74 @@ program
     }
     console.log(`OK. Page title: "${title}"`);
     console.log("D&D Beyond session is active.");
+    await browser.close();
+  });
+
+// ── parse ─────────────────────────────────────────────────────────────────────
+// For testing: load a URL, run a parser, pretty-print JSON. Use spell URL + spell
+// parser (works); spell URL + equipment parser (fails with selector error).
+program
+  .command("parse")
+  .description(
+    "Load a URL, run a parser (spell|equipment|item|monster|list), print JSON. For testing."
+  )
+  .requiredOption("--parser <name>", "Parser: spell | equipment | item | monster | list")
+  .requiredOption("--url <url>", "Page URL to load (e.g. a D&D Beyond spell or list page)")
+  .action(async (cmdOpts: { parser: string; url: string }) => {
+    const opts = program.opts();
+    const parserName = cmdOpts.parser.toLowerCase();
+    const url = cmdOpts.url;
+
+    const browser = await connectCDP(opts.cdpUrl as string);
+    const page = getPage(browser);
+
+    const isListParser = parserName === "list";
+    const waitUntil = cmdOpts.debug || isListParser ? "domcontentloaded" : "networkidle";
+    const timeout = cmdOpts.debug || isListParser ? 60000 : 30000;
+    try {
+      await page.goto(url, { waitUntil, timeout });
+    } catch (err) {
+      console.error("Failed to load URL:", err instanceof Error ? err.message : String(err));
+      await browser.close();
+      process.exit(1);
+    }
+
+    try {
+      let result: unknown;
+      switch (parserName) {
+        case "spell":
+          result = await parseSpellPage(page);
+          break;
+        case "equipment":
+          result = await parseEquipmentPage(page);
+          break;
+        case "item":
+          result = await parseItemPage(page);
+          break;
+        case "monster":
+          result = await parseMonsterPage(page, []);
+          break;
+        case "list": {
+          const pathname = new URL(url).pathname;
+          const typeMatch = pathname.match(/^\/(spells|monsters|magic-items|equipment)/);
+          const type = (typeMatch?.[1] ?? "spells") as ContentType;
+          result = await parseListPage(page, type);
+          break;
+        }
+        default:
+          console.error(
+            `Unknown parser "${parserName}". Use: spell | equipment | item | monster | list`
+          );
+          await browser.close();
+          process.exit(1);
+      }
+      console.log(JSON.stringify(result, null, 2));
+    } catch (err) {
+      console.error("Parse error:", err instanceof Error ? err.message : String(err));
+      await browser.close();
+      process.exit(1);
+    }
+
     await browser.close();
   });
 

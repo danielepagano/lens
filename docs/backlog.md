@@ -37,7 +37,6 @@
 
 ## General Backlog
 
-- **D&D Beyond Reference Data Extractor**. [Design here](ddb-extract-design.md)
 - Add a role marker so we know which character is acting?
 - **`attach` Operator** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
 - **Background KB extraction** *(infrastructure, not a player operator)*

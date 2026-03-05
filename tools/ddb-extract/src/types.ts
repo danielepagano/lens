@@ -39,6 +39,7 @@ export interface MonsterData {
   actions: string;
   reactions?: string;
   legendaryActions?: string;
+  description?: string;
   habitats: string[];
 }
 

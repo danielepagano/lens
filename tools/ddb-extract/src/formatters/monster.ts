@@ -53,5 +53,9 @@ export function formatMonster(data: MonsterData, source: string): string {
     body += `\n\n---\n**Legendary Actions**\n\n${data.legendaryActions}`;
   }
 
+  if (data.description) {
+    body += `\n\n---\n**Description**\n\n${data.description}`;
+  }
+
   return wrapKbBlock(id, tags, body);
 }
