@@ -35,19 +35,12 @@ What ochre jellies can’t dissolve they leave behind. Roll on or choose a resul
 Ochre Jelly Leftovers
 
 | 1d6 | After a Meal, the Ochre Jelly Leaves Behind … |
-
 | --- | --- |
-
 | 1 | A bone etched with a word or an eerie symbol. |
-
 | 2 | Broken dragonborn or tiefling horns. |
-
 | 3 | An ornate prosthetic limb. |
-
 | 4 | The skeleton of an explorer’s pet (perhaps a small dog, monkey, or parrot). |
-
 | 5 | A skull with gold teeth worth 1d4 GP. |
-
 | 6 | A spotless suit of metal armor. |
 
 [source: https://www.dndbeyond.com/monsters/5195148-ochre-jelly]: #

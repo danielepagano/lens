@@ -37,23 +37,14 @@ Roll on or choose a result from the Guardian Naga Lore table to inspire what a n
 Guardian Naga Lore
 
 | 1d8 | The Guardian Naga Recalls … |
-
 | --- | --- |
-
 | 1 | The last words of an ancient sage or leader. |
-
 | 2 | The location of a hidden city or continent. |
-
 | 3 | A magic word, password, or riddle’s answer. |
-
 | 4 | The names of all who have told it stories. |
-
 | 5 | An otherwise forgotten ritual or spell. |
-
 | 6 | Recipes using regional ingredients. |
-
 | 7 | Stories of forgotten gods and local spirits. |
-
 | 8 | The vulnerabilities of a legendary monster. |
 
 [source: https://www.dndbeyond.com/monsters/5195066-guardian-naga]: #

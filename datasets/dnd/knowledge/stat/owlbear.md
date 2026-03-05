@@ -34,15 +34,10 @@ Owlbears dwell in distinctive dens. Roll on or choose a result from the Owlbear 
 Owlbear Den Features
 
 | 1d4 | An Owlbear Den Contains … |
-
 | --- | --- |
-
 | 1 | Evidence of previous occupants, like bandits, wolves, or dragons. |
-
 | 2 | Heaps of regurgitated pellets studded with coins or other treasure. |
-
 | 3 | A nest with 1d6 owlbear eggs. |
-
 | 4 | Passages through the earth or hollow trees. |
 
 [source: https://www.dndbeyond.com/monsters/5195152-owlbear]: #

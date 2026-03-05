@@ -61,27 +61,16 @@ Among the best-known animal lords are those that represent cats, hawks, lizards,
 Sage Animal Lord Appearances
 
 | 1d10 | Bestial Shape |
-
 | --- | --- |
-
 | 1 | Coyote |
-
 | 2 | Crow |
-
 | 3 | Elephant |
-
 | 4 | Lizard |
-
 | 5 | Mouse |
-
 | 6 | Owl |
-
 | 7 | Salmon |
-
 | 8 | Spider |
-
 | 9 | Turtle |
-
 | 10 | Whale |
 
 [source: https://www.dndbeyond.com/monsters/5197987-animal-lord-sage]: #

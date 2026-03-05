@@ -30,15 +30,10 @@ Weretigers shape-shift from humanoid forms into tigers or tiger-humanoid hybrids
 Weretiger Wards
 
 | 1d4 | The Weretiger Protects A … |
-
 | --- | --- |
-
 | 1 | Legendary weapon or symbol of rulership. |
-
 | 2 | Proving ground for prophesied heroes. |
-
 | 3 | Rare species of magical plant or animal. |
-
 | 4 | Sacred fountain with magical waters. |
 
 [source: https://www.dndbeyond.com/monsters/5195266-weretiger]: #

@@ -33,19 +33,12 @@ Stone golems are typically created to protect places of significance to a group,
 Stone Golem Orders
 
 | 1d6 | The Stone Golem Follows Orders To … |
-
 | --- | --- |
-
 | 1 | Allow only those wearing ritual garb to pass. |
-
 | 2 | Cast Slow on and aid in apprehending anyone who touches a city’s prized relic. |
-
 | 3 | Destroy a dam or bridge at the command of one bearing a ruler’s medallion of office. |
-
 | 4 | Obey whoever places a missing crest in its chest, then deactivate for a year. |
-
 | 5 | Reveal a hidden passage to those who recite a leader’s final words. |
-
 | 6 | Watch for and do battle with the type of monster that slew the hero it resembles. |
 
 [source: https://www.dndbeyond.com/monsters/4904850-stone-golem]: #

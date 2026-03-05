@@ -33,19 +33,12 @@ Quivering masses of acidic goo, gelatinous cubes wobble through narrow caverns a
 Gelatinous Cube Debris
 
 | 1d6 | Floating in the Gelatinous Cube Is A... |
-
 | --- | --- |
-
 | 1 | Chest or recently trapped mimic. |
-
 | 2 | Collection of bubbles or rocks resembling eyes. |
-
 | 3 | Key to a nearby door or coffer. |
-
 | 4 | Remarkable weapon in need of repair. |
-
 | 5 | Skeleton belonging to a famous adventurer. |
-
 | 6 | Tablet bearing a mysterious message. |
 
 [source: https://www.dndbeyond.com/monsters/5195005-gelatinous-cube]: #

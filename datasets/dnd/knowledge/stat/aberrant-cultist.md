@@ -60,27 +60,16 @@ Cults often identify with symbols that exemplify their beliefs. Such symbols mig
 Cult Symbols
 
 | 1d10 | The Symbol Is... | Depicted As... |
-
 | --- | --- | --- |
-
 | 1 | An alchemical sign | A calendar or map |
-
 | 2 | An animal | A crest or as heraldry |
-
 | 3 | A celestial body | An elaborate diagram |
-
 | 4 | A deity’s icon | A metaphorical image |
-
 | 5 | An element | A mystical being |
-
 | 6 | An eye | Part of an equation |
-
 | 7 | A geometric shape | A repeating pattern |
-
 | 8 | A letter or number | A series of scratches |
-
 | 9 | Part of a monster | A simple pictogram |
-
 | 10 | A skull | A weapon or tool |
 
 [source: https://www.dndbeyond.com/monsters/5194866-aberrant-cultist]: #

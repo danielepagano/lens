@@ -32,19 +32,12 @@ A doppelganger’s agenda might relate to its mysterious magical origins or to m
 Doppelganger Deceptions
 
 | 1d6 | The Doppelganger Schemes To... |
-
 | --- | --- |
-
 | 1 | Cause chaos within the temple of a deity that cursed it to live without a true form. |
-
 | 2 | Conceal evidence of a vast conspiracy. |
-
 | 3 | Control a community through fear by posing as a legendary bogeyman. |
-
 | 4 | Replace a noble to enjoy a decadent lifestyle. |
-
 | 5 | Spy on wizards to learn how to complete its own botched magical creation. |
-
 | 6 | Take an influential position, acting as a sleeper agent for a doppelganger invasion. |
 
 [source: https://www.dndbeyond.com/monsters/5174955-doppelganger]: #

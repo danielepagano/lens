@@ -50,23 +50,14 @@ Whether in service to lawful deities or as part of the Great Modron March, modro
 Modron Operations
 
 | 1d8 | The Modrons Work To … |
-
 | --- | --- |
-
 | 1 | Create a clockwork outpost to monitor the balance of obscure planar forces. |
-
 | 2 | Ensure neither side gains the upper hand in a conflict between good and evil. |
-
 | 3 | Excavate a portal to another plane. |
-
 | 4 | Find a lost contingent of modrons. |
-
 | 5 | Reactivate a titanic but lost modron device. |
-
 | 6 | Remove a forest, mountain, or city before the arrival of a modron procession. |
-
 | 7 | Seal off a planar rift or wild magic zone. |
-
 | 8 | Wage war with demons, slaadi, or chaotic Fey. |
 
 [source: https://www.dndbeyond.com/monsters/5195130-modron-pentadrone]: #

@@ -37,19 +37,12 @@ Cambions come into being in disparate ways. Roll on or choose a result from the 
 Cambion Origins
 
 | 1d6 | The Cambion Gained Its Power After... |
-
 | --- | --- |
-
 | 1 | Being possessed by a fiendish being. |
-
 | 2 | Being resurrected by an evil magic-user. |
-
 | 3 | Lengthy exposure to a Lower Plane. |
-
 | 4 | Making a bargain with a Fiend. |
-
 | 5 | Suffering a god’s curse. |
-
 | 6 | Taking part in fiendish rituals. |
 
 [source: https://www.dndbeyond.com/monsters/5194937-cambion]: #

@@ -29,19 +29,12 @@ Skeletons rise at the summons of necromancers and foul spirits. Whether they’r
 Skeleton Pantomimes
 
 | 1d6 | Left to Its Own Devices, the Skeleton … |
-
 | --- | --- |
-
 | 1 | Delivers meal salvers or ages-old correspondence to the crypt of its dead master. |
-
 | 2 | Endlessly trains in battle with other skeletons, despite being hacked to animate splinters. |
-
 | 3 | Mimics ways it entertained itself in life, such as acting, dancing, or reading. |
-
 | 4 | Performs a familiar task, such as cleaning, cooking, mining, or praying. |
-
 | 5 | Repeats its final moments of life. |
-
 | 6 | Stands guard at the post it protected in life. |
 
 [source: https://www.dndbeyond.com/monsters/5195257-warhorse-skeleton]: #

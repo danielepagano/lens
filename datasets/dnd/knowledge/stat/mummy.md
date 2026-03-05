@@ -29,23 +29,14 @@ Roll on or choose a result from the Mummy Resurrections table to determine why a
 Mummy Resurrections
 
 | 1d8 | The Mummy Reanimates To … |
-
 | --- | --- |
-
 | 1 | Defend a holy site it was created to protect. |
-
 | 2 | Obey the summons of a mummy lord. |
-
 | 3 | Oppose an enemy who has returned to life. |
-
 | 4 | Protect its descendants from an ancient threat. |
-
 | 5 | Punish the progeny of those who cursed it. |
-
 | 6 | Reclaim treasures robbed from its crypt. |
-
 | 7 | Serve whoever speaks the prayer on its tomb. |
-
 | 8 | Slay anyone who sets eyes on it. |
 
 ---

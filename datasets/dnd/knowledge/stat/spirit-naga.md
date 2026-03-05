@@ -36,19 +36,12 @@ Spirit nagas seek to claim what they believe they deserve. Their schemes often i
 Spirit Naga Grievances
 
 | 1d6 | The Spirit Naga Believes … |
-
 | --- | --- |
-
 | 1 | A character is to blame for its recent failures. |
-
 | 2 | It has been evicted from its rightful home. |
-
 | 3 | Locals have reneged on an age-old bargain. |
-
 | 4 | Other creatures are mocking it. |
-
 | 5 | A rival is spying on it. |
-
 | 6 | Someone’s treasure rightfully belongs to it. |
 
 [source: https://www.dndbeyond.com/monsters/5195215-spirit-naga]: #

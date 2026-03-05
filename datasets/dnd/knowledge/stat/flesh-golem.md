@@ -39,19 +39,12 @@ Flesh golems appear in varied forms. Roll on or choose a result from the Flesh G
 Flesh Golem Characteristics
 
 | 1d6 | The Flesh Golem Has … |
-
 | --- | --- |
-
 | 1 | Animal parts among its humanlike pieces. |
-
 | 2 | A disguise of makeup and heavy clothing. |
-
 | 3 | Missing parts and exposed insides. |
-
 | 4 | Parts serving unintended roles, like a body composed of dozens of hands. |
-
 | 5 | Perfect features accented by beautiful stitching. |
-
 | 6 | Visible mechanisms, bellows, and engines. |
 
 [source: https://www.dndbeyond.com/monsters/5194997-flesh-golem]: #

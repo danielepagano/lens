@@ -28,19 +28,12 @@ Countless tales surround griffons. Roll on or choose a result from the Griffon T
 Griffon Tales
 
 | 1d6 | Legends Claim That Griffons … |
-
 | --- | --- |
-
 | 1 | Attack anything in the skies near their lairs. |
-
 | 2 | Curse their killers. Those who slay a griffon face the enmity of all animals. |
-
 | 3 | Lay eggs with remarkable healing properties. |
-
 | 4 | Prefer the taste of horses over all other prey. |
-
 | 5 | Serve the first creature they see after hatching. |
-
 | 6 | Won’t attack those with royal blood. |
 
 [source: https://www.dndbeyond.com/monsters/5195062-griffon]: #

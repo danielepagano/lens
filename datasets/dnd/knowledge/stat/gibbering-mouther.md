@@ -35,19 +35,12 @@ Gibbering mouthers come into being in various unpleasant ways. Roll on or choose
 Gibbering Mouther Nascencies
 
 | 1d6 | The Gibbering Mouther Is... |
-
 | --- | --- |
-
 | 1 | Another creature warped by dangerous magic. |
-
 | 2 | The autonomous appendage of a chaotic deity, Far Realm entity, or star-spawn horror. |
-
 | 3 | The experiment of an aberrant manipulator. |
-
 | 4 | Part of the life cycle of some other Aberration. |
-
 | 5 | A shape-shifter that lost control of its powers. |
-
 | 6 | Someone cursed by a cult or vengeful deity. |
 
 [source: https://www.dndbeyond.com/monsters/5195034-gibbering-mouther]: #

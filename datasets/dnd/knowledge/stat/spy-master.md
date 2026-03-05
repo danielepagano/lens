@@ -36,15 +36,10 @@ Spies gather information and disseminate lies, manipulating people to gain the r
 Spy Personas
 
 | 1d4 | The Spy Disguises Themself As … |
-
 | --- | --- |
-
 | 1 | A bard or traveling performer. |
-
 | 2 | A captive or servant of a monster or villain. |
-
 | 3 | A dignitary or traveler from a distant land. |
-
 | 4 | A visitor from a different time or world. |
 
 [source: https://www.dndbeyond.com/monsters/5195216-spy-master]: #

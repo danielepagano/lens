@@ -32,19 +32,12 @@ Shadows might resemble the silhouettes of who they were in life or take on more 
 Shadow Shapes
 
 | 1d6 | The Shadow Appears As … |
-
 | --- | --- |
-
 | 1 | A distorted stalker that lurks in the woods. |
-
 | 2 | A fiend that dwells near a wicked ritual site. |
-
 | 3 | Grasping hands that haunt a miser’s home. |
-
 | 4 | A grim storybook character that follows those who speak its name. |
-
 | 5 | Its target, acting in eerie pantomime. |
-
 | 6 | An ominous priest that haunts a defiled site. |
 
 [source: https://www.dndbeyond.com/monsters/5174958-shadow]: #

@@ -41,19 +41,12 @@ Roll on or choose a result from the Bandit Motivations table to determine the ci
 Bandit Motivations
 
 | 1d6 | The Bandit ... |
-
 | --- | --- |
-
 | 1 | Fights only oppressors. |
-
 | 2 | Is an ex-soldier who was discarded by their nation and now takes what they were promised. |
-
 | 3 | Is in a gang that views nonmembers as foes. |
-
 | 4 | Hesitantly serves a villainous leader. |
-
 | 5 | Secretly works for a government or a regional ruler to sow chaos. |
-
 | 6 | Takes what they need to survive. |
 
 [source: https://www.dndbeyond.com/monsters/5194912-bandit-captain]: #

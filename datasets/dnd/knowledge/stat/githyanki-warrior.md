@@ -52,23 +52,14 @@ Characters might be drawn into conflicts involving githzerai and githyanki in va
 Gith Conflicts
 
 | 1d8 | The Characters Are... |
-
 | --- | --- |
-
 | 1 | Called on to deliver a message or mysterious parcel to or from Vlaakith the Lich Queen. |
-
 | 2 | Encouraged by a disguised intellect devourer to seek out an elusive gith leader. |
-
 | 3 | Entreated to aid githzerai fleeing the githyanki who destroyed their sanctuary. |
-
 | 4 | Entrusted with renewing or disrupting the githyanki’s alliance with red dragons. |
-
 | 5 | Invited to hunt illithids with githyanki. |
-
 | 6 | Pressed to uncover a gith spy in a planar community or on a spelljamming ship. |
-
 | 7 | Sent on a quest to discover the last known location of the hero Gith or Zerthimon. |
-
 | 8 | Tasked with returning the blade of a fallen githyanki knight to the knight’s people. |
 
 [source: https://www.dndbeyond.com/monsters/5195037-githyanki-warrior]: #

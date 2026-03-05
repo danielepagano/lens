@@ -53,27 +53,16 @@ Lacking information about what their other gods look like, kuo-toa priests inven
 Kuo-toa Deity Features
 
 | 1d10 | The Deity’s Head Is Like A … | 1d10 | The Deity’s Body Is Like A … |
-
 | --- | --- | --- | --- |
-
 | 1 | Barnacle | 1 | Hermit crab |
-
 | 2 | Crab claw | 2 | Jellyfish |
-
 | 3 | Hagfish | 3 | Kuo-toa |
-
 | 4 | Moray eel | 4 | Mantis shrimp |
-
 | 5 | Sea anemone | 5 | Merfolk |
-
 | 6 | Shark | 6 | Plesiosaurus |
-
 | 7 | Sunfish | 7 | Sea cucumber |
-
 | 8 | Tentacle | 8 | Ship’s figurehead |
-
 | 9 | Treasure chest | 9 | Squid |
-
 | 10 | Viperfish | 10 | Whale |
 
 ---
@@ -85,23 +74,14 @@ Kuo-toa typically organize their communities around sites they believe to be imp
 Kuo-toa Ritual Sites
 
 | 1d8 | The Kuo-toa Community Features … |
-
 | --- | --- |
-
 | 1 | An arena scattered with weapons made from crustacean shells. |
-
 | 2 | A gallery of hibernating chuuls. |
-
 | 3 | A garden of mussels and tide pool creatures that whisper secrets. |
-
 | 4 | A hidden shrine with a patchwork depiction of a new kuo-toa deity. |
-
 | 5 | The lavish chamber of an animal or monster said to be prophetic, lucky, or literate. |
-
 | 6 | A pool filled with jellyfish, eels, or fish roe that glow in organized patterns. |
-
 | 7 | A punishment chamber exposed to the light of the surface. |
-
 | 8 | A towering statue of a kuo-toa deity. |
 
 [source: https://www.dndbeyond.com/monsters/5195098-kuo-toa-archpriest]: #

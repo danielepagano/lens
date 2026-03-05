@@ -34,23 +34,14 @@ Roll on or choose a result from the Ettin Interactions table to inspire how an e
 Ettin Interactions
 
 | 1d8 | The Ettin’s Heads Are … |
-
 | --- | --- |
-
 | 1 | Amping up one another in preparation for a conflict or challenge. |
-
 | 2 | Keep their back to the gorgon or otherwise act like they don’t see the monster. |
-
 | 3 | Criticizing one another as they perform separate tasks. |
-
 | 4 | Engaged in a staring contest. |
-
 | 5 | Making polite small talk as if they were meeting for the first time. |
-
 | 6 | Performatively ignoring one another. |
-
 | 7 | Talking over an increasingly convoluted plot. |
-
 | 8 | Trying to keep one another awake. |
 
 [source: https://www.dndbeyond.com/monsters/5194990-ettin]: #

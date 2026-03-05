@@ -63,23 +63,14 @@ Mummy lords are usually consumed by ageless plots. Roll on or choose a result fr
 Mummy Lord Plots
 
 | 1d8 | The Mummy Lord Seeks To … |
-
 | --- | --- |
-
 | 1 | Open a portal to the past, when its power was at its height. |
-
 | 2 | Perform a ritual that can be attempted only once every eight hundred years. |
-
 | 3 | Reclaim and resurrect a loved one’s corpse. |
-
 | 4 | Reconquer the lands that once composed its empire. |
-
 | 5 | Recover the pieces of its lost heart. |
-
 | 6 | Replace its descendant as the ruler of a realm. |
-
 | 7 | Sacrifice a thousand souls to its god in return for true life. |
-
 | 8 | Transform the people of an entire nation into Undead servants. |
 
 ---

@@ -75,27 +75,16 @@ Every arch-hag has a unique weakness tied to a fateful encounter the hag had in 
 Arch-hag Anathemas
 
 | 1d10 | The Arch-hag’s Weakness Is ... |
-
 | --- | --- |
-
 | 1 | The bones of the arch-hag’s first love. |
-
 | 2 | A devil’s tear. |
-
 | 3 | An egg with a miniature castle inside. |
-
 | 4 | A flower that blooms only when time stops. |
-
 | 5 | A gift from the hag’s twin. |
-
 | 6 | One of the hag’s missing teeth. |
-
 | 7 | The multiverse’s worst pun. |
-
 | 8 | A viciously mauled scarecrow. |
-
 | 9 | A star pulled from the sky. |
-
 | 10 | A thread from the Lady of Pain’s robes. |
 
 [source: https://www.dndbeyond.com/monsters/5194900-arch-hag]: #

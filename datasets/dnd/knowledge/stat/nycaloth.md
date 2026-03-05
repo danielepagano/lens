@@ -34,15 +34,10 @@ Nycaloths and other yugoloths frequently serve as mercenary forces in extraplana
 Yugoloth Incursions
 
 | 1d4 | Yugoloth Mercenaries Seek To … |
-
 | --- | --- |
-
 | 1 | Claim a portal with strategic importance. |
-
 | 2 | Enlist monsters as allies or beasts of war. |
-
 | 3 | Destroy a city harboring enemy cultists. |
-
 | 4 | Liberate an imprisoned fiendish ally. |
 
 [source: https://www.dndbeyond.com/monsters/5195147-nycaloth]: #

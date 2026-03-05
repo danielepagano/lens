@@ -35,19 +35,12 @@ All manner of torments might give rise to a banshee. Roll on or choose a result 
 Banshee Sorrows
 
 | 1d6 | Torment Compels the Banshee To ... |
-
 | --- | --- |
-
 | 1 | Appear prior to a family member’s death. |
-
 | 2 | Haunt the site where it was executed. |
-
 | 3 | Lament a lost love and haunt their grave. |
-
 | 4 | Presage a disaster or tragedy. |
-
 | 5 | Seek the return of a stolen treasure. |
-
 | 6 | Slay those more beautiful than it was in life. |
 
 [source: https://www.dndbeyond.com/monsters/5194916-banshee]: #

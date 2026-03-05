@@ -49,19 +49,12 @@ Yuan-ti might gain their reptilian features through dangerous supernatural rites
 Yuan-ti Transformations
 
 | 1d6 | A Yuan-ti Gained Its Snake Features From … |
-
 | --- | --- |
-
 | 1 | Bargaining parts of its soul to a pantheon of serpentine demigods. |
-
 | 2 | A curse laid on its people in the distant past. |
-
 | 3 | The dream-venom of Merrshaulk, a slumbering snake god. |
-
 | 4 | Experiments by spirit nagas or other yuan-ti. |
-
 | 5 | A ritual involving the skin of a fiendish snake. |
-
 | 6 | Trials to excise its “weak” human parts. |
 
 [source: https://www.dndbeyond.com/monsters/5195288-yuan-ti-abomination]: #

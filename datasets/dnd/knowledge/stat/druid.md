@@ -34,19 +34,12 @@ Druids use primal magic, traditional teachings, and bonds with animals and eldri
 Druid Traditions
 
 | 1d6 | The Druid Is … |
-
 | --- | --- |
-
 | 1 | An avenger who strikes against destructive civilizations and those who abuse nature. |
-
 | 2 | A guide who aids travelers in navigating the realms of Beasts, Fey, or Plants. |
-
 | 3 | A hermit who works alone to protect the lands, seas, or skies they call home. |
-
 | 4 | A mender who travels the world healing natural, magical, or manufactured disasters. |
-
 | 5 | Part of a loose organization that adheres to timeless rituals and guards natural secrets. |
-
 | 6 | A warden who minds the underpinnings of reality and protects against extraplanar threats. |
 
 [source: https://www.dndbeyond.com/monsters/5194976-druid]: #

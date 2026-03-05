@@ -47,27 +47,16 @@ Roll on or choose a result from the Mage Roles table to inspire different sorts 
 Mage Roles
 
 | 1d10 | The Mage Is … |
-
 | --- | --- |
-
 | 1 | An astronomer who draws magic from stars. |
-
 | 2 | An author who writes about the occult. |
-
 | 3 | A magical engineer who creates wonders. |
-
 | 4 | An oracle who interprets omens. |
-
 | 5 | A prodigy with a remarkable magical heritage. |
-
 | 6 | A psion whose powers manifest as spells. |
-
 | 7 | A scholar investigating ancient lore. |
-
 | 8 | A soothsayer who advises rulers. |
-
 | 9 | A war mage who aids soldiers in battle. |
-
 | 10 | A witch who shares secret wisdom. |
 
 [source: https://www.dndbeyond.com/monsters/5194902-archmage]: #

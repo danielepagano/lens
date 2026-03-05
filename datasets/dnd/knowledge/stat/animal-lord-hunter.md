@@ -60,27 +60,16 @@ Among the best-known animal lords are those that represent cats, hawks, lizards,
 Hunter Animal Lord Appearances
 
 | 1d10 | Bestial Shape |
-
 | --- | --- |
-
 | 1 | Alligator |
-
 | 2 | Badger |
-
 | 3 | Bat |
-
 | 4 | Cat |
-
 | 5 | Hawk |
-
 | 6 | Mongoose |
-
 | 7 | Praying mantis |
-
 | 8 | Shark |
-
 | 9 | Snake |
-
 | 10 | Wolf |
 
 [source: https://www.dndbeyond.com/monsters/5194891-animal-lord-hunter]: #

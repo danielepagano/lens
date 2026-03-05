@@ -53,23 +53,14 @@ Krakens rarely appear on the surface, but when they do, they herald times of cha
 Kraken Attacks
 
 | 1d8 | The Enraged Kraken … |
-
 | --- | --- |
-
 | 1 | Abducts the vessel of a leader or another important community member. |
-
 | 2 | Attacks a community from below using flooded ruins, hidden aquifers, or sewers. |
-
 | 3 | Breaks a lighthouse or seaside tower, carrying it and the occupants to a secret island. |
-
 | 4 | Calls down lightning on any ship that enters its aquatic territory. |
-
 | 5 | Carries ships to an inescapable sargassum. |
-
 | 6 | Dams a river or cuts off a city’s sea access. |
-
 | 7 | Devours all sea life near a fishing community, threatening it with ruin. |
-
 | 8 | Masterminds an invasion from the sea by merfolk, sahuagin, or storm giants. |
 
 ---

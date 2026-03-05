@@ -37,23 +37,14 @@ Those visited by an incubus have recurring nightmares. Roll on or choose a resul
 Incubus Nightmares
 
 | 1d8 | The Incubus’s Victim Has Dreams Of … |
-
 | --- | --- |
-
 | 1 | An angry family member or authority figure. |
-
 | 2 | Being chased through the wilderness. |
-
 | 3 | Being devoured by animals or monsters. |
-
 | 4 | Falling, drowning, or suffocating. |
-
 | 5 | A ruinous public embarrassment. |
-
 | 6 | A shadowy intruder or monstrous silhouette. |
-
 | 7 | A traumatic past event. |
-
 | 8 | A visitor with an eerie or enigmatic message. |
 
 [source: https://www.dndbeyond.com/monsters/4904793-incubus]: #

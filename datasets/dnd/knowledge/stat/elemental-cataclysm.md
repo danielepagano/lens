@@ -53,23 +53,14 @@ Little can stop an elemental cataclysm. Those that oppose one of these calamitie
 Elemental Alterations
 
 | 1d8 | The Elemental Cataclysm Leaves Behind A … |
-
 | --- | --- |
-
 | 1 | Dramatic increase or decrease in temperature. |
-
 | 2 | Gigantic coral reef or fungal forest. |
-
 | 3 | Never-ending storm or whirlpool. |
-
 | 4 | Passage to the Underdark or portal to an Elemental Plane. |
-
 | 5 | Primeval or previously extinct animal population. |
-
 | 6 | Rapidly growing rainforest. |
-
 | 7 | River where previously there was none. |
-
 | 8 | Series of dramatic rock formations. |
 
 [source: https://www.dndbeyond.com/monsters/5194982-elemental-cataclysm]: #

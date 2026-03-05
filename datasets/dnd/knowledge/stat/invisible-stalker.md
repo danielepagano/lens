@@ -34,19 +34,12 @@ In rare cases, an invisible stalker lingers in the world without a spellcaster c
 Uncontrolled Invisible Stalkers
 
 | 1d6 | The Invisible Stalker Is … |
-
 | --- | --- |
-
 | 1 | The breath of an infamous god or monster. |
-
 | 2 | A guardian of a hidden portal or magical site. |
-
 | 3 | The lingering violent thoughts of someone killed in a great battle. |
-
 | 4 | A manifestation of uncontrolled magic. |
-
 | 5 | A servant of an evil elemental ruler such as Yan-C-Bin (the Elemental Prince of Evil Air). |
-
 | 6 | Unable to complete its duty and tries to create circumstances allowing it to fulfill its task. |
 
 [source: https://www.dndbeyond.com/monsters/5195089-invisible-stalker]: #

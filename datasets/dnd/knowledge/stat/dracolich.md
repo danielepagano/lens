@@ -70,27 +70,16 @@ There are untold profane routes by which a dragon might become a dracolich. Howe
 Dracolich Soul Gem Vessels
 
 | 1d10 | A Dracolich’s Soul Gem Is Hidden In... |
-
 | --- | --- |
-
 | 1 | Another dragon’s treasure hoard. |
-
 | 2 | The body of a servant or an ancestor. |
-
 | 3 | The core of a dracolich’s melted hoard. |
-
 | 4 | A corrupted dragon egg. |
-
 | 5 | A dragon horn a hero took as a trophy. |
-
 | 6 | A nation’s royal or religious treasure. |
-
 | 7 | A powerful magic item. |
-
 | 8 | A source of magical wonders, such as a giant tree or mystical pool. |
-
 | 9 | The vault of an archdevil, a wicked god, or another extraplanar villain. |
-
 | 10 | The weapon that slew the dracolich. |
 
 [source: https://www.dndbeyond.com/monsters/5194972-dracolich]: #

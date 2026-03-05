@@ -56,15 +56,10 @@ Few things survive the tarrasque’s rampages, and reports of the monster’s de
 Tarrasque Evidence
 
 | 1d4 | Amid Destruction, the Tarrasque Leaves … |
-
 | --- | --- |
-
 | 1 | Evidence of a magic spell reflected back on its caster, like Ice Knife or Melf’s Acid Arrow. |
-
 | 2 | Massive footprints or claw marks. |
-
 | 3 | A russet scale the size of a knight’s shield. |
-
 | 4 | A shattered mountain or diverted river. |
 
 [source: https://www.dndbeyond.com/monsters/5195232-tarrasque]: #

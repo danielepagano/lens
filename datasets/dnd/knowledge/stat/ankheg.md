@@ -31,23 +31,14 @@ Ankheg tunnels are roughly cylindrical and are often littered with the remains o
 Ankheg Tunnel Discoveries
 
 | 1d8 | Inside the Ankheg Tunnel Is ... |
-
 | --- | --- |
-
 | 1 | Another tunnel (either natural or of worked stone) that extends into the Underdark. |
-
 | 2 | A buried ruin or grave exposed by the tunnel. |
-
 | 3 | A cluster of 1d4 fresh ankheg eggs that can be broken and used as vials of Acid. |
-
 | 4 | A dead ankheg and evidence of a deadlier subterranean predator. |
-
 | 5 | A piece of ankheg carapace usable as a Shield |
-
 | 6 | A pouch with 2d6 GP near a puddle of acid. |
-
 | 7 | A stray farm or woodland animal. |
-
 | 8 | A viciously mauled scarecrow. |
 
 [source: https://www.dndbeyond.com/monsters/5194897-ankheg]: #

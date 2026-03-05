@@ -37,23 +37,14 @@ Wights might return from the dead for a multitude of sinister reasons. Roll on o
 Wight Motives
 
 | 1d8 | The Wight Returned from the Dead To … |
-
 | --- | --- |
-
 | 1 | Challenge anyone who passes near its grave on a certain cursed night. |
-
 | 2 | Conquer the land it believes it should rule. |
-
 | 3 | Continue the crimes it was executed for. |
-
 | 4 | Follow the foul master it served in life. |
-
 | 5 | Honor an oath it left unfulfilled in life. |
-
 | 6 | Obey the cult or deity that gave it unlife. |
-
 | 7 | Prove it was the greatest warrior to ever live. |
-
 | 8 | Seek its stolen heart or other treasure. |
 
 [source: https://www.dndbeyond.com/monsters/5195269-wight]: #

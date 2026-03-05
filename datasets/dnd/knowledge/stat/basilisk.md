@@ -25,23 +25,14 @@ The remains of Petrified creatures litter the area where a basilisk hunts. These
 Petrified Basilisk Victims
 
 | 1d8 | A Basilisk Used Its Gaze to Petrify ... |
-
 | --- | --- |
-
 | 1 | An adventurer with an ornate key hanging around their neck. |
-
 | 2 | Animals like bats, bears, deer, or goats. |
-
 | 3 | A climber clinging to a stalactite. |
-
 | 4 | Itself using a large mirror or shiny surface. |
-
 | 5 | A mimic disguised as a chest full of treasure. |
-
 | 6 | A monster such as an umber hulk or a troglodyte. |
-
 | 7 | Someone caught in a comic pose or making a regrettable face. |
-
 | 8 | A victim now being used as a nest for insects or other vermin. |
 
 [source: https://www.dndbeyond.com/monsters/5194919-basilisk]: #

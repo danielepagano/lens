@@ -43,19 +43,12 @@ The drive to subjugate and pillage is part of hobgoblins’ supernatural nature,
 Hobgoblin Strategies
 
 | 1d6 | The Hobgoblin Works To … |
-
 | --- | --- |
-
 | 1 | Build a vessel to carry hobgoblin armies to new conquests. |
-
 | 2 | Capture monsters and train them to fight. |
-
 | 3 | Collapse a region into the Underdark so riches can be sifted from the ruins. |
-
 | 4 | Construct a giant machine to strip resources. |
-
 | 5 | Convince devils, dragons, or hobgoblins from Acheron to invade an enemy land. |
-
 | 6 | Help shortsighted merchants undermine a government or despoil the environment. |
 
 [source: https://www.dndbeyond.com/monsters/5195079-hobgoblin-warrior]: #

@@ -170,15 +170,17 @@ export async function parseMonsterPage(
                     )
                   : [];
                 if (headerCells.length > 0) {
-                  parts.push("| " + headerCells.join(" | ") + " |");
-                  parts.push("| " + headerCells.map(() => "---").join(" | ") + " |");
+                  const tableLines: string[] = [];
+                  tableLines.push("| " + headerCells.join(" | ") + " |");
+                  tableLines.push("| " + headerCells.map(() => "---").join(" | ") + " |");
                   const rows = node.querySelectorAll("tbody tr");
                   rows.forEach((tr) => {
                     const cells = Array.from(tr.querySelectorAll("td")).map(
                       (td) => (td as HTMLElement).innerText?.trim() ?? ""
                     );
-                    if (cells.length > 0) parts.push("| " + cells.join(" | ") + " |");
+                    if (cells.length > 0) tableLines.push("| " + cells.join(" | ") + " |");
                   });
+                  parts.push(tableLines.join("\n"));
                 }
               }
             }

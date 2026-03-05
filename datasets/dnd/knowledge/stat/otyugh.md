@@ -31,15 +31,10 @@ Otyughs often bury themselves amid trash heaps and observe their surroundings wi
 Otyugh Lures
 
 | 1d4 | To Attract Potential Meals, the Otyugh … |
-
 | --- | --- |
-
 | 1 | Disguises its tentacles with garbage puppets. |
-
 | 2 | Sings an enticing song in Otyugh. |
-
 | 3 | Telepathically transmits a message like “Happy good stuff here!” or “Help now! I’m too delicious?” |
-
 | 4 | Telepathically transmits an image of a large gemstone, crooked weapon, or soggy pastry. |
 
 [source: https://www.dndbeyond.com/monsters/5195151-otyugh]: #

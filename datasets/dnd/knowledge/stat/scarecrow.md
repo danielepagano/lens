@@ -27,23 +27,14 @@ Although scarecrows take their name from rural effigies, they might take varied 
 Scarecrow Frames
 
 | 1d8 | The Scarecrow Is Made From … |
-
 | --- | --- |
-
 | 1 | Animal furs, bones, horns, and claws. |
-
 | 2 | Beehives or wasp nests over a wicker frame. |
-
 | 3 | A carved pumpkin atop a body of thick vines. |
-
 | 4 | Nets, flotsam, grapnels, and fishing tackle. |
-
 | 5 | Oversize stuffed animal or mannequin parts. |
-
 | 6 | Rusty armor and torture devices. |
-
 | 7 | A sackcloth head atop straw-stuffed clothes. |
-
 | 8 | Wedding clothes that were never worn. |
 
 [source: https://www.dndbeyond.com/monsters/5195196-scarecrow]: #

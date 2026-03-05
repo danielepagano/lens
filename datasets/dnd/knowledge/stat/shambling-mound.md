@@ -32,19 +32,12 @@ Strange circumstances might give rise to shambling mounds, transforming vegetati
 Shambling Mound Cultivation
 
 | 1d6 | The Shambling Mound Is … |
-
 | --- | --- |
-
 | 1 | Covered in vibrant alien or Feywild blooms. |
-
 | 2 | Hauling a rune-etched menhir in its torso. |
-
 | 3 | Infested with vermin or fungi. |
-
 | 4 | Made up of knotty vines entangling skeletons. |
-
 | 5 | Mutated and leaking glowing pollution. |
-
 | 6 | The remains of an ancient tree or a treant. |
 
 [source: https://www.dndbeyond.com/monsters/5195203-shambling-mound]: #

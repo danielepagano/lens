@@ -28,15 +28,10 @@ Once infamous for their magical aptitude, fomorians are giants afflicted with a 
 Fomorian Warping
 
 | 1d4 | The Fomorian’s Hex Causes … |
-
 | --- | --- |
-
 | 1 | Colorful, wandering pustules. |
-
 | 2 | Excessive sweating of rainbow-hued fluids. |
-
 | 3 | Patches of wriggling hair. |
-
 | 4 | Veins that bulge and lurch under the skin. |
 
 [source: https://www.dndbeyond.com/monsters/5195000-fomorian]: #

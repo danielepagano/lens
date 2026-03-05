@@ -38,19 +38,12 @@ Green hags frequently know strange magic or forgotten secrets, such as the weakn
 Green Hag Bargains
 
 | 1d6 | A Green Hag Trades Its Knowledge For … |
-
 | --- | --- |
-
 | 1 | A bargainer’s memories of a loved one. |
-
 | 2 | The cauldron of a rival hag. |
-
 | 3 | A favor to be redeemed when the hag wishes. |
-
 | 4 | A flower from a hidden Feywild garden. |
-
 | 5 | A gift given freely by a yugoloth. |
-
 | 6 | A vial filled with a ruler’s tears. |
 
 [source: https://www.dndbeyond.com/monsters/5195057-green-hag]: #

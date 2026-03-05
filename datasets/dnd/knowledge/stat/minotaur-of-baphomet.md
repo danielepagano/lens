@@ -28,15 +28,10 @@ Minotaurs of Baphomet often dwell in mazes, leading their allies to hidden desti
 Minotaur Mazes
 
 | 1d4 | The Minotaur of Baphomet Lurks In … |
-
 | --- | --- |
-
 | 1 | A multilevel mine or sewer. |
-
 | 2 | Multiple mazes connected by magic portals. |
-
 | 3 | A poisonous swamp with labyrinthine paths. |
-
 | 4 | The ruins of a buried palace or temple. |
 
 [source: https://www.dndbeyond.com/monsters/5195126-minotaur-of-baphomet]: #
