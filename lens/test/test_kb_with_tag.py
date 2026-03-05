@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from lens.core.commands.kb import kb_with_tag
+from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 
 
@@ -109,6 +110,40 @@ class TestGetIdsWithTag(unittest.TestCase):
         self.assertEqual(self.store.get_ids_with_tag("FEATURED"), ["place.nyc"])
         self.assertEqual(self.store.get_ids_with_tag("featured"), ["place.nyc"])
 
+    def test_get_ids_with_all_tags_empty_returns_empty(self) -> None:
+        self.assertEqual(self.store.get_ids_with_all_tags([]), [])
+
+    def test_get_ids_with_all_tags_single_same_as_get_ids_with_tag(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.add_tags("place.nyc", ["featured"])
+        self.assertEqual(
+            self.store.get_ids_with_all_tags(["featured"]),
+            self.store.get_ids_with_tag("featured"),
+        )
+
+    def test_get_ids_with_all_tags_two_tags_returns_intersection(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        self.store.store_object("place.chicago", "Chicago")
+        self.store.add_tags("place.nyc", ["featured", "pc"])
+        self.store.add_tags("place.boston", ["featured"])
+        self.store.add_tags("place.chicago", ["pc"])
+        ids = self.store.get_ids_with_all_tags(["featured", "pc"])
+        self.assertEqual(ids, ["place.nyc"])
+
+    def test_get_ids_with_all_tags_three_tags_returns_intersection(self) -> None:
+        self.store.store_object("place.a", "A")
+        self.store.store_object("place.b", "B")
+        self.store.add_tags("place.a", ["t1", "t2", "t3"])
+        self.store.add_tags("place.b", ["t1", "t2"])
+        self.assertEqual(self.store.get_ids_with_all_tags(["t1", "t2", "t3"]), ["place.a"])
+        self.assertEqual(self.store.get_ids_with_all_tags(["t1", "t2"]), ["place.a", "place.b"])
+
+    def test_get_ids_with_all_tags_no_match_returns_empty(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.add_tags("place.nyc", ["featured"])
+        self.assertEqual(self.store.get_ids_with_all_tags(["featured", "nonexistent"]), [])
+
 
 class TestTraverseByDotTags(unittest.TestCase):
     def setUp(self) -> None:
@@ -124,7 +159,7 @@ class TestTraverseByDotTags(unittest.TestCase):
 
     def test_map_traversal_kingdom_cities_taverns(self) -> None:
         _build_map_fixture(self.store)
-        root_ids, layers = self.store.traverse_by_dot_tags("loc.kingdom", same_type_only=False)
+        root_ids, layers = self.store.traverse_by_dot_tags(["loc.kingdom"], same_type_only=False)
         self.assertEqual(set(root_ids), {"loc.kingdom", "loc.city_a", "loc.city_b"})
         by_tag = dict(layers)
         self.assertIn("loc.city_a", by_tag)
@@ -134,7 +169,7 @@ class TestTraverseByDotTags(unittest.TestCase):
 
     def test_same_type_only_filters_traversal(self) -> None:
         _build_cross_type_fixture(self.store)
-        _, layers_same = self.store.traverse_by_dot_tags("loc.region", same_type_only=True)
+        _, layers_same = self.store.traverse_by_dot_tags(["loc.region"], same_type_only=True)
         by_tag = dict(layers_same)
         self.assertIn("loc.dungeon", by_tag)
         self.assertEqual(set(by_tag["loc.dungeon"]), set())
@@ -144,7 +179,7 @@ class TestTraverseByDotTags(unittest.TestCase):
         self.store.store_object("front.curse", "Curse")
         self.store.add_tags("loc.dungeon", ["simple_tag", "front.curse"])
         self.store.add_tags("front.curse", ["loc.dungeon"])
-        root_ids, layers = self.store.traverse_by_dot_tags("simple_tag", same_type_only=True)
+        root_ids, layers = self.store.traverse_by_dot_tags(["simple_tag"], same_type_only=True)
         self.assertIn("loc.dungeon", root_ids)
         tag_set = {t for t, _ in layers}
         self.assertIn("loc.dungeon", tag_set)
@@ -152,7 +187,7 @@ class TestTraverseByDotTags(unittest.TestCase):
 
     def test_cycle_does_not_loop(self) -> None:
         _build_cycle_fixture(self.store)
-        root_ids, layers = self.store.traverse_by_dot_tags("start", same_type_only=False)
+        root_ids, layers = self.store.traverse_by_dot_tags(["start"], same_type_only=False)
         self.assertIn("loc.a", root_ids)
         self.assertIn("other.x", root_ids)
         by_tag = dict(layers)
@@ -163,22 +198,32 @@ class TestTraverseByDotTags(unittest.TestCase):
         self.assertLessEqual(len(layers), 4)
 
     def test_empty_root_returns_empty_layers(self) -> None:
-        _, layers = self.store.traverse_by_dot_tags("nonexistent", same_type_only=False)
+        _, layers = self.store.traverse_by_dot_tags(["nonexistent"], same_type_only=False)
         self.assertEqual(layers, [])
 
     def test_part_head_same_type_filters_to_empty(self) -> None:
         _build_part_fixture(self.store)
-        root_ids, layers = self.store.traverse_by_dot_tags("part.head", same_type_only=True)
+        root_ids, layers = self.store.traverse_by_dot_tags(["part.head"], same_type_only=True)
         self.assertEqual(root_ids, [])
         self.assertEqual(layers, [])
 
     def test_part_head_recurse_follows_dot_tags_from_objects(self) -> None:
         _build_part_fixture(self.store)
-        root_ids, layers = self.store.traverse_by_dot_tags("part.head", same_type_only=False)
+        root_ids, layers = self.store.traverse_by_dot_tags(["part.head"], same_type_only=False)
         self.assertEqual(set(root_ids), {"person.amy", "person.carlos"})
         by_tag = dict(layers)
         self.assertIn("part.body", by_tag)
         self.assertEqual(set(by_tag["part.body"]), {"person.amy"})
+
+    def test_traverse_multi_tag_root_is_intersection(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        self.store.store_object("place.chicago", "Chicago")
+        self.store.add_tags("place.nyc", ["featured", "pc"])
+        self.store.add_tags("place.boston", ["featured"])
+        self.store.add_tags("place.chicago", ["pc"])
+        root_ids, _ = self.store.traverse_by_dot_tags(["featured", "pc"], same_type_only=False)
+        self.assertEqual(root_ids, ["place.nyc"])
 
 
 class TestKbWithTagCore(unittest.TestCase):
@@ -195,7 +240,7 @@ class TestKbWithTagCore(unittest.TestCase):
 
     def _run_with_tag(
         self,
-        tag: str,
+        tags: list[str],
         *,
         expand: bool = False,
         recurse: bool = False,
@@ -206,13 +251,13 @@ class TestKbWithTagCore(unittest.TestCase):
         dict[str, KnowledgeObject] | None
     ]:
         with patch("lens.core.commands.kb.get_store", return_value=self.store):
-            result = kb_with_tag(tag, expand=expand, recurse=recurse, same_type_only=same_type_only)
+            result = kb_with_tag(tags, expand=expand, recurse=recurse, same_type_only=same_type_only)
         return result.ids, result.layers, result.objects
 
     def test_base_returns_ids_only(self) -> None:
         self.store.store_object("place.nyc", "NYC")
         self.store.add_tags("place.nyc", ["featured"])
-        ids, layers, objects = self._run_with_tag("featured")
+        ids, layers, objects = self._run_with_tag(["featured"])
         self.assertEqual(ids, ["place.nyc"])
         self.assertIsNone(layers)
         self.assertIsNone(objects)
@@ -220,7 +265,7 @@ class TestKbWithTagCore(unittest.TestCase):
     def test_expand_returns_objects(self) -> None:
         self.store.store_object("place.nyc", "Big city")
         self.store.add_tags("place.nyc", ["featured"])
-        ids, layers, objects = self._run_with_tag("featured", expand=True)
+        ids, layers, objects = self._run_with_tag(["featured"], expand=True)
         self.assertEqual(ids, ["place.nyc"])
         self.assertIsNone(layers)
         self.assertIsNotNone(objects)
@@ -229,7 +274,7 @@ class TestKbWithTagCore(unittest.TestCase):
 
     def test_recurse_returns_layers(self) -> None:
         _build_map_fixture(self.store)
-        ids, layers, objects = self._run_with_tag("loc.kingdom", recurse=True)
+        ids, layers, objects = self._run_with_tag(["loc.kingdom"], recurse=True)
         self.assertEqual(set(ids), {"loc.kingdom", "loc.city_a", "loc.city_b"})
         self.assertIsNotNone(layers)
         by_tag = dict(layers or [])
@@ -241,7 +286,7 @@ class TestKbWithTagCore(unittest.TestCase):
     def test_recurse_expand_returns_objects_for_all_layers(self) -> None:
         _build_map_fixture(self.store)
         ids, layers, objects = self._run_with_tag(
-            "loc.kingdom", recurse=True, expand=True
+            ["loc.kingdom"], recurse=True, expand=True
         )
         self.assertIsNotNone(objects)
         all_ids = set(ids)
@@ -252,7 +297,7 @@ class TestKbWithTagCore(unittest.TestCase):
 
     def test_same_type_base_filters_root_ids(self) -> None:
         _build_part_fixture(self.store)
-        ids, layers, objects = self._run_with_tag("part.head", same_type_only=True)
+        ids, layers, objects = self._run_with_tag(["part.head"], same_type_only=True)
         self.assertEqual(ids, [])
         self.assertIsNone(layers)
         self.assertIsNone(objects)
@@ -260,11 +305,27 @@ class TestKbWithTagCore(unittest.TestCase):
     def test_same_type_recurse_returns_empty_when_no_matching_roots(self) -> None:
         _build_part_fixture(self.store)
         ids, layers, objects = self._run_with_tag(
-            "part.head", recurse=True, same_type_only=True
+            ["part.head"], recurse=True, same_type_only=True
         )
         self.assertEqual(ids, [])
         self.assertEqual(layers or [], [])
         self.assertIsNone(objects)
+
+    def test_multi_tag_returns_only_objects_with_all_tags(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        self.store.store_object("place.chicago", "Chicago")
+        self.store.add_tags("place.nyc", ["featured", "pc"])
+        self.store.add_tags("place.boston", ["featured"])
+        self.store.add_tags("place.chicago", ["pc"])
+        ids, _, _ = self._run_with_tag(["featured", "pc"])
+        self.assertEqual(ids, ["place.nyc"])
+
+    def test_empty_tags_raises(self) -> None:
+        with patch("lens.core.commands.kb.get_store", return_value=self.store):
+            with self.assertRaises(LensException) as ctx:
+                kb_with_tag([], expand=False, recurse=False)
+        self.assertIn("at least one tag", str(ctx.exception))
 
 
 class TestWithTagCli(unittest.TestCase):
@@ -281,7 +342,7 @@ class TestWithTagCli(unittest.TestCase):
 
     def _run_with_tag_cli(
         self,
-        tag: str,
+        tags: list[str],
         *,
         expand: bool = False,
         recurse: bool = False,
@@ -296,7 +357,7 @@ class TestWithTagCli(unittest.TestCase):
                     buf = StringIO()
                     sys.stdout = buf
                     with_tag(
-                        tag,
+                        tags,
                         expand=expand,
                         recurse=recurse,
                         same_type_only=same_type_only,
@@ -308,19 +369,19 @@ class TestWithTagCli(unittest.TestCase):
     def test_cli_base_prints_ids(self) -> None:
         self.store.store_object("place.nyc", "NYC")
         self.store.add_tags("place.nyc", ["featured"])
-        out = self._run_with_tag_cli("featured")
+        out = self._run_with_tag_cli(["featured"])
         self.assertEqual(out.strip(), "place.nyc")
 
     def test_cli_expand_prints_objects(self) -> None:
         self.store.store_object("place.nyc", "Big city")
         self.store.add_tags("place.nyc", ["featured"])
-        out = self._run_with_tag_cli("featured", expand=True)
+        out = self._run_with_tag_cli(["featured"], expand=True)
         self.assertIn("KB['place.nyc']", out)
         self.assertIn("Big city", out)
 
     def test_cli_recurse_prints_headers_and_ids(self) -> None:
         _build_map_fixture(self.store)
-        out = self._run_with_tag_cli("loc.kingdom", recurse=True)
+        out = self._run_with_tag_cli(["loc.kingdom"], recurse=True)
         self.assertIn("# Objects with tag 'loc.kingdom'", out)
         self.assertIn("loc.kingdom", out)
         self.assertIn("loc.city_a", out)
@@ -332,17 +393,17 @@ class TestWithTagCli(unittest.TestCase):
 
     def test_cli_same_type_prints_nothing(self) -> None:
         _build_part_fixture(self.store)
-        out = self._run_with_tag_cli("part.head", same_type_only=True)
+        out = self._run_with_tag_cli(["part.head"], same_type_only=True)
         self.assertEqual(out.strip(), "")
 
     def test_cli_same_type_recurse_prints_nothing(self) -> None:
         _build_part_fixture(self.store)
-        out = self._run_with_tag_cli("part.head", recurse=True, same_type_only=True)
+        out = self._run_with_tag_cli(["part.head"], recurse=True, same_type_only=True)
         self.assertEqual(out.strip(), "")
 
     def test_cli_recurse_follows_dot_tags_not_object_ids_as_tags(self) -> None:
         _build_part_fixture(self.store)
-        out = self._run_with_tag_cli("part.head", recurse=True)
+        out = self._run_with_tag_cli(["part.head"], recurse=True)
         self.assertIn("# Objects with tag 'part.head'", out)
         self.assertIn("person.amy", out)
         self.assertIn("person.carlos", out)
@@ -352,7 +413,7 @@ class TestWithTagCli(unittest.TestCase):
 
     def test_cli_recurse_expand_prints_all_objects_by_layer(self) -> None:
         _build_map_fixture(self.store)
-        out = self._run_with_tag_cli("loc.kingdom", recurse=True, expand=True)
+        out = self._run_with_tag_cli(["loc.kingdom"], recurse=True, expand=True)
         self.assertIn("# From tag 'loc.city_a'", out)
         self.assertIn("KB['loc.tavern_1']", out)
         self.assertIn("KB['loc.tavern_2']", out)
@@ -360,3 +421,13 @@ class TestWithTagCli(unittest.TestCase):
         self.assertIn("Tavern 1.", out)
         self.assertIn("Tavern 2.", out)
         self.assertIn("Tavern 3.", out)
+
+    def test_cli_multi_tag_prints_only_ids_with_all_tags(self) -> None:
+        self.store.store_object("place.nyc", "NYC")
+        self.store.store_object("place.boston", "Boston")
+        self.store.store_object("place.chicago", "Chicago")
+        self.store.add_tags("place.nyc", ["featured", "pc"])
+        self.store.add_tags("place.boston", ["featured"])
+        self.store.add_tags("place.chicago", ["pc"])
+        out = self._run_with_tag_cli(["featured", "pc"])
+        self.assertEqual(out.strip(), "place.nyc")

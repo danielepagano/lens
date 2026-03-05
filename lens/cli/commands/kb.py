@@ -186,7 +186,7 @@ def get(
 
 @app.command("with-tag", no_args_is_help=True)
 def with_tag(
-    tag: str = typer.Argument(..., help="Tag to query (string or dot-tag)"),
+    tags: list[str] = typer.Argument(..., help="Tag(s) to query; object must have all (AND)"),
     expand: bool = typer.Option(False, "-e", "--expand", help="Print full objects instead of IDs"),
     recurse: bool = typer.Option(False, "-r", "--recurse", help="Recursively follow dot-tags and list children"),
     same_type_only: bool = typer.Option(
@@ -196,10 +196,13 @@ def with_tag(
         help="Filter by object type when starting tag is a dot-tag",
     ),
 ) -> None:
-    """List object IDs with a tag; optionally expand or recurse by dot-tags (map-style back-traversal)."""
+    """List object IDs that have all given tags; optionally expand or recurse by dot-tags (map-style back-traversal)."""
+    if not tags:
+        typer.echo("Error: at least one tag is required", err=True)
+        raise typer.Exit(1)
     try:
         result = kb_with_tag(
-            tag,
+            tags,
             expand=expand,
             recurse=recurse,
             same_type_only=same_type_only,
@@ -229,7 +232,7 @@ def with_tag(
     else:
         if not expand:
             if result.ids or result.layers:
-                typer.echo(f"# Objects with tag {tag!r}")
+                typer.echo(f"# Objects with tag {tags[0]!r}")
                 for cid in result.ids:
                     typer.echo(cid)
             if result.layers:

@@ -243,26 +243,51 @@ class KnowledgeStore:
         objs = tag_to_objs.get(tag.lower(), set())
         return sorted(objs)
 
+    def get_ids_with_all_tags(self, tags: list[str]) -> list[str]:
+        """Return object IDs that have every given tag. One _load_tags(), in-memory set intersection."""
+        if not tags:
+            return []
+        tag_to_objs, _ = self._load_tags()
+        result: set[str] | None = None
+        for tag in tags:
+            objs = tag_to_objs.get(tag.lower(), set())
+            if result is None:
+                result = set(objs)
+            else:
+                result &= objs
+            if not result:
+                return []
+        return sorted(result) if result else []
+
     def traverse_by_dot_tags(
         self,
-        starting_tag: str,
+        tags: list[str],
         *,
         same_type_only: bool = False,
     ) -> tuple[list[str], list[tuple[str, list[str]]]]:
-        """BFS over tags: start with tag, get objects; follow dot-tags from those objects.
+        """BFS over tags: root = objects with every tag in tags; follow dot-tags from those objects.
 
-        Returns (root_ids, layers). Root_ids are objects with the starting tag (filtered by
-        type if same_type_only). Layers are (tag, child_ids) for tags discovered by following
-        dot-tags from objects. Each tag visited at most once; cycles avoided via visited_tags.
+        Returns (root_ids, layers). Root_ids are objects that have all listed tags (filtered by
+        type if same_type_only, using tags[0]). Layers are (tag, child_ids) for tags discovered
+        by following dot-tags from objects. Each tag visited at most once; cycles avoided via visited_tags.
         """
+        if not tags:
+            return [], []
         tag_to_objs, obj_to_tags = self._load_tags()
-        start_lower = starting_tag.lower()
-        root_ids = sorted(tag_to_objs.get(start_lower, set()))
+        if len(tags) == 1:
+            root_set = tag_to_objs.get(tags[0].lower(), set())
+        else:
+            root_set = tag_to_objs.get(tags[0].lower(), set()).copy()
+            for t in tags[1:]:
+                root_set &= tag_to_objs.get(t.lower(), set())
+                if not root_set:
+                    return [], []
+        root_ids = sorted(root_set)
 
         starting_type: str | None = None
-        if same_type_only and "." in starting_tag:
+        if same_type_only and "." in tags[0]:
             try:
-                starting_type, _ = parse_id(starting_tag)
+                starting_type, _ = parse_id(tags[0])
             except ValueError:
                 pass
 
@@ -319,7 +344,7 @@ class KnowledgeStore:
             root_ids = _filter_ids_by_type(root_ids)
 
         layers: list[tuple[str, list[str]]] = []
-        visited_tags: set[str] = {start_lower}
+        visited_tags: set[str] = {t.lower() for t in tags}
         queue: deque[str] = deque(_next_tags_from_ids(root_ids))
 
         while queue:
