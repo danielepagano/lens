@@ -5,7 +5,6 @@ import asyncio
 import typer
 
 from lens.cli.options import pin_option, unpin_option
-from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
@@ -21,9 +20,10 @@ async def _print_token(chunk: str) -> None:
 
 @app.callback()
 def design(
+    id: str = typer.Argument(..., help="Design session ID (alphanumeric, underscores, hyphens)"),
     prompt: str | None = typer.Argument(
         None,
-        help="Design task or question (omit to start an open-ended session)",
+        help="Design task or question",
     ),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
@@ -32,12 +32,6 @@ def design(
         "--llm",
         "-l",
         help="LLM ID to use (overrides project default)",
-    ),
-    retry: bool = typer.Option(
-        False,
-        "--retry",
-        "-r",
-        help="Discard generated text and regenerate",
     ),
 ) -> None:
     """Collaborative KB design session: think, look up, and propose changes."""
@@ -61,20 +55,26 @@ def design(
         raise typer.Exit(1)
 
     try:
-        asyncio.run(
-            DesignOperator.run_inline(
+        result = asyncio.run(
+            DesignOperator.run_design(
                 session=session,
                 narrative=narrative,
+                id=id,
                 prompt=prompt,
                 pins=list(pin),
                 unpins=list(unpin),
                 llm_id=llm,
-                retry=retry,
                 on_token=_print_token,
-                on_confirm=confirm_tool_call,
             )
         )
-        print()  # ensure final newline
+        print()  # final newline after streamed output
+        if result.inserted:
+            typer.echo(f"KB: inserted {', '.join(result.inserted)}")
+        if result.updated:
+            typer.echo(f"KB: updated {', '.join(result.updated)}")
+        if result.errors:
+            for err in result.errors:
+                typer.echo(f"lens design: kb error: {err}", err=True)
     except OperatorError as e:
         typer.echo(f"lens design: {e}", err=True)
         raise typer.Exit(1)

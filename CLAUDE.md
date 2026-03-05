@@ -42,13 +42,6 @@ made during the pytest session.
 exists.  Alternatively: `git config --global commit.gpgsign` returns `true`
 with `gpg.ssh.program` pointing to `/tmp/code-sign`.
 
-**What does NOT work in cloud sessions**:
-- `lens/test/integration/` — excluded from `poe test` by design; requires a
-  live LLM endpoint and a fully configured content repository.
-- Any shell command that runs `git commit` outside of pytest (e.g. manual
-  testing in a temp directory) will go through the signing hook, which works
-  only when the session's API key is active.
-
 ## Architecture
 
 Lens is a CLI tool for managing AI-assisted narrative creation. A **Lens project** is a Git repository with a `lens.toml`, `narrative/`, and `knowledge/` directory.

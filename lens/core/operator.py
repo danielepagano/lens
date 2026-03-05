@@ -70,11 +70,12 @@ class Operator(ABC):
     limited_to_datasets: ClassVar[list[str]] = []
     """If non-empty, only available if one of the given datasets is currently active."""
 
-    use_command_tools: ClassVar[bool] = True
+    use_command_tools: ClassVar[bool] = False
     """Whether to expose KB command tools (kb_get, kb_with_tag) to the LLM.
 
-    Set to ``False`` for operators that prioritise speed over knowledge
-    retrieval — in particular ``play``, which must feel immediate.
+    Operators opt in by setting this to ``True``.  Only planning operators
+    (e.g. ``design``) do so; operators that prioritise speed (e.g. ``play``,
+    ``write``) keep the default of ``False`` so there is no tool-call overhead.
     """
 
     @property

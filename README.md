@@ -321,6 +321,28 @@ Arguments: `ADDRESS START_LINE END_LINE [PROMPT]`
 
 `edit` wraps the selected lines in a claim annotation (`[edit:eSTART_END]: #`) that is staged, then streams the proposed replacement as an unstaged diff. Use `lens rollback` to cancel, or commit to accept.
 
+### `lens design`
+
+Creates a KB design workspace sub-node.  The LLM reasons with extended thinking,
+uses `kb_get` and `kb_with_tag` to inspect existing objects, and outputs proposals
+as fenced `kb` blocks that are immediately applied to the knowledge store.
+
+```bash
+lens design my-session                          # open-ended session
+lens design castle-dorn "design the dungeon"    # with a task prompt
+lens design npc-refresh -p faction.thieves-guild
+```
+
+Arguments: `ID [PROMPT]`
+
+- `ID` — session identifier (alphanumeric, underscores, hyphens).  Required.
+  The generated content is saved in a sub-node at this key and the parent
+  receives a `[design:<id>/]: #` self-closing annotation.
+- `PROMPT` — design task.  Omit to start an open-ended session.
+
+After the command completes, newly inserted or updated KB objects are printed.
+Use `lens rollback` to undo both the narrative annotation and the KB changes.
+
 ### `lens rollback`
 
 Discards the pending operator transaction. The behaviour differs by operator type:

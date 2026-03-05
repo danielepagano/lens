@@ -175,6 +175,7 @@ async def _stream_once(
     stop_sequences: list[str] | None,
     tools: list[dict[str, Any]] | None,
     cancel_event: asyncio.Event,
+    enable_thinking: bool = False,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Execute one HTTP streaming request.
 
@@ -198,6 +199,8 @@ async def _stream_once(
     if tools is not None:
         payload["tools"] = tools
         payload["tool_choice"] = "auto"
+    if enable_thinking:
+        payload["reasoning"] = {"effort": "high"}
 
     headers: dict[str, str] = {"Accept": "text/event-stream"}
     if cfg.api_key:
@@ -374,6 +377,7 @@ async def generate_stream(
     tools: list[dict[str, Any]] | None = None,
     cancel_event: asyncio.Event | None = None,
     command_tool_handlers: dict[str, CommandToolFn] | None = None,
+    enable_thinking: bool = False,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Stream LLM output as structured events.
 
@@ -426,6 +430,7 @@ async def generate_stream(
                 stop_sequences=stop_sequences,
                 tools=tools,
                 cancel_event=_cancel,
+                enable_thinking=enable_thinking,
             ):
                 if event.preview:
                     yield event
