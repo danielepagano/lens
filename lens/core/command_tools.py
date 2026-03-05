@@ -86,8 +86,9 @@ async def _kb_with_tag(args: dict[str, Any], project_root: Path) -> str:
         return "(no tags provided)"
     recurse_raw = args.get("recurse")
     recurse: int | None = int(recurse_raw) if recurse_raw is not None else None
+    expand: bool = bool(args.get("expand", False))
 
-    result = _cmd_kb_with_tag(tags, expand=True, recurse=recurse)
+    result = _cmd_kb_with_tag(tags, expand=expand, recurse=recurse)
     if not result.ids:
         return f"(no KB objects found with tags: {', '.join(tags)})"
 
@@ -109,7 +110,8 @@ register_command_tool(
         description=(
             "Retrieve one or more KB objects by canonical ID. Use to look up a specific "
             "entity (npc, loc, faction, front, lore, pc, spell, stat, etc.) before "
-            "writing about it. Automatically includes linked objects. Read-only."
+            "writing about it. Append '+' to an ID (e.g. 'npc.gandalf+') to also fetch "
+            "objects linked from it. Read-only."
         ),
         parameters={
             "type": "object",
@@ -118,7 +120,8 @@ register_command_tool(
                     "type": "array",
                     "items": {"type": "string"},
                     "description": (
-                        "One or more canonical KB IDs, e.g. ['npc.gandalf', 'loc.rivendell']"
+                        "One or more canonical KB IDs, e.g. ['npc.gandalf', 'loc.rivendell']. "
+                        "Append '+' to fetch linked objects too, e.g. ['npc.gandalf+']."
                     ),
                 },
             },
@@ -135,7 +138,8 @@ register_command_tool(
             "Find all KB objects that have ALL of the given tags. Useful for discovering "
             "available entities of a type or linked to a specific object "
             "(e.g. all factions, all locations in a region, all NPCs in a faction). "
-            "Returns IDs and full object text. Read-only."
+            "Returns matching IDs by default; set expand=true to also return full object text. "
+            "Read-only."
         ),
         parameters={
             "type": "object",
@@ -146,6 +150,13 @@ register_command_tool(
                     "description": (
                         "Tags all matched objects must have. "
                         "Examples: ['faction'], ['loc.springfield'], ['npc', 'faction.thieves-guild']"
+                    ),
+                },
+                "expand": {
+                    "type": "boolean",
+                    "description": (
+                        "If true, return the full text of each matched object in addition to IDs. "
+                        "Default false (IDs only)."
                     ),
                 },
                 "recurse": {

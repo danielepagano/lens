@@ -4,33 +4,32 @@
 sub-node.  The LLM reasons with extended thinking, uses ``kb_get`` and
 ``kb_with_tag`` to inspect existing KB objects, and outputs proposals as
 fenced ``kb`` blocks (``lens kb extract`` format).  After generation, the
-operator automatically applies those blocks to the knowledge store and writes
-a self-closing ``[design:<id>/]: #`` annotation in the parent — the sub-node
-file is preserved as a durable record of the design session.
+operator automatically applies those blocks to the knowledge store.
 
-Secrets: the LLM may include ``<!-- ai:secret: plaintext -->`` in its KB
-proposals; the platform ROT13-encodes them on write.
+The parent node gets an open ``[design:<id>]: #`` annotation written before
+generation starts, and a matching ``[/design:<id>]: #`` close tag written
+afterwards.  The sub-node file is preserved as a durable record of the
+design session.
 
-Design is available in all projects.  It does not register as an operator
-tool — sessions are always user-initiated.
+Continue behaviour: if a pending transaction for the same design id already
+exists (i.e. the previous run was interrupted before the close tag was
+written), running ``lens design <id>`` again appends a new generation round
+to the existing sub-node and re-closes the annotation pair.
 """
 
 from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
-from pathlib import Path
 from typing import Any, ClassVar
 
 from lens.core.command_tools import get_command_registry
-from lens.core.commands.kb import KbExtractResult, parse_kb_fences
-from lens.core.context import crawl
-from lens.core.knowledge import KnowledgeStore, parse_id
+from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
+from lens.core.context import assemble_prompt, crawl
 from lens.core.llm import LLMError, generate_stream
-from lens.core.narrative import NarrativeNode
+from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator, OperatorError
 from lens.core.project import ProjectSession, validate_slug
-from lens.core.storage import Storage
 
 logger = logging.getLogger(__name__)
 
@@ -124,42 +123,6 @@ class DesignOperator(Operator):
         return INSTRUCTION_WITH_PROMPT.format(prompt=prompt) if prompt else INSTRUCTION_OPEN
 
     # ------------------------------------------------------------------
-    # KB fence application
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _apply_kb_fences(
-        content: str,
-        project_root: Path,
-        storage: Storage,
-    ) -> KbExtractResult:
-        """Parse ```kb blocks from *content* and apply them via *storage*."""
-        entries, errors = parse_kb_fences(content)
-        result = KbExtractResult(errors=list(errors))
-
-        if not entries:
-            return result
-
-        kb = KnowledgeStore.for_project(project_root, storage=storage)
-        for entry in entries:
-            try:
-                parse_id(entry.id)
-            except ValueError as e:
-                result.errors.append(
-                    f"invalid KB id '{entry.id}': {e}"
-                )
-                continue
-            is_new = not kb.exists(entry.id)
-            kb.store_object(entry.id, entry.content)
-            if entry.tags:
-                err = kb.add_tags(entry.id, entry.tags)
-                if err:
-                    result.errors.append(f"tag error for '{entry.id}': {err}")
-            (result.inserted if is_new else result.updated).append(entry.id)
-
-        return result
-
-    # ------------------------------------------------------------------
     # Main entry point
     # ------------------------------------------------------------------
 
@@ -176,7 +139,7 @@ class DesignOperator(Operator):
         llm_id: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> KbExtractResult:
-        """Create a design sub-node, generate content, apply kb fences, self-close.
+        """Create (or continue) a design sub-node, generate content, apply kb fences.
 
         Returns the :class:`~lens.core.commands.kb.KbExtractResult` from
         applying the generated kb blocks (for reporting in the CLI).
@@ -191,7 +154,23 @@ class DesignOperator(Operator):
             )
 
         cursor = narrative.find_cursor()
-        if id in cursor.child_keys():
+
+        # Detect an interrupted design: the cursor may have descended into the
+        # design sub-node because the open annotation was written but the close
+        # tag was not yet appended.  In that case, step back to the parent.
+        is_interrupted = False
+        if cursor.key_path and cursor.key_path[-1] == id:
+            parent = NarrativeNode(
+                narrative_root=cursor.narrative_root,
+                key_path=cursor.key_path[:-1],
+            )
+            parent_text = parent.md_path().read_text(encoding="utf-8")
+            open_ann = find_unclosed_cursor_annotation(parent_text)
+            if open_ann is not None and open_ann.operator == cls.name and open_ann.id == id:
+                is_interrupted = True
+                cursor = parent
+
+        if not is_interrupted and id in cursor.child_keys():
             raise OperatorError(
                 f"design node '{id}' already exists; "
                 "use 'lens rollback' to undo or choose a different id"
@@ -202,23 +181,21 @@ class DesignOperator(Operator):
         storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
 
-        # Promote cursor to folder and create an empty child node file.
-        if cursor.is_leaf():
-            cursor.to_folder(storage)
-        child_md = cursor.md_path().parent / f"{id}.md"
-        storage.write_file(child_md, "")
+        if not is_interrupted:
+            # Fresh: create sub-node file and write open annotation to parent.
+            if cursor.is_leaf():
+                cursor.to_folder(storage)
+            storage.write_file(cursor.md_path().parent / f"{id}.md", "")
+            op.append_to_node(cursor, op.build_open_tag(id) + "\n")
 
-        # Write self-closing annotation to parent immediately so the
-        # transaction is recorded even if generation is interrupted.
-        self_close_tag = op.build_self_closing_tag(id)
-        op.append_to_node(cursor, self_close_tag + "\n")
+        # Path to the child sub-node file (recomputed after possible folder promotion).
+        child_md = cursor.md_path().parent / f"{id}.md"
 
         # Build prompt.
         ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
         crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
-        from lens.core.context import assemble_prompt
         messages = assemble_prompt(
             crawl_result,
             system_prompt=op.system_prompt,
@@ -268,18 +245,25 @@ class DesignOperator(Operator):
         if interrupted:
             # Partial content is still useful; write what we have.
             if content.strip():
-                storage.write_file(child_md, content + "\n")
+                existing = child_md.read_text(encoding="utf-8") if child_md.exists() else ""
+                sep = "\n" if existing.endswith("\n") else "\n\n"
+                storage.write_file(child_md, existing + sep + content + "\n")
             return KbExtractResult()
 
         if not content.strip():
             raise OperatorError("no content generated")
 
-        # Write content to the sub-node.
-        storage.write_file(child_md, content + "\n")
+        # Append generated content to sub-node file.
+        existing = child_md.read_text(encoding="utf-8") if child_md.exists() else ""
+        sep = "\n" if existing.endswith("\n") else "\n\n"
+        storage.write_file(child_md, existing + sep + content + "\n")
 
-        # Apply kb fences from the generated content using the same storage
-        # transaction so narrative + KB changes commit together.
-        result = cls._apply_kb_fences(content, session.project_root, storage)
+        # Close the annotation in the parent node.
+        op.append_to_node(cursor, op.build_close_tag(id) + "\n")
+
+        # Apply kb fences from generated content using the same storage transaction
+        # so narrative + KB changes commit together.
+        result = kb_extract_from_text(content, session.project_root, storage)
         for err in result.errors:
             logger.warning("design: %s", err)
 
