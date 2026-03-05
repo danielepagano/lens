@@ -1,0 +1,14 @@
+**Blight** · 4th-level Necromancy
+
+**Casting Time**: 1 Action
+**Range**: 30 ft.
+**Components**: V, S
+**Duration**: Instantaneous
+
+A creature that you can see within range makes a Constitution saving throw, taking 8d8 Necrotic damage on a failed save or half as much damage on a successful one. A Plant creature automatically fails the save.
+
+Alternatively, target a nonmagical plant that isn’t a creature, such as a tree or shrub. It doesn’t make a save; it simply withers and dies.
+
+**Using a Higher-Level Spell Slot.** The damage increases by 1d8 for each spell slot level above 4.
+
+[source: https://www.dndbeyond.com/spells/2618934-blight]: #

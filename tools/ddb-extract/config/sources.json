@@ -1,0 +1,741 @@
+{
+  "phb-2024": {
+    "name": "Player's Handbook",
+    "filterId": 145,
+    "types": [
+      "spells",
+      "items",
+      "equipment"
+    ]
+  },
+  "phb-2014": {
+    "name": "Player's Handbook (2014)",
+    "filterId": 2,
+    "types": [
+      "spells",
+      "items",
+      "equipment"
+    ]
+  },
+  "mm-2025": {
+    "name": "Monster Manual",
+    "filterId": 147,
+    "types": [
+      "monsters"
+    ]
+  },
+  "mm-2014": {
+    "name": "Monster Manual (2014)",
+    "filterId": 5,
+    "types": [
+      "monsters"
+    ]
+  },
+  "dmg-2024": {
+    "name": "Dungeon Master's Guide",
+    "filterId": 146,
+    "types": [
+      "items",
+      "equipment"
+    ]
+  },
+  "dmg-2014": {
+    "name": "Dungeon Master's Guide (2014)",
+    "filterId": 3,
+    "types": [
+      "items",
+      "equipment"
+    ]
+  },
+  "xge": {
+    "name": "Xanathar's Guide to Everything",
+    "filterId": 27,
+    "types": [
+      "spells",
+      "items"
+    ]
+  },
+  "tce": {
+    "name": "Tasha's Cauldron of Everything",
+    "filterId": 67,
+    "types": [
+      "spells",
+      "items"
+    ]
+  },
+  "mtof": {
+    "name": "Mordenkainen's Tome of Foes",
+    "filterId": 33,
+    "types": [
+      "monsters"
+    ]
+  },
+  "motm": {
+    "name": "Mordenkainen Presents: Monsters of the Multiverse",
+    "filterId": 85,
+    "types": [
+      "monsters"
+    ]
+  },
+  "vgtm": {
+    "name": "Volo's Guide to Monsters",
+    "filterId": 15,
+    "types": [
+      "monsters"
+    ]
+  },
+  "fizban": {
+    "name": "Fizban's Treasury of Dragons",
+    "filterId": 81,
+    "types": [
+      "monsters",
+      "spells",
+      "items"
+    ]
+  },
+  "spelljammer": {
+    "name": "Spelljammer: Adventures in Space",
+    "filterId": 90,
+    "types": [
+      "monsters",
+      "items"
+    ]
+  },
+  "dragonlance": {
+    "name": "Dragonlance: Shadow of the Dragon Queen",
+    "filterId": 95,
+    "types": [
+      "monsters",
+      "spells",
+      "items"
+    ]
+  },
+  "phandelver-shattered": {
+    "name": "Phandelver and Below: The Shattered Obelisk",
+    "filterId": 113,
+    "types": [
+      "monsters",
+      "items"
+    ]
+  },
+  "planescape": {
+    "name": "Planescape: Adventures in the Multiverse",
+    "filterId": 114,
+    "types": [
+      "monsters",
+      "items"
+    ]
+  },
+  "bigby-giants": {
+    "name": "Bigby Presents: Glory of the Giants",
+    "filterId": 110,
+    "types": [
+      "monsters",
+      "items"
+    ]
+  },
+  "book-many-things": {
+    "name": "The Book of Many Things",
+    "filterId": 109,
+    "types": [
+      "monsters",
+      "items"
+    ]
+  },
+  "vecna": {
+    "name": "Vecna: Eve of Ruin",
+    "filterId": 132,
+    "types": [
+      "monsters",
+      "items"
+    ]
+  },
+  "quests-infinite-staircase": {
+    "name": "Quests from the Infinite Staircase",
+    "filterId": 137,
+    "types": [
+      "monsters",
+      "items"
+    ]
+  },
+  "abomination-vaults": {
+    "name": "Abomination Vaults",
+    "filterId": 202,
+    "types": []
+  },
+  "acquisitions-incorporated": {
+    "name": "Acquisitions Incorporated",
+    "filterId": 44,
+    "types": []
+  },
+  "adventure-atlas-the-mortuary": {
+    "name": "Adventure Atlas: The Mortuary",
+    "filterId": 125,
+    "types": []
+  },
+  "astarions-book-of-hungers": {
+    "name": "Astarion's Book of Hungers",
+    "filterId": 217,
+    "types": []
+  },
+  "baldur-s-gate-gazetteer": {
+    "name": "Baldur’s Gate Gazetteer",
+    "filterId": 122,
+    "types": []
+  },
+  "baldur-s-gate-descent-into-avernus": {
+    "name": "Baldur’s Gate: Descent into Avernus",
+    "filterId": 48,
+    "types": []
+  },
+  "basic-rules-2014": {
+    "name": "Basic Rules (2014)",
+    "filterId": 1,
+    "types": []
+  },
+  "book-of-ebon-tides": {
+    "name": "Book of Ebon Tides",
+    "filterId": 151,
+    "types": []
+  },
+  "borderlands-quest-goblin-trouble": {
+    "name": "Borderlands Quest: Goblin Trouble",
+    "filterId": 195,
+    "types": []
+  },
+  "candlekeep-mysteries": {
+    "name": "Candlekeep Mysteries",
+    "filterId": 68,
+    "types": []
+  },
+  "critical-role": {
+    "name": "Critical Role",
+    "filterId": 31,
+    "types": []
+  },
+  "critical-role-call-of-the-netherdeep": {
+    "name": "Critical Role: Call of the Netherdeep",
+    "filterId": 83,
+    "types": []
+  },
+  "cthulhu-by-torchlight": {
+    "name": "Cthulhu by Torchlight",
+    "filterId": 200,
+    "types": []
+  },
+  "curse-of-strahd": {
+    "name": "Curse of Strahd",
+    "filterId": 6,
+    "types": []
+  },
+  "curse-of-strahd-character-options": {
+    "name": "Curse of Strahd: Character Options",
+    "filterId": 26,
+    "types": []
+  },
+  "d-d-beyond-basic-rules": {
+    "name": "D&D Beyond Basic Rules",
+    "filterId": 148,
+    "types": []
+  },
+  "descent-into-the-lost-caverns-of-tsojcanth": {
+    "name": "Descent into the Lost Caverns of Tsojcanth",
+    "filterId": 136,
+    "types": []
+  },
+  "divine-contention": {
+    "name": "Divine Contention",
+    "filterId": 52,
+    "types": []
+  },
+  "domains-of-delight-a-feywild-accessory": {
+    "name": "Domains of Delight: A Feywild Accessory",
+    "filterId": 116,
+    "types": []
+  },
+  "dragon-delves": {
+    "name": "Dragon Delves",
+    "filterId": 163,
+    "types": []
+  },
+  "dragon-of-icespire-peak": {
+    "name": "Dragon of Icespire Peak",
+    "filterId": 41,
+    "types": []
+  },
+  "dragons-of-stormwreck-isle": {
+    "name": "Dragons of Stormwreck Isle",
+    "filterId": 94,
+    "types": []
+  },
+  "dungeons-dragons-vs-rick-and-morty": {
+    "name": "Dungeons & Dragons vs. Rick and Morty",
+    "filterId": 54,
+    "types": []
+  },
+  "dungeons-of-drakkenheim": {
+    "name": "Dungeons of Drakkenheim",
+    "filterId": 131,
+    "types": []
+  },
+  "dungeons-of-drakkenheim-in-search-of-the-smugglers-secrets": {
+    "name": "Dungeons of Drakkenheim: In Search of the Smuggler's Secrets",
+    "filterId": 159,
+    "types": []
+  },
+  "eberron-forge-of-the-artificer": {
+    "name": "Eberron: Forge of the Artificer",
+    "filterId": 191,
+    "types": []
+  },
+  "eberron-rising-from-the-last-war": {
+    "name": "Eberron: Rising from the Last War",
+    "filterId": 49,
+    "types": []
+  },
+  "elemental-evil-players-companion": {
+    "name": "Elemental Evil Player's Companion",
+    "filterId": 4,
+    "types": []
+  },
+  "explorers-guide-to-wildemount": {
+    "name": "Explorer's Guide to Wildemount",
+    "filterId": 59,
+    "types": []
+  },
+  "exploring-eberron-2024": {
+    "name": "Exploring Eberron (2024)",
+    "filterId": 225,
+    "types": []
+  },
+  "faster-purple-worm-everybody-dies-vol-1": {
+    "name": "Faster, Purple Worm! Everybody Dies, Vol. 1",
+    "filterId": 227,
+    "types": []
+  },
+  "fated-flight-of-the-recluse": {
+    "name": "Fated Flight of the Recluse",
+    "filterId": 222,
+    "types": []
+  },
+  "flee-mortals": {
+    "name": "Flee, Mortals!",
+    "filterId": 142,
+    "types": []
+  },
+  "forgotten-realms-adventures-in-faer-n": {
+    "name": "Forgotten Realms: Adventures in Faerûn",
+    "filterId": 206,
+    "types": []
+  },
+  "forgotten-realms-heroes-of-faer-n": {
+    "name": "Forgotten Realms: Heroes of Faerûn",
+    "filterId": 205,
+    "types": []
+  },
+  "forgotten-realms-the-tenebrous-stone": {
+    "name": "Forgotten Realms: The Tenebrous Stone",
+    "filterId": 218,
+    "types": []
+  },
+  "frozen-sick": {
+    "name": "Frozen Sick",
+    "filterId": 62,
+    "types": []
+  },
+  "ghosts-of-saltmarsh": {
+    "name": "Ghosts of Saltmarsh",
+    "filterId": 43,
+    "types": []
+  },
+  "giants-of-the-star-forge": {
+    "name": "Giants of the Star Forge",
+    "filterId": 121,
+    "types": []
+  },
+  "grim-hollow-campaign-guide": {
+    "name": "Grim Hollow: Campaign Guide",
+    "filterId": 208,
+    "types": []
+  },
+  "grim-hollow-player-pack": {
+    "name": "Grim Hollow: Player Pack",
+    "filterId": 150,
+    "types": []
+  },
+  "grim-hollow-player-s-guide": {
+    "name": "Grim Hollow: Player’s Guide",
+    "filterId": 207,
+    "types": []
+  },
+  "guildmasters-guide-to-ravnica": {
+    "name": "Guildmasters’ Guide to Ravnica",
+    "filterId": 38,
+    "types": []
+  },
+  "heliana-s-guide-to-monster-hunting-part-1": {
+    "name": "Heliana’s Guide to Monster Hunting: Part 1",
+    "filterId": 162,
+    "types": []
+  },
+  "heroes-of-the-borderlands": {
+    "name": "Heroes of the Borderlands",
+    "filterId": 199,
+    "types": []
+  },
+  "heroes-feast-saving-the-children-s-menu": {
+    "name": "Heroes’ Feast: Saving the Children’s Menu",
+    "filterId": 129,
+    "types": []
+  },
+  "hold-back-the-dead": {
+    "name": "Hold Back The Dead",
+    "filterId": 157,
+    "types": []
+  },
+  "humblewood-campaign-setting": {
+    "name": "Humblewood Campaign Setting",
+    "filterId": 133,
+    "types": []
+  },
+  "humblewood-tales": {
+    "name": "Humblewood Tales",
+    "filterId": 158,
+    "types": []
+  },
+  "hunt-for-the-thessalhydra": {
+    "name": "Hunt for the Thessalhydra",
+    "filterId": 47,
+    "types": []
+  },
+  "icewind-dale-rime-of-the-frostmaiden": {
+    "name": "Icewind Dale: Rime of the Frostmaiden",
+    "filterId": 66,
+    "types": []
+  },
+  "infernal-machine-rebuild": {
+    "name": "Infernal Machine Rebuild",
+    "filterId": 56,
+    "types": []
+  },
+  "intro-to-stormwreck-isle": {
+    "name": "Intro to Stormwreck Isle",
+    "filterId": 128,
+    "types": []
+  },
+  "journeys-through-the-radiant-citadel": {
+    "name": "Journeys through the Radiant Citadel",
+    "filterId": 87,
+    "types": []
+  },
+  "keys-from-the-golden-vault": {
+    "name": "Keys from the Golden Vault",
+    "filterId": 103,
+    "types": []
+  },
+  "lairs-of-etharis": {
+    "name": "Lairs of Etharis",
+    "filterId": 130,
+    "types": []
+  },
+  "legendary-magic-items": {
+    "name": "Legendary Magic Items",
+    "filterId": 111,
+    "types": []
+  },
+  "lightning-keep": {
+    "name": "Lightning Keep",
+    "filterId": 126,
+    "types": []
+  },
+  "locathah-rising": {
+    "name": "Locathah Rising",
+    "filterId": 55,
+    "types": []
+  },
+  "lorwyn-first-light": {
+    "name": "Lorwyn: First Light",
+    "filterId": 220,
+    "types": []
+  },
+  "lost-laboratory-of-kwalish": {
+    "name": "Lost Laboratory of Kwalish",
+    "filterId": 40,
+    "types": []
+  },
+  "lost-mine-of-phandelver": {
+    "name": "Lost Mine of Phandelver",
+    "filterId": 8,
+    "types": []
+  },
+  "misplaced-monsters-volume-one": {
+    "name": "Misplaced Monsters: Volume One",
+    "filterId": 112,
+    "types": []
+  },
+  "monsters-of-drakkenheim": {
+    "name": "Monsters of Drakkenheim",
+    "filterId": 196,
+    "types": []
+  },
+  "monstrous-compendium-vol-1-spelljammer-creatures": {
+    "name": "Monstrous Compendium Vol. 1: Spelljammer Creatures",
+    "filterId": 89,
+    "types": []
+  },
+  "monstrous-compendium-vol-2-dragonlance-creatures": {
+    "name": "Monstrous Compendium Vol. 2: Dragonlance Creatures",
+    "filterId": 101,
+    "types": []
+  },
+  "monstrous-compendium-vol-3-minecraft-creatures": {
+    "name": "Monstrous Compendium Vol. 3: Minecraft Creatures",
+    "filterId": 115,
+    "types": []
+  },
+  "monstrous-compendium-vol-4-eldraine-creatures": {
+    "name": "Monstrous Compendium Vol. 4: Eldraine Creatures",
+    "filterId": 124,
+    "types": []
+  },
+  "mordenkainens-fiendish-folio-volume-1": {
+    "name": "Mordenkainen's Fiendish Folio Volume 1",
+    "filterId": 57,
+    "types": []
+  },
+  "mythic-odysseys-of-theros": {
+    "name": "Mythic Odysseys of Theros",
+    "filterId": 61,
+    "types": []
+  },
+  "netheril-s-fall": {
+    "name": "Netheril’s Fall",
+    "filterId": 216,
+    "types": []
+  },
+  "obojima-tales-from-the-tall-grass": {
+    "name": "Obojima: Tales from the Tall Grass",
+    "filterId": 160,
+    "types": []
+  },
+  "one-grung-above": {
+    "name": "One Grung Above",
+    "filterId": 60,
+    "types": []
+  },
+  "one-shot-wonders-10-coastal-one-shot-adventures": {
+    "name": "One-Shot Wonders: 10 Coastal One-Shot Adventures",
+    "filterId": 188,
+    "types": []
+  },
+  "one-shot-wonders-10-desert-one-shot-adventures": {
+    "name": "One-Shot Wonders: 10 Desert One-Shot Adventures",
+    "filterId": 189,
+    "types": []
+  },
+  "one-shot-wonders-10-forest-one-shot-adventures": {
+    "name": "One-Shot Wonders: 10 Forest One-Shot Adventures",
+    "filterId": 190,
+    "types": []
+  },
+  "one-shot-wonders-holiday-adventure-pack": {
+    "name": "One-Shot Wonders: Holiday Adventure Pack",
+    "filterId": 223,
+    "types": []
+  },
+  "out-of-the-abyss": {
+    "name": "Out of the Abyss",
+    "filterId": 9,
+    "types": []
+  },
+  "princes-of-the-apocalypse": {
+    "name": "Princes of the Apocalypse",
+    "filterId": 10,
+    "types": []
+  },
+  "prisoner-13": {
+    "name": "Prisoner 13",
+    "filterId": 105,
+    "types": []
+  },
+  "rrakkma": {
+    "name": "Rrakkma",
+    "filterId": 34,
+    "types": []
+  },
+  "ruins-of-symbaroum-setting-handbook": {
+    "name": "Ruins of Symbaroum: Setting Handbook",
+    "filterId": 167,
+    "types": []
+  },
+  "scions-of-elemental-evil": {
+    "name": "Scions of Elemental Evil",
+    "filterId": 153,
+    "types": []
+  },
+  "sleeping-dragon-s-wake": {
+    "name": "Sleeping Dragon’s Wake",
+    "filterId": 51,
+    "types": []
+  },
+  "spelljammer-academy": {
+    "name": "Spelljammer Academy",
+    "filterId": 93,
+    "types": []
+  },
+  "storm-kings-thunder": {
+    "name": "Storm King's Thunder",
+    "filterId": 12,
+    "types": []
+  },
+  "storm-lord-s-wrath": {
+    "name": "Storm Lord’s Wrath",
+    "filterId": 50,
+    "types": []
+  },
+  "stranger-things-welcome-to-the-hellfire-club": {
+    "name": "Stranger Things: Welcome to the Hellfire Club",
+    "filterId": 203,
+    "types": []
+  },
+  "strixhaven-a-curriculum-of-chaos": {
+    "name": "Strixhaven: A Curriculum of Chaos",
+    "filterId": 80,
+    "types": []
+  },
+  "sword-coast-adventurers-guide": {
+    "name": "Sword Coast Adventurer's Guide",
+    "filterId": 13,
+    "types": []
+  },
+  "tal-dorei-campaign-setting-reborn": {
+    "name": "Tal’Dorei Campaign Setting Reborn",
+    "filterId": 123,
+    "types": []
+  },
+  "tales-from-the-shadows": {
+    "name": "Tales from the Shadows",
+    "filterId": 152,
+    "types": []
+  },
+  "tales-from-the-yawning-portal": {
+    "name": "Tales from the Yawning Portal",
+    "filterId": 14,
+    "types": []
+  },
+  "the-crooked-moon-part-one-player-options-campaign-setting": {
+    "name": "The Crooked Moon Part One: Player Options & Campaign Setting",
+    "filterId": 193,
+    "types": []
+  },
+  "the-crooked-moon-part-two-monsters-adventure-campaign": {
+    "name": "The Crooked Moon Part Two: Monsters & Adventure Campaign",
+    "filterId": 194,
+    "types": []
+  },
+  "the-griffon-s-saddlebag-book-two": {
+    "name": "The Griffon’s Saddlebag: Book Two",
+    "filterId": 156,
+    "types": []
+  },
+  "the-gunslinger-class-valda-s-spire-of-secrets": {
+    "name": "The Gunslinger Class: Valda’s Spire of Secrets",
+    "filterId": 197,
+    "types": []
+  },
+  "the-illrigger-revised": {
+    "name": "The Illrigger Revised",
+    "filterId": 155,
+    "types": []
+  },
+  "the-lord-of-the-rings-roleplaying": {
+    "name": "The Lord of the Rings Roleplaying",
+    "filterId": 154,
+    "types": []
+  },
+  "the-malady-of-minarrh": {
+    "name": "The Malady of Minarrh",
+    "filterId": 161,
+    "types": []
+  },
+  "the-pugilist-class-2024": {
+    "name": "The Pugilist Class (2024)",
+    "filterId": 228,
+    "types": []
+  },
+  "the-tortle-package": {
+    "name": "The Tortle Package",
+    "filterId": 28,
+    "types": []
+  },
+  "the-vecna-dossier": {
+    "name": "The Vecna Dossier",
+    "filterId": 91,
+    "types": []
+  },
+  "the-wild-beyond-the-witchlight": {
+    "name": "The Wild Beyond the Witchlight",
+    "filterId": 79,
+    "types": []
+  },
+  "thieves-gallery": {
+    "name": "Thieves’ Gallery",
+    "filterId": 104,
+    "types": []
+  },
+  "tomb-of-annihilation": {
+    "name": "Tomb of Annihilation",
+    "filterId": 25,
+    "types": []
+  },
+  "tome-of-beasts-1": {
+    "name": "Tome of Beasts 1",
+    "filterId": 139,
+    "types": []
+  },
+  "tyranny-of-dragons": {
+    "name": "Tyranny of Dragons",
+    "filterId": 102,
+    "types": []
+  },
+  "uni-and-the-hunt-for-the-lost-horn": {
+    "name": "Uni and the Hunt for the Lost Horn",
+    "filterId": 149,
+    "types": []
+  },
+  "valda-s-spire-of-secrets-player-pack": {
+    "name": "Valda’s Spire of Secrets: Player Pack",
+    "filterId": 164,
+    "types": []
+  },
+  "van-richten-s-guide-to-ravenloft": {
+    "name": "Van Richten’s Guide to Ravenloft",
+    "filterId": 69,
+    "types": []
+  },
+  "vecna-nest-of-the-eldritch-eye": {
+    "name": "Vecna: Nest of the Eldritch Eye",
+    "filterId": 135,
+    "types": []
+  },
+  "waterdeep-dragon-heist": {
+    "name": "Waterdeep: Dragon Heist",
+    "filterId": 35,
+    "types": []
+  },
+  "waterdeep-dungeon-of-the-mad-mage": {
+    "name": "Waterdeep: Dungeon of the Mad Mage",
+    "filterId": 36,
+    "types": []
+  },
+  "wayfinders-guide-to-eberron": {
+    "name": "Wayfinder's Guide to Eberron",
+    "filterId": 37,
+    "types": []
+  },
+  "where-evil-lives": {
+    "name": "Where Evil Lives",
+    "filterId": 143,
+    "types": []
+  }
+}

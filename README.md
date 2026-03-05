@@ -373,6 +373,14 @@ verbose_llm  = true
 
 With this enabled, each LLM call will emit a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` formatted block to the logger at `INFO` level — showing the exact prompt sent and the full response received, with no raw protocol noise.
 
+## Tools
+
+### `tools/ddb-extract/`
+
+A standalone TypeScript CLI that extracts D&D Beyond content (spells, monsters, magic items, equipment) into Lens KB-formatted Markdown files using Playwright + CDP. Output files are consumed by `lens kb extract` to seed the `datasets/dnd/` knowledge store.
+
+See [`tools/ddb-extract/README.md`](tools/ddb-extract/README.md) for setup and usage.
+
 ## Development
 
 ```bash

@@ -1,0 +1,3235 @@
+[tags]
+"source:phb-2024" = [
+    "spell.acid-splash",
+    "spell.aid",
+    "spell.alarm",
+    "spell.alter-self",
+    "spell.animal-friendship",
+    "spell.animal-messenger",
+    "spell.animal-shapes",
+    "spell.animate-dead",
+    "spell.animate-objects",
+    "spell.antilife-shell",
+    "spell.antimagic-field",
+    "spell.antipathy-sympathy",
+    "spell.arcane-eye",
+    "spell.arcane-gate",
+    "spell.arcane-lock",
+    "spell.arcane-vigor",
+    "spell.armor-of-agathys",
+    "spell.arms-of-hadar",
+    "spell.astral-projection",
+    "spell.augury",
+    "spell.aura-of-life",
+    "spell.aura-of-purity",
+    "spell.aura-of-vitality",
+    "spell.awaken",
+    "spell.bane",
+    "spell.banishing-smite",
+    "spell.banishment",
+    "spell.barkskin",
+    "spell.beacon-of-hope",
+    "spell.beast-sense",
+    "spell.befuddlement",
+    "spell.bestow-curse",
+    "spell.bigbys-hand",
+    "spell.blade-barrier",
+    "spell.blade-ward",
+    "spell.bless",
+    "spell.blight",
+    "spell.blinding-smite",
+    "spell.blindness-deafness",
+    "spell.blink",
+    "spell.blur",
+    "spell.burning-hands",
+    "spell.call-lightning",
+    "spell.calm-emotions",
+    "spell.chain-lightning",
+    "spell.charm-monster",
+    "spell.charm-person",
+    "spell.chill-touch",
+    "spell.chromatic-orb",
+    "spell.circle-of-death",
+    "spell.circle-of-power",
+    "spell.clairvoyance",
+    "spell.clone",
+    "spell.cloud-of-daggers",
+    "spell.cloudkill",
+    "spell.color-spray",
+    "spell.command",
+    "spell.commune",
+    "spell.commune-with-nature",
+    "spell.compelled-duel",
+    "spell.comprehend-languages",
+    "spell.compulsion",
+    "spell.cone-of-cold",
+    "spell.confusion",
+    "spell.conjure-animals",
+    "spell.conjure-barrage",
+    "spell.conjure-celestial",
+    "spell.conjure-elemental",
+    "spell.conjure-fey",
+    "spell.conjure-minor-elementals",
+    "spell.conjure-volley",
+    "spell.conjure-woodland-beings",
+    "spell.contact-other-plane",
+    "spell.contagion",
+    "spell.contingency",
+    "spell.continual-flame",
+    "spell.control-water",
+    "spell.control-weather",
+    "spell.cordon-of-arrows",
+    "spell.counterspell",
+    "spell.create-food-and-water",
+    "spell.create-or-destroy-water",
+    "spell.create-undead",
+    "spell.creation",
+    "spell.crown-of-madness",
+    "spell.crusaders-mantle",
+    "spell.cure-wounds",
+    "spell.dancing-lights",
+    "spell.darkness",
+    "spell.darkvision",
+    "spell.daylight",
+    "spell.death-ward",
+    "spell.delayed-blast-fireball",
+    "spell.demiplane",
+    "spell.destructive-wave",
+    "spell.detect-evil-and-good",
+    "spell.detect-magic",
+    "spell.detect-poison-and-disease",
+    "spell.detect-thoughts",
+    "spell.dimension-door",
+    "spell.disguise-self",
+    "spell.disintegrate",
+    "spell.dispel-evil-and-good",
+    "spell.dispel-magic",
+    "spell.dissonant-whispers",
+    "spell.divination",
+    "spell.divine-favor",
+    "spell.divine-smite",
+    "spell.divine-word",
+    "spell.dominate-beast",
+    "spell.dominate-monster",
+    "spell.dominate-person",
+    "spell.dragons-breath",
+    "spell.drawmijs-instant-summons",
+    "spell.dream",
+    "spell.druidcraft",
+    "spell.earthquake",
+    "spell.eldritch-blast",
+    "spell.elemental-weapon",
+    "spell.elementalism",
+    "spell.enhance-ability",
+    "spell.enlarge-reduce",
+    "spell.ensnaring-strike",
+    "spell.entangle",
+    "spell.enthrall",
+    "spell.etherealness",
+    "spell.evards-black-tentacles",
+    "spell.expeditious-retreat",
+    "spell.eyebite",
+    "spell.fabricate",
+    "spell.faerie-fire",
+    "spell.false-life",
+    "spell.fear",
+    "spell.feather-fall",
+    "spell.feign-death",
+    "spell.find-familiar",
+    "spell.find-steed",
+    "spell.find-the-path",
+    "spell.find-traps",
+    "spell.finger-of-death",
+    "spell.fire-bolt",
+    "spell.fire-shield",
+    "spell.fire-storm",
+    "spell.fireball",
+    "spell.flame-blade",
+    "spell.flame-strike",
+    "spell.flaming-sphere",
+    "spell.flesh-to-stone",
+    "spell.fly",
+    "spell.fog-cloud",
+    "spell.forbiddance",
+    "spell.forcecage",
+    "spell.foresight",
+    "spell.fount-of-moonlight",
+    "spell.freedom-of-movement",
+    "spell.friends",
+    "spell.gaseous-form",
+    "spell.gate",
+    "spell.geas",
+    "spell.gentle-repose",
+    "spell.giant-insect",
+    "spell.glibness",
+    "spell.globe-of-invulnerability",
+    "spell.glyph-of-warding",
+    "spell.goodberry",
+    "spell.grasping-vine",
+    "spell.grease",
+    "spell.greater-invisibility",
+    "spell.greater-restoration",
+    "spell.guardian-of-faith",
+    "spell.guards-and-wards",
+    "spell.guidance",
+    "spell.guiding-bolt",
+    "spell.gust-of-wind",
+    "spell.hail-of-thorns",
+    "spell.hallow",
+    "spell.hallucinatory-terrain",
+    "spell.harm",
+    "spell.haste",
+    "spell.heal",
+    "spell.healing-word",
+    "spell.heat-metal",
+    "spell.hellish-rebuke",
+    "spell.heroes-feast",
+    "spell.heroism",
+    "spell.hex",
+    "spell.hold-monster",
+    "spell.hold-person",
+    "spell.holy-aura",
+    "spell.hunger-of-hadar",
+    "spell.hunters-mark",
+    "spell.hypnotic-pattern",
+    "spell.ice-knife",
+    "spell.ice-storm",
+    "spell.identify",
+    "spell.illusory-script",
+    "spell.imprisonment",
+    "spell.incendiary-cloud",
+    "spell.inflict-wounds",
+    "spell.insect-plague",
+    "spell.invisibility",
+    "spell.jallarzis-storm-of-radiance",
+    "spell.jump",
+    "spell.knock",
+    "spell.legend-lore",
+    "spell.leomunds-secret-chest",
+    "spell.leomunds-tiny-hut",
+    "spell.lesser-restoration",
+    "spell.levitate",
+    "spell.light",
+    "spell.lightning-arrow",
+    "spell.lightning-bolt",
+    "spell.locate-animals-or-plants",
+    "spell.locate-creature",
+    "spell.locate-object",
+    "spell.longstrider",
+    "spell.mage-armor",
+    "spell.mage-hand",
+    "spell.magic-circle",
+    "spell.magic-jar",
+    "spell.magic-missile",
+    "spell.magic-mouth",
+    "spell.magic-weapon",
+    "spell.major-image",
+    "spell.mass-cure-wounds",
+    "spell.mass-heal",
+    "spell.mass-healing-word",
+    "spell.mass-suggestion",
+    "spell.maze",
+    "spell.meld-into-stone",
+    "spell.melfs-acid-arrow",
+    "spell.mending",
+    "spell.message",
+    "spell.meteor-swarm",
+    "spell.mind-blank",
+    "spell.mind-sliver",
+    "spell.mind-spike",
+    "spell.minor-illusion",
+    "spell.mirage-arcane",
+    "spell.mirror-image",
+    "spell.mislead",
+    "spell.misty-step",
+    "spell.modify-memory",
+    "spell.moonbeam",
+    "spell.mordenkainens-faithful-hound",
+    "spell.mordenkainens-magnificent-mansion",
+    "spell.mordenkainens-private-sanctum",
+    "spell.mordenkainens-sword",
+    "spell.move-earth",
+    "spell.nondetection",
+    "spell.nystuls-magic-aura",
+    "spell.otilukes-freezing-sphere",
+    "spell.otilukes-resilient-sphere",
+    "spell.ottos-irresistible-dance",
+    "spell.pass-without-trace",
+    "spell.passwall",
+    "spell.phantasmal-force",
+    "spell.phantasmal-killer",
+    "spell.phantom-steed",
+    "spell.planar-ally",
+    "spell.planar-binding",
+    "spell.plane-shift",
+    "spell.plant-growth",
+    "spell.poison-spray",
+    "spell.polymorph",
+    "spell.power-word-fortify",
+    "spell.power-word-heal",
+    "spell.power-word-kill",
+    "spell.power-word-stun",
+    "spell.prayer-of-healing",
+    "spell.prestidigitation",
+    "spell.prismatic-spray",
+    "spell.prismatic-wall",
+    "spell.produce-flame",
+    "spell.programmed-illusion",
+    "spell.project-image",
+    "spell.protection-from-energy",
+    "spell.protection-from-evil-and-good",
+    "spell.protection-from-poison",
+    "spell.purify-food-and-drink",
+    "spell.raise-dead",
+    "spell.rarys-telepathic-bond",
+    "spell.ray-of-enfeeblement",
+    "spell.ray-of-frost",
+    "spell.ray-of-sickness",
+    "spell.regenerate",
+    "spell.reincarnate",
+    "spell.remove-curse",
+    "spell.resistance",
+    "spell.resurrection",
+    "spell.reverse-gravity",
+    "spell.revivify",
+    "spell.rope-trick",
+    "spell.sacred-flame",
+    "spell.sanctuary",
+    "spell.scorching-ray",
+    "spell.scrying",
+    "spell.searing-smite",
+    "spell.see-invisibility",
+    "spell.seeming",
+    "spell.sending",
+    "spell.sequester",
+    "spell.shapechange",
+    "spell.shatter",
+    "spell.shield",
+    "spell.shield-of-faith",
+    "spell.shillelagh",
+    "spell.shining-smite",
+    "spell.shocking-grasp",
+    "spell.silence",
+    "spell.silent-image",
+    "spell.simulacrum",
+    "spell.sleep",
+    "spell.sleet-storm",
+    "spell.slow",
+    "spell.sorcerous-burst",
+    "spell.spare-the-dying",
+    "spell.speak-with-animals",
+    "spell.speak-with-dead",
+    "spell.speak-with-plants",
+    "spell.spider-climb",
+    "spell.spike-growth",
+    "spell.spirit-guardians",
+    "spell.spiritual-weapon",
+    "spell.staggering-smite",
+    "spell.starry-wisp",
+    "spell.steel-wind-strike",
+    "spell.stinking-cloud",
+    "spell.stone-shape",
+    "spell.stoneskin",
+    "spell.storm-of-vengeance",
+    "spell.suggestion",
+    "spell.summon-aberration",
+    "spell.summon-beast",
+    "spell.summon-celestial",
+    "spell.summon-construct",
+    "spell.summon-dragon",
+    "spell.summon-elemental",
+    "spell.summon-fey",
+    "spell.summon-fiend",
+    "spell.summon-undead",
+    "spell.sunbeam",
+    "spell.sunburst",
+    "spell.swift-quiver",
+    "spell.symbol",
+    "spell.synaptic-static",
+    "spell.tashas-bubbling-cauldron",
+    "spell.tashas-hideous-laughter",
+    "spell.telekinesis",
+    "spell.telepathy",
+    "spell.teleport",
+    "spell.teleportation-circle",
+    "spell.tensers-floating-disk",
+    "spell.thaumaturgy",
+    "spell.thorn-whip",
+    "spell.thunderclap",
+    "spell.thunderous-smite",
+    "spell.thunderwave",
+    "spell.time-stop",
+    "spell.toll-the-dead",
+    "spell.tongues",
+    "spell.transport-via-plants",
+    "spell.tree-stride",
+    "spell.true-polymorph",
+    "spell.true-resurrection",
+    "spell.true-seeing",
+    "spell.true-strike",
+    "spell.tsunami",
+    "spell.unseen-servant",
+    "spell.vampiric-touch",
+    "spell.vicious-mockery",
+    "spell.vitriolic-sphere",
+    "spell.wall-of-fire",
+    "spell.wall-of-force",
+    "spell.wall-of-ice",
+    "spell.wall-of-stone",
+    "spell.wall-of-thorns",
+    "spell.warding-bond",
+    "spell.water-breathing",
+    "spell.water-walk",
+    "spell.web",
+    "spell.weird",
+    "spell.wind-walk",
+    "spell.wind-wall",
+    "spell.wish",
+    "spell.witch-bolt",
+    "spell.word-of-radiance",
+    "spell.word-of-recall",
+    "spell.wrathful-smite",
+    "spell.yolandes-regal-presence",
+    "spell.zone-of-truth",
+]
+"level:0" = [
+    "spell.acid-splash",
+    "spell.blade-ward",
+    "spell.chill-touch",
+    "spell.dancing-lights",
+    "spell.druidcraft",
+    "spell.eldritch-blast",
+    "spell.elementalism",
+    "spell.fire-bolt",
+    "spell.friends",
+    "spell.guidance",
+    "spell.light",
+    "spell.mage-hand",
+    "spell.mending",
+    "spell.message",
+    "spell.mind-sliver",
+    "spell.minor-illusion",
+    "spell.poison-spray",
+    "spell.prestidigitation",
+    "spell.produce-flame",
+    "spell.ray-of-frost",
+    "spell.resistance",
+    "spell.sacred-flame",
+    "spell.shillelagh",
+    "spell.shocking-grasp",
+    "spell.sorcerous-burst",
+    "spell.spare-the-dying",
+    "spell.starry-wisp",
+    "spell.thaumaturgy",
+    "spell.thorn-whip",
+    "spell.thunderclap",
+    "spell.toll-the-dead",
+    "spell.true-strike",
+    "spell.vicious-mockery",
+    "spell.word-of-radiance",
+]
+"school:evocation" = [
+    "spell.acid-splash",
+    "spell.bigbys-hand",
+    "spell.blade-barrier",
+    "spell.blinding-smite",
+    "spell.burning-hands",
+    "spell.chain-lightning",
+    "spell.chromatic-orb",
+    "spell.cone-of-cold",
+    "spell.continual-flame",
+    "spell.crusaders-mantle",
+    "spell.darkness",
+    "spell.daylight",
+    "spell.delayed-blast-fireball",
+    "spell.destructive-wave",
+    "spell.divine-smite",
+    "spell.divine-word",
+    "spell.eldritch-blast",
+    "spell.faerie-fire",
+    "spell.fire-bolt",
+    "spell.fire-shield",
+    "spell.fire-storm",
+    "spell.fireball",
+    "spell.flame-blade",
+    "spell.flame-strike",
+    "spell.forcecage",
+    "spell.fount-of-moonlight",
+    "spell.guiding-bolt",
+    "spell.gust-of-wind",
+    "spell.hellish-rebuke",
+    "spell.ice-storm",
+    "spell.jallarzis-storm-of-radiance",
+    "spell.leomunds-tiny-hut",
+    "spell.light",
+    "spell.lightning-bolt",
+    "spell.magic-missile",
+    "spell.melfs-acid-arrow",
+    "spell.meteor-swarm",
+    "spell.moonbeam",
+    "spell.mordenkainens-sword",
+    "spell.otilukes-freezing-sphere",
+    "spell.prismatic-spray",
+    "spell.ray-of-frost",
+    "spell.sacred-flame",
+    "spell.scorching-ray",
+    "spell.searing-smite",
+    "spell.shatter",
+    "spell.shocking-grasp",
+    "spell.sorcerous-burst",
+    "spell.spiritual-weapon",
+    "spell.starry-wisp",
+    "spell.sunbeam",
+    "spell.sunburst",
+    "spell.thunderclap",
+    "spell.thunderous-smite",
+    "spell.thunderwave",
+    "spell.vitriolic-sphere",
+    "spell.wall-of-fire",
+    "spell.wall-of-force",
+    "spell.wall-of-ice",
+    "spell.wall-of-stone",
+    "spell.wind-wall",
+    "spell.witch-bolt",
+    "spell.word-of-radiance",
+]
+"level:2" = [
+    "spell.aid",
+    "spell.alter-self",
+    "spell.animal-messenger",
+    "spell.arcane-lock",
+    "spell.arcane-vigor",
+    "spell.augury",
+    "spell.barkskin",
+    "spell.beast-sense",
+    "spell.blindness-deafness",
+    "spell.blur",
+    "spell.calm-emotions",
+    "spell.cloud-of-daggers",
+    "spell.continual-flame",
+    "spell.cordon-of-arrows",
+    "spell.crown-of-madness",
+    "spell.darkness",
+    "spell.darkvision",
+    "spell.detect-thoughts",
+    "spell.dragons-breath",
+    "spell.enhance-ability",
+    "spell.enlarge-reduce",
+    "spell.enthrall",
+    "spell.find-steed",
+    "spell.find-traps",
+    "spell.flame-blade",
+    "spell.flaming-sphere",
+    "spell.gentle-repose",
+    "spell.gust-of-wind",
+    "spell.heat-metal",
+    "spell.hold-person",
+    "spell.invisibility",
+    "spell.knock",
+    "spell.lesser-restoration",
+    "spell.levitate",
+    "spell.locate-animals-or-plants",
+    "spell.locate-object",
+    "spell.magic-mouth",
+    "spell.magic-weapon",
+    "spell.melfs-acid-arrow",
+    "spell.mind-spike",
+    "spell.mirror-image",
+    "spell.misty-step",
+    "spell.moonbeam",
+    "spell.nystuls-magic-aura",
+    "spell.pass-without-trace",
+    "spell.phantasmal-force",
+    "spell.prayer-of-healing",
+    "spell.protection-from-poison",
+    "spell.ray-of-enfeeblement",
+    "spell.rope-trick",
+    "spell.scorching-ray",
+    "spell.see-invisibility",
+    "spell.shatter",
+    "spell.shining-smite",
+    "spell.silence",
+    "spell.spider-climb",
+    "spell.spike-growth",
+    "spell.spiritual-weapon",
+    "spell.suggestion",
+    "spell.summon-beast",
+    "spell.warding-bond",
+    "spell.web",
+    "spell.zone-of-truth",
+]
+"school:abjuration" = [
+    "spell.aid",
+    "spell.alarm",
+    "spell.antilife-shell",
+    "spell.antimagic-field",
+    "spell.arcane-lock",
+    "spell.arcane-vigor",
+    "spell.armor-of-agathys",
+    "spell.aura-of-life",
+    "spell.aura-of-purity",
+    "spell.aura-of-vitality",
+    "spell.banishment",
+    "spell.beacon-of-hope",
+    "spell.blade-ward",
+    "spell.circle-of-power",
+    "spell.contingency",
+    "spell.counterspell",
+    "spell.cure-wounds",
+    "spell.death-ward",
+    "spell.dispel-evil-and-good",
+    "spell.dispel-magic",
+    "spell.forbiddance",
+    "spell.freedom-of-movement",
+    "spell.globe-of-invulnerability",
+    "spell.glyph-of-warding",
+    "spell.greater-restoration",
+    "spell.guards-and-wards",
+    "spell.hallow",
+    "spell.heal",
+    "spell.healing-word",
+    "spell.holy-aura",
+    "spell.imprisonment",
+    "spell.lesser-restoration",
+    "spell.mage-armor",
+    "spell.magic-circle",
+    "spell.mass-cure-wounds",
+    "spell.mass-heal",
+    "spell.mass-healing-word",
+    "spell.mind-blank",
+    "spell.mordenkainens-private-sanctum",
+    "spell.nondetection",
+    "spell.otilukes-resilient-sphere",
+    "spell.pass-without-trace",
+    "spell.planar-binding",
+    "spell.prayer-of-healing",
+    "spell.prismatic-wall",
+    "spell.protection-from-energy",
+    "spell.protection-from-evil-and-good",
+    "spell.protection-from-poison",
+    "spell.remove-curse",
+    "spell.resistance",
+    "spell.sanctuary",
+    "spell.shield",
+    "spell.shield-of-faith",
+    "spell.symbol",
+    "spell.warding-bond",
+]
+"level:1" = [
+    "spell.alarm",
+    "spell.animal-friendship",
+    "spell.armor-of-agathys",
+    "spell.arms-of-hadar",
+    "spell.bane",
+    "spell.bless",
+    "spell.burning-hands",
+    "spell.charm-person",
+    "spell.chromatic-orb",
+    "spell.color-spray",
+    "spell.command",
+    "spell.compelled-duel",
+    "spell.comprehend-languages",
+    "spell.create-or-destroy-water",
+    "spell.cure-wounds",
+    "spell.detect-evil-and-good",
+    "spell.detect-magic",
+    "spell.detect-poison-and-disease",
+    "spell.disguise-self",
+    "spell.dissonant-whispers",
+    "spell.divine-favor",
+    "spell.divine-smite",
+    "spell.ensnaring-strike",
+    "spell.entangle",
+    "spell.expeditious-retreat",
+    "spell.faerie-fire",
+    "spell.false-life",
+    "spell.feather-fall",
+    "spell.find-familiar",
+    "spell.fog-cloud",
+    "spell.goodberry",
+    "spell.grease",
+    "spell.guiding-bolt",
+    "spell.hail-of-thorns",
+    "spell.healing-word",
+    "spell.hellish-rebuke",
+    "spell.heroism",
+    "spell.hex",
+    "spell.hunters-mark",
+    "spell.ice-knife",
+    "spell.identify",
+    "spell.illusory-script",
+    "spell.inflict-wounds",
+    "spell.jump",
+    "spell.longstrider",
+    "spell.mage-armor",
+    "spell.magic-missile",
+    "spell.protection-from-evil-and-good",
+    "spell.purify-food-and-drink",
+    "spell.ray-of-sickness",
+    "spell.sanctuary",
+    "spell.searing-smite",
+    "spell.shield",
+    "spell.shield-of-faith",
+    "spell.silent-image",
+    "spell.sleep",
+    "spell.speak-with-animals",
+    "spell.tashas-hideous-laughter",
+    "spell.tensers-floating-disk",
+    "spell.thunderous-smite",
+    "spell.thunderwave",
+    "spell.unseen-servant",
+    "spell.witch-bolt",
+    "spell.wrathful-smite",
+]
+ritual = [
+    "spell.alarm",
+    "spell.animal-messenger",
+    "spell.augury",
+    "spell.beast-sense",
+    "spell.commune",
+    "spell.commune-with-nature",
+    "spell.comprehend-languages",
+    "spell.contact-other-plane",
+    "spell.detect-magic",
+    "spell.detect-poison-and-disease",
+    "spell.divination",
+    "spell.drawmijs-instant-summons",
+    "spell.feign-death",
+    "spell.find-familiar",
+    "spell.forbiddance",
+    "spell.gentle-repose",
+    "spell.identify",
+    "spell.illusory-script",
+    "spell.leomunds-tiny-hut",
+    "spell.locate-animals-or-plants",
+    "spell.magic-mouth",
+    "spell.meld-into-stone",
+    "spell.phantom-steed",
+    "spell.purify-food-and-drink",
+    "spell.rarys-telepathic-bond",
+    "spell.silence",
+    "spell.speak-with-animals",
+    "spell.spiritual-weapon",
+    "spell.tensers-floating-disk",
+    "spell.unseen-servant",
+    "spell.water-breathing",
+    "spell.water-walk",
+]
+"school:transmutation" = [
+    "spell.alter-self",
+    "spell.animal-shapes",
+    "spell.animate-objects",
+    "spell.awaken",
+    "spell.barkskin",
+    "spell.blindness-deafness",
+    "spell.blink",
+    "spell.control-water",
+    "spell.control-weather",
+    "spell.cordon-of-arrows",
+    "spell.create-or-destroy-water",
+    "spell.darkvision",
+    "spell.disintegrate",
+    "spell.divine-favor",
+    "spell.dragons-breath",
+    "spell.druidcraft",
+    "spell.earthquake",
+    "spell.elemental-weapon",
+    "spell.elementalism",
+    "spell.enhance-ability",
+    "spell.enlarge-reduce",
+    "spell.expeditious-retreat",
+    "spell.fabricate",
+    "spell.feather-fall",
+    "spell.flesh-to-stone",
+    "spell.fly",
+    "spell.gaseous-form",
+    "spell.haste",
+    "spell.heat-metal",
+    "spell.jump",
+    "spell.knock",
+    "spell.levitate",
+    "spell.lightning-arrow",
+    "spell.longstrider",
+    "spell.magic-weapon",
+    "spell.meld-into-stone",
+    "spell.mending",
+    "spell.message",
+    "spell.move-earth",
+    "spell.passwall",
+    "spell.plant-growth",
+    "spell.polymorph",
+    "spell.prestidigitation",
+    "spell.purify-food-and-drink",
+    "spell.regenerate",
+    "spell.reverse-gravity",
+    "spell.rope-trick",
+    "spell.sequester",
+    "spell.shapechange",
+    "spell.shillelagh",
+    "spell.shining-smite",
+    "spell.slow",
+    "spell.speak-with-plants",
+    "spell.spider-climb",
+    "spell.spike-growth",
+    "spell.stone-shape",
+    "spell.stoneskin",
+    "spell.swift-quiver",
+    "spell.telekinesis",
+    "spell.thaumaturgy",
+    "spell.thorn-whip",
+    "spell.time-stop",
+    "spell.true-polymorph",
+    "spell.water-breathing",
+    "spell.water-walk",
+    "spell.wind-walk",
+]
+"school:enchantment" = [
+    "spell.animal-friendship",
+    "spell.animal-messenger",
+    "spell.antipathy-sympathy",
+    "spell.bane",
+    "spell.befuddlement",
+    "spell.bless",
+    "spell.calm-emotions",
+    "spell.charm-monster",
+    "spell.charm-person",
+    "spell.command",
+    "spell.compelled-duel",
+    "spell.compulsion",
+    "spell.confusion",
+    "spell.crown-of-madness",
+    "spell.dissonant-whispers",
+    "spell.dominate-beast",
+    "spell.dominate-monster",
+    "spell.dominate-person",
+    "spell.enthrall",
+    "spell.friends",
+    "spell.geas",
+    "spell.glibness",
+    "spell.heroism",
+    "spell.hex",
+    "spell.hold-monster",
+    "spell.hold-person",
+    "spell.mass-suggestion",
+    "spell.mind-sliver",
+    "spell.modify-memory",
+    "spell.ottos-irresistible-dance",
+    "spell.power-word-fortify",
+    "spell.power-word-heal",
+    "spell.power-word-kill",
+    "spell.power-word-stun",
+    "spell.sleep",
+    "spell.staggering-smite",
+    "spell.suggestion",
+    "spell.synaptic-static",
+    "spell.tashas-hideous-laughter",
+    "spell.vicious-mockery",
+    "spell.yolandes-regal-presence",
+    "spell.zone-of-truth",
+]
+"level:8" = [
+    "spell.animal-shapes",
+    "spell.antimagic-field",
+    "spell.antipathy-sympathy",
+    "spell.befuddlement",
+    "spell.clone",
+    "spell.control-weather",
+    "spell.demiplane",
+    "spell.dominate-monster",
+    "spell.earthquake",
+    "spell.glibness",
+    "spell.holy-aura",
+    "spell.incendiary-cloud",
+    "spell.maze",
+    "spell.mind-blank",
+    "spell.power-word-stun",
+    "spell.sunburst",
+    "spell.telepathy",
+    "spell.tsunami",
+]
+"level:3" = [
+    "spell.animate-dead",
+    "spell.aura-of-vitality",
+    "spell.beacon-of-hope",
+    "spell.bestow-curse",
+    "spell.blinding-smite",
+    "spell.blink",
+    "spell.call-lightning",
+    "spell.clairvoyance",
+    "spell.conjure-animals",
+    "spell.conjure-barrage",
+    "spell.counterspell",
+    "spell.create-food-and-water",
+    "spell.crusaders-mantle",
+    "spell.daylight",
+    "spell.dispel-magic",
+    "spell.elemental-weapon",
+    "spell.fear",
+    "spell.feign-death",
+    "spell.fireball",
+    "spell.fly",
+    "spell.gaseous-form",
+    "spell.glyph-of-warding",
+    "spell.haste",
+    "spell.hunger-of-hadar",
+    "spell.hypnotic-pattern",
+    "spell.leomunds-tiny-hut",
+    "spell.lightning-arrow",
+    "spell.lightning-bolt",
+    "spell.magic-circle",
+    "spell.major-image",
+    "spell.mass-healing-word",
+    "spell.meld-into-stone",
+    "spell.nondetection",
+    "spell.phantom-steed",
+    "spell.plant-growth",
+    "spell.protection-from-energy",
+    "spell.remove-curse",
+    "spell.revivify",
+    "spell.sending",
+    "spell.sleet-storm",
+    "spell.slow",
+    "spell.speak-with-dead",
+    "spell.speak-with-plants",
+    "spell.spirit-guardians",
+    "spell.stinking-cloud",
+    "spell.summon-fey",
+    "spell.summon-undead",
+    "spell.tongues",
+    "spell.vampiric-touch",
+    "spell.water-breathing",
+    "spell.water-walk",
+    "spell.wind-wall",
+]
+"school:necromancy" = [
+    "spell.animate-dead",
+    "spell.astral-projection",
+    "spell.bestow-curse",
+    "spell.blight",
+    "spell.chill-touch",
+    "spell.circle-of-death",
+    "spell.clone",
+    "spell.contagion",
+    "spell.create-undead",
+    "spell.eyebite",
+    "spell.false-life",
+    "spell.feign-death",
+    "spell.finger-of-death",
+    "spell.gentle-repose",
+    "spell.harm",
+    "spell.inflict-wounds",
+    "spell.magic-jar",
+    "spell.poison-spray",
+    "spell.raise-dead",
+    "spell.ray-of-enfeeblement",
+    "spell.ray-of-sickness",
+    "spell.reincarnate",
+    "spell.resurrection",
+    "spell.revivify",
+    "spell.spare-the-dying",
+    "spell.speak-with-dead",
+    "spell.summon-undead",
+    "spell.toll-the-dead",
+    "spell.true-resurrection",
+    "spell.vampiric-touch",
+    "spell.wrathful-smite",
+]
+"level:5" = [
+    "spell.animate-objects",
+    "spell.antilife-shell",
+    "spell.awaken",
+    "spell.banishing-smite",
+    "spell.bigbys-hand",
+    "spell.circle-of-power",
+    "spell.cloudkill",
+    "spell.commune",
+    "spell.commune-with-nature",
+    "spell.cone-of-cold",
+    "spell.conjure-elemental",
+    "spell.conjure-volley",
+    "spell.contact-other-plane",
+    "spell.contagion",
+    "spell.creation",
+    "spell.destructive-wave",
+    "spell.dispel-evil-and-good",
+    "spell.dominate-person",
+    "spell.dream",
+    "spell.flame-strike",
+    "spell.geas",
+    "spell.greater-restoration",
+    "spell.hallow",
+    "spell.hold-monster",
+    "spell.insect-plague",
+    "spell.jallarzis-storm-of-radiance",
+    "spell.legend-lore",
+    "spell.mass-cure-wounds",
+    "spell.mislead",
+    "spell.modify-memory",
+    "spell.passwall",
+    "spell.planar-binding",
+    "spell.raise-dead",
+    "spell.rarys-telepathic-bond",
+    "spell.reincarnate",
+    "spell.scrying",
+    "spell.seeming",
+    "spell.steel-wind-strike",
+    "spell.summon-celestial",
+    "spell.summon-dragon",
+    "spell.swift-quiver",
+    "spell.synaptic-static",
+    "spell.telekinesis",
+    "spell.teleportation-circle",
+    "spell.tree-stride",
+    "spell.wall-of-force",
+    "spell.wall-of-stone",
+    "spell.yolandes-regal-presence",
+]
+"level:4" = [
+    "spell.arcane-eye",
+    "spell.aura-of-life",
+    "spell.aura-of-purity",
+    "spell.banishment",
+    "spell.blight",
+    "spell.charm-monster",
+    "spell.compulsion",
+    "spell.confusion",
+    "spell.conjure-minor-elementals",
+    "spell.conjure-woodland-beings",
+    "spell.control-water",
+    "spell.death-ward",
+    "spell.dimension-door",
+    "spell.divination",
+    "spell.dominate-beast",
+    "spell.evards-black-tentacles",
+    "spell.fabricate",
+    "spell.fire-shield",
+    "spell.fount-of-moonlight",
+    "spell.freedom-of-movement",
+    "spell.giant-insect",
+    "spell.grasping-vine",
+    "spell.greater-invisibility",
+    "spell.guardian-of-faith",
+    "spell.hallucinatory-terrain",
+    "spell.ice-storm",
+    "spell.leomunds-secret-chest",
+    "spell.locate-creature",
+    "spell.mordenkainens-faithful-hound",
+    "spell.mordenkainens-private-sanctum",
+    "spell.otilukes-resilient-sphere",
+    "spell.phantasmal-killer",
+    "spell.polymorph",
+    "spell.staggering-smite",
+    "spell.stone-shape",
+    "spell.stoneskin",
+    "spell.summon-aberration",
+    "spell.summon-construct",
+    "spell.summon-elemental",
+    "spell.vitriolic-sphere",
+    "spell.wall-of-fire",
+]
+"school:divination" = [
+    "spell.arcane-eye",
+    "spell.augury",
+    "spell.beast-sense",
+    "spell.clairvoyance",
+    "spell.commune",
+    "spell.commune-with-nature",
+    "spell.comprehend-languages",
+    "spell.contact-other-plane",
+    "spell.detect-evil-and-good",
+    "spell.detect-magic",
+    "spell.detect-poison-and-disease",
+    "spell.detect-thoughts",
+    "spell.divination",
+    "spell.find-the-path",
+    "spell.find-traps",
+    "spell.foresight",
+    "spell.guidance",
+    "spell.hunters-mark",
+    "spell.identify",
+    "spell.legend-lore",
+    "spell.locate-animals-or-plants",
+    "spell.locate-creature",
+    "spell.locate-object",
+    "spell.mind-spike",
+    "spell.rarys-telepathic-bond",
+    "spell.scrying",
+    "spell.see-invisibility",
+    "spell.sending",
+    "spell.speak-with-animals",
+    "spell.telepathy",
+    "spell.tongues",
+    "spell.true-seeing",
+    "spell.true-strike",
+]
+"level:6" = [
+    "spell.arcane-gate",
+    "spell.blade-barrier",
+    "spell.chain-lightning",
+    "spell.circle-of-death",
+    "spell.conjure-fey",
+    "spell.contingency",
+    "spell.create-undead",
+    "spell.disintegrate",
+    "spell.drawmijs-instant-summons",
+    "spell.eyebite",
+    "spell.find-the-path",
+    "spell.flesh-to-stone",
+    "spell.forbiddance",
+    "spell.globe-of-invulnerability",
+    "spell.guards-and-wards",
+    "spell.harm",
+    "spell.heal",
+    "spell.heroes-feast",
+    "spell.magic-jar",
+    "spell.mass-suggestion",
+    "spell.move-earth",
+    "spell.otilukes-freezing-sphere",
+    "spell.ottos-irresistible-dance",
+    "spell.planar-ally",
+    "spell.programmed-illusion",
+    "spell.summon-fiend",
+    "spell.sunbeam",
+    "spell.tashas-bubbling-cauldron",
+    "spell.transport-via-plants",
+    "spell.true-seeing",
+    "spell.wall-of-ice",
+    "spell.wall-of-thorns",
+    "spell.wind-walk",
+    "spell.word-of-recall",
+]
+"school:conjuration" = [
+    "spell.arcane-gate",
+    "spell.arms-of-hadar",
+    "spell.banishing-smite",
+    "spell.call-lightning",
+    "spell.cloud-of-daggers",
+    "spell.cloudkill",
+    "spell.conjure-animals",
+    "spell.conjure-barrage",
+    "spell.conjure-celestial",
+    "spell.conjure-elemental",
+    "spell.conjure-fey",
+    "spell.conjure-minor-elementals",
+    "spell.conjure-volley",
+    "spell.conjure-woodland-beings",
+    "spell.create-food-and-water",
+    "spell.demiplane",
+    "spell.dimension-door",
+    "spell.drawmijs-instant-summons",
+    "spell.ensnaring-strike",
+    "spell.entangle",
+    "spell.etherealness",
+    "spell.evards-black-tentacles",
+    "spell.find-familiar",
+    "spell.find-steed",
+    "spell.flaming-sphere",
+    "spell.fog-cloud",
+    "spell.gate",
+    "spell.giant-insect",
+    "spell.goodberry",
+    "spell.grasping-vine",
+    "spell.grease",
+    "spell.guardian-of-faith",
+    "spell.hail-of-thorns",
+    "spell.heroes-feast",
+    "spell.hunger-of-hadar",
+    "spell.ice-knife",
+    "spell.incendiary-cloud",
+    "spell.insect-plague",
+    "spell.leomunds-secret-chest",
+    "spell.mage-hand",
+    "spell.maze",
+    "spell.misty-step",
+    "spell.mordenkainens-faithful-hound",
+    "spell.mordenkainens-magnificent-mansion",
+    "spell.planar-ally",
+    "spell.plane-shift",
+    "spell.produce-flame",
+    "spell.sleet-storm",
+    "spell.spirit-guardians",
+    "spell.steel-wind-strike",
+    "spell.stinking-cloud",
+    "spell.storm-of-vengeance",
+    "spell.summon-aberration",
+    "spell.summon-beast",
+    "spell.summon-celestial",
+    "spell.summon-construct",
+    "spell.summon-dragon",
+    "spell.summon-elemental",
+    "spell.summon-fey",
+    "spell.summon-fiend",
+    "spell.tashas-bubbling-cauldron",
+    "spell.teleport",
+    "spell.teleportation-circle",
+    "spell.tensers-floating-disk",
+    "spell.transport-via-plants",
+    "spell.tree-stride",
+    "spell.tsunami",
+    "spell.unseen-servant",
+    "spell.wall-of-thorns",
+    "spell.web",
+    "spell.wish",
+    "spell.word-of-recall",
+]
+"level:9" = [
+    "spell.astral-projection",
+    "spell.foresight",
+    "spell.gate",
+    "spell.imprisonment",
+    "spell.mass-heal",
+    "spell.meteor-swarm",
+    "spell.power-word-heal",
+    "spell.power-word-kill",
+    "spell.prismatic-wall",
+    "spell.shapechange",
+    "spell.storm-of-vengeance",
+    "spell.time-stop",
+    "spell.true-polymorph",
+    "spell.true-resurrection",
+    "spell.weird",
+    "spell.wish",
+]
+"school:illusion" = [
+    "spell.blur",
+    "spell.color-spray",
+    "spell.creation",
+    "spell.dancing-lights",
+    "spell.disguise-self",
+    "spell.dream",
+    "spell.fear",
+    "spell.greater-invisibility",
+    "spell.hallucinatory-terrain",
+    "spell.hypnotic-pattern",
+    "spell.illusory-script",
+    "spell.invisibility",
+    "spell.magic-mouth",
+    "spell.major-image",
+    "spell.minor-illusion",
+    "spell.mirage-arcane",
+    "spell.mirror-image",
+    "spell.mislead",
+    "spell.nystuls-magic-aura",
+    "spell.phantasmal-force",
+    "spell.phantasmal-killer",
+    "spell.phantom-steed",
+    "spell.programmed-illusion",
+    "spell.project-image",
+    "spell.seeming",
+    "spell.silence",
+    "spell.silent-image",
+    "spell.simulacrum",
+    "spell.weird",
+]
+"level:7" = [
+    "spell.conjure-celestial",
+    "spell.delayed-blast-fireball",
+    "spell.divine-word",
+    "spell.etherealness",
+    "spell.finger-of-death",
+    "spell.fire-storm",
+    "spell.forcecage",
+    "spell.mirage-arcane",
+    "spell.mordenkainens-magnificent-mansion",
+    "spell.mordenkainens-sword",
+    "spell.plane-shift",
+    "spell.power-word-fortify",
+    "spell.prismatic-spray",
+    "spell.project-image",
+    "spell.regenerate",
+    "spell.resurrection",
+    "spell.reverse-gravity",
+    "spell.sequester",
+    "spell.simulacrum",
+    "spell.symbol",
+    "spell.teleport",
+]
+
+[objects]
+"spell.acid-splash" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.aid" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.alarm" = [
+    "level:1",
+    "ritual",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.alter-self" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.animal-friendship" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.animal-messenger" = [
+    "level:2",
+    "ritual",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.animal-shapes" = [
+    "level:8",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.animate-dead" = [
+    "level:3",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.animate-objects" = [
+    "level:5",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.antilife-shell" = [
+    "level:5",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.antimagic-field" = [
+    "level:8",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.antipathy-sympathy" = [
+    "level:8",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.arcane-eye" = [
+    "level:4",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.arcane-gate" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.arcane-lock" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.arcane-vigor" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.armor-of-agathys" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.arms-of-hadar" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.astral-projection" = [
+    "level:9",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.augury" = [
+    "level:2",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.aura-of-life" = [
+    "level:4",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.aura-of-purity" = [
+    "level:4",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.aura-of-vitality" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.awaken" = [
+    "level:5",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.bane" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.banishing-smite" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.banishment" = [
+    "level:4",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.barkskin" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.beacon-of-hope" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.beast-sense" = [
+    "level:2",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.befuddlement" = [
+    "level:8",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.bestow-curse" = [
+    "level:3",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.bigbys-hand" = [
+    "level:5",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.blade-barrier" = [
+    "level:6",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.blade-ward" = [
+    "level:0",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.bless" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.blight" = [
+    "level:4",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.blinding-smite" = [
+    "level:3",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.blindness-deafness" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.blink" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.blur" = [
+    "level:2",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.burning-hands" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.call-lightning" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.calm-emotions" = [
+    "level:2",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.chain-lightning" = [
+    "level:6",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.charm-monster" = [
+    "level:4",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.charm-person" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.chill-touch" = [
+    "level:0",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.chromatic-orb" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.circle-of-death" = [
+    "level:6",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.circle-of-power" = [
+    "level:5",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.clairvoyance" = [
+    "level:3",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.clone" = [
+    "level:8",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.cloud-of-daggers" = [
+    "level:2",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.cloudkill" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.color-spray" = [
+    "level:1",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.command" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.commune" = [
+    "level:5",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.commune-with-nature" = [
+    "level:5",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.compelled-duel" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.comprehend-languages" = [
+    "level:1",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.compulsion" = [
+    "level:4",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.cone-of-cold" = [
+    "level:5",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.confusion" = [
+    "level:4",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.conjure-animals" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.conjure-barrage" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.conjure-celestial" = [
+    "level:7",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.conjure-elemental" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.conjure-fey" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.conjure-minor-elementals" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.conjure-volley" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.conjure-woodland-beings" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.contact-other-plane" = [
+    "level:5",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.contagion" = [
+    "level:5",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.contingency" = [
+    "level:6",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.continual-flame" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.control-water" = [
+    "level:4",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.control-weather" = [
+    "level:8",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.cordon-of-arrows" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.counterspell" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.create-food-and-water" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.create-or-destroy-water" = [
+    "level:1",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.create-undead" = [
+    "level:6",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.creation" = [
+    "level:5",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.crown-of-madness" = [
+    "level:2",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.crusaders-mantle" = [
+    "level:3",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.cure-wounds" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.dancing-lights" = [
+    "level:0",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.darkness" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.darkvision" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.daylight" = [
+    "level:3",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.death-ward" = [
+    "level:4",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.delayed-blast-fireball" = [
+    "level:7",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.demiplane" = [
+    "level:8",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.destructive-wave" = [
+    "level:5",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.detect-evil-and-good" = [
+    "level:1",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.detect-magic" = [
+    "level:1",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.detect-poison-and-disease" = [
+    "level:1",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.detect-thoughts" = [
+    "level:2",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.dimension-door" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.disguise-self" = [
+    "level:1",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.disintegrate" = [
+    "level:6",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.dispel-evil-and-good" = [
+    "level:5",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.dispel-magic" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.dissonant-whispers" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.divination" = [
+    "level:4",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.divine-favor" = [
+    "level:1",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.divine-smite" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.divine-word" = [
+    "level:7",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.dominate-beast" = [
+    "level:4",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.dominate-monster" = [
+    "level:8",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.dominate-person" = [
+    "level:5",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.dragons-breath" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.drawmijs-instant-summons" = [
+    "level:6",
+    "ritual",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.dream" = [
+    "level:5",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.druidcraft" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.earthquake" = [
+    "level:8",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.eldritch-blast" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.elemental-weapon" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.elementalism" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.enhance-ability" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.enlarge-reduce" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.ensnaring-strike" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.entangle" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.enthrall" = [
+    "level:2",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.etherealness" = [
+    "level:7",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.evards-black-tentacles" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.expeditious-retreat" = [
+    "level:1",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.eyebite" = [
+    "level:6",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.fabricate" = [
+    "level:4",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.faerie-fire" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.false-life" = [
+    "level:1",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.fear" = [
+    "level:3",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.feather-fall" = [
+    "level:1",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.feign-death" = [
+    "level:3",
+    "ritual",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.find-familiar" = [
+    "level:1",
+    "ritual",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.find-steed" = [
+    "level:2",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.find-the-path" = [
+    "level:6",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.find-traps" = [
+    "level:2",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.finger-of-death" = [
+    "level:7",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.fire-bolt" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.fire-shield" = [
+    "level:4",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.fire-storm" = [
+    "level:7",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.fireball" = [
+    "level:3",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.flame-blade" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.flame-strike" = [
+    "level:5",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.flaming-sphere" = [
+    "level:2",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.flesh-to-stone" = [
+    "level:6",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.fly" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.fog-cloud" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.forbiddance" = [
+    "level:6",
+    "ritual",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.forcecage" = [
+    "level:7",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.foresight" = [
+    "level:9",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.fount-of-moonlight" = [
+    "level:4",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.freedom-of-movement" = [
+    "level:4",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.friends" = [
+    "level:0",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.gaseous-form" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.gate" = [
+    "level:9",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.geas" = [
+    "level:5",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.gentle-repose" = [
+    "level:2",
+    "ritual",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.giant-insect" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.glibness" = [
+    "level:8",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.globe-of-invulnerability" = [
+    "level:6",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.glyph-of-warding" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.goodberry" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.grasping-vine" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.grease" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.greater-invisibility" = [
+    "level:4",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.greater-restoration" = [
+    "level:5",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.guardian-of-faith" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.guards-and-wards" = [
+    "level:6",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.guidance" = [
+    "level:0",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.guiding-bolt" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.gust-of-wind" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.hail-of-thorns" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.hallow" = [
+    "level:5",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.hallucinatory-terrain" = [
+    "level:4",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.harm" = [
+    "level:6",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.haste" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.heal" = [
+    "level:6",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.healing-word" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.heat-metal" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.hellish-rebuke" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.heroes-feast" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.heroism" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.hex" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.hold-monster" = [
+    "level:5",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.hold-person" = [
+    "level:2",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.holy-aura" = [
+    "level:8",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.hunger-of-hadar" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.hunters-mark" = [
+    "level:1",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.hypnotic-pattern" = [
+    "level:3",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.ice-knife" = [
+    "level:1",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.ice-storm" = [
+    "level:4",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.identify" = [
+    "level:1",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.illusory-script" = [
+    "level:1",
+    "ritual",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.imprisonment" = [
+    "level:9",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.incendiary-cloud" = [
+    "level:8",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.inflict-wounds" = [
+    "level:1",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.insect-plague" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.invisibility" = [
+    "level:2",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.jallarzis-storm-of-radiance" = [
+    "level:5",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.jump" = [
+    "level:1",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.knock" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.legend-lore" = [
+    "level:5",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.leomunds-secret-chest" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.leomunds-tiny-hut" = [
+    "level:3",
+    "ritual",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.lesser-restoration" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.levitate" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.light" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.lightning-arrow" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.lightning-bolt" = [
+    "level:3",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.locate-animals-or-plants" = [
+    "level:2",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.locate-creature" = [
+    "level:4",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.locate-object" = [
+    "level:2",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.longstrider" = [
+    "level:1",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.mage-armor" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.mage-hand" = [
+    "level:0",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.magic-circle" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.magic-jar" = [
+    "level:6",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.magic-missile" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.magic-mouth" = [
+    "level:2",
+    "ritual",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.magic-weapon" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.major-image" = [
+    "level:3",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.mass-cure-wounds" = [
+    "level:5",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.mass-heal" = [
+    "level:9",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.mass-healing-word" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.mass-suggestion" = [
+    "level:6",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.maze" = [
+    "level:8",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.meld-into-stone" = [
+    "level:3",
+    "ritual",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.melfs-acid-arrow" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.mending" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.message" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.meteor-swarm" = [
+    "level:9",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.mind-blank" = [
+    "level:8",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.mind-sliver" = [
+    "level:0",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.mind-spike" = [
+    "level:2",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.minor-illusion" = [
+    "level:0",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.mirage-arcane" = [
+    "level:7",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.mirror-image" = [
+    "level:2",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.mislead" = [
+    "level:5",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.misty-step" = [
+    "level:2",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.modify-memory" = [
+    "level:5",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.moonbeam" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.mordenkainens-faithful-hound" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.mordenkainens-magnificent-mansion" = [
+    "level:7",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.mordenkainens-private-sanctum" = [
+    "level:4",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.mordenkainens-sword" = [
+    "level:7",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.move-earth" = [
+    "level:6",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.nondetection" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.nystuls-magic-aura" = [
+    "level:2",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.otilukes-freezing-sphere" = [
+    "level:6",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.otilukes-resilient-sphere" = [
+    "level:4",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.ottos-irresistible-dance" = [
+    "level:6",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.pass-without-trace" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.passwall" = [
+    "level:5",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.phantasmal-force" = [
+    "level:2",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.phantasmal-killer" = [
+    "level:4",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.phantom-steed" = [
+    "level:3",
+    "ritual",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.planar-ally" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.planar-binding" = [
+    "level:5",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.plane-shift" = [
+    "level:7",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.plant-growth" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.poison-spray" = [
+    "level:0",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.polymorph" = [
+    "level:4",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.power-word-fortify" = [
+    "level:7",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.power-word-heal" = [
+    "level:9",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.power-word-kill" = [
+    "level:9",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.power-word-stun" = [
+    "level:8",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.prayer-of-healing" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.prestidigitation" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.prismatic-spray" = [
+    "level:7",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.prismatic-wall" = [
+    "level:9",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.produce-flame" = [
+    "level:0",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.programmed-illusion" = [
+    "level:6",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.project-image" = [
+    "level:7",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.protection-from-energy" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.protection-from-evil-and-good" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.protection-from-poison" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.purify-food-and-drink" = [
+    "level:1",
+    "ritual",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.raise-dead" = [
+    "level:5",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.rarys-telepathic-bond" = [
+    "level:5",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.ray-of-enfeeblement" = [
+    "level:2",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.ray-of-frost" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.ray-of-sickness" = [
+    "level:1",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.regenerate" = [
+    "level:7",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.reincarnate" = [
+    "level:5",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.remove-curse" = [
+    "level:3",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.resistance" = [
+    "level:0",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.resurrection" = [
+    "level:7",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.reverse-gravity" = [
+    "level:7",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.revivify" = [
+    "level:3",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.rope-trick" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.sacred-flame" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.sanctuary" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.scorching-ray" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.scrying" = [
+    "level:5",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.searing-smite" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.see-invisibility" = [
+    "level:2",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.seeming" = [
+    "level:5",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.sending" = [
+    "level:3",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.sequester" = [
+    "level:7",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.shapechange" = [
+    "level:9",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.shatter" = [
+    "level:2",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.shield" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.shield-of-faith" = [
+    "level:1",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.shillelagh" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.shining-smite" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.shocking-grasp" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.silence" = [
+    "level:2",
+    "ritual",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.silent-image" = [
+    "level:1",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.simulacrum" = [
+    "level:7",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.sleep" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.sleet-storm" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.slow" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.sorcerous-burst" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.spare-the-dying" = [
+    "level:0",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.speak-with-animals" = [
+    "level:1",
+    "ritual",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.speak-with-dead" = [
+    "level:3",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.speak-with-plants" = [
+    "level:3",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.spider-climb" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.spike-growth" = [
+    "level:2",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.spirit-guardians" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.spiritual-weapon" = [
+    "level:2",
+    "ritual",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.staggering-smite" = [
+    "level:4",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.starry-wisp" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.steel-wind-strike" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.stinking-cloud" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.stone-shape" = [
+    "level:4",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.stoneskin" = [
+    "level:4",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.storm-of-vengeance" = [
+    "level:9",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.suggestion" = [
+    "level:2",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.summon-aberration" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-beast" = [
+    "level:2",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-celestial" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-construct" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-dragon" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-elemental" = [
+    "level:4",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-fey" = [
+    "level:3",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-fiend" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.summon-undead" = [
+    "level:3",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.sunbeam" = [
+    "level:6",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.sunburst" = [
+    "level:8",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.swift-quiver" = [
+    "level:5",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.symbol" = [
+    "level:7",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.synaptic-static" = [
+    "level:5",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.tashas-bubbling-cauldron" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.tashas-hideous-laughter" = [
+    "level:1",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.telekinesis" = [
+    "level:5",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.telepathy" = [
+    "level:8",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.teleport" = [
+    "level:7",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.teleportation-circle" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.tensers-floating-disk" = [
+    "level:1",
+    "ritual",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.thaumaturgy" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.thorn-whip" = [
+    "level:0",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.thunderclap" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.thunderous-smite" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.thunderwave" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.time-stop" = [
+    "level:9",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.toll-the-dead" = [
+    "level:0",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.tongues" = [
+    "level:3",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.transport-via-plants" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.tree-stride" = [
+    "level:5",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.true-polymorph" = [
+    "level:9",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.true-resurrection" = [
+    "level:9",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.true-seeing" = [
+    "level:6",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.true-strike" = [
+    "level:0",
+    "school:divination",
+    "source:phb-2024",
+]
+"spell.tsunami" = [
+    "level:8",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.unseen-servant" = [
+    "level:1",
+    "ritual",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.vampiric-touch" = [
+    "level:3",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.vicious-mockery" = [
+    "level:0",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.vitriolic-sphere" = [
+    "level:4",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.wall-of-fire" = [
+    "level:4",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.wall-of-force" = [
+    "level:5",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.wall-of-ice" = [
+    "level:6",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.wall-of-stone" = [
+    "level:5",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.wall-of-thorns" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.warding-bond" = [
+    "level:2",
+    "school:abjuration",
+    "source:phb-2024",
+]
+"spell.water-breathing" = [
+    "level:3",
+    "ritual",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.water-walk" = [
+    "level:3",
+    "ritual",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.web" = [
+    "level:2",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.weird" = [
+    "level:9",
+    "school:illusion",
+    "source:phb-2024",
+]
+"spell.wind-walk" = [
+    "level:6",
+    "school:transmutation",
+    "source:phb-2024",
+]
+"spell.wind-wall" = [
+    "level:3",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.wish" = [
+    "level:9",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.witch-bolt" = [
+    "level:1",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.word-of-radiance" = [
+    "level:0",
+    "school:evocation",
+    "source:phb-2024",
+]
+"spell.word-of-recall" = [
+    "level:6",
+    "school:conjuration",
+    "source:phb-2024",
+]
+"spell.wrathful-smite" = [
+    "level:1",
+    "school:necromancy",
+    "source:phb-2024",
+]
+"spell.yolandes-regal-presence" = [
+    "level:5",
+    "school:enchantment",
+    "source:phb-2024",
+]
+"spell.zone-of-truth" = [
+    "level:2",
+    "school:enchantment",
+    "source:phb-2024",
+]

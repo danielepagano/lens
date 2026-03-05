@@ -1,0 +1,24 @@
+{
+  "name": "ddb-extract",
+  "version": "0.1.0",
+  "description": "Extract D&D Beyond content into Lens KB-formatted Markdown",
+  "type": "module",
+  "bin": {
+    "ddb": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
+    "playwright": "^1.49.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

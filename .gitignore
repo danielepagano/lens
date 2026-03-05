@@ -208,4 +208,4 @@ __marimo__/
 
 # Lens
 .DS_Store
-docs/dnd_orig/
+datasets/dnd/ddb_out/
