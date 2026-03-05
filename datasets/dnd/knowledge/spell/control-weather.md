@@ -18,6 +18,7 @@ When you change the weather conditions, find a current condition on the followin
 | 3 | Overcast or ground fog |
 | 4 | Rain, hail, or snow |
 | 5 | Torrential rain, driving hail, or blizzard |
+
 | Stage | Condition |
 | --- | --- |
 | 1 | Heat wave |
@@ -26,6 +27,7 @@ When you change the weather conditions, find a current condition on the followin
 | 4 | Cool |
 | 5 | Cold |
 | 6 | Freezing |
+
 | Stage | Condition |
 | --- | --- |
 | 1 | Calm |

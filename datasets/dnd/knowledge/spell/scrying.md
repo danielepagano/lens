@@ -12,6 +12,7 @@ You can see and hear a creature you choose that is on the same plane of existenc
 | Secondhand (heard of the target) | +5 |
 | Firsthand (met the target) | +0 |
 | Extensive (know the target well) | −5 |
+
 | You Have the Target’s... | Save Modifier |
 | --- | --- |
 | Picture or other likeness | −2 |
