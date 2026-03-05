@@ -34,6 +34,7 @@ from lens.core.annotations import (
     strip_markdown_comments,
 )
 from lens.core.chain import ChainSpec
+from lens.core.command_tools import CommandToolFn, get_command_registry
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, ToolCall, generate_stream
@@ -68,6 +69,13 @@ class Operator(ABC):
 
     limited_to_datasets: ClassVar[list[str]] = []
     """If non-empty, only available if one of the given datasets is currently active."""
+
+    use_command_tools: ClassVar[bool] = True
+    """Whether to expose KB command tools (kb_get, kb_with_tag) to the LLM.
+
+    Set to ``False`` for operators that prioritise speed over knowledge
+    retrieval — in particular ``play``, which must feel immediate.
+    """
 
     @property
     @abstractmethod
@@ -822,12 +830,35 @@ class Operator(ABC):
             messages = probe_op.build_messages(crawl_result, ann_params)
             tools_payload = []
 
+        # ── Command tools ─────────────────────────────────────────────────
+        # Operators that prioritise speed (e.g. play) opt out via
+        # use_command_tools = False.
+        command_handlers: dict[str, CommandToolFn] | None = None
+        if cls.use_command_tools:
+            cmd_registry = get_command_registry()
+            if cmd_registry:
+                command_handlers = {
+                    name: fn for name, (_def, fn) in cmd_registry.items()
+                }
+                for cmd_name, (cmd_def, _fn) in cmd_registry.items():
+                    tools_payload.append(
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": cmd_name,
+                                "description": cmd_def.description,
+                                "parameters": cmd_def.parameters,
+                            },
+                        }
+                    )
+
         try:
             async for event in generate_stream(
                 messages,
                 session.project_root,
                 llm_id=llm_id,
                 tools=tools_payload if tools_payload else None,
+                command_tool_handlers=command_handlers,
             ):
                 if event.preview and on_token:
                     await on_token(event.preview)

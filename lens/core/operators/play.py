@@ -52,6 +52,7 @@ class PlayOperator(Operator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = False
     limited_to_datasets: ClassVar[list[str]] = ['dnd']
+    use_command_tools: ClassVar[bool] = False  # speed over knowledge; @mention covers lookups
 
     @property
     def system_prompt(self) -> str:

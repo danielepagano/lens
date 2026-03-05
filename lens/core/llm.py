@@ -13,7 +13,7 @@ import logging
 import os
 import signal
 import tomllib
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -23,6 +23,11 @@ import httpx
 from lens.core.annotations import encode_ai_secrets
 
 logger = logging.getLogger(__name__)
+
+# Maximum number of consecutive command-tool round-trips before aborting.
+_MAX_COMMAND_TOOL_ITERATIONS = 10
+
+CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
 
 
 class LLMError(Exception):
@@ -119,7 +124,7 @@ class StreamEvent:
     final: FinalPayload | None = None
 
 
-def _format_messages(messages: list[dict[str, str]]) -> str:
+def _format_messages(messages: list[dict[str, Any]]) -> str:
     """Format messages as a human-readable block for logging."""
     sep = "─" * 60
     parts: list[str] = []
@@ -162,41 +167,23 @@ def _strip_preview(chunk: str, mid_comment: bool) -> tuple[str, bool]:
     return ("".join(result), False)
 
 
-async def generate_stream(
-    messages: list[dict[str, str]],
-    project_root: Path,
+async def _stream_once(
+    messages: list[dict[str, Any]],
+    cfg: _LLMConfig,
+    verbose: bool,
     *,
-    llm_id: str | None = None,
-    stop_sequences: list[str] | None = None,
-    tools: list[dict[str, Any]] | None = None,
-    cancel_event: asyncio.Event | None = None,
+    stop_sequences: list[str] | None,
+    tools: list[dict[str, Any]] | None,
+    cancel_event: asyncio.Event,
 ) -> AsyncGenerator[StreamEvent, None]:
-    """Stream LLM output as structured events: preview (HTML comments stripped)
-    during generation, and a final payload with encoded text, optional tool
-    call, usage, and interrupted flag.
+    """Execute one HTTP streaming request.
+
+    Yields zero or more ``StreamEvent(preview=...)`` during generation,
+    then exactly one ``StreamEvent(final=...)`` at the end.
+
+    Does **not** install a SIGINT handler or raise ``KeyboardInterrupt``
+    — the caller (``generate_stream``) manages that.
     """
-    _cancel = cancel_event if cancel_event is not None else asyncio.Event()
-    _interrupted = False
-    _sigint_installed = False
-
-    loop = asyncio.get_running_loop()
-
-    def _handle_sigint() -> None:
-        nonlocal _interrupted
-        _interrupted = True
-        _cancel.set()
-
-    try:
-        loop.add_signal_handler(signal.SIGINT, _handle_sigint)
-        _sigint_installed = True
-    except (NotImplementedError, ValueError):
-        pass
-
-    cfg, verbose = _load_config(project_root, llm_id)
-
-    if verbose:
-        logger.info("LLM PROMPT\n%s", _format_messages(messages))
-
     url = f"{cfg.base_url.rstrip('/')}/chat/completions"
     payload: dict[str, Any] = {
         "messages": messages,
@@ -220,6 +207,7 @@ async def generate_stream(
     chunks: list[str] = []
     usage: dict[str, int] | None = None
     mid_comment = False
+    interrupted = False
 
     tool_calls_by_index: dict[int, dict[str, Any]] = {}
 
@@ -233,8 +221,8 @@ async def generate_stream(
                     )
 
                 async for line in response.aiter_lines():
-                    if _cancel.is_set():
-                        _interrupted = True
+                    if cancel_event.is_set():
+                        interrupted = True
                         break
 
                     line = line.strip()
@@ -294,6 +282,7 @@ async def generate_stream(
                         acc = tool_calls_by_index[idx]
                         if tc.get("id"):
                             acc["id"] = tc["id"]
+                        # Defensive: inject type if missing (LM Studio quirk)
                         fn = tc.get("function", {})
                         if fn.get("name"):
                             acc["name"] = fn["name"]
@@ -306,9 +295,6 @@ async def generate_stream(
         ) from exc
     except httpx.RequestError as exc:
         raise LLMError(f"LLM request failed: {exc}") from exc
-    finally:
-        if _sigint_installed:
-            loop.remove_signal_handler(signal.SIGINT)
 
     full_text = "".join(chunks)
     encoded_text = encode_ai_secrets(full_text)
@@ -339,7 +325,7 @@ async def generate_stream(
                     "cannot fold multiple tool calls"
                 )
                 fold_error = True
-                _interrupted = True
+                interrupted = True
                 break
             prev_acc["arguments_parsed"]["chain"] = {
                 "name": last_acc["name"],
@@ -369,13 +355,174 @@ async def generate_stream(
         sep = "─" * 60
         logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, "".join(response_parts), sep)
 
-    payload_out = FinalPayload(
-        text=encoded_text,
-        tool_call=tool_call,
-        usage=usage,
-        interrupted=_interrupted,
+    yield StreamEvent(
+        final=FinalPayload(
+            text=encoded_text,
+            tool_call=tool_call,
+            usage=usage,
+            interrupted=interrupted,
+        )
     )
-    yield StreamEvent(final=payload_out)
+
+
+async def generate_stream(
+    messages: list[dict[str, Any]],
+    project_root: Path,
+    *,
+    llm_id: str | None = None,
+    stop_sequences: list[str] | None = None,
+    tools: list[dict[str, Any]] | None = None,
+    cancel_event: asyncio.Event | None = None,
+    command_tool_handlers: dict[str, CommandToolFn] | None = None,
+) -> AsyncGenerator[StreamEvent, None]:
+    """Stream LLM output as structured events.
+
+    Yields ``StreamEvent(preview=...)`` during generation (HTML comments
+    stripped) and a single ``StreamEvent(final=...)`` at the end.
+
+    When *command_tool_handlers* is provided and the LLM calls a tool whose
+    name appears in that mapping, the handler is executed immediately, the
+    result is appended to the working message list, and the LLM is re-invoked
+    — all without exiting this generator.  Preview events from every iteration
+    are forwarded to the caller.
+
+    Tool calls whose names are **not** in *command_tool_handlers* (i.e.
+    operator tools) cause the generator to return a ``FinalPayload`` with
+    ``tool_call`` set, exactly as before — the caller dispatches them.
+    """
+    _cancel = cancel_event if cancel_event is not None else asyncio.Event()
+    _interrupted = False
+    _sigint_installed = False
+
+    loop = asyncio.get_running_loop()
+
+    def _handle_sigint() -> None:
+        nonlocal _interrupted
+        _interrupted = True
+        _cancel.set()
+
+    try:
+        loop.add_signal_handler(signal.SIGINT, _handle_sigint)
+        _sigint_installed = True
+    except (NotImplementedError, ValueError):
+        pass
+
+    cfg, verbose = _load_config(project_root, llm_id)
+
+    if verbose:
+        logger.info("LLM PROMPT\n%s", _format_messages(messages))
+
+    working_messages: list[dict[str, Any]] = list(messages)
+    last_usage: dict[str, int] | None = None
+
+    try:
+        for _iteration in range(_MAX_COMMAND_TOOL_ITERATIONS + 1):
+            final: FinalPayload | None = None
+
+            async for event in _stream_once(
+                working_messages,
+                cfg,
+                verbose,
+                stop_sequences=stop_sequences,
+                tools=tools,
+                cancel_event=_cancel,
+            ):
+                if event.preview:
+                    yield event
+                elif event.final:
+                    final = event.final
+                    if event.final.usage:
+                        last_usage = event.final.usage
+
+            if final is None:
+                # Should not happen; guard against empty responses
+                break
+
+            if final.interrupted:
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text=final.text,
+                        tool_call=final.tool_call,
+                        usage=last_usage,
+                        interrupted=True,
+                    )
+                )
+                _interrupted = True
+                break
+
+            # ── Command tool path ─────────────────────────────────────────
+            if (
+                final.tool_call is not None
+                and command_tool_handlers is not None
+                and final.tool_call.name in command_tool_handlers
+            ):
+                handler = command_tool_handlers[final.tool_call.name]
+                # Strip "chain" key before passing to handler — chain is an
+                # operator concept and does not apply to command tools.
+                handler_args = {
+                    k: v
+                    for k, v in final.tool_call.arguments.items()
+                    if k != "chain"
+                }
+                result = await handler(handler_args, project_root)
+
+                working_messages.append(
+                    {
+                        "role": "assistant",
+                        "content": final.text or None,
+                        "tool_calls": [
+                            {
+                                "id": final.tool_call.id,
+                                "type": "function",
+                                "function": {
+                                    "name": final.tool_call.name,
+                                    "arguments": json.dumps(
+                                        final.tool_call.arguments
+                                    ),
+                                },
+                            }
+                        ],
+                    }
+                )
+                working_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": final.tool_call.id,
+                        "content": result,
+                    }
+                )
+                continue
+
+            # ── Operator tool or normal end ───────────────────────────────
+            yield StreamEvent(
+                final=FinalPayload(
+                    text=final.text,
+                    tool_call=final.tool_call,
+                    usage=last_usage,
+                    interrupted=False,
+                )
+            )
+            break
+
+        else:
+            # Exceeded maximum command tool iterations
+            logger.warning(
+                "generate_stream: exceeded %d command tool iterations; aborting",
+                _MAX_COMMAND_TOOL_ITERATIONS,
+            )
+            yield StreamEvent(
+                final=FinalPayload(
+                    text="",
+                    tool_call=None,
+                    usage=last_usage,
+                    interrupted=True,
+                )
+            )
+            _interrupted = True
+
+    finally:
+        if _sigint_installed:
+            loop.remove_signal_handler(signal.SIGINT)
 
     if _interrupted:
         raise KeyboardInterrupt
