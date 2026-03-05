@@ -233,18 +233,25 @@ A dedicated narrative sub-tree where the conversation is not story, it's collabo
 
 The model emits certainly emits discursive text and collects answers from the user, but the replies also include fenced blocks compliant with the `kb extract` command format. This lets the model focus on content rather than prose style, and makes extraction deterministic. Secrets work because they are encoded as they come out of the LLM.
 
+The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing but pinning an expanded object like `loc.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
+
+The operator _does not_ author static high-level objects like `lore.world` that setup the general setting and tone. Those are added by the player, or they can use a normal edit operator for assistance.
+
+Other Considerations:  
+  - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `loc.springfield` by the rules of `loc` there will an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
+  - It would be pretty easy to create a `map` operator that uses the `loc` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing non-advance way to remember things.
+
 #### Design objects
 The bulk of the knowledge that drives the design flow lives not in the system prompt but in `design` KB objects that can be pinned into the design sub-tree. The root prompt has a knowledge of what they are and what's in them, and then asks the user what they want to do: a session zero phase sequence, create or refine objects like locations and factions, create example adventure hooks, plan encounters, etc. 
 
 The operator then creates sub-sections that have that type of design task pinned in their front matter, and can even chain a write operator from what the user asked to do to get the section content started without repetition. When the user is done, we simply call `kb extract` on that design sub-folder and import all the knowledge created! The user can of course skip the chat and create a design operator already pointed to a specific design object, and get going right away.
 
 The set of design objects will evolve over and refine over time, but they will be things like to deliver:  
-  - High-level world-building
-  - Interesting Locations
-  - Engaging Characters and Factions
-  - Plots, narrative arcs, twists and turns
-  - Balanced Combat Encounters
-  - Finding and selecting items like monsters and items based on some requirements
+  - Location build-out: edit one or more locations, correctly linked  
+    - Large geography, cities, or structures to explore, from homes to dungeons
+  - Advenute build-out: create or update a front, including related factions and NPCs
+  - Encounters design: location (stored or not), type (social, stealth, combat, dynamic), who's there (mobs, factions, NPC's), related fronts
+  - Finding and selecting items like a balanced amount of appropriate monsters or proper loot based on some requirements
 
 ### Play General Scenes with `play`
 

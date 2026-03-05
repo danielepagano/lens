@@ -238,32 +238,68 @@ class KnowledgeStore:
         return sorted(obj_to_tags.get(canonical_id, set()))
 
     def get_ids_with_tag(self, tag: str) -> list[str]:
-        """Return object IDs that have the given tag, from tags.toml [tags] index."""
+        """Return object IDs that have the given tag across project and datasets.
+
+        The project store's ``tags.toml`` is authoritative for project-local
+        objects; selected datasets contribute their own tag indexes via their
+        ``tags.toml`` files. The result is the union of all matching IDs.
+        """
+        tag_l = tag.lower()
+        objs: set[str] = set()
+
+        # Project-local tags.
         tag_to_objs, _ = self._load_tags()
-        objs = tag_to_objs.get(tag.lower(), set())
+        objs.update(tag_to_objs.get(tag_l, set()))
+
+        # Dataset tags (read-only).
+        for ds in self._dataset_stores:
+            ds_tag_to_objs, _ = ds._load_tags()
+            objs.update(ds_tag_to_objs.get(tag_l, set()))
+
         return sorted(objs)
 
     def get_ids_with_all_tags(self, tags: list[str]) -> list[str]:
-        """Return object IDs that have every given tag. One _load_tags(), in-memory set intersection."""
+        """Return object IDs that have every given tag across project and datasets.
+
+        For each store (project and selected datasets), compute the intersection
+        of IDs that have all listed tags within that store, then union the
+        per-store results.
+        """
         if not tags:
             return []
+        tag_lowers = [t.lower() for t in tags]
+
+        overall: set[str] = set()
+
+        def _intersect_for_store(tag_to_objs: dict[str, set[str]]) -> set[str]:
+            store_result: set[str] | None = None
+            for t in tag_lowers:
+                objs = tag_to_objs.get(t, set())
+                if store_result is None:
+                    store_result = set(objs)
+                else:
+                    store_result &= objs
+                if not store_result:
+                    break
+            return store_result or set()
+
+        # Project-local intersection.
         tag_to_objs, _ = self._load_tags()
-        result: set[str] | None = None
-        for tag in tags:
-            objs = tag_to_objs.get(tag.lower(), set())
-            if result is None:
-                result = set(objs)
-            else:
-                result &= objs
-            if not result:
-                return []
-        return sorted(result) if result else []
+        overall.update(_intersect_for_store(tag_to_objs))
+
+        # Dataset intersections.
+        for ds in self._dataset_stores:
+            ds_tag_to_objs, _ = ds._load_tags()
+            overall.update(_intersect_for_store(ds_tag_to_objs))
+
+        return sorted(overall) if overall else []
 
     def traverse_by_dot_tags(
         self,
         tags: list[str],
         *,
         same_type_only: bool = False,
+        max_depth: int | None = None,
     ) -> tuple[list[str], list[tuple[str, list[str]]]]:
         """BFS over tags: root = objects with every tag in tags; follow dot-tags from those objects.
 
@@ -273,13 +309,31 @@ class KnowledgeStore:
         """
         if not tags:
             return [], []
+
+        # Build merged tag/object indexes across project and all selected datasets.
+        merged_tag_to_objs: dict[str, set[str]] = {}
+        merged_obj_to_tags: dict[str, set[str]] = {}
+
+        def _merge_indexes(tag_to_objs: dict[str, set[str]], obj_to_tags: dict[str, set[str]]) -> None:
+            for tag, objs in tag_to_objs.items():
+                bucket = merged_tag_to_objs.setdefault(tag, set())
+                bucket.update(objs)
+            for obj_id, obj_tags in obj_to_tags.items():
+                bucket = merged_obj_to_tags.setdefault(obj_id, set())
+                bucket.update(obj_tags)
+
         tag_to_objs, obj_to_tags = self._load_tags()
+        _merge_indexes(tag_to_objs, obj_to_tags)
+        for ds in self._dataset_stores:
+            ds_tag_to_objs, ds_obj_to_tags = ds._load_tags()
+            _merge_indexes(ds_tag_to_objs, ds_obj_to_tags)
+
         if len(tags) == 1:
-            root_set = tag_to_objs.get(tags[0].lower(), set())
+            root_set = merged_tag_to_objs.get(tags[0].lower(), set())
         else:
-            root_set = tag_to_objs.get(tags[0].lower(), set()).copy()
+            root_set = merged_tag_to_objs.get(tags[0].lower(), set()).copy()
             for t in tags[1:]:
-                root_set &= tag_to_objs.get(t.lower(), set())
+                root_set &= merged_tag_to_objs.get(t.lower(), set())
                 if not root_set:
                     return [], []
         root_ids = sorted(root_set)
@@ -310,7 +364,7 @@ class KnowledgeStore:
             out: list[str] = []
             seen: set[str] = set()
             for oid in ids:
-                for tag in obj_to_tags.get(oid.lower(), set()):
+                for tag in merged_obj_to_tags.get(oid.lower(), set()):
                     if "." not in tag:
                         continue
                     if same_type_only and starting_type is not None:
@@ -325,7 +379,7 @@ class KnowledgeStore:
                         seen.add(t_lower)
                         out.append(tag)
                 oid_lower = oid.lower()
-                if "." in oid and oid_lower not in seen and oid_lower in tag_to_objs:
+                if "." in oid and oid_lower not in seen and oid_lower in merged_tag_to_objs:
                     if same_type_only and starting_type is not None:
                         try:
                             t, _ = parse_id(oid)
@@ -344,22 +398,26 @@ class KnowledgeStore:
             root_ids = _filter_ids_by_type(root_ids)
 
         layers: list[tuple[str, list[str]]] = []
+        effective_max_depth: int | None = max_depth if max_depth is None or max_depth > 0 else None
         visited_tags: set[str] = {t.lower() for t in tags}
-        queue: deque[str] = deque(_next_tags_from_ids(root_ids))
+        queue: deque[tuple[str, int]] = deque(
+            (t, 1) for t in _next_tags_from_ids(root_ids)
+        )
 
         while queue:
-            t = queue.popleft()
+            t, depth = queue.popleft()
             t_lower = t.lower()
             if t_lower in visited_tags:
                 continue
             visited_tags.add(t_lower)
-            child_ids = sorted(tag_to_objs.get(t_lower, set()))
+            child_ids = sorted(merged_tag_to_objs.get(t_lower, set()))
             if same_type_only and starting_type is not None:
                 child_ids = _filter_ids_by_type(child_ids)
             layers.append((t, child_ids))
-            for next_tag in _next_tags_from_ids(child_ids):
-                if next_tag.lower() not in visited_tags:
-                    queue.append(next_tag)
+            if effective_max_depth is None or depth < effective_max_depth:
+                for next_tag in _next_tags_from_ids(child_ids):
+                    if next_tag.lower() not in visited_tags:
+                        queue.append((next_tag, depth + 1))
 
         return root_ids, layers
 

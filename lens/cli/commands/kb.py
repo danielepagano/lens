@@ -188,7 +188,12 @@ def get(
 def with_tag(
     tags: list[str] = typer.Argument(..., help="Tag(s) to query; object must have all (AND)"),
     expand: bool = typer.Option(False, "-e", "--expand", help="Print full objects instead of IDs"),
-    recurse: bool = typer.Option(False, "-r", "--recurse", help="Recursively follow dot-tags and list children"),
+    recurse: int | None = typer.Option(
+        None,
+        "-r",
+        "--recurse",
+        help="Recursively follow dot-tags and list children; N limits depth, 0 = full traversal",
+    ),
     same_type_only: bool = typer.Option(
         False,
         "-s",
@@ -221,7 +226,7 @@ def with_tag(
             except LensException:
                 pass
 
-    if not recurse:
+    if recurse is None:
         if not expand:
             for cid in result.ids:
                 typer.echo(cid)

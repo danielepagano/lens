@@ -130,13 +130,13 @@ def kb_with_tag(
     tags: list[str],
     *,
     expand: bool,
-    recurse: bool,
+    recurse: int | None,
     same_type_only: bool = False,
 ) -> WithTagResult:
     if not tags:
         raise LensException("at least one tag is required")
     kb = get_store()
-    if not recurse:
+    if recurse is None:
         ids = kb.get_ids_with_all_tags(tags)
         if same_type_only and tags:
             ids = _filter_ids_by_tag_type(ids, tags[0])
@@ -144,7 +144,14 @@ def kb_with_tag(
             return WithTagResult(ids=ids)
         objects = kb.get_objects(ids)
         return WithTagResult(ids=ids, objects=objects)
-    root_ids, layers = kb.traverse_by_dot_tags(tags, same_type_only=same_type_only)
+    max_depth: int | None = None
+    if recurse > 0:
+        max_depth = recurse
+    root_ids, layers = kb.traverse_by_dot_tags(
+        tags,
+        same_type_only=same_type_only,
+        max_depth=max_depth,
+    )
     seen: set[str] = set()
     all_ids: list[str] = list(root_ids)
     for _, child_ids in layers:
