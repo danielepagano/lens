@@ -43,19 +43,12 @@ Cultists use magic and extreme measures to spread radical beliefs. Some privatel
 Cultist Agendas
 
 | 1d6 | The Cultist Strives To … |
-
 | --- | --- |
-
 | 1 | Bring about the end of a dominant order, an age, or the world. |
-
 | 2 | Burn away the comfortable lies of reality, revealing forgotten or terrible truths. |
-
 | 3 | Expand their faith though mind control or supernatural coercion. |
-
 | 4 | Make global changes, like sinking the land or awakening volcanoes. |
-
 | 5 | Remake life on a mass scale, altering other creatures’ bodies or spiritual beings. |
-
 | 6 | Summon their deity or its herald, weapon, or realm into their world. |
 
 ---
