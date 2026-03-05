@@ -36,23 +36,14 @@ Ropers can move, albeit slowly. Crawling on the sticky cilia that cover their un
 Roper Hazards
 
 | 1d8 | The Roper Drags Prey Through … |
-
 | --- | --- |
-
 | 1 | Areas that trigger traps. |
-
 | 2 | Caverns filled with smoke or gas. |
-
 | 3 | Dead magic* or wild magic* zones. |
-
 | 4 | The lair of a creature it is trying to bait out. |
-
 | 5 | A nest of rats, insects, or other vermin. |
-
 | 6 | Patches of brown mold* or green slime*. |
-
 | 7 | Pools of magma or boiling water. |
-
 | 8 | Razorvine* or similar dangerous plants. |
 
 *See the Dungeon Master’s Guide.

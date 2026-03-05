@@ -31,19 +31,12 @@ Nightmares’ speed, resilience, and ability to gallop between planes of existen
 Nightmare Riders
 
 | 1d6 | The Nightmare Carries … |
-
 | --- | --- |
-
 | 1 | The champion or messenger of an evil deity. |
-
 | 2 | A group of joyriding imps or quasits. |
-
 | 3 | An innocent soul trapped on the wild Fiend. |
-
 | 4 | A lore-hunting mage, cultist, or lich. |
-
 | 5 | A night hag herding larvae between planes. |
-
 | 6 | A wicked cavalier, such as a death knight, an erinyes, an incubus, or a vampire. |
 
 [source: https://www.dndbeyond.com/monsters/5195143-nightmare]: #

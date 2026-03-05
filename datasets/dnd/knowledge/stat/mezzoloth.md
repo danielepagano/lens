@@ -38,19 +38,12 @@ Mezzoloths typically form mercenary bands with others of their kind. These force
 Mezzoloth Payments
 
 | 1d6 | The Mezzoloth Agrees to Serve For … |
-
 | --- | --- |
-
 | 1 | Access to a planar portal. |
-
 | 2 | Information valued by its true master. |
-
 | 3 | A lair where it can bring others of its kind. |
-
 | 4 | Magic weapons or armor. |
-
 | 5 | The right to loot holy sites in places it conquers. |
-
 | 6 | Souls, whether as larvae or captured spirits. |
 
 [source: https://www.dndbeyond.com/monsters/5195122-mezzoloth]: #

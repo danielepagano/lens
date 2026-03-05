@@ -34,19 +34,12 @@ Through fiendish rites, succubi can transform into incubi to manipulate their pr
 Succubus Temptations
 
 | 1d6 | The Succubus Manipulates Its Target By … |
-
 | --- | --- |
-
 | 1 | Adopting the form of a lost loved one. |
-
 | 2 | Charming someone close to its target. |
-
 | 3 | Isolating them from their loved ones. |
-
 | 4 | Manipulating events to bring surprise fortune. |
-
 | 5 | Posing as a flattering underling. |
-
 | 6 | Taking the form of one in need of protection. |
 
 [source: https://www.dndbeyond.com/monsters/4904865-succubus]: #

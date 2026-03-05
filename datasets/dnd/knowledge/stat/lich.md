@@ -68,23 +68,14 @@ Spirit jars are typically small, well-made objects that were meaningful to a lic
 Lich Spirit Jars
 
 | 1d8 | The Lich’s Spirit Jar Is … |
-
 | --- | --- |
-
 | 1 | A bottle or puzzle box inscribed with sigils. |
-
 | 2 | A contract folded into a paper figure. |
-
 | 3 | The first magic item the lich created. |
-
 | 4 | A hollow figurine of a deity or monster. |
-
 | 5 | An hourglass with its sands floating in stasis. |
-
 | 6 | A locket or signet ring with a noble crest. |
-
 | 7 | A rune-etched egg. |
-
 | 8 | The skull of the lich’s mentor. |
 
 ---

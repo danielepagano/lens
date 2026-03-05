@@ -41,23 +41,14 @@ To terrify opponents and spread their reputations, pirate crews fly distinctive 
 Pirate Flags
 
 | 1d8 | The Flag Shows A … | 1d8 | With … |
-
 | --- | --- | --- | --- |
-
 | 1 | Buccaneer | 1 | A captain’s hat |
-
 | 2 | Dragon | 2 | Crossbones |
-
 | 3 | Fiend | 3 | Crossed blades |
-
 | 4 | Goat | 4 | An eye patch |
-
 | 5 | Kraken | 5 | Lightning bolts |
-
 | 6 | Merfolk | 6 | A mug of ale |
-
 | 7 | Skull | 7 | A tattoo |
-
 | 8 | Whale | 8 | A treasure chest |
 
 [source: https://www.dndbeyond.com/monsters/4904830-pirate]: #

@@ -35,19 +35,12 @@ Lamias either are descendants of that first lamia or have made similar deals. Th
 Lamia Pacts
 
 | 1d6 | The Lamia Compels the Bargainer To … |
-
 | --- | --- |
-
 | 1 | Bring it a possession from a ruler or noble. |
-
 | 2 | Create a map of a dungeon or ruin. |
-
 | 3 | Escort it through a nearby community’s gate. |
-
 | 4 | Place a strange idol in a specific site or home. |
-
 | 5 | Remove a magic item’s curse, then return it. |
-
 | 6 | Slay a monster and retrieve a specific organ. |
 
 [source: https://www.dndbeyond.com/monsters/5195103-lamia]: #

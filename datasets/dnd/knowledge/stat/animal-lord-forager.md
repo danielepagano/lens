@@ -60,27 +60,16 @@ Among the best-known animal lords are those that represent cats, hawks, lizards,
 Forager Animal Lord Appearances
 
 | 1d10 | Bestial Shape |
-
 | --- | --- |
-
 | 1 | Bear |
-
 | 2 | Bee |
-
 | 3 | Bison |
-
 | 4 | Capybara |
-
 | 5 | Carp |
-
 | 6 | Rabbit |
-
 | 7 | Rooster |
-
 | 8 | Sloth |
-
 | 9 | Stag |
-
 | 10 | Vulture |
 
 [source: https://www.dndbeyond.com/monsters/5194890-animal-lord-forager]: #

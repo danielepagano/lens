@@ -26,15 +26,10 @@ Pegasi are hunted by servants of evil, leading many of these winged steeds to fl
 Pegasus Offerings
 
 | 1d4 | A Pegasus Won’t Flee Someone … |
-
 | --- | --- |
-
 | 1 | Bearing the gear of a hero the pegasus aided. |
-
 | 2 | Offering magical fruit or holy spring water. |
-
 | 3 | Singing a song in Celestial, Druidic, or Sylvan. |
-
 | 4 | Wearing the garb of an ancient heroic order. |
 
 [source: https://www.dndbeyond.com/monsters/5195153-pegasus]: #

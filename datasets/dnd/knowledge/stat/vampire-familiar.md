@@ -38,19 +38,12 @@ Undead vampires lie dormant during the day, retreating to resting places hidden 
 Vampire Resting Places
 
 | 1d6 | The Vampire’s Resting Place Is … |
-
 | --- | --- |
-
 | 1 | Among the roots of a dead tree. |
-
 | 2 | At the bottom of a stagnant pool. |
-
 | 3 | A coffin filled with grave dirt. |
-
 | 4 | A large pot full of blood or vinegar. |
-
 | 5 | A space accessible only by shape-shifting. |
-
 | 6 | Within a statue or suit of armor. |
 
 [source: https://www.dndbeyond.com/monsters/5195247-vampire-familiar]: #

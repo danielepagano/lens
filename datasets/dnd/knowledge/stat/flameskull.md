@@ -40,19 +40,12 @@ Flameskulls take various forms, from skulls with humanlike features to ones with
 Flameskull Details
 
 | 1d6 | The Flameskull Features … |
-
 | --- | --- |
-
 | 1 | Arcane diagrams etched into it. |
-
 | 2 | Flames like dramatic features, horns, or hair. |
-
 | 3 | Fractured pieces that fly in unison. |
-
 | 4 | An iron plate bolted over its mouth. |
-
 | 5 | Lethal head trauma. |
-
 | 6 | Mismatched animal teeth. |
 
 [source: https://www.dndbeyond.com/monsters/5194995-flameskull]: #

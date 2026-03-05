@@ -30,19 +30,12 @@ Roll on or choose a result from the Will-o’-Wisp Ambushes table to inspire how
 Will-o’-Wisp Ambushes
 
 | 1d6 | The Will-o’-Wisp Tempts Victims Into … |
-
 | --- | --- |
-
 | 1 | An abandoned structure ready to collapse. |
-
 | 2 | An ambush by hungry ghouls or vampires. |
-
 | 3 | A dreaded ruin that curses those who enter. |
-
 | 4 | The lair of a predator, like a bear or wyvern. |
-
 | 5 | Patches of brown mold* or green slime.* |
-
 | 6 | Quicksand* or pools covered in thin ice.* |
 
 *See the Dungeon Master’s Guide.

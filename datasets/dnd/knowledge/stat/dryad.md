@@ -37,19 +37,12 @@ Guardians of the woodlands, dryads magically flit from tree to tree and from roo
 Dryad Sanctuaries
 
 | 1d6 | The Dryad Dwells in and Protects … |
-
 | --- | --- |
-
 | 1 | An acres-large clonal colony—a stand of identical, interconnected trees. |
-
 | 2 | A fortresslike tree, like a baobab or ­sequoia. |
-
 | 3 | A living lock—a plant that seals evil below or blocks the path to a dungeon. |
-
 | 4 | A lonely tree that stands atop a windswept mountain or amid a petrified forest. |
-
 | 5 | A plant with magic fruit or remarkable seeds. |
-
 | 6 | A shambling mound or treant that the dryad lives in or around as a Fey symbiote. |
 
 [source: https://www.dndbeyond.com/monsters/5194977-dryad]: #

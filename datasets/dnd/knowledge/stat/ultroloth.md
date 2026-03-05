@@ -39,19 +39,12 @@ Ultroloths strive to achieve planes-spanning plots. Roll on or choose a result f
 Ultroloth Conspiracies
 
 | 1d6 | The Ultroloth Schemes To … |
-
 | --- | --- |
-
 | 1 | Convince cultists their god has forsaken them. |
-
 | 2 | Destabilize a nation and rule the chaos. |
-
 | 3 | Incite a calamity and hold a world hostage. |
-
 | 4 | Provoke hostilities between immortal armies and sell magic weapons to both sides. |
-
 | 5 | Steal an invention and slay all who know of it. |
-
 | 6 | Unleash fiendish hordes on a foe’s homeland. |
 
 [source: https://www.dndbeyond.com/monsters/5195244-ultroloth]: #

@@ -54,19 +54,12 @@ Mind flayers work as lone schemers, in mysterious cabals, or as part of worlds-s
 Mind Flayer Machinations
 
 | 1d6 | The Mind Flayer Colony Seeks To … |
-
 | --- | --- |
-
 | 1 | Blot out the sun so their Underdark-dwelling servants can invade the surface. |
-
 | 2 | Create a new monstrous fusion between mind flayers and a legendary monster. |
-
 | 3 | Forge a psionic network uniting illithid colonies. |
-
 | 4 | Replace world leaders with intellect devourers. |
-
 | 5 | Restore a vessel to travel through Wildspace. |
-
 | 6 | Sacrifice the mental energy of a planet’s populace to take control of a githyanki bastion. |
 
 [source: https://www.dndbeyond.com/monsters/5195124-mind-flayer-arcanist]: #

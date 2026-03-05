@@ -33,23 +33,14 @@ Earth elementals are typically made of more than dirt. While an elemental’s co
 Earth Elemental Compositions
 
 | 1d8 | The Earth Elemental’s Body Features … |
-
 | --- | --- |
-
 | 1 | Colorful mineral formations. |
-
 | 2 | Cooled magma in melted heaps. |
-
 | 3 | Grass, moss, or plant roots. |
-
 | 4 | Heaps of peat or decaying matter. |
-
 | 5 | Mounds of sand studded with shells. |
-
 | 6 | Rubble or pieces of a ruined structure. |
-
 | 7 | Striking striations or bands of color. |
-
 | 8 | Veins of iron or other ore. |
 
 [source: https://www.dndbeyond.com/monsters/5194980-earth-elemental]: #

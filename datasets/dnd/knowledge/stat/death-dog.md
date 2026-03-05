@@ -28,19 +28,12 @@ Legends tie death dogs to malicious death gods, the underworld, and cursed ruler
 Death Dog Malady Symptoms
 
 | 1d6 | The Death Dog’s Malady Causes... |
-
 | --- | --- |
-
 | 1 | Marks from canine jaws to appear on the victim’s body, as if they were still being mauled. |
-
 | 2 | The victim’s body to wither, as if constantly exposed to desert heat. |
-
 | 3 | The victim to be distracted by distant howling or vague whispers only they can hear. |
-
 | 4 | The victim’s flesh to rot like a corpse. |
-
 | 5 | The victim to itch, as if they had fleas or sand beneath their skin. |
-
 | 6 | Wicked symbols to gradually appear on and spread across the victim’s body. |
 
 [source: https://www.dndbeyond.com/monsters/5194961-death-dog]: #

@@ -37,19 +37,12 @@ Rather than literal correspondence from a god, a deva conveys an allegory or que
 Deva Messages
 
 | 1d6 | The Deva Tasks a Mortal with Delivering... |
-
 | --- | --- |
-
 | 1 | The corpse of a hero in need of redemption. |
-
 | 2 | The cure for a plague in a distant land. |
-
 | 3 | A holy coffer that must not be opened. |
-
 | 4 | A magic weapon usable only by a true hero. |
-
 | 5 | A seedling that wilts if exposed to anger. |
-
 | 6 | Someone from another world with a prophesied purpose but no memory. |
 
 [source: https://www.dndbeyond.com/monsters/5194968-deva]: #

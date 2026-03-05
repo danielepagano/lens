@@ -35,19 +35,12 @@ When on the Material Plane or otherwise left to their own devices, hezrous reckl
 Demonic Undertakings
 
 | 1d6 | The Demon Is Compelled To … |
-
 | --- | --- |
-
 | 1 | Break open a vault and steal what’s within. |
-
 | 2 | Defile a place using blasphemous symbols and demonic gore. |
-
 | 3 | Fetch or otherwise provide materials for a profane ritual. |
-
 | 4 | Guard a site and slay anyone who comes near. |
-
 | 5 | Hunt down a foe, destroying everything barring the demon’s path. |
-
 | 6 | Intimidate someone into following orders. |
 
 [source: https://www.dndbeyond.com/monsters/5195073-hezrou]: #

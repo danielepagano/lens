@@ -44,19 +44,12 @@ Those who create gorgons strive to give them purposefully obscure command keys. 
 Gorgon Command Keys
 
 | 1d6 | Gorgon Won’t Attack Those That … |
-
 | --- | --- |
-
 | 1 | Cast a particular spell in the gorgon’s presence. |
-
 | 2 | Keep their back to the gorgon or otherwise act like they don’t see the monster. |
-
 | 3 | Offer it a drink of blood, water, or wine. |
-
 | 4 | Recite a specific rhyme or sing a certain song. |
-
 | 5 | Say its creator’s name backward. |
-
 | 6 | Wear a mask, perhaps in the shape of a bull or an animal meaningful to the gorgon’s creator. |
 
 [source: https://www.dndbeyond.com/monsters/5194932-brazen-gorgon]: #

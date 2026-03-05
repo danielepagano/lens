@@ -36,27 +36,16 @@ Many pseudodragons prefer the finer things in life. These diminutive dragons mig
 Pseudodragon Treats
 
 | 1d10 | The Pseudodragon Wants … |
-
 | --- | --- |
-
 | 1 | Flamboyant accessories it can wear. |
-
 | 2 | Mementos from a lost friend or master. |
-
 | 3 | Outlandish delicacies—like axe beak-egg omelets or mammoth-milk cheese. |
-
 | 4 | The possessions of a sibling, rival, or master. |
-
 | 5 | Shiny gifts, from gems to abalone shells. |
-
 | 6 | Soft bedding and stuffed toys. |
-
 | 7 | A specific cook’s signature dessert. |
-
 | 8 | Time-consuming beauty treatments. |
-
 | 9 | To hear a bedtime story or favorite song. |
-
 | 10 | Trophies and important-sounding titles. |
 
 [source: https://www.dndbeyond.com/monsters/4775834-pseudodragon]: #

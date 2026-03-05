@@ -65,79 +65,46 @@ Among the best-known animal lords are those that represent cats, hawks, lizards,
 Forager Animal Lord Appearances
 
 | 1d10 | Bestial Shape |
-
 | --- | --- |
-
 | 1 | Bear |
-
 | 2 | Bee |
-
 | 3 | Bison |
-
 | 4 | Capybara |
-
 | 5 | Carp |
-
 | 6 | Rabbit |
-
 | 7 | Rooster |
-
 | 8 | Sloth |
-
 | 9 | Stag |
-
 | 10 | Vulture |
 
 Hunter Animal Lord Appearances
 
 | 1d10 | Bestial Shape |
-
 | --- | --- |
-
 | 1 | Alligator |
-
 | 2 | Badger |
-
 | 3 | Bat |
-
 | 4 | Cat |
-
 | 5 | Hawk |
-
 | 6 | Mongoose |
-
 | 7 | Praying mantis |
-
 | 8 | Shark |
-
 | 9 | Snake |
-
 | 10 | Wolf |
 
 Sage Animal Lord Appearances
 
 | 1d10 | Bestial Shape |
-
 | --- | --- |
-
 | 1 | Coyote |
-
 | 2 | Crow |
-
 | 3 | Elephant |
-
 | 4 | Lizard |
-
 | 5 | Mouse |
-
 | 6 | Owl |
-
 | 7 | Salmon |
-
 | 8 | Spider |
-
 | 9 | Turtle |
-
 | 10 | Whale |
 
 [source: https://www.dndbeyond.com/monsters/5194892-animal-lord]: #

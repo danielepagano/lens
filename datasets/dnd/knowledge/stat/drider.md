@@ -36,19 +36,12 @@ Driders also appear when whole communities are transformed by a wicked god’s w
 Drider Metamorphoses
 
 | 1d6 | The Drider Gained Its Form As … |
-
 | --- | --- |
-
 | 1 | A blessing from a deity of assassins, dangerous wildernesses, or the Underdark. |
-
 | 2 | A curse from a powerful hag, vengeful witch, or strange Artifact. |
-
 | 3 | An experiment by an aboleth, a mind flayer, or another life-shaping magic-user. |
-
 | 4 | A magical means of escaping disaster or some worse fate. |
-
 | 5 | A mutation after exposure to chaotic planar energies or strange Underdark radiations. |
-
 | 6 | A punishment from a spiteful god, like Lolth or the Queen of Air and Darkness. |
 
 [source: https://www.dndbeyond.com/monsters/5194975-drider]: #

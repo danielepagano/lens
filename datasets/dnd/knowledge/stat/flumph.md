@@ -36,19 +36,12 @@ Flumphs dwell in psychically charged regions or near creatures with psionic magi
 Flumph Assistance
 
 | 1d6 | 1d6 The Flumph Helps By … |
-
 | --- | --- |
-
 | 1 | Cooking a meal of Underdark delicacies. |
-
 | 2 | Performing a psychic song or “smell poem.” |
-
 | 3 | Recovering and nursing fallen adventurers. |
-
 | 4 | Revealing the location of helpful magic items. |
-
 | 5 | Serving as a guide to a foe’s hidden lair. |
-
 | 6 | Sharing excessive encouragement and praise. |
 
 ---
@@ -60,27 +53,16 @@ A flumph’s extremities change color to reflect its mood. The Flumph Colors and
 Flumph Colors and Emotions
 
 | Color | Emotion |
-
 | --- | --- |
-
 | Blue, Dark | Sadness |
-
 | Blue, Light | Happiness |
-
 | Green | Curiosity |
-
 | Magenta | Unknown* |
-
 | Orange | Confusion |
-
 | Pink | Amusement |
-
 | Purple | Fear |
-
 | Red | Anger |
-
 | Teal | Serenity |
-
 | Yellow | Excitement |
 
 *Rarely seen; potentially no human equivalent

@@ -30,19 +30,12 @@ Gargoyles have a variety of appearances. Roll on or choose a result from the Gar
 Gargoyle Sculptures
 
 | 1d6 | The Gargoyle Is Sculpted to Appear... |
-
 | --- | --- |
-
 | 1 | Cherubic with perpetually smiling features. |
-
 | 2 | Crudely hewed or naturally formed. |
-
 | 3 | Damaged or marred by mismatched pieces. |
-
 | 4 | Dragon-like with polished stone scales. |
-
 | 5 | Gothically fiendish with horns and a tail. |
-
 | 6 | Useful, like an ornate podium or a pillar. |
 
 ---
@@ -54,23 +47,14 @@ Gargoyles seek to ambush foes or creatures that trespass on their territories. W
 Gargoyle Camouflage
 
 | 1d8 | The Gargoyle Conceals Itself Amid... |
-
 | --- | --- |
-
 | 1 | Burls and bark on a giant tree. |
-
 | 2 | Monuments in a graveyard or memorial. |
-
 | 3 | Outcroppings on a cliff or rock formation |
-
 | 4 | The petrified victims of a basilisk or medusa. |
-
 | 5 | Reliefs on a sculpted gate or wall. |
-
 | 6 | Rubble in a ruin or junkyard. |
-
 | 7 | Stalactites or icicles on a cavern ceiling. |
-
 | 8 | Statuary on a castle, mansion, or temple. |
 
 [source: https://www.dndbeyond.com/monsters/5195003-gargoyle]: #

@@ -58,19 +58,12 @@ Empyreans are the spawn of deities. While not gods themselves, they possess divi
 Empyrean Influences
 
 | 1d6 | The Empyrean Has Features That Are … |
-
 | --- | --- |
-
 | 1 | Balanced, naturalistic, or suggestive of watching eyes. |
-
 | 2 | Colorful, shadowy, or fluid or that vary depending on the viewer. |
-
 | 3 | Comforting and gentle or that remind viewers of pleasant memories. |
-
 | 4 | Disconnected parts, visible thoughts, or errant shapes. |
-
 | 5 | Machinelike, stoic, symmetrical, or suggestive of judgment. |
-
 | 6 | Morbid, menacing, or monstrous or that embody the viewer’s fears. |
 
 [source: https://www.dndbeyond.com/monsters/5194985-empyrean-fiend]: #

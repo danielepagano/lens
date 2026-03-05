@@ -33,27 +33,16 @@ Wraiths might arise from a single powerfully evil soul or other baleful forces. 
 Wraith Manifestations
 
 | 1d10 | The Wraith Embodies ... |
-
 | --- | --- |
-
 | 1 | The blasphemous magic of a cursed location. |
-
 | 2 | The exorcised evil of a redeemed villain. |
-
 | 3 | A legendary villain who returns once a century. |
-
 | 4 | Locals’ fear of a superstition or legend. |
-
 | 5 | The memory of a tragedy. |
-
 | 6 | A profane idea or foul piece of lore. |
-
 | 7 | The torment of one or more suffering souls. |
-
 | 8 | The viciousness of a profane Artifact. |
-
 | 9 | The vile dreams of a slumbering god. |
-
 | 10 | The voracity of a life-hungry realm, such as the Shadowfell or Negative Plane. |
 
 [source: https://www.dndbeyond.com/monsters/5174960-wraith]: #

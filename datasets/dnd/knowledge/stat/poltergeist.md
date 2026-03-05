@@ -31,23 +31,14 @@ Poltergeists telekinetically move objects in the places they lurk. Roll on or ch
 Poltergeist Activities
 
 | 1d8 | To Torment the Living, the Poltergeist … |
-
 | --- | --- |
-
 | 1 | Keeps returning a discarded item. |
-
 | 2 | Leaves footprints on vertical surfaces. |
-
 | 3 | Makes noises like someone trapped in a wall. |
-
 | 4 | Organizes a pack’s contents across the floor. |
-
 | 5 | Playfully puppets a corpse or doll. |
-
 | 6 | Removes bedding while someone sleeps. |
-
 | 7 | Sticks knives or weapons in the ceiling. |
-
 | 8 | Uncannily stacks books, furniture, or utensils. |
 
 [source: https://www.dndbeyond.com/monsters/5195168-poltergeist]: #

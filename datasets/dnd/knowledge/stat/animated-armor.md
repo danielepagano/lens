@@ -33,27 +33,16 @@ Roll on or choose a result from the Animated Object Catalysts table to inspire w
 Animated Object Catalysts
 
 | 1d10 | The Object Was Animated By ... |
-
 | --- | --- |
-
 | 1 | A Celestial or Fiend using the object to protect or torment a mortal. |
-
 | 2 | A combination of magic and technology, such as alchemy or alien science. |
-
 | 3 | The essence of someone transformed by a supernatural trickster. |
-
 | 4 | Fey as part of their games or wiles. |
-
 | 5 | Happenstance, with the item gaining a semblance of life after a hundred years of use. |
-
 | 6 | A magic-user in need of a guardian or servant |
-
 | 7 | The song of a magical instrument. |
-
 | 8 | A spirit possessing the object. |
-
 | 9 | Wild magic, a spell that went awry, or a chaotic Artifact. |
-
 | 10 | The will of a powerful psychic being. |
 
 [source: https://www.dndbeyond.com/monsters/5194893-animated-armor]: #

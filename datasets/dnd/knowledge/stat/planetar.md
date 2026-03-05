@@ -41,19 +41,12 @@ These angels act where they can against overwhelming evil, but to avoid the atte
 Planetar Quests
 
 | 1d6 | The Planetar Entreats a Mortal Hero To … |
-
 | --- | --- |
-
 | 1 | Convince a villain to meet with the angel. |
-
 | 2 | Find a loved one a villain believes is dead. |
-
 | 3 | Heal the loved one of an evil ruler. |
-
 | 4 | Inspire the defenders of a besieged holy site. |
-
 | 5 | Recover and destroy an evil Artifact. |
-
 | 6 | Reveal the true name of a devil to banish it. |
 
 [source: https://www.dndbeyond.com/monsters/5195165-planetar]: #

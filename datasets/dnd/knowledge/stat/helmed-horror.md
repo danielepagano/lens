@@ -32,19 +32,12 @@ Helmed horrors might perform any number of assignments. Roll on or choose a resu
 Helmed Horror Directives
 
 | 1d6 | The Helmed Horror Follows Commands To … |
-
 | --- | --- |
-
 | 1 | Carry its master’s palanquin through the air. |
-
 | 2 | Defend a remarkable treasure or piece of armor by incorporating the item into its being. |
-
 | 3 | Imitate a dead or imprisoned hero by using their armor and weapons. |
-
 | 4 | Perform as a laborer or servant. |
-
 | 5 | Serve in a legion formed from the armors of a land’s ancient defenders. |
-
 | 6 | Stand sentry in a gallery of mundane armors. |
 
 [source: https://www.dndbeyond.com/monsters/5195072-helmed-horror]: #

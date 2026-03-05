@@ -32,19 +32,12 @@ Treants defend and are shaped by secrets of the forest. Roll on or choose a resu
 Treant Secrets
 
 | 1d6 | The Treant Is … |
-
 | --- | --- |
-
 | 1 | Blessed by a god and grows magic fruit. |
-
 | 2 | Growing atop the entrance to a dungeon or portal to the Feywild. |
-
 | 3 | Home to a community of pixies or sprites. |
-
 | 4 | The last lore keeper of lost druidic knowledge. |
-
 | 5 | Rooted on a hero’s burial mound and animates trees that look like questing knights. |
-
 | 6 | Scarred by a fire and holds the bones of the arsonist who started it in a hollow. |
 
 [source: https://www.dndbeyond.com/monsters/5195236-treant]: #

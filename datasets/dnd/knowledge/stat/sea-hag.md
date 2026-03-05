@@ -35,19 +35,12 @@ Sea hags cloak themselves in illusions to work their schemes. Roll on or choose 
 Sea Hag Disguises
 
 | 1d6 | The Sea Hag Takes the Form of A … |
-
 | --- | --- |
-
 | 1 | Captive and claims nearby villagers bound them and left them to drown. |
-
 | 2 | Castaway and shares a cursed item’s location with would-be rescuers. |
-
 | 3 | Healer and passes off poisons as medicine. |
-
 | 4 | Panic-spreading prophesier of doom. |
-
 | 5 | Ship captain and delivers passengers to the hag’s pet sea monster. |
-
 | 6 | Wounded sailor and claims their ship was destroyed by merfolk or other peaceful people. |
 
 [source: https://www.dndbeyond.com/monsters/5195198-sea-hag]: #
