@@ -28,6 +28,10 @@ Vengeful Glare. Wisdom Saving Throw: DC 15, one creature the revenant can see wi
 
 Revenants possess the bodies they had in life, using them to hunt down their killers. If their bodies are destroyed, they take control of new bodies that gradually change to resemble the revenants’ original forms.
 
+---
+
+### Revenants
+
 Wrathful spirits bent on revenge, revenants possess corpses and other materials, using them to seek justice or vent their rage on those who wronged them. Revenants refuse to rest until those they seek to punish are no more. If their bodies are destroyed, revenants claim new forms and continue their ruthless quests.
 
 [source: https://www.dndbeyond.com/monsters/5195182-revenant]: #

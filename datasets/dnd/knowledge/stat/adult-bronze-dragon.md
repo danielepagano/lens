@@ -28,7 +28,8 @@ Repulsion Breath. Strength Saving Throw: DC 19, each creature in a 30-foot Cone.
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 17, +10 to hit with spell attacks):
 
-At Will: Detect Magic, Guiding Bolt (level 2 version), Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell), Speak with Animals, Thaumaturgy1/Day Each: Detect Thoughts, Water Breathing
+At Will: Detect Magic, Guiding Bolt (level 2 version), Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell), Speak with Animals, Thaumaturgy
+1/Day Each: Detect Thoughts, Water Breathing
 
 ---
 **Legendary Actions**
@@ -46,9 +47,17 @@ Thunderclap. Constitution Saving Throw: DC 17, each creature in a 20-foot-radius
 
 Adult bronze dragons often dwell near places they defend or where they help others work toward goals. They might become patrons of whole cities, advising leaders and helping generations flourish.
 
+---
+
+### Bronze Dragons
+
 Where bronze dragons dwell, wonders flourish. Imaginative yet mindful, these metallic dragons work toward greatness and help others achieve all they can. They strive to preserve innovations, from the works of past civilizations to new discoveries, and they share such works widely. When dealing with shorter-lived beings, bronze dragons prefer to win them over through conversation and cultivation, but they don’t shy from battle when villains keep others from achieving their potential.
 
 Bronze dragons enjoy the power and endless possibilities of the sea, and they often make their lairs in places of natural beauty or communities they wish to preserve. Within their dwellings, bronze dragons hoard things they believe will be useful one day. They salvage treasure lost to the sea, reclaiming wealth or sunken ships.
+
+---
+
+### Bronze Dragon Lairs
 
 Bronze dragons usually make their homes near or under the sea.
 

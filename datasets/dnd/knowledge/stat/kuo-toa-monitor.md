@@ -27,6 +27,10 @@ Bone Whip. Melee Attack Roll: +5, reach 10 ft. Hit: 6 (1d6 + 3) Slashing damage 
 
 Kuo-toa monitors control the day-to-day life of weaker kuo-toa, directing their work and worship. They also train beasts or monsters in the kuo-toa’s service—such as chuuls or giant crabs—and command them in battle. Archpriests bless monitors with the power to control their underlings and to subdue foes with electricity channeled through their bizarre whips.
 
+---
+
+### Kuo-toa
+
 Kuo-toa have slimy, humanoid bodies and the heads of goggle-eyed deep-sea fish. They claim they once dominated whole worlds, their empires spanning land and sea under the blessings of piscine gods. The kuo-toa can’t say what disaster brought their glorious civilization to an end, but elves, humans, mind flayers, and the kuo-toan gods bear the brunt of their blame. From the lands and seas of the surface, the kuo-toa retreated into cavernous trenches and Underdark seas. In these hidden realms, kuo-toa brood over all they’ve lost and forgotten, nursing plots to avenge themselves for slights that might never have occurred.
 
 Kuo-toa hate the civilizations of the surface and the Underdark, believing themselves to be victims of age-old slights and ongoing conspiracies. Kuo-toa undertake contrived plots to propel themselves to dominance, often kidnapping people to learn their secrets or making dubious sacrifices to bizarre gods. To facilitate such plots, kuo-toa try to capture creatures alive using nets or strange weapons. Drow, dwarves, and gnomes dwelling in the Underdark, as well as surface communities near submerged subterranean passages, are frequent targets for kuo-toa raids and other plots.

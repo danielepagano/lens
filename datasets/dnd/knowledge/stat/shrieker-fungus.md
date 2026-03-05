@@ -20,6 +20,10 @@ Shriek. Trigger: A creature or a source of Bright Light moves within 30 feet of 
 
 If exposed to light or otherwise disturbed, mushroomlike shriekers emit a high-pitched noise that gives them their name. This wailing might alert other creatures or attract predators.
 
+---
+
+### Fungi
+
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
 
 [source: https://www.dndbeyond.com/monsters/5195205-shrieker-fungus]: #

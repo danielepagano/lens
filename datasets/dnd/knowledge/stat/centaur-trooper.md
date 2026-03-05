@@ -25,6 +25,10 @@ Longbow. Ranged Attack Roll: +4, range 150/600 ft. Hit: 6 (1d8 + 2) Piercing dam
 
 Centaur troopers are knight-like guardians. Many are suspicious of non-Fey creatures
 
+---
+
+### Centaurs
+
 Centaurs are defenders of forests, plains, and sites of primeval power. With upper bodies like humans’ and the lower bodies of horses, centaurs charge into battle against those who would harm their allies.
 
 [source: https://www.dndbeyond.com/monsters/5194939-centaur-trooper]: #

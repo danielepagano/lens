@@ -31,6 +31,10 @@ Spellcasting. The knight casts one of the following spells, using Charisma as th
 
 Questing knights travel in pursuit of a cause, such as slaying a villain, defeating a monster, recovering an Artifact, or restoring their lost honor.
 
+---
+
+### Knights
+
 Knights are skilled warriors trained for war and tested in battle. Many serve the rulers of a realm, a religion, or an order devoted to a cause.
 
 [source: https://www.dndbeyond.com/monsters/5195177-questing-knight]: #

@@ -22,6 +22,10 @@ Bite. Melee Attack Roll: +4, reach 5 ft. Hit: 6 (1d8 + 2) Piercing damage plus 3
 
 Juvenile salamanders emerge from burning hot, two-foot-diameter eggs. Called fire snakes, these serpentlike creatures slither through the Plane of Fire and other intensely hot places. After consuming the proper fuels and exposing themselves to fiery extremes, fire snakes grow into salamanders.
 
+---
+
+### Salamanders
+
 Salamanders are serpentine denizens of the Elemental Plane of Fire. They believe that flames expose the purest forms of all things and delight in burning and melting things, seeing fleeting beauty and striking nuances in blazes consuming different fuels—ancient forests, artistic masterpieces, or living creatures. To salamanders, those that can’t endure their flames are nothing but ashes in disguise. They harbor malice toward few creatures, but they consider creating remarkable flames more important than the pain and loss their fires cause.
 
 Salamanders are typically content to dwell on the Elemental Plane of Fire, creating strange, temporary art amid the flames. Some travel to other planes of existence and worlds to experience the flames of other realms or create conflagrations of unprecedented scale.

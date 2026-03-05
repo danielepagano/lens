@@ -22,4 +22,26 @@ Basilisks are ponderous predators with eight clawed legs, crystalline spines, an
 
 The remains of Petrified creatures litter the area where a basilisk hunts. These might be mundane creatures or more unusual beings that had dire encounters with a basilisk. Roll on or choose a result from the Petrified Basilisk Victims table to inspire the statues that might appear in a basilisk’s hunting grounds. There is a 50 percent chance that any of these statues are missing limbs or broken into pieces.
 
+Petrified Basilisk Victims
+
+| 1d8 | A Basilisk Used Its Gaze to Petrify ... |
+
+| --- | --- |
+
+| 1 | An adventurer with an ornate key hanging around their neck. |
+
+| 2 | Animals like bats, bears, deer, or goats. |
+
+| 3 | A climber clinging to a stalactite. |
+
+| 4 | Itself using a large mirror or shiny surface. |
+
+| 5 | A mimic disguised as a chest full of treasure. |
+
+| 6 | A monster such as an umber hulk or a troglodyte. |
+
+| 7 | Someone caught in a comic pose or making a regrettable face. |
+
+| 8 | A victim now being used as a nest for insects or other vermin. |
+
 [source: https://www.dndbeyond.com/monsters/5194919-basilisk]: #

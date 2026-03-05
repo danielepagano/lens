@@ -27,6 +27,10 @@ Acid Breath (Recharge 5–6). Dexterity Saving Throw: DC 11, each creature in a 
 
 Black dragon wyrmlings lurk in bogs and polluted waterways, hunting for prey and weaker creatures to overpower. While older wyrmlings eventually seek their own territories, recently hatched ones might hunt one another, seeking dominance over their clutch and slaying rivals they can’t subjugate.
 
+---
+
+### Black Dragons
+
 Black dragons delight in suffering and ruin. While other chromatic dragons scheme for power and wealth, these dragons seek to tear down all they see and rule over what remains.
 
 Black dragons are terrifying creatures with curved horns and withered visages suggestive of fiendish skulls. They typically inhabit stagnant swamps, crumbling ruins, or places of magical or environmental corruption. Their acid breath scars their domains, eroding the features from ancient statues and leaving nature with festering wounds.

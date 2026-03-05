@@ -22,75 +22,20 @@ Beguiling Song. Wisdom Saving Throw: DC 15, each creature in a 20-foot-radius Sp
 
 Spellcasting. The performer casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 15):
 
-At Will: Minor Illusion, Prestidigitation 1/Day: Tasha’s Hideous Laughter (level 3 version)
+At Will: Minor Illusion, Prestidigitation
+1/Day: Tasha’s Hideous Laughter (level 3 version)
 
 ---
 **Description**
 
 Maestros are headlining performers who enjoy considerable renown. They might be theaters’ marquee actors, astonishing daredevils, or jesters experienced at entertaining fickle royals. Some share their techniques with apprentices, while others jealously guard their secrets.
 
+---
+
+### Performers
+
 From royal courts to village squares, skilled entertainers hone their talents and delight audiences. Some travel far, sharing tales and demonstrating mysterious arts. Others serve in the courts and theaters of great nations, cultivating celebrity and navigating the whims of patrons. Many hone professional secrets and magical flourishes, striving to make their performances truly unforgettable.
 
 Use the following list of entertainers and roles to inspire the performers in your adventures:
-
-Acrobat
-
-Actor
-
-Aerialist
-
-Animal trainer
-
-Athlete
-
-Burlesque artist
-
-Busker
-
-Circus performer
-
-Comedian
-
-Contortionist
-
-Dancer
-
-Daredevil
-
-Jester
-
-Juggler
-
-Magician
-
-Mentalist
-
-Mime
-
-Minstrel
-
-Mourner
-
-Oral historian
-
-Poet
-
-Puppeteer
-
-Ritualist
-
-Stage fighter
-
-Storyteller
-
-Throat singer
-
-Town crier
-
-Trick rider
-
-Vocalist
-
-Wrestler
 
 [source: https://www.dndbeyond.com/monsters/5195155-performer-maestro]: #

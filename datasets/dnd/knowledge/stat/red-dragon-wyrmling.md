@@ -25,6 +25,10 @@ Fire Breath (Recharge 5–6). Dexterity Saving Throw: DC 13, each creature in a 
 
 Red dragon wyrmlings are born destroyers. From a young age, they delight in igniting objects and creatures alike. They sometimes restrain themselves from scorching creatures to instead bully others into following their orders and bringing them gifts.
 
+---
+
+### Red Dragons
+
 Red dragons take whatever they desire and burn to ash anything that stands in their way. These chromatic dragons endlessly desire more—more magic, territory, treasure, or whatever else inflames their cruel ambitions.
 
 Red dragons make their lairs amid perilous cliffs and volcanoes. Within, they amass and fiercely protect hoards of treasure, and many have perfect recall of the hoards' contents and the locations of all they’ve collected. Should anything go missing, red dragons fly into rages. They don’t rest until their treasures are returned and the thieves have burned.

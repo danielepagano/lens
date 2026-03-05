@@ -25,4 +25,18 @@ Baphomet, Demon Lord of Beasts, claims to have created minotaurs and demands the
 
 Minotaurs of Baphomet often dwell in mazes, leading their allies to hidden destinations and stalking trespassers. Roll on or choose a result from the Minotaur Mazes table to inspire the shape of a minotaur’s dwelling.
 
+Minotaur Mazes
+
+| 1d4 | The Minotaur of Baphomet Lurks In … |
+
+| --- | --- |
+
+| 1 | A multilevel mine or sewer. |
+
+| 2 | Multiple mazes connected by magic portals. |
+
+| 3 | A poisonous swamp with labyrinthine paths. |
+
+| 4 | The ruins of a buried palace or temple. |
+
 [source: https://www.dndbeyond.com/monsters/5195126-minotaur-of-baphomet]: #

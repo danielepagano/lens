@@ -32,7 +32,8 @@ If the target takes damage from the Dream spell, the target’s Hit Point maximu
 
 Spellcasting. The hag casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 14):
 
-At Will: Detect Magic, Etherealness, Magic Missile (level 4 version) 2/Day Each: Phantasmal Killer, Plane Shift (self only)
+At Will: Detect Magic, Etherealness, Magic Missile (level 4 version)
+2/Day Each: Phantasmal Killer, Plane Shift (self only)
 
 ---
 **Description**

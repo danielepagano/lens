@@ -27,4 +27,22 @@ Birds of prey of fantastic scale, rocs hunt over vast territories and can snatch
 
 Rocs nest amid remote heights. Their nests are typically littered with treasure and uneaten prey. Roll on or choose an option from the Roc Nest Remnants table to inspire what’s in a roc’s nest.
 
+Roc Nest Remnants
+
+| 1d6 | The Roc’s Nest Holds … |
+
+| --- | --- |
+
+| 1 | The burial litter of a lost hero. |
+
+| 2 | A caravan wagon full of trade goods. |
+
+| 3 | A live elephant. |
+
+| 4 | 1d4 eggs larger than adult humans. |
+
+| 5 | Someone marooned in the nest. |
+
+| 6 | A statue of a knight riding a rearing steed. |
+
 [source: https://www.dndbeyond.com/monsters/5195184-roc]: #

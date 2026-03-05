@@ -22,7 +22,8 @@ Claw. Melee Attack Roll: +5, reach 5 ft. Hit: 6 (1d6 + 3) Slashing damage plus 5
 
 Spellcasting. The quaggoth casts one of the following spells, requiring no spell components and using Wisdom as the spellcasting ability (spell save DC 12):
 
-At Will: Mage Hand (the hand is Invisible), Minor Illusion 2/Day: Mind Spike
+At Will: Mage Hand (the hand is Invisible), Minor Illusion
+2/Day: Mind Spike
 
 ---
 **Reactions**
@@ -33,6 +34,10 @@ Psionic Defense (3/Day). The quaggoth casts Feather Fall or Shield in response t
 **Description**
 
 Quaggoth thonots possess psionic abilities, which they use to give themselves an edge in combat and to coerce the service of other quaggoths.
+
+---
+
+### Quaggoths
 
 Beastly hunters endemic to subterranean depths, quaggoths scrape harsh existences from the Underdark. While they can survive on bitter lichens and toxic fungi, they viciously attack anything they can make a meal of, from giant spiders to explorers. Quaggoths sometimes serve as muscle for Underdark-dwelling villains.
 

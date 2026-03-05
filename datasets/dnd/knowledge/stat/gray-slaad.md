@@ -24,12 +24,17 @@ Chaos Claw. Melee Attack Roll: +8, reach 10 ft. Hit: 9 (1d10 + 4) Slashing damag
 
 Spellcasting. The slaad casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16):
 
-At Will: Detect Magic, Detect Thoughts, Invisibility (self only), Mage Hand, Major Image1/Day Each: Cloudkill, Fly, Plane Shift (self only), Tongues
+At Will: Detect Magic, Detect Thoughts, Invisibility (self only), Mage Hand, Major Image
+1/Day Each: Cloudkill, Fly, Plane Shift (self only), Tongues
 
 ---
 **Description**
 
 Gray slaadi arise from green slaadi transformed by the Spawning Stone or slaad lords. They explore the planes, seeking Humanoid communities to invade near planar pathways.
+
+---
+
+### Slaadi
 
 Unpredictable slaadi devour and multiply across the Ever-Changing Chaos of Limbo. These toad-like, extraplanar beings embody the endless potentiality of their home plane of existence. While slaadi aren’t inherently evil, their impulses are wild and often destructive. Many are driven to propagate through supernatural processes. Unfortunately, these processes typically are fatal for other creatures.
 

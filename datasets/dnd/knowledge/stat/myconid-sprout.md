@@ -24,6 +24,10 @@ Rapport Spores. The myconid expels spores in a 30-foot Emanation originating fro
 
 Myconid sprouts tend to their fungal homes and watch for trespassers.
 
+---
+
+### Myconids
+
 Myconids dwell in remote Underdark reaches overgrown with molds and mushrooms. These ambulatory fungal creatures tend to their sanctuaries and avoid becoming embroiled in the conflicts of other creatures. They use specialized spores to communicate, to alert one another to danger, and to defend themselves. When myconids encounter others beings, they use mind-linking spores to allow nearby creatures to telepathically share thoughts. Nevertheless, myconids’ goals remain mysterious to most non-fungal creatures.
 
 [source: https://www.dndbeyond.com/monsters/5195139-myconid-sprout]: #

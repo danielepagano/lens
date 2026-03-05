@@ -25,6 +25,10 @@ Earthen Maul. Melee Attack Roll: +5, reach 5 ft. Hit: 10 (2d6 + 3) Bludgeoning d
 
 Lizardfolk sovereigns undergo magical rites that imbue them with fantastic strength and magic from the Elemental Plane of Earth. In some, though, it also unlocks a primal viciousness.
 
+---
+
+### Lizardfolk
+
 Lizardfolk dwell in wildernesses suffused with primal magic. While many lizardfolk are Humanoids with varied skills, some forge powerful bonds with the Elemental Plane of Earth, granting them magical connections to the cycle of growth and rebirth.
 
 [source: https://www.dndbeyond.com/monsters/5195108-lizardfolk-sovereign]: #

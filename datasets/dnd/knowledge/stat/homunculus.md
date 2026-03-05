@@ -24,4 +24,26 @@ A mage can create a cat-sized, obedient assistant called a homunculus through a 
 
 A homunculus’s appearance reflects its creator’s tastes. Roll on or choose a result from the Homunculus Features table to inspire a homunculus’s form.
 
+Homunculus Features
+
+| 1d8 | The Homunculus Has Features That Are … |
+
+| --- | --- |
+
+| 1 | Bat-like with tattered wings. |
+
+| 2 | Made of soft metal and delicate gears. |
+
+| 3 | Marked with its creator’s symbol. |
+
+| 4 | Similar to those of a winged humanoid. |
+
+| 5 | Sprouting flowers and leaves. |
+
+| 6 | Suggestive of its creator’s appearance. |
+
+| 7 | Underdeveloped and fleshy with beady eyes. |
+
+| 8 | Woven and patchwork, like a well-loved toy. |
+
 [source: https://www.dndbeyond.com/monsters/5195080-homunculus]: #

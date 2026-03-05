@@ -24,7 +24,26 @@ Shock. Melee Attack Roll: +4, reach 5 ft. Hit: 11 (2d8 + 2) Lightning damage.
 ---
 **Description**
 
-From a distance, will-o’-wisps look like lanterns bobbing in the dark. Through the windows of abandoned structures or around the bends of treacherous paths, these spirits tempt the curious into peril. Once their prey is vulnerable, will-o’-wisps feed on the life force of those they lay low. Roll on or choose a result from the Will-o’-Wisp Ambushes table to inspire how a will-o’-wisp imperils its victims.
+From a distance, will-o’-wisps look like lanterns bobbing in the dark. Through the windows of abandoned structures or around the bends of treacherous paths, these spirits tempt the curious into peril. Once their prey is vulnerable, will-o’-wisps feed on the life force of those they lay low.
+Roll on or choose a result from the Will-o’-Wisp Ambushes table to inspire how a will-o’-wisp imperils its victims.
+
+Will-o’-Wisp Ambushes
+
+| 1d6 | The Will-o’-Wisp Tempts Victims Into … |
+
+| --- | --- |
+
+| 1 | An abandoned structure ready to collapse. |
+
+| 2 | An ambush by hungry ghouls or vampires. |
+
+| 3 | A dreaded ruin that curses those who enter. |
+
+| 4 | The lair of a predator, like a bear or wyvern. |
+
+| 5 | Patches of brown mold* or green slime.* |
+
+| 6 | Quicksand* or pools covered in thin ice.* |
 
 *See the Dungeon Master’s Guide.
 

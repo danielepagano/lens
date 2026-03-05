@@ -30,7 +30,8 @@ Slaying Bow. Dexterity Saving Throw: DC 21, one creature the solar can see withi
 
 Spellcasting. The solar casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 25):
 
-At Will: Detect Evil and Good1/Day Each: Commune, Control Weather, Dispel Evil and Good, Resurrection
+At Will: Detect Evil and Good
+1/Day Each: Commune, Control Weather, Dispel Evil and Good, Resurrection
 
 ---
 **Legendary Actions**

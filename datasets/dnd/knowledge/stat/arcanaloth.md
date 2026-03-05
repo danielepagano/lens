@@ -32,7 +32,8 @@ Fiendish Burst. Melee or Ranged Attack Roll: +9, reach 5 ft. or range 120 ft. Hi
 
 Spellcasting. The arcanaloth casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 17):
 
-At Will: Alter Self, Detect Magic, Identify, Mage Hand, Prestidigitation 1/Day Each: Contact Other Plane, Detect Thoughts, Dimension Door, Mind Blank
+At Will: Alter Self, Detect Magic, Identify, Mage Hand, Prestidigitation
+1/Day Each: Contact Other Plane, Detect Thoughts, Dimension Door, Mind Blank
 
 ---
 **Reactions**

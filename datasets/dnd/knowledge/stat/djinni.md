@@ -31,7 +31,9 @@ Whenever the whirlwind enters a creature’s space or a creature enters the whir
 
 Spellcasting. The djinni casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 17):
 
-At Will: Detect Evil and Good, Detect Magic2/Day Each: Create Food and Water (can create wine instead of water), Tongues, Wind Walk1/Day Each: Creation, Gaseous Form, Invisibility, Major Image, Plane Shift
+At Will: Detect Evil and Good, Detect Magic
+2/Day Each: Create Food and Water (can create wine instead of water), Tongues, Wind Walk
+1/Day Each: Creation, Gaseous Form, Invisibility, Major Image, Plane Shift
 
 ---
 **Description**

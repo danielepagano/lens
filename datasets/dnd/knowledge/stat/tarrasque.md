@@ -50,6 +50,21 @@ The tarrasque is a bipedal, prehistoric Monstrosity that stands over seventy fee
 
 The tarrasque is a creature of tireless rage. It lashes out at any creature that catches its attention, thrashing with claws and its mighty tail while swallowing smaller beings whole. It seems to take instinctual offense at the works of lesser beings, venting its rage at buildings, bridges, ships, and monuments. The larger a structure or foe is, the greater the tarrasque’s wrath.
 
-It is a mystery what—if anything—calms the tarrasque, but eventually it returns to its slumber, leaving the world irrevocably changed. While the tarrasque might be halted by incredible opposition, its threat can never be wiped from the multiverse. Whenever the tarrasque is defeated, another tarrasque awakes somewhere else on the Material Plane. Few things survive the tarrasque’s rampages, and reports of the monster’s devastation are often contradictory, incomplete, or beyond belief. In cases where it leaves no survivors, its calamities might initially be blamed on evil dragons or magical disasters, but the tarrasque frequently leaves behind some unmistakable indication of its passage. Roll on or choose a result from the Tarrasque Evidence table to inspire what marks the monster’s rampages.
+It is a mystery what—if anything—calms the tarrasque, but eventually it returns to its slumber, leaving the world irrevocably changed. While the tarrasque might be halted by incredible opposition, its threat can never be wiped from the multiverse. Whenever the tarrasque is defeated, another tarrasque awakes somewhere else on the Material Plane.
+Few things survive the tarrasque’s rampages, and reports of the monster’s devastation are often contradictory, incomplete, or beyond belief. In cases where it leaves no survivors, its calamities might initially be blamed on evil dragons or magical disasters, but the tarrasque frequently leaves behind some unmistakable indication of its passage. Roll on or choose a result from the Tarrasque Evidence table to inspire what marks the monster’s rampages.
+
+Tarrasque Evidence
+
+| 1d4 | Amid Destruction, the Tarrasque Leaves … |
+
+| --- | --- |
+
+| 1 | Evidence of a magic spell reflected back on its caster, like Ice Knife or Melf’s Acid Arrow. |
+
+| 2 | Massive footprints or claw marks. |
+
+| 3 | A russet scale the size of a knight’s shield. |
+
+| 4 | A shattered mountain or diverted river. |
 
 [source: https://www.dndbeyond.com/monsters/5195232-tarrasque]: #

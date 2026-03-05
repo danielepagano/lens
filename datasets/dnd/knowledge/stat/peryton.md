@@ -29,4 +29,18 @@ Perytons are monstrous predators that hunt people—particularly humans and elve
 
 Perytons tear out the hearts of those they slay, carrying the organs back to grisly lairs. This gives rise to numerous superstitions surrounding perytons. Roll on or choose a result from the Peryton Superstitions table to inspire why a peryton steals hearts.
 
+Peryton Superstitions
+
+| 1d4 | If a Peryton Collects Enough Hearts … |
+
+| --- | --- |
+
+| 1 | The hearts grant an evil wish. |
+
+| 2 | It reverts to its original form. |
+
+| 3 | A new peryton hatches from each heart. |
+
+| 4 | A portal opens to the Lower Planes. |
+
 [source: https://www.dndbeyond.com/monsters/5195157-peryton]: #

@@ -586,47 +586,39 @@ class TestPlayOperatorRequirements(unittest.TestCase):
     def test_no_pins_raises(self) -> None:
         with self.assertRaises(OperatorError) as ctx:
             PlayOperator.check_requirements(self.session, self.cursor, pins=[])
-        self.assertIn("player character", str(ctx.exception))
+        self.assertIn("rules.dnd", str(ctx.exception))
+        self.assertIn("rules.engagement", str(ctx.exception))
 
-    def test_pin_without_pc_tag_raises(self) -> None:
-        # Create KB object without pc tag
-        kb_dir = self.root / "knowledge" / "person"
-        kb_dir.mkdir(parents=True)
-        (kb_dir / "hero.md").write_text("A brave hero.\n")
+    def test_missing_rules_pins_raises(self) -> None:
+        # Has pc.hero but missing rules pins
         with self.assertRaises(OperatorError) as ctx:
             PlayOperator.check_requirements(
-                self.session, self.cursor, pins=["person.hero"]
+                self.session, self.cursor, pins=["pc.hero"]
             )
-        self.assertIn("pc", str(ctx.exception))
+        self.assertIn("rules.dnd", str(ctx.exception))
 
-    def test_pin_with_pc_tag_passes(self) -> None:
-        from lens.core.knowledge import KnowledgeStore
-        KnowledgeStore.clear_registry()
-        # Create KB object and tag it as pc
-        kb_dir = self.root / "knowledge" / "person"
-        kb_dir.mkdir(parents=True)
-        (kb_dir / "hero.md").write_text("A brave hero.\n")
-        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
-        subprocess.run(["git", "commit", "-m", "kb"], cwd=self.root, capture_output=True, check=True)
-        kb = KnowledgeStore.for_project(self.root)
-        kb.add_tags("person.hero", ["pc"])
-        # Should not raise
-        PlayOperator.check_requirements(self.session, self.cursor, pins=["person.hero"])
+    def test_missing_pc_pin_raises(self) -> None:
+        # Has rules pins but no pc.* pin
+        with self.assertRaises(OperatorError) as ctx:
+            PlayOperator.check_requirements(
+                self.session, self.cursor,
+                pins=["rules.dnd", "rules.engagement"],
+            )
+        self.assertIn("pc.", str(ctx.exception))
 
-    def test_front_matter_pin_with_pc_tag_passes(self) -> None:
-        from lens.core.knowledge import KnowledgeStore
-        KnowledgeStore.clear_registry()
-        kb_dir = self.root / "knowledge" / "person"
-        kb_dir.mkdir(parents=True)
-        (kb_dir / "hero.md").write_text("A brave hero.\n")
-        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
-        subprocess.run(["git", "commit", "-m", "kb"], cwd=self.root, capture_output=True, check=True)
-        kb = KnowledgeStore.for_project(self.root)
-        kb.add_tags("person.hero", ["pc"])
-        # Pin via front matter on cursor node (lens annotation format)
+    def test_all_required_pins_passes(self) -> None:
+        # Should not raise with rules + pc.* pins
+        PlayOperator.check_requirements(
+            self.session, self.cursor,
+            pins=["rules.dnd", "rules.engagement", "pc.hero"],
+        )
+
+    def test_front_matter_pins_pass(self) -> None:
+        # Pin all required objects via front matter, no explicit pins
         cursor_md = self.cursor.md_path()
-        cursor_md.write_text("[\n  kb_pin:\n  - person.hero\n]: #\n# test\n")
-        # No explicit pins — should pass via front matter
+        cursor_md.write_text(
+            "[\n  kb_pin:\n  - rules.dnd\n  - rules.engagement\n  - pc.hero\n]: #\n# test\n"
+        )
         PlayOperator.check_requirements(self.session, self.cursor, pins=[])
 
 

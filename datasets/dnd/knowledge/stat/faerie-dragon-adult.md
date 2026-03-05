@@ -22,12 +22,17 @@ Euphoria Breath (Recharge 5–6). Wisdom Saving Throw: DC 13, each creature in a
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 13):
 
-At Will: Dancing Lights, Mage Hand, Minor Illusion1/Day Each: Hallucinatory Terrain, Polymorph
+At Will: Dancing Lights, Mage Hand, Minor Illusion
+1/Day Each: Hallucinatory Terrain, Polymorph
 
 ---
 **Description**
 
 The pranks of faerie dragon adults tend to lead others to people in need or wrongs to be righted.
+
+---
+
+### Faerie Dragons
 
 Faerie dragons are cat-size pranksters with draconic features, butterfly-like wings, and scales of warm hues as youths and cool hues as adults.
 

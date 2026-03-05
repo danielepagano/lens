@@ -32,4 +32,22 @@ Hezrous serve more powerful demons, such as nalfeshnees and mariliths. They take
 
 When on the Material Plane or otherwise left to their own devices, hezrous recklessly indulge in destructive, short-sighted rampages. Only magic and threats from more powerful masters can curb these demons’ outrages and compel hezrous to pursue greater plots. Powerful spellcasters often use sinister coercions, spells like Magic Circle and Planar Binding, or other magic to force hezrous to serve them. Roll on or choose a result from the Demonic Undertakings table to inspire how a magic-user might employ a hezrou or similar demon.
 
+Demonic Undertakings
+
+| 1d6 | The Demon Is Compelled To … |
+
+| --- | --- |
+
+| 1 | Break open a vault and steal what’s within. |
+
+| 2 | Defile a place using blasphemous symbols and demonic gore. |
+
+| 3 | Fetch or otherwise provide materials for a profane ritual. |
+
+| 4 | Guard a site and slay anyone who comes near. |
+
+| 5 | Hunt down a foe, destroying everything barring the demon’s path. |
+
+| 6 | Intimidate someone into following orders. |
+
 [source: https://www.dndbeyond.com/monsters/5195073-hezrou]: #

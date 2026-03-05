@@ -27,6 +27,10 @@ Javelin. Melee or Ranged Attack Roll: +7, reach 5 ft. or range 30/120 ft. Hit: 1
 
 Berserker commanders bear the scars of battle and drive their followers to match their deadly zeal. These commanders tap into a primal magic to enhance their might.
 
+---
+
+### Berserkers
+
 Gripped by the adrenaline of battle, berserkers are reckless invaders, pit fighters, and other ferocious warriors.
 
 [source: https://www.dndbeyond.com/monsters/5194924-berserker-commander]: #

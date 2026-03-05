@@ -27,6 +27,10 @@ Paralyzing Breath. Constitution Saving Throw: DC 13, each creature in a 15-foot 
 
 Silver dragon wyrmlings typically live with one or more parents or mentors, learning much about the world and its past before living on their own.
 
+---
+
+### Silver Dragons
+
 Silver dragons work to preserve peace and encourage greatness. They try to live as examples of decency while remaining watchful against evil.
 
 Silver dragons typically dwell amid snow-capped mountains, though aspirations and congeniality drive some to instead live among cosmopolitan societies. Disguised as humanoids, they ally with artists, historians, knights, and humble leaders who learn from the past to create better futures.

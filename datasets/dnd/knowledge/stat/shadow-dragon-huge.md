@@ -40,6 +40,8 @@ Veil of Shadow. The dragon uses Shadow Stealth, and one creature of its choice t
 ---
 **Description**
 
+### Shadow Dragon Lairs
+
 Shadow dragons lair in places of darkness and despair, such as accursed ruins, the depths of the Underdark, or the Shadowfell.
 
 The region around a shadow dragon’s lair is twisted by its presence, creating the following effects:
@@ -49,5 +51,13 @@ Negative Energy Suffusion. Whenever a creature within 1 mile of the lair regains
 Stifling Shadows. Within 1 mile of the lair, effects that normally create Bright Light instead create Dim Light, and creatures there have Advantage on Dexterity (Stealth) checks.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
+
+
+
+Shadow dragons haunt forgotten, lightless places. While they might have once been other types of dragons, the influence of planar forces, negative energy, or sinister magic has stripped them of their former color or luster. In place of any former breath weapon, shadow dragons exhale caliginous gouts that saps life from everything it touches. Those slain by a shadow dragon’s breath rise as shades obedient to the shadow dragon’s will.
+
+Shadow dragons typically dwell in the Underdark, particularly in areas with connections to the Shadowfell or other tenebrous realms. In some cases, they might lurk in dark, corrupted reaches of the regions they preferred before transforming into shadow dragons. Overgrown swamps, sepulchral desert ruins, and ash-choked volcanoes make natural lairs for shadow dragons.
+
+Like many other dragons, shadow dragons collect hoards. Their tastes tend to be morbid—collecting coins from ruined empires and their victims’ skulls.
 
 [source: https://www.dndbeyond.com/monsters/5195201-shadow-dragon-huge]: #

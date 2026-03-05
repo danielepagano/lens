@@ -22,12 +22,17 @@ Faerie Dust. Melee or Ranged Attack Roll: +7, reach 5 ft. or range 60 ft. Hit: 1
 
 Spellcasting. The pixie casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 15):
 
-At Will: Dancing Lights, Druidcraft, Invisibility (self only) 1/Day Each: Detect Thoughts, Fly, Major Image
+At Will: Dancing Lights, Druidcraft, Invisibility (self only)
+1/Day Each: Detect Thoughts, Fly, Major Image
 
 ---
 **Description**
 
 Energetic entertainers, wonderbringers use their magic in defense of the wilderness when they must.
+
+---
+
+### Pixies
 
 Barely a foot tall, pixies resemble diminutive elves with gossamer wings. They invisibly observe those who enter their wooded homes, revealing themselves to those with friendly intentions. Those who are unfriendly become the targets of pixies’ pranks.
 

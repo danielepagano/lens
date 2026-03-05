@@ -29,4 +29,22 @@ Assassins are professional killers skilled at stealthily approaching their victi
 
 Many assassins adhere to a professional code or exhibit some signature quirk. Roll on or choose a result from the Assassin Modus Operandi table to inspire an assassin’s distinctive habits.
 
+Assassin Modus Operandi
+
+| 1d6 | The Assassin Is Infamous For ... |
+
+| --- | --- |
+
+| 1 | Arranging their victims in artful tableaux. |
+
+| 2 | Hiding within large objects, such as suits of armor or hollow furnishings. |
+
+| 3 | Leaving behind a signature item, such as a calling card, flower, seashell, or tooth. |
+
+| 4 | Posing as celebrities, holy people, or servants. |
+
+| 5 | Taking trophies from their victims. |
+
+| 6 | Using poison with a distinctive color or smell. |
+
 [source: https://www.dndbeyond.com/monsters/5194904-assassin]: #

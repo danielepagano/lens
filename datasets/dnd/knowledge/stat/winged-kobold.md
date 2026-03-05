@@ -26,6 +26,10 @@ Chromatic Spittle. Ranged Attack Roll: +5, range 30 ft. Hit: 6 (1d6 + 3) damage 
 
 Some kobolds are born with wings. Called urds by others of their kind, these kobolds are thought to be blessed by a dragon or Tiamat, the Dragon Queen. Despite their favored status, winged kobolds are as cowardly as their brethren and use their flight mostly to keep out of reach of their foes.
 
+---
+
+### Kobolds
+
 Cowardly cousins to chromatic dragons, kobolds serve draconic overlords as warriors and servants. These scrappy menaces mimic the behaviors of their dragon masters. Though their small stature and recklessness make kobolds poor imitators of dragons, what they lack in ferocity they make up for in zeal and ingenuity. They are especially adept at creating traps and setting ambushes.
 
 Kobolds’ scales resemble those of chromatic dragons that live near their warrens. Rarely, kobolds possess features evocative of metallic dragons or other dragon-like creatures.

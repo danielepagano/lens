@@ -21,7 +21,8 @@ Serpentine Gaze. Wisdom Saving Throw: DC 13, one creature the naga can see withi
 
 Spellcasting. The naga casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 13):
 
-At Will: Mage Hand, Thaumaturgy 1/Day Each: Command, Detect Thoughts, Lightning Bolt
+At Will: Mage Hand, Thaumaturgy
+1/Day Each: Command, Detect Thoughts, Lightning Bolt
 
 ---
 **Description**

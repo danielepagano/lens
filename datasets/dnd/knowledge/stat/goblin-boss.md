@@ -30,6 +30,10 @@ Redirect Attack. Trigger: A creature the goblin can see makes an attack roll aga
 
 Goblin bosses are often the most imaginative, disruptive, or forceful goblins. Through a combination of luck, cowardice, and callousness, these leaders avoid harm at the expense of their followers.
 
+---
+
+### Goblins
+
 Goblins are Feywild embodiments of recklessness and ruin. They delight in wreckage—the louder, the more energetic, and the more convoluted, the better. Goblin raids are often as much opportunities to enjoy setting fires and tormenting livestock as they are parts of more disruptive plots.
 
 Goblins obey those who accomplish the wildest plans. Such leaders might be goblin raid masterminds, bombastic magic-users, or those capable of making the loudest noises. Hobgoblins and forceful humanoids might also command ornery groups of goblins, directing their destructiveness toward banditry, sabotage, or war.

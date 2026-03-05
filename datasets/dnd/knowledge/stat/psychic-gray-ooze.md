@@ -30,6 +30,10 @@ Mind Corrosion. Trigger: The ooze fails a saving throw against a spell or anothe
 
 Psychic gray oozes exhibit violent psionic abilities. These oozes sometimes result from failed attempts to summon or create creatures linked to the Elemental Plane of Earth, like gargoyles or homunculi.
 
+---
+
+### Gray Oozes
+
 Gray oozes are predatory, corrosive slimes that blend in with stony surroundings.
 
 [source: https://www.dndbeyond.com/monsters/5195172-psychic-gray-ooze]: #

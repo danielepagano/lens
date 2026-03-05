@@ -24,7 +24,8 @@ Flame Burst. Melee or Ranged Attack Roll: +7, reach 5 ft. or range 120 ft. Hit: 
 
 Spellcasting. The azer casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 15):
 
-At Will: Elementalism, Mage Hand 1/Day: Fireball
+At Will: Elementalism, Mage Hand
+1/Day: Fireball
 
 ---
 **Reactions**
@@ -35,6 +36,10 @@ Hellish Rebuke (2/Day). The azer casts Hellish Rebuke in response to that spellâ
 **Description**
 
 Azer pyromancers conjure flames from the Elemental Plane of Fire to defend themselves and stoke magical forges.
+
+---
+
+### Azers
 
 Azers are living bronze folk who work the primal elements of creation to craft weapons and magical wonders among the multiverseâ€™s mightiest infernos.
 

@@ -31,6 +31,10 @@ Magical Backlash. Trigger: A creature within 120 feet of the cockatrice deals da
 
 Bolder than their smaller cousins, cockatrice regents brim with unstable magical energy they use to restrain distant foes.
 
+---
+
+### Cockatrices
+
 Cockatrices combine the features of irate roosters and starving reptiles. They petrify those they bite, their slightest peck turning their prey to stone.
 
 [source: https://www.dndbeyond.com/monsters/5194948-cockatrice-regent]: #

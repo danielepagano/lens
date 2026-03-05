@@ -32,4 +32,18 @@ Clay golems are magical defenders made from earth and clay to protect places or 
 
 These golems obey their creators’ orders and protect what their makers value most. Some still follow these orders long after their creators’ deaths. Roll on or choose a result from the Clay Golem Orders table to inspire the commands a clay golem follows.
 
+Clay Golem Orders
+
+| 1d4 | The Clay Golem Follows Orders To... |
+
+| --- | --- |
+
+| 1 | Block the path of anyone who enters a site with a weapon drawn. |
+
+| 2 | Defend any member of their creator’s family or community who is threatened in its sight. |
+
+| 3 | Prevent any Fiend from crossing a bridge. |
+
+| 4 | Remove any who enter its creator’s workshop. |
+
 [source: https://www.dndbeyond.com/monsters/5194945-clay-golem]: #

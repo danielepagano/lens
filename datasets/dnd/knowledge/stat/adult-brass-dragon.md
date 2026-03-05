@@ -26,7 +26,8 @@ Sleep Breath. Constitution Saving Throw: DC 18, each creature in a 60-foot Cone.
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16):
 
-At Will: Detect Magic, Minor Illusion, Scorching Ray, Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell), Speak with Animals 1/Day Each: Detect Thoughts, Control Weather
+At Will: Detect Magic, Minor Illusion, Scorching Ray, Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell), Speak with Animals
+1/Day Each: Detect Thoughts, Control Weather
 
 ---
 **Legendary Actions**
@@ -44,11 +45,19 @@ Scorching Sands. Dexterity Saving Throw: DC 16, one creature the dragon can see 
 
 Adult brass dragons know many secrets and have vast networks of contacts. These dragons share perspectives they’ve learned from across the world and passionately combat the lies of con artists and villains that lead people astray.
 
+---
+
+### Brass Dragons
+
 Gregarious and outgoing, brass dragons relish sharing knowledge and stories. Although these metallic dragons favor arid lands, they cheerfully journey considerable distances to visit friendly creatures, pass on what they’ve learned, and collect news. Though good natured, brass dragons don’t shirk from combat when necessary, thwarting foes with magical sleep and searing them with flame.
 
 Brass dragons favor warm climes, particularly steppes and rocky or sandy deserts, and they usually dwell near prominent crossroads or oases that regularly draw visitors. They enjoy adopting Humanoid forms, disguising themselves as traveling merchants, scholars, storytellers, or anyone else invested in others’ stories.
 
 Brass dragons collect eclectic objects. While such items might seem like knickknacks, each is part of a story—perhaps a nostalgic memento or evidence of a tale passed into myth. An old friend’s hat and the crown of the last ruler of a forgotten dynasty could occupy the same shelf in a brass dragon’s hoard.
+
+---
+
+### Brass Dragon Lairs
 
 Brass dragons usually dwell in secret caves and canyons near well-traveled routes.
 

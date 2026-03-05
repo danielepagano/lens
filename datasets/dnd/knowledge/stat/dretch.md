@@ -22,6 +22,10 @@ Fetid Cloud (1/Day). Constitution Saving Throw: DC 11, each creature in a 10-foo
 
 Lone dretches serve other demons or evil magic-users. They are erratic, filthy, and violent, and they demonstrate little sense of self-preservation.
 
+---
+
+### Dretches
+
 The servants and victims of greater demons, dretches embody petty instincts, chaotic impulses, and violent urges. Dretches exist in unfathomable numbers in the depths of the Abyss, where their reeking throngs fill vast demonic hordes.
 
 [source: https://www.dndbeyond.com/monsters/5194974-dretch]: #

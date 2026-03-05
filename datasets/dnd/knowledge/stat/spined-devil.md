@@ -28,4 +28,22 @@ Tail Spine. Ranged Attack Roll: +4, range 20/80 ft. Hit: 4 (1d4 + 2) Piercing da
 
 Spined devils, also known as spinagons, lurk in the shadows of the Lower Planes, seeking secrets for their infernal lords. They prefer to attack from the air, flinging wicked barbs while staying out of reach of foes. Spined devils collect information to gain leverage over mortals or to entice powerful devils. Roll on or choose a result from the Spined Devil Intelligence table to inspire what information a spined devil seeks or already possesses.
 
+Spined Devil Intelligence
+
+| 1d6 | The Spined Devil Covets Information About … |
+
+| --- | --- |
+
+| 1 | Artifacts, their locations, and their owners. |
+
+| 2 | Betrayals by infernal allies or other devils. |
+
+| 3 | Crimes or deceptions by influential leaders. |
+
+| 4 | The identities of incognito individuals. |
+
+| 5 | The movements of extraplanar armies. |
+
+| 6 | Prophecies or secrets hidden by gods. |
+
 [source: https://www.dndbeyond.com/monsters/5195214-spined-devil]: #

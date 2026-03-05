@@ -24,11 +24,14 @@ Claw. Melee Attack Roll: +12, reach 5 ft. Hit: 20 (4d6 + 6) Slashing damage.
 
 Roar (3/Day). The sphinx emits a magical roar. Whenever it roars, the roar has a different effect, as detailed below (the sequence resets when it takes a Long Rest):
 
-First Roar. Wisdom Saving Throw: DC 20, each enemy in a 500-foot Emanation originating from the sphinx. Failure: The target has the Frightened condition for 1 minute.Second Roar. Wisdom Saving Throw: DC 20, each enemy in a 500-foot Emanation originating from the sphinx. Failure: The target has the Paralyzed condition, and it repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically.Third Roar. Constitution Saving Throw: DC 20, each enemy in a 500-foot Emanation originating from the sphinx. Failure: 44 (8d10) Thunder damage, and the target has the Prone condition. Success: Half damage only.
+First Roar. Wisdom Saving Throw: DC 20, each enemy in a 500-foot Emanation originating from the sphinx. Failure: The target has the Frightened condition for 1 minute.
+Second Roar. Wisdom Saving Throw: DC 20, each enemy in a 500-foot Emanation originating from the sphinx. Failure: The target has the Paralyzed condition, and it repeats the save at the end of each of its turns, ending the effect on itself on a success. After 1 minute, it succeeds automatically.
+Third Roar. Constitution Saving Throw: DC 20, each enemy in a 500-foot Emanation originating from the sphinx. Failure: 44 (8d10) Thunder damage, and the target has the Prone condition. Success: Half damage only.
 
 Spellcasting. The sphinx casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 20):
 
-At Will: Detect Evil and Good, Thaumaturgy1/Day Each: Detect Magic, Dispel Magic, Greater Restoration, Heroes’ Feast, Zone of Truth
+At Will: Detect Evil and Good, Thaumaturgy
+1/Day Each: Detect Magic, Dispel Magic, Greater Restoration, Heroes’ Feast, Zone of Truth
 
 ---
 **Legendary Actions**
@@ -44,7 +47,15 @@ Weight of Years. Constitution Saving Throw: DC 16, one creature the sphinx can s
 
 Sphinxes of valor guard world-changing or dangerous secrets—evidence of weird truths, deadly Artifacts, and things that shouldn’t exist. They inhabit hidden, magical sites and hold their duty above mortal life. If threatened, a sphinx of valor defends its charge with its supernaturally empowered roar and fierce strikes.
 
+---
+
+### Sphinxes
+
 Sphinxes protect the secrets of the multiverse. Formed from the spirits of sages and explorers, sphinxes know the power of truth and the importance of preserving it. They share their wisdom only with those who prove themselves wise or overcome tests of worthiness, such as riddles or battles with dangerous beasts. Through their existences, sphinxes might change form as they gain more nuanced understanding of cosmic enigmas.
+
+---
+
+### Sphinx Lairs
 
 Sphinxes typically dwell in places that hold great knowledge or prophetic magic.
 

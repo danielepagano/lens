@@ -17,7 +17,10 @@ export function formatEquipment(data: EquipmentData, source: string): string {
 
   const stats: string[] = [];
   if (data.cost) stats.push(`**Cost** ${data.cost}`);
+  if (data.armorClass) stats.push(`**Armor Class** ${data.armorClass}`);
   if (data.damage) stats.push(`**Damage** ${data.damage}`);
+  if (data.strength) stats.push(`**Strength** ${data.strength}`);
+  if (data.stealth) stats.push(`**Stealth** ${data.stealth}`);
   if (data.weight) stats.push(`**Weight** ${data.weight}`);
 
   let body = headline;

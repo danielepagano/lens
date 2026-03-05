@@ -27,6 +27,10 @@ Conjure Slimy Glob. Ranged Attack Roll: +4, range 60 ft. Hit: 9 (3d4 + 2) Acid d
 
 The servants of kuo-toa archpriests, kuo-toa whips—so named for their role in enforcing order among other kuo-toa—lead war bands in carrying out the commands of their superiors. In return for their zeal, these kuo-toa are granted minor magical abilities and pincerlike weapons for subduing foes. In battle, whips drive on other kuo-toa with threats of violence and burbling chants.
 
+---
+
+### Kuo-toa
+
 Kuo-toa have slimy, humanoid bodies and the heads of goggle-eyed deep-sea fish. They claim they once dominated whole worlds, their empires spanning land and sea under the blessings of piscine gods. The kuo-toa can’t say what disaster brought their glorious civilization to an end, but elves, humans, mind flayers, and the kuo-toan gods bear the brunt of their blame. From the lands and seas of the surface, the kuo-toa retreated into cavernous trenches and Underdark seas. In these hidden realms, kuo-toa brood over all they’ve lost and forgotten, nursing plots to avenge themselves for slights that might never have occurred.
 
 Kuo-toa hate the civilizations of the surface and the Underdark, believing themselves to be victims of age-old slights and ongoing conspiracies. Kuo-toa undertake contrived plots to propel themselves to dominance, often kidnapping people to learn their secrets or making dubious sacrifices to bizarre gods. To facilitate such plots, kuo-toa try to capture creatures alive using nets or strange weapons. Drow, dwarves, and gnomes dwelling in the Underdark, as well as surface communities near submerged subterranean passages, are frequent targets for kuo-toa raids and other plots.

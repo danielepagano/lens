@@ -50,6 +50,32 @@ Krakens usually have little interest in mortal affairs. These terrors were creat
 
 Krakens rarely appear on the surface, but when they do, they herald times of change and doom. When roused to action, these titans directly attack coastal cities or whole armadas. Kraken onslaughts persist until their wrath is sated, their divine patrons are appeased, or their egos are placated by valuable offerings. Roll on or choose a result from the Kraken Attacks table to inspire what ruin a kraken might unleash.
 
+Kraken Attacks
+
+| 1d8 | The Enraged Kraken … |
+
+| --- | --- |
+
+| 1 | Abducts the vessel of a leader or another important community member. |
+
+| 2 | Attacks a community from below using flooded ruins, hidden aquifers, or sewers. |
+
+| 3 | Breaks a lighthouse or seaside tower, carrying it and the occupants to a secret island. |
+
+| 4 | Calls down lightning on any ship that enters its aquatic territory. |
+
+| 5 | Carries ships to an inescapable sargassum. |
+
+| 6 | Dams a river or cuts off a city’s sea access. |
+
+| 7 | Devours all sea life near a fishing community, threatening it with ruin. |
+
+| 8 | Masterminds an invasion from the sea by merfolk, sahuagin, or storm giants. |
+
+---
+
+### Kraken Lairs
+
 Kraken lairs tend to be sunken temples, eldritch ritual sites, or primeval places of divine power. They might lie deep beneath bodies of fresh or salt water, and they often connect to labyrinths of flooded subterranean tunnels or networks of magical portals.
 
 The region containing a kraken’s lair is twisted by its presence, creating the following effects:

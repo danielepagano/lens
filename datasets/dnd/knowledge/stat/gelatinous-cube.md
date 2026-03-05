@@ -30,4 +30,22 @@ Engulf. The cube moves up to its Speed without provoking Opportunity Attacks. Th
 
 Quivering masses of acidic goo, gelatinous cubes wobble through narrow caverns and dungeons, engulfing anything in their paths. These Oozes are naturally transparent, making them difficult to see while they’re stationary. Creatures and objects that become stuck within these slimes are gradually dissolved. Undigested detritus sometimes floats within a gelatinous cube, hinting at its past meals. Roll on or choose a result from the Gelatinous Cube Debris table to inspire a gelatinous cube’s contents.
 
+Gelatinous Cube Debris
+
+| 1d6 | Floating in the Gelatinous Cube Is A... |
+
+| --- | --- |
+
+| 1 | Chest or recently trapped mimic. |
+
+| 2 | Collection of bubbles or rocks resembling eyes. |
+
+| 3 | Key to a nearby door or coffer. |
+
+| 4 | Remarkable weapon in need of repair. |
+
+| 5 | Skeleton belonging to a famous adventurer. |
+
+| 6 | Tablet bearing a mysterious message. |
+
 [source: https://www.dndbeyond.com/monsters/5195005-gelatinous-cube]: #

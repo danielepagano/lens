@@ -25,6 +25,11 @@ import { parseSpellPage } from "./parsers/spell-page.js";
 import { parseEquipmentPage } from "./parsers/equipment-page.js";
 import { parseItemPage } from "./parsers/item-page.js";
 import { parseMonsterPage } from "./parsers/monster-page.js";
+import { formatSpell } from "./formatters/spell.js";
+import { formatMonster } from "./formatters/monster.js";
+import { formatItem } from "./formatters/item.js";
+import { formatEquipment } from "./formatters/equipment.js";
+import type { SpellData, MonsterData, ItemData, EquipmentData } from "./types.js";
 
 const program = new Command();
 
@@ -71,7 +76,8 @@ program
   )
   .requiredOption("--parser <name>", "Parser: spell | equipment | item | monster | list")
   .requiredOption("--url <url>", "Page URL to load (e.g. a D&D Beyond spell or list page)")
-  .action(async (cmdOpts: { parser: string; url: string }) => {
+  .option("--render", "After JSON, print the KB block that would be generated")
+  .action(async (cmdOpts: { parser: string; url: string; render?: boolean }) => {
     const opts = program.opts();
     const parserName = cmdOpts.parser.toLowerCase();
     const url = cmdOpts.url;
@@ -80,8 +86,8 @@ program
     const page = getPage(browser);
 
     const isListParser = parserName === "list";
-    const waitUntil = cmdOpts.debug || isListParser ? "domcontentloaded" : "networkidle";
-    const timeout = cmdOpts.debug || isListParser ? 60000 : 30000;
+    const waitUntil = isListParser ? "domcontentloaded" : "networkidle";
+    const timeout = isListParser ? 60000 : 30000;
     try {
       await page.goto(url, { waitUntil, timeout });
     } catch (err) {
@@ -120,6 +126,31 @@ program
           process.exit(1);
       }
       console.log(JSON.stringify(result, null, 2));
+
+      if (cmdOpts.render && parserName !== "list") {
+        const source = "test";
+        let kb: string;
+        switch (parserName) {
+          case "spell":
+            kb = formatSpell(result as SpellData, source);
+            break;
+          case "monster":
+            kb = formatMonster(result as MonsterData, source);
+            break;
+          case "item":
+            kb = formatItem(result as ItemData, source);
+            break;
+          case "equipment":
+            kb = formatEquipment(result as EquipmentData, source);
+            break;
+          default:
+            kb = "";
+        }
+        if (kb) {
+          console.log("\n--- KB block ---\n");
+          console.log(kb);
+        }
+      }
     } catch (err) {
       console.error("Parse error:", err instanceof Error ? err.message : String(err));
       await browser.close();

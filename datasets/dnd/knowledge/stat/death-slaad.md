@@ -24,12 +24,17 @@ Chaos Blade. Melee Attack Roll: +9, reach 10 ft. Hit: 11 (1d12 + 5) Slashing dam
 
 Spellcasting. The slaad casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16):
 
-At Will: Detect Magic, Detect Thoughts, Invisibility (self only), Mage Hand, Major Image1/Day Each: Blight (level 8 version), Cloudkill (level 6 version), Fly, Plane Shift, Tongues
+At Will: Detect Magic, Detect Thoughts, Invisibility (self only), Mage Hand, Major Image
+1/Day Each: Blight (level 8 version), Cloudkill (level 6 version), Fly, Plane Shift, Tongues
 
 ---
 **Description**
 
 Slaad lords create death slaadi by infusing gray slaadi with a portion of their chaotic energy. When groups of slaadi act deliberately, death slaadi are often behind their designs.
+
+---
+
+### Slaadi
 
 Unpredictable slaadi devour and multiply across the Ever-Changing Chaos of Limbo. These toad-like, extraplanar beings embody the endless potentiality of their home plane of existence. While slaadi aren’t inherently evil, their impulses are wild and often destructive. Many are driven to propagate through supernatural processes. Unfortunately, these processes typically are fatal for other creatures.
 

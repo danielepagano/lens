@@ -25,6 +25,10 @@ Talons. Melee Attack Roll: +8, reach 5 ft. Hit: 14 (2d8 + 5) Piercing damage. If
 
 Giant axe beaks typically dwell in secluded, primeval realms, such as isolated islands or underground wildernesses. They often compete with dinosaurs and other giant beasts for territory.
 
+---
+
+### Axe Beaks
+
 Axe beaks are flightless, birdlike creatures with distinctive axe-shaped beaks. Swift predators, they chase down prey and use their beaks to hack through foliage protecting their quarry. Axe beaks live in varied environments. Colorfully plumed axe beaks race across tropical plains, while axe beaks with snowy feathers hunt the tundra.
 
 Axe beaks are difficult to train, but those hatched and raised in captivity can become reliable mounts.

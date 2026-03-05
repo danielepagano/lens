@@ -24,12 +24,17 @@ Bog Staff. Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Bludgeoning damag
 
 Spellcasting. The bullywug casts one of the following spells, using Wisdom as the spellcasting ability (spell save DC 13, +5 to hit with spell attacks):
 
-At Will: Dancing Lights, Druidcraft, Ray of Sickness 1/Day Each: Speak with Plants, Vitriolic Sphere
+At Will: Dancing Lights, Druidcraft, Ray of Sickness
+1/Day Each: Speak with Plants, Vitriolic Sphere
 
 ---
 **Description**
 
 Bullywug bog sages channel the magic of the swamp to sicken foes and speak with plants.
+
+---
+
+### Bullywugs
 
 Fey embodiments of swamplands, bullywugs protect the murky wilds and consider themselves cosmically favored for that role. These human-size, toad- or frog-like creatures have close relationships with the creatures of the swamp.
 

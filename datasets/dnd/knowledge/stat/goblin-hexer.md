@@ -20,7 +20,8 @@ Hex Stick. Melee or Ranged Attack Roll: +5, reach 5 ft. or range 60 ft. Hit: 12 
 
 Spellcasting. The goblin casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 13):
 
-At Will: Minor Illusion 1/Day Each: Blindness/Deafness, Faerie Fire, Grease
+At Will: Minor Illusion
+1/Day Each: Blindness/Deafness, Faerie Fire, Grease
 
 ---
 **Reactions**
@@ -31,6 +32,10 @@ Jinx. Trigger: A creature the goblin can see hits it with an attack roll. Respon
 **Description**
 
 Goblin hexers use flashy and disruptive magic. Many goblin hexers are theatrical, dressing and behaving in exaggerated mimicry of archmages.
+
+---
+
+### Goblins
 
 Goblins are Feywild embodiments of recklessness and ruin. They delight in wreckage—the louder, the more energetic, and the more convoluted, the better. Goblin raids are often as much opportunities to enjoy setting fires and tormenting livestock as they are parts of more disruptive plots.
 

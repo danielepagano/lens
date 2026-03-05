@@ -22,12 +22,17 @@ Prance. Melee Attack Roll: +7, reach 5 ft. Hit: 13 (2d8 + 4) Bludgeoning damage,
 
 Fey Melody (Recharge 4–6). The satyr conjures a charming or frightening song. Wisdom Saving Throw: DC 14, each enemy in a 60-foot Emanation originating from the satyr. Failure: The target is subjected to the song’s effect:
 
-Charming. The target has the Charmed condition for 1 minute. While Charmed, the target has the Incapacitated condition and uses all its movement to dance in place. The effect ends on the target if it takes any damage. Frightening. 10 (2d6 + 3) Psychic damage, and the target has the Frightened condition for 1 minute. If the target ends its turn out of line of sight from the satyr, the condition ends on it.
+Charming. The target has the Charmed condition for 1 minute. While Charmed, the target has the Incapacitated condition and uses all its movement to dance in place. The effect ends on the target if it takes any damage.
+Frightening. 10 (2d6 + 3) Psychic damage, and the target has the Frightened condition for 1 minute. If the target ends its turn out of line of sight from the satyr, the condition ends on it.
 
 ---
 **Description**
 
 Satyr revelmasters use magical music to change the moods of other creatures. They do so to keep their celebrations exciting and to ward off foes.
+
+---
+
+### Satyrs
 
 Satyrs embody the untamed joys of the wilderness. They indulge in sprees of merrymaking—eating, drinking, performing, fighting, and frolicking.
 

@@ -54,6 +54,28 @@ Aboleths possess terrifying intellects and have alien mindsets. These creatures 
 
 Aboleths’ alien goals and methods are often mysterious to other creatures. Roll on or choose a result from the Aboleth Schemes table to inspire an aboleth’s schemes.
 
+Aboleth Schemes
+
+| 1d6 | The Aboleth Seeks To... |
+
+| --- | --- |
+
+| 1 | Accomplish incomprehensible plans that lead it to act in seemingly random ways. |
+
+| 2 | Learn more of the world by kidnapping people and consuming their minds. |
+
+| 3 | Manipulate innocents into worshiping it as a god by using its telepathy from hiding. |
+
+| 4 | Open a gate to the distant past or future, releasing an invasion from another time. |
+
+| 5 | Rouse a dragon turtle, a kraken, or another sea monster to flood a coastal city. |
+
+| 6 | Trick treasure hunters into recovering relics from its long-fallen empire. |
+
+---
+
+### Aboleth Lairs
+
 Aboleths usually dwell in submerged ruins and caverns. They keep air-filled spaces for their terrestrial servants and to hold treasures that would be damaged by water.
 
 The region containing an aboleth’s lair is warped by it, creating the following effects:

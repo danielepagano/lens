@@ -26,6 +26,10 @@ Constrict. Strength Saving Throw: DC 15, one Large or smaller creature the salam
 
 Most salamanders are arrogant yet curious, seeking to create artful blazes or burn that which has never been burned. They eagerly explain their work to strangers before trying to determine how the strangers burn. Salamanders radiate intense heat, which is conducted by their blazing weapons.
 
+---
+
+### Salamanders
+
 Salamanders are serpentine denizens of the Elemental Plane of Fire. They believe that flames expose the purest forms of all things and delight in burning and melting things, seeing fleeting beauty and striking nuances in blazes consuming different fuels—ancient forests, artistic masterpieces, or living creatures. To salamanders, those that can’t endure their flames are nothing but ashes in disguise. They harbor malice toward few creatures, but they consider creating remarkable flames more important than the pain and loss their fires cause.
 
 Salamanders are typically content to dwell on the Elemental Plane of Fire, creating strange, temporary art amid the flames. Some travel to other planes of existence and worlds to experience the flames of other realms or create conflagrations of unprecedented scale.

@@ -30,10 +30,40 @@ Riposte. Trigger: The pirate is hit by a melee attack roll while holding a weapo
 
 Pirate captains command crews of pirates, dictating their destinations and targets. Captains cultivate fearsome and theatrical reputations, painting themselves as larger-than-life characters to terrorize their foes, ensure the obedience of their crews, and attract followers to their banner. Many have colorful nicknames inspired by signature traits and deeds.
 
+---
+
+### Pirates
+
 The term “pirate” encompasses a broad range of seafarers, including vicious sea rovers, dogged privateers, cursed treasure hunters, and others who seek riches and fame on the seas.
 
 Pirates might be allies, foes, wild cards, or some combination thereof. While they are the bane of merchants and coastal communities, they know secrets of the sea and how to avoid aquatic threats. More unusual pirates set their sights beyond the waves, using airships, spelljamming vessels, plane-shifting craft, or stranger vehicles to explore and raid incredible realms.
 
+---
+
+### Pirate Flags
+
 To terrify opponents and spread their reputations, pirate crews fly distinctive flags. Roll twice on or choose results from the Pirate Flags table to inspire what flag a pirate crew sails under.
+
+Pirate Flags
+
+| 1d8 | The Flag Shows A … | 1d8 | With … |
+
+| --- | --- | --- | --- |
+
+| 1 | Buccaneer | 1 | A captain’s hat |
+
+| 2 | Dragon | 2 | Crossbones |
+
+| 3 | Fiend | 3 | Crossed blades |
+
+| 4 | Goat | 4 | An eye patch |
+
+| 5 | Kraken | 5 | Lightning bolts |
+
+| 6 | Merfolk | 6 | A mug of ale |
+
+| 7 | Skull | 7 | A tattoo |
+
+| 8 | Whale | 8 | A treasure chest |
 
 [source: https://www.dndbeyond.com/monsters/4904838-pirate-captain]: #

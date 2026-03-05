@@ -20,6 +20,10 @@ Slam. Melee Attack Roll: +6, reach 10 ft. Hit: 13 (2d8 + 4) Bludgeoning damage.
 
 Some awakened trees stand in still, meditative states for long periods, making them easy to mistake for normal plants, while others patrol regions of natural power. Awakened trees are sometimes brought to life by influences from the Feywild, which make them colorful and endlessly blooming, or by Shadowfell energy, which covers them with grotesque burls or makes them look lifeless.
 
+---
+
+### Awakened Plants
+
 Magic can invest plants with mobility, sapience, and even a voice. Spells such as Awaken or the influence of other planes of existence might bring mundane vegetation to life, while other remarkable plants might naturally have these features.
 
 [source: https://www.dndbeyond.com/monsters/5194906-awakened-tree]: #

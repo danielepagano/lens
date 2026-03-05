@@ -27,6 +27,10 @@ Paralyzing Breath. Constitution Saving Throw: DC 17, each creature in a 30-foot 
 
 Young silver dragons usually have close ties with elder metallic dragons or heroic role models, helping those with great goals achieve their ambitions. They might serve as messengers for or representatives of such do-gooders.
 
+---
+
+### Silver Dragons
+
 Silver dragons work to preserve peace and encourage greatness. They try to live as examples of decency while remaining watchful against evil.
 
 Silver dragons typically dwell amid snow-capped mountains, though aspirations and congeniality drive some to instead live among cosmopolitan societies. Disguised as humanoids, they ally with artists, historians, knights, and humble leaders who learn from the past to create better futures.

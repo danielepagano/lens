@@ -35,4 +35,18 @@ Also known as kytons, chain devils consider themselves morbid artisans who use d
 
 Along with psychological threats and physical harm, a chain devil uses its unnerving gaze to make its victims perceive their worst fear rather than the monster. Roll on or choose a result from the Chain Devil Masks table to inspire a chain devil’s fearful appearance.
 
+Chain Devil Masks
+
+| 1d4 | To a Viewer, the Chain Devil Looks Like... |
+
+| --- | --- |
+
+| 1 | The corpse of a loved one. |
+
+| 2 | A disapproving deity. |
+
+| 3 | A harsh instructor or superior. |
+
+| 4 | The viewer at their lowest point in life. |
+
 [source: https://www.dndbeyond.com/monsters/5194941-chain-devil]: #

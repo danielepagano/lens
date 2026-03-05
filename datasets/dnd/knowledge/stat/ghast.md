@@ -24,6 +24,10 @@ Claw. Melee Attack Roll: +5, reach 5 ft. Hit: 10 (2d6 + 3) Slashing damage. If t
 
 Ghasts frequently organize ghouls into packs to despoil crypts and steal the wealth within.
 
+---
+
+### Ghasts
+
 Ghasts are reeking, undying corpses closely related to ghouls. They hunger for the vices they enjoyed in life as much as they do for rotting flesh.
 
 [source: https://www.dndbeyond.com/monsters/5195007-ghast]: #

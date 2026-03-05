@@ -27,6 +27,10 @@ Cold Breath (Recharge 5–6). Constitution Saving Throw: DC 12, each creature in
 
 White dragon wyrmlings usually head off on their own soon after hatching. While the cold means little to these creatures, food is scarce in arctic realms, and predators there are merciless. Most white dragon wyrmlings survive by scavenging, hunting opportunistically, and quickly fleeing foes—including other white dragons.
 
+---
+
+### White Dragons
+
 Among the most primal chromatic dragons, white dragons prioritize survival over all. Life is harsh and uncertain in the arctic expanses, glacial heights, and frozen seas where these dragons dwell. White dragons fiercely protect their territories, scouring the frigid regions for food and evidence of trespassers. Most white dragons ignore the plots of smaller creatures and other dragons, concerning themselves only with their own survival.
 
 White dragons create lairs to defend themselves from other deadly arctic creatures and from dangerous natural conditions. Within these shelters, white dragons hoard testaments to their superiority, such as monstrous skulls, the gear of defeated rivals, and curiosities that capture their interest. To protect such treasure, white dragons coax ice to form over their hoards or sink their wealth in frigid pools. For white dragons, each piece of treasure embodies a victory—the details of which inflate as these dragons age.

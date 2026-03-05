@@ -24,7 +24,8 @@ Fire Breath (Recharge 5–6). Dexterity Saving Throw: DC 21, each creature in a 
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 20, +12 to hit with spell attacks):
 
-At Will: Command (level 2 version), Detect Magic, Scorching Ray 1/Day: Fireball
+At Will: Command (level 2 version), Detect Magic, Scorching Ray
+1/Day: Fireball
 
 ---
 **Legendary Actions**
@@ -42,11 +43,19 @@ Pounce. The dragon moves up to half its Speed, and it makes one Rend attack.
 
 Adult red dragons are tyrants that claim vast domains and might command armies of followers or significant magical resources. Red dragons rarely pay attention to the nations and claims of smaller creatures, and they might consider entire cities part of their realm. Most red dragons are inattentive rulers, though, spending decades focused on their own comforts, hoards, or magical concerns within their lairs. But when their attention returns to their territories, if they find matters not to their liking, whole lands might burn.
 
+---
+
+### Red Dragons
+
 Red dragons take whatever they desire and burn to ash anything that stands in their way. These chromatic dragons endlessly desire more—more magic, territory, treasure, or whatever else inflames their cruel ambitions.
 
 Red dragons make their lairs amid perilous cliffs and volcanoes. Within, they amass and fiercely protect hoards of treasure, and many have perfect recall of the hoards' contents and the locations of all they’ve collected. Should anything go missing, red dragons fly into rages. They don’t rest until their treasures are returned and the thieves have burned.
 
 Red dragons believe themselves to be the greatest of all dragons and, by extension, the greatest of all creatures. To them, pillaging and conquering are their right—treasures can find no more honored place than in their hoards, and other creatures are privileged to serve them.
+
+---
+
+### Red Dragon Lairs
 
 Red dragons make their lairs in smoldering, unapproachable places such as volcanic mountains, burning wastelands, and ruins they’ve stolen from other creatures.
 

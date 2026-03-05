@@ -26,12 +26,17 @@ Spectral Jaws. Melee or Ranged Attack Roll: +4, reach 5 ft. or range 120 ft. Hit
 
 Spellcasting. The sahuagin casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 12):
 
-At Will: Thaumaturgy 2/Day Each: Hold Person, Tongues
+At Will: Thaumaturgy
+2/Day Each: Hold Person, Tongues
 
 ---
 **Description**
 
 Sahuagin priests serve the will of Sekolah or other fiendish masters. They direct and support other sahuagin, and they consider every combatant that falls in battle—whether enemy or ally—a sacrifice to their fierce deities.
+
+---
+
+### Sahuagin
 
 Sahuagin are fiendish terrors that prey on creatures above and below the water. Called “sea devils” by residents of coastal communities, sahuagin are ruthless raiders. They ransack ships, fishing villages, and undersea communities to slake their bloodthirst, claim treasure, and make sacrifices to their vicious deity—the sharklike god Sekolah.
 

@@ -22,6 +22,10 @@ Rotting Touch. Melee Attack Roll: +2, reach 10 ft. Hit: 4 (1d8) Necrotic damage
 
 Slow but mobile, violet fungi rot any flesh they touch with their lashing tendrils.
 
+---
+
+### Fungi
+
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
 
 [source: https://www.dndbeyond.com/monsters/5195254-violet-fungus]: #

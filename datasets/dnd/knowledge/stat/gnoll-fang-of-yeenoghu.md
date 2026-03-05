@@ -24,6 +24,10 @@ Bone Flail. Melee Attack Roll: +5, reach 10 ft. Hit: 7 (1d8 + 3) Piercing damage
 
 Gnolls possessed by demonic vestiges of the demon lord Yeenoghu, fangs of Yeenoghu direct the chaos of gnoll packs. Along the way, these fanatics seek grisly omens from Yeenoghu and strive to interpret the demon lord’s vicious goals.
 
+---
+
+### Gnolls
+
 The first gnolls arose from hyenas that fed on flesh tainted by the Abyss. Their corruption and violence delighted the demon lord Yeenoghu, who encouraged their numbers and spread them across the multiverse. Ever since, gnolls have been the cackling servants of Yeenoghu, existing to cause ruin and to feast on what remains.
 
 [source: https://www.dndbeyond.com/monsters/5195044-gnoll-fang-of-yeenoghu]: #

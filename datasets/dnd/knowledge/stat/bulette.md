@@ -25,6 +25,10 @@ Deadly Leap. The bulette spends 5 feet of movement to jump to a space within 15 
 
 Bulettes range under vast territories. They often threaten animal herds, and they can wipe out whole farming communities.
 
+---
+
+### Bulettes
+
 Also called “land sharks,” bulettes are single-minded predators that burrow under, leap over, and burst through obstacles in pursuit of their quarry. They burrow rapidly just belowground. On sensing movement, they erupt from below, attempting to catch prey in their oversize maws.
 
 [source: https://www.dndbeyond.com/monsters/5194936-bulette]: #

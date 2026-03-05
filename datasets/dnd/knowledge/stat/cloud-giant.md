@@ -22,7 +22,8 @@ Thundercloud. Ranged Attack Roll: +12, range 240 ft. Hit: 18 (3d6 + 8) Thunder d
 
 Spellcasting. The giant casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 15):
 
-At Will: Detect Magic, Fog Cloud, Light1/Day Each: Control Weather, Gaseous Form, Telekinesis
+At Will: Detect Magic, Fog Cloud, Light
+1/Day Each: Control Weather, Gaseous Form, Telekinesis
 
 ---
 **Description**

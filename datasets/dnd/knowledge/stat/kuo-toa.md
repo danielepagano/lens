@@ -34,6 +34,10 @@ Kuo-toa loot ruins and raid communities near their dwellings in the Underdark. T
 
 Most kuo-toa follow the orders of their more powerful leaders out of a combination of faith and fear. In rare cases, a kuo-toa might abandon its community to live as a hermit or wanderer. Such kuo-toa might know much about the Underdark, but they live in fear of the strange gods they forsook.
 
+---
+
+### Kuo-toa
+
 Kuo-toa have slimy, humanoid bodies and the heads of goggle-eyed deep-sea fish. They claim they once dominated whole worlds, their empires spanning land and sea under the blessings of piscine gods. The kuo-toa can’t say what disaster brought their glorious civilization to an end, but elves, humans, mind flayers, and the kuo-toan gods bear the brunt of their blame. From the lands and seas of the surface, the kuo-toa retreated into cavernous trenches and Underdark seas. In these hidden realms, kuo-toa brood over all they’ve lost and forgotten, nursing plots to avenge themselves for slights that might never have occurred.
 
 Kuo-toa hate the civilizations of the surface and the Underdark, believing themselves to be victims of age-old slights and ongoing conspiracies. Kuo-toa undertake contrived plots to propel themselves to dominance, often kidnapping people to learn their secrets or making dubious sacrifices to bizarre gods. To facilitate such plots, kuo-toa try to capture creatures alive using nets or strange weapons. Drow, dwarves, and gnomes dwelling in the Underdark, as well as surface communities near submerged subterranean passages, are frequent targets for kuo-toa raids and other plots.

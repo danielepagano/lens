@@ -32,4 +32,26 @@ Fire elementals arise when spirits of the Elemental Plane of Fire inhabit flames
 
 Fire elementals might burn in distinctive ways. Roll on or choose a result from the Fire Elemental Compositions table to inspire a fire elemental’s features.
 
+Fire Elemental Compositions
+
+| 1d8 | The Fire Elemental’s Body Features … |
+
+| --- | --- |
+
+| 1 | Colorful, superheated gases. |
+
+| 2 | A column of diabolical or divine flame. |
+
+| 3 | Crackling shapes that look like animals, fiends, skeletons, sprites, or other beings. |
+
+| 4 | Flames that are predominantly white, blue, or a more unusual color. |
+
+| 5 | The form of a calm or tormented humanoid. |
+
+| 6 | Smoke that forms eerie shapes or symbols. |
+
+| 7 | Soot that smells like cedar, cloves, incense, or burning meat. |
+
+| 8 | Swirls of cinders and burning debris. |
+
 [source: https://www.dndbeyond.com/monsters/4904758-fire-elemental]: #

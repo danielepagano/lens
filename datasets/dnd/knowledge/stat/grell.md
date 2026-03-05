@@ -31,4 +31,22 @@ Grells are sapient beings, but their intellects and motivations are alien to mos
 
 Many grells pursue methods of traveling between worlds and planes of existence. They sometimes slip onto star-faring vessels or enter portals heedless of their destination. Roll on or choose a result from the Grell Explorations table to inspire why grells seek passage between realms.
 
+Grell Explorations
+
+| 1d6 | Grells Travel Because They Are … |
+
+| --- | --- |
+
+| 1 | Advanced viruses, each the clone of all other grell. They exist only to feed and spread. |
+
+| 2 | The larvae of another creature and require electrically charged environs to reproduce. |
+
+| 3 | Seeking to escape some catastrophe or terror lurking in the depths. |
+
+| 4 | Supernaturally connected to ravenous alien beings and serve as their feeding appendages. |
+
+| 5 | Vestiges of an ancient evil that will return if grells collectively consume enough creatures. |
+
+| 6 | Without souls, but convinced they can attain souls by eating certain beings. |
+
 [source: https://www.dndbeyond.com/monsters/5195059-grell]: #

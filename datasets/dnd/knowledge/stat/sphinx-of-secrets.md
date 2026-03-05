@@ -26,12 +26,17 @@ Curse of the Riddle. Intelligence Saving Throw: DC 15, one creature the sphinx c
 
 Spellcasting. The sphinx casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 15):
 
-At Will: Detect Magic, Identify, Prestidigitation1/Day Each: Locate Object, Remove Curse
+At Will: Detect Magic, Identify, Prestidigitation
+1/Day Each: Locate Object, Remove Curse
 
 ---
 **Description**
 
 Sphinxes of secrets are commonly associated with a site of great magic or learning. These immortal beings often outlive such locations, though, and might protect a site’s ruins as they continue their own studies. Sphinxes of secrets fiercely guard their dwellings and research.
+
+---
+
+### Sphinxes
 
 Sphinxes protect the secrets of the multiverse. Formed from the spirits of sages and explorers, sphinxes know the power of truth and the importance of preserving it. They share their wisdom only with those who prove themselves wise or overcome tests of worthiness, such as riddles or battles with dangerous beasts. Through their existences, sphinxes might change form as they gain more nuanced understanding of cosmic enigmas.
 

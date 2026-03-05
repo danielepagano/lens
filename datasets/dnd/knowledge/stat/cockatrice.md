@@ -20,6 +20,10 @@ Petrifying Bite. Melee Attack Roll: +3, reach 5 ft. Hit: 3 (1d4 + 1) Piercing da
 
 Cockatrices often try to claim eye-catching structures—such as ruins and secluded farms—as roosts.
 
+---
+
+### Cockatrices
+
 Cockatrices combine the features of irate roosters and starving reptiles. They petrify those they bite, their slightest peck turning their prey to stone.
 
 [source: https://www.dndbeyond.com/monsters/5194949-cockatrice]: #

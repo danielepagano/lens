@@ -34,8 +34,38 @@ Counterattack. Trigger: The warrior is hit by an attack roll. Response: The warr
 
 Skilled in both combat and leadership, warrior commanders overcome challenges through a combination of martial skill and clever tactics.
 
+---
+
+### Warriors
+
 Warriors are professionals who make a living through their prowess in battle. They might be skilled in using a variety of tactics or trained to take advantage of unusual battlefields. Warriors often work together, whether in armies or in teams with deliberate goals.
 
 Roll on or choose a result from the Warrior Roles table to inspire the creation of different sorts of warriors.
+
+Warrior Roles
+
+| 1d10 | The Warrior Is … |
+
+| --- | --- |
+
+| 1 | A bodyguard who protects a noble. |
+
+| 2 | A cavalry officer with an unusual steed. |
+
+| 3 | A crusader who fights for a divine cause. |
+
+| 4 | A duelist who claims to be unbeatable. |
+
+| 5 | A gate guard who asks nonsensical questions. |
+
+| 6 | A grizzled veteran who trains new recruits. |
+
+| 7 | A hunter skilled at slaying specific monsters. |
+
+| 8 | A retired general who is weary of battle. |
+
+| 9 | A volunteer with a homemade weapon. |
+
+| 10 | A young mercenary trying to prove their skill. |
 
 [source: https://www.dndbeyond.com/monsters/5195258-warrior-commander]: #

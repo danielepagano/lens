@@ -35,4 +35,22 @@ Black puddings are shapeless masses of predatory cells. Once a pudding detects o
 
 Various supernatural conditions might bring black puddings into being. Roll on or choose a result from the Black Pudding Sources table to inspire a pudding’s origins.
 
+Black Pudding Sources
+
+| 1d6 | The Black Pudding Formed From ... |
+
+| --- | --- |
+
+| 1 | An ancient black dragon’s acidic saliva. |
+
+| 2 | The blood or extreme emotions of a foul deity. |
+
+| 3 | Cosmic entropy or ruinous planar forces. |
+
+| 4 | A curse that transformed a forgotten tyrant. |
+
+| 5 | Forbidden or industrialized magic. |
+
+| 6 | Necrotic material animated by aimless spirits. |
+
 [source: https://www.dndbeyond.com/monsters/5194925-black-pudding]: #

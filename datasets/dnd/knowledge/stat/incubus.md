@@ -22,7 +22,8 @@ Restless Touch. Melee Attack Roll: +7, reach 5 ft. Hit: 15 (3d6 + 5) Psychic dam
 
 Spellcasting. The incubus casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 15):
 
-At Will: Disguise Self, Etherealness 1/Day Each: Dream, Hypnotic Pattern
+At Will: Disguise Self, Etherealness
+1/Day Each: Dream, Hypnotic Pattern
 
 ---
 **Description**
@@ -32,5 +33,27 @@ Incubi exploit the vulnerability of mortal dreams. Slipping into the homes of sl
 Incubi can transform into succubi and vice versa, taking the forms they need to manipulate foes in dreams or in the flesh.
 
 Those visited by an incubus have recurring nightmares. Roll on or choose a result from the Incubus Nightmares table to inspire these night terrors.
+
+Incubus Nightmares
+
+| 1d8 | The Incubus’s Victim Has Dreams Of … |
+
+| --- | --- |
+
+| 1 | An angry family member or authority figure. |
+
+| 2 | Being chased through the wilderness. |
+
+| 3 | Being devoured by animals or monsters. |
+
+| 4 | Falling, drowning, or suffocating. |
+
+| 5 | A ruinous public embarrassment. |
+
+| 6 | A shadowy intruder or monstrous silhouette. |
+
+| 7 | A traumatic past event. |
+
+| 8 | A visitor with an eerie or enigmatic message. |
 
 [source: https://www.dndbeyond.com/monsters/4904793-incubus]: #

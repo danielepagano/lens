@@ -29,4 +29,22 @@ With their hair of living snakes and their infamous petrifying gazes, medusas ar
 
 Medusas are born or created through preternatural circumstances. Roll on or choose a result from the Medusa Fates table to inspire what led to a medusa’s creation.
 
+Medusa Fates
+
+| 1d6 | The Medusa Was … |
+
+| --- | --- |
+
+| 1 | Born a medusa and lives unaware of whatever curse or circumstances afflicted its ancestor. |
+
+| 2 | Created by a god and tasked with guarding a treasure or secret. |
+
+| 3 | A cultist who made a fiendish bargain and enjoyed rewards that have since faded. |
+
+| 4 | An explorer transformed and compelled to defend a cursed ruin. |
+
+| 5 | A vain noble whose magical attempt to gain eternal beauty backfired. |
+
+| 6 | The victim of a bite from a magical serpent or reptilian god in disguise. |
+
 [source: https://www.dndbeyond.com/monsters/5195118-medusa]: #

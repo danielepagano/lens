@@ -21,6 +21,10 @@ Spear. Melee or Ranged Attack Roll: +3, reach 5 ft. or range 20/60 ft. Hit: 4 (1
 
 Guards are perceptive, but most have little martial training. They might be bouncers, lookouts, members of a city watch, or other keen-eyed warriors.
 
+---
+
+### Guards
+
 Guards protect people, places, and things, either for pay or from a sense of duty. They might perform their duties vigilantly or distractedly. Some raise alarms at the first sign of danger and defend their charges with their lives. Others flee outright if their compensation doesn’t match the danger they face.
 
 [source: https://www.dndbeyond.com/monsters/5195065-guard]: #

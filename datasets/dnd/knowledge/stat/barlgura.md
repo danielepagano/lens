@@ -24,7 +24,8 @@ Thrash. Melee Attack Roll: +7, reach 5 ft. Hit: 9 (1d10 + 4) Bludgeoning damage.
 
 Spellcasting. The barlgura casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 13):
 
-2/Day Each: Disguise Self, Invisibility (self only) 1/Day Each: Entangle, Phantasmal Killer (level 6 version)
+2/Day Each: Disguise Self, Invisibility (self only)
+1/Day Each: Entangle, Phantasmal Killer (level 6 version)
 
 ---
 **Description**

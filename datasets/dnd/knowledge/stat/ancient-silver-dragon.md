@@ -26,7 +26,8 @@ Paralyzing Breath. Constitution Saving Throw: DC 24, each creature in a 90-foot 
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 23, +15 to hit with spell attacks):
 
-At Will: Detect Magic, Hold Monster, Ice Knife (level 2 version), Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell) 1/Day Each: Control Weather, Ice Storm (level 7 version), Teleport, Zone of Truth
+At Will: Detect Magic, Hold Monster, Ice Knife (level 2 version), Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell)
+1/Day Each: Control Weather, Ice Storm (level 7 version), Teleport, Zone of Truth
 
 ---
 **Legendary Actions**
@@ -44,11 +45,19 @@ Pounce. The dragon moves up to half its Speed, and it makes one Rend attack.
 
 Ancient silver dragons pursue world-wide change. They defend their communities and allies, encouraging them to perform deeds worthy of legend. Some set their sights on other worlds and planes of existence, creating extraplanar alliances or combating multiplanar threats. They might have guises in multiple societies and forge generation-spanning friendships with heroic families or valorous groups.
 
+---
+
+### Silver Dragons
+
 Silver dragons work to preserve peace and encourage greatness. They try to live as examples of decency while remaining watchful against evil.
 
 Silver dragons typically dwell amid snow-capped mountains, though aspirations and congeniality drive some to instead live among cosmopolitan societies. Disguised as humanoids, they ally with artists, historians, knights, and humble leaders who learn from the past to create better futures.
 
 Silver dragons take inspiration from legendary heroes and have grand ambitions. Many collect treasures that reflect these interests, such as histories, ancient art, and the gear of famous champions.
+
+---
+
+### Silver Dragon Lairs
 
 Silver dragons typically lair in picturesque mountain retreats or on sculpted cloud “islands.”
 

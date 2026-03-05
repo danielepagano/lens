@@ -37,6 +37,8 @@ Necrosis. The demilich makes one Necrotic Burst attack.
 ---
 **Description**
 
+### Demilich Lairs
+
 Demiliches jealously guard their deathtrap-laden sanctums. The most notorious of these is the Tomb of Horrors, lair of the infamous Acererak.
 
 The region containing a demilich’s lair is twisted by its presence, creating the following effects:
@@ -46,5 +48,9 @@ Enervating Domain. Whenever a creature other than the demilich or one of its all
 Travel Ward. Creatures can’t use teleportation or planar travel to enter or exit the lair.
 
 If the demilich dies or moves its lair elsewhere, these effects end immediately.
+
+
+
+A demilich is a skull harboring the remnants of a lich’s wicked essence. If the burden of immortality overwhelms a lich, its consciousness turns inward as its body rots away. But if its remains are disturbed, a demilich rises. Demiliches usually appear as skulls adorned with gems or arcane sigils.
 
 [source: https://www.dndbeyond.com/monsters/5194967-demilich]: #

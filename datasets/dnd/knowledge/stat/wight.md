@@ -22,7 +22,8 @@ Necrotic Sword. Melee Attack Roll: +4, reach 5 ft. Hit: 6 (1d8 + 2) Slashing dam
 
 Necrotic Bow. Ranged Attack Roll: +4, range 150/600 ft. Hit: 6 (1d8 + 2) Piercing damage plus 4 (1d8) Necrotic damage.
 
-Life Drain. Constitution Saving Throw: DC 13, one creature within 5 feet. Failure: 6 (1d8 + 2) Necrotic damage, and the target’s Hit Point maximum decreases by an amount equal to the damage taken. A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight’s control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.
+Life Drain. Constitution Saving Throw: DC 13, one creature within 5 feet. Failure: 6 (1d8 + 2) Necrotic damage, and the target’s Hit Point maximum decreases by an amount equal to the damage taken.
+A Humanoid slain by this attack rises 24 hours later as a Zombie under the wight’s control, unless the Humanoid is restored to life or its body is destroyed. The wight can have no more than twelve zombies under its control at a time.
 
 ---
 **Description**
@@ -32,5 +33,27 @@ Wights are the withered corpses of relentless warriors whose wickedness sustains
 After dying and returning from the grave, a wight continues its villainous ways, but it is now driven by a hunger for life. A wight drains living essence through its attacks. Humanoids slain by a wight’s life-sapping grip reanimate a day later and serve the wight as obedient zombies.
 
 Wights might return from the dead for a multitude of sinister reasons. Roll on or choose a result from the Wight Motives table to inspire why a wight plagues the living.
+
+Wight Motives
+
+| 1d8 | The Wight Returned from the Dead To … |
+
+| --- | --- |
+
+| 1 | Challenge anyone who passes near its grave on a certain cursed night. |
+
+| 2 | Conquer the land it believes it should rule. |
+
+| 3 | Continue the crimes it was executed for. |
+
+| 4 | Follow the foul master it served in life. |
+
+| 5 | Honor an oath it left unfulfilled in life. |
+
+| 6 | Obey the cult or deity that gave it unlife. |
+
+| 7 | Prove it was the greatest warrior to ever live. |
+
+| 8 | Seek its stolen heart or other treasure. |
 
 [source: https://www.dndbeyond.com/monsters/5195269-wight]: #

@@ -36,7 +36,9 @@ Pesky Swarm. The target has Disadvantage on attack rolls and ability checks unti
 
 Spellcasting. The animal lord casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 20):
 
-At Will: Animal Friendship, Animal Messenger, Speak with Animals 2/Day Each: Awaken, Greater Restoration 1/Day Each: Animal Shapes, Sunburst
+At Will: Animal Friendship, Animal Messenger, Speak with Animals
+2/Day Each: Awaken, Greater Restoration
+1/Day Each: Animal Shapes, Sunburst
 
 ---
 **Legendary Actions**
@@ -55,5 +57,31 @@ Animal lords are the immortal spirits of legendary animals. They serve as the di
 Most animal lords make their homes in the Beastlands, but they occasionally journey to the Feywild or other idyllic realms. They rarely travel to the Material Plane, making exceptions only when a world faces environmental disaster or droves of animals are otherwise in jeopardy.
 
 Among the best-known animal lords are those that represent cats, hawks, lizards, and wolves, but animal lords exist for beasts of all types. Some animal lords even embody creatures that are rare or extinct on Material Plane worlds, like megafauna or dinosaurs. Using their divine might, animal lords can summon spectral animals, channel spiritual energy, and exhibit powers associated with one of three broad groups: foragers, hunters, or sages. These powers are tied to an animal lord’s personality and traits associated with the creature it resembles. Roll on or choose results from the relevant Animal Lord Appearances table to inspire what creature an animal lord resembles.
+
+Sage Animal Lord Appearances
+
+| 1d10 | Bestial Shape |
+
+| --- | --- |
+
+| 1 | Coyote |
+
+| 2 | Crow |
+
+| 3 | Elephant |
+
+| 4 | Lizard |
+
+| 5 | Mouse |
+
+| 6 | Owl |
+
+| 7 | Salmon |
+
+| 8 | Spider |
+
+| 9 | Turtle |
+
+| 10 | Whale |
 
 [source: https://www.dndbeyond.com/monsters/5197987-animal-lord-sage]: #

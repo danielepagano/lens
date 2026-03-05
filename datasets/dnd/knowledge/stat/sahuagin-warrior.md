@@ -29,6 +29,10 @@ Claw. Melee Attack Roll: +3, reach 5 ft. Hit: 4 (1d6 + 1) Slashing damage.
 
 Sahuagin warriors are vicious combatants that savage their foes with webbed claws. Once sahuagin draw blood, they usually attack until either they or their foe is slain.
 
+---
+
+### Sahuagin
+
 Sahuagin are fiendish terrors that prey on creatures above and below the water. Called “sea devils” by residents of coastal communities, sahuagin are ruthless raiders. They ransack ships, fishing villages, and undersea communities to slake their bloodthirst, claim treasure, and make sacrifices to their vicious deity—the sharklike god Sekolah.
 
 Sahuagin constantly war on any peoples living near their territory. Merfolk and other aquatic folk bear the brunt of these attacks, but sahuagin also hunt air-breathers who sail over or swim through the waters the sea devils claim. Sahuagin often attack alongside sharks, which they can telepathically command.

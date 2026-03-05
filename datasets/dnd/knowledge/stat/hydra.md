@@ -33,4 +33,18 @@ Most hydras have five heads, but some mature or battle-tested hydras have more. 
 
 While many hydras claim their own territories, wicked deities might use them to guard treasures or magical sites. Roll on or choose a result from the Hydra Lairs table to inspire why a hydra lurks where it does.
 
+Hydra Lairs
+
+| 1d4 | The Hydra Lurks Where It Does To … |
+
+| --- | --- |
+
+| 1 | Ensure none claim the weapon of a fallen hero. |
+
+| 2 | Defend the home of a wise but sinister oracle. |
+
+| 3 | Guard a magical herb that blooms once a year. |
+
+| 4 | Protect a font of poison that pollutes a river. |
+
 [source: https://www.dndbeyond.com/monsters/5195084-hydra]: #

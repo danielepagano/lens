@@ -53,4 +53,30 @@ Only magic items and the corpses of gods and titans can endure inside the blob. 
 
 When the blob appears, roll on or choose a result from the Blob of Annihilation Contents table to inspire what extraordinary thing remains within its goop.
 
+Blob of Annihilation Contents
+
+| 1d10 | The Blob Contains ... |
+
+| --- | --- |
+
+| 1 | An Amulet of the Planes. |
+
+| 2 | An Artifact of the DM’s choice. |
+
+| 3 | The corpses of two gods who were entangled in battle when the blob consumed them. |
+
+| 4 | A Cubic Gate. |
+
+| 5 | A Deck of Many Things. |
+
+| 6 | A magic key that opens a door in Sigil that no other key and no spell can open. |
+
+| 7 | The preserved corpse of an empyrean. |
+
+| 8 | The remains of half a kraken. |
+
+| 9 | The skull of a death god. |
+
+| 10 | A tarrasque that just died. |
+
 [source: https://www.dndbeyond.com/monsters/5194926-blob-of-annihilation]: #

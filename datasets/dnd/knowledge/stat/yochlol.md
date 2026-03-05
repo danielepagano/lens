@@ -28,7 +28,8 @@ Caustic Lash. Melee or Ranged Attack Roll: +8, reach 10 ft. or range 120 ft. Hit
 
 Spellcasting. The yochlol casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 15):
 
-At Will: Detect Thoughts, Gaseous Form (self only), Web1/Day: Dominate Person
+At Will: Detect Thoughts, Gaseous Form (self only), Web
+1/Day: Dominate Person
 
 ---
 **Reactions**

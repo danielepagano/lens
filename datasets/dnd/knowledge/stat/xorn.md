@@ -35,4 +35,26 @@ Rapt gourmands, xorn focus on their next meals. They care little for living crea
 
 Roll on or choose a result from the Xorn Delicacies table to inspire a xorn’s favorite fare.
 
+Xorn Delicacies
+
+| 1d8 | The Xorn Craves … |
+
+| --- | --- |
+
+| 1 | Adamantine or mithral. |
+
+| 2 | Coins minted by a long-dead empire. |
+
+| 3 | Fossils or petrified wood. |
+
+| 4 | A gem that’s part of a magic item. |
+
+| 5 | The keystone of a great arch or bridge. |
+
+| 6 | Parts of a galeb duhr or stone golem. |
+
+| 7 | A piece of a meteor or moon. |
+
+| 8 | The stone crowning a mountain peak. |
+
 [source: https://www.dndbeyond.com/monsters/5195274-xorn]: #

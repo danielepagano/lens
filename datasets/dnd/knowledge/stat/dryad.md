@@ -26,11 +26,30 @@ Thorn Burst. Ranged Attack Roll: +6, range 60 ft. Hit: 7 (1d6 + 4) Piercing dama
 
 Spellcasting. The dryad casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 14):
 
-At Will: Animal Friendship, Charm Monster (lasts 24 hours; ends early if the dryad casts the spell again), Druidcraft1/Day Each: Entangle, Pass without Trace
+At Will: Animal Friendship, Charm Monster (lasts 24 hours; ends early if the dryad casts the spell again), Druidcraft
+1/Day Each: Entangle, Pass without Trace
 
 ---
 **Description**
 
 Guardians of the woodlands, dryads magically flit from tree to tree and from root to bough, harrying trespassers with tangling vines and thorns. Most of these elusive beings have a special connection with one plant or a natural sanctuary that they protect. Some also share physical similarities with the plants they’re most connected to. Dryads might sicken or die if their plant or sanctuary is destroyed, recovering only if it is healed or magically replaced. Roll on or choose an option from the Dryad Sanctuaries table to inspire a dryad’s bond.
+
+Dryad Sanctuaries
+
+| 1d6 | The Dryad Dwells in and Protects … |
+
+| --- | --- |
+
+| 1 | An acres-large clonal colony—a stand of identical, interconnected trees. |
+
+| 2 | A fortresslike tree, like a baobab or ­sequoia. |
+
+| 3 | A living lock—a plant that seals evil below or blocks the path to a dungeon. |
+
+| 4 | A lonely tree that stands atop a windswept mountain or amid a petrified forest. |
+
+| 5 | A plant with magic fruit or remarkable seeds. |
+
+| 6 | A shambling mound or treant that the dryad lives in or around as a Fey symbiote. |
 
 [source: https://www.dndbeyond.com/monsters/5194977-dryad]: #

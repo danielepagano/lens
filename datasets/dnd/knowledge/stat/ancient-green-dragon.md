@@ -26,7 +26,8 @@ Poison Breath (Recharge 5–6). Constitution Saving Throw: DC 22, each creature 
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 21):
 
-At Will: Detect Magic, Mind Spike (level 5 version) 1/Day Each: Geas, Modify Memory
+At Will: Detect Magic, Mind Spike (level 5 version)
+1/Day Each: Geas, Modify Memory
 
 ---
 **Legendary Actions**
@@ -44,9 +45,17 @@ Pounce. The dragon moves up to half its Speed, and it makes one Rend attack.
 
 Ancient green dragons are creatures of legend, rarely seen by their servants or foes. Via magic and well-hidden agents, these dragons stoke suspicion between allies and undermine noble works. As bonds fray, the dragons reap rewards of greater wealth and control. Eventually the ambitions of ancient green dragons stretch beyond their territories as they seek control over empires, planar realms, or death itself.
 
+---
+
+### Green Dragons
+
 From forbidden forest depths, green dragons whisper evils into the world and manipulate the lives of those who listen. Elusive, conniving, and egotistical, these chromatic dragons patiently prey on the fears of shorter-lived beings, corrupting and isolating them. Green dragons might lurk amid labyrinthine wildernesses for centuries without revealing themselves; even their most devoted followers might know them only as the voice of the woodlands or a whisper in their dreams.
 
 Despite their might, most green dragons disdain physical violence, viewing combat as servants’ work and preferring to trick foes into dangerous or exploitative scenarios. These dragons collect “baubles” that embody their webs of manipulation and serve as tools of extortion, such as compromising documents, family heirlooms, and sentimental treasures.
+
+---
+
+### Green Dragon Lairs
 
 Green dragons lair in ancient forests, often shaping stands of massive trees into compounds of interwoven branches, hollow trunks, and caverns amid mighty roots. They might also dwell amid forested ruins, particularly the former homes of those they’ve conquered.
 

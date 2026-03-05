@@ -36,7 +36,8 @@ Fortify (Forager Only). The animal lord gains 20 Temporary Hit Points.
 
 Spellcasting. The animal lord casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 20):
 
-At Will: Animal Friendship, Animal Messenger, Speak with Animals 2/Day Each: Awaken, Greater Restoration
+At Will: Animal Friendship, Animal Messenger, Speak with Animals
+2/Day Each: Awaken, Greater Restoration
 
 ---
 **Legendary Actions**
@@ -55,5 +56,31 @@ Animal lords are the immortal spirits of legendary animals. They serve as the di
 Most animal lords make their homes in the Beastlands, but they occasionally journey to the Feywild or other idyllic realms. They rarely travel to the Material Plane, making exceptions only when a world faces environmental disaster or droves of animals are otherwise in jeopardy.
 
 Among the best-known animal lords are those that represent cats, hawks, lizards, and wolves, but animal lords exist for beasts of all types. Some animal lords even embody creatures that are rare or extinct on Material Plane worlds, like megafauna or dinosaurs. Using their divine might, animal lords can summon spectral animals, channel spiritual energy, and exhibit powers associated with one of three broad groups: foragers, hunters, or sages. These powers are tied to an animal lord’s personality and traits associated with the creature it resembles. Roll on or choose results from the relevant Animal Lord Appearances table to inspire what creature an animal lord resembles.
+
+Forager Animal Lord Appearances
+
+| 1d10 | Bestial Shape |
+
+| --- | --- |
+
+| 1 | Bear |
+
+| 2 | Bee |
+
+| 3 | Bison |
+
+| 4 | Capybara |
+
+| 5 | Carp |
+
+| 6 | Rabbit |
+
+| 7 | Rooster |
+
+| 8 | Sloth |
+
+| 9 | Stag |
+
+| 10 | Vulture |
 
 [source: https://www.dndbeyond.com/monsters/5194890-animal-lord-forager]: #

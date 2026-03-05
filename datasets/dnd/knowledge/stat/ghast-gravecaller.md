@@ -30,6 +30,10 @@ At Will: Speak with Dead, Thaumaturgy
 
 Ghast gravecallers wield fell magic and converse with corpses. They might pose as liches or vampires.
 
+---
+
+### Ghasts
+
 Ghasts are reeking, undying corpses closely related to ghouls. They hunger for the vices they enjoyed in life as much as they do for rotting flesh.
 
 [source: https://www.dndbeyond.com/monsters/5195006-ghast-gravecaller]: #

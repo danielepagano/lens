@@ -30,7 +30,8 @@ Dreadful Glare. Wisdom Saving Throw: DC 17, one creature the mummy can see withi
 
 Spellcasting. The mummy casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 17, +9 to hit with spell attacks):
 
-At Will: Dispel Magic, Thaumaturgy 1/Day Each: Animate Dead, Harm, Insect Plague (level 7 version)
+At Will: Dispel Magic, Thaumaturgy
+1/Day Each: Animate Dead, Harm, Insect Plague (level 7 version)
 
 ---
 **Reactions**
@@ -59,11 +60,41 @@ A mummy lord’s heart embodies the pact that grants it immortality. Rather than
 
 Mummy lords are usually consumed by ageless plots. Roll on or choose a result from the Mummy Lord Plots table to determine a mummy lord’s ancient agenda.
 
+Mummy Lord Plots
+
+| 1d8 | The Mummy Lord Seeks To … |
+
+| --- | --- |
+
+| 1 | Open a portal to the past, when its power was at its height. |
+
+| 2 | Perform a ritual that can be attempted only once every eight hundred years. |
+
+| 3 | Reclaim and resurrect a loved one’s corpse. |
+
+| 4 | Reconquer the lands that once composed its empire. |
+
+| 5 | Recover the pieces of its lost heart. |
+
+| 6 | Replace its descendant as the ruler of a realm. |
+
+| 7 | Sacrifice a thousand souls to its god in return for true life. |
+
+| 8 | Transform the people of an entire nation into Undead servants. |
+
+---
+
+### Mummies
+
 Mysterious rites and mighty faith can tie spirits to their corpses, binding them to their remains for all time. Should their resting places be violated, these beings, known as mummies, reanimate their deteriorating bodies to restore the sanctity of their tombs and punish those who disturbed their rest.
 
 Mummies pursue those who offend them, typically mortals who desecrate their resting places, steal their burial treasures, or defile sites tied to their faith. With undying rage, these ancient corpses go to extreme lengths to avenge themselves and restore what they need to find peace.
 
 A mummy might look frail, but its body possesses supernatural strength, and its gaze can strike fear in the bravest hearts. Those who escape a mummy’s grasp might find themselves subject to a terrible curse. Victims of a mummy’s curse gradually wither, their bodies rotting away until they’re reduced to dust. This curse can be healed only by the Remove Curse spell or similar magic.
+
+---
+
+### Mummy Lord Lairs
 
 Mummy lords typically lurk in the ruins of places they dwelled in life. Such sites have forbidding reputations, or they might be lost and forgotten.
 

@@ -20,6 +20,7 @@ Talons. Melee Attack Roll: +4, reach 5 ft. Hit: 7 (1d10 + 2) Slashing damage.
 
 Spellcasting. The owl casts one of the following spells, requiring no spell components and using Wisdom as the spellcasting ability:
 
-At Will: Detect Evil and Good, Detect Magic1/Day: Clairvoyance
+At Will: Detect Evil and Good, Detect Magic
+1/Day: Clairvoyance
 
 [source: https://www.dndbeyond.com/monsters/5195024-giant-owl]: #

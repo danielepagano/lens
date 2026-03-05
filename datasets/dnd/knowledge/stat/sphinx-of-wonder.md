@@ -28,6 +28,10 @@ Burst of Ingenuity (2/Day). Trigger: The sphinx or another creature within 30 fe
 
 A sphinx of wonder is brightly feathered and the size of a lion cub. One comes into being every time a unique idea is conceived on the Material Plane. Each sphinx of wonder is fascinated by a particular type of story or field of study, and it learns all it can about that topic. It bears a unique sigil on its forehead that suggests the type of knowledge that fascinates it. Sometimes, a sphinx of wonder forms a bond with a mortal scholar and aids them in their research.
 
+---
+
+### Sphinxes
+
 Sphinxes protect the secrets of the multiverse. Formed from the spirits of sages and explorers, sphinxes know the power of truth and the importance of preserving it. They share their wisdom only with those who prove themselves wise or overcome tests of worthiness, such as riddles or battles with dangerous beasts. Through their existences, sphinxes might change form as they gain more nuanced understanding of cosmic enigmas.
 
 [source: https://www.dndbeyond.com/monsters/4775843-sphinx-of-wonder]: #

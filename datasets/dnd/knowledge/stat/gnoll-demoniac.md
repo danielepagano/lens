@@ -25,6 +25,10 @@ Hunger of Yeenoghu (Recharge 5–6). The gnoll conjures a 30-foot Cube of magica
 
 Gnoll demoniacs are berserkers that arise from gnolls who’ve ritualistically fed on flesh corrupted by the Abyss. Now embodying the ruinous hunger of Yeenoghu, these gnolls throw themselves into battle, heedless of odds or their own survival. Rampaging demoniacs even devour other gnolls in their wild frenzies.
 
+---
+
+### Gnolls
+
 The first gnolls arose from hyenas that fed on flesh tainted by the Abyss. Their corruption and violence delighted the demon lord Yeenoghu, who encouraged their numbers and spread them across the multiverse. Ever since, gnolls have been the cackling servants of Yeenoghu, existing to cause ruin and to feast on what remains.
 
 [source: https://www.dndbeyond.com/monsters/5195043-gnoll-demoniac]: #

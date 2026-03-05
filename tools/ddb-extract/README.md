@@ -267,7 +267,7 @@ Confirmed selectors (verified 2026-03-04):
 | spell-page | `.page-title` (name), `.ddb-statblock-item` (stats), `.more-info-content p` (description) |
 | monster-page | `.page-title` (name), `.mon-stat-block__meta` (meta), `.mon-stat-block__attribute` (AC/HP/speed), `.ability-block__stat--{str\|dex...}` (ability scores), `.mon-stat-block__tidbit` (skills/CR), `.mon-stat-block__description-block` (traits/actions) |
 | item-page | `.page-title` (name), `.item-info .details` (subtitle/rarity), `.more-info-content` (desc) |
-| equipment-page | `.page-title` (name), `.ddb-statblock-item` (stats), `.more-info-content` (desc) |
+| equipment-page | `.page-title` (name); current DOM: `.details-container-equipment` + table (Cost/Damage/Weight/Properties) + `.details-container-content-description-text` (desc); legacy: `.ddb-statblock-item`, `.more-info-content` |
 
 To inspect the live DOM of a page using the CDP session:
 

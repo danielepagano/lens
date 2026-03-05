@@ -33,6 +33,28 @@ Camouflaged as rock formations, ropers are aberrant ambushers that lurk in wait 
 
 Ropers can move, albeit slowly. Crawling on the sticky cilia that cover their undersides, ropers can climb walls and suspend themselves from ceilings. These hunters often position themselves in unexpected or treacherous locations, using their surroundings to weaken their prey. Roll on or choose a result from the Roper Hazards table to inspire what dangers ropers employ when ambushing prey.
 
+Roper Hazards
+
+| 1d8 | The Roper Drags Prey Through … |
+
+| --- | --- |
+
+| 1 | Areas that trigger traps. |
+
+| 2 | Caverns filled with smoke or gas. |
+
+| 3 | Dead magic* or wild magic* zones. |
+
+| 4 | The lair of a creature it is trying to bait out. |
+
+| 5 | A nest of rats, insects, or other vermin. |
+
+| 6 | Patches of brown mold* or green slime*. |
+
+| 7 | Pools of magma or boiling water. |
+
+| 8 | Razorvine* or similar dangerous plants. |
+
 *See the Dungeon Master’s Guide.
 
 [source: https://www.dndbeyond.com/monsters/5195185-roper]: #

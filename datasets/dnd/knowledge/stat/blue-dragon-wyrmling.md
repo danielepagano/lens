@@ -25,6 +25,10 @@ Lightning Breath (Recharge 5–6). Dexterity Saving Throw: DC 12, each creature 
 
 Blue dragon wyrmlings often serve other powerful creatures, learning the ways of control and establishing fearful reputations among weaker creatures. Many wyrmlings initially serve loyally, but as their powers grow to match their ambitions, they eventually betray or abandon their associates. These wyrmlings tempt small groups of creatures into their service, rewarding them with modest treasures and promises of future power.
 
+---
+
+### Blue Dragons
+
 Arrogant and imperious, blue dragons are chromatic dragons that crave control and collect followers like other dragons hoard treasure. They seek to transform their territories into empires, domains to be feared by nations.
 
 Blue dragons have sharp features with piercing horns and scales that range from sapphire to the shades of stormy skies. They dwell in deserts and badlands, particularly regions with dramatic spires from whose tops they might see for miles. They seek lairs near sites of symbolic power, such as the abandoned fortresses of giants, the colossi of fallen empires, or monuments raised by their followers.

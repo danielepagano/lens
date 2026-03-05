@@ -33,4 +33,18 @@ When not serving their diabolical masters, bone devils tempt self-obsessed morta
 
 Bone devils travel across the multiverse to fulfill diabolical orders. If left with no other choices, they might conscript mortals to aid them in their vicious goals. Roll on or choose a result from the Bone Devil Objectives table to inspire a bone devil’s goals.
 
+Bone Devil Objectives
+
+| 1d4 | The Bone Devil Seeks To ... |
+
+| --- | --- |
+
+| 1 | Capture a soul that escaped the Nine Hells. |
+
+| 2 | Convey a message or make an example of someone in the name of an archdevil. |
+
+| 3 | Find someone who broke a deal with a devil. |
+
+| 4 | Slay someone or steal something as part of its pact with a wicked magic-user. |
+
 [source: https://www.dndbeyond.com/monsters/5194930-bone-devil]: #

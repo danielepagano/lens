@@ -22,6 +22,10 @@ Tendril. Melee Attack Roll: +0, reach 5 ft. Hit: 3 (1d6) Poison damage, and the 
 
 Gas spores are floating, orbicular fungi with rhizome growths and protuberances that resemble the stalks and eyes of beholders. If destroyed, a gas spore explodes in a poisonous burst that can infect creatures and slay them in hours. Infected corpses spawn more gas spores that grow to full size in a matter of days.
 
+---
+
+### Fungi
+
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
 
 [source: https://www.dndbeyond.com/monsters/5195004-gas-spore-fungus]: #

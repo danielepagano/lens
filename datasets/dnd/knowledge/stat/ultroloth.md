@@ -26,7 +26,8 @@ Hypnotic Gaze. Wisdom Saving Throw: DC 17, each creature in a 30-foot Cone. Fail
 
 Spellcasting. The ultroloth casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 17):
 
-At Will: Alter Self, Clairvoyance, Detect Magic1/Day Each: Dimension Door, Fireball (level 5 version), Wall of Fire
+At Will: Alter Self, Clairvoyance, Detect Magic
+1/Day Each: Dimension Door, Fireball (level 5 version), Wall of Fire
 
 ---
 **Description**
@@ -34,5 +35,23 @@ At Will: Alter Self, Clairvoyance, Detect Magic1/Day Each: Dimension Door, Fireb
 With uncanny patience and fiendish cunning, ultroloths manipulate mortals and their fellow yugoloths alike, seeking to hoard power and spread suffering. These sinister masterminds often work with other yugoloths, but they might compel nearly any creature into their service. If coercion doesn’t work, ultroloths use their eerie eyes and innate magic to hypnotize or charm targets.
 
 Ultroloths strive to achieve planes-spanning plots. Roll on or choose a result from the Ultroloth Conspiracies table to inspire such villainy.
+
+Ultroloth Conspiracies
+
+| 1d6 | The Ultroloth Schemes To … |
+
+| --- | --- |
+
+| 1 | Convince cultists their god has forsaken them. |
+
+| 2 | Destabilize a nation and rule the chaos. |
+
+| 3 | Incite a calamity and hold a world hostage. |
+
+| 4 | Provoke hostilities between immortal armies and sell magic weapons to both sides. |
+
+| 5 | Steal an invention and slay all who know of it. |
+
+| 6 | Unleash fiendish hordes on a foe’s homeland. |
 
 [source: https://www.dndbeyond.com/monsters/5195244-ultroloth]: #

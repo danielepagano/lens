@@ -26,6 +26,10 @@ Parry. Trigger: The noble is hit by a melee attack roll while holding a weapon. 
 
 A noble’s social advantages typically grant the noble access to greater education and training than most common folk, while nobles’ experience with business or politics makes many adept negotiators.
 
+---
+
+### Nobles
+
 Nobles encompass a variety of people with social influence. They might be rulers, wealthy merchants, callous bureaucrats, or the idle elite.
 
 [source: https://www.dndbeyond.com/monsters/5195145-noble]: #

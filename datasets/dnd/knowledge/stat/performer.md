@@ -26,68 +26,12 @@ Uncanny Dodge. Trigger: The performer is hit by an attack roll. Response: The pe
 
 Common performers include traveling storytellers, tavern musicians, local entertainers, and chorus members performing with veteran artists. These performers might be self-taught or in the early years of formal training. Most have a modest level of celebrity and two or three instruments or talents at which they excel.
 
+---
+
+### Performers
+
 From royal courts to village squares, skilled entertainers hone their talents and delight audiences. Some travel far, sharing tales and demonstrating mysterious arts. Others serve in the courts and theaters of great nations, cultivating celebrity and navigating the whims of patrons. Many hone professional secrets and magical flourishes, striving to make their performances truly unforgettable.
 
 Use the following list of entertainers and roles to inspire the performers in your adventures:
-
-Acrobat
-
-Actor
-
-Aerialist
-
-Animal trainer
-
-Athlete
-
-Burlesque artist
-
-Busker
-
-Circus performer
-
-Comedian
-
-Contortionist
-
-Dancer
-
-Daredevil
-
-Jester
-
-Juggler
-
-Magician
-
-Mentalist
-
-Mime
-
-Minstrel
-
-Mourner
-
-Oral historian
-
-Poet
-
-Puppeteer
-
-Ritualist
-
-Stage fighter
-
-Storyteller
-
-Throat singer
-
-Town crier
-
-Trick rider
-
-Vocalist
-
-Wrestler
 
 [source: https://www.dndbeyond.com/monsters/5195156-performer]: #

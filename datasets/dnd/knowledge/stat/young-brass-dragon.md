@@ -27,6 +27,10 @@ Sleep Breath. Constitution Saving Throw: DC 14, each creature in a 30-foot Cone.
 
 Young brass dragons travel extensively, often spending a few years in a region before circling back to their lair. Some work closely with other metallic dragons, carrying information between allies.
 
+---
+
+### Brass Dragons
+
 Gregarious and outgoing, brass dragons relish sharing knowledge and stories. Although these metallic dragons favor arid lands, they cheerfully journey considerable distances to visit friendly creatures, pass on what they’ve learned, and collect news. Though good natured, brass dragons don’t shirk from combat when necessary, thwarting foes with magical sleep and searing them with flame.
 
 Brass dragons favor warm climes, particularly steppes and rocky or sandy deserts, and they usually dwell near prominent crossroads or oases that regularly draw visitors. They enjoy adopting Humanoid forms, disguising themselves as traveling merchants, scholars, storytellers, or anyone else invested in others’ stories.

@@ -14,7 +14,9 @@ Aberrant Ground. The ground in a 10-foot Emanation originating from the mouther 
 
 Gibbering. The mouther babbles incoherently while it doesn’t have the Incapacitated condition. Wisdom Saving Throw: DC 10, any creature that starts its turn within 20 feet of the mouther while it is babbling. Failure: The target rolls 1d8 to determine what it does during the current turn:
 
-1–4. The target does nothing. 5–6. The target takes no action or Bonus Action and uses all its movement to move in a random direction. 7–8. The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can’t make such an attack.
+1–4. The target does nothing.
+5–6. The target takes no action or Bonus Action and uses all its movement to move in a random direction.
+7–8. The target makes a melee attack against a randomly determined creature within its reach or does nothing if it can’t make such an attack.
 
 ---
 **Actions**
@@ -29,5 +31,23 @@ Blinding Spittle (Recharge 5–6). Dexterity Saving Throw: DC 10, each creature 
 Gibbering mouthers endlessly feed on and regrow their own amoeboid bodies—amorphous heaps roiling with eyes, teeth, and strange organs. These mind-bending terrors sing and scream, laugh and cry with a cacophony of voices ranging from disturbingly unnatural to shockingly familiar. They exist only to feed and to unleash their disdain for reality, their many maws dripping with otherworldly spittle.
 
 Gibbering mouthers come into being in various unpleasant ways. Roll on or choose a result from the Gibbering Mouther Nascencies table to inspire what brought one of these horrors into being.
+
+Gibbering Mouther Nascencies
+
+| 1d6 | The Gibbering Mouther Is... |
+
+| --- | --- |
+
+| 1 | Another creature warped by dangerous magic. |
+
+| 2 | The autonomous appendage of a chaotic deity, Far Realm entity, or star-spawn horror. |
+
+| 3 | The experiment of an aberrant manipulator. |
+
+| 4 | Part of the life cycle of some other Aberration. |
+
+| 5 | A shape-shifter that lost control of its powers. |
+
+| 6 | Someone cursed by a cult or vengeful deity. |
 
 [source: https://www.dndbeyond.com/monsters/5195034-gibbering-mouther]: #

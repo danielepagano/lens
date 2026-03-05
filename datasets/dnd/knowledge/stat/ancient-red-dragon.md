@@ -24,7 +24,8 @@ Fire Breath (Recharge 5–6). Dexterity Saving Throw: DC 24, each creature in a 
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 23, +15 to hit with spell attacks):
 
-At Will: Command (level 2 version), Detect Magic, Scorching Ray (level 3 version) 1/Day Each: Fireball (level 6 version), Scrying
+At Will: Command (level 2 version), Detect Magic, Scorching Ray (level 3 version)
+1/Day Each: Fireball (level 6 version), Scrying
 
 ---
 **Legendary Actions**
@@ -42,11 +43,19 @@ Pounce. The dragon moves up to half its Speed, and it makes one Rend attack.
 
 Ancient red dragons number among the most feared and destructive beings in the multiverse. Few can withstand the wrath of an ancient red dragon that turns its mind toward devastation. These dragons’ greed matches their ruinous potential, and they collect vast hoards studded with storied treasures and magic items. Their lairs frequently tap into volcanic depths and might pierce other planes of existence, bringing servants from the Elemental Plane of Fire or the Lower Planes into their service.
 
+---
+
+### Red Dragons
+
 Red dragons take whatever they desire and burn to ash anything that stands in their way. These chromatic dragons endlessly desire more—more magic, territory, treasure, or whatever else inflames their cruel ambitions.
 
 Red dragons make their lairs amid perilous cliffs and volcanoes. Within, they amass and fiercely protect hoards of treasure, and many have perfect recall of the hoards' contents and the locations of all they’ve collected. Should anything go missing, red dragons fly into rages. They don’t rest until their treasures are returned and the thieves have burned.
 
 Red dragons believe themselves to be the greatest of all dragons and, by extension, the greatest of all creatures. To them, pillaging and conquering are their right—treasures can find no more honored place than in their hoards, and other creatures are privileged to serve them.
+
+---
+
+### Red Dragon Lairs
 
 Red dragons make their lairs in smoldering, unapproachable places such as volcanic mountains, burning wastelands, and ruins they’ve stolen from other creatures.
 

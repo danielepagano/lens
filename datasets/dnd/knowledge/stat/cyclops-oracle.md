@@ -22,7 +22,8 @@ Flash of Light. Ranged Attack Roll: +10, range 120 ft. Hit: 17 (2d10 + 6) Radian
 
 Spellcasting. The cyclops casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 16):
 
-2/Day Each: Arcane Eye, Detect Magic, Locate Object 1/Day: Legend Lore
+2/Day Each: Arcane Eye, Detect Magic, Locate Object
+1/Day: Legend Lore
 
 ---
 **Reactions**
@@ -33,6 +34,10 @@ Portent (Recharge 4–6). Trigger: The cyclops or an ally it can see makes a D20
 **Description**
 
 Cyclops oracles gaze through history to learn hidden truths. Many share these secrets with those who aid them in correcting the mistakes of the past.
+
+---
+
+### Cyclopes
 
 Cyclopes are gigantic, one-eyed descendants of the gods. Using their mystical vision, cyclopes can witness how future events are likely to occur.
 

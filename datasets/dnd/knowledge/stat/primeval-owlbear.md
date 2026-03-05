@@ -27,8 +27,26 @@ Screech (Recharge 5–6). Constitution Saving Throw: DC 15, each creature in a 3
 
 Ancient forests and Feywild demesnes steeped in magic can give rise to particularly large and vicious owlbears. These primeval specimens can fly—albeit poorly—and emit thunderous screeches that can rattle foes and even tear them asunder.
 
+---
+
+### Owlbears
+
 Created long ago by misguided mages, owlbears combine keen avian eyes, thick feathers, and a tearing beak with a mighty bearlike frame. Despite their magical origins, owlbears have propagated and spread to wildernesses across the multiverse.
 
 Owlbears dwell in distinctive dens. Roll on or choose a result from the Owlbear Den Features table to inspire an owlbear den’s noteworthy traits.
+
+Owlbear Den Features
+
+| 1d4 | An Owlbear Den Contains … |
+
+| --- | --- |
+
+| 1 | Evidence of previous occupants, like bandits, wolves, or dragons. |
+
+| 2 | Heaps of regurgitated pellets studded with coins or other treasure. |
+
+| 3 | A nest with 1d6 owlbear eggs. |
+
+| 4 | Passages through the earth or hollow trees. |
 
 [source: https://www.dndbeyond.com/monsters/5195171-primeval-owlbear]: #

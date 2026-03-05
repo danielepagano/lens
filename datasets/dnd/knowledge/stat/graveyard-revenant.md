@@ -26,6 +26,10 @@ Haunting Glare (Recharge 5–6). Wisdom Saving Throw: DC 15, each creature in a 
 
 Graveyard revenants possess dozens of bodies that combine to form grotesque masses. They take revenge on those responsible for mass deaths or institutions that callously ruin lives.
 
+---
+
+### Revenants
+
 Wrathful spirits bent on revenge, revenants possess corpses and other materials, using them to seek justice or vent their rage on those who wronged them. Revenants refuse to rest until those they seek to punish are no more. If their bodies are destroyed, revenants claim new forms and continue their ruthless quests.
 
 [source: https://www.dndbeyond.com/monsters/5195054-graveyard-revenant]: #

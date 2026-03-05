@@ -23,6 +23,10 @@ Wind Javelin. Melee or Ranged Attack Roll: +4, reach 5 ft. or range 30/120 ft. H
 
 Aarakocra skirmishers are adept at fighting aerial foes amid the clouds. They often attack land-bound threats with diving strikes from above.
 
+---
+
+### Aarakocra
+
 Aarakocra are birdlike folk who soar the skies of countless worlds and the endless expanses of the Elemental Plane of Air. They often resemble avians common to the lands where they dwell; some resemble hawks or condors, while others appear similar to hummingbirds or archaeopteryxes. In many lands, aarakocra tell of their ancient heroics resisting the wicked Queen of Chaos alongside the mysterious Wind Dukes of Aaqa.
 
 [source: https://www.dndbeyond.com/monsters/5194865-aarakocra-skirmisher]: #

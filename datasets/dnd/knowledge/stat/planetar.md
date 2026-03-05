@@ -28,7 +28,8 @@ Holy Burst. Dexterity Saving Throw: DC 20, each enemy in a 20-foot-radius Sphere
 
 Spellcasting. The planetar casts one of the following spells, requiring no Material components and using Charisma as spellcasting ability (spell save DC 20):
 
-At Will: Detect Evil and Good 1/Day Each: Commune, Control Weather, Dispel Evil and Good, Raise Dead
+At Will: Detect Evil and Good
+1/Day Each: Commune, Control Weather, Dispel Evil and Good, Raise Dead
 
 ---
 **Description**
@@ -36,5 +37,23 @@ At Will: Detect Evil and Good 1/Day Each: Commune, Control Weather, Dispel Evil 
 Planetars deliver the punishment of righteous gods. These angels innately know truth from lies, and they use magic and blessed weapons to protect the just and root out wickedness across the Multiverse.
 
 These angels act where they can against overwhelming evil, but to avoid the attention of the Lower Planes, they prefer to let mortals attend to affairs on the Material Plane. Planetars often choose mortal champions to oppose threats they’re loath to face directly, involving themselves only if necessary. Roll on or choose a result from the Planetar Quests table to inspire what evil a planetar might recruit heroes to thwart.
+
+Planetar Quests
+
+| 1d6 | The Planetar Entreats a Mortal Hero To … |
+
+| --- | --- |
+
+| 1 | Convince a villain to meet with the angel. |
+
+| 2 | Find a loved one a villain believes is dead. |
+
+| 3 | Heal the loved one of an evil ruler. |
+
+| 4 | Inspire the defenders of a besieged holy site. |
+
+| 5 | Recover and destroy an evil Artifact. |
+
+| 6 | Reveal the true name of a devil to banish it. |
 
 [source: https://www.dndbeyond.com/monsters/5195165-planetar]: #

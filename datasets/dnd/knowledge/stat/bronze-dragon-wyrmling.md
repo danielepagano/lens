@@ -29,6 +29,10 @@ Repulsion Breath. Strength Saving Throw: DC 12, each creature in a 30-foot Cone.
 
 Bronze dragon wyrmlings believe they can solve any problems, and they seek to prove it. They often fixate on local challenges, such as drought or rampant banditry. While their zeal can be charming, these wyrmlings can get in over their heads and might then need help correcting mistakes.
 
+---
+
+### Bronze Dragons
+
 Where bronze dragons dwell, wonders flourish. Imaginative yet mindful, these metallic dragons work toward greatness and help others achieve all they can. They strive to preserve innovations, from the works of past civilizations to new discoveries, and they share such works widely. When dealing with shorter-lived beings, bronze dragons prefer to win them over through conversation and cultivation, but they don’t shy from battle when villains keep others from achieving their potential.
 
 Bronze dragons enjoy the power and endless possibilities of the sea, and they often make their lairs in places of natural beauty or communities they wish to preserve. Within their dwellings, bronze dragons hoard things they believe will be useful one day. They salvage treasure lost to the sea, reclaiming wealth or sunken ships.

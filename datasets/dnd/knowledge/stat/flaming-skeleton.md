@@ -28,6 +28,28 @@ Hurl Flame. Ranged Attack Roll: +4, range 60 ft. Hit: 7 (1d10 + 2) Fire damage.
 
 Flaming skeletons burn with unbridled necromantic energy. This magic grants them blazing attacks and greater awareness, which they use to command lesser Undead.
 
+---
+
+### Skeletons
+
 Skeletons rise at the summons of necromancers and foul spirits. Whether they’re the remains of the ancient dead or fresh bones bound to morbid ambitions, they commit deathless work for whatever forces reanimated them, often serving as guardians, soldiers, or laborers. In rare cases, skeletons are reanimated but given no particular direction. Roll on or choose a result from the Skeleton Pantomimes table to inspire how undirected skeletons behave.
+
+Skeleton Pantomimes
+
+| 1d6 | Left to Its Own Devices, the Skeleton … |
+
+| --- | --- |
+
+| 1 | Delivers meal salvers or ages-old correspondence to the crypt of its dead master. |
+
+| 2 | Endlessly trains in battle with other skeletons, despite being hacked to animate splinters. |
+
+| 3 | Mimics ways it entertained itself in life, such as acting, dancing, or reading. |
+
+| 4 | Performs a familiar task, such as cleaning, cooking, mining, or praying. |
+
+| 5 | Repeats its final moments of life. |
+
+| 6 | Stands guard at the post it protected in life. |
 
 [source: https://www.dndbeyond.com/monsters/5194996-flaming-skeleton]: #

@@ -24,6 +24,10 @@ Claw. Melee Attack Roll: +4, reach 5 ft. Hit: 4 (1d4 + 2) Slashing damage. If th
 
 Ghouls rise from the bodies of cannibals and villains with depraved hungers. They form packs out of shared voracity.
 
+---
+
+### Ghouls
+
 Packs of ghouls haunt the rotten corners of the world, ravenously hunting for corpses and those soon to be corpses. These gaunt, animate cadavers with unnaturally long tongues dwell in catacombs and ruins where they devour the contents of graves and paralyze foes with vicious claws.
 
 [source: https://www.dndbeyond.com/monsters/5195009-ghoul]: #

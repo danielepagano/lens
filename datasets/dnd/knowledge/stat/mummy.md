@@ -26,6 +26,32 @@ Common mummies are the remains of priests, nobles, or champions of faith that un
 
 Roll on or choose a result from the Mummy Resurrections table to determine why a mummy has returned from the dead.
 
+Mummy Resurrections
+
+| 1d8 | The Mummy Reanimates To … |
+
+| --- | --- |
+
+| 1 | Defend a holy site it was created to protect. |
+
+| 2 | Obey the summons of a mummy lord. |
+
+| 3 | Oppose an enemy who has returned to life. |
+
+| 4 | Protect its descendants from an ancient threat. |
+
+| 5 | Punish the progeny of those who cursed it. |
+
+| 6 | Reclaim treasures robbed from its crypt. |
+
+| 7 | Serve whoever speaks the prayer on its tomb. |
+
+| 8 | Slay anyone who sets eyes on it. |
+
+---
+
+### Mummies
+
 Mysterious rites and mighty faith can tie spirits to their corpses, binding them to their remains for all time. Should their resting places be violated, these beings, known as mummies, reanimate their deteriorating bodies to restore the sanctity of their tombs and punish those who disturbed their rest.
 
 Mummies pursue those who offend them, typically mortals who desecrate their resting places, steal their burial treasures, or defile sites tied to their faith. With undying rage, these ancient corpses go to extreme lengths to avenge themselves and restore what they need to find peace.

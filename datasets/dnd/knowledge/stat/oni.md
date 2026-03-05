@@ -35,4 +35,18 @@ Oni are elusive entities that inhabit dark forests and other wildernesses. By sh
 
 Oni torment villages that don’t pay them or other supernatural forces respect. Roll on or choose a result from the Oni Troubles table to inspire how an oni menaces such communities.
 
+Oni Troubles
+
+| 1d4 | The Oni Torments People By … |
+
+| --- | --- |
+
+| 1 | Charming people to perform nasty tricks. |
+
+| 2 | Claiming a bridge, gate, shrine, or trail and trying to eat anyone who comes near. |
+
+| 3 | Luring other monsters to the settlement. |
+
+| 4 | Playing drums that keep everyone awake. |
+
 [source: https://www.dndbeyond.com/monsters/5195150-oni]: #

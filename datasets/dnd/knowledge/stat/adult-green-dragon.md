@@ -26,7 +26,8 @@ Poison Breath (Recharge 5–6). Constitution Saving Throw: DC 18, each creature 
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 17):
 
-At Will: Detect Magic, Mind Spike (level 3 version) 1/Day: Geas
+At Will: Detect Magic, Mind Spike (level 3 version)
+1/Day: Geas
 
 ---
 **Legendary Actions**
@@ -44,9 +45,17 @@ Pounce. The dragon moves up to half its Speed, and it makes one Rend attack.
 
 The words of adult green dragons are as deadly as their poisonous breath. They are brilliant schemers that pride themselves on influencing communities near their lairs. They obsess over information and create vast spy networks. Many of these dragons seek magical methods of surveillance or domination, and they manipulate adventurers into hunting down lost magic to aid in such control.
 
+---
+
+### Green Dragons
+
 From forbidden forest depths, green dragons whisper evils into the world and manipulate the lives of those who listen. Elusive, conniving, and egotistical, these chromatic dragons patiently prey on the fears of shorter-lived beings, corrupting and isolating them. Green dragons might lurk amid labyrinthine wildernesses for centuries without revealing themselves; even their most devoted followers might know them only as the voice of the woodlands or a whisper in their dreams.
 
 Despite their might, most green dragons disdain physical violence, viewing combat as servants’ work and preferring to trick foes into dangerous or exploitative scenarios. These dragons collect “baubles” that embody their webs of manipulation and serve as tools of extortion, such as compromising documents, family heirlooms, and sentimental treasures.
+
+---
+
+### Green Dragon Lairs
 
 Green dragons lair in ancient forests, often shaping stands of massive trees into compounds of interwoven branches, hollow trunks, and caverns amid mighty roots. They might also dwell amid forested ruins, particularly the former homes of those they’ve conquered.
 

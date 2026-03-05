@@ -32,7 +32,8 @@ Necrotic Breath (Recharge 5–6). Constitution Saving Throw: DC 20, each creatur
 
 Spellcasting. The dracolich casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 19, +11 to hit with spell attacks):
 
-At Will: Detect Magic, Ray of Sickness (level 2 version) 1/Day Each: Create Undead (level 8 version), Finger of Death
+At Will: Detect Magic, Ray of Sickness (level 2 version)
+1/Day Each: Create Undead (level 8 version), Finger of Death
 
 ---
 **Legendary Actions**
@@ -48,6 +49,8 @@ Terrifying Presence. Wisdom Saving Throw: DC 19, each creature in a 30-foot Eman
 ---
 **Description**
 
+### Dracolich Lairs
+
 A dracolich lurks in a corrupted version of the lair it had in life. The region containing a dracolich’s lair is warped by its presence, creating the following effects:
 
 Sapping Mist. The area within 1 mile of the lair is Lightly Obscured by pale fog. Whenever a creature other than the dracolich or one of its allies finishes a Long Rest in that area, it must succeed on a DC 15 Constitution saving throw or gain 1 Exhaustion level.
@@ -55,5 +58,39 @@ Sapping Mist. The area within 1 mile of the lair is Lightly Obscured by pale fog
 Soul Drain. Creatures within 1 mile of the lair have Disadvantage on Death Saving Throws.
 
 If the dracolich is destroyed or moves its lair elsewhere, these effects end immediately. The effects resume if the dracolich gains a new body (see its Soul Gem trait).
+
+
+
+The vilest dragons seek to escape the grip of death, employing ageless secrets and blasphemous magic to become horrors called dracoliches. These deathless dragons bind their spirits to gems and magically animate their rotting corpses. Eventually becoming skeletal horrors, dracoliches continue the centuries-spanning plots they pursued in life, seek revenge on those that brought them low, and strive toward vicious goals they couldn’t indulge in life.
+
+Dracoliches combine the corrupt immortality of the undead with the legendary power of dragons. A dracolich retains a breath weapon, but it is a chilling necrotic blast. These terrors gradually sicken the land near their lairs and attract sinister followers—usually other undead or cultists seeking to revel in their terrible might. Living dragons of all types loathe and seek to destroy dracoliches, viewing them as distortions of draconic magic.
+
+There are untold profane routes by which a dragon might become a dracolich. However one is created, a dracolich chooses a gem that becomes the anchor for its spirit and binds the deathless dragon to the world. So long as a dracolich is on the same plane of existence as its soul gem, the dracolich can survive the destruction of its physical body. Its spirit retreats into the gem if the dracolich’s body is destroyed, and the monster might one day regain its terrifying form. Dracoliches often sequester their soul gems within meaningful treasure from their hoard or in unassuming baubles. Roll on or choose a result from the Dracolich Soul Gem Vessels table to inspire what holds a dracolich’s soul gem.
+
+Dracolich Soul Gem Vessels
+
+| 1d10 | A Dracolich’s Soul Gem Is Hidden In... |
+
+| --- | --- |
+
+| 1 | Another dragon’s treasure hoard. |
+
+| 2 | The body of a servant or an ancestor. |
+
+| 3 | The core of a dracolich’s melted hoard. |
+
+| 4 | A corrupted dragon egg. |
+
+| 5 | A dragon horn a hero took as a trophy. |
+
+| 6 | A nation’s royal or religious treasure. |
+
+| 7 | A powerful magic item. |
+
+| 8 | A source of magical wonders, such as a giant tree or mystical pool. |
+
+| 9 | The vault of an archdevil, a wicked god, or another extraplanar villain. |
+
+| 10 | The weapon that slew the dracolich. |
 
 [source: https://www.dndbeyond.com/monsters/5194972-dracolich]: #

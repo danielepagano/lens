@@ -22,12 +22,17 @@ Hail of Stone (Recharge 5–6). Constitution Saving Throw: DC 12, each creature 
 
 Spellcasting. The lizardfolk casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 12):
 
-At Will: Elementalism 1/Day Each: Meld into Stone, Speak with Plants, Spike Growth
+At Will: Elementalism
+1/Day Each: Meld into Stone, Speak with Plants, Spike Growth
 
 ---
 **Description**
 
 Lizardfolk geomancers draw magic from the natural world, using it to protect their people and territories.
+
+---
+
+### Lizardfolk
 
 Lizardfolk dwell in wildernesses suffused with primal magic. While many lizardfolk are Humanoids with varied skills, some forge powerful bonds with the Elemental Plane of Earth, granting them magical connections to the cycle of growth and rebirth.
 

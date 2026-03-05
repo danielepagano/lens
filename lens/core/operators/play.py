@@ -5,42 +5,41 @@ describing what player characters observe, hear, and encounter — without
 writing what they think, feel, decide, or do.  The operator stops at decision
 or action points, giving the player space to respond.
 
-Requires at least one knowledge object tagged ``pc`` (player character) to be
-pinned in the current context, so the LLM knows who the player characters are.
+Requires ``rules.dnd`` and ``rules.engagement`` to be pinned (they carry the
+full ruleset and the player-AI contract), plus at least one ``pc.*`` KB object
+so the LLM knows who the player characters are.
 """
 
 from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator, OperatorError
-from lens.core.tools import OperatorToolDef
 from lens.core.project import ProjectSession
+from lens.core.tools import OperatorToolDef
 
 # ---------------------------------------------------------------------------
 # Prompt constants
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = (
-    "You are a Game Master narrating a tabletop RPG session. "
-    "Write in second person or close third person, describing what the player "
-    "characters observe, hear, smell, and experience in vivid detail. "
-    "IMPORTANT: Do NOT write what player characters think, feel, decide, or do — "
-    "their agency belongs to the player. "
-    "Stop narrating when a player character faces a decision, must act, or can react. "
-    "End your response at a moment that invites player input: a question, a threat, "
-    "an open door, a pause before action. "
-    'A player character will have a KB entry and one of its TAGS will be "pc";'
-    'only characters that have a KB entry are player-controlled, for others you can decide as normal. '
+    "You are the Game Master. "
+    "The Rules of Engagement are pinned in your context — follow them exactly. "
+    "Player characters are identified by their pinned KB objects (id prefix 'pc.'). "
+    "Write from GM voice only: describe what the world does, what NPCs say and do, "
+    "what the environment presents. "
+    "Never write PC decisions, thoughts, feelings, or roll any dice. "
+    "Stop at every decision point and yield to the player."
 )
+
+REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 
 INSTRUCTION_CONTINUE = "Continue the scene, then pause for player response."
 
 INSTRUCTION_WITH_PROMPT = (
     "Continue the scene following these instructions: {prompt}. "
-    "Then yeld to the user to allow their player(s) to act when appropriate."
+    "Then yield to the user to allow their player(s) to act when appropriate."
 )
 
 
@@ -52,7 +51,6 @@ INSTRUCTION_WITH_PROMPT = (
 class PlayOperator(Operator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = False
-    # example operator dataset limiting
     limited_to_datasets: ClassVar[list[str]] = ['dnd']
 
     @property
@@ -70,7 +68,7 @@ class PlayOperator(Operator):
         cursor: NarrativeNode,
         pins: list[str],
     ) -> None:
-        """Require at least one KB object tagged ``pc`` in the current context.
+        """Require ``rules.dnd``, ``rules.engagement``, and at least one ``pc.*`` pin.
 
         Checks explicit *pins* plus any ``kb_pin`` entries in the cursor's
         front matter.
@@ -81,23 +79,21 @@ class PlayOperator(Operator):
             if isinstance(fm_raw, list) else []
         )
         all_pins = fm_pins + pins
+        bases = {p.rstrip("+") for p in all_pins}
 
-        if not all_pins:
+        missing = REQUIRED_PINS - bases
+        if missing:
             raise OperatorError(
-                "play requires at least one player character pinned — "
-                "add a KB object tagged 'pc' with --pin or kb_pin front matter"
+                "play requires the following KB objects to be pinned: "
+                + ", ".join(sorted(missing))
+                + " — add them with --pin or kb_pin front matter"
             )
 
-        kb = KnowledgeStore.for_project(session.project_root)
-        for pin_id in all_pins:
-            base = pin_id.rstrip("+")
-            if "pc" in kb.get_tags(base):
-                return
-
-        raise OperatorError(
-            "play requires at least one player character (tagged 'pc') to be pinned — "
-            "none of the current pins carry the 'pc' tag"
-        )
+        if not any(b.startswith("pc.") for b in bases):
+            raise OperatorError(
+                "play requires at least one player character (pc.*) to be pinned — "
+                "add a pc.* KB object with --pin or kb_pin front matter"
+            )
 
 
 # ---------------------------------------------------------------------------

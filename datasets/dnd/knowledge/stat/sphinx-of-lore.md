@@ -26,7 +26,8 @@ Mind-Rending Roar (Recharge 5–6). Wisdom Saving Throw: DC 16, each enemy in a 
 
 Spellcasting. The sphinx casts one of the following spells, requiring no Material components and using Intelligence as the spellcasting ability (spell save DC 16):
 
-At Will: Detect Magic, Identify, Mage Hand, Minor Illusion, Prestidigitation1/Day Each: Dispel Magic, Legend Lore, Locate Object, Plane Shift, Remove Curse, Tongues
+At Will: Detect Magic, Identify, Mage Hand, Minor Illusion, Prestidigitation
+1/Day Each: Dispel Magic, Legend Lore, Locate Object, Plane Shift, Remove Curse, Tongues
 
 ---
 **Legendary Actions**
@@ -42,7 +43,15 @@ Weight of Years. Constitution Saving Throw: DC 16, one creature the sphinx can s
 
 Sphinxes of lore each know a great secret and protect it all costs. This truth might take the form of an ancient text, a magical puzzle, or a path to another world. These sphinxes might gain reputations as sages or oracles, but they typically dwell far from civilization.
 
+---
+
+### Sphinxes
+
 Sphinxes protect the secrets of the multiverse. Formed from the spirits of sages and explorers, sphinxes know the power of truth and the importance of preserving it. They share their wisdom only with those who prove themselves wise or overcome tests of worthiness, such as riddles or battles with dangerous beasts. Through their existences, sphinxes might change form as they gain more nuanced understanding of cosmic enigmas.
+
+---
+
+### Sphinx Lairs
 
 Sphinxes typically dwell in places that hold great knowledge or prophetic magic.
 

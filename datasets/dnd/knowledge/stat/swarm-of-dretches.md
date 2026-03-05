@@ -26,6 +26,10 @@ Rend. Melee Attack Roll: +4, reach 5 ft. Hit: 12 (3d6 + 2) Slashing damage, or 9
 
 Swarms of dretches sometimes escape the Abyss onto other planes of existence, or they might be part of a demonic invasion. Without direction, these crude demons rampage and despoil with cruel enthusiasm.
 
+---
+
+### Dretches
+
 The servants and victims of greater demons, dretches embody petty instincts, chaotic impulses, and violent urges. Dretches exist in unfathomable numbers in the depths of the Abyss, where their reeking throngs fill vast demonic hordes.
 
 [source: https://www.dndbeyond.com/monsters/5195223-swarm-of-dretches]: #

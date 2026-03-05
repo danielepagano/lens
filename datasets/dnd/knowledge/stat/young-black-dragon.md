@@ -27,6 +27,10 @@ Acid Breath (Recharge 5–6). Dexterity Saving Throw: DC 14, each creature in a 
 
 Most young black dragons claim a hidden lair—typically a dismal place accessible through deadly ruins or a treacherous bog. They delight in exploiting fearful servants and might terrorize small communities or impress groups of kobolds or troglodytes into their service. Some ally themselves with powerful undead such as death knights and vampires or aberrations such as aboleths and kuo-toa.
 
+---
+
+### Black Dragons
+
 Black dragons delight in suffering and ruin. While other chromatic dragons scheme for power and wealth, these dragons seek to tear down all they see and rule over what remains.
 
 Black dragons are terrifying creatures with curved horns and withered visages suggestive of fiendish skulls. They typically inhabit stagnant swamps, crumbling ruins, or places of magical or environmental corruption. Their acid breath scars their domains, eroding the features from ancient statues and leaving nature with festering wounds.

@@ -26,7 +26,8 @@ Baleful Command (Recharge 5–6). Wisdom Saving Throw: DC 18, each enemy in a 30
 
 Spellcasting. The rakshasa casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 18):
 
-At Will: Detect Magic, Detect Thoughts, Disguise Self, Mage Hand, Minor Illusion 1/Day Each: Fly, Invisibility, Major Image, Plane Shift
+At Will: Detect Magic, Detect Thoughts, Disguise Self, Mage Hand, Minor Illusion
+1/Day Each: Fly, Invisibility, Major Image, Plane Shift
 
 ---
 **Description**

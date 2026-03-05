@@ -22,6 +22,10 @@ Greataxe. Melee Attack Roll: +5, reach 5 ft. Hit: 9 (1d12 + 3) Slashing damage.
 
 Berserkers might fight for personal glory or form motivated forces or howling hordes.
 
+---
+
+### Berserkers
+
 Gripped by the adrenaline of battle, berserkers are reckless invaders, pit fighters, and other ferocious warriors.
 
 [source: https://www.dndbeyond.com/monsters/4904621-berserker]: #

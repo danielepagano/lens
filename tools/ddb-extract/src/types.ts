@@ -60,6 +60,9 @@ export interface EquipmentData {
   damage?: string;
   weight?: string;
   properties?: string;
+  armorClass?: string;
+  strength?: string;
+  stealth?: string;
   description: string;
 }
 

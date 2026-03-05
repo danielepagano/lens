@@ -25,6 +25,10 @@ Longsword. Melee Attack Roll: +6, reach 5 ft. Hit: 15 (2d10 + 4) Slashing damage
 
 Guard captains often have ample professional experience. They might be accomplished bodyguards, protectors of magic treasures, veteran watch members, or similar wardens.
 
+---
+
+### Guards
+
 Guards protect people, places, and things, either for pay or from a sense of duty. They might perform their duties vigilantly or distractedly. Some raise alarms at the first sign of danger and defend their charges with their lives. Others flee outright if their compensation doesn’t match the danger they face.
 
 [source: https://www.dndbeyond.com/monsters/5195064-guard-captain]: #

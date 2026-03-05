@@ -24,6 +24,10 @@ Spore Bomb (Recharge 5–6). Constitution Saving Throw: DC 15, each creature in 
 
 A violet fungus necrohulk forms when a violet fungus colony infests and animates an ample heap of decay. This necrohulk attacks prey and spreads fungal spores for the colony.
 
+---
+
+### Fungi
+
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
 
 [source: https://www.dndbeyond.com/monsters/5195253-violet-fungus-necrohulk]: #

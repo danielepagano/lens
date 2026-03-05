@@ -29,7 +29,8 @@ Earth Burst. Ranged Attack Roll: +10, range 120 ft. Hit: 15 (2d8 + 6) Bludgeonin
 
 Spellcasting. The dao casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16):
 
-At Will: Detect Evil and Good, Detect Magic, Stone Shape 1/Day Each: Gaseous Form, Invisibility, Move Earth, Passwall, Plane Shift, Tongues, Wall of Stone
+At Will: Detect Evil and Good, Detect Magic, Stone Shape
+1/Day Each: Gaseous Form, Invisibility, Move Earth, Passwall, Plane Shift, Tongues, Wall of Stone
 
 ---
 **Description**

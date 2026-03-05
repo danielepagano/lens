@@ -27,6 +27,10 @@ Pseudopod. Melee Attack Roll: +3, reach 5 ft. Hit: 10 (2d8 + 1) Acid damage. Non
 
 Gray oozes appear in areas affected by unpredictable magic. Magic-users who fail in their attempts to bind elemental spirits to the bodies of Constructs might also accidentally create gray oozes.
 
+---
+
+### Gray Oozes
+
 Gray oozes are predatory, corrosive slimes that blend in with stony surroundings.
 
 [source: https://www.dndbeyond.com/monsters/4904776-gray-ooze]: #

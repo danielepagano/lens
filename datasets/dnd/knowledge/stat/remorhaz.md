@@ -22,6 +22,10 @@ Bite. Melee Attack Roll: +11, reach 10 ft. Hit: 18 (2d10 + 7) Piercing damage pl
 
 Full-grown remorhazes are single-minded ambush predators. They attempt to bite prey and trap it against their searing bodies, then swallow their meal whole. Remorhazes eat as much as they can, since they might go months without feeding.
 
+---
+
+### Remorhazes
+
 Remorhazes are centipede-like terrors that burrow through snow and ice to ambush smaller creatures that trespass in their frozen territories.
 
 [source: https://www.dndbeyond.com/monsters/5195181-remorhaz]: #

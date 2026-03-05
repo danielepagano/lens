@@ -27,7 +27,8 @@ Hurl Flame. Ranged Attack Roll: +8, range 120 ft. Hit: 24 (7d6) Fire damage.
 
 Spellcasting. The efreeti casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16):
 
-At Will: Detect Magic, Elementalism 1/Day Each: Gaseous Form, Invisibility, Major Image, Plane Shift, Tongues, Wall of Fire (level 7 version)
+At Will: Detect Magic, Elementalism
+1/Day Each: Gaseous Form, Invisibility, Major Image, Plane Shift, Tongues, Wall of Fire (level 7 version)
 
 ---
 **Description**

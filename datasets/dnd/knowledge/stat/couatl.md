@@ -21,7 +21,8 @@ Constrict. Strength Saving Throw: DC 15, one Medium or smaller creature the coua
 
 Spellcasting. The couatl casts one of the following spells, requiring no spell components and using Wisdom as the spellcasting ability (spell save DC 15):
 
-At Will: Detect Evil and Good, Detect Magic, Detect Thoughts, Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell)1/Day Each: Create Food and Water, Dream, Greater Restoration, Scrying, Sleep
+At Will: Detect Evil and Good, Detect Magic, Detect Thoughts, Shapechange (Beast or Humanoid form only, no Temporary Hit Points gained from the spell, and no Concentration or Temporary Hit Points required to maintain the spell)
+1/Day Each: Create Food and Water, Dream, Greater Restoration, Scrying, Sleep
 
 ---
 **Description**

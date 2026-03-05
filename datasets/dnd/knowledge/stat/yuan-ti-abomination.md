@@ -26,7 +26,8 @@ Poison Spray (Recharge 5–6). Constitution Saving Throw: DC 14, each creature i
 
 Spellcasting (Yuan-ti Form Only). The yuan-ti casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 15):
 
-At Will: Animal Friendship (snakes only)3/Day: Suggestion
+At Will: Animal Friendship (snakes only)
+3/Day: Suggestion
 
 ---
 **Description**
@@ -35,10 +36,32 @@ Yuan-ti abominations have traded away nearly all evidence of their humanity, com
 
 The true threat of yuan-ti abominations stems not from their physical might but from their cunning. These masterminds often lead cultlike cells of other yuan-ti and direct them in enacting elaborate conspiracies. Abominations avoid jeopardizing themselves, typically scheming from hidden bastions where they’re protected by yuan-ti and serpent guardians. These coldhearted leaders have a unique understanding of the supernatural forces that grant yuan-ti their powers, and they usually have insidious magical traps and contingencies at their disposal.
 
+---
+
+### Yuan-ti
+
 Exploiting pacts with sinister supernatural forces, yuan-ti bargain away their humanity for the lethality and predatory deviousness of serpents. From hidden bastions, they manipulate rulers and the wealthy, seeking to control the world. Many yuan-ti possess venomous magic, which often manifests as fangs or striking serpents.
 
 Yuan-ti have humanlike forms with a variety of horrifying serpentine transformations. Some have a scattering of reptilian scales, while others are giants that are more snake than human. Typically, the more snakelike yuan-ti are, the greater esteem they hold among their kind.
 
 Yuan-ti might gain their reptilian features through dangerous supernatural rites. Roll on or choose a result from the Yuan-ti Transformations table to inspire how yuan-ti obtain their serpentine aspects.
+
+Yuan-ti Transformations
+
+| 1d6 | A Yuan-ti Gained Its Snake Features From … |
+
+| --- | --- |
+
+| 1 | Bargaining parts of its soul to a pantheon of serpentine demigods. |
+
+| 2 | A curse laid on its people in the distant past. |
+
+| 3 | The dream-venom of Merrshaulk, a slumbering snake god. |
+
+| 4 | Experiments by spirit nagas or other yuan-ti. |
+
+| 5 | A ritual involving the skin of a fiendish snake. |
+
+| 6 | Trials to excise its “weak” human parts. |
 
 [source: https://www.dndbeyond.com/monsters/5195288-yuan-ti-abomination]: #

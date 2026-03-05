@@ -20,6 +20,10 @@ Beak. Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Slashing damage.
 
 Alone or in small groups, axe beaks stalk prey to feed their flocks. When working together, axe beaks use rudimentary tactics, with some distracting threats while others strike vulnerable targets or rush young axe beaks to safety.
 
+---
+
+### Axe Beaks
+
 Axe beaks are flightless, birdlike creatures with distinctive axe-shaped beaks. Swift predators, they chase down prey and use their beaks to hack through foliage protecting their quarry. Axe beaks live in varied environments. Colorfully plumed axe beaks race across tropical plains, while axe beaks with snowy feathers hunt the tundra.
 
 Axe beaks are difficult to train, but those hatched and raised in captivity can become reliable mounts.

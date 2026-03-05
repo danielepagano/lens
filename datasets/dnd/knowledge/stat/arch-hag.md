@@ -30,7 +30,8 @@ Crackling Wave. Dexterity Saving Throw: DC 22, each creature in a 60-foot Cone. 
 
 Spellcasting. The hag casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 22):
 
-At Will: Detect Thoughts, Dimension Door,Dispel Magic, Hypnotic Pattern 2/Day Each: Mass Suggestion, Modify Memory, Plane Shift
+At Will: Detect Thoughts, Dimension Door,Dispel Magic, Hypnotic Pattern
+2/Day Each: Mass Suggestion, Modify Memory, Plane Shift
 
 ---
 **Reactions**
@@ -49,6 +50,8 @@ Malicious Magic. The hag uses Spellcasting to cast Dimension Door or Hypnotic Pa
 ---
 **Description**
 
+### Arch-hag Lairs
+
 Each arch-hag creates a magical home, such as a hidden demiplane, a mansion atop a storm cloud or—in the case of the arch-hag Baba Yaga—a hut atop giant chicken legs. The interiors of these lairs frequently change or exhibit bewildering features.
 
 The region containing an arch-hag’s lair is altered by its presence, creating the following effects:
@@ -58,5 +61,41 @@ Lapsus Linguae. Creatures (excluding the hag and its allies) within 1 mile of th
 Meddlesome Magic. Whenever a creature other than the hag or its allies finishes a Long Rest while within 1 mile of the lair, the next time that creature casts a spell using a spell slot, it also casts Confusion centered on itself. The spell uses the creature’s spellcasting ability and doesn’t require Concentration.
 
 If the arch-hag is destroyed or moves its lair elsewhere, these effects end immediately.
+
+
+
+Immortal and unpredictable, arch-hags hoard secrets and strike magical bargains, altering fate to indulge their fickle whims. These timeless schemers pursue the secrets of the multiverse and work strange magic in pursuit of their inscrutable goals.
+
+Arch-hags are unpredictable, self-interested, and greedy, with bizarre fascinations and affectations. Nevertheless, they often make deals to further their plots. These hags are fonts of secret knowledge, particularly lore regarding forbidden magic and multiversal secrets. They might share their knowledge, but their secrets always have a price. In trade for their secrets, arch-hags might request peculiar errands, valuable magic items, or preternatural currency, like one’s memories, a year of one’s life, or the ability to cry.
+
+Most arch-hags avoid battle, but if forced to fight, they unleash dangerous magic, such as spectral claws, arcing lightning, and mind-bending spells. An arch-hag can curse other magic-users, confounding the spellcasters’ incantations and forcing the spellcasters to say the opposite of what they mean. Even if an arch-hag is brought low, its preparations allow it to magically slip away and begin plotting its revenge.
+
+Every arch-hag has a unique weakness tied to a fateful encounter the hag had in the past or some- thing that embodies the antithesis of the hag’s magic. A hag goes out of its way to keep this vulnerability secret. Although an arch-hag isn’t physically harmed by its weakness, it can be destroyed only while its weakness is nearby. Roll on or choose a result from the Arch-hag Anathemas table to inspire an arch-hag’s weakness.
+
+Arch-hag Anathemas
+
+| 1d10 | The Arch-hag’s Weakness Is ... |
+
+| --- | --- |
+
+| 1 | The bones of the arch-hag’s first love. |
+
+| 2 | A devil’s tear. |
+
+| 3 | An egg with a miniature castle inside. |
+
+| 4 | A flower that blooms only when time stops. |
+
+| 5 | A gift from the hag’s twin. |
+
+| 6 | One of the hag’s missing teeth. |
+
+| 7 | The multiverse’s worst pun. |
+
+| 8 | A viciously mauled scarecrow. |
+
+| 9 | A star pulled from the sky. |
+
+| 10 | A thread from the Lady of Pain’s robes. |
 
 [source: https://www.dndbeyond.com/monsters/5194900-arch-hag]: #

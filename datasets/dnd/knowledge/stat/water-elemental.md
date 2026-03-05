@@ -30,4 +30,18 @@ Spirits of the Elemental Plane of Water form shapeless liquids into water elemen
 
 Water elementals’ shapes are influenced by the liquid bodies in which they form. Roll on or choose a result from the Water Elemental Compositions table to inspire a water elemental’s features.
 
+Water Elemental Compositions
+
+| 1d4 | The Water Elemental’s Body Features … |
+
+| --- | --- |
+
+| 1 | Chilling or near-boiling temperatures. |
+
+| 2 | Energetic effervescence. |
+
+| 3 | Muddy, polluted, or crystal-clear water. |
+
+| 4 | Seaweed, tiny fish, or other sea life. |
+
 [source: https://www.dndbeyond.com/monsters/5195261-water-elemental]: #

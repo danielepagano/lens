@@ -25,6 +25,10 @@ Sleep Breath. Constitution Saving Throw: DC 11, each creature in a 15-foot Cone.
 
 Brass dragon wyrmlings are relentlessly curious. These dragons eagerly engage approachable creatures and are quick to explore any place that has an interesting story. Once they hear tales of adventure, many are keen to start their own quests.
 
+---
+
+### Brass Dragons
+
 Gregarious and outgoing, brass dragons relish sharing knowledge and stories. Although these metallic dragons favor arid lands, they cheerfully journey considerable distances to visit friendly creatures, pass on what they’ve learned, and collect news. Though good natured, brass dragons don’t shirk from combat when necessary, thwarting foes with magical sleep and searing them with flame.
 
 Brass dragons favor warm climes, particularly steppes and rocky or sandy deserts, and they usually dwell near prominent crossroads or oases that regularly draw visitors. They enjoy adopting Humanoid forms, disguising themselves as traveling merchants, scholars, storytellers, or anyone else invested in others’ stories.

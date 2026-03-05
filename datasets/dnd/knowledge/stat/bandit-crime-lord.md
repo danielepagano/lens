@@ -27,8 +27,30 @@ Pistol. Ranged Attack Roll: +9, range 30/90 ft. Hit: 10 (1d10 + 5) Piercing dama
 
 Bandit crime lords manipulate shadowy organizations and prioritize their own survival over any single lackey or plot.
 
+---
+
+### Bandits
+
 Bandits use the threat of violence to take what they want. Such criminals include gang members, desperadoes, and lawless mercenaries. Yet not all bandits are motivated by greed. Some are driven to lives of crime by unjust laws, desperation, or the threats of merciless leaders.
 
 Roll on or choose a result from the Bandit Motivations table to determine the circumstances behind a bandit’s crimes.
+
+Bandit Motivations
+
+| 1d6 | The Bandit ... |
+
+| --- | --- |
+
+| 1 | Fights only oppressors. |
+
+| 2 | Is an ex-soldier who was discarded by their nation and now takes what they were promised. |
+
+| 3 | Is in a gang that views nonmembers as foes. |
+
+| 4 | Hesitantly serves a villainous leader. |
+
+| 5 | Secretly works for a government or a regional ruler to sow chaos. |
+
+| 6 | Takes what they need to survive. |
 
 [source: https://www.dndbeyond.com/monsters/5194913-bandit-crime-lord]: #

@@ -26,4 +26,26 @@ Specters are bodiless, life-devouring spirits drawn to darkness and negative emo
 
 Specters seek creatures and locations that exude evil and feed on the suffering they inspire. Roll on or choose a result from the Specter Haunts table to inspire where a specter lurks.
 
+Specter Haunts
+
+| 1d8 | The Specter Lurks Near … |
+
+| --- | --- |
+
+| 1 | A community afflicted by curses, grudges, plagues, or tragedies. |
+
+| 2 | An evil Artifact or a deadly magical device. |
+
+| 3 | The lair of a Fiend or an Undead. |
+
+| 4 | The place where a villain died or is buried. |
+
+| 5 | A portal to the Lower Planes, Negative Plane, or Shadowfell. |
+
+| 6 | The sanctuary of a necromancer or death cult. |
+
+| 7 | A secluded monument binding wicked souls. |
+
+| 8 | The site of a disaster or mass death. |
+
 [source: https://www.dndbeyond.com/monsters/5195210-specter]: #

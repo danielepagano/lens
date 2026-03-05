@@ -46,11 +46,19 @@ Pounce. The dragon can move up to half its Speed, and it makes one Rend attack.
 
 By the time they’re adults, black dragons are among the greatest terrors in the lands they claim. Wretched swamps and monster-haunted ruins grow more dismal and spread under an adult black dragon’s influence. Morbid cultists and doomsayers frequently gather in the dragon’s service, bringing with them undead terrors that answer to the black dragon and aid it in spreading ruin to nearby bastions of beauty and peace.
 
+---
+
+### Black Dragons
+
 Black dragons delight in suffering and ruin. While other chromatic dragons scheme for power and wealth, these dragons seek to tear down all they see and rule over what remains.
 
 Black dragons are terrifying creatures with curved horns and withered visages suggestive of fiendish skulls. They typically inhabit stagnant swamps, crumbling ruins, or places of magical or environmental corruption. Their acid breath scars their domains, eroding the features from ancient statues and leaving nature with festering wounds.
 
 Black dragons hoard tarnished symbols of hope and relics of fallen empires. The more sought-after the treasure, the more black dragons prize it—particularly if they were responsible for it being lost.
+
+---
+
+### Black Dragon Lairs
 
 Black dragons lurk in dismal ruins, polluted bogs, or other sites gripped by decay.
 

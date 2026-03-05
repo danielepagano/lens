@@ -24,6 +24,10 @@ Heavy Crossbow. Ranged Attack Roll: +3, range 100/400 ft. Hit: 6 (1d10 + 1) Pier
 
 Toughs might work in groups at the direction of a leader, or individual toughs might bully weaker folk into doing what they say.
 
+---
+
+### Toughs
+
 Bodyguards, belligerents, and laborers, toughs rely on their physical strength to intimidate foes. They might be brawny criminals, rowdy tavern goers, seasoned workers, or anyone who uses their muscle to get what they want.
 
 [source: https://www.dndbeyond.com/monsters/5195235-tough]: #

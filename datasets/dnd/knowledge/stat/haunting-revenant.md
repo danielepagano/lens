@@ -32,6 +32,10 @@ Haunting revenants possess ruins and forsaken places connected with their deaths
 
 The places haunting revenants lurk swiftly gain infamous reputations.
 
+---
+
+### Revenants
+
 Wrathful spirits bent on revenge, revenants possess corpses and other materials, using them to seek justice or vent their rage on those who wronged them. Revenants refuse to rest until those they seek to punish are no more. If their bodies are destroyed, revenants claim new forms and continue their ruthless quests.
 
 [source: https://www.dndbeyond.com/monsters/5195070-haunting-revenant]: #

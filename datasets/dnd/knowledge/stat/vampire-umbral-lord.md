@@ -17,7 +17,10 @@ Shadow Escape. If the vampire drops to 0 Hit Points outside its resting place, i
 
 Vampire Weakness. The vampire has these weaknesses:
 
-Forbiddance. The vampire can’t enter a residence without an invitation from an occupant.Running Water. The vampire takes 20 Acid damage if it ends its turn in running water.Stake to the Heart. If a weapon that deals Piercing damage is driven into the vampire’s heart while the vampire has the Incapacitated condition in its resting place, the vampire has the Paralyzed condition until the weapon is removed.Sunlight. The vampire takes 20 Radiant damage if it starts its turn in sunlight. While in sunlight, it has Disadvantage on attack rolls and ability checks.
+Forbiddance. The vampire can’t enter a residence without an invitation from an occupant.
+Running Water. The vampire takes 20 Acid damage if it ends its turn in running water.
+Stake to the Heart. If a weapon that deals Piercing damage is driven into the vampire’s heart while the vampire has the Incapacitated condition in its resting place, the vampire has the Paralyzed condition until the weapon is removed.
+Sunlight. The vampire takes 20 Radiant damage if it starts its turn in sunlight. While in sunlight, it has Disadvantage on attack rolls and ability checks.
 
 ---
 **Actions**
@@ -42,6 +45,8 @@ Umbral Strike. The vampire moves up to half its Speed, and it makes one Grave St
 ---
 **Description**
 
+### Vampire Lairs
+
 Vampires and vampire umbral lords create sanctuaries apart from the living, whether hidden in cosmopolitan cities or sequestered in ruins where they dwelled in life.
 
 The region containing a vampire’s lair is warped by its presence, creating the following effects:
@@ -53,5 +58,35 @@ Looming Shadows. Shadows within 1 mile of the lair seem to move as if alive. Any
 Mists. The area within 1 mile of the lair is Lightly Obscured by a persistent, creeping fog. The vampire and any creatures of its choice are unaffected by the fog.
 
 If the vampire dies or moves its lair elsewhere, these effects end immediately.
+
+
+
+Vampire umbral lords embrace their ties to the darkness, devoting themselves to sinister powers in exchange for access to forbidden magic.
+
+---
+
+### Vampires
+
+Vampires disguise their accursed, immortal natures, passing as mortals to feed on the blood of the living. While the youngest vampires might be little more than bloodthirsty servants of their creators, the eldest possess incredible cunning and control over supernatural forces of the night.
+
+Undead vampires lie dormant during the day, retreating to resting places hidden from foes and the sun’s searing rays. Roll on or choose a result from the Vampire Resting Places table to inspire a vampire’s grim sanctuary.
+
+Vampire Resting Places
+
+| 1d6 | The Vampire’s Resting Place Is … |
+
+| --- | --- |
+
+| 1 | Among the roots of a dead tree. |
+
+| 2 | At the bottom of a stagnant pool. |
+
+| 3 | A coffin filled with grave dirt. |
+
+| 4 | A large pot full of blood or vinegar. |
+
+| 5 | A space accessible only by shape-shifting. |
+
+| 6 | Within a statue or suit of armor. |
 
 [source: https://www.dndbeyond.com/monsters/5195250-vampire-umbral-lord]: #

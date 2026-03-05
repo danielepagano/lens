@@ -22,7 +22,8 @@ Corrupting Touch. Wisdom Saving Throw: DC 13, one creature the lamia can see wit
 
 Spellcasting. The lamia casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 13):
 
-At Will: Disguise Self (can appear as a Large or Medium biped), Minor Illusion 1/Day Each: Geas, Major Image, Scrying
+At Will: Disguise Self (can appear as a Large or Medium biped), Minor Illusion
+1/Day Each: Geas, Major Image, Scrying
 
 ---
 **Description**
@@ -30,5 +31,23 @@ At Will: Disguise Self (can appear as a Large or Medium biped), Minor Illusion 1
 Legends say the first lamia was an ambitious ruler who made a sinister bargain with the demon lord Graz’zt for everlasting majesty. As a consequence, the ruler was transformed into a lamia, a monster with the body of a lion and an accursed touch.
 
 Lamias either are descendants of that first lamia or have made similar deals. They often dwell near ruins, seeking mysterious magic they can use to gain riches and influence. Lamias use magical illusions and enchantments to trick others into serving them. They sometimes work with bandits to abduct travelers, releasing captives only if they accept a dangerous bargain. Roll on or choose a result from the Lamia Pacts table to inspire a lamia’s desires.
+
+Lamia Pacts
+
+| 1d6 | The Lamia Compels the Bargainer To … |
+
+| --- | --- |
+
+| 1 | Bring it a possession from a ruler or noble. |
+
+| 2 | Create a map of a dungeon or ruin. |
+
+| 3 | Escort it through a nearby community’s gate. |
+
+| 4 | Place a strange idol in a specific site or home. |
+
+| 5 | Remove a magic item’s curse, then return it. |
+
+| 6 | Slay a monster and retrieve a specific organ. |
 
 [source: https://www.dndbeyond.com/monsters/5195103-lamia]: #

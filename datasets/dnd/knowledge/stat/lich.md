@@ -26,7 +26,9 @@ Paralyzing Touch. Melee Attack Roll: +12, reach 5 ft. Hit: 15 (3d6 + 5) Cold dam
 
 Spellcasting. The lich casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 20):
 
-At Will: Detect Magic, Detect Thoughts, Dispel Magic, Fireball (level 5 version), Invisibility, Lightning Bolt (level 5 version), Mage Hand, Prestidigitation 2/Day Each: Animate Dead, Dimension Door, Plane Shift 1/Day Each: Chain Lightning, Finger of Death, Power Word Kill, Scrying
+At Will: Detect Magic, Detect Thoughts, Dispel Magic, Fireball (level 5 version), Invisibility, Lightning Bolt (level 5 version), Mage Hand, Prestidigitation
+2/Day Each: Animate Dead, Dimension Door, Plane Shift
+1/Day Each: Chain Lightning, Finger of Death, Power Word Kill, Scrying
 
 ---
 **Reactions**
@@ -55,9 +57,39 @@ A lich’s age and origin influences its form. Older liches appear as little mor
 
 Although liches don’t fear death, they’re not free from the ravages of time. Over ages, some liches lose their connection to time and the physical world, degenerating into demiliches.
 
+---
+
+### Lich Spirit Jars
+
 The process of becoming a lich is involved, dangerous, and unique to each would-be lich. If the rite succeeds, the lich’s soul is bound to a spirit jar, a specially prepared magical repository. This relic anchors the lich’s spirit to the world and preserves it should the lich’s body be destroyed. A lich can be slain only if its spirit jar is ruined. As such, a lich goes to great lengths to hide and protect its spirit jar.
 
 Spirit jars are typically small, well-made objects that were meaningful to a lich in life. Roll on or choose a result from the Lich Spirit Jar table to inspire where a lich hides its soul.
+
+Lich Spirit Jars
+
+| 1d8 | The Lich’s Spirit Jar Is … |
+
+| --- | --- |
+
+| 1 | A bottle or puzzle box inscribed with sigils. |
+
+| 2 | A contract folded into a paper figure. |
+
+| 3 | The first magic item the lich created. |
+
+| 4 | A hollow figurine of a deity or monster. |
+
+| 5 | An hourglass with its sands floating in stasis. |
+
+| 6 | A locket or signet ring with a noble crest. |
+
+| 7 | A rune-etched egg. |
+
+| 8 | The skull of the lich’s mentor. |
+
+---
+
+### Lich Lairs
 
 Liches create secluded libraries of magical lore and arcane laboratories hidden within extraplanar bastions, fortresses with cursed reputations, or other such deadly sanctuaries.
 

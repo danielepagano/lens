@@ -29,7 +29,8 @@ Hellfire Orb (Recharge 5–6). Dexterity Saving Throw: DC 18, each creature in a
 
 Spellcasting. The death knight casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 18):
 
-At Will: Command, Phantom Steed2/Day Each: Destructive Wave (Necrotic), Dispel Magic
+At Will: Command, Phantom Steed
+2/Day Each: Destructive Wave (Necrotic), Dispel Magic
 
 ---
 **Reactions**
@@ -51,6 +52,10 @@ Lunge. The death knight moves up to half its Speed, and it makes one Dread Blade
 **Description**
 
 Death knights are deadly combatants and domineering commanders with grim histories. Some strive to end the curses that doom them to undeath, though their selfish souls eternally shackle them to their fates. Others, like the infamous death knight Lord Soth, brood in dismal ruins for centuries, rousing themselves to action only when something reignites their deathless evil.
+
+---
+
+### Death Knights
 
 Champions of evil, death knights are armor-clad, skeletal warlords. Combining devastating martial prowess and blasphemous magic, these undying tyrants lead unholy legions against the living or brood in cursed citadels. Every death knight is haunted by a legacy of tragedy and dishonor that drives it to commit greater evils.
 

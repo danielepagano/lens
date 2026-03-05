@@ -26,6 +26,10 @@ Incite Rampage (Recharge 5–6). The gnoll targets another creature it can see w
 
 Rising above other gnolls with their viciousness and physical prowess, gnoll pack lords terrorize weaker gnolls into their service. These brutes drive other gnolls to acts of great violence, then claim the best of their servants’ spoils.
 
+---
+
+### Gnolls
+
 The first gnolls arose from hyenas that fed on flesh tainted by the Abyss. Their corruption and violence delighted the demon lord Yeenoghu, who encouraged their numbers and spread them across the multiverse. Ever since, gnolls have been the cackling servants of Yeenoghu, existing to cause ruin and to feast on what remains.
 
 [source: https://www.dndbeyond.com/monsters/5195045-gnoll-pack-lord]: #

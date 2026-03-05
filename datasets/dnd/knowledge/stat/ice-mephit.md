@@ -27,6 +27,10 @@ Frost Breath (Recharge 6). Constitution Saving Throw: DC 10, each creature in a 
 
 Ice mephits have bodies made of frigid air and frozen water. They delight in freezing things and dropping ice into peoples’ clothes.
 
+---
+
+### Mephits
+
 Mephits are mean-spirited tricksters that dwell on the Elemental Planes. The six most prominent types of mephits resemble halfling-size gargoyles with wings, exaggerated features, and bodies composed of two elements. Most live self-interested existences, indulging their warped senses of humor or overblown egos on their home planes of existence. Some serve as messengers or spies for genies or magic-users.
 
 Mephits resent leaving the elemental extremes where they make their homes. If loosed on the Material Plane or other realms, they lash out with nasty pranks or by tormenting weaker creatures. When destroyed, mephits explode in a burst of elemental magic.

@@ -6,4 +6,14 @@ Name (plus any nicknames or code-names we'd see them called)
 - Affiliations and Relationships: (only non-obvious and story-relevant) 
 - How they solve problems: (key strengths and weaknesses, passive features that make a difference in how the character interfaces with the world that matter to the DM, like high passive perception, darkvision, movement speeds, etc. Do not include specific active skills or powers: it is the player's responsibility to surface when these are revealed and used.)
 
-<!-- TAG POLICY: tag a `pc` object with mechanical rule tags, like movement speeds and resistances. Also link them to any faction of which they are members. -->
+<!-- TAG POLICY:
+Tag a `pc` object with mechanical rule tags and micro-state that matter to how they interact with the world, and link them to any `faction.*` they belong to.
+
+Run-time tags:
+- Senses: `sense:darkvision`, `sense:truesight`, `sense:blindsight`, `sense:tremorsense`
+- Movement speeds: `speed:flying`, `speed:climb`, `speed:burrow`, `speed:swim`
+- Damage resistance: `resistance:acid`, `resistance:bludgeoning`, `resistance:cold`, `resistance:fire`, `resistance:force`, `resistance:lightning`, `resistance:necrotic`, `resistance:piercing`, `resistance:poison`, `resistance:psychic`, `resistance:radiant`, `resistance:slashing`, `resistance:thunder`
+- Damage immunity / vulnerability: `immunity:<damage-type>` (for the same list as resistance), `vulnerability:<damage-type>`
+- Conditions: `condition:blinded`, `condition:charmed`, `condition:deafened`, `condition:exhaustion`, `condition:frightened`, `condition:grappled`, `condition:incapacitated`, `condition:invisible`, `condition:paralyzed`, `condition:petrified`, `condition:poisoned`, `condition:prone`, `condition:restrained`, `condition:stunned`, `condition:unconscious`
+- Other useful micro-state: `concentrating`, `bloodied`
+-->

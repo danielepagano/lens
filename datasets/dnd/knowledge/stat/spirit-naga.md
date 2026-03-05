@@ -23,7 +23,8 @@ Necrotic Ray. Ranged Attack Roll: +6, range 60 ft. Hit: 21 (6d6) Necrotic damage
 
 Spellcasting. The naga casts one of the following spells, requiring no Somatic or Material components and using Intelligence as the spellcasting ability (spell save DC 14):
 
-At Will: Detect Magic, Mage Hand, Minor Illusion, Water Breathing2/Day Each: Detect Thoughts, Dimension Door, Hold Person (level 3 version), Lightning Bolt (level 4 version)
+At Will: Detect Magic, Mage Hand, Minor Illusion, Water Breathing
+2/Day Each: Detect Thoughts, Dimension Door, Hold Person (level 3 version), Lightning Bolt (level 4 version)
 
 ---
 **Description**
@@ -31,5 +32,23 @@ At Will: Detect Magic, Mage Hand, Minor Illusion, Water Breathing2/Day Each: Det
 Spirit nagas loathe the world and all creatures. Possessing perfect memories, these venomous, cobra-like creatures recall every slight committed against them during their immortal existences. In their dank, joyless lairs, they create vicious plots to avenge themselves against even petty offenses.
 
 Spirit nagas seek to claim what they believe they deserve. Their schemes often involve poisons, vile spells, cursed objects, or magical compulsions, eventually making them wellsprings of diabolical know­ledge and evil inspiration. Other villains often seek out spirit nagas as advisers and allies. Roll on or choose a result from the Spirit Naga Grievances table to inspire what motivates a spirit naga’s schemes.
+
+Spirit Naga Grievances
+
+| 1d6 | The Spirit Naga Believes … |
+
+| --- | --- |
+
+| 1 | A character is to blame for its recent failures. |
+
+| 2 | It has been evicted from its rightful home. |
+
+| 3 | Locals have reneged on an age-old bargain. |
+
+| 4 | Other creatures are mocking it. |
+
+| 5 | A rival is spying on it. |
+
+| 6 | Someone’s treasure rightfully belongs to it. |
 
 [source: https://www.dndbeyond.com/monsters/5195215-spirit-naga]: #

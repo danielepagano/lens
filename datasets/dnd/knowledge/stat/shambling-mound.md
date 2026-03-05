@@ -29,4 +29,22 @@ Shambling mounds—also known as “shamblers”—embody the tenacity of the wi
 
 Strange circumstances might give rise to shambling mounds, transforming vegetation into hulks with rudimentary cunning. Such conditions include strikes from magical lightning, nature defending itself, or druidic curses. Roll on or choose a result from the Shambling Mound Cultivation table to inspire a shambling mound’s origins and features.
 
+Shambling Mound Cultivation
+
+| 1d6 | The Shambling Mound Is … |
+
+| --- | --- |
+
+| 1 | Covered in vibrant alien or Feywild blooms. |
+
+| 2 | Hauling a rune-etched menhir in its torso. |
+
+| 3 | Infested with vermin or fungi. |
+
+| 4 | Made up of knotty vines entangling skeletons. |
+
+| 5 | Mutated and leaking glowing pollution. |
+
+| 6 | The remains of an ancient tree or a treant. |
+
 [source: https://www.dndbeyond.com/monsters/5195203-shambling-mound]: #

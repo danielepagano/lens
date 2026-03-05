@@ -28,4 +28,18 @@ Otyughs live to eat—the more disgusting the meal, the better. They consider al
 
 Otyughs often bury themselves amid trash heaps and observe their surroundings with their eye-studded stalk. They use glittery trash and telepathic urgings to coax creatures close, then burst from hiding, attacking with their spiny tentacles and filthy maws. Roll on or choose a result from the Otyugh Lures table to inspire how an otyugh tempts prey close.
 
+Otyugh Lures
+
+| 1d4 | To Attract Potential Meals, the Otyugh … |
+
+| --- | --- |
+
+| 1 | Disguises its tentacles with garbage puppets. |
+
+| 2 | Sings an enticing song in Otyugh. |
+
+| 3 | Telepathically transmits a message like “Happy good stuff here!” or “Help now! I’m too delicious?” |
+
+| 4 | Telepathically transmits an image of a large gemstone, crooked weapon, or soggy pastry. |
+
 [source: https://www.dndbeyond.com/monsters/5195151-otyugh]: #

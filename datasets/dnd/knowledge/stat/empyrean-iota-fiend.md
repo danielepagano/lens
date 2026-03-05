@@ -29,6 +29,28 @@ Spellcasting. The empyrean casts one of the following spells, requiring no Mater
 
 Empyrean iotas are the thoughts, memories, or indirect attentions of deities personified and given a measure of autonomy. Resembling floating glyphs, motes of color, icons of divinity, or stranger shapes, these beings are messengers of the gods and aides to those gods’ servants. Iotas have their own knowledge and personalities, though they might know little more than the realms and wishes of their creators.
 
+---
+
+### Empyreans
+
 Empyreans are the spawn of deities. While not gods themselves, they possess divine influence and powers related to their divine parents. Some empyreans are near-demigods with fantastic might and the power to reshape mortal lives. Others are little more than divine thoughts or moments of immortal attention made manifest. Whether empyreans are idealized beings or vestiges of divinity, their appearances are influenced by their creators. Roll on or choose a result from the Empyrean Influences table to inspire what aspects of an empyrean’s heritage manifest in its physical form.
+
+Empyrean Influences
+
+| 1d6 | The Empyrean Has Features That Are … |
+
+| --- | --- |
+
+| 1 | Balanced, naturalistic, or suggestive of watching eyes. |
+
+| 2 | Colorful, shadowy, or fluid or that vary depending on the viewer. |
+
+| 3 | Comforting and gentle or that remind viewers of pleasant memories. |
+
+| 4 | Disconnected parts, visible thoughts, or errant shapes. |
+
+| 5 | Machinelike, stoic, symmetrical, or suggestive of judgment. |
+
+| 6 | Morbid, menacing, or monstrous or that embody the viewer’s fears. |
 
 [source: https://www.dndbeyond.com/monsters/5194987-empyrean-iota-fiend]: #

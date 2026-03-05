@@ -30,4 +30,26 @@ Primal spirits from the Elemental Plane of Earth merge with rocks and minerals t
 
 Earth elementals are typically made of more than dirt. While an elemental’s composition doesn’t change its statistics or have monetary value, it makes each elemental distinct. Roll on or choose a result from the Earth Elemental Compositions table to inspire an earth elemental’s features.
 
+Earth Elemental Compositions
+
+| 1d8 | The Earth Elemental’s Body Features … |
+
+| --- | --- |
+
+| 1 | Colorful mineral formations. |
+
+| 2 | Cooled magma in melted heaps. |
+
+| 3 | Grass, moss, or plant roots. |
+
+| 4 | Heaps of peat or decaying matter. |
+
+| 5 | Mounds of sand studded with shells. |
+
+| 6 | Rubble or pieces of a ruined structure. |
+
+| 7 | Striking striations or bands of color. |
+
+| 8 | Veins of iron or other ore. |
+
 [source: https://www.dndbeyond.com/monsters/5194980-earth-elemental]: #

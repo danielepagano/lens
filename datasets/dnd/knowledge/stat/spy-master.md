@@ -27,6 +27,24 @@ Smoke Bomb (1/Day). The spy throws a bomb to a point it can see within 30 feet o
 
 Spy masters have extensive experience in gathering secrets while leaving no evidence of their presence.
 
+---
+
+### Spies
+
 Spies gather information and disseminate lies, manipulating people to gain the results the spies’ patrons desire. They’re trained to manipulate, infiltrate, and—when necessary—escape in a hurry. Many adopt disguises, aliases, or code names to maintain anonymity. Roll on or choose a result from the Spy Personas table to inspire a spy’s disguise.
+
+Spy Personas
+
+| 1d4 | The Spy Disguises Themself As … |
+
+| --- | --- |
+
+| 1 | A bard or traveling performer. |
+
+| 2 | A captive or servant of a monster or villain. |
+
+| 3 | A dignitary or traveler from a distant land. |
+
+| 4 | A visitor from a different time or world. |
 
 [source: https://www.dndbeyond.com/monsters/5195216-spy-master]: #

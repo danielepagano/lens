@@ -30,4 +30,22 @@ Parry. Trigger: The gladiator is hit by a melee attack roll while holding a weap
 
 Gladiators are professional fighters who pit themselves against one another, monsters, and other challenges to entertain audiences. While some compete merely to survive, others love the thrill of performing—and all gladiators know the importance of theatrics in keeping audiences excited. Roll on or choose an option from the Gladiator Theatrics table to inspire the unique flourishes a gladiator uses when competing.
 
+Gladiator Theatrics
+
+| 1d6 | During a Competition, the Gladiator... |
+
+| --- | --- |
+
+| 1 | Dedicates their impending victory to a deity, ruler, beloved noble, or member of the crowd. |
+
+| 2 | Dresses in a monster-themed mask and cape. |
+
+| 3 | Judges whether their foe fights honorably. |
+
+| 4 | Leads the crowd in a rousing theme song. |
+
+| 5 | Seeks to claim a trophy from a foe. |
+
+| 6 | Takes advice from the crowd, omens, or a pet. |
+
 [source: https://www.dndbeyond.com/monsters/5195042-gladiator]: #

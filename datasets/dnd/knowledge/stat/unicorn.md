@@ -25,7 +25,8 @@ Radiant Horn. Melee Attack Roll: +7, reach 5 ft. Hit: 9 (1d10 + 4) Radiant damag
 
 Spellcasting. The unicorn casts one of the following spells, requiring no spell components and using Charisma as the spellcasting ability (spell save DC 14):
 
-At Will: Detect Evil and Good, Druidcraft1/Day Each: Calm Emotions, Dispel Evil and Good, Entangle, Pass without Trace, Word of Recall
+At Will: Detect Evil and Good, Druidcraft
+1/Day Each: Calm Emotions, Dispel Evil and Good, Entangle, Pass without Trace, Word of Recall
 
 ---
 **Legendary Actions**
@@ -40,6 +41,10 @@ Shimmering Shield. The unicorn targets itself or one creature it can see within 
 **Description**
 
 Unicorns are majestic defenders of forests. They are revered by many Fey and other forest dwellers, and they do whatever they can to ensure the peace and health of those who shelter in their wooded realms.
+
+---
+
+### Unicorn Lairs
 
 Unicorns dwell in unspoiled forests, particularly where benevolent Fey creatures live.
 

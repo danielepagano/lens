@@ -28,4 +28,26 @@ Manticores have tails bristling with detachable spikes. These monsters launch th
 
 Despite their ravenous tendencies, manticores enjoy speaking with those they’re about to devour. Sometimes they make agreements with their prey. Roll on or choose a result from the Manticore Negotiations table to inspire what a manticore might offer in exchange for a more tempting meal.
 
+Manticore Negotiations
+
+| 1d8 | The Manticore Agrees To … |
+
+| --- | --- |
+
+| 1 | Attack a particular foe. |
+
+| 2 | Create a distraction. |
+
+| 3 | Give up a captive or corpse. |
+
+| 4 | Let a group navigate its territory unharmed. |
+
+| 5 | Let someone pretend to slay it in battle. |
+
+| 6 | Scare or threaten someone. |
+
+| 7 | Serve a creature as a steed until the sun sets. |
+
+| 8 | Try to locate something from its vantage point in the sky. |
+
 [source: https://www.dndbeyond.com/monsters/5195115-manticore]: #

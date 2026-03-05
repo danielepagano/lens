@@ -25,7 +25,8 @@ Hellfire Orb (Recharge 5–6). Dexterity Saving Throw: DC 15, each creature in a
 
 Spellcasting. The aspirant casts one of the following spells, using Charisma as the spellcasting ability (spell save DC 15):
 
-At Will: Phantom Steed 1/Day Each: Destructive Wave (Necrotic), Dispel Magic
+At Will: Phantom Steed
+1/Day Each: Destructive Wave (Necrotic), Dispel Magic
 
 ---
 **Reactions**
@@ -36,6 +37,10 @@ Parry. Trigger: The aspirant is hit by a melee attack roll while holding a weapo
 **Description**
 
 When the leader of a villainous order rises as a death knight, their wicked devotees might join them in their cursed existence as death knight aspirants. These followers bear a measure of their leader’s power and serve as they did in life, obediently following the death knight’s decrees and heralding its terrible will.
+
+---
+
+### Death Knights
 
 Champions of evil, death knights are armor-clad, skeletal warlords. Combining devastating martial prowess and blasphemous magic, these undying tyrants lead unholy legions against the living or brood in cursed citadels. Every death knight is haunted by a legacy of tragedy and dishonor that drives it to commit greater evils.
 

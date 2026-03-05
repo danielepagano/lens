@@ -34,4 +34,18 @@ Their magical cores protected by mighty armor, iron golems defend important site
 
 Iron golems preserve and protect their charges for generations. Roll on or choose a result from the Iron Golem Orders table to inspire what commands an iron golem follows.
 
+Iron Golem Orders
+
+| 1d4 | The Iron Golem Follows Orders To … |
+
+| --- | --- |
+
+| 1 | Block a door that has never been opened, moving only when a prophecy is fulfilled. |
+
+| 2 | Exhale poison gas whenever it can, pausing only when someone speaks a passphrase. |
+
+| 3 | Pose as a statue until a community’s hour of greatest need. |
+
+| 4 | Stand atop the resting place of a powerful magic item. |
+
 [source: https://www.dndbeyond.com/monsters/5195090-iron-golem]: #

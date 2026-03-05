@@ -29,6 +29,10 @@ Limited Foresight (Recharge 6). Trigger: A creature the cyclops can see makes an
 
 Most cyclops sentries serve their divine progenitors and oppose those who would tamper with fate.
 
+---
+
+### Cyclopes
+
 Cyclopes are gigantic, one-eyed descendants of the gods. Using their mystical vision, cyclopes can witness how future events are likely to occur.
 
 [source: https://www.dndbeyond.com/monsters/5194957-cyclops-sentry]: #

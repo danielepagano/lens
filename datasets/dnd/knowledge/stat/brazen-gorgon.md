@@ -29,6 +29,10 @@ Smelting Charge (Recharge 5–6). The gorgon moves up to its Speed without provo
 
 Followers of the exiled archdevil Moloch altered the process of creating gorgons to craft their own diabolical guardians called brazen gorgons. These gorgons are hollow, bull-like automatons whose metal bodies glow with intense heat. When they charge their foes, the ribs of their frames open like cages to ensnare enemies and roast them within. Brazen gorgons are often found in blasphemous sites dedicated to Moloch, other archdevils, or bloodthirsty gods.
 
+---
+
+### Gorgons
+
 Resembling mighty bulls armored in iron plates, gorgons are lifelike automatons that seek to destroy all who enter their territories. In addition to goring foes with their deadly horns and trampling them under their iron hooves, gorgons exhale gouts of noxious gas.
 
 Gorgons are created by magic-users to serve as guardians. The process for creating a gorgon is labor intensive and dangerous, with one method requiring the skeleton of a bull, the blood of a medusa, and the brain of a basilisk fused into a frame of ensorcelled iron. If the process fails, petrifying gas emerges from the materials, creating a magical threat that can fill a structure and linger for years.
@@ -36,5 +40,23 @@ Gorgons are created by magic-users to serve as guardians. The process for creati
 When magic-users create gorgons, they often enchant them to ignore those who confront the creature with a specific command key, usually a password or a specific signal. Once a gorgon is set to guard an area, it attacks any who enter until they flee or are destroyed. Should someone provide the command key, the monster ignores that intruder so long as the intruder remains in its sight. But if the intruder ventures out of sight and then returns without again presenting the command key, the gorgon attacks. Those in a gorgon’s territory must remain vigilant and aware of the monster’s exact position, or they risk being attacked by a gorgon they thought was no longer a threat.
 
 Those who create gorgons strive to give them purposefully obscure command keys. Hints at command keys might be found among the records of a gorgon’s creator or in the area the gorgon protects—perhaps scrawled as a petrified trespasser’s final act. Roll on or choose a result from the Gorgon Command Keys table to inspire the word or signal that temporarily neutralizes a gorgon.
+
+Gorgon Command Keys
+
+| 1d6 | Gorgon Won’t Attack Those That … |
+
+| --- | --- |
+
+| 1 | Cast a particular spell in the gorgon’s presence. |
+
+| 2 | Keep their back to the gorgon or otherwise act like they don’t see the monster. |
+
+| 3 | Offer it a drink of blood, water, or wine. |
+
+| 4 | Recite a specific rhyme or sing a certain song. |
+
+| 5 | Say its creator’s name backward. |
+
+| 6 | Wear a mask, perhaps in the shape of a bull or an animal meaningful to the gorgon’s creator. |
 
 [source: https://www.dndbeyond.com/monsters/5194932-brazen-gorgon]: #

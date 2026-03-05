@@ -114,10 +114,12 @@ export async function parseMonsterPage(
             const blockText =
               paras.length > 0
                 ? paras
-                    .map((p) => p.textContent?.trim() ?? "")
+                    .map((p) =>
+                      (p as HTMLElement).innerText?.trim() ?? p.textContent?.trim() ?? ""
+                    )
                     .filter((t) => t.length > 0)
                     .join("\n\n")
-                : content.textContent?.trim() ?? "";
+                : (content as HTMLElement).innerText?.trim() ?? content.textContent?.trim() ?? "";
             if ((heading.includes("trait") || heading.includes("feature")) && !traits)
               traits = blockText;
             else if (heading.includes("action") && !heading.includes("legendary") && !actions)
@@ -126,16 +128,63 @@ export async function parseMonsterPage(
             else if (heading.includes("legendary") && !legendaryActions) legendaryActions = blockText;
           });
 
-        const descEl =
-          document.querySelector(".more-info-content .mon-details__description-block-content") ??
-          document.querySelector(".more-info-content");
-        if (descEl) {
-          const blocks: string[] = [];
-          descEl.querySelectorAll("p").forEach((p) => {
-            const t = p.textContent?.trim() ?? "";
-            if (t.length > 0) blocks.push(t);
+        const descContainer = document.querySelector(".more-info-content");
+        if (descContainer) {
+          const parts: string[] = [];
+          const blocks = Array.from(
+            descContainer.querySelectorAll(".mon-details__description-block-content")
+          );
+          const parents: Element[] =
+            blocks.length > 0 ? blocks : [descContainer];
+
+          parents.forEach((parent, parentIndex) => {
+            if (parentIndex > 0 && parts.length > 0) {
+              parts.push("");
+            }
+            for (const node of Array.from(parent.children)) {
+              const tag = node.tagName?.toUpperCase();
+              if (tag === "H2") {
+                const t = (node as HTMLElement).innerText?.trim() ?? "";
+                if (t) parts.push("## " + t);
+              } else if (tag === "H3") {
+                const t = (node as HTMLElement).innerText?.trim() ?? "";
+                if (t) parts.push("### " + t);
+              } else if (tag === "H4") {
+                const t = (node as HTMLElement).innerText?.trim() ?? "";
+                if (t) parts.push("#### " + t);
+              } else if (tag === "P") {
+                const t = (node as HTMLElement).innerText?.trim() ?? "";
+                if (t) parts.push(t);
+              } else if (tag === "HR") {
+                parts.push("---");
+              } else if (tag === "TABLE") {
+                const caption = node.querySelector("caption");
+                const capText = caption
+                  ? (caption as HTMLElement).innerText?.trim() ?? ""
+                  : "";
+                if (capText) parts.push(capText);
+                const thead = node.querySelector("thead tr");
+                const headerCells = thead
+                  ? Array.from(thead.querySelectorAll("th")).map(
+                      (th) => (th as HTMLElement).innerText?.trim() ?? ""
+                    )
+                  : [];
+                if (headerCells.length > 0) {
+                  parts.push("| " + headerCells.join(" | ") + " |");
+                  parts.push("| " + headerCells.map(() => "---").join(" | ") + " |");
+                  const rows = node.querySelectorAll("tbody tr");
+                  rows.forEach((tr) => {
+                    const cells = Array.from(tr.querySelectorAll("td")).map(
+                      (td) => (td as HTMLElement).innerText?.trim() ?? ""
+                    );
+                    if (cells.length > 0) parts.push("| " + cells.join(" | ") + " |");
+                  });
+                }
+              }
+            }
           });
-          description = blocks.join("\n\n");
+
+          description = parts.join("\n\n");
         }
       } else {
         meta =
@@ -215,10 +264,12 @@ export async function parseMonsterPage(
           const blockText =
             paras.length > 0
               ? paras
-                  .map((p) => p.textContent?.trim() ?? "")
+                  .map((p) =>
+                    (p as HTMLElement).innerText?.trim() ?? p.textContent?.trim() ?? ""
+                  )
                   .filter((t) => t.length > 0)
                   .join("\n\n")
-              : content.textContent?.trim() ?? "";
+              : (content as HTMLElement).innerText?.trim() ?? content.textContent?.trim() ?? "";
           if ((heading.includes("trait") || heading.includes("feature")) && !traits)
             traits = blockText;
           else if (heading.includes("action") && !heading.includes("legendary") && !actions)

@@ -28,4 +28,22 @@ Energetic spirits from the Elemental Plane of Air, air elementals gather clouds 
 
 Air elementals often have distinctive compositions. Roll on or choose a result from the Air Elemental Compositions table to inspire the elemental’s appearance.
 
+Aboleth Schemes
+
+| 1d6 | The Air Elemental’s Body Features ... |
+
+| --- | --- |
+
+| 1 | Cumulus or cirrus clouds. |
+
+| 2 | A mixture of vibrantly colored gases. |
+
+| 3 | A pungent, sour-looking miasma |
+
+| 4 | Shifting cloud clusters that resemble animals and simple shapes. |
+
+| 5 | Sinister features obscured in a misty mass. |
+
+| 6 | Swirling storm clouds. |
+
 [source: https://www.dndbeyond.com/monsters/5194878-air-elemental]: #

@@ -27,8 +27,30 @@ Vampire familiars are living people who serve vampires, either willingly or due 
 
 Many vampire familiars aspire to eventually become vampires, while others are magically charmed or serve as part of some terrible bargain. In each case, these vampire servants show signs of their vampiric corruption, such as corpse-like complexions, uncanny reflexes, and evidence of their masters’ repeated feedings. A vampire familiar loses its supernatural abilities and returns to its original Humanoid state if its vampire master is destroyed.
 
+---
+
+### Vampires
+
 Vampires disguise their accursed, immortal natures, passing as mortals to feed on the blood of the living. While the youngest vampires might be little more than bloodthirsty servants of their creators, the eldest possess incredible cunning and control over supernatural forces of the night.
 
 Undead vampires lie dormant during the day, retreating to resting places hidden from foes and the sun’s searing rays. Roll on or choose a result from the Vampire Resting Places table to inspire a vampire’s grim sanctuary.
+
+Vampire Resting Places
+
+| 1d6 | The Vampire’s Resting Place Is … |
+
+| --- | --- |
+
+| 1 | Among the roots of a dead tree. |
+
+| 2 | At the bottom of a stagnant pool. |
+
+| 3 | A coffin filled with grave dirt. |
+
+| 4 | A large pot full of blood or vinegar. |
+
+| 5 | A space accessible only by shape-shifting. |
+
+| 6 | Within a statue or suit of armor. |
 
 [source: https://www.dndbeyond.com/monsters/5195247-vampire-familiar]: #

@@ -22,6 +22,10 @@ Ocean Spear. Melee or Ranged Attack Roll: +2, reach 5 ft. or range 20/60 ft. Hit
 
 Merfolk skirmishers defend their homes from aquatic monsters and invaders from the surface.
 
+---
+
+### Merfolk
+
 Beneath the waves dwell merfolk, mysterious creatures that merge the features of humans and sea creatures. Some are curious about land dwellers, while others view them with suspicion.
 
 [source: https://www.dndbeyond.com/monsters/5195119-merfolk-skirmisher]: #

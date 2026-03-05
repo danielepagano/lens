@@ -25,6 +25,10 @@ Insectile Rapier. Melee Attack Roll: +4, reach 5 ft. Hit: 6 (1d8 + 2) Piercing d
 
 Bullywug warriors are adept at moving through swamps and ambushing trespassers. They often work alongside packs of trained giant frogs.
 
+---
+
+### Bullywugs
+
 Fey embodiments of swamplands, bullywugs protect the murky wilds and consider themselves cosmically favored for that role. These human-size, toad- or frog-like creatures have close relationships with the creatures of the swamp.
 
 [source: https://www.dndbeyond.com/monsters/4831017-bullywug-warrior]: #

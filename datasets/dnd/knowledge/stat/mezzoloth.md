@@ -35,4 +35,22 @@ Mezzoloths are insectile yugoloths that seek power and souls in the service of f
 
 Mezzoloths typically form mercenary bands with others of their kind. These forces serve more powerful yugoloths, other fiends, sinister mages, or anyone who provides them with tempting rewards. Mezzoloths obediently adhere to the bargains they strike, potentially serving their patrons for centuries, but once those terms expire, yesterday’s client could become today’s target. Roll on or choose a result from the Mezzoloth Payments table to inspire a mezzoloth’s price for its services.
 
+Mezzoloth Payments
+
+| 1d6 | The Mezzoloth Agrees to Serve For … |
+
+| --- | --- |
+
+| 1 | Access to a planar portal. |
+
+| 2 | Information valued by its true master. |
+
+| 3 | A lair where it can bring others of its kind. |
+
+| 4 | Magic weapons or armor. |
+
+| 5 | The right to loot holy sites in places it conquers. |
+
+| 6 | Souls, whether as larvae or captured spirits. |
+
 [source: https://www.dndbeyond.com/monsters/5195122-mezzoloth]: #

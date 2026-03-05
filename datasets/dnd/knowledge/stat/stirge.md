@@ -22,6 +22,24 @@ The stirge can detach itself by spending 5 feet of its movement. The target or a
 
 A single stirge is usually little more than an annoyance, but several can be deadly if they attach faster than a victim can remove them.
 
+---
+
+### Stirges
+
 Stirges are bat-size vermin with dagger-length proboscises that attach to other creatures and drain life from them. Stirges are most active at night and hide in shadowy places during the day. If disturbed, they take flight and defend themselves. Roll on or choose a result from the Stirge Roosts table to inspire where stirges might lurk.
+
+Stirge Roosts
+
+| 1d4 | Between Hunts, the Stirge Lurks In … |
+
+| --- | --- |
+
+| 1 | The attic or furniture of a ruined building. |
+
+| 2 | A cave or narrow crevice. |
+
+| 3 | A hollow tree or thicket. |
+
+| 4 | The remains of a gigantic, dead creature. |
 
 [source: https://www.dndbeyond.com/monsters/5195219-stirge]: #

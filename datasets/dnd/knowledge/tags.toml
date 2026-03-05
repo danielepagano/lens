@@ -4490,6 +4490,152 @@ ritual = [
     "stat.weretiger",
     "stat.werewolf",
 ]
+"source:basic-rules" = [
+    "equipment.antimatter-rifle",
+    "equipment.battleaxe",
+    "equipment.blowgun",
+    "equipment.breastplate",
+    "equipment.chain-mail",
+    "equipment.chain-shirt",
+    "equipment.club",
+    "equipment.crossbow-hand",
+    "equipment.crossbow-heavy",
+    "equipment.crossbow-light",
+    "equipment.dagger",
+    "equipment.dart",
+    "equipment.energy-cell",
+    "equipment.flail",
+    "equipment.glaive",
+    "equipment.greataxe",
+    "equipment.greatclub",
+    "equipment.greatsword",
+    "equipment.halberd",
+    "equipment.half-plate",
+    "equipment.handaxe",
+    "equipment.hide",
+    "equipment.javelin",
+    "equipment.lance",
+    "equipment.laser-pistol",
+    "equipment.laser-rifle",
+    "equipment.leather",
+    "equipment.light-hammer",
+    "equipment.longbow",
+    "equipment.longsword",
+    "equipment.mace",
+    "equipment.maul",
+    "equipment.morningstar",
+    "equipment.musket",
+    "equipment.net",
+    "equipment.padded",
+    "equipment.pike",
+    "equipment.pistol",
+    "equipment.pistol-automatic",
+    "equipment.plate",
+    "equipment.quarterstaff",
+    "equipment.rapier",
+    "equipment.revolver",
+    "equipment.rifle-automatic",
+    "equipment.rifle-hunting",
+    "equipment.ring-mail",
+    "equipment.scale-mail",
+    "equipment.scimitar",
+    "equipment.shield",
+    "equipment.shortbow",
+    "equipment.shortsword",
+    "equipment.shotgun",
+    "equipment.sickle",
+    "equipment.sling",
+    "equipment.spear",
+    "equipment.spiked-armor",
+    "equipment.splint",
+    "equipment.studded-leather",
+    "equipment.trident",
+    "equipment.war-pick",
+    "equipment.warhammer",
+    "equipment.whip",
+]
+"category:firearms-ranged-weapon" = [
+    "equipment.antimatter-rifle",
+    "equipment.laser-pistol",
+    "equipment.laser-rifle",
+    "equipment.pistol-automatic",
+    "equipment.revolver",
+    "equipment.rifle-automatic",
+    "equipment.rifle-hunting",
+    "equipment.shotgun",
+]
+"category:martial-melee-weapon" = [
+    "equipment.battleaxe",
+    "equipment.flail",
+    "equipment.glaive",
+    "equipment.greataxe",
+    "equipment.greatsword",
+    "equipment.halberd",
+    "equipment.lance",
+    "equipment.longsword",
+    "equipment.maul",
+    "equipment.morningstar",
+    "equipment.pike",
+    "equipment.rapier",
+    "equipment.scimitar",
+    "equipment.shortsword",
+    "equipment.trident",
+    "equipment.war-pick",
+    "equipment.warhammer",
+    "equipment.whip",
+]
+"category:martial-ranged-weapon" = [
+    "equipment.blowgun",
+    "equipment.crossbow-hand",
+    "equipment.crossbow-heavy",
+    "equipment.longbow",
+    "equipment.musket",
+    "equipment.net",
+    "equipment.pistol",
+]
+"category:medium-armor" = [
+    "equipment.breastplate",
+    "equipment.chain-shirt",
+    "equipment.half-plate",
+    "equipment.hide",
+    "equipment.scale-mail",
+    "equipment.spiked-armor",
+]
+"category:heavy-armor" = [
+    "equipment.chain-mail",
+    "equipment.plate",
+    "equipment.ring-mail",
+    "equipment.splint",
+]
+"category:simple-melee-weapon" = [
+    "equipment.club",
+    "equipment.dagger",
+    "equipment.greatclub",
+    "equipment.handaxe",
+    "equipment.javelin",
+    "equipment.light-hammer",
+    "equipment.mace",
+    "equipment.quarterstaff",
+    "equipment.sickle",
+    "equipment.spear",
+]
+"category:simple-ranged-weapon" = [
+    "equipment.crossbow-light",
+    "equipment.dart",
+    "equipment.shortbow",
+    "equipment.sling",
+]
+"category:ammunition" = [
+    "equipment.energy-cell",
+]
+"category:light-armor" = [
+    "equipment.leather",
+    "equipment.padded",
+    "equipment.studded-leather",
+]
+"category:shield" = [
+    "equipment.shield",
+]
 
 [objects]
 "spell.acid-splash" = [
@@ -10562,4 +10708,252 @@ ritual = [
     "size:medium",
     "source:mm-2025",
     "type:undead",
+]
+"equipment.antimatter-rifle" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.battleaxe" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.blowgun" = [
+    "category:martial-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.breastplate" = [
+    "category:medium-armor",
+    "source:basic-rules",
+]
+"equipment.chain-mail" = [
+    "category:heavy-armor",
+    "source:basic-rules",
+]
+"equipment.chain-shirt" = [
+    "category:medium-armor",
+    "source:basic-rules",
+]
+"equipment.club" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.crossbow-hand" = [
+    "category:martial-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.crossbow-heavy" = [
+    "category:martial-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.crossbow-light" = [
+    "category:simple-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.dagger" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.dart" = [
+    "category:simple-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.energy-cell" = [
+    "category:ammunition",
+    "source:basic-rules",
+]
+"equipment.flail" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.glaive" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.greataxe" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.greatclub" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.greatsword" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.halberd" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.half-plate" = [
+    "category:medium-armor",
+    "source:basic-rules",
+]
+"equipment.handaxe" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.hide" = [
+    "category:medium-armor",
+    "source:basic-rules",
+]
+"equipment.javelin" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.lance" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.laser-pistol" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.laser-rifle" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.leather" = [
+    "category:light-armor",
+    "source:basic-rules",
+]
+"equipment.light-hammer" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.longbow" = [
+    "category:martial-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.longsword" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.mace" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.maul" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.morningstar" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.musket" = [
+    "category:martial-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.net" = [
+    "category:martial-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.padded" = [
+    "category:light-armor",
+    "source:basic-rules",
+]
+"equipment.pike" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.pistol" = [
+    "category:martial-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.pistol-automatic" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.plate" = [
+    "category:heavy-armor",
+    "source:basic-rules",
+]
+"equipment.quarterstaff" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.rapier" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.revolver" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.rifle-automatic" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.rifle-hunting" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.ring-mail" = [
+    "category:heavy-armor",
+    "source:basic-rules",
+]
+"equipment.scale-mail" = [
+    "category:medium-armor",
+    "source:basic-rules",
+]
+"equipment.scimitar" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.shield" = [
+    "category:shield",
+    "source:basic-rules",
+]
+"equipment.shortbow" = [
+    "category:simple-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.shortsword" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.shotgun" = [
+    "category:firearms-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.sickle" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.sling" = [
+    "category:simple-ranged-weapon",
+    "source:basic-rules",
+]
+"equipment.spear" = [
+    "category:simple-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.spiked-armor" = [
+    "category:medium-armor",
+    "source:basic-rules",
+]
+"equipment.splint" = [
+    "category:heavy-armor",
+    "source:basic-rules",
+]
+"equipment.studded-leather" = [
+    "category:light-armor",
+    "source:basic-rules",
+]
+"equipment.trident" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.war-pick" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.warhammer" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
+]
+"equipment.whip" = [
+    "category:martial-melee-weapon",
+    "source:basic-rules",
 ]

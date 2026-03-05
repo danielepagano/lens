@@ -25,4 +25,18 @@ Warping Hex (Recharge 4–6). Wisdom Saving Throw: DC 16, one creature the fomor
 
 Once infamous for their magical aptitude, fomorians are giants afflicted with a fey curse. In their pride, they were tricked into invading the Feywild to claim its magic for their own. When the archfey rulers of that realm united, the fomorians were turned back and cursed with supernatural strangeness to make their bodies match their vile souls. Ever since, fomorians have dwelled in the Underdark amid the ruins of their magical cities. The archfey’s curse afflicts them still, tormenting them with wandering cankers, lurching organs, and stranger discomforts. Rather than atoning for their offenses, fomorians harness the magic of their curse and turn it against others. Roll on or choose a result from the Fomorian Warping table to inspire the cosmetic effects a creature undergoes while they’re affected by a fomorian’s Warping Hex.
 
+Fomorian Warping
+
+| 1d4 | The Fomorian’s Hex Causes … |
+
+| --- | --- |
+
+| 1 | Colorful, wandering pustules. |
+
+| 2 | Excessive sweating of rainbow-hued fluids. |
+
+| 3 | Patches of wriggling hair. |
+
+| 4 | Veins that bulge and lurch under the skin. |
+
 [source: https://www.dndbeyond.com/monsters/5195000-fomorian]: #

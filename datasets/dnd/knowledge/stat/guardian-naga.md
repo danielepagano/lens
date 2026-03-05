@@ -24,7 +24,8 @@ Poisonous Spittle. Constitution Saving Throw: DC 16, one creature the naga can s
 
 Spellcasting. The naga casts one of the following spells, requiring no Somatic or Material components and using Wisdom as the spellcasting ability (spell save DC 16):
 
-At Will: Thaumaturgy 1/Day Each: Clairvoyance, Cure Wounds (level 6 version), Flame Strike (level 6 version), Geas, True Seeing
+At Will: Thaumaturgy
+1/Day Each: Clairvoyance, Cure Wounds (level 6 version), Flame Strike (level 6 version), Geas, True Seeing
 
 ---
 **Description**
@@ -32,5 +33,27 @@ At Will: Thaumaturgy 1/Day Each: Clairvoyance, Cure Wounds (level 6 version), Fl
 Guardian nagas are immortal, serpentine scholars that possess perfect memories. They collect the histories and lore of those they live among, guarding cultures’ stories and passing them on to new generations with infallible accuracy. Guardian nagas that outlive their host civilizations might linger in whatever ruins remain, preserving the civilizations’ stories so their lost people might live on.
 
 Roll on or choose a result from the Guardian Naga Lore table to inspire what a naga knows.
+
+Guardian Naga Lore
+
+| 1d8 | The Guardian Naga Recalls … |
+
+| --- | --- |
+
+| 1 | The last words of an ancient sage or leader. |
+
+| 2 | The location of a hidden city or continent. |
+
+| 3 | A magic word, password, or riddle’s answer. |
+
+| 4 | The names of all who have told it stories. |
+
+| 5 | An otherwise forgotten ritual or spell. |
+
+| 6 | Recipes using regional ingredients. |
+
+| 7 | Stories of forgotten gods and local spirits. |
+
+| 8 | The vulnerabilities of a legendary monster. |
 
 [source: https://www.dndbeyond.com/monsters/5195066-guardian-naga]: #

@@ -27,4 +27,18 @@ Longbow (Humanoid or Hybrid Form Only). Ranged Attack Roll: +4, range 150/600 ft
 
 Weretigers shape-shift from humanoid forms into tigers or tiger-humanoid hybrids. Although they can transform at will or when their magical nature demands, many weretigers are nocturnal and transform into their bestial shapes at night. Some were­tigers’ transformations might also be tied to the crescent moon, seasons, or momentous events. Weretigers often view their abilities as a blessing or a family honor, and they use their shape-shifting abilities to defend something with historic importance. Roll on or choose a result from the Weretiger Wards table to inspire what a weretiger defends.
 
+Weretiger Wards
+
+| 1d4 | The Weretiger Protects A … |
+
+| --- | --- |
+
+| 1 | Legendary weapon or symbol of rulership. |
+
+| 2 | Proving ground for prophesied heroes. |
+
+| 3 | Rare species of magical plant or animal. |
+
+| 4 | Sacred fountain with magical waters. |
+
 [source: https://www.dndbeyond.com/monsters/5195266-weretiger]: #

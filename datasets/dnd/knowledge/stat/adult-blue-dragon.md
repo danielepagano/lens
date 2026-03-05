@@ -24,7 +24,8 @@ Lightning Breath (Recharge 5–6). Dexterity Saving Throw: DC 19, each creature 
 
 Spellcasting. The dragon casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 18):
 
-At Will: Detect Magic, Invisibility, Mage Hand, Shatter 1/Day Each: Scrying, Sending
+At Will: Detect Magic, Invisibility, Mage Hand, Shatter
+1/Day Each: Scrying, Sending
 
 ---
 **Legendary Actions**
@@ -42,11 +43,19 @@ Tail Swipe. The dragon makes one Rend attack.
 
 Adult blue dragons command small empires, which might be territories of subjugated followers, shadowy criminal networks, or cultic enclaves. Endlessly suspicious and wary of rivals, these dragons enact elaborate schemes to ruin their foes, test the loyalty of their servants, and ensure their dominance for centuries.
 
+---
+
+### Blue Dragons
+
 Arrogant and imperious, blue dragons are chromatic dragons that crave control and collect followers like other dragons hoard treasure. They seek to transform their territories into empires, domains to be feared by nations.
 
 Blue dragons have sharp features with piercing horns and scales that range from sapphire to the shades of stormy skies. They dwell in deserts and badlands, particularly regions with dramatic spires from whose tops they might see for miles. They seek lairs near sites of symbolic power, such as the abandoned fortresses of giants, the colossi of fallen empires, or monuments raised by their followers.
 
 Regalia of rulership and artistic masterpieces fill blue dragons’ hoards. These dragons have no interest in treasures that are common or flawed, preferring one-of-a-kind gemstones, the crowns of fallen royals, and magic items capable of spreading the dragons’ influence.
+
+---
+
+### Blue Dragon Lairs
 
 Blue dragons dwell in arid lands. Their lairs might be death traps meant to entomb invaders or ostentatious fortresses where they plot domination.
 

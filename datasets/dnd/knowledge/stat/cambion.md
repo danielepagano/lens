@@ -22,7 +22,8 @@ Fire Ray. Ranged Attack Roll: +7, range 120 ft. Hit: 13 (3d6 + 3) Fire damage.
 
 Spellcasting. The cambion casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 14):
 
-2/Day Each: Alter Self, Command (level 3 version), Detect Magic1/Day Each: Dominate Person (level 8 version), Plane Shift (self only)
+2/Day Each: Alter Self, Command (level 3 version), Detect Magic
+1/Day Each: Dominate Person (level 8 version), Plane Shift (self only)
 
 ---
 **Description**
@@ -32,5 +33,23 @@ Cambions are former mortals corrupted by fiendish power or possessed by insidiou
 Many cambions serve the malevolent forces that are the source of their powers. Others seek to claim the might of whatever created them or to seize otherworldly powers of their own. Among the most notorious of such cambions is Iuz, a villain who became an evil demigod and whose villainous nation threatens the Free City of Greyhawk on Oerth.
 
 Cambions come into being in disparate ways. Roll on or choose a result from the Cambion Origins table to determine the source of a cambion’s fiendish might.
+
+Cambion Origins
+
+| 1d6 | The Cambion Gained Its Power After... |
+
+| --- | --- |
+
+| 1 | Being possessed by a fiendish being. |
+
+| 2 | Being resurrected by an evil magic-user. |
+
+| 3 | Lengthy exposure to a Lower Plane. |
+
+| 4 | Making a bargain with a Fiend. |
+
+| 5 | Suffering a god’s curse. |
+
+| 6 | Taking part in fiendish rituals. |
 
 [source: https://www.dndbeyond.com/monsters/5194937-cambion]: #

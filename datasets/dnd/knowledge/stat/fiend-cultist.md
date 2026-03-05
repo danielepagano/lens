@@ -20,7 +20,8 @@ Pact Axe. Melee Attack Roll: +7, reach 5 ft. Hit: 10 (1d12 + 4) Slashing damage 
 
 Spellcasting. The cultist casts one of the following spells, using Wisdom as the spellcasting ability (spell save DC 15, +7 to hit with spell attacks):
 
-At Will: Scorching Ray (level 5 version), Thaumaturgy 2/Day: Fireball (level 6 version)
+At Will: Scorching Ray (level 5 version), Thaumaturgy
+2/Day: Fireball (level 6 version)
 
 ---
 **Reactions**
@@ -32,8 +33,60 @@ Hellish Rebuke. The cultist casts Hellish Rebuke in response to that spell’s t
 
 Fiend cultists worship fiends or evil deities. They often work to bring ruin to innocents or to summon their sinister patron into the world. Fiend cultists might serve infamous powers such as archdevils and demon lords, or foul immortals—beings such as Demogorgon, Pazuzu, Iuz, Zariel, or Zuggtmoy.
 
+---
+
+### Cultists
+
 Cultists use magic and extreme measures to spread radical beliefs. Some privately pursue esoteric secrets, while others form shadowy cabals seeking to bring about terrifying ends. Cultists often follow obscure mystical traditions or obsess over interpretations of ancient prophecies. They might worship supernatural patrons—deities, otherworldly creatures, manipulative alien minds, or stranger forces. Roll on or choose a result from the Cultist Agendas table to inspire what a cultist seeks to achieve.
 
+Cultist Agendas
+
+| 1d6 | The Cultist Strives To … |
+
+| --- | --- |
+
+| 1 | Bring about the end of a dominant order, an age, or the world. |
+
+| 2 | Burn away the comfortable lies of reality, revealing forgotten or terrible truths. |
+
+| 3 | Expand their faith though mind control or supernatural coercion. |
+
+| 4 | Make global changes, like sinking the land or awakening volcanoes. |
+
+| 5 | Remake life on a mass scale, altering other creatures’ bodies or spiritual beings. |
+
+| 6 | Summon their deity or its herald, weapon, or realm into their world. |
+
+---
+
+### Occult Symbols
+
 Cults often identify with symbols that exemplify their beliefs. Such symbols might mark objects important to the cult, as well as the dress and bodies of cultists themselves. These symbols might be broadly understandable, or they might have meaning only to cultists. Roll twice on or choose results from the Cult Symbols table to inspire a cult’s icons.
+
+Cult Symbols
+
+| 1d10 | The Symbol Is... | Depicted As... |
+
+| --- | --- | --- |
+
+| 1 | An alchemical sign | A calendar or map |
+
+| 2 | An animal | A crest or as heraldry |
+
+| 3 | A celestial body | An elaborate diagram |
+
+| 4 | A deity’s icon | A metaphorical image |
+
+| 5 | An element | A mystical being |
+
+| 6 | An eye | Part of an equation |
+
+| 7 | A geometric shape | A repeating pattern |
+
+| 8 | A letter or number | A series of scratches |
+
+| 9 | Part of a monster | A simple pictogram |
+
+| 10 | A skull | A weapon or tool |
 
 [source: https://www.dndbeyond.com/monsters/5194993-fiend-cultist]: #

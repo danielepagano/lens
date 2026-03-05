@@ -31,4 +31,22 @@ Succubi prey on mortals physically and exploit their waking desires. They relish
 
 Through fiendish rites, succubi can transform into incubi to manipulate their prey in dreams as well as the waking world. They can also change shape to torment their victims. These tempters can dominate Humanoids, but they usually do so to reinforce their manipulations or defend themselves rather than controlling others outright. Roll on or choose a result from the Succubus Temptations table to inspire how a succubus toys with its victims.
 
+Succubus Temptations
+
+| 1d6 | The Succubus Manipulates Its Target By … |
+
+| --- | --- |
+
+| 1 | Adopting the form of a lost loved one. |
+
+| 2 | Charming someone close to its target. |
+
+| 3 | Isolating them from their loved ones. |
+
+| 4 | Manipulating events to bring surprise fortune. |
+
+| 5 | Posing as a flattering underling. |
+
+| 6 | Taking the form of one in need of protection. |
+
 [source: https://www.dndbeyond.com/monsters/4904865-succubus]: #

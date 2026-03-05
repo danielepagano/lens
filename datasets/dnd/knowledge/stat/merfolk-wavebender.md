@@ -22,7 +22,8 @@ Aquatic Burst. Melee or Ranged Attack Roll: +7, reach 5 ft. or range 60 ft. Hit:
 
 Spellcasting. The merfolk casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 15):
 
-At Will: Elementalism, Light 1/Day Each: Control Water, Create or Destroy Water
+At Will: Elementalism, Light
+1/Day Each: Control Water, Create or Destroy Water
 
 ---
 **Reactions**
@@ -33,6 +34,10 @@ Watery Rebuke. Trigger: An enemy the merfolk can see enters a space within 5 fee
 **Description**
 
 These merfolk mages use magic to manipulate water, storms, and sea creatures to aid them.
+
+---
+
+### Merfolk
 
 Beneath the waves dwell merfolk, mysterious creatures that merge the features of humans and sea creatures. Some are curious about land dwellers, while others view them with suspicion.
 

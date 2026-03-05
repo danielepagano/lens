@@ -26,7 +26,8 @@ Lightning Storm (Recharge 5–6). Dexterity Saving Throw: DC 18, each creature i
 
 Spellcasting. The giant casts one of the following spells, requiring no Material components and using Wisdom as the spellcasting ability (spell save DC 18):
 
-At Will: Detect Magic, Light1/Day: Control Weather
+At Will: Detect Magic, Light
+1/Day: Control Weather
 
 ---
 **Description**

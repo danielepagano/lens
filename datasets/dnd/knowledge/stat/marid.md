@@ -27,7 +27,8 @@ Water Jet. Dexterity Saving Throw: DC 18, each creature in a 60-foot-long, 10-fo
 
 Spellcasting. The marid casts one of the following spells, requiring no Material components and using Charisma as the spellcasting ability (spell save DC 16):
 
-At Will: Create or Destroy Water, Detect Evil and Good, Detect Magic, Purify Food and Drink 1/Day Each: Control Water, Gaseous Form, Invisibility, Plane Shift, Tongues
+At Will: Create or Destroy Water, Detect Evil and Good, Detect Magic, Purify Food and Drink
+1/Day Each: Control Water, Gaseous Form, Invisibility, Plane Shift, Tongues
 
 ---
 **Description**

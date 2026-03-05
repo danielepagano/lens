@@ -8,11 +8,10 @@ import type { ListItem } from "../types.js";
 //   /equipment?filter-source={id}&page=N
 //
 // Confirmed selectors (verified 2026-03-04 against live DOM):
-//   List container:    .listing-body [data-slug]  (row = div.info direct child of ul.listing)
-//   Name link path:    #content > section > div > .listing-body > ul > div > .row.XXX-name > span.name > a
-//   Row link:          span.name a  or  a.link[href^="/"]  (detail link; first a[href] is often image)
-//   Pagination next:   li.b-pagination-item-next containing a[href] when next page exists
-//   Environment tags:  span.tag.environment-tag  (monsters only, on list rows)
+//   Spells/monsters/items: .listing-body [data-slug]  (row = div.info), span.name a or a.link
+//   Equipment:            .listing-body .list-row-equipment  (no data-slug; slug from a.link href)
+//   Pagination next:      li.b-pagination-item-next containing a[href] when next page exists
+//   Environment tags:     span.tag.environment-tag  (monsters only, on list rows)
 
 const BASE_URL = "https://www.dndbeyond.com";
 
@@ -22,10 +21,13 @@ function listPath(type: ContentType): string {
   return `/${type}`;
 }
 
+const LIST_READY_SELECTOR =
+  ".listing-body [data-slug], .listing-body .list-row-equipment, .listing-empty";
+
 /** Parse list items from the currently loaded list page (no navigation). */
 export async function parseListPage(page: Page, type: ContentType): Promise<ListItem[]> {
   await page
-    .waitForSelector(".listing-body [data-slug], .listing-empty", { timeout: 20000 })
+    .waitForSelector(LIST_READY_SELECTOR, { timeout: 20000 })
     .catch(() => {
       throw new Error(`List page did not render at ${page.url()}`);
     });
@@ -33,6 +35,22 @@ export async function parseListPage(page: Page, type: ContentType): Promise<List
   return page.evaluate(
     (contentType: string): ListItem[] => {
       const results: ListItem[] = [];
+      const base = "https://www.dndbeyond.com";
+
+      if (contentType === "equipment") {
+        const rows = document.querySelectorAll<HTMLElement>(".listing-body .list-row-equipment");
+        rows.forEach((row) => {
+          const anchor = row.querySelector<HTMLAnchorElement>('a.link[href^="/equipment/"]');
+          if (!anchor) return;
+          const href = anchor.getAttribute("href") ?? "";
+          const slug = href.replace(/^\/equipment\/?/, "").split("?")[0].trim() || "";
+          if (!slug) return;
+          const name = anchor.textContent?.trim() ?? slug;
+          results.push({ slug, url: `${base}${href}`, name });
+        });
+        return results;
+      }
+
       const rows = document.querySelectorAll<HTMLElement>(".listing-body [data-slug]");
       rows.forEach((row) => {
         const slug = row.getAttribute("data-slug") ?? "";
@@ -43,7 +61,7 @@ export async function parseListPage(page: Page, type: ContentType): Promise<List
         if (!anchor) return;
         const href = anchor.getAttribute("href") ?? "";
         const name = anchor.textContent?.trim() ?? slug;
-        const item: ListItem = { slug, url: `https://www.dndbeyond.com${href}`, name };
+        const item: ListItem = { slug, url: `${base}${href}`, name };
         if (contentType === "monsters") {
           const habitatTags = row.querySelectorAll<HTMLElement>("span.tag.environment-tag");
           if (habitatTags.length > 0) {
@@ -76,7 +94,7 @@ export async function extractListItems(
     await page.goto(url, { waitUntil: "networkidle" });
 
     await page
-      .waitForSelector(".listing-body [data-slug], .listing-empty", { timeout: 15000 })
+      .waitForSelector(LIST_READY_SELECTOR, { timeout: 15000 })
       .catch(() => {
         throw new Error(`List page did not render for ${type} page ${pageNum}`);
       });
@@ -84,6 +102,21 @@ export async function extractListItems(
     const items = await page.evaluate(
       (contentType: string): ListItem[] => {
         const results: ListItem[] = [];
+        const base = "https://www.dndbeyond.com";
+
+        if (contentType === "equipment") {
+          const rows = document.querySelectorAll<HTMLElement>(".listing-body .list-row-equipment");
+          rows.forEach((row) => {
+            const anchor = row.querySelector<HTMLAnchorElement>('a.link[href^="/equipment/"]');
+            if (!anchor) return;
+            const href = anchor.getAttribute("href") ?? "";
+            const slug = href.replace(/^\/equipment\/?/, "").split("?")[0].trim() || "";
+            if (!slug) return;
+            const name = anchor.textContent?.trim() ?? slug;
+            results.push({ slug, url: `${base}${href}`, name });
+          });
+          return results;
+        }
 
         const rows = document.querySelectorAll<HTMLElement>(".listing-body [data-slug]");
         rows.forEach((row) => {
@@ -98,11 +131,10 @@ export async function extractListItems(
 
           const item: ListItem = {
             slug,
-            url: `https://www.dndbeyond.com${href}`,
+            url: `${base}${href}`,
             name,
           };
 
-          // Habitats — only present on monster rows
           if (contentType === "monsters") {
             const habitatTags = row.querySelectorAll<HTMLElement>(
               "span.tag.environment-tag"
