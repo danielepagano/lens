@@ -30,6 +30,18 @@ poe lens <command>
 
 Always run `poe check` before considering a task complete. It runs lint, typecheck, and tests in sequence — all three must pass.
 
+## Cloud environment (Claude Code on claude.ai)
+
+Cloud sessions enforce signed git commits via a hook that calls an external
+API (`/tmp/code-sign`).  `poe test` and `poe check` work correctly because
+`lens/test/conftest.py` detects the environment at session start and injects
+`GIT_CONFIG_COUNT` overrides that disable signing for all subprocess git calls
+made during the pytest session.
+
+**How to detect a cloud session**: `/home/claude/.ssh/commit_signing_key.pub`
+exists.  Alternatively: `git config --global commit.gpgsign` returns `true`
+with `gpg.ssh.program` pointing to `/tmp/code-sign`.
+
 ## Architecture
 
 Lens is a CLI tool for managing AI-assisted narrative creation. A **Lens project** is a Git repository with a `lens.toml`, `narrative/`, and `knowledge/` directory.

@@ -349,34 +349,24 @@ def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
     return list(entries_by_id.values()), errors
 
 
-def kb_extract(file_paths: list[str]) -> KbExtractResult:
-    """Parse *file_paths* for ```kb blocks and upsert them into the KB store.
+def kb_extract_from_text(
+    text: str,
+    project_root: Path,
+    storage: Storage,
+) -> KbExtractResult:
+    """Parse ``kb`` fenced blocks from *text* and upsert them into the KB store.
 
-    All writes go through the KnowledgeStore singleton, which uses a single
-    lazily-created Storage — so all changes land as one pending git transaction.
+    Uses the provided *storage* instance so the writes join an existing
+    transaction.  This is the core extraction logic shared by ``kb_extract``
+    (CLI/file-path version) and the ``design`` operator (in-memory version).
     """
-    if not file_paths:
-        return KbExtractResult()
-
-    texts: list[str] = []
-    for file_path in file_paths:
-        path = Path(file_path)
-        if not path.exists() or not path.is_file():
-            raise LensException(f"file not found: {file_path}")
-        texts.append(path.read_text(encoding="utf-8"))
-
-    combined_text = "\n".join(texts)
-    entries, parse_errors = parse_kb_fences(combined_text)
-
+    entries, parse_errors = parse_kb_fences(text)
     result = KbExtractResult(errors=list(parse_errors))
 
     if not entries:
         return result
 
-    root = find_project_root()
-    git_root = find_git_root_from(root)
-    storage = Storage(git_root)
-    kb = KnowledgeStore.for_project(root, storage=storage)
+    kb = KnowledgeStore.for_project(project_root, storage=storage)
     for entry in entries:
         try:
             parse_id(entry.id)
@@ -397,3 +387,26 @@ def kb_extract(file_paths: list[str]) -> KbExtractResult:
         (result.inserted if is_new else result.updated).append(entry.id)
 
     return result
+
+
+def kb_extract(file_paths: list[str]) -> KbExtractResult:
+    """Parse *file_paths* for ```kb blocks and upsert them into the KB store.
+
+    All writes go through the KnowledgeStore singleton, which uses a single
+    lazily-created Storage — so all changes land as one pending git transaction.
+    """
+    if not file_paths:
+        return KbExtractResult()
+
+    texts: list[str] = []
+    for file_path in file_paths:
+        path = Path(file_path)
+        if not path.exists() or not path.is_file():
+            raise LensException(f"file not found: {file_path}")
+        texts.append(path.read_text(encoding="utf-8"))
+
+    combined_text = "\n".join(texts)
+    root = find_project_root()
+    git_root = find_git_root_from(root)
+    storage = Storage(git_root)
+    return kb_extract_from_text(combined_text, root, storage)
