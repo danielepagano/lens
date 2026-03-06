@@ -355,80 +355,74 @@ required_count = Σ count for each entry in required
 
 XP for each stat block is derived from its `cr:X` tag via the internal `CR_XP` table. Neither the budget nor any XP value is ever emitted in output.
 
-#### Phase 2: Required vs. budget — three cases
+#### Phase 2: Generate candidate solutions
 
-**Case A — Required exceeds budget**
+The algorithm treats the budget as a watermark and moves toward it from whatever the committed XP is. Both directions (over and under) use the same output structure — a list of candidate solutions sorted by closeness to the budget, each carrying an optional remark.
 
-Emit a warning section before any proposals:
+**If committed_xp > budget — reduce required**
 
-```
-⚠ Required monsters exceed the moderate budget.
-  These monsters are harder than requested — use them only if intentional.
-
-Budget-appropriate alternatives (reduce required counts to fit):
-  Option 1: 1 × Noble + 2 × Guard  (removes 4 guards)
-  Option 2: 1 × Noble + 1 × Guard  (removes 5 guards)
-```
-
-Slim-down logic: for each required entry with count > 1, compute the maximum count that keeps total committed XP ≤ budget while keeping all other required entries at their original counts. If at least one entry can be reduced to ≥ 1, emit up to three such alternatives ordered by how close they get to the budget. If no slim-down is possible (e.g. a single required monster already exceeds budget on its own), the warning notes this explicitly.
-
-After the warning, also emit the required lineup as a single proposal (the DM asked for it; they just need to know what they're getting into). No optional fill is added in this case.
-
-**Case B — Required exactly meets budget**
-
-Emit required as a single proposal. Note that it exactly meets the budget. No optional fill.
-
-**Case C — Required is under budget**
-
-`remaining = budget − committed_xp`. Proceed to Phase 3.
-
-#### Phase 3: Determine fill mode
-
-**Is it a horde?**  `required_count > 2 × num_pcs`
-
-If yes: the DM deliberately chose a large swarm. The optional fill should complement it with a small number of high-CR monsters (the "big baddy or two"), not more swarm creatures.
-
-- If `remaining < min_optional_xp` (can't even fit one of the cheapest optional): emit one proposal of required-only, with a note: *"Required monsters are close to budget — adding fewer [swarm type] would leave room for a big baddy."*
-- Otherwise: sort optional by CR_XP **descending** (prioritise high-CR), pick greedily until 2 have been selected or remaining budget is exhausted. Emit up to 3 proposals varying which 1–2 high-CR optionals are used.
-
-If no: normal fill mode (Phase 4).
-
-#### Phase 4: Normal fill — weighted random sampling
-
-**Fill target**: roughly 1 additional monster per PC beyond required, with wiggle room across proposals.
+For each required entry with `count > 1`, compute the maximum count that keeps total committed XP ≤ budget (all other entries unchanged):
 
 ```python
-base_fill = max(1, num_pcs - required_count)
-fill_targets = [base_fill, base_fill + 1, max(1, base_fill - 1)]
-# one per proposal; de-dup if base_fill is 1
+reduced = floor((budget - sum_xp_of_other_entries) / xp_of_this_entry)
+# include only if reduced >= 1
 ```
 
-**Optional candidate weights** (harmonic decay on rank):
+Each valid reduction is one candidate solution. Also include the original lineup as a solution (it may be closest to budget if no reduction lands closer). Collect all candidates.
+
+**If committed_xp ≤ budget — fill up**
+
+`remaining = budget − committed_xp`
+
+*With optional candidates*: sample up to 3 fill combinations using weighted randomization (Phase 3). Each combination is one candidate solution.
+
+*Without optional candidates* (empty list): for each required entry, try adding more of it:
+
+```python
+extra = floor(remaining / xp_of_this_entry)
+# if extra >= 1: solution = required with this entry count += extra
+```
+
+Each viable addition is one candidate solution. This path exists specifically for cases like "20 zombies required, no optionals — add more zombies."
+
+#### Phase 3: Weighted sampling for optional fill
+
+Weight each optional candidate by its rank position (harmonic decay):
 
 ```
 weight[i] = 1 / (i + 1)
-# candidate[0] → 1.0, candidate[1] → 0.5, candidate[2] → 0.33, candidate[3] → 0.25, …
+# optional[0] → 1.0, optional[1] → 0.5, optional[2] → 0.33, …
 ```
 
-For each of the 3 proposals, independently sample without replacement from the optional list using these weights to select up to 2 stat block types. Then for each selected type:
+For each of 3 independent samples:
+1. Sample without replacement using these weights to select **up to 2 stat block types** (DMG: 2–3 distinct stat blocks per encounter is the manageable ceiling)
+2. For each selected type, greedily assign count to spend remaining budget:
 
 ```python
-count = min(
-    floor(remaining_budget_share / xp),  # don't overspend
-    fill_target_for_this_proposal,        # headcount ceiling
-)
-count = max(1, count)
+count = max(1, floor(remaining / xp))
+remaining -= count * xp
 ```
 
-Remaining budget is consumed across the selected types in rank order. Total across required + fill must not exceed budget.
+3. Stop adding types once remaining < cheapest remaining optional XP
 
-After generating 3 proposals, deduplicate: if two proposals are identical (same types and counts), resample the duplicate up to 5 times; if still identical, drop it. Emit 1–3 distinct proposals.
+The result is a fill combination (list of `{id, count}`) appended to required to form a complete candidate solution.
 
-**Why weighted randomization instead of always taking top-3**: with a long optional list, deterministically taking the top 3 options ignores the rest entirely. Weighted sampling means lower-ranked candidates appear occasionally, producing more varied proposals across multiple tool calls and making better use of the search results the AI assembled.
+#### Phase 4: Rank and emit
 
-#### Phase 5: Emit proposals
+Sort all candidate solutions by `abs(total_xp − budget)`. Ties broken by putting under-budget solutions before over-budget ones (the DMG says don't exceed budget; being slightly under is fine).
 
-Each proposal is a table in the same format as `encounter_search`, with `Count` prepended. Required rows appear first, then optional fill rows. No XP is shown anywhere.
+Deduplicate (same set of `{id, count}` pairs). Emit up to 3 solutions, each as a count table followed by an optional remark line.
+
+**Remark conditions**:
+
+| Condition | Remark |
+|---|---|
+| total_xp > budget | "⚠ exceeds {difficulty} budget — use intentionally or raise difficulty" |
+| No slim-down possible (all required counts are 1, still over budget) | "⚠ required monster(s) alone exceed budget — no reduction possible" |
+| total_xp < 50% of budget | "budget largely unspent — consider higher-CR optional candidates" |
+| No fill was possible (remaining > 0, no optional, no required extras) | "no optional candidates provided; consider calling encounter_search first" |
+
+**Output format**:
 
 ```
 ## Encounter Proposals
@@ -453,19 +447,19 @@ Party: 4 × Level 5 | Difficulty: Moderate
 |---|---|---|---|---|---|---|
 | 1 | stat.wight | Wight | 3 | undead | medium | any |
 | 4 | stat.specter | Specter | 1 | undead | medium | any |
+> budget largely unspent — consider higher-CR optional candidates
 ```
 
 ### Edge cases
 
 | Situation | Behaviour |
 |---|---|
-| `required` is empty, `optional` is non-empty | Treat as all-optional; fill target = 1–2 per PC |
-| `required` is empty, `optional` is empty | Emit error: nothing to build an encounter from |
-| Required entry has no `cr:` tag | Skip XP contribution; note in header; still include in proposals |
-| Optional candidate has no `cr:` tag or not found in KB | Skip with a note in header; continue with remaining candidates |
-| Ally XP ≥ budget | Note: "Allies alone may outmatch this encounter"; emit required-only proposal |
-| Optional list has only 1 candidate | All 3 proposals use that candidate; vary count via the fill_targets |
-| Required is a horde and remaining budget = 0 | Emit required as-is; note: "Consider fewer [X] to allow room for a supporting monster" |
+| `required` is empty, `optional` is non-empty | Committed XP = 0; all fill comes from optional |
+| Both `required` and `optional` are empty | Emit error: nothing to build an encounter from |
+| Required entry has no `cr:` tag | Treat its XP as 0 (skip from budget math); include in proposals; note in output |
+| Optional candidate has no `cr:` tag or not found in KB | Skip silently; note in output header |
+| Ally XP ≥ budget | Budget ≤ 0; note "Allies alone may outmatch this encounter"; emit required-only if non-empty |
+| All candidates produce total XP < 50% of budget | Emit best available, remark on unspent budget |
 
 ---
 
@@ -676,10 +670,10 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
   - [ ] `cr_str_to_float()` — `"1/4"` → `0.25` (ally parameter format → float)
   - [ ] `_name_from_id()` — `"stat.adult-white-dragon"` → `"Adult White Dragon"`
   - [ ] `_stat_xp()` — look up XP for a stat block ID via its `cr:` tag
-  - [ ] `_slim_down_proposals()` — generate count-reduced alternatives when required exceeds budget
-  - [ ] `_weighted_sample()` — sample without replacement using harmonic-decay weights
-  - [ ] `_horde_fill()` — sort optional by XP desc, greedily pick 1–2 big baddies
-  - [ ] `_normal_fill()` — 3 independent weighted samples, dedup, vary fill_target ±1
+  - [ ] `_reduce_candidates()` — for each over-budget required entry with count > 1, generate a reduced solution
+  - [ ] `_weighted_sample()` — sample without replacement using harmonic-decay weights; returns up to 2 optional types per call
+  - [ ] `_fill_candidates()` — 3 independent weighted samples from optional (or extra-required if no optional); returns fill combinations
+  - [ ] `_rank_solutions()` — sort by abs(total_xp − budget), ties: under before over; deduplicate
   - [ ] `_invoke_encounter_search()` — async tool handler
   - [ ] `_invoke_encounter_build()` — async tool handler; emits count tables, no XP
   - [ ] `register_operator_tool()` calls for both tools
@@ -688,11 +682,12 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
   - [ ] Ally XP reduction (including reduction to zero)
   - [ ] CR tag ↔ float round-trip (both directions)
   - [ ] Search tag filtering logic (can be tested against the testing dataset)
-  - [ ] Slim-down proposals: over-budget required with reducible counts
-  - [ ] Slim-down proposals: single required monster already over budget (no slim-down possible)
-  - [ ] Normal fill: weighted sampling produces varied proposals; lower-ranked candidates can appear
-  - [ ] Horde fill: optional sorted by XP descending, max 2 selected
-  - [ ] Horde fill: remaining budget too small for any optional → required-only with note
+  - [ ] Reduce path: over-budget required with reducible counts → reduced solutions sorted by closeness
+  - [ ] Reduce path: single required monster already over budget → original returned with remark, no reduction possible
+  - [ ] Fill path (optional): 3 weighted samples produce distinct proposals; lower-ranked candidates can appear
+  - [ ] Fill path (no optional): extra-required fill used; produces at least 1 solution
+  - [ ] Ranking: solutions sorted by abs distance; under-budget before over-budget at equal distance
+  - [ ] Remark conditions: over-budget, budget < 50%, no fill possible
   - [ ] Edge cases: empty required, empty optional, both empty
 - [ ] Run `poe check` (lint + typecheck + tests)
 
@@ -700,7 +695,7 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
 
 ## Open Questions
 
-**1. Monster count cap**: The horde/normal split handles this structurally — normal fill targets ~1 per PC, so hordes only appear when the DM explicitly requires them. The DMG note about >2 per PC variance risk is worth surfacing as a header annotation on required hordes, but it should not block output.
+**1. Monster count cap**: The XP watermark approach naturally produces reasonable counts — budget / XP-per-monster gives a count that scales with the encounter tier. Hordes only appear when the DM explicitly requires them or when the optional candidates have very low CR relative to the party. The DMG note about >2 per PC variance risk could be surfaced as a remark, but it's not yet in the remark conditions table; add it if it proves useful during testing.
 
 **2. Multiple habitats per monster**: The search already handles this since `get_ids_with_tag("habitat:urban")` returns any monster tagged with that habitat. No special handling needed.
 
