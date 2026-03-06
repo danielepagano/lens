@@ -242,7 +242,7 @@ def with_tag(
                     typer.echo(cid)
             if result.layers:
                 for parent_tag, child_ids in result.layers:
-                    typer.echo(f"\n## Children of tag {parent_tag!r}")
+                    typer.echo(f"\n> with-tag {parent_tag!r}")
                     for cid in child_ids:
                         typer.echo(cid)
         else:

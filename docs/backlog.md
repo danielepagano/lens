@@ -37,6 +37,11 @@
 
 ## General Backlog
 
+- **KB search improvements**:
+    - NEW `kb list-tags` lists unique tag values, opt by type (`--type stat`), or by prefix (`--start-with cr:`)
+    - IMPROVE `kb with-tag` with  
+        - Support for OR groups of tags using parens: `type:aberration (cr:1 cr:2)` is aberrations of CR 1 or 2.
+        - Print the object's tags next to each id in non-expanded mode (also makes recursive mode make more sense!)
 - Add a role marker so we know which character is acting?
 - **`attach` Operator** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
 - **Background KB extraction** *(infrastructure, not a player operator)*

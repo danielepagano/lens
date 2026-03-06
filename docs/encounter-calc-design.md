@@ -1,70 +1,49 @@
 # Encounter Calculator Design
 
-> Status: Design (not yet implemented)
-
 ## Overview
 
-When the DM describes a narrative situation — zombies rising in a cemetery, bandits blocking the road — the AI needs to find and assemble an appropriate set of monsters without loading every stat block into context. This subsystem provides two LLM-callable tools that close that gap:
+When the DM describes a narrative situation (e.g. zombies rising in a cemetery, bandits blocking the road, cultists trying to complete a ritual) the AI needs to find and assemble an appropriate set of monsters without loading every stat block into context. The AI uses `kb with-tag` to discover stat block candidates — submitting sets of CR tags (or no CR restriction), habitat filters, type filters, etc. — then calls a single LLM-callable tool:
 
-1. **`encounter_search`** — finds stat block IDs matching a CR range, habitat, and monster type, returning a compact table (no stat block bodies)
-2. **`encounter_build`** — takes the AI's ranked candidate list plus party composition and produces up to three balanced encounter proposals using D&D 2024 XP budget math (internally; XP is never surfaced in output)
+**`balance_encounter`** — takes the AI's ranked candidate list plus party composition and produces up to three balanced encounter proposals using D&D 2024 XP budget math (internally; XP is never surfaced in output).
 
-The AI uses these tools in sequence: search to discover candidates, rank them by narrative fit, then build to get balanced monster lineups. The AI then picks the best proposal and writes the encounter narratively.
-
-Both tools are dataset-gated (`limited_to_datasets = ["dnd"]`) and are registered via the standard `register_operator_tool` mechanism, making them available inside any operator when the `dnd` dataset is active — primarily `play` and the planned `encounter` operator.
+The AI uses `kb with-tag` to discover candidates, ranks them by narrative fit, then calls `balance_encounter` to get balanced monster lineups. The AI picks the best proposal and writes the encounter narratively. The tool is dataset-gated (`limited_to_datasets = ["dnd"]`) and registered via the standard `register_operator_tool` mechanism, making it available inside any operator when the `dnd` dataset is active during a planning operator such as `design`.
 
 ---
 
 ## User Flow
 
 ```
-DM invokes play or encounter operator
+DM invokes designs and acounter in planning mode
   │
   ├─ AI assesses narrative situation and party composition
-  │    (PCs are pinned; AI sees level:N tags from context)
+  │    (PCs are pinned; AI sees level:N tags from context — per pc/_template.md)
   │
-  ├─ AI calls encounter_search(cr_min, cr_max, habitat, monster_type)
-  │    → compact table of candidate stat IDs with CR/type/size/habitats
+  ├─ AI uses kb with-tag to discover candidates
+  │    e.g. kb with-tag type:undead (cr:1 cr:2 cr:3 cr:1-4)
+  │    or   kb with-tag (habitat:forest habitat:any)
+  │    or   kb with-tag type:humanoid  (no CR restriction)
+  │    → IDs with tags (CR/type/size/habitat) in with-tag's standard output
+  │    AI may use kb list-tags --type stat --start-with cr: to learn tag values
   │
   ├─ AI decides:
   │    required  = specific stat blocks with fixed counts the scene demands
   │               (e.g. the vampire they're chasing, the noble + her guard unit)
   │    optional  = ranked list of fill-in candidates (no counts — tool decides)
   │
-  ├─ AI calls encounter_build(required, optional, difficulty, pcs, allies?)
+  ├─ AI calls balance_encounter(required, optional, difficulty, pcs, allies?)
   │    → if required is already over budget: warning + slim-down alternatives
   │    → otherwise: up to 3 fill proposals in count-table format
   │
-  └─ AI picks winning proposal and writes the encounter narrative
+  └─ AI picks winning proposal and creates encounter
 ```
 
 ---
 
 ## Tag Conventions
 
-### Existing tags on `stat.*` objects (set by `ddb-extract` / `lens kb tag`)
-
-| Tag key | Example values | Meaning |
-|---|---|---|
-| `cr:X` | `cr:0` `cr:1-8` `cr:1-4` `cr:1-2` `cr:1` … `cr:30` | Challenge Rating (see CR encoding below) |
-| `type:X` | `type:undead` `type:humanoid` `type:dragon` | Monster type |
-| `size:X` | `size:tiny` … `size:gargantuan` | Creature size |
-| `habitat:X` | `habitat:urban` `habitat:forest` `habitat:any` … | Valid habitat(s); a stat block can have multiple |
-
-### New tag needed: `level:N` on `pc.*` objects
-
-The DM must add a `level:N` tag to each PC KB object. The `N` is the PC's current character level (1–20). Example:
-
-```bash
-lens kb tag pc.elara -a level:5
-lens kb tag pc.bodok -a level:3
-```
-
-When the AI reads the encounter context, pinned PCs appear in the `[RELEVANT KNOWLEDGE]` block with their tags visible (via `KnowledgeObject.format()`). The AI reads the levels from there and passes them explicitly to `encounter_build`.
-
-Allied creatures (friendly NPCs, summoned beasts, etc.) are identified by their CR rather than a level. The AI identifies allies from context and passes their CRs directly.
-
----
+We need two tags for this to work:  
+ - `cr:X` tag on `stat` (created by tooling reliably)
+ - `level:X` tag on `pc` (maintained by user)
 
 ## CR Tag Encoding
 
@@ -80,8 +59,6 @@ Fractional CRs use the denominator as a hyphen-separated suffix:
 | 2 | `cr:2` | 2.0 |
 | … | … | … |
 | 30 | `cr:30` | 30.0 |
-
-The `encounter_search` tool accepts `cr_min` and `cr_max` as float strings (e.g. `"0.25"`, `"5"`). Internally it maps each float to the tag value it corresponds to and queries all CR tags that fall within the range.
 
 Canonical CR-to-tag mapping:
 
@@ -104,7 +81,7 @@ CR_TAG_ORDER: list[tuple[float, str]] = [
 
 ### Design choice: no monster-count multiplier
 
-D&D 2024 dropped the monster-count multiplier used in the 2014 DMG. Monster XP is summed directly and compared against the party's XP budget for the requested difficulty. This is simpler to reason about and aligns with current rules.
+Monster XP is summed directly and compared against the party's XP budget for the requested difficulty. This is simpler to reason about and aligns with current rules.
 
 ### XP budget per character by level
 
@@ -145,7 +122,7 @@ If `adjusted_budget ≤ 0` the encounter is trivially easy regardless of monster
 
 ### CR to XP table
 
-Standard D&D XP values (same across 2014 and 2024):
+Standard D&D XP values:
 
 | CR | XP | CR | XP | CR | XP |
 |---|---|---|---|---|---|
@@ -165,135 +142,7 @@ Standard D&D XP values (same across 2014 and 2024):
 
 ---
 
-## Tool 1: `encounter_search`
-
-### Purpose
-
-Search `stat.*` KB objects by CR range and optional filters. Returns a compact table that the AI uses to rank candidates. Does NOT return stat block bodies — only IDs and their categorical tags.
-
-### JSON Schema (parameters)
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "cr_min": {
-      "type": "string",
-      "description": "Minimum CR (inclusive) as a decimal string: '0', '0.125', '0.25', '0.5', '1', '2', ... '30'."
-    },
-    "cr_max": {
-      "type": "string",
-      "description": "Maximum CR (inclusive) as a decimal string."
-    },
-    "habitat": {
-      "type": "string",
-      "description": "Optional habitat filter. One of: arctic, coastal, desert, forest, grassland, hill, mountain, swamp, underdark, underwater, urban, any, planar-abyss, planar-nine-hells, planar-feywild, planar-shadowfell. Omit to search all habitats."
-    },
-    "monster_type": {
-      "type": "string",
-      "description": "Optional type filter. One of: aberration, beast, celestial, construct, dragon, elemental, fey, fiend, giant, humanoid, monstrosity, ooze, plant, undead. Omit to include all types."
-    }
-  },
-  "required": ["cr_min", "cr_max"]
-}
-```
-
-### Implementation
-
-```python
-async def _invoke_encounter_search(args, session, narrative, depth, on_token, on_confirm):
-    cr_min = float(args["cr_min"])
-    cr_max = float(args["cr_max"])
-    habitat = args.get("habitat")
-    monster_type = args.get("monster_type")
-
-    kb = KnowledgeStore.for_project(session.project_root)
-
-    # 1. Collect all CR tags within [cr_min, cr_max]
-    cr_tags = [tag for (cr_val, tag) in CR_TAG_ORDER if cr_min <= cr_val <= cr_max]
-    if not cr_tags:
-        await on_token("No CR tags found in that range.\n")
-        return
-
-    # 2. Get stat IDs for each CR tag in range, union them
-    matching: set[str] = set()
-    for tag in cr_tags:
-        matching.update(kb.get_ids_with_tag(tag))
-
-    # Filter to stat.* objects only
-    matching = {id for id in matching if id.startswith("stat.")}
-
-    # 3. Optionally intersect with habitat filter
-    if habitat:
-        habitat_ids = set(kb.get_ids_with_tag(f"habitat:{habitat}"))
-        matching &= habitat_ids
-
-    # 4. Optionally intersect with type filter
-    if monster_type:
-        type_ids = set(kb.get_ids_with_tag(f"type:{monster_type}"))
-        matching &= type_ids
-
-    if not matching:
-        await on_token("No stat blocks found matching the given criteria.\n")
-        return
-
-    # 5. For each match, retrieve tags and build table row
-    rows = []
-    for stat_id in sorted(matching):
-        tags = kb.get_tags(stat_id)
-        cr = _tag_value(tags, "cr")
-        mtype = _tag_value(tags, "type")
-        size = _tag_value(tags, "size")
-        habitats = ", ".join(_tag_values(tags, "habitat"))
-        name = _name_from_id(stat_id)  # "stat.adult-white-dragon" → "Adult White Dragon"
-        rows.append((stat_id, name, cr, mtype, size, habitats))
-
-    # 6. Emit markdown table
-    lines = ["| ID | Name | CR | Type | Size | Habitats |",
-             "|---|---|---|---|---|---|"]
-    for stat_id, name, cr, mtype, size, habitats in rows:
-        lines.append(f"| {stat_id} | {name} | {cr} | {mtype} | {size} | {habitats} |")
-
-    await on_token("\n".join(lines) + "\n")
-```
-
-Helper functions:
-
-```python
-def _tag_value(tags: list[str], prefix: str) -> str:
-    """Return first value after 'prefix:' in the tag list, or ''."""
-    for t in tags:
-        if t.startswith(f"{prefix}:"):
-            return t[len(prefix)+1:]
-    return ""
-
-def _tag_values(tags: list[str], prefix: str) -> list[str]:
-    """Return all values after 'prefix:' in the tag list."""
-    return [t[len(prefix)+1:] for t in tags if t.startswith(f"{prefix}:")]
-
-def _name_from_id(stat_id: str) -> str:
-    """'stat.adult-white-dragon' → 'Adult White Dragon'"""
-    key = stat_id.split(".", 1)[-1]
-    return " ".join(word.capitalize() for word in key.split("-"))
-```
-
-### Output format (example)
-
-```
-| ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|
-| stat.ghoul | Ghoul | 1 | undead | medium | any |
-| stat.skeleton | Skeleton | 1-4 | undead | medium | any |
-| stat.specter | Specter | 1 | undead | medium | any |
-| stat.wight | Wight | 3 | undead | medium | any |
-| stat.zombie | Zombie | 1-4 | undead | medium | any |
-```
-
-CR values in the table use the raw tag format (`1-4` for 1/4, `1-2` for 1/2) — the AI knows how to read these.
-
----
-
-## Tool 2: `encounter_build`
+## Tool: `balance_encounter`
 
 ### Purpose
 
@@ -368,7 +217,10 @@ reduced = floor((budget - sum_xp_of_other_entries) / xp_of_this_entry)
 # include only if reduced >= 1
 ```
 
-Each valid reduction is one candidate solution. Also include the original lineup as a solution (it may be closest to budget if no reduction lands closer). Collect all candidates.
+Each valid reduction is one candidate solution. **Always include the original requested lineup** as a candidate (the DM may want PCs to face an impossible enemy with a narrative way out planned, for drama reasons).
+
+- *If any reduction brings total XP in-budget*: the best in-budget reduction is surfaced first; the original is emitted as a later option with the remark "Over requested XP budget; do not use without narrative safeguards".
+- *If no reduction is possible* (all required counts are 1, or no reduction lands in-budget): emit only the original with the remark "⚠ required monster(s) alone exceed budget — no reduction possible".
 
 **If committed_xp ≤ budget — fill up**
 
@@ -409,45 +261,34 @@ The result is a fill combination (list of `{id, count}`) appended to required to
 
 #### Phase 4: Rank and emit
 
-Sort all candidate solutions by `abs(total_xp − budget)`. Ties broken by putting under-budget solutions before over-budget ones (the DMG says don't exceed budget; being slightly under is fine).
+Sort all candidate solutions by `abs(total_xp − budget)`. Ties broken by putting under-budget solutions before over-budget ones (the DMG says don't exceed budget; being slightly under is fine). This ensures that when both a reduced in-budget solution and the original over-budget lineup exist, the reduced one appears first.
 
 Deduplicate (same set of `{id, count}` pairs). Emit up to 3 solutions, each as a count table followed by an optional remark line.
+
+**Remark selection**: For over-budget solutions, the remark depends on whether reduction was possible. If the reduce path could produce at least one in-budget reduction (i.e. at least one required entry had `count > 1` and a valid reduced count), use "Over requested XP budget; do not use without narrative safeguards" for the original lineup. If no reduction was possible, use the "no slim-down possible" remark.
+
+**Monster count cap**: When emitting each solution, compute `party_size = len(pcs) + len(allies)`. If `total_monster_count / party_size > 4`, append the monster-count warning to that solution's remark (in addition to any other remark). This warns that action economy may make the encounter harder than XP math suggests.
 
 **Remark conditions**:
 
 | Condition | Remark |
 |---|---|
-| total_xp > budget | "⚠ exceeds {difficulty} budget — use intentionally or raise difficulty" |
-| No slim-down possible (all required counts are 1, still over budget) | "⚠ required monster(s) alone exceed budget — no reduction possible" |
+| total_xp > budget (reduction was possible; this is the original requested lineup) | "Over requested XP budget; do not use without narrative safeguards" |
+| total_xp > budget (no reduction possible — all required counts are 1) | "⚠ required monster(s) alone exceed budget — no reduction possible" |
 | total_xp < 50% of budget | "budget largely unspent — consider higher-CR optional candidates" |
-| No fill was possible (remaining > 0, no optional, no required extras) | "no optional candidates provided; consider calling encounter_search first" |
+| No fill was possible (remaining > 0, no optional, no required extras) | "no optional candidates provided; consider using kb with-tag to discover candidates first" |
+| Total monster count / party size > 4 | "You have more than the recommended number of enemies per ally; this encounter may be harder than CR math suggests, consider lowering enemy count" |
 
 **Output format**:
 
 ```
-## Encounter Proposals
+Encounter Proposals
+Line format: [creature qty] stat.id ..tags..
 
-Party: 4 × Level 5 | Difficulty: Moderate
+> Option A (any remarks here)
+[1] stat.wight cr:3 type:undead size:medium habitat:any
+[4] stat.ghoul cr:1 type:undead size:medium habitat:any
 
-### Option A
-| Count | ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|---|
-| 1 | stat.wight | Wight | 3 | undead | medium | any |
-| 4 | stat.ghoul | Ghoul | 1 | undead | medium | any |
-
-### Option B
-| Count | ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|---|
-| 1 | stat.wight | Wight | 3 | undead | medium | any |
-| 3 | stat.zombie | Zombie | 1-4 | undead | medium | any |
-| 2 | stat.ghoul | Ghoul | 1 | undead | medium | any |
-
-### Option C
-| Count | ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|---|
-| 1 | stat.wight | Wight | 3 | undead | medium | any |
-| 4 | stat.specter | Specter | 1 | undead | medium | any |
-> budget largely unspent — consider higher-CR optional candidates
 ```
 
 ### Edge cases
@@ -469,22 +310,11 @@ Party: 4 × Level 5 | Difficulty: Moderate
 
 Four Level 5 PCs explore an old cemetery at night. No allies. Moderate difficulty.
 
-**`encounter_search` call**:
-```json
-{"cr_min": "0", "cr_max": "5", "monster_type": "undead"}
+**`kb with-tag` call** (with-tag output shows IDs with tags):
 ```
-
-Result (subset):
+kb with-tag type:undead (cr:1 cr:2 cr:3 cr:1-4 cr:1-2)
 ```
-| ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|
-| stat.ghast | Ghast | 2 | undead | medium | any |
-| stat.ghoul | Ghoul | 1 | undead | medium | any |
-| stat.skeleton | Skeleton | 1-4 | undead | medium | any |
-| stat.specter | Specter | 1 | undead | medium | any |
-| stat.wight | Wight | 3 | undead | medium | any |
-| stat.zombie | Zombie | 1-4 | undead | medium | any |
-```
+→ e.g. stat.ghast cr:2 type:undead, stat.ghoul cr:1 type:undead, stat.skeleton cr:1-4 type:undead, stat.specter cr:1 type:undead, stat.wight cr:3 type:undead, stat.zombie cr:1-4 type:undead, …
 
 AI decides: no single monster is required; it wants to see wight as the anchor, with ghoul and specter as atmospheric fill. It calls:
 
@@ -497,7 +327,26 @@ AI decides: no single monster is required; it wants to see wight as the anchor, 
 }
 ```
 
-Budget = 4 × 750 = 3,000. Fill target: ~4 additional. Weighted sampling biases toward wight and ghoul but may occasionally surface specter. Three proposals emerge with different optional combinations; AI picks the one that fits the scene.
+Budget = 4 × 750 = 3,000. Fill target: ~4 additional. Weighted sampling biases toward wight and ghoul but may occasionally surface specter. Example output:
+
+```
+Encounter Proposals
+Line format: [creature qty] stat.id ..tags..
+
+> Option A
+[1] stat.wight cr:3 type:undead size:medium habitat:any
+[4] stat.ghoul cr:1 type:undead size:medium habitat:any
+
+> Option B
+[2] stat.ghast cr:2 type:undead size:medium habitat:any
+[2] stat.specter cr:1 type:undead size:medium habitat:any
+
+> Option C
+[1] stat.wight cr:3 type:undead size:medium habitat:any
+[2] stat.zombie cr:1-4 type:undead size:medium habitat:any
+```
+
+AI picks the one that fits the scene.
 
 ---
 
@@ -505,7 +354,7 @@ Budget = 4 × 750 = 3,000. Fill target: ~4 additional. Weighted sampling biases 
 
 Four Level 4 PCs confront a corrupt noble at a gala. The noble must be present; guards round it out. Moderate difficulty.
 
-**`encounter_build` call**:
+**`balance_encounter` call**:
 ```json
 {
   "required": [{"id": "stat.noble", "count": 1}],
@@ -515,39 +364,57 @@ Four Level 4 PCs confront a corrupt noble at a gala. The noble must be present; 
 }
 ```
 
-Budget = 4 × 375 = 1,500. Noble XP = 700. Remaining = 800. Fill target ≈ 3 (1 per PC beyond the noble). Guard XP = 50. Proposals vary: Option A might be 4 guards, Option B might be 2 thugs, Option C might be 1 spy + 2 guards — all sampled by weight.
+Budget = 4 × 375 = 1,500. Noble XP = 700. Remaining = 800. Fill target ≈ 3 (1 per PC beyond the noble). Guard XP = 50. Example output:
+
+```
+Encounter Proposals
+Line format: [creature qty] stat.id ..tags..
+
+> Option A
+[1] stat.noble cr:1-8 type:humanoid size:medium habitat:urban
+[4] stat.guard cr:1-8 type:humanoid size:medium habitat:urban
+
+> Option B
+[1] stat.noble cr:1-8 type:humanoid size:medium habitat:urban
+[2] stat.thug cr:1-2 type:humanoid size:medium habitat:urban
+
+> Option C
+[1] stat.noble cr:1-8 type:humanoid size:medium habitat:urban
+[1] stat.spy cr:1 type:humanoid size:medium habitat:urban
+[2] stat.guard cr:1-8 type:humanoid size:medium habitat:urban
+```
 
 ---
 
-### Example 3 — Over-budget required (chase scene ends in fight)
+### Example 3 — Over-budget required (reducible)
 
-Four Level 5 PCs finally corner the vampire. Moderate difficulty requested.
+Four Level 5 PCs face a zombie horde blocking a bridge. The DM wants 80 zombies for the scene. Moderate difficulty.
 
-**`encounter_build` call**:
+**`balance_encounter` call**:
 ```json
 {
-  "required": [{"id": "stat.vampire", "count": 1}],
-  "optional": ["stat.zombie", "stat.skeleton"],
+  "required": [{"id": "stat.zombie", "count": 80}],
+  "optional": [],
   "difficulty": "moderate",
   "pcs": [5, 5, 5, 5]
 }
 ```
 
-Budget = 3,000. Vampire XP = 10,000. Required exceeds budget.
+Budget = 3,000. Zombie XP = 50 each → 80 × 50 = 4,000 committed. Required exceeds budget. Reduction possible: floor(3,000 / 50) = 60 zombies brings total in-budget.
 
 Output:
 ```
-⚠ Required monsters exceed the moderate budget.
-  The vampire alone is a high-difficulty encounter for this party.
-  Use intentionally, or switch difficulty to "high".
+Encounter Proposals
+Line format: [creature qty] stat.id ..tags..
 
-No slim-down available — reducing count below 1 is not possible.
+> Option A
+[60] stat.zombie cr:1-4 type:undead size:medium habitat:any
 
-### Required Lineup (over budget — use with intention)
-| Count | ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|---|
-| 1 | stat.vampire | Vampire | 13 | undead | medium | any |
+> Option B (Over requested XP budget; do not use without narrative safeguards)
+[80] stat.zombie cr:1-4 type:undead size:medium habitat:any
 ```
+
+The reduced lineup (Option A) is always first when reduction is possible; the original requested set (Option B) is offered as a later option for DMs who want an overwhelming encounter with a planned narrative way out. When no reduction is possible (e.g. a single vampire, count 1), the tool emits only the original lineup with the remark "⚠ required monster(s) alone exceed budget — no reduction possible".
 
 ---
 
@@ -555,7 +422,7 @@ No slim-down available — reducing count below 1 is not possible.
 
 Four Level 5 PCs wade into a graveyard overrun by the undead. The DM wants 20 zombies as the swarm, rounded out with something scarier. Moderate difficulty.
 
-**`encounter_build` call**:
+**`balance_encounter` call**:
 ```json
 {
   "required": [{"id": "stat.zombie", "count": 20}],
@@ -568,35 +435,18 @@ Four Level 5 PCs wade into a graveyard overrun by the undead. The DM wants 20 zo
 Budget = 3,000. Zombie XP = 50 each → 1,000 committed. Remaining = 2,000. Horde mode (20 > 2 × 4 = 8). Sort optional by CR descending: mummy (CR 3, 700 XP), wight (CR 3, 700 XP), ghast (CR 2, 450 XP). Greedily fill with 1–2 big baddies:
 
 ```
-### Option A
-| Count | ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|---|
-| 20 | stat.zombie | Zombie | 1-4 | undead | medium | any |
-| 1 | stat.mummy | Mummy | 3 | undead | medium | desert, any |
-| 1 | stat.wight | Wight | 3 | undead | medium | any |
+Encounter Proposals
+Line format: [creature qty] stat.id ..tags..
 
-### Option B
-| Count | ID | Name | CR | Type | Size | Habitats |
-|---|---|---|---|---|---|---|
-| 20 | stat.zombie | Zombie | 1-4 | undead | medium | any |
-| 2 | stat.ghast | Ghast | 2 | undead | medium | any |
+> Option A
+[20] stat.zombie cr:1-4 type:undead size:medium habitat:any
+[1] stat.mummy cr:3 type:undead size:medium habitat:desert habitat:any
+[1] stat.wight cr:3 type:undead size:medium habitat:any
+
+> Option B
+[20] stat.zombie cr:1-4 type:undead size:medium habitat:any
+[2] stat.ghast cr:2 type:undead size:medium habitat:any
 ```
-
----
-
-## Integration with the `encounter` Operator
-
-The `encounter` operator is already sketched in `docs/rpg-design.md`. The calculator tools are the missing mechanical layer that makes it viable.
-
-When the `encounter` operator is built, its system prompt should:
-1. Tell the AI that PCs in context have `level:N` tags visible
-2. Instruct the AI to call `encounter_search` first with a CR range and habitat that matches the narrative situation
-3. After ranking the search results, call `encounter_build` with the ranked candidates and explicit party array
-4. Select one proposal and open the encounter sub-node with the chosen lineup
-
-The two tools are also available inside `play` (since tools are session-wide when the `dnd` dataset is active), so the AI can initiate encounter planning mid-scene without a dedicated operator call.
-
----
 
 ## File Layout
 
@@ -606,37 +456,22 @@ All encounter calculator code lives in a single new file:
 lens/core/operators/encounter_calc.py
 ```
 
-It registers two tools at module import time (the `tools.py` autodiscovery mechanism picks it up from `lens/core/operators/`):
+It registers the `balance_encounter` tool at module import time (the `tools.py` autodiscovery mechanism picks it up from `lens/core/operators/`):
 
 ```python
 register_operator_tool(
-    "encounter_search",
+    "balance_encounter",
     OperatorToolDef(
-        parameters=ENCOUNTER_SEARCH_SCHEMA,
+        parameters=balance_encounter_SCHEMA,
         prompt_snippet=(
-            "Use encounter_search to find stat block IDs by CR range, habitat, and monster type. "
-            "Returns a table of IDs with CR/type/size/habitat — not full stat blocks. "
-            "Call this before encounter_build to discover candidates."
-        ),
-        keep_text=True,
-    ),
-    _invoke_encounter_search,
-    limited_to_datasets=["dnd"],
-)
-
-register_operator_tool(
-    "encounter_build",
-    OperatorToolDef(
-        parameters=ENCOUNTER_BUILD_SCHEMA,
-        prompt_snippet=(
-            "Use encounter_build to generate up to three balanced encounter proposals from a "
+            "Use balance_encounter to generate up to three balanced encounter proposals from a "
             "ranked candidate list. Pass PC levels explicitly from context (level:N tags on pinned "
             "pc.* objects) and ally CRs if any allies fight alongside the party. "
             "The tool uses D&D 2024 XP budget math (no monster-count multiplier)."
         ),
         keep_text=True,
     ),
-    _invoke_encounter_build,
+    _invoke_balance_encounter,
     limited_to_datasets=["dnd"],
 )
 ```
@@ -651,11 +486,9 @@ The XP budget table, CR-to-XP table, and CR tag ordering are module-level consta
 
 ## System Prompt Snippet for Operators
 
-When the `dnd` dataset is active, both tools append their `prompt_snippet` to the operator system prompt via the existing tool-rendering path in `operator.py`. No additional system prompt engineering is needed beyond what the tools declare.
+The DM-facing guidance (how to actually USE these tools during a session) belongs in a KB object — likely `design.encounter`. That object is out of scope for this design but should say something like:
 
-The DM-facing guidance (how to actually USE these tools during a session) belongs in a KB object — likely `rules.encounter` or a design object — that the player or DM pins when planning combat. That object is out of scope for this design but should say something like:
-
-> When planning a combat encounter: estimate an appropriate CR range (party level × 2/3 for moderate difficulty). Call encounter_search with that range plus the narrative habitat and monster type. Rank results by fit. Call encounter_build with your ranked list, the PC levels from their pinned objects, and any allied creatures. Pick a proposal and narrate.
+> When planning a combat encounter: use kb with-tag (with OR groups for CR sets, habitat, type) or kb list-tags to discover stat block candidates. Rank results by narrative fit. Call balance_encounter with your ranked list, the PC levels from their pinned objects, and any allied creatures. Pick a proposal and narrate.
 
 ---
 
@@ -670,35 +503,21 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
   - [ ] `cr_str_to_float()` — `"1/4"` → `0.25` (ally parameter format → float)
   - [ ] `_name_from_id()` — `"stat.adult-white-dragon"` → `"Adult White Dragon"`
   - [ ] `_stat_xp()` — look up XP for a stat block ID via its `cr:` tag
-  - [ ] `_reduce_candidates()` — for each over-budget required entry with count > 1, generate a reduced solution
+  - [ ] `_reduce_candidates()` — for each over-budget required entry with count > 1, generate reduced solutions; always include original lineup when any reduction is possible; always include the original lineup as a candidate when any reduction is possible
   - [ ] `_weighted_sample()` — sample without replacement using harmonic-decay weights; returns up to 2 optional types per call
   - [ ] `_fill_candidates()` — 3 independent weighted samples from optional (or extra-required if no optional); returns fill combinations
   - [ ] `_rank_solutions()` — sort by abs(total_xp − budget), ties: under before over; deduplicate
-  - [ ] `_invoke_encounter_search()` — async tool handler
-  - [ ] `_invoke_encounter_build()` — async tool handler; emits count tables, no XP
-  - [ ] `register_operator_tool()` calls for both tools
+  - [ ] `_invoke_balance_encounter()` — async tool handler; emits count tables, no XP; applies remark selection (reduction possible vs not) and monster count cap; applies remark selection (reduction possible vs not) and monster count cap per solution
+  - [ ] `register_operator_tool()` for balance_encounter only
 - [ ] Add unit tests in `lens/test/test_encounter_calc.py`:
   - [ ] Budget calculation for various party compositions and difficulties
   - [ ] Ally XP reduction (including reduction to zero)
   - [ ] CR tag ↔ float round-trip (both directions)
-  - [ ] Search tag filtering logic (can be tested against the testing dataset)
   - [ ] Reduce path: over-budget required with reducible counts → reduced solutions sorted by closeness
   - [ ] Reduce path: single required monster already over budget → original returned with remark, no reduction possible
   - [ ] Fill path (optional): 3 weighted samples produce distinct proposals; lower-ranked candidates can appear
   - [ ] Fill path (no optional): extra-required fill used; produces at least 1 solution
   - [ ] Ranking: solutions sorted by abs distance; under-budget before over-budget at equal distance
-  - [ ] Remark conditions: over-budget, budget < 50%, no fill possible
+  - [ ] Remark conditions: over-budget (reduction possible vs not), budget < 50%, no fill possible, monster count cap
   - [ ] Edge cases: empty required, empty optional, both empty
 - [ ] Run `poe check` (lint + typecheck + tests)
-
----
-
-## Open Questions
-
-**1. Monster count cap**: The XP watermark approach naturally produces reasonable counts — budget / XP-per-monster gives a count that scales with the encounter tier. Hordes only appear when the DM explicitly requires them or when the optional candidates have very low CR relative to the party. The DMG note about >2 per PC variance risk could be surfaced as a remark, but it's not yet in the remark conditions table; add it if it proves useful during testing.
-
-**2. Multiple habitats per monster**: The search already handles this since `get_ids_with_tag("habitat:urban")` returns any monster tagged with that habitat. No special handling needed.
-
-**3. `encounter_search` vs `kb with-tag`**: The existing `kb with-tag` CLI command already supports tag queries. The `encounter_search` tool is a specialized version that (a) handles CR ranges across multiple tags, (b) formats output as a compact table rather than full KB object content, and (c) is callable by the LLM mid-session. There is intentional overlap; the CLI command remains for human use.
-
-**4. `size` as a search filter**: Size is not included as a search parameter (not obviously useful for encounter design). Add it as an optional parameter if a use case emerges.
