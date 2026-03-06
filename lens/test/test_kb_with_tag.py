@@ -467,10 +467,10 @@ class TestWithTagCli(unittest.TestCase):
         self.assertIn("# Objects with tag 'loc.kingdom'", out)
         self.assertIn("loc.kingdom", out)
         self.assertIn("loc.city_a", out)
-        self.assertIn("## Children of tag 'loc.city_a'", out)
+        self.assertIn("> with-tag 'loc.city_a'", out)
         self.assertIn("loc.tavern_1", out)
         self.assertIn("loc.tavern_2", out)
-        self.assertIn("## Children of tag 'loc.city_b'", out)
+        self.assertIn("> with-tag 'loc.city_b'", out)
         self.assertIn("loc.tavern_3", out)
 
     def test_cli_same_type_prints_nothing(self) -> None:
@@ -489,9 +489,9 @@ class TestWithTagCli(unittest.TestCase):
         self.assertIn("# Objects with tag 'part.head'", out)
         self.assertIn("person.amy", out)
         self.assertIn("person.carlos", out)
-        self.assertIn("## Children of tag 'part.body'", out)
-        self.assertNotIn("## Children of tag 'person.amy'", out)
-        self.assertNotIn("## Children of tag 'person.carlos'", out)
+        self.assertIn("> with-tag 'part.body'", out)
+        self.assertNotIn("> with-tag 'person.amy'", out)
+        self.assertNotIn("> with-tag 'person.carlos'", out)
 
     def test_cli_recurse_expand_prints_all_objects_by_layer(self) -> None:
         _build_map_fixture(self.store)
@@ -521,8 +521,8 @@ class TestWithTagCli(unittest.TestCase):
         self.assertIn("loc.kingdom", out)
         self.assertIn("loc.city_a", out)
         self.assertIn("loc.city_b", out)
-        self.assertIn("## Children of tag 'loc.city_a'", out)
-        self.assertIn("## Children of tag 'loc.city_b'", out)
+        self.assertIn("> with-tag 'loc.city_a'", out)
+        self.assertIn("> with-tag 'loc.city_b'", out)
         self.assertIn("loc.tavern_1", out)
         self.assertIn("loc.tavern_2", out)
         self.assertIn("loc.tavern_3", out)
@@ -532,7 +532,7 @@ class TestWithTagCli(unittest.TestCase):
 
         # No recurse: only kingdom (direct matches for 'loc.continent').
         out = self._run_with_tag_cli(["loc.continent"])
-        self.assertNotIn("## Children of tag", out)
+        self.assertNotIn("> with-tag", out)
         self.assertIn("loc.kingdom", out)
         self.assertNotIn("loc.city", out)
         self.assertNotIn("loc.tavern", out)
@@ -541,7 +541,7 @@ class TestWithTagCli(unittest.TestCase):
         out = self._run_with_tag_cli(["loc.continent"], recurse=1)
         self.assertIn("# Objects with tag 'loc.continent'", out)
         self.assertIn("loc.kingdom", out)
-        self.assertIn("## Children of tag 'loc.kingdom'", out)
+        self.assertIn("> with-tag 'loc.kingdom'", out)
         self.assertIn("loc.city", out)
         self.assertNotIn("loc.tavern", out)
 
@@ -551,8 +551,8 @@ class TestWithTagCli(unittest.TestCase):
         self.assertIn("loc.kingdom", out)
         self.assertIn("loc.city", out)
         self.assertIn("loc.tavern", out)
-        self.assertIn("## Children of tag 'loc.kingdom'", out)
-        self.assertIn("## Children of tag 'loc.city'", out)
+        self.assertIn("> with-tag 'loc.kingdom'", out)
+        self.assertIn("> with-tag 'loc.city'", out)
 
 
 class TestKbWithTagDatasets(unittest.TestCase):
