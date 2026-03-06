@@ -26,11 +26,14 @@ DM invokes play or encounter operator
   ├─ AI calls encounter_search(cr_min, cr_max, habitat, monster_type)
   │    → compact table of candidate stat IDs with CR/type/size/habitats
   │
-  ├─ AI ranks candidates by narrative fit
-  │    (e.g. zombie > ghoul > wight for a cemetery scene)
+  ├─ AI decides:
+  │    required  = specific stat blocks with fixed counts the scene demands
+  │               (e.g. the vampire they're chasing, the noble + her guard unit)
+  │    optional  = ranked list of fill-in candidates (no counts — tool decides)
   │
-  ├─ AI calls encounter_build(candidates, difficulty, pcs, allies)
-  │    → up to 3 encounter proposals: same columns as search, with counts, grouped per proposal
+  ├─ AI calls encounter_build(required, optional, difficulty, pcs, allies?)
+  │    → if required is already over budget: warning + slim-down alternatives
+  │    → otherwise: up to 3 fill proposals in count-table format
   │
   └─ AI picks winning proposal and writes the encounter narrative
 ```
@@ -294,7 +297,7 @@ CR values in the table use the raw tag format (`1-4` for 1/4, `1-2` for 1/2) —
 
 ### Purpose
 
-Given the AI's ranked list of preferred stat block IDs, the party composition, and a desired difficulty, compute up to three balanced encounter proposals. XP budget math is used internally to determine monster counts; the output format mirrors `encounter_search` rows with a count prepended — no XP figures are emitted.
+Given a fixed set of required monsters (stat block IDs with counts) and a ranked list of optional fill-in candidates, compute up to three encounter proposals that meet the requested difficulty. XP budget math is used internally; no XP figures are emitted. The required monsters are always included as-is; the tool decides counts only for the optional fill.
 
 ### JSON Schema (parameters)
 
@@ -302,10 +305,22 @@ Given the AI's ranked list of preferred stat block IDs, the party composition, a
 {
   "type": "object",
   "properties": {
-    "candidates": {
+    "required": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id":    {"type": "string", "description": "Stat block ID, e.g. 'stat.vampire'"},
+          "count": {"type": "integer", "minimum": 1}
+        },
+        "required": ["id", "count"]
+      },
+      "description": "Monsters that must appear with specific counts. Can be empty if the AI has no fixed requirements."
+    },
+    "optional": {
       "type": "array",
       "items": {"type": "string"},
-      "description": "Ranked list of stat block IDs in preference order (most narratively fitting first). Up to 6 candidates. Example: ['stat.zombie', 'stat.ghoul', 'stat.wight']."
+      "description": "Ranked list of stat block IDs to fill out the encounter (most preferred first). The tool picks counts. Any number of candidates — weighted randomization ensures lower-ranked options still appear occasionally."
     },
     "difficulty": {
       "type": "string",
@@ -315,157 +330,263 @@ Given the AI's ranked list of preferred stat block IDs, the party composition, a
     "pcs": {
       "type": "array",
       "items": {"type": "integer", "minimum": 1, "maximum": 20},
-      "description": "List of PC levels, one integer per PC. Example: [5, 5, 5, 5] for a party of four level-5 characters."
+      "description": "PC levels, one integer per PC. Example: [5, 5, 5, 5]."
     },
     "allies": {
       "type": "array",
       "items": {"type": "string"},
-      "description": "Optional list of ally CRs (as fraction strings) that fight alongside the party and reduce the monster budget. Example: ['1/2', '2']. Omit or pass [] if no allies."
+      "description": "Optional ally CRs as fraction strings ('1/2', '2', etc.) that fight with the party and reduce the effective budget."
     }
   },
-  "required": ["candidates", "difficulty", "pcs"]
+  "required": ["required", "optional", "difficulty", "pcs"]
 }
 ```
 
 ### Implementation
 
-#### Phase 1: Compute the budget
+#### Phase 1: Compute budget and committed XP
 
 ```python
-def compute_budget(pcs: list[int], difficulty: str, allies: list[str]) -> int:
-    budget = sum(XP_BUDGET[level][difficulty] for level in pcs)
-    ally_xp = sum(CR_XP[cr_str_to_float(cr)] for cr in (allies or []))
-    return max(0, budget - ally_xp)
+budget = Σ XP_BUDGET[pc_level][difficulty] − Σ CR_XP[ally_cr]
+
+committed_xp = Σ (count × CR_XP[stat_id]) for each {id, count} in required
+required_count = Σ count for each entry in required
 ```
 
-`cr_str_to_float` converts `"1/4"` → `0.25`, `"1/2"` → `0.5`, `"1"` → `1.0`, etc.
+XP for each stat block is derived from its `cr:X` tag via the internal `CR_XP` table. Neither the budget nor any XP value is ever emitted in output.
 
-#### Phase 2: Look up candidate XP values
+#### Phase 2: Required vs. budget — three cases
+
+**Case A — Required exceeds budget**
+
+Emit a warning section before any proposals:
+
+```
+⚠ Required monsters exceed the moderate budget.
+  These monsters are harder than requested — use them only if intentional.
+
+Budget-appropriate alternatives (reduce required counts to fit):
+  Option 1: 1 × Noble + 2 × Guard  (removes 4 guards)
+  Option 2: 1 × Noble + 1 × Guard  (removes 5 guards)
+```
+
+Slim-down logic: for each required entry with count > 1, compute the maximum count that keeps total committed XP ≤ budget while keeping all other required entries at their original counts. If at least one entry can be reduced to ≥ 1, emit up to three such alternatives ordered by how close they get to the budget. If no slim-down is possible (e.g. a single required monster already exceeds budget on its own), the warning notes this explicitly.
+
+After the warning, also emit the required lineup as a single proposal (the DM asked for it; they just need to know what they're getting into). No optional fill is added in this case.
+
+**Case B — Required exactly meets budget**
+
+Emit required as a single proposal. Note that it exactly meets the budget. No optional fill.
+
+**Case C — Required is under budget**
+
+`remaining = budget − committed_xp`. Proceed to Phase 3.
+
+#### Phase 3: Determine fill mode
+
+**Is it a horde?**  `required_count > 2 × num_pcs`
+
+If yes: the DM deliberately chose a large swarm. The optional fill should complement it with a small number of high-CR monsters (the "big baddy or two"), not more swarm creatures.
+
+- If `remaining < min_optional_xp` (can't even fit one of the cheapest optional): emit one proposal of required-only, with a note: *"Required monsters are close to budget — adding fewer [swarm type] would leave room for a big baddy."*
+- Otherwise: sort optional by CR_XP **descending** (prioritise high-CR), pick greedily until 2 have been selected or remaining budget is exhausted. Emit up to 3 proposals varying which 1–2 high-CR optionals are used.
+
+If no: normal fill mode (Phase 4).
+
+#### Phase 4: Normal fill — weighted random sampling
+
+**Fill target**: roughly 1 additional monster per PC beyond required, with wiggle room across proposals.
 
 ```python
-def candidate_xp(stat_id: str, kb: KnowledgeStore) -> float | None:
-    tags = kb.get_tags(stat_id)
-    cr_str = _tag_value(tags, "cr")    # e.g. "1-4"
-    if not cr_str:
-        return None
-    cr_val = cr_tag_to_float(cr_str)   # e.g. 0.25
-    return CR_XP.get(cr_val)
+base_fill = max(1, num_pcs - required_count)
+fill_targets = [base_fill, base_fill + 1, max(1, base_fill - 1)]
+# one per proposal; de-dup if base_fill is 1
 ```
 
-`cr_tag_to_float` converts the stored tag format: `"1-4"` → `0.25`, `"1-2"` → `0.5`, `"1"` → `1.0`, etc.
+**Optional candidate weights** (harmonic decay on rank):
 
-#### Phase 3: Generate proposals
+```
+weight[i] = 1 / (i + 1)
+# candidate[0] → 1.0, candidate[1] → 0.5, candidate[2] → 0.33, candidate[3] → 0.25, …
+```
 
-Three proposal strategies are attempted in order. Each is only included if it produces a valid (non-zero) encounter:
-
-**Strategy A — Primary focus**: Fill the budget primarily with `candidates[0]`, supplementing with `candidates[1]` and `candidates[2]` if needed to approach the budget.
-
-**Strategy B — Secondary focus**: Fill primarily with `candidates[1]` (or `candidates[0]` if only one candidate), supplement with adjacent candidates.
-
-**Strategy C — Broadest mix**: Distribute XP budget across all candidates proportionally, from highest-ranked (most budget) to lowest-ranked (least budget). This produces the most varied lineup.
-
-For each strategy, the monster count per type is computed as:
+For each of the 3 proposals, independently sample without replacement from the optional list using these weights to select up to 2 stat block types. Then for each selected type:
 
 ```python
-count = max(1, round(allocated_xp / candidate_xp_per_monster))
+count = min(
+    floor(remaining_budget_share / xp),  # don't overspend
+    fill_target_for_this_proposal,        # headcount ceiling
+)
+count = max(1, count)
 ```
 
-Where `allocated_xp` is the share of the total budget assigned to that monster type in the strategy.
+Remaining budget is consumed across the selected types in rank order. Total across required + fill must not exceed budget.
 
-After computing counts:
-- Round each count down so total XP does not massively overshoot (> 150% of budget)
-- If total XP < 25% of budget for a strategy, skip it (not a meaningful encounter)
+After generating 3 proposals, deduplicate: if two proposals are identical (same types and counts), resample the duplicate up to 5 times; if still identical, drop it. Emit 1–3 distinct proposals.
 
-#### Phase 4: Emit proposals
+**Why weighted randomization instead of always taking top-3**: with a long optional list, deterministically taking the top 3 options ignores the rest entirely. Weighted sampling means lower-ranked candidates appear occasionally, producing more varied proposals across multiple tool calls and making better use of the search results the AI assembled.
 
-Each proposal is a table using the same columns as `encounter_search`, with a `Count` column prepended. No XP is shown. The AI uses the counts and its knowledge of narrative fit to pick a winner.
+#### Phase 5: Emit proposals
+
+Each proposal is a table in the same format as `encounter_search`, with `Count` prepended. Required rows appear first, then optional fill rows. No XP is shown anywhere.
 
 ```
 ## Encounter Proposals
 
 Party: 4 × Level 5 | Difficulty: Moderate
 
-### Option A — Zombie Horde
+### Option A
 | Count | ID | Name | CR | Type | Size | Habitats |
 |---|---|---|---|---|---|---|
-| 8 | stat.zombie | Zombie | 1-4 | undead | medium | any |
-| 3 | stat.ghoul | Ghoul | 1 | undead | medium | any |
+| 1 | stat.wight | Wight | 3 | undead | medium | any |
+| 4 | stat.ghoul | Ghoul | 1 | undead | medium | any |
 
-### Option B — Pack Hunters
+### Option B
 | Count | ID | Name | CR | Type | Size | Habitats |
 |---|---|---|---|---|---|---|
-| 5 | stat.ghoul | Ghoul | 1 | undead | medium | any |
-| 2 | stat.wight | Wight | 3 | undead | medium | any |
+| 1 | stat.wight | Wight | 3 | undead | medium | any |
+| 3 | stat.zombie | Zombie | 1-4 | undead | medium | any |
+| 2 | stat.ghoul | Ghoul | 1 | undead | medium | any |
 
-### Option C — Elite Guard
+### Option C
 | Count | ID | Name | CR | Type | Size | Habitats |
 |---|---|---|---|---|---|---|
-| 4 | stat.wight | Wight | 3 | undead | medium | any |
-| 6 | stat.zombie | Zombie | 1-4 | undead | medium | any |
+| 1 | stat.wight | Wight | 3 | undead | medium | any |
+| 4 | stat.specter | Specter | 1 | undead | medium | any |
 ```
-
-The AI reads these proposals, picks one, and writes the encounter narrative around it.
 
 ### Edge cases
 
 | Situation | Behaviour |
 |---|---|
-| Single candidate only | All 3 proposals use only that monster at different counts targeting low / moderate / high budgets respectively |
-| Candidate has no `cr:` tag | Skip that candidate; emit a note in the header |
-| Ally XP ≥ budget | Header notes "ally XP meets or exceeds budget — encounter is likely trivial"; one token proposal with the lowest-CR candidate at count 1 |
-| All strategies produce meaningless counts (< 25% budget) | Header note: "CR range too low for this party — consider searching higher CRs" |
-| Candidate stat ID not found in KB | Skip with a note in the header |
+| `required` is empty, `optional` is non-empty | Treat as all-optional; fill target = 1–2 per PC |
+| `required` is empty, `optional` is empty | Emit error: nothing to build an encounter from |
+| Required entry has no `cr:` tag | Skip XP contribution; note in header; still include in proposals |
+| Optional candidate has no `cr:` tag or not found in KB | Skip with a note in header; continue with remaining candidates |
+| Ally XP ≥ budget | Note: "Allies alone may outmatch this encounter"; emit required-only proposal |
+| Optional list has only 1 candidate | All 3 proposals use that candidate; vary count via the fill_targets |
+| Required is a horde and remaining budget = 0 | Emit required as-is; note: "Consider fewer [X] to allow room for a supporting monster" |
 
 ---
 
-## Worked Example
+## Worked Examples
 
-**Situation**: Four Level 5 PCs explore an old cemetery at night. No allies. The DM wants a Moderate difficulty combat with undead.
+### Example 1 — Undead cemetery (pure optional, no fixed requirement)
 
-**Step 1 — AI estimates CR range**
+Four Level 5 PCs explore an old cemetery at night. No allies. Moderate difficulty.
 
-For a Moderate encounter, appropriate CR ≈ party level × (2/3) ≈ 3. Search CR 0 to 5 to allow variety including low-CR horde monsters.
-
-**Step 2 — `encounter_search` call**
-
+**`encounter_search` call**:
 ```json
-{
-  "cr_min": "0",
-  "cr_max": "5",
-  "monster_type": "undead"
-}
+{"cr_min": "0", "cr_max": "5", "monster_type": "undead"}
 ```
 
 Result (subset):
 ```
-| stat.ghoul         | Ghoul         | 1   | undead | medium | any      |
-| stat.ghast         | Ghast         | 2   | undead | medium | any      |
-| stat.skeleton      | Skeleton      | 1-4 | undead | medium | any      |
-| stat.specter       | Specter       | 1   | undead | medium | any      |
-| stat.wight         | Wight         | 3   | undead | medium | any      |
-| stat.zombie        | Zombie        | 1-4 | undead | medium | any      |
-| stat.mummy         | Mummy         | 3   | undead | medium | desert, any |
+| ID | Name | CR | Type | Size | Habitats |
+|---|---|---|---|---|---|
+| stat.ghast | Ghast | 2 | undead | medium | any |
+| stat.ghoul | Ghoul | 1 | undead | medium | any |
+| stat.skeleton | Skeleton | 1-4 | undead | medium | any |
+| stat.specter | Specter | 1 | undead | medium | any |
+| stat.wight | Wight | 3 | undead | medium | any |
+| stat.zombie | Zombie | 1-4 | undead | medium | any |
 ```
 
-**Step 3 — AI ranks by narrative fit**
-
-For a dark cemetery scene: zombie (1st — thematic horde), ghoul (2nd — hunter threat), wight (3rd — elite commander)
-
-**Step 4 — `encounter_build` call**
+AI decides: no single monster is required; it wants to see wight as the anchor, with ghoul and specter as atmospheric fill. It calls:
 
 ```json
 {
-  "candidates": ["stat.zombie", "stat.ghoul", "stat.wight"],
+  "required": [],
+  "optional": ["stat.wight", "stat.ghoul", "stat.specter", "stat.zombie", "stat.skeleton"],
   "difficulty": "moderate",
   "pcs": [5, 5, 5, 5]
 }
 ```
 
-Output (three proposals as in the format above — count tables, no XP).
+Budget = 4 × 750 = 3,000. Fill target: ~4 additional. Weighted sampling biases toward wight and ghoul but may occasionally surface specter. Three proposals emerge with different optional combinations; AI picks the one that fits the scene.
 
-**Step 5 — AI picks and narrates**
+---
 
-The AI selects Option C (elite guard) because a wight commander leading zombie thralls fits the cemetery aesthetic with good dramatic tension. It writes the encounter: the wight directs, zombies form a wall, ghouls lurk in the shadows.
+### Example 2 — Noble and her guard unit (required with counts)
+
+Four Level 4 PCs confront a corrupt noble at a gala. The noble must be present; guards round it out. Moderate difficulty.
+
+**`encounter_build` call**:
+```json
+{
+  "required": [{"id": "stat.noble", "count": 1}],
+  "optional": ["stat.guard", "stat.thug", "stat.spy"],
+  "difficulty": "moderate",
+  "pcs": [4, 4, 4, 4]
+}
+```
+
+Budget = 4 × 375 = 1,500. Noble XP = 700. Remaining = 800. Fill target ≈ 3 (1 per PC beyond the noble). Guard XP = 50. Proposals vary: Option A might be 4 guards, Option B might be 2 thugs, Option C might be 1 spy + 2 guards — all sampled by weight.
+
+---
+
+### Example 3 — Over-budget required (chase scene ends in fight)
+
+Four Level 5 PCs finally corner the vampire. Moderate difficulty requested.
+
+**`encounter_build` call**:
+```json
+{
+  "required": [{"id": "stat.vampire", "count": 1}],
+  "optional": ["stat.zombie", "stat.skeleton"],
+  "difficulty": "moderate",
+  "pcs": [5, 5, 5, 5]
+}
+```
+
+Budget = 3,000. Vampire XP = 10,000. Required exceeds budget.
+
+Output:
+```
+⚠ Required monsters exceed the moderate budget.
+  The vampire alone is a high-difficulty encounter for this party.
+  Use intentionally, or switch difficulty to "high".
+
+No slim-down available — reducing count below 1 is not possible.
+
+### Required Lineup (over budget — use with intention)
+| Count | ID | Name | CR | Type | Size | Habitats |
+|---|---|---|---|---|---|---|
+| 1 | stat.vampire | Vampire | 13 | undead | medium | any |
+```
+
+---
+
+### Example 4 — Zombie horde + big baddy
+
+Four Level 5 PCs wade into a graveyard overrun by the undead. The DM wants 20 zombies as the swarm, rounded out with something scarier. Moderate difficulty.
+
+**`encounter_build` call**:
+```json
+{
+  "required": [{"id": "stat.zombie", "count": 20}],
+  "optional": ["stat.wight", "stat.mummy", "stat.ghast"],
+  "difficulty": "moderate",
+  "pcs": [5, 5, 5, 5]
+}
+```
+
+Budget = 3,000. Zombie XP = 50 each → 1,000 committed. Remaining = 2,000. Horde mode (20 > 2 × 4 = 8). Sort optional by CR descending: mummy (CR 3, 700 XP), wight (CR 3, 700 XP), ghast (CR 2, 450 XP). Greedily fill with 1–2 big baddies:
+
+```
+### Option A
+| Count | ID | Name | CR | Type | Size | Habitats |
+|---|---|---|---|---|---|---|
+| 20 | stat.zombie | Zombie | 1-4 | undead | medium | any |
+| 1 | stat.mummy | Mummy | 3 | undead | medium | desert, any |
+| 1 | stat.wight | Wight | 3 | undead | medium | any |
+
+### Option B
+| Count | ID | Name | CR | Type | Size | Habitats |
+|---|---|---|---|---|---|---|
+| 20 | stat.zombie | Zombie | 1-4 | undead | medium | any |
+| 2 | stat.ghast | Ghast | 2 | undead | medium | any |
+```
 
 ---
 
@@ -554,6 +675,11 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
   - [ ] `cr_tag_to_float()` — `"1-4"` → `0.25` (tag format → float)
   - [ ] `cr_str_to_float()` — `"1/4"` → `0.25` (ally parameter format → float)
   - [ ] `_name_from_id()` — `"stat.adult-white-dragon"` → `"Adult White Dragon"`
+  - [ ] `_stat_xp()` — look up XP for a stat block ID via its `cr:` tag
+  - [ ] `_slim_down_proposals()` — generate count-reduced alternatives when required exceeds budget
+  - [ ] `_weighted_sample()` — sample without replacement using harmonic-decay weights
+  - [ ] `_horde_fill()` — sort optional by XP desc, greedily pick 1–2 big baddies
+  - [ ] `_normal_fill()` — 3 independent weighted samples, dedup, vary fill_target ±1
   - [ ] `_invoke_encounter_search()` — async tool handler
   - [ ] `_invoke_encounter_build()` — async tool handler; emits count tables, no XP
   - [ ] `register_operator_tool()` calls for both tools
@@ -562,15 +688,19 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
   - [ ] Ally XP reduction (including reduction to zero)
   - [ ] CR tag ↔ float round-trip (both directions)
   - [ ] Search tag filtering logic (can be tested against the testing dataset)
-  - [ ] Proposal generation with 1, 2, and 3 candidates
-  - [ ] Edge cases: no candidates found, single candidate, all-low-CR candidates vs high-level party
+  - [ ] Slim-down proposals: over-budget required with reducible counts
+  - [ ] Slim-down proposals: single required monster already over budget (no slim-down possible)
+  - [ ] Normal fill: weighted sampling produces varied proposals; lower-ranked candidates can appear
+  - [ ] Horde fill: optional sorted by XP descending, max 2 selected
+  - [ ] Horde fill: remaining budget too small for any optional → required-only with note
+  - [ ] Edge cases: empty required, empty optional, both empty
 - [ ] Run `poe check` (lint + typecheck + tests)
 
 ---
 
 ## Open Questions
 
-**1. Monster count cap**: The DMG notes that encounters with more than two creatures per character carry higher variance risk and recommends fragile creatures for large hordes. The tool reports any count without capping; the AI decides if "8 zombies for 4 PCs" is narratively appropriate. A soft note in the proposal header (e.g. "> 2 per PC — include fragile monsters") could help surface this guidance without constraining the output.
+**1. Monster count cap**: The horde/normal split handles this structurally — normal fill targets ~1 per PC, so hordes only appear when the DM explicitly requires them. The DMG note about >2 per PC variance risk is worth surfacing as a header annotation on required hordes, but it should not block output.
 
 **2. Multiple habitats per monster**: The search already handles this since `get_ids_with_tag("habitat:urban")` returns any monster tagged with that habitat. No special handling needed.
 
