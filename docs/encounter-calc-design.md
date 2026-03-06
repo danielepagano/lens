@@ -7,7 +7,7 @@
 When the DM describes a narrative situation — zombies rising in a cemetery, bandits blocking the road — the AI needs to find and assemble an appropriate set of monsters without loading every stat block into context. This subsystem provides two LLM-callable tools that close that gap:
 
 1. **`encounter_search`** — finds stat block IDs matching a CR range, habitat, and monster type, returning a compact table (no stat block bodies)
-2. **`encounter_build`** — takes the AI's ranked candidate list plus party composition and produces up to three balanced encounter proposals using D&D 2024 XP budget math
+2. **`encounter_build`** — takes the AI's ranked candidate list plus party composition and produces up to three balanced encounter proposals using D&D 2024 XP budget math (internally; XP is never surfaced in output)
 
 The AI uses these tools in sequence: search to discover candidates, rank them by narrative fit, then build to get balanced monster lineups. The AI then picks the best proposal and writes the encounter narratively.
 
@@ -30,7 +30,7 @@ DM invokes play or encounter operator
   │    (e.g. zombie > ghoul > wight for a cemetery scene)
   │
   ├─ AI calls encounter_build(candidates, difficulty, pcs, allies)
-  │    → up to 3 encounter proposals with monster counts and XP breakdown
+  │    → up to 3 encounter proposals: same columns as search, with counts, grouped per proposal
   │
   └─ AI picks winning proposal and writes the encounter narrative
 ```
@@ -105,7 +105,7 @@ D&D 2024 dropped the monster-count multiplier used in the 2014 DMG. Monster XP i
 
 ### XP budget per character by level
 
-The budget for an encounter = sum of each PC's budget at their level for the requested difficulty. These numbers match the D&D 2024 DMG encounter-building table (which aligns closely with the 2014 easy/medium/hard thresholds — confirm against physical 2024 DMG pp. 111–112 during implementation).
+The budget for an encounter = sum of each PC's budget at their level for the requested difficulty. Transcribed verbatim from the D&D 2024 DMG "XP Budget per Character" table.
 
 | Level | Low | Moderate | High |
 |---|---|---|---|
@@ -122,7 +122,7 @@ The budget for an encounter = sum of each PC's budget at their level for the req
 | 11 | 1,900 | 2,900 | 4,100 |
 | 12 | 2,200 | 3,700 | 4,700 |
 | 13 | 2,600 | 4,200 | 5,400 |
-| 14 | 2,900 | 4,900 | 6,300 |
+| 14 | 2,900 | 4,900 | 6,200 |
 | 15 | 3,300 | 5,400 | 7,800 |
 | 16 | 3,800 | 6,100 | 9,800 |
 | 17 | 4,500 | 7,200 | 11,700 |
@@ -159,17 +159,6 @@ Standard D&D XP values (same across 2014 and 2024):
 | 7 | 2,900 | | | 28 | 120,000 |
 | 8 | 3,900 | | | 29 | 135,000 |
 | | | | | 30 | 155,000 |
-
-### Difficulty classification
-
-After computing total monster XP, the tool classifies the actual difficulty by comparing against all three budget thresholds for the given party (useful for proposals that land off-target):
-
-```
-if monster_xp < low_budget:     "Trivial"
-if monster_xp < moderate_budget: "Low"
-if monster_xp < high_budget:     "Moderate"
-else:                             "High"
-```
 
 ---
 
@@ -305,7 +294,7 @@ CR values in the table use the raw tag format (`1-4` for 1/4, `1-2` for 1/2) —
 
 ### Purpose
 
-Given the AI's ranked list of preferred stat block IDs, the party composition, and a desired difficulty, compute up to three balanced encounter proposals. The proposals aim to hit the XP budget while exploring different monster mixes.
+Given the AI's ranked list of preferred stat block IDs, the party composition, and a desired difficulty, compute up to three balanced encounter proposals. XP budget math is used internally to determine monster counts; the output format mirrors `encounter_search` rows with a count prepended — no XP figures are emitted.
 
 ### JSON Schema (parameters)
 
@@ -386,36 +375,33 @@ Where `allocated_xp` is the share of the total budget assigned to that monster t
 After computing counts:
 - Round each count down so total XP does not massively overshoot (> 150% of budget)
 - If total XP < 25% of budget for a strategy, skip it (not a meaningful encounter)
-- Classify the actual difficulty for each proposal (trivial / low / moderate / high)
 
 #### Phase 4: Emit proposals
+
+Each proposal is a table using the same columns as `encounter_search`, with a `Count` column prepended. No XP is shown. The AI uses the counts and its knowledge of narrative fit to pick a winner.
 
 ```
 ## Encounter Proposals
 
-**Party**: 4 × Level 5
-**Difficulty**: Moderate
-**XP Budget**: 3,000 XP (4 × 750)
-**Ally reduction**: none
+Party: 4 × Level 5 | Difficulty: Moderate
 
----
+### Option A — Zombie Horde
+| Count | ID | Name | CR | Type | Size | Habitats |
+|---|---|---|---|---|---|---|
+| 8 | stat.zombie | Zombie | 1-4 | undead | medium | any |
+| 3 | stat.ghoul | Ghoul | 1 | undead | medium | any |
 
-### Option A — Undead Horde (zombie-forward)
-- 6 × stat.zombie (CR 1/4 · 50 XP each) → 300 XP
-- 9 × stat.ghoul (CR 1 · 200 XP each) → 1,800 XP
-- 1 × stat.wight (CR 3 · 700 XP) → 700 XP
-- **Total**: 2,800 XP | **Actual difficulty**: Moderate ✓
+### Option B — Pack Hunters
+| Count | ID | Name | CR | Type | Size | Habitats |
+|---|---|---|---|---|---|---|
+| 5 | stat.ghoul | Ghoul | 1 | undead | medium | any |
+| 2 | stat.wight | Wight | 3 | undead | medium | any |
 
-### Option B — Pack Hunters (ghoul-forward)
-- 3 × stat.ghoul (CR 1 · 200 XP each) → 600 XP
-- 2 × stat.wight (CR 3 · 700 XP each) → 1,400 XP
-- 8 × stat.zombie (CR 1/4 · 50 XP each) → 400 XP
-- **Total**: 2,400 XP | **Actual difficulty**: Low (slightly under)
-
-### Option C — Elite Guard (wight-forward)
-- 4 × stat.wight (CR 3 · 700 XP each) → 2,800 XP
-- 4 × stat.zombie (CR 1/4 · 50 XP each) → 200 XP
-- **Total**: 3,000 XP | **Actual difficulty**: Moderate ✓
+### Option C — Elite Guard
+| Count | ID | Name | CR | Type | Size | Habitats |
+|---|---|---|---|---|---|---|
+| 4 | stat.wight | Wight | 3 | undead | medium | any |
+| 6 | stat.zombie | Zombie | 1-4 | undead | medium | any |
 ```
 
 The AI reads these proposals, picks one, and writes the encounter narrative around it.
@@ -424,11 +410,11 @@ The AI reads these proposals, picks one, and writes the encounter narrative arou
 
 | Situation | Behaviour |
 |---|---|
-| Single candidate only | All 3 proposals use only that monster at different counts (× budget_low, × budget_moderate, × budget_high) |
-| Candidate has no `cr:` tag | Skip that candidate with a warning line in output |
-| Budget ≤ 0 after ally reduction | Report that allies alone outmatch the encounter; propose 1 token weak monster |
-| All proposals produce < 25% budget coverage | Report that the CR range is too low for this party; suggest higher CRs |
-| Candidate stat ID not found in KB | Skip with warning |
+| Single candidate only | All 3 proposals use only that monster at different counts targeting low / moderate / high budgets respectively |
+| Candidate has no `cr:` tag | Skip that candidate; emit a note in the header |
+| Ally XP ≥ budget | Header notes "ally XP meets or exceeds budget — encounter is likely trivial"; one token proposal with the lowest-CR candidate at count 1 |
+| All strategies produce meaningless counts (< 25% budget) | Header note: "CR range too low for this party — consider searching higher CRs" |
+| Candidate stat ID not found in KB | Skip with a note in the header |
 
 ---
 
@@ -475,9 +461,7 @@ For a dark cemetery scene: zombie (1st — thematic horde), ghoul (2nd — hunte
 }
 ```
 
-Budget = 4 × 750 = 3,000 XP.
-
-Output (three proposals as shown in the format above).
+Output (three proposals as in the format above — count tables, no XP).
 
 **Step 5 — AI picks and narrates**
 
@@ -565,18 +549,18 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
 - [ ] Add `level:N` tag to all `pc.*` objects in the test dataset (`datasets/testing/`)
 - [ ] Write `lens/core/operators/encounter_calc.py` with:
   - [ ] `CR_TAG_ORDER` — ordered list of `(float, "cr:tag")` pairs
-  - [ ] `CR_XP` — dict mapping CR float to XP int
-  - [ ] `XP_BUDGET` — nested dict `{level: {difficulty: xp}}`
-  - [ ] `cr_tag_to_float()` — `"1-4"` → `0.25`
-  - [ ] `cr_str_to_float()` — `"1/4"` → `0.25` (for ally parameter)
+  - [ ] `CR_XP` — dict mapping CR float to XP int (internal only; never emitted)
+  - [ ] `XP_BUDGET` — nested dict `{level: {difficulty: xp}}` (internal only; never emitted)
+  - [ ] `cr_tag_to_float()` — `"1-4"` → `0.25` (tag format → float)
+  - [ ] `cr_str_to_float()` — `"1/4"` → `0.25` (ally parameter format → float)
   - [ ] `_name_from_id()` — `"stat.adult-white-dragon"` → `"Adult White Dragon"`
   - [ ] `_invoke_encounter_search()` — async tool handler
-  - [ ] `_invoke_encounter_build()` — async tool handler
+  - [ ] `_invoke_encounter_build()` — async tool handler; emits count tables, no XP
   - [ ] `register_operator_tool()` calls for both tools
 - [ ] Add unit tests in `lens/test/test_encounter_calc.py`:
   - [ ] Budget calculation for various party compositions and difficulties
   - [ ] Ally XP reduction (including reduction to zero)
-  - [ ] CR tag ↔ float round-trip
+  - [ ] CR tag ↔ float round-trip (both directions)
   - [ ] Search tag filtering logic (can be tested against the testing dataset)
   - [ ] Proposal generation with 1, 2, and 3 candidates
   - [ ] Edge cases: no candidates found, single candidate, all-low-CR candidates vs high-level party
@@ -586,14 +570,10 @@ The DM-facing guidance (how to actually USE these tools during a session) belong
 
 ## Open Questions
 
-**1. Monster count cap**: Should the tool enforce a maximum per-monster-type count (e.g. 15)? A 60-zombie horde is mathematically correct but may be narratively absurd. Current design leaves this to the AI's judgment — the tool reports any count, and the AI can modulate. A soft warning ("> 12 of one type — consider a higher-CR alternative") might be useful.
+**1. Monster count cap**: The DMG notes that encounters with more than two creatures per character carry higher variance risk and recommends fragile creatures for large hordes. The tool reports any count without capping; the AI decides if "8 zombies for 4 PCs" is narratively appropriate. A soft note in the proposal header (e.g. "> 2 per PC — include fragile monsters") could help surface this guidance without constraining the output.
 
 **2. Multiple habitats per monster**: The search already handles this since `get_ids_with_tag("habitat:urban")` returns any monster tagged with that habitat. No special handling needed.
 
-**3. Type `or-small-humanoid` and similar compound tags**: Tags like `type:or-small-humanoid` exist for shapeshifters. The type filter does exact matching on the tag value, so searching `monster_type: "humanoid"` would miss these. An option: also query `type:or-small-humanoid` when `monster_type` is `"humanoid"`. Or leave it — these are edge cases.
+**3. `encounter_search` vs `kb with-tag`**: The existing `kb with-tag` CLI command already supports tag queries. The `encounter_search` tool is a specialized version that (a) handles CR ranges across multiple tags, (b) formats output as a compact table rather than full KB object content, and (c) is callable by the LLM mid-session. There is intentional overlap; the CLI command remains for human use.
 
-**4. `encounter_search` vs `kb with-tag`**: The existing `kb with-tag` CLI command already supports tag queries. The `encounter_search` tool is a specialized version that (a) handles CR ranges across multiple tags, (b) formats output as a compact table rather than full KB object content, and (c) is callable by the LLM mid-session. There is intentional overlap; the CLI command remains for human use.
-
-**5. D&D 2024 budget table accuracy**: The table in this document is derived from the referenced calculator (which uses 2014 thresholds) with the multiplier removed. Verify the Moderate column against the printed 2024 DMG encounter-building table during implementation — the 2024 DMG may have revised some values.
-
-**6. `size` as a search filter**: Size is not included as a search parameter (not obviously useful for encounter design). Add it as an optional parameter if a use case emerges.
+**4. `size` as a search filter**: Size is not included as a search parameter (not obviously useful for encounter design). Add it as an optional parameter if a use case emerges.
