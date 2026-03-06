@@ -15,7 +15,7 @@ export function formatMonster(data: MonsterData, source: string): string {
   const id = `stat.${key}`;
 
   const tags: string[] = [
-    `source:${source}`,
+    // `source:${source}`,
     `cr:${encodeCR(data.cr)}`,
     `type:${toTagSlug(data.type)}`,
     `size:${toTagSlug(data.size)}`,

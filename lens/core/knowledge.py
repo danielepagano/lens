@@ -234,8 +234,17 @@ class KnowledgeStore:
         self._ensure_storage().write_file(path, content)
 
     def get_tags(self, canonical_id: str) -> list[str]:
+        """Return tags for an object. Checks project first, then datasets."""
         _, obj_to_tags = self._load_tags()
-        return sorted(obj_to_tags.get(canonical_id, set()))
+        tags = obj_to_tags.get(canonical_id)
+        if tags is not None:
+            return sorted(tags)
+        for ds in self._dataset_stores:
+            _, ds_obj_to_tags = ds._load_tags()
+            tags = ds_obj_to_tags.get(canonical_id)
+            if tags is not None:
+                return sorted(tags)
+        return []
 
     def get_ids_with_tag(self, tag: str) -> list[str]:
         """Return object IDs that have the given tag across project and datasets.
@@ -293,6 +302,77 @@ class KnowledgeStore:
             overall.update(_intersect_for_store(ds_tag_to_objs))
 
         return sorted(overall) if overall else []
+
+    def get_ids_with_tag_groups(self, groups: list[list[str]]) -> list[str]:
+        """Return object IDs that match all tag groups (AND across groups, OR within).
+
+        Each group is a list of tags; object must have at least one tag from each group.
+        """
+        if not groups:
+            return []
+        result: set[str] | None = None
+        for group in groups:
+            if not group:
+                return []
+            group_ids: set[str] = set()
+            for tag in group:
+                group_ids.update(self.get_ids_with_tag(tag))
+            if result is None:
+                result = group_ids
+            else:
+                result &= group_ids
+            if not result:
+                return []
+        return sorted(result) if result else []
+
+    def list_unique_tags(
+        self,
+        type_filter: str | None = None,
+        prefix_filter: str | None = None,
+    ) -> list[str]:
+        """Return sorted unique tag values from the merged index (project + datasets).
+
+        type_filter: only tags on objects of this type (e.g. stat.ghoul -> stat).
+        prefix_filter: only tags starting with this prefix (e.g. cr:).
+        Filters are ANDed.
+        """
+        merged_tag_to_objs: dict[str, set[str]] = {}
+        merged_obj_to_tags: dict[str, set[str]] = {}
+
+        def _merge_indexes(
+            tag_to_objs: dict[str, set[str]], obj_to_tags: dict[str, set[str]]
+        ) -> None:
+            for tag, objs in tag_to_objs.items():
+                bucket = merged_tag_to_objs.setdefault(tag, set())
+                bucket.update(objs)
+            for obj_id, obj_tags in obj_to_tags.items():
+                bucket = merged_obj_to_tags.setdefault(obj_id, set())
+                bucket.update(obj_tags)
+
+        tag_to_objs, obj_to_tags = self._load_tags()
+        _merge_indexes(tag_to_objs, obj_to_tags)
+        for ds in self._dataset_stores:
+            ds_tag_to_objs, ds_obj_to_tags = ds._load_tags()
+            _merge_indexes(ds_tag_to_objs, ds_obj_to_tags)
+
+        want_type = type_filter.lower() if type_filter else None
+        want_prefix = prefix_filter.lower() if prefix_filter else None
+
+        tags_set: set[str] = set()
+        for obj_id, obj_tags in merged_obj_to_tags.items():
+            if want_type is not None:
+                try:
+                    obj_type, _ = parse_id(obj_id)
+                    if obj_type != want_type:
+                        continue
+                except ValueError:
+                    continue
+            for tag in obj_tags:
+                if want_prefix is not None and not tag.startswith(want_prefix):
+                    continue
+                tags_set.add(tag)
+
+        return sorted(tags_set)
 
     def traverse_by_dot_tags(
         self,
@@ -420,6 +500,123 @@ class KnowledgeStore:
                         queue.append((next_tag, depth + 1))
 
         return root_ids, layers
+
+    def traverse_from_ids(
+        self,
+        root_ids: list[str],
+        *,
+        same_type_only: bool = False,
+        max_depth: int | None = None,
+        starting_type: str | None = None,
+    ) -> tuple[list[str], list[tuple[str, list[str]]]]:
+        """BFS from explicit root IDs: follow dot-tags from those objects.
+
+        Same semantics as traverse_by_dot_tags but root set is given explicitly.
+        When same_type_only is True and starting_type is None, infers from first root_id.
+        """
+        if not root_ids:
+            return [], []
+
+        merged_tag_to_objs: dict[str, set[str]] = {}
+        merged_obj_to_tags: dict[str, set[str]] = {}
+
+        def _merge_indexes(
+            tag_to_objs: dict[str, set[str]], obj_to_tags: dict[str, set[str]]
+        ) -> None:
+            for tag, objs in tag_to_objs.items():
+                bucket = merged_tag_to_objs.setdefault(tag, set())
+                bucket.update(objs)
+            for obj_id, obj_tags in obj_to_tags.items():
+                bucket = merged_obj_to_tags.setdefault(obj_id, set())
+                bucket.update(obj_tags)
+
+        tag_to_objs, obj_to_tags = self._load_tags()
+        _merge_indexes(tag_to_objs, obj_to_tags)
+        for ds in self._dataset_stores:
+            ds_tag_to_objs, ds_obj_to_tags = ds._load_tags()
+            _merge_indexes(ds_tag_to_objs, ds_obj_to_tags)
+
+        st: str | None = starting_type
+        if same_type_only and st is None and root_ids:
+            try:
+                st, _ = parse_id(root_ids[0])
+            except ValueError:
+                pass
+
+        def _filter_ids_by_type(ids: list[str]) -> list[str]:
+            if st is None:
+                return ids
+            out: list[str] = []
+            for oid in ids:
+                if "." not in oid:
+                    continue
+                try:
+                    t, _ = parse_id(oid)
+                except ValueError:
+                    continue
+                if t == st:
+                    out.append(oid)
+            return out
+
+        def _next_tags_from_ids(ids: list[str]) -> list[str]:
+            out: list[str] = []
+            seen: set[str] = set()
+            for oid in ids:
+                for tag in merged_obj_to_tags.get(oid.lower(), set()):
+                    if "." not in tag:
+                        continue
+                    if same_type_only and st is not None:
+                        try:
+                            t, _ = parse_id(tag)
+                        except ValueError:
+                            continue
+                        if t != st:
+                            continue
+                    t_lower = tag.lower()
+                    if t_lower not in seen:
+                        seen.add(t_lower)
+                        out.append(tag)
+                oid_lower = oid.lower()
+                if "." in oid and oid_lower not in seen and oid_lower in merged_tag_to_objs:
+                    if same_type_only and st is not None:
+                        try:
+                            t, _ = parse_id(oid)
+                        except ValueError:
+                            pass
+                        else:
+                            if t == st:
+                                seen.add(oid_lower)
+                                out.append(oid)
+                    else:
+                        seen.add(oid_lower)
+                        out.append(oid)
+            return out
+
+        filtered_root = _filter_ids_by_type(root_ids) if same_type_only and st else root_ids
+
+        layers: list[tuple[str, list[str]]] = []
+        effective_max_depth: int | None = max_depth if max_depth is None or max_depth > 0 else None
+        visited_tags: set[str] = set()
+        queue: deque[tuple[str, int]] = deque(
+            (t, 1) for t in _next_tags_from_ids(filtered_root)
+        )
+
+        while queue:
+            t, depth = queue.popleft()
+            t_lower = t.lower()
+            if t_lower in visited_tags:
+                continue
+            visited_tags.add(t_lower)
+            child_ids = sorted(merged_tag_to_objs.get(t_lower, set()))
+            if same_type_only and st is not None:
+                child_ids = _filter_ids_by_type(child_ids)
+            layers.append((t, child_ids))
+            if effective_max_depth is None or depth < effective_max_depth:
+                for next_tag in _next_tags_from_ids(child_ids):
+                    if next_tag.lower() not in visited_tags:
+                        queue.append((next_tag, depth + 1))
+
+        return filtered_root, layers
 
     def get_invalid_dot_tags(self, tags: list[str]) -> list[str]:
         """Return dot-tags that reference non-existent objects."""

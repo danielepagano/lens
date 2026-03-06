@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from lens.core.commands.kb import kb_get as _cmd_kb_get
+from lens.core.commands.kb import kb_list_tags as _cmd_kb_list_tags
 from lens.core.commands.kb import kb_with_tag as _cmd_kb_with_tag
 from lens.core.knowledge import KnowledgeObject
 
@@ -76,6 +77,20 @@ async def _kb_get(args: dict[str, Any], project_root: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
+# kb_list_tags handler — delegates to commands/kb.py, identical to CLI behaviour
+# ---------------------------------------------------------------------------
+
+
+async def _kb_list_tags(args: dict[str, Any], project_root: Path) -> str:
+    type_filter: str | None = args.get("type_filter") or None
+    prefix_filter: str | None = args.get("prefix_filter") or None
+    tags = _cmd_kb_list_tags(type_filter=type_filter, prefix_filter=prefix_filter)
+    if not tags:
+        return "(no tags found)"
+    return "\n".join(tags)
+
+
+# ---------------------------------------------------------------------------
 # kb_with_tag handler — delegates to commands/kb.py, identical to CLI behaviour
 # ---------------------------------------------------------------------------
 
@@ -92,7 +107,16 @@ async def _kb_with_tag(args: dict[str, Any], project_root: Path) -> str:
     if not result.ids:
         return f"(no KB objects found with tags: {', '.join(tags)})"
 
-    parts: list[str] = [f"IDs: {', '.join(result.ids)}"]
+    def _format_id_line(cid: str) -> str:
+        if result.id_to_tags and cid in result.id_to_tags:
+            tag_str = " ".join(result.id_to_tags[cid])
+            return f"{cid}  [{tag_str}]" if tag_str else cid
+        return cid
+
+    if expand:
+        parts: list[str] = []
+    else:
+        parts = ["IDs:\n" + "\n".join(_format_id_line(cid) for cid in result.ids)]
     if result.objects:
         formatted = _format_objects(result.objects)
         if formatted:
@@ -132,14 +156,43 @@ register_command_tool(
 )
 
 register_command_tool(
+    "kb_list_tags",
+    CommandToolDef(
+        description=(
+            "List unique tag values from the knowledge store. Use to discover available tags "
+            "(e.g. CR values, creature types, habitats). Optionally filter by object type "
+            "or tag prefix. Read-only."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "type_filter": {
+                    "type": "string",
+                    "description": (
+                        "Only list tags that appear on objects of this type "
+                        "(e.g. 'stat' for stat blocks, 'spell' for spells)."
+                    ),
+                },
+                "prefix_filter": {
+                    "type": "string",
+                    "description": (
+                        "Only list tags that start with this prefix "
+                        "(e.g. 'cr:' for CR tags, 'type:' for creature types)."
+                    ),
+                },
+            },
+        },
+    ),
+    _kb_list_tags,
+)
+
+register_command_tool(
     "kb_with_tag",
     CommandToolDef(
         description=(
-            "Find all KB objects that have ALL of the given tags. Useful for discovering "
-            "available entities of a type or linked to a specific object "
-            "(e.g. all factions, all locations in a region, all NPCs in a faction). "
-            "Returns matching IDs by default; set expand=true to also return full object text. "
-            "Read-only."
+            "Find KB objects matching tag groups. AND across groups, OR within (a b c). "
+            "Examples: ['type:undead', '(cr:1 cr:2)'] = undead with CR 1 or 2. "
+            "Returns IDs (with tags) by default; set expand=true for full object text. Read-only."
         ),
         parameters={
             "type": "object",
@@ -148,8 +201,8 @@ register_command_tool(
                     "type": "array",
                     "items": {"type": "string"},
                     "description": (
-                        "Tags all matched objects must have. "
-                        "Examples: ['faction'], ['loc.springfield'], ['npc', 'faction.thieves-guild']"
+                        "Tag groups. Single tags ANDed; '(a b c)' = OR within. "
+                        "Examples: ['faction'], ['type:undead', '(cr:1 cr:2 cr:3)']"
                     ),
                 },
                 "expand": {

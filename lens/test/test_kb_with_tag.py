@@ -368,6 +368,16 @@ class TestKbWithTagCore(unittest.TestCase):
         ids, _, _ = self._run_with_tag(["featured", "pc"])
         self.assertEqual(ids, ["place.nyc"])
 
+    def test_or_group_returns_objects_matching_any_tag_in_or_group(self) -> None:
+        self.store.store_object("stat.ghoul", "Ghoul")
+        self.store.store_object("stat.wight", "Wight")
+        self.store.store_object("stat.skeleton", "Skeleton")
+        self.store.add_tags("stat.ghoul", ["type:undead", "cr:1"])
+        self.store.add_tags("stat.wight", ["type:undead", "cr:3"])
+        self.store.add_tags("stat.skeleton", ["type:undead", "cr:1-4"])
+        ids, _, _ = self._run_with_tag(["type:undead", "(cr:1 cr:2 cr:3)"])
+        self.assertEqual(set(ids), {"stat.ghoul", "stat.wight"})
+
     def test_empty_tags_raises(self) -> None:
         with patch("lens.core.commands.kb.get_store", return_value=self.store):
             with self.assertRaises(LensException) as ctx:
@@ -452,7 +462,7 @@ class TestWithTagCli(unittest.TestCase):
         self.store.store_object("place.nyc", "NYC")
         self.store.add_tags("place.nyc", ["featured"])
         out = self._run_with_tag_cli(["featured"])
-        self.assertEqual(out.strip(), "place.nyc")
+        self.assertEqual(out.strip(), "place.nyc  [featured]")
 
     def test_cli_expand_prints_objects(self) -> None:
         self.store.store_object("place.nyc", "Big city")
@@ -512,7 +522,7 @@ class TestWithTagCli(unittest.TestCase):
         self.store.add_tags("place.boston", ["featured"])
         self.store.add_tags("place.chicago", ["pc"])
         out = self._run_with_tag_cli(["featured", "pc"])
-        self.assertEqual(out.strip(), "place.nyc")
+        self.assertEqual(out.strip(), "place.nyc  [featured pc]")
 
     def test_cli_recurse_depth_1_omits_deeper_children(self) -> None:
         _build_map_fixture(self.store)
@@ -592,6 +602,32 @@ class TestKbWithTagDatasets(unittest.TestCase):
             )
         return result.ids, result.layers, result.objects
 
+    def _run_with_tag_cli(
+        self,
+        tags: list[str],
+        *,
+        expand: bool = False,
+        recurse: int | None = None,
+        same_type_only: bool = False,
+    ) -> str:
+        with patch("lens.core.commands.kb.get_store", return_value=self.store):
+            with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
+                from lens.cli.commands.kb import with_tag
+
+                old_stdout = sys.stdout
+                try:
+                    buf = StringIO()
+                    sys.stdout = buf
+                    with_tag(
+                        tags,
+                        expand=expand,
+                        recurse=recurse,
+                        same_type_only=same_type_only,
+                    )
+                    return buf.getvalue()
+                finally:
+                    sys.stdout = old_stdout
+
     def test_base_uses_dataset_tags_index(self) -> None:
         # The 'testing' dataset defines tag 'protagonist' for person.hero only.
         ids, layers, objects = self._run_with_tag(["protagonist"])
@@ -607,3 +643,10 @@ class TestKbWithTagDatasets(unittest.TestCase):
         # There is no further dot-tag chain, so layers stay empty.
         self.assertEqual(layers or [], [])
         self.assertIsNone(objects)
+
+    def test_dataset_objects_show_tags_in_cli_output(self) -> None:
+        """Tags for dataset-only objects must appear when with-tag is run from a project."""
+        out = self._run_with_tag_cli(["protagonist"])
+        self.assertIn("person.hero", out)
+        self.assertIn("[", out)
+        self.assertIn("protagonist", out)

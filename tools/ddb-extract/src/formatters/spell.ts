@@ -6,7 +6,7 @@ export function formatSpell(data: SpellData, source: string): string {
   const id = `spell.${key}`;
 
   const tags: string[] = [
-    `source:${source}`,
+    // `source:${source}`,
     `level:${data.level}`,
     `school:${toTagSlug(data.school)}`,
   ];

@@ -293,7 +293,8 @@ export async function parseMonsterPage(
         .join(" ")
         .toLowerCase()
         .replace(/\s*\([^)]*\)/g, "")
-        .trim();
+        .replace(/\s*or\s+(tiny|small|medium|large|huge|gargantuan)\s*/gi, " ")
+        .trim() || "unknown";
 
       const habitatEls = document.querySelectorAll(
         "footer p.tags.environment-tags span.tag.environment-tag"

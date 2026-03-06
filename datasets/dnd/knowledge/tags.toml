@@ -1,397 +1,4 @@
 [tags]
-"source:phb-2024" = [
-    "spell.acid-splash",
-    "spell.aid",
-    "spell.alarm",
-    "spell.alter-self",
-    "spell.animal-friendship",
-    "spell.animal-messenger",
-    "spell.animal-shapes",
-    "spell.animate-dead",
-    "spell.animate-objects",
-    "spell.antilife-shell",
-    "spell.antimagic-field",
-    "spell.antipathy-sympathy",
-    "spell.arcane-eye",
-    "spell.arcane-gate",
-    "spell.arcane-lock",
-    "spell.arcane-vigor",
-    "spell.armor-of-agathys",
-    "spell.arms-of-hadar",
-    "spell.astral-projection",
-    "spell.augury",
-    "spell.aura-of-life",
-    "spell.aura-of-purity",
-    "spell.aura-of-vitality",
-    "spell.awaken",
-    "spell.bane",
-    "spell.banishing-smite",
-    "spell.banishment",
-    "spell.barkskin",
-    "spell.beacon-of-hope",
-    "spell.beast-sense",
-    "spell.befuddlement",
-    "spell.bestow-curse",
-    "spell.bigbys-hand",
-    "spell.blade-barrier",
-    "spell.blade-ward",
-    "spell.bless",
-    "spell.blight",
-    "spell.blinding-smite",
-    "spell.blindness-deafness",
-    "spell.blink",
-    "spell.blur",
-    "spell.burning-hands",
-    "spell.call-lightning",
-    "spell.calm-emotions",
-    "spell.chain-lightning",
-    "spell.charm-monster",
-    "spell.charm-person",
-    "spell.chill-touch",
-    "spell.chromatic-orb",
-    "spell.circle-of-death",
-    "spell.circle-of-power",
-    "spell.clairvoyance",
-    "spell.clone",
-    "spell.cloud-of-daggers",
-    "spell.cloudkill",
-    "spell.color-spray",
-    "spell.command",
-    "spell.commune",
-    "spell.commune-with-nature",
-    "spell.compelled-duel",
-    "spell.comprehend-languages",
-    "spell.compulsion",
-    "spell.cone-of-cold",
-    "spell.confusion",
-    "spell.conjure-animals",
-    "spell.conjure-barrage",
-    "spell.conjure-celestial",
-    "spell.conjure-elemental",
-    "spell.conjure-fey",
-    "spell.conjure-minor-elementals",
-    "spell.conjure-volley",
-    "spell.conjure-woodland-beings",
-    "spell.contact-other-plane",
-    "spell.contagion",
-    "spell.contingency",
-    "spell.continual-flame",
-    "spell.control-water",
-    "spell.control-weather",
-    "spell.cordon-of-arrows",
-    "spell.counterspell",
-    "spell.create-food-and-water",
-    "spell.create-or-destroy-water",
-    "spell.create-undead",
-    "spell.creation",
-    "spell.crown-of-madness",
-    "spell.crusaders-mantle",
-    "spell.cure-wounds",
-    "spell.dancing-lights",
-    "spell.darkness",
-    "spell.darkvision",
-    "spell.daylight",
-    "spell.death-ward",
-    "spell.delayed-blast-fireball",
-    "spell.demiplane",
-    "spell.destructive-wave",
-    "spell.detect-evil-and-good",
-    "spell.detect-magic",
-    "spell.detect-poison-and-disease",
-    "spell.detect-thoughts",
-    "spell.dimension-door",
-    "spell.disguise-self",
-    "spell.disintegrate",
-    "spell.dispel-evil-and-good",
-    "spell.dispel-magic",
-    "spell.dissonant-whispers",
-    "spell.divination",
-    "spell.divine-favor",
-    "spell.divine-smite",
-    "spell.divine-word",
-    "spell.dominate-beast",
-    "spell.dominate-monster",
-    "spell.dominate-person",
-    "spell.dragons-breath",
-    "spell.drawmijs-instant-summons",
-    "spell.dream",
-    "spell.druidcraft",
-    "spell.earthquake",
-    "spell.eldritch-blast",
-    "spell.elemental-weapon",
-    "spell.elementalism",
-    "spell.enhance-ability",
-    "spell.enlarge-reduce",
-    "spell.ensnaring-strike",
-    "spell.entangle",
-    "spell.enthrall",
-    "spell.etherealness",
-    "spell.evards-black-tentacles",
-    "spell.expeditious-retreat",
-    "spell.eyebite",
-    "spell.fabricate",
-    "spell.faerie-fire",
-    "spell.false-life",
-    "spell.fear",
-    "spell.feather-fall",
-    "spell.feign-death",
-    "spell.find-familiar",
-    "spell.find-steed",
-    "spell.find-the-path",
-    "spell.find-traps",
-    "spell.finger-of-death",
-    "spell.fire-bolt",
-    "spell.fire-shield",
-    "spell.fire-storm",
-    "spell.fireball",
-    "spell.flame-blade",
-    "spell.flame-strike",
-    "spell.flaming-sphere",
-    "spell.flesh-to-stone",
-    "spell.fly",
-    "spell.fog-cloud",
-    "spell.forbiddance",
-    "spell.forcecage",
-    "spell.foresight",
-    "spell.fount-of-moonlight",
-    "spell.freedom-of-movement",
-    "spell.friends",
-    "spell.gaseous-form",
-    "spell.gate",
-    "spell.geas",
-    "spell.gentle-repose",
-    "spell.giant-insect",
-    "spell.glibness",
-    "spell.globe-of-invulnerability",
-    "spell.glyph-of-warding",
-    "spell.goodberry",
-    "spell.grasping-vine",
-    "spell.grease",
-    "spell.greater-invisibility",
-    "spell.greater-restoration",
-    "spell.guardian-of-faith",
-    "spell.guards-and-wards",
-    "spell.guidance",
-    "spell.guiding-bolt",
-    "spell.gust-of-wind",
-    "spell.hail-of-thorns",
-    "spell.hallow",
-    "spell.hallucinatory-terrain",
-    "spell.harm",
-    "spell.haste",
-    "spell.heal",
-    "spell.healing-word",
-    "spell.heat-metal",
-    "spell.hellish-rebuke",
-    "spell.heroes-feast",
-    "spell.heroism",
-    "spell.hex",
-    "spell.hold-monster",
-    "spell.hold-person",
-    "spell.holy-aura",
-    "spell.hunger-of-hadar",
-    "spell.hunters-mark",
-    "spell.hypnotic-pattern",
-    "spell.ice-knife",
-    "spell.ice-storm",
-    "spell.identify",
-    "spell.illusory-script",
-    "spell.imprisonment",
-    "spell.incendiary-cloud",
-    "spell.inflict-wounds",
-    "spell.insect-plague",
-    "spell.invisibility",
-    "spell.jallarzis-storm-of-radiance",
-    "spell.jump",
-    "spell.knock",
-    "spell.legend-lore",
-    "spell.leomunds-secret-chest",
-    "spell.leomunds-tiny-hut",
-    "spell.lesser-restoration",
-    "spell.levitate",
-    "spell.light",
-    "spell.lightning-arrow",
-    "spell.lightning-bolt",
-    "spell.locate-animals-or-plants",
-    "spell.locate-creature",
-    "spell.locate-object",
-    "spell.longstrider",
-    "spell.mage-armor",
-    "spell.mage-hand",
-    "spell.magic-circle",
-    "spell.magic-jar",
-    "spell.magic-missile",
-    "spell.magic-mouth",
-    "spell.magic-weapon",
-    "spell.major-image",
-    "spell.mass-cure-wounds",
-    "spell.mass-heal",
-    "spell.mass-healing-word",
-    "spell.mass-suggestion",
-    "spell.maze",
-    "spell.meld-into-stone",
-    "spell.melfs-acid-arrow",
-    "spell.mending",
-    "spell.message",
-    "spell.meteor-swarm",
-    "spell.mind-blank",
-    "spell.mind-sliver",
-    "spell.mind-spike",
-    "spell.minor-illusion",
-    "spell.mirage-arcane",
-    "spell.mirror-image",
-    "spell.mislead",
-    "spell.misty-step",
-    "spell.modify-memory",
-    "spell.moonbeam",
-    "spell.mordenkainens-faithful-hound",
-    "spell.mordenkainens-magnificent-mansion",
-    "spell.mordenkainens-private-sanctum",
-    "spell.mordenkainens-sword",
-    "spell.move-earth",
-    "spell.nondetection",
-    "spell.nystuls-magic-aura",
-    "spell.otilukes-freezing-sphere",
-    "spell.otilukes-resilient-sphere",
-    "spell.ottos-irresistible-dance",
-    "spell.pass-without-trace",
-    "spell.passwall",
-    "spell.phantasmal-force",
-    "spell.phantasmal-killer",
-    "spell.phantom-steed",
-    "spell.planar-ally",
-    "spell.planar-binding",
-    "spell.plane-shift",
-    "spell.plant-growth",
-    "spell.poison-spray",
-    "spell.polymorph",
-    "spell.power-word-fortify",
-    "spell.power-word-heal",
-    "spell.power-word-kill",
-    "spell.power-word-stun",
-    "spell.prayer-of-healing",
-    "spell.prestidigitation",
-    "spell.prismatic-spray",
-    "spell.prismatic-wall",
-    "spell.produce-flame",
-    "spell.programmed-illusion",
-    "spell.project-image",
-    "spell.protection-from-energy",
-    "spell.protection-from-evil-and-good",
-    "spell.protection-from-poison",
-    "spell.purify-food-and-drink",
-    "spell.raise-dead",
-    "spell.rarys-telepathic-bond",
-    "spell.ray-of-enfeeblement",
-    "spell.ray-of-frost",
-    "spell.ray-of-sickness",
-    "spell.regenerate",
-    "spell.reincarnate",
-    "spell.remove-curse",
-    "spell.resistance",
-    "spell.resurrection",
-    "spell.reverse-gravity",
-    "spell.revivify",
-    "spell.rope-trick",
-    "spell.sacred-flame",
-    "spell.sanctuary",
-    "spell.scorching-ray",
-    "spell.scrying",
-    "spell.searing-smite",
-    "spell.see-invisibility",
-    "spell.seeming",
-    "spell.sending",
-    "spell.sequester",
-    "spell.shapechange",
-    "spell.shatter",
-    "spell.shield",
-    "spell.shield-of-faith",
-    "spell.shillelagh",
-    "spell.shining-smite",
-    "spell.shocking-grasp",
-    "spell.silence",
-    "spell.silent-image",
-    "spell.simulacrum",
-    "spell.sleep",
-    "spell.sleet-storm",
-    "spell.slow",
-    "spell.sorcerous-burst",
-    "spell.spare-the-dying",
-    "spell.speak-with-animals",
-    "spell.speak-with-dead",
-    "spell.speak-with-plants",
-    "spell.spider-climb",
-    "spell.spike-growth",
-    "spell.spirit-guardians",
-    "spell.spiritual-weapon",
-    "spell.staggering-smite",
-    "spell.starry-wisp",
-    "spell.steel-wind-strike",
-    "spell.stinking-cloud",
-    "spell.stone-shape",
-    "spell.stoneskin",
-    "spell.storm-of-vengeance",
-    "spell.suggestion",
-    "spell.summon-aberration",
-    "spell.summon-beast",
-    "spell.summon-celestial",
-    "spell.summon-construct",
-    "spell.summon-dragon",
-    "spell.summon-elemental",
-    "spell.summon-fey",
-    "spell.summon-fiend",
-    "spell.summon-undead",
-    "spell.sunbeam",
-    "spell.sunburst",
-    "spell.swift-quiver",
-    "spell.symbol",
-    "spell.synaptic-static",
-    "spell.tashas-bubbling-cauldron",
-    "spell.tashas-hideous-laughter",
-    "spell.telekinesis",
-    "spell.telepathy",
-    "spell.teleport",
-    "spell.teleportation-circle",
-    "spell.tensers-floating-disk",
-    "spell.thaumaturgy",
-    "spell.thorn-whip",
-    "spell.thunderclap",
-    "spell.thunderous-smite",
-    "spell.thunderwave",
-    "spell.time-stop",
-    "spell.toll-the-dead",
-    "spell.tongues",
-    "spell.transport-via-plants",
-    "spell.tree-stride",
-    "spell.true-polymorph",
-    "spell.true-resurrection",
-    "spell.true-seeing",
-    "spell.true-strike",
-    "spell.tsunami",
-    "spell.unseen-servant",
-    "spell.vampiric-touch",
-    "spell.vicious-mockery",
-    "spell.vitriolic-sphere",
-    "spell.wall-of-fire",
-    "spell.wall-of-force",
-    "spell.wall-of-ice",
-    "spell.wall-of-stone",
-    "spell.wall-of-thorns",
-    "spell.warding-bond",
-    "spell.water-breathing",
-    "spell.water-walk",
-    "spell.web",
-    "spell.weird",
-    "spell.wind-walk",
-    "spell.wind-wall",
-    "spell.wish",
-    "spell.witch-bolt",
-    "spell.word-of-radiance",
-    "spell.word-of-recall",
-    "spell.wrathful-smite",
-    "spell.yolandes-regal-presence",
-    "spell.zone-of-truth",
-]
 "level:0" = [
     "spell.acid-splash",
     "spell.blade-ward",
@@ -1244,518 +851,6 @@ ritual = [
     "spell.symbol",
     "spell.teleport",
 ]
-"source:mm-2025" = [
-    "stat.aarakocra-aeromancer",
-    "stat.aarakocra-skirmisher",
-    "stat.aberrant-cultist",
-    "stat.aboleth",
-    "stat.abominable-yeti",
-    "stat.adult-black-dragon",
-    "stat.adult-blue-dragon",
-    "stat.adult-brass-dragon",
-    "stat.adult-bronze-dragon",
-    "stat.adult-copper-dragon",
-    "stat.adult-gold-dragon",
-    "stat.adult-green-dragon",
-    "stat.adult-red-dragon",
-    "stat.adult-silver-dragon",
-    "stat.adult-white-dragon",
-    "stat.air-elemental",
-    "stat.allosaurus",
-    "stat.ancient-black-dragon",
-    "stat.ancient-blue-dragon",
-    "stat.ancient-brass-dragon",
-    "stat.ancient-bronze-dragon",
-    "stat.ancient-copper-dragon",
-    "stat.ancient-gold-dragon",
-    "stat.ancient-green-dragon",
-    "stat.ancient-red-dragon",
-    "stat.ancient-silver-dragon",
-    "stat.ancient-white-dragon",
-    "stat.animal-lord",
-    "stat.animal-lord-forager",
-    "stat.animal-lord-hunter",
-    "stat.animal-lord-sage",
-    "stat.animated-armor",
-    "stat.animated-broom",
-    "stat.animated-flying-sword",
-    "stat.animated-rug-of-smothering",
-    "stat.ankheg",
-    "stat.ankylosaurus",
-    "stat.ape",
-    "stat.arcanaloth",
-    "stat.arch-hag",
-    "stat.archelon",
-    "stat.archmage",
-    "stat.archpriest",
-    "stat.assassin",
-    "stat.awakened-shrub",
-    "stat.awakened-tree",
-    "stat.axe-beak",
-    "stat.azer-pyromancer",
-    "stat.azer-sentinel",
-    "stat.baboon",
-    "stat.badger",
-    "stat.balor",
-    "stat.bandit",
-    "stat.bandit-captain",
-    "stat.bandit-crime-lord",
-    "stat.bandit-deceiver",
-    "stat.banshee",
-    "stat.barbed-devil",
-    "stat.barlgura",
-    "stat.basilisk",
-    "stat.bat",
-    "stat.bearded-devil",
-    "stat.behir",
-    "stat.beholder",
-    "stat.beholder-zombie",
-    "stat.berserker",
-    "stat.berserker-commander",
-    "stat.black-bear",
-    "stat.black-dragon-wyrmling",
-    "stat.black-pudding",
-    "stat.blink-dog",
-    "stat.blob-of-annihilation",
-    "stat.blood-hawk",
-    "stat.blue-dragon-wyrmling",
-    "stat.blue-slaad",
-    "stat.boar",
-    "stat.bone-devil",
-    "stat.bone-naga",
-    "stat.brass-dragon-wyrmling",
-    "stat.brazen-gorgon",
-    "stat.bronze-dragon-wyrmling",
-    "stat.brown-bear",
-    "stat.bugbear-stalker",
-    "stat.bugbear-warrior",
-    "stat.bulette",
-    "stat.bulette-pup",
-    "stat.bullywug-bog-sage",
-    "stat.bullywug-warrior",
-    "stat.cambion",
-    "stat.camel",
-    "stat.carrion-crawler",
-    "stat.cat",
-    "stat.centaur-trooper",
-    "stat.centaur-warden",
-    "stat.chain-devil",
-    "stat.chasme",
-    "stat.chimera",
-    "stat.chuul",
-    "stat.clay-golem",
-    "stat.cloaker",
-    "stat.cloud-giant",
-    "stat.cockatrice",
-    "stat.cockatrice-regent",
-    "stat.colossus",
-    "stat.commoner",
-    "stat.constrictor-snake",
-    "stat.copper-dragon-wyrmling",
-    "stat.couatl",
-    "stat.crab",
-    "stat.crawling-claw",
-    "stat.crocodile",
-    "stat.cultist",
-    "stat.cultist-fanatic",
-    "stat.cultist-hierophant",
-    "stat.cyclops-oracle",
-    "stat.cyclops-sentry",
-    "stat.dao",
-    "stat.darkmantle",
-    "stat.death-cultist",
-    "stat.death-dog",
-    "stat.death-knight",
-    "stat.death-knight-aspirant",
-    "stat.death-slaad",
-    "stat.death-tyrant",
-    "stat.deer",
-    "stat.demilich",
-    "stat.deva",
-    "stat.dire-wolf",
-    "stat.dire-worg",
-    "stat.displacer-beast",
-    "stat.djinni",
-    "stat.doppelganger",
-    "stat.dracolich",
-    "stat.dracolich-gargantuan",
-    "stat.draft-horse",
-    "stat.dragon-turtle",
-    "stat.dretch",
-    "stat.drider",
-    "stat.druid",
-    "stat.dryad",
-    "stat.dust-mephit",
-    "stat.eagle",
-    "stat.earth-elemental",
-    "stat.efreeti",
-    "stat.elemental-cataclysm",
-    "stat.elemental-cultist",
-    "stat.elephant",
-    "stat.elk",
-    "stat.empyrean-celestial",
-    "stat.empyrean-fiend",
-    "stat.empyrean-iota-celestial",
-    "stat.empyrean-iota-fiend",
-    "stat.erinyes",
-    "stat.ettercap",
-    "stat.ettin",
-    "stat.faerie-dragon-adult",
-    "stat.faerie-dragon-youth",
-    "stat.fiend-cultist",
-    "stat.fire-elemental",
-    "stat.fire-giant",
-    "stat.flameskull",
-    "stat.flaming-skeleton",
-    "stat.flesh-golem",
-    "stat.flumph",
-    "stat.flying-snake",
-    "stat.fomorian",
-    "stat.frog",
-    "stat.frost-giant",
-    "stat.galeb-duhr",
-    "stat.gargoyle",
-    "stat.gas-spore-fungus",
-    "stat.gelatinous-cube",
-    "stat.ghast",
-    "stat.ghast-gravecaller",
-    "stat.ghost",
-    "stat.ghoul",
-    "stat.giant-ape",
-    "stat.giant-axe-beak",
-    "stat.giant-badger",
-    "stat.giant-bat",
-    "stat.giant-boar",
-    "stat.giant-centipede",
-    "stat.giant-constrictor-snake",
-    "stat.giant-crab",
-    "stat.giant-crocodile",
-    "stat.giant-eagle",
-    "stat.giant-elk",
-    "stat.giant-fire-beetle",
-    "stat.giant-frog",
-    "stat.giant-goat",
-    "stat.giant-hyena",
-    "stat.giant-lizard",
-    "stat.giant-octopus",
-    "stat.giant-owl",
-    "stat.giant-rat",
-    "stat.giant-scorpion",
-    "stat.giant-seahorse",
-    "stat.giant-shark",
-    "stat.giant-spider",
-    "stat.giant-squid",
-    "stat.giant-toad",
-    "stat.giant-venomous-snake",
-    "stat.giant-vulture",
-    "stat.giant-wasp",
-    "stat.giant-weasel",
-    "stat.giant-wolf-spider",
-    "stat.gibbering-mouther",
-    "stat.githyanki-dracomancer",
-    "stat.githyanki-knight",
-    "stat.githyanki-warrior",
-    "stat.githzerai-monk",
-    "stat.githzerai-psion",
-    "stat.githzerai-zerth",
-    "stat.glabrezu",
-    "stat.gladiator",
-    "stat.gnoll-demoniac",
-    "stat.gnoll-fang-of-yeenoghu",
-    "stat.gnoll-pack-lord",
-    "stat.gnoll-warrior",
-    "stat.goat",
-    "stat.goblin-boss",
-    "stat.goblin-hexer",
-    "stat.goblin-minion",
-    "stat.goblin-warrior",
-    "stat.gold-dragon-wyrmling",
-    "stat.gorgon",
-    "stat.goristro",
-    "stat.graveyard-revenant",
-    "stat.gray-ooze",
-    "stat.gray-slaad",
-    "stat.green-dragon-wyrmling",
-    "stat.green-hag",
-    "stat.green-slaad",
-    "stat.grell",
-    "stat.grick",
-    "stat.grick-ancient",
-    "stat.griffon",
-    "stat.grimlock",
-    "stat.guard",
-    "stat.guard-captain",
-    "stat.guardian-naga",
-    "stat.gulthias-blight",
-    "stat.half-dragon",
-    "stat.harpy",
-    "stat.haunting-revenant",
-    "stat.hawk",
-    "stat.hell-hound",
-    "stat.helmed-horror",
-    "stat.hezrou",
-    "stat.hill-giant",
-    "stat.hippogriff",
-    "stat.hippopotamus",
-    "stat.hobgoblin-captain",
-    "stat.hobgoblin-warlord",
-    "stat.hobgoblin-warrior",
-    "stat.homunculus",
-    "stat.hook-horror",
-    "stat.horned-devil",
-    "stat.hunter-shark",
-    "stat.hydra",
-    "stat.hyena",
-    "stat.ice-devil",
-    "stat.ice-mephit",
-    "stat.imp",
-    "stat.incubus",
-    "stat.intellect-devourer",
-    "stat.invisible-stalker",
-    "stat.iron-golem",
-    "stat.jackal",
-    "stat.jackalwere",
-    "stat.juvenile-shadow-dragon",
-    "stat.kenku",
-    "stat.killer-whale",
-    "stat.knight",
-    "stat.kobold-warrior",
-    "stat.kraken",
-    "stat.kuo-toa",
-    "stat.kuo-toa-archpriest",
-    "stat.kuo-toa-monitor",
-    "stat.kuo-toa-whip",
-    "stat.lacedon-ghoul",
-    "stat.lamia",
-    "stat.larva",
-    "stat.lemure",
-    "stat.lich",
-    "stat.lion",
-    "stat.lizard",
-    "stat.lizardfolk-geomancer",
-    "stat.lizardfolk-sovereign",
-    "stat.mage",
-    "stat.mage-apprentice",
-    "stat.magma-mephit",
-    "stat.magmin",
-    "stat.mammoth",
-    "stat.manes",
-    "stat.manes-vaporspawn",
-    "stat.manticore",
-    "stat.marid",
-    "stat.marilith",
-    "stat.mastiff",
-    "stat.medusa",
-    "stat.merfolk-skirmisher",
-    "stat.merfolk-wavebender",
-    "stat.merrow",
-    "stat.mezzoloth",
-    "stat.mimic",
-    "stat.mind-flayer",
-    "stat.mind-flayer-arcanist",
-    "stat.minotaur-of-baphomet",
-    "stat.minotaur-skeleton",
-    "stat.modron-duodrone",
-    "stat.modron-monodrone",
-    "stat.modron-pentadrone",
-    "stat.modron-quadrone",
-    "stat.modron-tridrone",
-    "stat.mud-mephit",
-    "stat.mule",
-    "stat.mummy",
-    "stat.mummy-lord",
-    "stat.myconid-adult",
-    "stat.myconid-sovereign",
-    "stat.myconid-spore-servant",
-    "stat.myconid-sprout",
-    "stat.nalfeshnee",
-    "stat.needle-blight",
-    "stat.night-hag",
-    "stat.nightmare",
-    "stat.noble",
-    "stat.noble-prodigy",
-    "stat.nothic",
-    "stat.nycaloth",
-    "stat.ochre-jelly",
-    "stat.octopus",
-    "stat.ogre",
-    "stat.ogre-zombie",
-    "stat.ogrillon-ogre",
-    "stat.oni",
-    "stat.otyugh",
-    "stat.owl",
-    "stat.owlbear",
-    "stat.panther",
-    "stat.pegasus",
-    "stat.performer",
-    "stat.performer-legend",
-    "stat.performer-maestro",
-    "stat.peryton",
-    "stat.phase-spider",
-    "stat.piercer",
-    "stat.piranha",
-    "stat.pirate",
-    "stat.pirate-admiral",
-    "stat.pirate-captain",
-    "stat.pit-fiend",
-    "stat.pixie",
-    "stat.pixie-wonderbringer",
-    "stat.planetar",
-    "stat.plesiosaurus",
-    "stat.polar-bear",
-    "stat.poltergeist",
-    "stat.pony",
-    "stat.priest",
-    "stat.priest-acolyte",
-    "stat.primeval-owlbear",
-    "stat.pseudodragon",
-    "stat.psychic-gray-ooze",
-    "stat.pteranodon",
-    "stat.purple-worm",
-    "stat.quaggoth",
-    "stat.quaggoth-thonot",
-    "stat.quasit",
-    "stat.questing-knight",
-    "stat.rakshasa",
-    "stat.rat",
-    "stat.raven",
-    "stat.red-dragon-wyrmling",
-    "stat.red-slaad",
-    "stat.reef-shark",
-    "stat.remorhaz",
-    "stat.revenant",
-    "stat.rhinoceros",
-    "stat.riding-horse",
-    "stat.roc",
-    "stat.roper",
-    "stat.rust-monster",
-    "stat.saber-toothed-tiger",
-    "stat.sahuagin-baron",
-    "stat.sahuagin-priest",
-    "stat.sahuagin-warrior",
-    "stat.salamander",
-    "stat.salamander-fire-snake",
-    "stat.salamander-inferno-master",
-    "stat.satyr",
-    "stat.satyr-revelmaster",
-    "stat.scarecrow",
-    "stat.scorpion",
-    "stat.scout",
-    "stat.scout-captain",
-    "stat.sea-hag",
-    "stat.seahorse",
-    "stat.shadow",
-    "stat.shadow-demon",
-    "stat.shadow-dragon-huge",
-    "stat.shadow-dragon-large",
-    "stat.shambling-mound",
-    "stat.shield-guardian",
-    "stat.shrieker-fungus",
-    "stat.silver-dragon-wyrmling",
-    "stat.skeleton",
-    "stat.slaad-tadpole",
-    "stat.smoke-mephit",
-    "stat.solar",
-    "stat.spectator",
-    "stat.specter",
-    "stat.sphinx-of-lore",
-    "stat.sphinx-of-secrets",
-    "stat.sphinx-of-valor",
-    "stat.sphinx-of-wonder",
-    "stat.spider",
-    "stat.spined-devil",
-    "stat.spirit-naga",
-    "stat.sprite",
-    "stat.spy",
-    "stat.spy-master",
-    "stat.steam-mephit",
-    "stat.stirge",
-    "stat.stone-giant",
-    "stat.stone-golem",
-    "stat.storm-giant",
-    "stat.succubus",
-    "stat.swarm-of-bats",
-    "stat.swarm-of-crawling-claws",
-    "stat.swarm-of-dretches",
-    "stat.swarm-of-insects",
-    "stat.swarm-of-larvae",
-    "stat.swarm-of-lemures",
-    "stat.swarm-of-piranhas",
-    "stat.swarm-of-rats",
-    "stat.swarm-of-ravens",
-    "stat.swarm-of-stirges",
-    "stat.swarm-of-venomous-snakes",
-    "stat.tarrasque",
-    "stat.thri-kreen-marauder",
-    "stat.thri-kreen-psion",
-    "stat.tiger",
-    "stat.tough",
-    "stat.tough-boss",
-    "stat.treant",
-    "stat.tree-blight",
-    "stat.triceratops",
-    "stat.troglodyte",
-    "stat.troll",
-    "stat.troll-limb",
-    "stat.twig-blight",
-    "stat.tyrannosaurus-rex",
-    "stat.ultroloth",
-    "stat.umber-hulk",
-    "stat.unicorn",
-    "stat.vampire",
-    "stat.vampire-familiar",
-    "stat.vampire-nightbringer",
-    "stat.vampire-spawn",
-    "stat.vampire-umbral-lord",
-    "stat.venomous-snake",
-    "stat.vine-blight",
-    "stat.violet-fungus",
-    "stat.violet-fungus-necrohulk",
-    "stat.vrock",
-    "stat.vulture",
-    "stat.warhorse",
-    "stat.warhorse-skeleton",
-    "stat.warrior-commander",
-    "stat.warrior-infantry",
-    "stat.warrior-veteran",
-    "stat.water-elemental",
-    "stat.water-weird",
-    "stat.weasel",
-    "stat.werebear",
-    "stat.wereboar",
-    "stat.wererat",
-    "stat.weretiger",
-    "stat.werewolf",
-    "stat.white-dragon-wyrmling",
-    "stat.wight",
-    "stat.will-o-wisp",
-    "stat.winged-kobold",
-    "stat.winter-wolf",
-    "stat.wolf",
-    "stat.worg",
-    "stat.wraith",
-    "stat.wyvern",
-    "stat.xorn",
-    "stat.yeti",
-    "stat.yochlol",
-    "stat.young-black-dragon",
-    "stat.young-blue-dragon",
-    "stat.young-brass-dragon",
-    "stat.young-bronze-dragon",
-    "stat.young-copper-dragon",
-    "stat.young-gold-dragon",
-    "stat.young-green-dragon",
-    "stat.young-red-dragon",
-    "stat.young-remorhaz",
-    "stat.young-silver-dragon",
-    "stat.young-white-dragon",
-    "stat.yuan-ti-abomination",
-    "stat.yuan-ti-infiltrator",
-    "stat.yuan-ti-malison-type-1",
-    "stat.yuan-ti-malison-type-2",
-    "stat.yuan-ti-malison-type-3",
-    "stat.zombie",
-]
 "cr:4" = [
     "stat.aarakocra-aeromancer",
     "stat.archelon",
@@ -2186,7 +1281,7 @@ ritual = [
     "stat.young-bronze-dragon",
     "stat.young-green-dragon",
 ]
-"type:or-small-humanoid" = [
+"type:humanoid" = [
     "stat.aberrant-cultist",
     "stat.archmage",
     "stat.archpriest",
@@ -2197,6 +1292,7 @@ ritual = [
     "stat.bandit-deceiver",
     "stat.berserker",
     "stat.berserker-commander",
+    "stat.commoner",
     "stat.cultist",
     "stat.cultist-fanatic",
     "stat.cultist-hierophant",
@@ -2683,12 +1779,12 @@ ritual = [
     "stat.axe-beak",
     "stat.basilisk",
     "stat.behir",
-    "stat.bulette",
     "stat.bulette-pup",
+    "stat.bulette",
     "stat.carrion-crawler",
     "stat.chimera",
-    "stat.cockatrice",
     "stat.cockatrice-regent",
+    "stat.cockatrice",
     "stat.death-dog",
     "stat.displacer-beast",
     "stat.doppelganger",
@@ -2714,8 +1810,8 @@ ritual = [
     "stat.phase-spider",
     "stat.primeval-owlbear",
     "stat.purple-worm",
-    "stat.quaggoth",
     "stat.quaggoth-thonot",
+    "stat.quaggoth",
     "stat.remorhaz",
     "stat.roc",
     "stat.rust-monster",
@@ -2725,6 +1821,11 @@ ritual = [
     "stat.thri-kreen-psion",
     "stat.troglodyte",
     "stat.umber-hulk",
+    "stat.werebear",
+    "stat.wereboar",
+    "stat.wererat",
+    "stat.weretiger",
+    "stat.werewolf",
     "stat.winter-wolf",
     "stat.yeti",
     "stat.young-remorhaz",
@@ -4102,6 +3203,7 @@ ritual = [
     "stat.gulthias-blight",
     "stat.myconid-adult",
     "stat.myconid-sovereign",
+    "stat.myconid-spore-servant",
     "stat.myconid-sprout",
     "stat.needle-blight",
     "stat.shambling-mound",
@@ -4267,14 +3369,16 @@ ritual = [
     "stat.beholder-zombie",
     "stat.bone-naga",
     "stat.crawling-claw",
+    "stat.death-knight-aspirant",
+    "stat.death-knight",
     "stat.death-tyrant",
     "stat.demilich",
-    "stat.dracolich",
     "stat.dracolich-gargantuan",
+    "stat.dracolich",
     "stat.flameskull",
     "stat.flaming-skeleton",
-    "stat.ghast",
     "stat.ghast-gravecaller",
+    "stat.ghast",
     "stat.ghost",
     "stat.ghoul",
     "stat.graveyard-revenant",
@@ -4282,14 +3386,22 @@ ritual = [
     "stat.lacedon-ghoul",
     "stat.lich",
     "stat.minotaur-skeleton",
+    "stat.mummy-lord",
+    "stat.mummy",
     "stat.ogre-zombie",
+    "stat.poltergeist",
     "stat.revenant",
     "stat.shadow",
     "stat.skeleton",
     "stat.specter",
+    "stat.vampire-nightbringer",
+    "stat.vampire-spawn",
+    "stat.vampire-umbral-lord",
+    "stat.vampire",
     "stat.warhorse-skeleton",
     "stat.wight",
     "stat.will-o-wisp",
+    "stat.wraith",
     "stat.zombie",
 ]
 "habitat:planar-nine-hells" = [
@@ -4379,25 +3491,10 @@ ritual = [
 "cr:25" = [
     "stat.colossus",
 ]
-"type:humanoid" = [
-    "stat.commoner",
-]
 "habitat:planar-elemental-plane-of-earth" = [
     "stat.dao",
     "stat.earth-elemental",
     "stat.xorn",
-]
-"type:or-small-undead" = [
-    "stat.death-knight",
-    "stat.death-knight-aspirant",
-    "stat.mummy",
-    "stat.mummy-lord",
-    "stat.poltergeist",
-    "stat.vampire",
-    "stat.vampire-nightbringer",
-    "stat.vampire-spawn",
-    "stat.vampire-umbral-lord",
-    "stat.wraith",
 ]
 "cr:18" = [
     "stat.demilich",
@@ -4453,9 +3550,6 @@ ritual = [
     "stat.modron-quadrone",
     "stat.modron-tridrone",
 ]
-"type:or-small-plant" = [
-    "stat.myconid-spore-servant",
-]
 "habitat:planar-ethereal-plane" = [
     "stat.phase-spider",
 ]
@@ -4482,77 +3576,6 @@ ritual = [
 ]
 "cr:30" = [
     "stat.tarrasque",
-]
-"type:or-small-monstrosity" = [
-    "stat.werebear",
-    "stat.wereboar",
-    "stat.wererat",
-    "stat.weretiger",
-    "stat.werewolf",
-]
-"source:basic-rules" = [
-    "equipment.antimatter-rifle",
-    "equipment.battleaxe",
-    "equipment.blowgun",
-    "equipment.breastplate",
-    "equipment.chain-mail",
-    "equipment.chain-shirt",
-    "equipment.club",
-    "equipment.crossbow-hand",
-    "equipment.crossbow-heavy",
-    "equipment.crossbow-light",
-    "equipment.dagger",
-    "equipment.dart",
-    "equipment.energy-cell",
-    "equipment.flail",
-    "equipment.glaive",
-    "equipment.greataxe",
-    "equipment.greatclub",
-    "equipment.greatsword",
-    "equipment.halberd",
-    "equipment.half-plate",
-    "equipment.handaxe",
-    "equipment.hide",
-    "equipment.javelin",
-    "equipment.lance",
-    "equipment.laser-pistol",
-    "equipment.laser-rifle",
-    "equipment.leather",
-    "equipment.light-hammer",
-    "equipment.longbow",
-    "equipment.longsword",
-    "equipment.mace",
-    "equipment.maul",
-    "equipment.morningstar",
-    "equipment.musket",
-    "equipment.net",
-    "equipment.padded",
-    "equipment.pike",
-    "equipment.pistol",
-    "equipment.pistol-automatic",
-    "equipment.plate",
-    "equipment.quarterstaff",
-    "equipment.rapier",
-    "equipment.revolver",
-    "equipment.rifle-automatic",
-    "equipment.rifle-hunting",
-    "equipment.ring-mail",
-    "equipment.scale-mail",
-    "equipment.scimitar",
-    "equipment.shield",
-    "equipment.shortbow",
-    "equipment.shortsword",
-    "equipment.shotgun",
-    "equipment.sickle",
-    "equipment.sling",
-    "equipment.spear",
-    "equipment.spiked-armor",
-    "equipment.splint",
-    "equipment.studded-leather",
-    "equipment.trident",
-    "equipment.war-pick",
-    "equipment.warhammer",
-    "equipment.whip",
 ]
 "category:firearms-ranged-weapon" = [
     "equipment.antimatter-rifle",
@@ -4641,1996 +3664,1604 @@ ritual = [
 "spell.acid-splash" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.aid" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.alarm" = [
     "level:1",
     "ritual",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.alter-self" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.animal-friendship" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.animal-messenger" = [
     "level:2",
     "ritual",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.animal-shapes" = [
     "level:8",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.animate-dead" = [
     "level:3",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.animate-objects" = [
     "level:5",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.antilife-shell" = [
     "level:5",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.antimagic-field" = [
     "level:8",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.antipathy-sympathy" = [
     "level:8",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.arcane-eye" = [
     "level:4",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.arcane-gate" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.arcane-lock" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.arcane-vigor" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.armor-of-agathys" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.arms-of-hadar" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.astral-projection" = [
     "level:9",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.augury" = [
     "level:2",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.aura-of-life" = [
     "level:4",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.aura-of-purity" = [
     "level:4",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.aura-of-vitality" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.awaken" = [
     "level:5",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.bane" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.banishing-smite" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.banishment" = [
     "level:4",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.barkskin" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.beacon-of-hope" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.beast-sense" = [
     "level:2",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.befuddlement" = [
     "level:8",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.bestow-curse" = [
     "level:3",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.bigbys-hand" = [
     "level:5",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.blade-barrier" = [
     "level:6",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.blade-ward" = [
     "level:0",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.bless" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.blight" = [
     "level:4",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.blinding-smite" = [
     "level:3",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.blindness-deafness" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.blink" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.blur" = [
     "level:2",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.burning-hands" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.call-lightning" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.calm-emotions" = [
     "level:2",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.chain-lightning" = [
     "level:6",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.charm-monster" = [
     "level:4",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.charm-person" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.chill-touch" = [
     "level:0",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.chromatic-orb" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.circle-of-death" = [
     "level:6",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.circle-of-power" = [
     "level:5",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.clairvoyance" = [
     "level:3",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.clone" = [
     "level:8",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.cloud-of-daggers" = [
     "level:2",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.cloudkill" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.color-spray" = [
     "level:1",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.command" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.commune" = [
     "level:5",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.commune-with-nature" = [
     "level:5",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.compelled-duel" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.comprehend-languages" = [
     "level:1",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.compulsion" = [
     "level:4",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.cone-of-cold" = [
     "level:5",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.confusion" = [
     "level:4",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.conjure-animals" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.conjure-barrage" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.conjure-celestial" = [
     "level:7",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.conjure-elemental" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.conjure-fey" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.conjure-minor-elementals" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.conjure-volley" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.conjure-woodland-beings" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.contact-other-plane" = [
     "level:5",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.contagion" = [
     "level:5",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.contingency" = [
     "level:6",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.continual-flame" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.control-water" = [
     "level:4",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.control-weather" = [
     "level:8",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.cordon-of-arrows" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.counterspell" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.create-food-and-water" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.create-or-destroy-water" = [
     "level:1",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.create-undead" = [
     "level:6",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.creation" = [
     "level:5",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.crown-of-madness" = [
     "level:2",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.crusaders-mantle" = [
     "level:3",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.cure-wounds" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.dancing-lights" = [
     "level:0",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.darkness" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.darkvision" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.daylight" = [
     "level:3",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.death-ward" = [
     "level:4",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.delayed-blast-fireball" = [
     "level:7",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.demiplane" = [
     "level:8",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.destructive-wave" = [
     "level:5",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.detect-evil-and-good" = [
     "level:1",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.detect-magic" = [
     "level:1",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.detect-poison-and-disease" = [
     "level:1",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.detect-thoughts" = [
     "level:2",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.dimension-door" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.disguise-self" = [
     "level:1",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.disintegrate" = [
     "level:6",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.dispel-evil-and-good" = [
     "level:5",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.dispel-magic" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.dissonant-whispers" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.divination" = [
     "level:4",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.divine-favor" = [
     "level:1",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.divine-smite" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.divine-word" = [
     "level:7",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.dominate-beast" = [
     "level:4",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.dominate-monster" = [
     "level:8",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.dominate-person" = [
     "level:5",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.dragons-breath" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.drawmijs-instant-summons" = [
     "level:6",
     "ritual",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.dream" = [
     "level:5",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.druidcraft" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.earthquake" = [
     "level:8",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.eldritch-blast" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.elemental-weapon" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.elementalism" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.enhance-ability" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.enlarge-reduce" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.ensnaring-strike" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.entangle" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.enthrall" = [
     "level:2",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.etherealness" = [
     "level:7",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.evards-black-tentacles" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.expeditious-retreat" = [
     "level:1",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.eyebite" = [
     "level:6",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.fabricate" = [
     "level:4",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.faerie-fire" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.false-life" = [
     "level:1",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.fear" = [
     "level:3",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.feather-fall" = [
     "level:1",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.feign-death" = [
     "level:3",
     "ritual",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.find-familiar" = [
     "level:1",
     "ritual",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.find-steed" = [
     "level:2",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.find-the-path" = [
     "level:6",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.find-traps" = [
     "level:2",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.finger-of-death" = [
     "level:7",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.fire-bolt" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.fire-shield" = [
     "level:4",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.fire-storm" = [
     "level:7",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.fireball" = [
     "level:3",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.flame-blade" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.flame-strike" = [
     "level:5",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.flaming-sphere" = [
     "level:2",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.flesh-to-stone" = [
     "level:6",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.fly" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.fog-cloud" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.forbiddance" = [
     "level:6",
     "ritual",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.forcecage" = [
     "level:7",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.foresight" = [
     "level:9",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.fount-of-moonlight" = [
     "level:4",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.freedom-of-movement" = [
     "level:4",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.friends" = [
     "level:0",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.gaseous-form" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.gate" = [
     "level:9",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.geas" = [
     "level:5",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.gentle-repose" = [
     "level:2",
     "ritual",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.giant-insect" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.glibness" = [
     "level:8",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.globe-of-invulnerability" = [
     "level:6",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.glyph-of-warding" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.goodberry" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.grasping-vine" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.grease" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.greater-invisibility" = [
     "level:4",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.greater-restoration" = [
     "level:5",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.guardian-of-faith" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.guards-and-wards" = [
     "level:6",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.guidance" = [
     "level:0",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.guiding-bolt" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.gust-of-wind" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.hail-of-thorns" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.hallow" = [
     "level:5",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.hallucinatory-terrain" = [
     "level:4",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.harm" = [
     "level:6",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.haste" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.heal" = [
     "level:6",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.healing-word" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.heat-metal" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.hellish-rebuke" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.heroes-feast" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.heroism" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.hex" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.hold-monster" = [
     "level:5",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.hold-person" = [
     "level:2",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.holy-aura" = [
     "level:8",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.hunger-of-hadar" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.hunters-mark" = [
     "level:1",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.hypnotic-pattern" = [
     "level:3",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.ice-knife" = [
     "level:1",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.ice-storm" = [
     "level:4",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.identify" = [
     "level:1",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.illusory-script" = [
     "level:1",
     "ritual",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.imprisonment" = [
     "level:9",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.incendiary-cloud" = [
     "level:8",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.inflict-wounds" = [
     "level:1",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.insect-plague" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.invisibility" = [
     "level:2",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.jallarzis-storm-of-radiance" = [
     "level:5",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.jump" = [
     "level:1",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.knock" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.legend-lore" = [
     "level:5",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.leomunds-secret-chest" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.leomunds-tiny-hut" = [
     "level:3",
     "ritual",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.lesser-restoration" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.levitate" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.light" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.lightning-arrow" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.lightning-bolt" = [
     "level:3",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.locate-animals-or-plants" = [
     "level:2",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.locate-creature" = [
     "level:4",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.locate-object" = [
     "level:2",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.longstrider" = [
     "level:1",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.mage-armor" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.mage-hand" = [
     "level:0",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.magic-circle" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.magic-jar" = [
     "level:6",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.magic-missile" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.magic-mouth" = [
     "level:2",
     "ritual",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.magic-weapon" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.major-image" = [
     "level:3",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.mass-cure-wounds" = [
     "level:5",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.mass-heal" = [
     "level:9",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.mass-healing-word" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.mass-suggestion" = [
     "level:6",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.maze" = [
     "level:8",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.meld-into-stone" = [
     "level:3",
     "ritual",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.melfs-acid-arrow" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.mending" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.message" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.meteor-swarm" = [
     "level:9",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.mind-blank" = [
     "level:8",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.mind-sliver" = [
     "level:0",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.mind-spike" = [
     "level:2",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.minor-illusion" = [
     "level:0",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.mirage-arcane" = [
     "level:7",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.mirror-image" = [
     "level:2",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.mislead" = [
     "level:5",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.misty-step" = [
     "level:2",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.modify-memory" = [
     "level:5",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.moonbeam" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.mordenkainens-faithful-hound" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.mordenkainens-magnificent-mansion" = [
     "level:7",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.mordenkainens-private-sanctum" = [
     "level:4",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.mordenkainens-sword" = [
     "level:7",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.move-earth" = [
     "level:6",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.nondetection" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.nystuls-magic-aura" = [
     "level:2",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.otilukes-freezing-sphere" = [
     "level:6",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.otilukes-resilient-sphere" = [
     "level:4",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.ottos-irresistible-dance" = [
     "level:6",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.pass-without-trace" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.passwall" = [
     "level:5",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.phantasmal-force" = [
     "level:2",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.phantasmal-killer" = [
     "level:4",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.phantom-steed" = [
     "level:3",
     "ritual",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.planar-ally" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.planar-binding" = [
     "level:5",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.plane-shift" = [
     "level:7",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.plant-growth" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.poison-spray" = [
     "level:0",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.polymorph" = [
     "level:4",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.power-word-fortify" = [
     "level:7",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.power-word-heal" = [
     "level:9",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.power-word-kill" = [
     "level:9",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.power-word-stun" = [
     "level:8",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.prayer-of-healing" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.prestidigitation" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.prismatic-spray" = [
     "level:7",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.prismatic-wall" = [
     "level:9",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.produce-flame" = [
     "level:0",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.programmed-illusion" = [
     "level:6",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.project-image" = [
     "level:7",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.protection-from-energy" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.protection-from-evil-and-good" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.protection-from-poison" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.purify-food-and-drink" = [
     "level:1",
     "ritual",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.raise-dead" = [
     "level:5",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.rarys-telepathic-bond" = [
     "level:5",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.ray-of-enfeeblement" = [
     "level:2",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.ray-of-frost" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.ray-of-sickness" = [
     "level:1",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.regenerate" = [
     "level:7",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.reincarnate" = [
     "level:5",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.remove-curse" = [
     "level:3",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.resistance" = [
     "level:0",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.resurrection" = [
     "level:7",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.reverse-gravity" = [
     "level:7",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.revivify" = [
     "level:3",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.rope-trick" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.sacred-flame" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.sanctuary" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.scorching-ray" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.scrying" = [
     "level:5",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.searing-smite" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.see-invisibility" = [
     "level:2",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.seeming" = [
     "level:5",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.sending" = [
     "level:3",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.sequester" = [
     "level:7",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.shapechange" = [
     "level:9",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.shatter" = [
     "level:2",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.shield" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.shield-of-faith" = [
     "level:1",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.shillelagh" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.shining-smite" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.shocking-grasp" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.silence" = [
     "level:2",
     "ritual",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.silent-image" = [
     "level:1",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.simulacrum" = [
     "level:7",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.sleep" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.sleet-storm" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.slow" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.sorcerous-burst" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.spare-the-dying" = [
     "level:0",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.speak-with-animals" = [
     "level:1",
     "ritual",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.speak-with-dead" = [
     "level:3",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.speak-with-plants" = [
     "level:3",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.spider-climb" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.spike-growth" = [
     "level:2",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.spirit-guardians" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.spiritual-weapon" = [
     "level:2",
     "ritual",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.staggering-smite" = [
     "level:4",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.starry-wisp" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.steel-wind-strike" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.stinking-cloud" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.stone-shape" = [
     "level:4",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.stoneskin" = [
     "level:4",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.storm-of-vengeance" = [
     "level:9",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.suggestion" = [
     "level:2",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.summon-aberration" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-beast" = [
     "level:2",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-celestial" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-construct" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-dragon" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-elemental" = [
     "level:4",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-fey" = [
     "level:3",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-fiend" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.summon-undead" = [
     "level:3",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.sunbeam" = [
     "level:6",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.sunburst" = [
     "level:8",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.swift-quiver" = [
     "level:5",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.symbol" = [
     "level:7",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.synaptic-static" = [
     "level:5",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.tashas-bubbling-cauldron" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.tashas-hideous-laughter" = [
     "level:1",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.telekinesis" = [
     "level:5",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.telepathy" = [
     "level:8",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.teleport" = [
     "level:7",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.teleportation-circle" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.tensers-floating-disk" = [
     "level:1",
     "ritual",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.thaumaturgy" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.thorn-whip" = [
     "level:0",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.thunderclap" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.thunderous-smite" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.thunderwave" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.time-stop" = [
     "level:9",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.toll-the-dead" = [
     "level:0",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.tongues" = [
     "level:3",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.transport-via-plants" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.tree-stride" = [
     "level:5",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.true-polymorph" = [
     "level:9",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.true-resurrection" = [
     "level:9",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.true-seeing" = [
     "level:6",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.true-strike" = [
     "level:0",
     "school:divination",
-    "source:phb-2024",
 ]
 "spell.tsunami" = [
     "level:8",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.unseen-servant" = [
     "level:1",
     "ritual",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.vampiric-touch" = [
     "level:3",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.vicious-mockery" = [
     "level:0",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.vitriolic-sphere" = [
     "level:4",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.wall-of-fire" = [
     "level:4",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.wall-of-force" = [
     "level:5",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.wall-of-ice" = [
     "level:6",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.wall-of-stone" = [
     "level:5",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.wall-of-thorns" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.warding-bond" = [
     "level:2",
     "school:abjuration",
-    "source:phb-2024",
 ]
 "spell.water-breathing" = [
     "level:3",
     "ritual",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.water-walk" = [
     "level:3",
     "ritual",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.web" = [
     "level:2",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.weird" = [
     "level:9",
     "school:illusion",
-    "source:phb-2024",
 ]
 "spell.wind-walk" = [
     "level:6",
     "school:transmutation",
-    "source:phb-2024",
 ]
 "spell.wind-wall" = [
     "level:3",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.wish" = [
     "level:9",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.witch-bolt" = [
     "level:1",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.word-of-radiance" = [
     "level:0",
     "school:evocation",
-    "source:phb-2024",
 ]
 "spell.word-of-recall" = [
     "level:6",
     "school:conjuration",
-    "source:phb-2024",
 ]
 "spell.wrathful-smite" = [
     "level:1",
     "school:necromancy",
-    "source:phb-2024",
 ]
 "spell.yolandes-regal-presence" = [
     "level:5",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "spell.zone-of-truth" = [
     "level:2",
     "school:enchantment",
-    "source:phb-2024",
 ]
 "stat.aarakocra-aeromancer" = [
     "cr:4",
     "habitat:mountain",
     "habitat:planar-elemental-plane-of-air",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.aarakocra-skirmisher" = [
@@ -6638,36 +5269,31 @@ ritual = [
     "habitat:mountain",
     "habitat:planar-elemental-plane-of-air",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.aberrant-cultist" = [
     "cr:8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.aboleth" = [
     "cr:10",
     "habitat:underdark",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.abominable-yeti" = [
     "cr:9",
     "habitat:arctic",
     "size:huge",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.adult-black-dragon" = [
     "cr:14",
     "habitat:swamp",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-blue-dragon" = [
@@ -6675,28 +5301,24 @@ ritual = [
     "habitat:coastal",
     "habitat:desert",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-brass-dragon" = [
     "cr:13",
     "habitat:desert",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-bronze-dragon" = [
     "cr:15",
     "habitat:coastal",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-copper-dragon" = [
     "cr:14",
     "habitat:hill",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-gold-dragon" = [
@@ -6704,14 +5326,12 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-green-dragon" = [
     "cr:15",
     "habitat:forest",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-red-dragon" = [
@@ -6719,7 +5339,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-silver-dragon" = [
@@ -6727,14 +5346,12 @@ ritual = [
     "habitat:mountain",
     "habitat:urban",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.adult-white-dragon" = [
     "cr:13",
     "habitat:arctic",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.air-elemental" = [
@@ -6743,21 +5360,18 @@ ritual = [
     "habitat:mountain",
     "habitat:planar-elemental-plane-of-air",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.allosaurus" = [
     "cr:2",
     "habitat:grassland",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.ancient-black-dragon" = [
     "cr:21",
     "habitat:swamp",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-blue-dragon" = [
@@ -6765,28 +5379,24 @@ ritual = [
     "habitat:coastal",
     "habitat:desert",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-brass-dragon" = [
     "cr:20",
     "habitat:desert",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-bronze-dragon" = [
     "cr:22",
     "habitat:coastal",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-copper-dragon" = [
     "cr:21",
     "habitat:hill",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-gold-dragon" = [
@@ -6794,14 +5404,12 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-green-dragon" = [
     "cr:22",
     "habitat:forest",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-red-dragon" = [
@@ -6809,7 +5417,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-silver-dragon" = [
@@ -6817,70 +5424,60 @@ ritual = [
     "habitat:mountain",
     "habitat:urban",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.ancient-white-dragon" = [
     "cr:20",
     "habitat:arctic",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.animal-lord" = [
     "cr:20",
     "habitat:planar-beastlands",
     "size:medium",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.animal-lord-forager" = [
     "cr:20",
     "habitat:planar-beastlands",
     "size:medium",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.animal-lord-hunter" = [
     "cr:20",
     "habitat:planar-beastlands",
     "size:medium",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.animal-lord-sage" = [
     "cr:20",
     "habitat:planar-beastlands",
     "size:medium",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.animated-armor" = [
     "cr:1",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.animated-broom" = [
     "cr:1-4",
     "habitat:urban",
     "size:small",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.animated-flying-sword" = [
     "cr:1-4",
     "habitat:urban",
     "size:small",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.animated-rug-of-smothering" = [
     "cr:2",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.ankheg" = [
@@ -6888,77 +5485,66 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.ankylosaurus" = [
     "cr:3",
     "habitat:grassland",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.ape" = [
     "cr:1-2",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.arcanaloth" = [
     "cr:12",
     "habitat:planar-lower-planes",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.archelon" = [
     "cr:4",
     "habitat:underwater",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.arch-hag" = [
     "cr:21",
     "habitat:any",
     "size:large",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.archmage" = [
     "cr:12",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.archpriest" = [
     "cr:12",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.assassin" = [
     "cr:8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.awakened-shrub" = [
     "cr:0",
     "habitat:forest",
     "size:small",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.awakened-tree" = [
     "cr:2",
     "habitat:forest",
     "size:huge",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.axe-beak" = [
@@ -6967,7 +5553,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.azer-pyromancer" = [
@@ -6975,7 +5560,6 @@ ritual = [
     "habitat:mountain",
     "habitat:planar-elemental-plane-of-fire",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.azer-sentinel" = [
@@ -6983,7 +5567,6 @@ ritual = [
     "habitat:mountain",
     "habitat:planar-elemental-plane-of-fire",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.baboon" = [
@@ -6991,70 +5574,60 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.badger" = [
     "cr:0",
     "habitat:forest",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.balor" = [
     "cr:19",
     "habitat:planar-abyss",
     "size:huge",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.bandit" = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.bandit-captain" = [
     "cr:2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.bandit-crime-lord" = [
     "cr:11",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.bandit-deceiver" = [
     "cr:7",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.banshee" = [
     "cr:4",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.barbed-devil" = [
     "cr:5",
     "habitat:planar-nine-hells",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.barlgura" = [
     "cr:5",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.basilisk" = [
@@ -7062,7 +5635,6 @@ ritual = [
     "habitat:mountain",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.bat" = [
@@ -7072,28 +5644,24 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.bearded-devil" = [
     "cr:3",
     "habitat:planar-nine-hells",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.behir" = [
     "cr:11",
     "habitat:underdark",
     "size:huge",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.beholder" = [
     "cr:13",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.beholder-zombie" = [
@@ -7102,42 +5670,36 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.berserker" = [
     "cr:2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.berserker-commander" = [
     "cr:8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.black-bear" = [
     "cr:1-2",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.black-dragon-wyrmling" = [
     "cr:2",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.black-pudding" = [
     "cr:4",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:ooze",
 ]
 "stat.blink-dog" = [
@@ -7145,14 +5707,12 @@ ritual = [
     "habitat:forest",
     "habitat:planar-feywild",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.blob-of-annihilation" = [
     "cr:23",
     "habitat:any",
     "size:gargantuan",
-    "source:mm-2025",
     "type:ooze",
 ]
 "stat.blood-hawk" = [
@@ -7164,7 +5724,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.blue-dragon-wyrmling" = [
@@ -7172,14 +5731,12 @@ ritual = [
     "habitat:coastal",
     "habitat:desert",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.blue-slaad" = [
     "cr:7",
     "habitat:planar-limbo",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.boar" = [
@@ -7188,28 +5745,24 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.bone-devil" = [
     "cr:9",
     "habitat:planar-nine-hells",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.bone-naga" = [
     "cr:4",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.brass-dragon-wyrmling" = [
     "cr:1",
     "habitat:desert",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.brazen-gorgon" = [
@@ -7218,14 +5771,12 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.bronze-dragon-wyrmling" = [
     "cr:2",
     "habitat:coastal",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.brown-bear" = [
@@ -7234,7 +5785,6 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.bugbear-stalker" = [
@@ -7244,7 +5794,6 @@ ritual = [
     "habitat:planar-feywild",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.bugbear-warrior" = [
@@ -7254,7 +5803,6 @@ ritual = [
     "habitat:planar-feywild",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.bulette" = [
@@ -7263,7 +5811,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.bulette-pup" = [
@@ -7272,35 +5819,30 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.bullywug-bog-sage" = [
     "cr:4",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.bullywug-warrior" = [
     "cr:1-4",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.cambion" = [
     "cr:5",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.camel" = [
     "cr:1-8",
     "habitat:desert",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.carrion-crawler" = [
@@ -7308,7 +5850,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.cat" = [
@@ -7318,7 +5859,6 @@ ritual = [
     "habitat:grassland",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.centaur-trooper" = [
@@ -7327,7 +5867,6 @@ ritual = [
     "habitat:grassland",
     "habitat:planar-feywild",
     "size:large",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.centaur-warden" = [
@@ -7336,21 +5875,18 @@ ritual = [
     "habitat:grassland",
     "habitat:planar-feywild",
     "size:large",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.chain-devil" = [
     "cr:8",
     "habitat:planar-nine-hells",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.chasme" = [
     "cr:6",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.chimera" = [
@@ -7359,7 +5895,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.chuul" = [
@@ -7368,56 +5903,48 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.clay-golem" = [
     "cr:9",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.cloaker" = [
     "cr:8",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.cloud-giant" = [
     "cr:9",
     "habitat:mountain",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.cockatrice" = [
     "cr:1-2",
     "habitat:grassland",
     "size:small",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.cockatrice-regent" = [
     "cr:8",
     "habitat:grassland",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.colossus" = [
     "cr:25",
     "habitat:any",
     "size:gargantuan",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.commoner" = [
     "cr:0",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:humanoid",
 ]
 "stat.constrictor-snake" = [
@@ -7427,14 +5954,12 @@ ritual = [
     "habitat:swamp",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.copper-dragon-wyrmling" = [
     "cr:1",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.couatl" = [
@@ -7444,7 +5969,6 @@ ritual = [
     "habitat:grassland",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.crab" = [
@@ -7452,14 +5976,12 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.crawling-claw" = [
     "cr:0",
     "habitat:any",
     "size:tiny",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.crocodile" = [
@@ -7468,29 +5990,25 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.cultist" = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.cultist-fanatic" = [
     "cr:2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.cultist-hierophant" = [
     "cr:10",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.cyclops-oracle" = [
     "cr:10",
@@ -7501,7 +6019,6 @@ ritual = [
     "habitat:mountain",
     "habitat:underdark",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.cyclops-sentry" = [
@@ -7513,7 +6030,6 @@ ritual = [
     "habitat:mountain",
     "habitat:underdark",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.dao" = [
@@ -7521,56 +6037,48 @@ ritual = [
     "habitat:planar-elemental-plane-of-earth",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.darkmantle" = [
     "cr:1-2",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.death-cultist" = [
     "cr:8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.death-dog" = [
     "cr:1",
     "habitat:desert",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.death-knight" = [
     "cr:17",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.death-knight-aspirant" = [
     "cr:11",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.death-slaad" = [
     "cr:10",
     "habitat:planar-limbo",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.death-tyrant" = [
     "cr:14",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.deer" = [
@@ -7578,21 +6086,18 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.demilich" = [
     "cr:18",
     "habitat:any",
     "size:tiny",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.deva" = [
     "cr:10",
     "habitat:planar-upper-planes",
     "size:medium",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.dire-wolf" = [
@@ -7600,7 +6105,6 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.dire-worg" = [
@@ -7610,14 +6114,12 @@ ritual = [
     "habitat:hill",
     "habitat:planar-feywild",
     "size:huge",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.displacer-beast" = [
     "cr:3",
     "habitat:forest",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.djinni" = [
@@ -7625,7 +6127,6 @@ ritual = [
     "habitat:coastal",
     "habitat:planar-elemental-plane-of-air",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.doppelganger" = [
@@ -7633,28 +6134,24 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.dracolich" = [
     "cr:17",
     "habitat:any",
     "size:huge",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.dracolich-gargantuan" = [
     "cr:17",
     "habitat:any",
     "size:gargantuan",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.draft-horse" = [
     "cr:1-4",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.dragon-turtle" = [
@@ -7662,14 +6159,12 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:gargantuan",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.dretch" = [
     "cr:1-4",
     "habitat:planar-abyss",
     "size:small",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.drider" = [
@@ -7677,28 +6172,24 @@ ritual = [
     "habitat:forest",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.druid" = [
     "cr:2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.dryad" = [
     "cr:1",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.dust-mephit" = [
     "cr:1-2",
     "habitat:planar-elemental-planes",
     "size:small",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.eagle" = [
@@ -7708,7 +6199,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.earth-elemental" = [
@@ -7717,7 +6207,6 @@ ritual = [
     "habitat:planar-elemental-plane-of-earth",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.efreeti" = [
@@ -7725,28 +6214,24 @@ ritual = [
     "habitat:desert",
     "habitat:planar-elemental-plane-of-fire",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.elemental-cataclysm" = [
     "cr:22",
     "habitat:planar-elemental-chaos",
     "size:gargantuan",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.elemental-cultist" = [
     "cr:8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.elephant" = [
     "cr:4",
     "habitat:grassland",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.elk" = [
@@ -7755,49 +6240,42 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.empyrean-celestial" = [
     "cr:23",
     "habitat:any",
     "size:huge",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.empyrean-fiend" = [
     "cr:23",
     "habitat:any",
     "size:huge",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.empyrean-iota-celestial" = [
     "cr:1",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.empyrean-iota-fiend" = [
     "cr:1",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.erinyes" = [
     "cr:12",
     "habitat:planar-nine-hells",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.ettercap" = [
     "cr:2",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.ettin" = [
@@ -7806,36 +6284,31 @@ ritual = [
     "habitat:mountain",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.faerie-dragon-adult" = [
     "cr:2",
     "habitat:forest",
     "size:tiny",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.faerie-dragon-youth" = [
     "cr:1",
     "habitat:forest",
     "size:tiny",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.fiend-cultist" = [
     "cr:8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.fire-elemental" = [
     "cr:5",
     "habitat:desert",
     "habitat:planar-elemental-plane-of-fire",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.fire-giant" = [
@@ -7843,14 +6316,12 @@ ritual = [
     "habitat:mountain",
     "habitat:underdark",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.flameskull" = [
     "cr:4",
     "habitat:underdark",
     "size:tiny",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.flaming-skeleton" = [
@@ -7859,21 +6330,18 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.flesh-golem" = [
     "cr:5",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.flumph" = [
     "cr:1-8",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.flying-snake" = [
@@ -7882,14 +6350,12 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:tiny",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.fomorian" = [
     "cr:8",
     "habitat:underdark",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.frog" = [
@@ -7897,7 +6363,6 @@ ritual = [
     "habitat:forest",
     "habitat:swamp",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.frost-giant" = [
@@ -7905,7 +6370,6 @@ ritual = [
     "habitat:arctic",
     "habitat:mountain",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.galeb-duhr" = [
@@ -7913,7 +6377,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.gargoyle" = [
@@ -7921,21 +6384,18 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.gas-spore-fungus" = [
     "cr:1-2",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.gelatinous-cube" = [
     "cr:2",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:ooze",
 ]
 "stat.ghast" = [
@@ -7944,7 +6404,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.ghast-gravecaller" = [
@@ -7953,7 +6412,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.ghost" = [
@@ -7961,7 +6419,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.ghoul" = [
@@ -7970,14 +6427,12 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.giant-ape" = [
     "cr:7",
     "habitat:forest",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-axe-beak" = [
@@ -7986,14 +6441,12 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:huge",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.giant-badger" = [
     "cr:1-4",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-bat" = [
@@ -8002,7 +6455,6 @@ ritual = [
     "habitat:mountain",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-boar" = [
@@ -8011,7 +6463,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-centipede" = [
@@ -8019,7 +6470,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-constrictor-snake" = [
@@ -8029,7 +6479,6 @@ ritual = [
     "habitat:swamp",
     "habitat:underwater",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-crab" = [
@@ -8037,7 +6486,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-crocodile" = [
@@ -8045,7 +6493,6 @@ ritual = [
     "habitat:coastal",
     "habitat:swamp",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-eagle" = [
@@ -8055,7 +6502,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.giant-elk" = [
@@ -8064,14 +6510,12 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:huge",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.giant-fire-beetle" = [
     "cr:0",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-frog" = [
@@ -8079,7 +6523,6 @@ ritual = [
     "habitat:forest",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-goat" = [
@@ -8088,7 +6531,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-hyena" = [
@@ -8098,7 +6540,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-lizard" = [
@@ -8109,14 +6550,12 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-octopus" = [
     "cr:1",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-owl" = [
@@ -8125,7 +6564,6 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.giant-rat" = [
@@ -8135,28 +6573,24 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-scorpion" = [
     "cr:3",
     "habitat:desert",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-seahorse" = [
     "cr:1-2",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-shark" = [
     "cr:5",
     "habitat:underwater",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-spider" = [
@@ -8167,14 +6601,12 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-squid" = [
     "cr:6",
     "habitat:underwater",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-toad" = [
@@ -8184,7 +6616,6 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-venomous-snake" = [
@@ -8196,7 +6627,6 @@ ritual = [
     "habitat:hill",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-vulture" = [
@@ -8205,7 +6635,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.giant-wasp" = [
@@ -8214,7 +6643,6 @@ ritual = [
     "habitat:grassland",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-weasel" = [
@@ -8223,7 +6651,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.giant-wolf-spider" = [
@@ -8234,71 +6661,61 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.gibbering-mouther" = [
     "cr:2",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.githyanki-dracomancer" = [
     "cr:16",
     "habitat:planar-astral-plane",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.githyanki-knight" = [
     "cr:8",
     "habitat:planar-astral-plane",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.githyanki-warrior" = [
     "cr:3",
     "habitat:planar-astral-plane",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.githzerai-monk" = [
     "cr:2",
     "habitat:planar-limbo",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.githzerai-psion" = [
     "cr:12",
     "habitat:planar-limbo",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.githzerai-zerth" = [
     "cr:6",
     "habitat:planar-limbo",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.glabrezu" = [
     "cr:9",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.gladiator" = [
     "cr:5",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.gnoll-demoniac" = [
     "cr:8",
@@ -8307,7 +6724,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.gnoll-fang-of-yeenoghu" = [
@@ -8317,7 +6733,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.gnoll-pack-lord" = [
@@ -8327,7 +6742,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.gnoll-warrior" = [
@@ -8337,7 +6751,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.goat" = [
@@ -8347,7 +6760,6 @@ ritual = [
     "habitat:mountain",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.goblin-boss" = [
@@ -8359,7 +6771,6 @@ ritual = [
     "habitat:planar-feywild",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.goblin-hexer" = [
@@ -8371,7 +6782,6 @@ ritual = [
     "habitat:planar-feywild",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.goblin-minion" = [
@@ -8383,7 +6793,6 @@ ritual = [
     "habitat:planar-feywild",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.goblin-warrior" = [
@@ -8395,7 +6804,6 @@ ritual = [
     "habitat:planar-feywild",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.gold-dragon-wyrmling" = [
@@ -8403,7 +6811,6 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.gorgon" = [
@@ -8412,14 +6819,12 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.goristro" = [
     "cr:17",
     "habitat:planar-abyss",
     "size:huge",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.graveyard-revenant" = [
@@ -8428,28 +6833,24 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:huge",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.gray-ooze" = [
     "cr:1-2",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:ooze",
 ]
 "stat.gray-slaad" = [
     "cr:9",
     "habitat:planar-limbo",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.green-dragon-wyrmling" = [
     "cr:2",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.green-hag" = [
@@ -8458,21 +6859,18 @@ ritual = [
     "habitat:hill",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.green-slaad" = [
     "cr:8",
     "habitat:planar-limbo",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.grell" = [
     "cr:3",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.grick" = [
@@ -8480,7 +6878,6 @@ ritual = [
     "habitat:forest",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.grick-ancient" = [
@@ -8488,7 +6885,6 @@ ritual = [
     "habitat:forest",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.griffon" = [
@@ -8499,29 +6895,25 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.grimlock" = [
     "cr:1-4",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.guard" = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.guard-captain" = [
     "cr:4",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.guardian-naga" = [
     "cr:10",
@@ -8529,21 +6921,18 @@ ritual = [
     "habitat:forest",
     "habitat:planar-upper-planes",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.gulthias-blight" = [
     "cr:16",
     "habitat:forest",
     "size:gargantuan",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.half-dragon" = [
     "cr:5",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.harpy" = [
@@ -8553,7 +6942,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.haunting-revenant" = [
@@ -8562,7 +6950,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:gargantuan",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.hawk" = [
@@ -8574,7 +6961,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.hell-hound" = [
@@ -8583,28 +6969,24 @@ ritual = [
     "habitat:planar-lower-planes",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.helmed-horror" = [
     "cr:4",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.hezrou" = [
     "cr:8",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.hill-giant" = [
     "cr:5",
     "habitat:hill",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.hippogriff" = [
@@ -8613,7 +6995,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.hippopotamus" = [
@@ -8622,7 +7003,6 @@ ritual = [
     "habitat:grassland",
     "habitat:swamp",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.hobgoblin-captain" = [
@@ -8635,7 +7015,6 @@ ritual = [
     "habitat:planar-acheron",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.hobgoblin-warlord" = [
@@ -8648,7 +7027,6 @@ ritual = [
     "habitat:planar-acheron",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.hobgoblin-warrior" = [
@@ -8661,35 +7039,30 @@ ritual = [
     "habitat:planar-acheron",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.homunculus" = [
     "cr:0",
     "habitat:any",
     "size:tiny",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.hook-horror" = [
     "cr:3",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.horned-devil" = [
     "cr:11",
     "habitat:planar-nine-hells",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.hunter-shark" = [
     "cr:2",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.hydra" = [
@@ -8697,7 +7070,6 @@ ritual = [
     "habitat:coastal",
     "habitat:swamp",
     "size:huge",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.hyena" = [
@@ -8707,28 +7079,24 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.ice-devil" = [
     "cr:14",
     "habitat:planar-nine-hells",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.ice-mephit" = [
     "cr:1-2",
     "habitat:planar-elemental-planes",
     "size:small",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.imp" = [
     "cr:1",
     "habitat:any",
     "size:tiny",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.incubus" = [
@@ -8736,28 +7104,24 @@ ritual = [
     "habitat:planar-lower-planes",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.intellect-devourer" = [
     "cr:2",
     "habitat:underdark",
     "size:tiny",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.invisible-stalker" = [
     "cr:6",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.iron-golem" = [
     "cr:16",
     "habitat:any",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.jackal" = [
@@ -8765,7 +7129,6 @@ ritual = [
     "habitat:desert",
     "habitat:grassland",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.jackalwere" = [
@@ -8773,7 +7136,6 @@ ritual = [
     "habitat:desert",
     "habitat:grassland",
     "size:small",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.juvenile-shadow-dragon" = [
@@ -8781,7 +7143,6 @@ ritual = [
     "habitat:planar-shadowfell",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.kenku" = [
@@ -8790,22 +7151,19 @@ ritual = [
     "habitat:planar-shadowfell",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.killer-whale" = [
     "cr:3",
     "habitat:underwater",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.knight" = [
     "cr:3",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.kobold-warrior" = [
     "cr:1-8",
@@ -8819,14 +7177,12 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:small",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.kraken" = [
     "cr:23",
     "habitat:underwater",
     "size:gargantuan",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.kuo-toa" = [
@@ -8834,7 +7190,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.kuo-toa-archpriest" = [
@@ -8842,7 +7197,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.kuo-toa-monitor" = [
@@ -8850,7 +7204,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.kuo-toa-whip" = [
@@ -8858,7 +7211,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.lacedon-ghoul" = [
@@ -8867,35 +7219,30 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.lamia" = [
     "cr:4",
     "habitat:desert",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.larva" = [
     "cr:0",
     "habitat:planar-lower-planes",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.lemure" = [
     "cr:0",
     "habitat:planar-nine-hells",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.lich" = [
     "cr:21",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.lion" = [
@@ -8905,7 +7252,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.lizard" = [
@@ -8916,7 +7262,6 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.lizardfolk-geomancer" = [
@@ -8924,7 +7269,6 @@ ritual = [
     "habitat:forest",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.lizardfolk-sovereign" = [
@@ -8932,56 +7276,48 @@ ritual = [
     "habitat:forest",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.mage" = [
     "cr:6",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.mage-apprentice" = [
     "cr:2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.magma-mephit" = [
     "cr:1-2",
     "habitat:planar-elemental-planes",
     "size:small",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.magmin" = [
     "cr:1-2",
     "habitat:planar-elemental-plane-of-fire",
     "size:small",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.mammoth" = [
     "cr:6",
     "habitat:arctic",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.manes" = [
     "cr:1-8",
     "habitat:planar-abyss",
     "size:small",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.manes-vaporspawn" = [
     "cr:1",
     "habitat:planar-abyss",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.manticore" = [
@@ -8992,7 +7328,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.marid" = [
@@ -9001,14 +7336,12 @@ ritual = [
     "habitat:planar-elemental-plane-of-water",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.marilith" = [
     "cr:16",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.mastiff" = [
@@ -9017,14 +7350,12 @@ ritual = [
     "habitat:hill",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.medusa" = [
     "cr:6",
     "habitat:desert",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.merfolk-skirmisher" = [
@@ -9032,7 +7363,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.merfolk-wavebender" = [
@@ -9040,7 +7370,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.merrow" = [
@@ -9048,14 +7377,12 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.mezzoloth" = [
     "cr:5",
     "habitat:planar-gehenna",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.mimic" = [
@@ -9063,28 +7390,24 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.mind-flayer" = [
     "cr:7",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.mind-flayer-arcanist" = [
     "cr:11",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.minotaur-of-baphomet" = [
     "cr:3",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.minotaur-skeleton" = [
@@ -9093,49 +7416,42 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.modron-duodrone" = [
     "cr:1-4",
     "habitat:planar-mechanus",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.modron-monodrone" = [
     "cr:1-8",
     "habitat:planar-mechanus",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.modron-pentadrone" = [
     "cr:2",
     "habitat:planar-mechanus",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.modron-quadrone" = [
     "cr:1",
     "habitat:planar-mechanus",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.modron-tridrone" = [
     "cr:1-2",
     "habitat:planar-mechanus",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.mud-mephit" = [
     "cr:1-4",
     "habitat:planar-elemental-planes",
     "size:small",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.mule" = [
@@ -9144,7 +7460,6 @@ ritual = [
     "habitat:hill",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.mummy" = [
@@ -9152,113 +7467,97 @@ ritual = [
     "habitat:desert",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.mummy-lord" = [
     "cr:15",
     "habitat:desert",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.myconid-adult" = [
     "cr:1-2",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.myconid-sovereign" = [
     "cr:2",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.myconid-spore-servant" = [
     "cr:1",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-plant",
+    "type:plant",
 ]
 "stat.myconid-sprout" = [
     "cr:0",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.nalfeshnee" = [
     "cr:13",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.needle-blight" = [
     "cr:1-4",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.night-hag" = [
     "cr:5",
     "habitat:planar-lower-planes",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.nightmare" = [
     "cr:3",
     "habitat:planar-lower-planes",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.noble" = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.noble-prodigy" = [
     "cr:10",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.nothic" = [
     "cr:2",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.nycaloth" = [
     "cr:9",
     "habitat:planar-gehenna",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.ochre-jelly" = [
     "cr:2",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:ooze",
 ]
 "stat.octopus" = [
     "cr:0",
     "habitat:underwater",
     "size:small",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.ogre" = [
@@ -9272,7 +7571,6 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.ogre-zombie" = [
@@ -9281,7 +7579,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.ogrillon-ogre" = [
@@ -9295,7 +7592,6 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.oni" = [
@@ -9303,14 +7599,12 @@ ritual = [
     "habitat:forest",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.otyugh" = [
     "cr:5",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.owl" = [
@@ -9319,14 +7613,12 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.owlbear" = [
     "cr:3",
     "habitat:forest",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.panther" = [
@@ -9335,7 +7627,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.pegasus" = [
@@ -9345,36 +7636,31 @@ ritual = [
     "habitat:hill",
     "habitat:planar-upper-planes",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.performer" = [
     "cr:1-2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.performer-legend" = [
     "cr:10",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.performer-maestro" = [
     "cr:6",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.peryton" = [
     "cr:2",
     "habitat:hill",
     "habitat:mountain",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.phase-spider" = [
@@ -9387,49 +7673,42 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.piercer" = [
     "cr:1-2",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.piranha" = [
     "cr:0",
     "habitat:underwater",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.pirate" = [
     "cr:1",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.pirate-admiral" = [
     "cr:12",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.pirate-captain" = [
     "cr:6",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.pit-fiend" = [
     "cr:20",
     "habitat:planar-nine-hells",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.pixie" = [
@@ -9437,7 +7716,6 @@ ritual = [
     "habitat:forest",
     "habitat:planar-feywild",
     "size:tiny",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.pixie-wonderbringer" = [
@@ -9445,14 +7723,12 @@ ritual = [
     "habitat:forest",
     "habitat:planar-feywild",
     "size:tiny",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.planetar" = [
     "cr:16",
     "habitat:planar-upper-planes",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.plesiosaurus" = [
@@ -9460,14 +7736,12 @@ ritual = [
     "habitat:arctic",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.polar-bear" = [
     "cr:2",
     "habitat:arctic",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.poltergeist" = [
@@ -9475,36 +7749,31 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.pony" = [
     "cr:1-8",
     "habitat:grassland",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.priest" = [
     "cr:2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.priest-acolyte" = [
     "cr:1-4",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.primeval-owlbear" = [
     "cr:7",
     "habitat:forest",
     "size:huge",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.pseudodragon" = [
@@ -9516,14 +7785,12 @@ ritual = [
     "habitat:mountain",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.psychic-gray-ooze" = [
     "cr:1",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:ooze",
 ]
 "stat.pteranodon" = [
@@ -9532,7 +7799,6 @@ ritual = [
     "habitat:grassland",
     "habitat:mountain",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.purple-worm" = [
@@ -9540,43 +7806,37 @@ ritual = [
     "habitat:desert",
     "habitat:underdark",
     "size:gargantuan",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.quaggoth" = [
     "cr:2",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.quaggoth-thonot" = [
     "cr:3",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.quasit" = [
     "cr:1",
     "habitat:planar-abyss",
     "size:tiny",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.questing-knight" = [
     "cr:12",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.rakshasa" = [
     "cr:13",
     "habitat:planar-nine-hells",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.rat" = [
@@ -9586,7 +7846,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.raven" = [
@@ -9595,7 +7854,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.red-dragon-wyrmling" = [
@@ -9603,28 +7861,24 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.red-slaad" = [
     "cr:5",
     "habitat:planar-limbo",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.reef-shark" = [
     "cr:1-2",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.remorhaz" = [
     "cr:11",
     "habitat:arctic",
     "size:huge",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.revenant" = [
@@ -9633,14 +7887,12 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.rhinoceros" = [
     "cr:2",
     "habitat:grassland",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.riding-horse" = [
@@ -9648,7 +7900,6 @@ ritual = [
     "habitat:grassland",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.roc" = [
@@ -9659,21 +7910,18 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:gargantuan",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.roper" = [
     "cr:5",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.rust-monster" = [
     "cr:1-2",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.saber-toothed-tiger" = [
@@ -9682,7 +7930,6 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.sahuagin-baron" = [
@@ -9690,7 +7937,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.sahuagin-priest" = [
@@ -9698,7 +7944,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.sahuagin-warrior" = [
@@ -9706,7 +7951,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.salamander" = [
@@ -9714,7 +7958,6 @@ ritual = [
     "habitat:planar-elemental-plane-of-fire",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.salamander-fire-snake" = [
@@ -9722,7 +7965,6 @@ ritual = [
     "habitat:planar-elemental-plane-of-fire",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.salamander-inferno-master" = [
@@ -9730,7 +7972,6 @@ ritual = [
     "habitat:planar-elemental-plane-of-fire",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.satyr" = [
@@ -9738,7 +7979,6 @@ ritual = [
     "habitat:forest",
     "habitat:planar-feywild",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.satyr-revelmaster" = [
@@ -9746,50 +7986,43 @@ ritual = [
     "habitat:forest",
     "habitat:planar-feywild",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.scarecrow" = [
     "cr:1",
     "habitat:grassland",
     "size:medium",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.scorpion" = [
     "cr:0",
     "habitat:desert",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.scout" = [
     "cr:1-2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.scout-captain" = [
     "cr:3",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.sea-hag" = [
     "cr:2",
     "habitat:coastal",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.seahorse" = [
     "cr:0",
     "habitat:underwater",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.shadow" = [
@@ -9798,14 +8031,12 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.shadow-demon" = [
     "cr:4",
     "habitat:planar-abyss",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.shadow-dragon-huge" = [
@@ -9813,7 +8044,6 @@ ritual = [
     "habitat:planar-shadowfell",
     "habitat:underdark",
     "size:huge",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.shadow-dragon-large" = [
@@ -9821,7 +8051,6 @@ ritual = [
     "habitat:planar-shadowfell",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.shambling-mound" = [
@@ -9829,21 +8058,18 @@ ritual = [
     "habitat:forest",
     "habitat:swamp",
     "size:large",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.shield-guardian" = [
     "cr:7",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.shrieker-fungus" = [
     "cr:0",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.silver-dragon-wyrmling" = [
@@ -9851,7 +8077,6 @@ ritual = [
     "habitat:mountain",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.skeleton" = [
@@ -9860,35 +8085,30 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.slaad-tadpole" = [
     "cr:1-8",
     "habitat:planar-limbo",
     "size:tiny",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.smoke-mephit" = [
     "cr:1-4",
     "habitat:planar-elemental-planes",
     "size:small",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.solar" = [
     "cr:21",
     "habitat:planar-upper-planes",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.spectator" = [
     "cr:3",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:aberration",
 ]
 "stat.specter" = [
@@ -9896,7 +8116,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.sphinx-of-lore" = [
@@ -9904,7 +8123,6 @@ ritual = [
     "habitat:desert",
     "habitat:planar-upper-planes",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.sphinx-of-secrets" = [
@@ -9912,7 +8130,6 @@ ritual = [
     "habitat:desert",
     "habitat:planar-upper-planes",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.sphinx-of-valor" = [
@@ -9920,7 +8137,6 @@ ritual = [
     "habitat:desert",
     "habitat:planar-upper-planes",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.sphinx-of-wonder" = [
@@ -9928,7 +8144,6 @@ ritual = [
     "habitat:desert",
     "habitat:planar-upper-planes",
     "size:tiny",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.spider" = [
@@ -9939,14 +8154,12 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.spined-devil" = [
     "cr:2",
     "habitat:planar-nine-hells",
     "size:small",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.spirit-naga" = [
@@ -9954,7 +8167,6 @@ ritual = [
     "habitat:planar-lower-planes",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.sprite" = [
@@ -9962,28 +8174,24 @@ ritual = [
     "habitat:forest",
     "habitat:planar-feywild",
     "size:tiny",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.spy" = [
     "cr:1",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.spy-master" = [
     "cr:10",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.steam-mephit" = [
     "cr:1-4",
     "habitat:planar-elemental-planes",
     "size:small",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.stirge" = [
@@ -9997,7 +8205,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.stone-giant" = [
@@ -10005,14 +8212,12 @@ ritual = [
     "habitat:mountain",
     "habitat:underdark",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.stone-golem" = [
     "cr:10",
     "habitat:any",
     "size:large",
-    "source:mm-2025",
     "type:construct",
 ]
 "stat.storm-giant" = [
@@ -10020,7 +8225,6 @@ ritual = [
     "habitat:coastal",
     "habitat:underwater",
     "size:huge",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.succubus" = [
@@ -10028,7 +8232,6 @@ ritual = [
     "habitat:planar-lower-planes",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.swarm-of-bats" = [
@@ -10038,21 +8241,18 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:swarm-of-tiny-beasts",
 ]
 "stat.swarm-of-crawling-claws" = [
     "cr:3",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
     "type:swarm-of-tiny-undead",
 ]
 "stat.swarm-of-dretches" = [
     "cr:4",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:swarm-of-small-fiends",
 ]
 "stat.swarm-of-insects" = [
@@ -10065,28 +8265,24 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:swarm-of-tiny-beasts",
 ]
 "stat.swarm-of-larvae" = [
     "cr:1",
     "habitat:planar-lower-planes",
     "size:large",
-    "source:mm-2025",
     "type:swarm-of-medium-fiends",
 ]
 "stat.swarm-of-lemures" = [
     "cr:3",
     "habitat:planar-nine-hells",
     "size:large",
-    "source:mm-2025",
     "type:swarm-of-medium-fiends",
 ]
 "stat.swarm-of-piranhas" = [
     "cr:1",
     "habitat:underwater",
     "size:medium",
-    "source:mm-2025",
     "type:swarm-of-tiny-beasts",
 ]
 "stat.swarm-of-rats" = [
@@ -10096,7 +8292,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:swarm-of-tiny-beasts",
 ]
 "stat.swarm-of-ravens" = [
@@ -10105,7 +8300,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:swarm-of-tiny-beasts",
 ]
 "stat.swarm-of-stirges" = [
@@ -10119,7 +8313,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:swarm-of-tiny-monstrosities",
 ]
 "stat.swarm-of-venomous-snakes" = [
@@ -10131,14 +8324,12 @@ ritual = [
     "habitat:hill",
     "habitat:swamp",
     "size:medium",
-    "source:mm-2025",
     "type:swarm-of-tiny-beasts",
 ]
 "stat.tarrasque" = [
     "cr:30",
     "habitat:urban",
     "size:gargantuan",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.thri-kreen-marauder" = [
@@ -10146,7 +8337,6 @@ ritual = [
     "habitat:desert",
     "habitat:grassland",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.thri-kreen-psion" = [
@@ -10154,7 +8344,6 @@ ritual = [
     "habitat:desert",
     "habitat:grassland",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.tiger" = [
@@ -10162,49 +8351,42 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.tough" = [
     "cr:1-2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.tough-boss" = [
     "cr:4",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.treant" = [
     "cr:9",
     "habitat:forest",
     "size:huge",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.tree-blight" = [
     "cr:7",
     "habitat:forest",
     "size:huge",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.triceratops" = [
     "cr:5",
     "habitat:grassland",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.troglodyte" = [
     "cr:1-4",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.troll" = [
@@ -10216,7 +8398,6 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.troll-limb" = [
@@ -10228,35 +8409,30 @@ ritual = [
     "habitat:swamp",
     "habitat:underdark",
     "size:small",
-    "source:mm-2025",
     "type:giant",
 ]
 "stat.twig-blight" = [
     "cr:1-8",
     "habitat:forest",
     "size:small",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.tyrannosaurus-rex" = [
     "cr:8",
     "habitat:grassland",
     "size:huge",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.ultroloth" = [
     "cr:13",
     "habitat:planar-lower-planes",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.umber-hulk" = [
     "cr:5",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.unicorn" = [
@@ -10264,7 +8440,6 @@ ritual = [
     "habitat:forest",
     "habitat:planar-feywild",
     "size:large",
-    "source:mm-2025",
     "type:celestial",
 ]
 "stat.vampire" = [
@@ -10272,40 +8447,35 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.vampire-familiar" = [
     "cr:3",
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.vampire-nightbringer" = [
     "cr:8",
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.vampire-spawn" = [
     "cr:5",
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.vampire-umbral-lord" = [
     "cr:15",
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.venomous-snake" = [
     "cr:1-8",
@@ -10316,35 +8486,30 @@ ritual = [
     "habitat:hill",
     "habitat:swamp",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.vine-blight" = [
     "cr:1-2",
     "habitat:forest",
     "size:medium",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.violet-fungus" = [
     "cr:1-4",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.violet-fungus-necrohulk" = [
     "cr:7",
     "habitat:underdark",
     "size:large",
-    "source:mm-2025",
     "type:plant",
 ]
 "stat.vrock" = [
     "cr:6",
     "habitat:planar-abyss",
     "size:large",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.vulture" = [
@@ -10353,14 +8518,12 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.warhorse" = [
     "cr:1-2",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.warhorse-skeleton" = [
@@ -10369,29 +8532,25 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.warrior-commander" = [
     "cr:10",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.warrior-infantry" = [
     "cr:1-2",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.warrior-veteran" = [
     "cr:3",
     "habitat:any",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-humanoid",
+    "type:humanoid",
 ]
 "stat.water-elemental" = [
     "cr:5",
@@ -10400,7 +8559,6 @@ ritual = [
     "habitat:swamp",
     "habitat:underwater",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.water-weird" = [
@@ -10408,7 +8566,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.weasel" = [
@@ -10417,7 +8574,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:tiny",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.werebear" = [
@@ -10426,8 +8582,7 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-monstrosity",
+    "type:monstrosity",
 ]
 "stat.wereboar" = [
     "cr:4",
@@ -10435,16 +8590,14 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-monstrosity",
+    "type:monstrosity",
 ]
 "stat.wererat" = [
     "cr:2",
     "habitat:forest",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-monstrosity",
+    "type:monstrosity",
 ]
 "stat.weretiger" = [
     "cr:4",
@@ -10452,22 +8605,19 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-monstrosity",
+    "type:monstrosity",
 ]
 "stat.werewolf" = [
     "cr:3",
     "habitat:forest",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-monstrosity",
+    "type:monstrosity",
 ]
 "stat.white-dragon-wyrmling" = [
     "cr:2",
     "habitat:arctic",
     "size:medium",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.wight" = [
@@ -10478,7 +8628,6 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.will-o-wisp" = [
@@ -10487,7 +8636,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:tiny",
-    "source:mm-2025",
     "type:undead",
 ]
 "stat.winged-kobold" = [
@@ -10502,14 +8650,12 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:small",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.winter-wolf" = [
     "cr:3",
     "habitat:arctic",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.wolf" = [
@@ -10518,7 +8664,6 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
-    "source:mm-2025",
     "type:beast",
 ]
 "stat.worg" = [
@@ -10528,7 +8673,6 @@ ritual = [
     "habitat:hill",
     "habitat:planar-feywild",
     "size:large",
-    "source:mm-2025",
     "type:fey",
 ]
 "stat.wraith" = [
@@ -10536,15 +8680,13 @@ ritual = [
     "habitat:planar-shadowfell",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
-    "type:or-small-undead",
+    "type:undead",
 ]
 "stat.wyvern" = [
     "cr:6",
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.xorn" = [
@@ -10552,28 +8694,24 @@ ritual = [
     "habitat:planar-elemental-plane-of-earth",
     "habitat:underdark",
     "size:medium",
-    "source:mm-2025",
     "type:elemental",
 ]
 "stat.yeti" = [
     "cr:3",
     "habitat:arctic",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.yochlol" = [
     "cr:10",
     "habitat:planar-abyss",
     "size:medium",
-    "source:mm-2025",
     "type:fiend",
 ]
 "stat.young-black-dragon" = [
     "cr:7",
     "habitat:swamp",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-blue-dragon" = [
@@ -10581,28 +8719,24 @@ ritual = [
     "habitat:coastal",
     "habitat:desert",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-brass-dragon" = [
     "cr:6",
     "habitat:desert",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-bronze-dragon" = [
     "cr:8",
     "habitat:coastal",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-copper-dragon" = [
     "cr:7",
     "habitat:hill",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-gold-dragon" = [
@@ -10610,14 +8744,12 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-green-dragon" = [
     "cr:8",
     "habitat:forest",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-red-dragon" = [
@@ -10625,14 +8757,12 @@ ritual = [
     "habitat:hill",
     "habitat:mountain",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-remorhaz" = [
     "cr:5",
     "habitat:arctic",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.young-silver-dragon" = [
@@ -10640,14 +8770,12 @@ ritual = [
     "habitat:mountain",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.young-white-dragon" = [
     "cr:6",
     "habitat:arctic",
     "size:large",
-    "source:mm-2025",
     "type:dragon",
 ]
 "stat.yuan-ti-abomination" = [
@@ -10657,7 +8785,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:large",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.yuan-ti-infiltrator" = [
@@ -10667,7 +8794,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.yuan-ti-malison-type-1" = [
@@ -10677,7 +8803,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.yuan-ti-malison-type-2" = [
@@ -10687,7 +8812,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.yuan-ti-malison-type-3" = [
@@ -10697,7 +8821,6 @@ ritual = [
     "habitat:swamp",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:monstrosity",
 ]
 "stat.zombie" = [
@@ -10706,254 +8829,191 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
-    "source:mm-2025",
     "type:undead",
 ]
 "equipment.antimatter-rifle" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.battleaxe" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.blowgun" = [
     "category:martial-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.breastplate" = [
     "category:medium-armor",
-    "source:basic-rules",
 ]
 "equipment.chain-mail" = [
     "category:heavy-armor",
-    "source:basic-rules",
 ]
 "equipment.chain-shirt" = [
     "category:medium-armor",
-    "source:basic-rules",
 ]
 "equipment.club" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.crossbow-hand" = [
     "category:martial-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.crossbow-heavy" = [
     "category:martial-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.crossbow-light" = [
     "category:simple-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.dagger" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.dart" = [
     "category:simple-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.energy-cell" = [
     "category:ammunition",
-    "source:basic-rules",
 ]
 "equipment.flail" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.glaive" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.greataxe" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.greatclub" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.greatsword" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.halberd" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.half-plate" = [
     "category:medium-armor",
-    "source:basic-rules",
 ]
 "equipment.handaxe" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.hide" = [
     "category:medium-armor",
-    "source:basic-rules",
 ]
 "equipment.javelin" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.lance" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.laser-pistol" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.laser-rifle" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.leather" = [
     "category:light-armor",
-    "source:basic-rules",
 ]
 "equipment.light-hammer" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.longbow" = [
     "category:martial-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.longsword" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.mace" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.maul" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.morningstar" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.musket" = [
     "category:martial-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.net" = [
     "category:martial-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.padded" = [
     "category:light-armor",
-    "source:basic-rules",
 ]
 "equipment.pike" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.pistol" = [
     "category:martial-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.pistol-automatic" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.plate" = [
     "category:heavy-armor",
-    "source:basic-rules",
 ]
 "equipment.quarterstaff" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.rapier" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.revolver" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.rifle-automatic" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.rifle-hunting" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.ring-mail" = [
     "category:heavy-armor",
-    "source:basic-rules",
 ]
 "equipment.scale-mail" = [
     "category:medium-armor",
-    "source:basic-rules",
 ]
 "equipment.scimitar" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.shield" = [
     "category:shield",
-    "source:basic-rules",
 ]
 "equipment.shortbow" = [
     "category:simple-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.shortsword" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.shotgun" = [
     "category:firearms-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.sickle" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.sling" = [
     "category:simple-ranged-weapon",
-    "source:basic-rules",
 ]
 "equipment.spear" = [
     "category:simple-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.spiked-armor" = [
     "category:medium-armor",
-    "source:basic-rules",
 ]
 "equipment.splint" = [
     "category:heavy-armor",
-    "source:basic-rules",
 ]
 "equipment.studded-leather" = [
     "category:light-armor",
-    "source:basic-rules",
 ]
 "equipment.trident" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.war-pick" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.warhammer" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]
 "equipment.whip" = [
     "category:martial-melee-weapon",
-    "source:basic-rules",
 ]

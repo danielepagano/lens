@@ -14,6 +14,7 @@ from lens.core.commands.kb import (
     kb_copy,
     kb_rename,
     kb_get,
+    kb_list_tags,
     kb_with_tag,
     check_invalid_tags,
 )
@@ -184,9 +185,27 @@ def get(
             _print(objects[cid])
 
 
+@app.command("list-tags")
+def list_tags(
+    type_filter: str | None = typer.Option(None, "--type", "-t", help="Only tags on objects of this type"),
+    start_with: str | None = typer.Option(None, "--start-with", "-s", help="Only tags starting with this prefix"),
+) -> None:
+    """List unique tag values, optionally filtered by type or prefix."""
+    try:
+        tags = kb_list_tags(type_filter=type_filter, prefix_filter=start_with)
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+    for tag in tags:
+        typer.echo(tag)
+
+
 @app.command("with-tag", no_args_is_help=True)
 def with_tag(
-    tags: list[str] = typer.Argument(..., help="Tag(s) to query; object must have all (AND)"),
+    tags: list[str] = typer.Argument(
+        ...,
+        help="Tag(s) to query. AND across args; use (a b c) for OR within, e.g. type:undead (cr:1 cr:2)",
+    ),
     expand: bool = typer.Option(False, "-e", "--expand", help="Print full objects instead of IDs"),
     recurse: int | None = typer.Option(
         None,
@@ -201,7 +220,7 @@ def with_tag(
         help="Filter by object type when starting tag is a dot-tag",
     ),
 ) -> None:
-    """List object IDs that have all given tags; optionally expand or recurse by dot-tags (map-style back-traversal)."""
+    """List object IDs matching tag groups (AND across, OR within parens); optionally expand or recurse by dot-tags."""
     if not tags:
         typer.echo("Error: at least one tag is required", err=True)
         raise typer.Exit(1)
@@ -226,10 +245,16 @@ def with_tag(
             except LensException:
                 pass
 
+    def _format_id_with_tags(cid: str) -> str:
+        if result.id_to_tags and cid in result.id_to_tags:
+            tag_str = " ".join(result.id_to_tags[cid])
+            return f"{cid}  [{tag_str}]" if tag_str else cid
+        return cid
+
     if recurse is None:
         if not expand:
             for cid in result.ids:
-                typer.echo(cid)
+                typer.echo(_format_id_with_tags(cid))
         else:
             for cid in result.ids:
                 if result.objects and cid in result.objects:
@@ -239,12 +264,12 @@ def with_tag(
             if result.ids or result.layers:
                 typer.echo(f"# Objects with tag {tags[0]!r}")
                 for cid in result.ids:
-                    typer.echo(cid)
+                    typer.echo(_format_id_with_tags(cid))
             if result.layers:
                 for parent_tag, child_ids in result.layers:
                     typer.echo(f"\n> with-tag {parent_tag!r}")
                     for cid in child_ids:
-                        typer.echo(cid)
+                        typer.echo(_format_id_with_tags(cid))
         else:
             for cid in result.ids:
                 if result.objects and cid in result.objects:

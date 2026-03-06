@@ -296,6 +296,35 @@ class TestKnowledgeStore(unittest.TestCase):
         self.assertIn("note.one", data.get("objects", {}))
         self.assertEqual(data.get("objects", {}).get("note.one", []), ["good"])
 
+    def test_list_unique_tags_no_filter_returns_all_tags(self) -> None:
+        self.store.store_object("stat.ghoul", "Ghoul")
+        self.store.store_object("stat.wight", "Wight")
+        self.store.add_tags("stat.ghoul", ["cr:1", "type:undead", "habitat:any"])
+        self.store.add_tags("stat.wight", ["cr:3", "type:undead", "habitat:any"])
+        tags = self.store.list_unique_tags()
+        self.assertEqual(sorted(tags), ["cr:1", "cr:3", "habitat:any", "type:undead"])
+
+    def test_list_unique_tags_type_filter(self) -> None:
+        self.store.store_object("stat.ghoul", "Ghoul")
+        self.store.store_object("spell.fireball", "Fireball")
+        self.store.add_tags("stat.ghoul", ["cr:1", "type:undead"])
+        self.store.add_tags("spell.fireball", ["level:3", "type:evocation"])
+        tags = self.store.list_unique_tags(type_filter="stat")
+        self.assertEqual(sorted(tags), ["cr:1", "type:undead"])
+
+    def test_list_unique_tags_prefix_filter(self) -> None:
+        self.store.store_object("stat.ghoul", "Ghoul")
+        self.store.add_tags("stat.ghoul", ["cr:1", "type:undead", "habitat:any"])
+        tags = self.store.list_unique_tags(prefix_filter="cr:")
+        self.assertEqual(tags, ["cr:1"])
+
+    def test_list_unique_tags_combined_filters(self) -> None:
+        self.store.store_object("stat.ghoul", "Ghoul")
+        self.store.store_object("stat.wight", "Wight")
+        self.store.add_tags("stat.ghoul", ["cr:1", "type:undead"])
+        self.store.add_tags("stat.wight", ["cr:3", "type:undead"])
+        tags = self.store.list_unique_tags(type_filter="stat", prefix_filter="cr:")
+        self.assertEqual(sorted(tags), ["cr:1", "cr:3"])
 
     def test_get_single(self) -> None:
         self.store.store_object("place.nyc", "City content")

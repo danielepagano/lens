@@ -86,6 +86,7 @@ lens checkpoint # commit committed changes; tries to push, optional commit messa
 | `edit`    | AI: edit or create objects       |
 | `extract` | Bulk-import objects from a structured markdown file |
 | `get`     | Fetch objects (append `+` for directly linked, `++` for full tree traversal) |
+| `list-tags` | List unique tag values, optionally by type or prefix |
 | `with-tag`| List/expand objects by tag; optionally recurse via dot-tags |
 | `template`| Manage type templates            |
 | `tag`     | Add/remove tags on objects       |
@@ -151,6 +152,17 @@ Arguments: `ID INSTRUCTION`
 
 Options: `-p`/`--pin`, `-u`/`--unpin`, `-c`/`--context` (narrative address to crawl for context), `-t`/`--include-template` (include type template in prompt), `-l`/`--llm`. `--context` is not available in dataset mode.
 
+#### `lens kb list-tags`
+
+List unique tag values from the knowledge store, optionally filtered by object type or tag prefix.
+
+```bash
+lens kb list-tags                           # All tags
+lens kb list-tags --type stat               # Tags on stat objects only
+lens kb list-tags --start-with cr:          # Tags starting with cr: (e.g. cr:1, cr:2)
+lens kb list-tags --type stat --start-with cr:   # CR tags on stat objects
+```
+
 #### `lens kb with-tag`
 
 Back-traverse the tag index to see which objects have a given tag, and optionally walk “up” a location/map hierarchy.
@@ -161,9 +173,13 @@ lens kb with-tag loc.kingdom -e             # Print full objects instead of IDs
 lens kb with-tag loc.kingdom -r             # Breadth-first over dot-tags (e.g. kingdom → cities → taverns)
 lens kb with-tag loc.kingdom -r -e          # Same as above, but print objects layer by layer
 lens kb with-tag loc.kingdom -r -e -s       # Only follow/print IDs whose type matches the starting tag (loc.*)
+
+# OR groups: use (a b c) for tags that match any of a, b, or c. Quote for shell:
+lens kb with-tag "(cr:1-2 cr:1-4)" "(type:undead type:humanoid)" size:large
 ```
 
-- Base form prints object IDs that have the tag.
+- Base form prints object IDs with their tags (e.g. `stat.ghoul  [cr:1 type:undead]`).
+- **OR groups**: Tags in `(a b c)` match objects that have *any* of those tags. Groups are ANDed; quote parenthesized args for the shell.
 - `-e/--expand` prints objects in the same `KB['id']` format as `lens kb get`.
 - `-r/--recurse` follows dot-tags from objects (and object IDs used as tags, e.g. for Up-style location maps) breadth-first, avoiding cycles.
 - `-s/--same-type` filters by object type when the starting tag is a dot-tag: root IDs and recursive layers include only IDs whose type matches. For non-dot tags, `-s` is ignored.

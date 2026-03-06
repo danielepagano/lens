@@ -104,6 +104,24 @@ class WithTagResult:
     ids: list[str]
     layers: list[tuple[str, list[str]]] | None = None
     objects: dict[str, KnowledgeObject] | None = None
+    id_to_tags: dict[str, list[str]] | None = None
+
+
+def parse_tag_groups(tags: list[str]) -> list[list[str]]:
+    """Parse tags into groups. (a b c) is OR within; other elements are AND across."""
+    groups: list[list[str]] = []
+    for t in tags:
+        s = t.strip()
+        if not s:
+            continue
+        if s.startswith("(") and s.endswith(")"):
+            inner = s[1:-1].strip()
+            group = [x.strip() for x in inner.split() if x.strip()]
+            if group:
+                groups.append(group)
+        else:
+            groups.append([s])
+    return groups
 
 
 def _filter_ids_by_tag_type(ids: list[str], tag: str) -> list[str]:
@@ -135,23 +153,45 @@ def kb_with_tag(
 ) -> WithTagResult:
     if not tags:
         raise LensException("at least one tag is required")
+    groups = parse_tag_groups(tags)
+    if not groups:
+        raise LensException("at least one tag is required")
     kb = get_store()
+    first_tag = groups[0][0] if groups and groups[0] else ""
+
     if recurse is None:
-        ids = kb.get_ids_with_all_tags(tags)
-        if same_type_only and tags:
-            ids = _filter_ids_by_tag_type(ids, tags[0])
+        ids = kb.get_ids_with_tag_groups(groups)
+        if same_type_only and first_tag:
+            ids = _filter_ids_by_tag_type(ids, first_tag)
+        id_to_tags = {oid: kb.get_tags(oid) for oid in ids}
         if not expand:
-            return WithTagResult(ids=ids)
+            return WithTagResult(ids=ids, id_to_tags=id_to_tags)
         objects = kb.get_objects(ids)
-        return WithTagResult(ids=ids, objects=objects)
+        return WithTagResult(ids=ids, objects=objects, id_to_tags=id_to_tags)
+
     max_depth: int | None = None
     if recurse > 0:
         max_depth = recurse
-    root_ids, layers = kb.traverse_by_dot_tags(
-        tags,
-        same_type_only=same_type_only,
-        max_depth=max_depth,
-    )
+
+    has_or_group = any(len(g) > 1 for g in groups)
+    if has_or_group:
+        root_ids = kb.get_ids_with_tag_groups(groups)
+        if same_type_only and first_tag:
+            root_ids = _filter_ids_by_tag_type(root_ids, first_tag)
+        root_ids, layers = kb.traverse_from_ids(
+            root_ids,
+            same_type_only=same_type_only,
+            max_depth=max_depth,
+            starting_type=parse_id(first_tag)[0] if "." in first_tag else None,
+        )
+    else:
+        flat_tags = [g[0] for g in groups]
+        root_ids, layers = kb.traverse_by_dot_tags(
+            flat_tags,
+            same_type_only=same_type_only,
+            max_depth=max_depth,
+        )
+
     seen: set[str] = set()
     all_ids: list[str] = list(root_ids)
     for _, child_ids in layers:
@@ -159,10 +199,22 @@ def kb_with_tag(
             if cid not in seen:
                 seen.add(cid)
                 all_ids.append(cid)
+    id_to_tags = {oid: kb.get_tags(oid) for oid in all_ids}
     if not expand:
-        return WithTagResult(ids=root_ids, layers=layers)
+        return WithTagResult(ids=root_ids, layers=layers, id_to_tags=id_to_tags)
     objects = kb.get_objects(all_ids)
-    return WithTagResult(ids=root_ids, layers=layers, objects=objects)
+    return WithTagResult(ids=root_ids, layers=layers, objects=objects, id_to_tags=id_to_tags)
+
+
+def kb_list_tags(
+    type_filter: str | None = None,
+    prefix_filter: str | None = None,
+) -> list[str]:
+    kb = get_store()
+    return kb.list_unique_tags(
+        type_filter=type_filter,
+        prefix_filter=prefix_filter,
+    )
 
 
 def check_invalid_tags(tags: list[str]) -> list[str]:

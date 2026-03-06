@@ -6,7 +6,7 @@ export function formatItem(data: ItemData, source: string): string {
   const id = `item.${key}`;
 
   const tags: string[] = [
-    `source:${source}`,
+    // `source:${source}`,
     `rarity:${toTagSlug(data.rarity)}`,
     `type:${toTagSlug(data.itemType)}`,
   ];

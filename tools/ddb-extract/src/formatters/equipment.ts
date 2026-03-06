@@ -6,7 +6,7 @@ export function formatEquipment(data: EquipmentData, source: string): string {
   const id = `equipment.${key}`;
 
   const tags: string[] = [
-    `source:${source}`,
+    // `source:${source}`,
     `category:${toTagSlug(data.category)}`,
   ];
 
