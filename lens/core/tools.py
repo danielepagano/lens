@@ -22,8 +22,13 @@ def _ensure_tools_loaded() -> None:
     global _tools_loaded
     if not _tools_loaded:
         import lens.core.operators as operators_pkg
+        import lens.core.commands as commands_pkg
         for _importer, modname, _ in pkgutil.iter_modules(
             operators_pkg.__path__, operators_pkg.__name__ + "."
+        ):
+            importlib.import_module(modname)
+        for _importer, modname, _ in pkgutil.iter_modules(
+            commands_pkg.__path__, commands_pkg.__name__ + "."
         ):
             importlib.import_module(modname)
         _tools_loaded = True

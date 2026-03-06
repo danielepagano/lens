@@ -304,6 +304,18 @@ AI operators call the configured LLM and write the output into narrative nodes. 
 
 You can also pin KB objects inline by mentioning them as `@type.key` in your prompt — `lens write "describe @person.amy arriving at @place.market"` is equivalent to passing `-p person.amy -p place.market`. Only IDs that exist in the knowledge store are resolved; unknown mentions are ignored.
 
+### `lens dnd balance`
+
+Calculates and proposes balanced combat encounters based on a target difficulty, character levels, and a ranked list of candidate stat block IDs. Available only when the `dnd` dataset is active. The tool uses the D&D 2024 DMG rules for encounter building (internal XP budgets).
+
+```bash
+# Provide JSON configuration directly via stdin
+echo '{"difficulty": "moderate", "pcs": [3, 3], "required": [{"id": "stat.ghast", "count": 1}], "optional": ["stat.ghoul", "stat.skeleton"], "allies": ["1"]}' | lens dnd balance
+
+# Or via a JSON file
+lens dnd balance --input encounter_params.json
+```
+
 ### `lens write`
 
 Streams generated text into the cursor node, appending it inline.

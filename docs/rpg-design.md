@@ -246,12 +246,26 @@ The bulk of the knowledge that drives the design flow lives not in the system pr
 
 The operator then creates sub-sections that have that type of design task pinned in their front matter, and can even chain a write operator from what the user asked to do to get the section content started without repetition. When the user is done, we simply call `kb extract` on that design sub-folder and import all the knowledge created! The user can of course skip the chat and create a design operator already pointed to a specific design object, and get going right away.
 
-The set of design objects will evolve over and refine over time, but they will be things like to deliver:  
-  - Location build-out: edit one or more locations, correctly linked  
-    - Large geography, cities, or structures to explore, from homes to dungeons
-  - Advenute build-out: create or update a front, including related factions and NPCs
-  - Encounters design: location (stored or not), type (social, stealth, combat, dynamic), who's there (mobs, factions, NPC's), related fronts
-  - Finding and selecting items like a balanced amount of appropriate monsters or proper loot based on some requirements
+#### Location build-out
+
+> TODO: edit one or more locations, correctly linked. Large geography, cities, or structures to explore, from homes to dungeons
+
+#### Adventure build-out
+
+> TODO: create or update a front, including related factions and NPCs
+
+#### Encounter design
+
+The `design.encounter` object's prompt instructs the AI to plan combat encounters using `kb with-tag` and the `balance_encounter` tool: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` with required monsters (fixed IDs and counts), a ranked optional list, difficulty, PC levels (from pinned `pc.*` `level:N` tags), and optional ally CRs. The tool returns up to three proposals as count tables (no XP shown). This could be an iterative process.  
+  - **How encounters are calculated**: the party has an XP budget from PC levels and chosen difficulty (low/moderate/high); allies reduce that budget. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by rank) or, if required alone exceed the budget, suggests reduced counts. The AI picks a proposal and writes the encounter into the narrative.
+
+If we use this with the `design` it can only emits KB objects, so we must design an **encounter object** (e.g. `encounter.*`) that can be referenced when initiative is rolled; the shape of that object and the workflow will be designed separately, but is should:  
+  - Give an overview of the situation and stakes
+  - Tactical overview of who's figthing, any locations or start conditions, changing conditions, etc. So... the map, without a map.
+  - Link to the selected stat blocks from above. Also include the paramters used, so we know if they are still current.
+  - Link to any relevant objects so we have narrative. This is optional: sometimes it's just a cemetery with zombies (nothing to refer to), while other times it's a known location with a NPC with a front etc.
+
+Encounters can get stale fast! Situations, allies, character levels all can change. We could have an incomplete encounter with all the parameters, but we can re-balance it on the fly even as initiative is rolled to pick the final set of enemies (this is why we have required VS filler opponents, and are able to add ally stat blocks). This means the `encounter` operator should be able to run this process, and even use the same prompt and NOT emit an encounter object, just do so directly in narrative?
 
 ### Play General Scenes with `play`
 
