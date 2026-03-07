@@ -8,7 +8,7 @@ import typer
 
 from lens.core.knowledge import KnowledgeStore
 from lens.core.project import require_lens_context
-from lens.core.commands.balance_encounter import compute_encounters
+from lens.dnd.commands.balance_encounter import compute_encounters
 
 app = typer.Typer(help="D&D specific tools")
 

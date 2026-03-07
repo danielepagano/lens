@@ -9,7 +9,7 @@ from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
-from lens.core.operators.play import PlayOperator
+from lens.dnd.operators.play import PlayOperator
 from lens.core.project import ProjectSession
 
 app = typer.Typer(invoke_without_command=True)

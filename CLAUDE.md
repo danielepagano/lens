@@ -14,13 +14,13 @@ poe check
 # Individual checks
 poe lint       # ruff (auto-fix)
 poe pyright    # type checking
-poe test       # unittest discover
+poe test       # pytest (unit tests under lens/core/test, lens/cli/test, lens/dnd/test)
 
 # Run a single test module
-python -m unittest lens.test.test_annotations
+python -m pytest lens/core/test/test_annotations.py -v
 
 # Run a single test method
-python -m unittest lens.test.test_annotations.TestAnnotations.test_method_name
+python -m pytest lens/core/test/test_annotations.py -v -k test_method_name
 
 # Run the CLI locally (suppresses pysbd SyntaxWarning)
 poe lens <command>
@@ -34,7 +34,7 @@ Always run `poe check` before considering a task complete. It runs lint, typeche
 
 Cloud sessions enforce signed git commits via a hook that calls an external
 API (`/tmp/code-sign`).  `poe test` and `poe check` work correctly because
-`lens/test/conftest.py` detects the environment at session start and injects
+`lens/conftest.py` detects the environment at session start and injects
 `GIT_CONFIG_COUNT` overrides that disable signing for all subprocess git calls
 made during the pytest session.
 
@@ -52,8 +52,9 @@ Lens is a CLI tool for managing AI-assisted narrative creation. A **Lens project
 lens/
   cli/           # Typer CLI layer (argument parsing, error display)
     main.py      # Entry point + preflight callback
-    commands/    # Non-AI commands (init, use, kb, pin, stats, rollback)
+    commands/    # Non-AI commands (init, use, kb, pin, stats, rollback, dnd)
     operators/   # AI operator CLI adapters (write, edit, section, play)
+    test/        # CLI unit tests
   core/          # Business logic (no Typer dependency)
     project.py   # Git/project root discovery, active narrative resolution
     narrative.py # NarrativeNode tree model, NodeSegment, parse_segments()
@@ -69,8 +70,13 @@ lens/
     chain.py     # ChainSpec: deferred operator chaining within a transaction
     exceptions.py # Shared exception types
     commands/    # Core implementations for non-operator commands
-    operators/   # Core implementations for AI operators (write, edit, section, play)
-  test/          # unittest test suite
+    operators/   # Core implementations for AI operators (write, edit, section, design)
+    test/        # Core unit tests
+      integration/  # Integration tests
+  dnd/           # Dataset-specific package (commands, operators when dnd in scope)
+    commands/
+    operators/
+    test/        # D&D unit tests
 datasets/
   testing/       # Minimal dataset for integration tests
   dnd/           # D&D 2024 reference dataset (rules, spells, monsters, etc.)

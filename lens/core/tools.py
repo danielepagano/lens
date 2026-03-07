@@ -31,6 +31,19 @@ def _ensure_tools_loaded() -> None:
             commands_pkg.__path__, commands_pkg.__name__ + "."
         ):
             importlib.import_module(modname)
+        from lens.core.project import DATASET_PACKAGES
+        for _dataset_name, pkg_name in DATASET_PACKAGES.items():
+            for sub in ("operators", "commands"):
+                try:
+                    subpkg = importlib.import_module(f"{pkg_name}.{sub}")
+                except ImportError:
+                    continue
+                path = getattr(subpkg, "__path__", None)
+                if path is None:
+                    continue
+                prefix = f"{pkg_name}.{sub}."
+                for _importer, modname, _ in pkgutil.iter_modules(path, prefix):
+                    importlib.import_module(modname)
         _tools_loaded = True
 
 

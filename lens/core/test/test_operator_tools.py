@@ -24,7 +24,7 @@ from lens.core.tools import (
     get_tool_registry,
     register_operator_tool,
 )
-from lens.core.operators.play import PlayOperator
+from lens.dnd.operators.play import PlayOperator
 from lens.core.operators.write import WriteOperator
 from lens.core.project import ProjectSession
 

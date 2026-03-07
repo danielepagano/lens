@@ -16,6 +16,10 @@ if TYPE_CHECKING:
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
+# Dataset names that have a dedicated package under lens (sibling to core/cli).
+# Used by CLI and tools discovery to load dataset-specific commands/operators.
+DATASET_PACKAGES: dict[str, str] = {"dnd": "lens.dnd"}
+
 
 def datasets_root() -> Path:
     """Return the ``datasets/`` directory bundled with the Lens package."""

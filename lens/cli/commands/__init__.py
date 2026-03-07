@@ -24,5 +24,15 @@ def _discover_commands() -> Iterator[tuple[str, Typer]]:
 
 
 def register_commands(main_app: typer.Typer) -> None:
+    from lens.core.project import DATASET_PACKAGES, find_project_root, get_selected_datasets
+
+    try:
+        project_root = find_project_root()
+        selected = get_selected_datasets(project_root)
+    except RuntimeError:
+        selected = []
+
     for name, app in _discover_commands():
+        if name in DATASET_PACKAGES and name not in selected:
+            continue
         main_app.add_typer(app, name=name)

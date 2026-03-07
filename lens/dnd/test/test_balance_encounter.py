@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from lens.core.commands.balance_encounter import (
+from lens.dnd.commands.balance_encounter import (
     cr_tag_to_float,
     cr_str_to_float,
     compute_encounters,

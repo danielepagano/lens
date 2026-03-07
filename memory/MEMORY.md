@@ -25,7 +25,7 @@
 - `lens/core/project.py` — ProjectSession, find_git_root, require_lens_context
 - `lens/core/context.py` — crawl(), assemble_prompt()
 - `lens/core/storage.py` — git-backed transactional Storage
-- `lens/test/test_integration.py` — sequential happy-path integration tests (test_01..test_17)
+- `lens/core/test/integration/test_integration.py` — sequential happy-path integration tests
 - `datasets/testing/knowledge/` — testing dataset with person.hero + place.dungeon
 
 ## Testing Patterns
