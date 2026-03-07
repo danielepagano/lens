@@ -455,6 +455,13 @@ async def generate_stream(
                 _interrupted = True
                 break
 
+            if verbose and final.tool_call is not None:
+                logger.info(
+                    "LLM TOOL CALL REQUEST — %s(%s)",
+                    final.tool_call.name,
+                    json.dumps(final.tool_call.arguments),
+                )
+
             # ── Command tool path ─────────────────────────────────────────
             if (
                 final.tool_call is not None
@@ -470,6 +477,12 @@ async def generate_stream(
                     if k != "chain"
                 }
                 result = await handler(handler_args, project_root)
+                if verbose:
+                    logger.info(
+                        "LLM TOOL CALL RESPONSE — %s\n%s",
+                        final.tool_call.name,
+                        result,
+                    )
 
                 working_messages.append(
                     {

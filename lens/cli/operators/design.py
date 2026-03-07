@@ -20,7 +20,10 @@ async def _print_token(chunk: str) -> None:
 
 @app.callback()
 def design(
-    id: str = typer.Argument(..., help="Design session ID (alphanumeric, underscores, hyphens)"),
+    id: str = typer.Argument(
+        ...,
+        help="Design session ID (or 'end' to close current session; alphanumeric, underscores, hyphens)",
+    ),
     prompt: str | None = typer.Argument(
         None,
         help="Design task or question",
@@ -34,7 +37,7 @@ def design(
         help="LLM ID to use (overrides project default)",
     ),
 ) -> None:
-    """Collaborative KB design session: think, look up, and propose changes."""
+    """Collaborative KB design session: think, look up, and propose changes. Use 'lens design end' to close the current session."""
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:
@@ -47,6 +50,23 @@ def design(
             "lens design: no active narrative (run 'lens use <slug>' first)", err=True
         )
         raise typer.Exit(1)
+
+    if id.strip().lower() == "end":
+        try:
+            result = asyncio.run(
+                DesignOperator.run_design_end(session=session, narrative=narrative)
+            )
+            if result.inserted:
+                typer.echo(f"KB: inserted {', '.join(result.inserted)}")
+            if result.updated:
+                typer.echo(f"KB: updated {', '.join(result.updated)}")
+            if result.errors:
+                for err in result.errors:
+                    typer.echo(f"lens design end: kb error: {err}", err=True)
+        except OperatorError as e:
+            typer.echo(f"lens design end: {e}", err=True)
+            raise typer.Exit(1)
+        return
 
     try:
         validate_ids_exist(session.project_root, list(pin) + list(unpin))

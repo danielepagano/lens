@@ -71,4 +71,9 @@ def register_operators(main_app: typer.Typer) -> None:
         limited = list(getattr(op_class, "limited_to_datasets", [])) if op_class else []
         if not operator_applies_to_session(selected, limited):
             continue
-        main_app.add_typer(app, name=name, rich_help_panel="Operators")
+        if not app.registered_commands and app.registered_callback:
+            mod = importlib.import_module(f"lens.cli.operators.{name}")
+            callback = getattr(mod, name)
+            main_app.command(name, rich_help_panel="Operators")(callback)
+        else:
+            main_app.add_typer(app, name=name, rich_help_panel="Operators")

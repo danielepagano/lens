@@ -154,30 +154,36 @@ class TestDesignFreshRun(unittest.TestCase):
             _run_design(root, narrative, id="mydesign")
 
             cursor = narrative.find_cursor()
-            parent_text = cursor.md_path().read_text()
+            parent = (
+                NarrativeNode(
+                    narrative_root=narrative.narrative_root,
+                    key_path=cursor.key_path[:-1],
+                )
+                if cursor.key_path
+                else cursor
+            )
+            parent_text = parent.md_path().read_text()
             self.assertIn("[design:mydesign]: #", parent_text)
 
-    def test_close_tag_in_parent(self) -> None:
+    def test_no_close_tag_after_one_round(self) -> None:
+        """Design stays open after one generation; close tag only on design end."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
             _run_design(root, narrative, id="mydesign")
 
             cursor = narrative.find_cursor()
-            parent_text = cursor.md_path().read_text()
-            self.assertIn("[/design:mydesign]: #", parent_text)
-
-    def test_open_before_close_in_parent(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-
-            _run_design(root, narrative, id="mydesign")
-
-            cursor = narrative.find_cursor()
-            parent_text = cursor.md_path().read_text()
-            open_pos = parent_text.index("[design:mydesign]: #")
-            close_pos = parent_text.index("[/design:mydesign]: #")
-            self.assertLess(open_pos, close_pos)
+            parent = (
+                NarrativeNode(
+                    narrative_root=narrative.narrative_root,
+                    key_path=cursor.key_path[:-1],
+                )
+                if cursor.key_path
+                else cursor
+            )
+            parent_text = parent.md_path().read_text()
+            self.assertIn("[design:mydesign]: #", parent_text)
+            self.assertNotIn("[/design:mydesign]: #", parent_text)
 
     def test_generated_content_in_subnode(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -190,12 +196,19 @@ class TestDesignFreshRun(unittest.TestCase):
             child_text = child_md.read_text()
             self.assertIn("my proposals", child_text)
 
-    def test_kb_objects_inserted(self) -> None:
+    def test_kb_objects_inserted_on_end(self) -> None:
+        """KB blocks are applied only when the design session is closed (design end)."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            result = _run_design(root, narrative, id="mydesign")
+            run_result = _run_design(root, narrative, id="mydesign")
+            self.assertEqual(run_result.inserted, [])
 
+            result = asyncio.run(
+                DesignOperator.run_design_end(
+                    session=ProjectSession(root, root), narrative=narrative
+                )
+            )
             self.assertIn("npc.testperson", result.inserted)
             self.assertEqual(result.errors, [])
 
@@ -257,6 +270,95 @@ class TestDesignContinueRun(unittest.TestCase):
             self.assertIn("First round content.", child_text)
             self.assertIn("Second round content.", child_text)
 
+    def test_continue_uses_design_child_for_current_passage(self) -> None:
+        """Crawl must receive the design sub-node so CURRENT PASSAGE is the conversation, not the parent."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            cursor = narrative.find_cursor()
+            folder = cursor.md_path().parent
+            child_md = folder / "mydesign.md"
+            child_md.write_text("Existing design conversation.\n")
+            parent_text = cursor.md_path().read_text()
+            cursor.md_path().write_text(parent_text + "\n[design:mydesign]: #\n")
+
+            crawl_called_with_node: list[NarrativeNode] = []
+
+            def capture_crawl(node: NarrativeNode, **kwargs: Any) -> Any:
+                crawl_called_with_node.append(node)
+                from lens.core.context import crawl as real_crawl
+                return real_crawl(node, **kwargs)
+
+            async def _gen(*args: Any, **kwargs: Any) -> Any:
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="More content.",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            with patch("lens.core.operators.design.generate_stream", new=_gen):
+                with patch("lens.core.operators.design.get_command_registry", return_value={}):
+                    with patch("lens.core.operators.design.crawl", side_effect=capture_crawl):
+                        asyncio.run(
+                            DesignOperator.run_design(
+                                session=ProjectSession(root, root),
+                                narrative=narrative,
+                                id="mydesign",
+                                pins=[],
+                                unpins=[],
+                            )
+                        )
+
+            self.assertEqual(len(crawl_called_with_node), 1)
+            node_used = crawl_called_with_node[0]
+            self.assertEqual(node_used.key_path, ("mydesign",))
+            child_content = node_used.md_path().read_text()
+            self.assertIn("Existing design conversation.", child_content)
+
+
+# ---------------------------------------------------------------------------
+# Design end
+# ---------------------------------------------------------------------------
+
+
+class TestDesignEnd(unittest.TestCase):
+    def test_end_appends_close_tag_and_runs_kb_extract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _run_design(root, narrative, id="mydesign")
+            parent = NarrativeNode(
+                narrative_root=narrative.narrative_root, key_path=()
+            )
+            before = parent.md_path().read_text()
+            self.assertIn("[design:mydesign]: #", before)
+            self.assertNotIn("[/design:mydesign]: #", before)
+
+            asyncio.run(
+                DesignOperator.run_design_end(
+                    session=ProjectSession(root, root), narrative=narrative
+                )
+            )
+
+            after = parent.md_path().read_text()
+            self.assertIn("[/design:mydesign]: #", after)
+            open_pos = after.index("[design:mydesign]: #")
+            close_pos = after.index("[/design:mydesign]: #")
+            self.assertLess(open_pos, close_pos)
+
+    def test_end_raises_when_cursor_not_in_design(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            with self.assertRaises(OperatorError) as ctx:
+                asyncio.run(
+                    DesignOperator.run_design_end(
+                        session=ProjectSession(root, root), narrative=narrative
+                    )
+                )
+            self.assertIn("no open design to close", str(ctx.exception))
+
 
 # ---------------------------------------------------------------------------
 # Error cases
@@ -269,8 +371,11 @@ class TestDesignErrors(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
             _run_design(root, narrative, id="mydesign")
-
-            # Commit the pending transaction.
+            asyncio.run(
+                DesignOperator.run_design_end(
+                    session=ProjectSession(root, root), narrative=narrative
+                )
+            )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
                 ["git", "commit", "-m", "design"],

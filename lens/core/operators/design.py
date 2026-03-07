@@ -2,19 +2,21 @@
 
 ``lens design <id> [PROMPT]`` opens a one-shot planning session in its own
 sub-node.  The LLM reasons with extended thinking, uses ``kb_get`` and
-``kb_with_tag`` to inspect existing KB objects, and outputs proposals as
+``kb_with_tag`` to inspect existing KB entries, and outputs proposals as
 fenced ``kb`` blocks (``lens kb extract`` format).  After generation, the
 operator automatically applies those blocks to the knowledge store.
 
 The parent node gets an open ``[design:<id>]: #`` annotation written before
-generation starts, and a matching ``[/design:<id>]: #`` close tag written
-afterwards.  The sub-node file is preserved as a durable record of the
-design session.
+generation starts. The annotation is closed only when the user runs
+``lens design end`` (cursor in the design sub-node); that command runs
+``kb_extract_from_text`` on the full sub-node content and appends the
+close tag to the parent (no summary text between the tags).
 
 Continue behaviour: if a pending transaction for the same design id already
-exists (i.e. the previous run was interrupted before the close tag was
-written), running ``lens design <id>`` again appends a new generation round
-to the existing sub-node and re-closes the annotation pair.
+exists (open tag but no close tag), running ``lens design <id> [prompt]``
+again appends a new generation round to the existing sub-node. Context
+assembly uses the design sub-node as CURRENT PASSAGE so the conversation
+can continue.
 """
 
 from __future__ import annotations
@@ -39,24 +41,41 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-You are a collaborative RPG campaign designer working inside a Lens project.
+You are a collaborative story element designer. 
+Your role is to help the user create and refine knowledge base (KB)) entries \
+that drive a system that lets them collaborate with AI write stories or do \
+role-playing and interactive fiction. These entries are things like locations, \
+characters, factions,, lore, problems for the characters to solve, etc.
 
-Your role is to help the user create and refine KB (knowledge-base) objects \
-that drive their game: locations, NPCs, factions, fronts, lore, and anything \
-else they need.
+Each entry has a type and a key (id=type.key), and each type has a template, \
+which will be provided or can fetch using an ID of type._template. \
+KB entries also have TAGS, which can be used to in searches, or link them to \
+each other when the tag is another entry id.
 
-## How to work
+There are usually entries already filled in and provided for context, and maybe \
+even an ongoing story. For example, we could have a character KB[person.alice] \
+going to a place KB[loc.wonderland] already defined, and you are asked to fill \
+a new KB[loc.croquet-field] that a tag of loc.wonderland to link to where it is in.
 
-1. **Think before you propose.** Reason through the implications before \
-writing anything down. Consider how a new or updated object connects to what \
-already exists.
+In some cases, like if working in a more structured system like a role-playing game, \
+you will also be provided more specific instructions, for example KB[design.encounter] \
+could be used to instruct you on how to design RPG combat encounters; these instructions \
+may even be paired with tools you can call with your tool-calling capabilities.
 
-2. **Look up what exists.** Before creating or changing objects, use the \
-``kb_get`` tool to inspect specific objects and ``kb_with_tag`` to discover \
-related ones. Do not assume — check. RELEVANT KNOWLEDGE items are KB entries \
-and you can assume they both relevant and are current.
+HOW TO WORK:
 
-3. **Output proposals as fenced kb blocks.** Every KB object you want to \
+1. Think before you propose. Reason through the implications before \
+writing anything down. Consider how a new or updated entry connects to what \
+already exists. 
+
+2. Look up what exists. Before creating or changing entries, use tools like \
+``kb_get`` tool to inspect specific entries and ``kb_with_tag`` to discover \
+related entries. Do not assume — check. If an entry you write has the same key \
+as an existing one it will overwrite it, so you MUST preserve previous details! \
+Provided RELEVANT KNOWLEDGE items are KB entries and you can assume they are \
+both relevant and are fresh.
+
+3. Output proposals as fenced kb blocks. Every KB entry you want to \
 create or update must appear as a fenced code block with the ``kb`` language \
 tag, using this format:
 
@@ -64,30 +83,31 @@ tag, using this format:
 ---
 id: type.key
 tags:
-  - link.tag (dot notation links this object to an object with that type.key) 
+  - link.tag (dot notation links this entry to an entry with that type.key) 
   - key:value (used for standardized classification) 
   - simple
 ---
-Object content here. 
+Entry text here (should be based on type._template). 
 ```
 
-   Include as many blocks as needed.
+Include as many blocks as needed, and you can write any text around blocks to \
+discuss or explain; only the blocks have side-effects in the knowledge base.
 
-4. **Use Temaplates.** Before creating a new object or making major changes, \
-get the template: <type>._template. It will contains instructions of object purpose, \
+4. Use Temaplates. Before creating a new entry or making major changes, \
+get the template: <type>._template. It will contains instructions of its purpose, \
 what to include, and how to tag it. Follow this tag policy.
 
-5. **Be concise.** Objects are read repeatedly by the LLM during play. Every \
-word costs tokens. Prefer terse, high-signal content over prose.
+5. Be concise. Entries are read repeatedly by the LLM during play. Every \
+word costs tokens. Prefer terse, high-signal content over prose in KB.
 
-6. **Iterate.** If you emit a kb object and the user wants changes, emit again \
-with the requested changes. Only the last instance of the object will be inserted.
+6. Iterate. If you emit a kb entry and the user wants changes, emit it again \
+with the requested changes. Only the last instance of any entry you emit will be inserted.
 
-## What you do NOT do
+What NOT to do:
 
 - Do not write narrative prose (you are currently planning/world-building).
-- Do not update ``state.*`` or ``pc.*`` objects (owned by the player or other systems).
-- Do not fabricate details about existing objects without checking them first.
+- Do not create or update entry types or subjects topics you were not asked to. 
+- Do not fabricate details about existing entries without checking them first.
 """
 
 INSTRUCTION_OPEN = (
@@ -98,7 +118,8 @@ INSTRUCTION_OPEN = (
 INSTRUCTION_WITH_PROMPT = (
     "Design task: {prompt}\n\n"
     "Use kb_get / kb_with_tag to check what already exists, think through "
-    "implications, then propose the necessary KB objects as fenced kb blocks."
+    "implications, ask as many questions as you'd like, then propose the "
+    "necessary KB entries as fenced kb blocks."
 )
 
 
@@ -189,11 +210,15 @@ class DesignOperator(Operator):
         # Path to the child sub-node file (recomputed after possible folder promotion).
         child_md = cursor.md_path().parent / f"{id}.md"
 
-        # Build prompt.
+        # Use the design child node for context so CURRENT PASSAGE is the sub-node content.
+        design_child = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path + (id,),
+        )
         ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
-        crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
+        crawl_result = crawl(design_child, extra_pins=pins, extra_unpins=unpins)
         messages = assemble_prompt(
             crawl_result,
             system_prompt=op.system_prompt,
@@ -251,18 +276,49 @@ class DesignOperator(Operator):
         if not content.strip():
             raise OperatorError("no content generated")
 
-        # Append generated content to sub-node file.
+        # Append generated content to sub-node file (session stays open until design end).
+        # kb_extract_from_text runs only on close (run_design_end).
         existing = child_md.read_text(encoding="utf-8") if child_md.exists() else ""
         sep = "\n" if existing.endswith("\n") else "\n\n"
         storage.write_file(child_md, existing + sep + content + "\n")
 
-        # Close the annotation in the parent node.
-        op.append_to_node(cursor, op.build_close_tag(id) + "\n")
+        return KbExtractResult()
 
-        # Apply kb fences from generated content using the same storage transaction
-        # so narrative + KB changes commit together.
-        result = kb_extract_from_text(content, session.project_root, storage)
+    @classmethod
+    async def run_design_end(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+    ) -> KbExtractResult:
+        """Close the current design session: run kb_extract on sub-node content and append close tag.
+
+        Cursor must be in the design sub-node. Appends ``[/design:<id>]: #`` to the parent
+        (no content between the tags). Returns the result of kb_extract_from_text on the
+        full sub-node content.
+        """
+        cursor = narrative.find_cursor()
+        if not cursor.key_path:
+            raise OperatorError("no open design to close (cursor at root)")
+        id = cursor.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        parent_text = parent.md_path().read_text(encoding="utf-8")
+        open_ann = find_unclosed_cursor_annotation(parent_text)
+        if open_ann is None or open_ann.operator != cls.name or open_ann.id != id:
+            raise OperatorError(
+                f"parent does not have unclosed [design:{id}]: # — "
+                "cursor must be in the design sub-node"
+            )
+        child_text = cursor.md_path().read_text(encoding="utf-8")
+        rel_path = str(parent.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(id, rel_path)
+        storage = session.new_storage(owner=owner)
+        op = cls(storage, narrative)
+        result = kb_extract_from_text(child_text, session.project_root, storage)
         for err in result.errors:
-            logger.warning("design: %s", err)
-
+            logger.warning("design end: %s", err)
+        op.append_to_node(parent, op.build_close_tag(id) + "\n")
         return result
