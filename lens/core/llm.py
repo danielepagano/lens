@@ -41,7 +41,6 @@ class _LLMConfig:
     api_key: str
     temperature: float
     timeout_seconds: int
-    provider: str  # "generic" | "openrouter"
 
 
 def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bool]:
@@ -99,7 +98,6 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
             api_key=api_key,
             temperature=float(raw.get("temperature", 0.8)),
             timeout_seconds=int(raw.get("timeout_seconds", 120)),
-            provider=str(raw.get("provider", "generic")),
         ),
         verbose_llm,
     )
@@ -246,18 +244,13 @@ async def _stream_once(
     if tools is not None:
         payload["tools"] = tools
         payload["tool_choice"] = "auto"
-    if cfg.provider == "openrouter":
-        if enable_thinking:
-            payload["reasoning"] = {"effort": "medium"}
-        else:
-            payload["reasoning"] = {"effort": "low", "exclude": True}
+    payload["enable_thinking"] = enable_thinking
+    payload["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
+    if enable_thinking:
+        payload["reasoning"] = {"effort": "medium"}
     else:
-        # Generic: Ollama, koboldcpp, vLLM, LM Studio, etc.
-        payload["enable_thinking"] = enable_thinking
-        payload["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
+        payload["reasoning"] = {"effort": "none", "enabled": False}
         if not enable_thinking:
-            # /no_think prefix: belt-and-suspenders for Qwen3 on stacks that
-            # honour chat template soft-switching (vLLM ≤0.8.5, some LM Studio)
             working = [dict(m) for m in messages]
             if working and working[0].get("role") == "system":
                 raw_content = working[0].get("content")
