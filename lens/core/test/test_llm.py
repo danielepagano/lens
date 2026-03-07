@@ -239,6 +239,19 @@ class TestLoadConfig(unittest.TestCase):
         self.assertAlmostEqual(cfg.temperature, 0.8)
         self.assertEqual(cfg.timeout_seconds, 120)
 
+    def test_default_provider_is_generic(self) -> None:
+        self._write("[[llm]]\nbase_url = \"https://api.example.com/v1\"\n")
+        cfg, _ = _load_config(self.root, None)
+        self.assertEqual(cfg.provider, "generic")
+
+    def test_openrouter_provider_read(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://openrouter.ai/api/v1\"\n"
+            "provider = \"openrouter\"\n"
+        )
+        cfg, _ = _load_config(self.root, None)
+        self.assertEqual(cfg.provider, "openrouter")
+
     def test_custom_temperature_and_timeout(self) -> None:
         self._write(
             "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
@@ -330,6 +343,44 @@ class TestGenerateStream(unittest.TestCase):
         resp = _FakeResponse(lines=_sse(_chunk("ok")))
         _, _, client = self._run(resp)
         self.assertNotIn("stop", client.captured_kwargs.get("json", {}))
+
+    def test_generic_provider_no_reasoning_key(self) -> None:
+        """Default (generic) provider must not send 'reasoning' key."""
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp)
+        self.assertNotIn("reasoning", client.captured_kwargs.get("json", {}))
+
+    def test_generic_provider_sends_enable_thinking_false(self) -> None:
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp)
+        payload = client.captured_kwargs.get("json", {})
+        self.assertIs(payload.get("enable_thinking"), False)
+        self.assertEqual(payload.get("chat_template_kwargs"), {"enable_thinking": False})
+
+    def test_openrouter_provider_sends_reasoning_key(self) -> None:
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://openrouter.ai/api/v1\"\n"
+            "provider = \"openrouter\"\n"
+        )
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp)
+        payload = client.captured_kwargs.get("json", {})
+        self.assertIn("reasoning", payload)
+        self.assertIn("effort", payload["reasoning"])
+        self.assertNotIn("enable_thinking", payload)
+        self.assertNotIn("chat_template_kwargs", payload)
+
+    def test_openrouter_suppress_thinking_uses_valid_effort(self) -> None:
+        """OpenRouter suppress: effort must be 'low', not 'none'."""
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://openrouter.ai/api/v1\"\n"
+            "provider = \"openrouter\"\n"
+        )
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp)
+        payload = client.captured_kwargs.get("json", {})
+        self.assertEqual(payload["reasoning"]["effort"], "low")
+        self.assertTrue(payload["reasoning"].get("exclude"))
 
     def test_api_key_sent_as_bearer(self) -> None:
         (self.root / "lens.toml").write_text(

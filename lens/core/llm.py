@@ -41,6 +41,7 @@ class _LLMConfig:
     api_key: str
     temperature: float
     timeout_seconds: int
+    provider: str  # "generic" | "openrouter"
 
 
 def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bool]:
@@ -98,6 +99,7 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
             api_key=api_key,
             temperature=float(raw.get("temperature", 0.8)),
             timeout_seconds=int(raw.get("timeout_seconds", 120)),
+            provider=str(raw.get("provider", "generic")),
         ),
         verbose_llm,
     )
@@ -244,25 +246,30 @@ async def _stream_once(
     if tools is not None:
         payload["tools"] = tools
         payload["tool_choice"] = "auto"
-    if enable_thinking:
-        payload["reasoning"] = {"effort": "medium", "include_thought": False}
+    if cfg.provider == "openrouter":
+        if enable_thinking:
+            payload["reasoning"] = {"effort": "medium"}
+        else:
+            payload["reasoning"] = {"effort": "low", "exclude": True}
     else:
-        payload["reasoning"] = {"effort": "none"}
-        payload["enable_thinking"] = False
-        payload["chat_template_kwargs"] = {"enable_thinking": False}
-        working = [dict(m) for m in messages]
-        if working and working[0].get("role") == "system":
-            raw_content = working[0].get("content")
-            content = raw_content if isinstance(raw_content, str) else ""
-            if "/no_think" not in content and "/think" not in content:
-                working[0] = {**working[0], "content": "/no_think\n\n" + content}
-        payload["messages"] = working
+        # Generic: Ollama, koboldcpp, vLLM, LM Studio, etc.
+        payload["enable_thinking"] = enable_thinking
+        payload["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
+        if not enable_thinking:
+            # /no_think prefix: belt-and-suspenders for Qwen3 on stacks that
+            # honour chat template soft-switching (vLLM ≤0.8.5, some LM Studio)
+            working = [dict(m) for m in messages]
+            if working and working[0].get("role") == "system":
+                raw_content = working[0].get("content")
+                content_str = raw_content if isinstance(raw_content, str) else ""
+                if "/no_think" not in content_str and "/think" not in content_str:
+                    working[0] = {**working[0], "content": "/no_think\n\n" + content_str}
+            payload["messages"] = working
 
     headers: dict[str, str] = {"Accept": "text/event-stream"}
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
 
-    response_parts: list[str] = []
     raw_response_parts: list[str] = []
     chunks: list[str] = []
     usage: dict[str, int] | None = None
@@ -331,7 +338,6 @@ async def _stream_once(
                             raw_response_parts.append(content)
                         content, think_close = _strip_think_tags(content, think_close)
                         if content:
-                            response_parts.append(content)
                             chunks.append(content)
                             preview, mid_comment = _strip_preview(content, mid_comment)
                             if preview:
@@ -427,8 +433,8 @@ async def _stream_once(
                 "".join(raw_response_parts),
                 sep,
             )
-        if response_parts:
-            logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, "".join(response_parts), sep)
+        if chunks:
+            logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, "".join(chunks), sep)
 
     yield StreamEvent(
         final=FinalPayload(
