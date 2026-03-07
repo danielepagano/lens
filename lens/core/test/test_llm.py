@@ -450,6 +450,101 @@ class TestGenerateStream(unittest.TestCase):
         self.assertIn("RESPONSE", combined)
         self.assertIn("narrate this", combined)
 
+    def test_reasoning_content_logged_as_thinking_not_narrative(self) -> None:
+        """reasoning_content deltas must appear in verbose THINKING log, not in final.text."""
+        (self.root / "lens.toml").write_text(
+            "[project]\nverbose_llm = true\n\n"
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        thinking_chunk = {"choices": [{"delta": {"reasoning_content": "think think"}}]}
+        resp = _FakeResponse(lines=_sse(thinking_chunk, _chunk("answer")))
+        with self.assertLogs("lens.core.llm", level="INFO") as log:
+            _, final, _ = self._run(resp)
+        combined = "\n".join(log.output)
+        self.assertIn("THINKING", combined)
+        self.assertIn("think think", combined)
+        self.assertNotIn("THINKING", combined.replace("THINKING", "", 1))  # only one THINKING section is fine
+        assert final is not None
+        self.assertEqual(final.text, "answer")
+        self.assertNotIn("think", final.text)
+
+    def test_command_tool_text_accumulated_into_final(self) -> None:
+        """Text emitted before a command tool call must appear in final.text."""
+        import asyncio as _asyncio
+
+        tc = {
+            "index": 0,
+            "id": "call_ct1",
+            "function": {"name": "kb_get", "arguments": '{"id":"npc.villain"}'},
+        }
+        iter1 = {
+            "choices": [{"delta": {"content": "Before.", "tool_calls": [tc]}}]
+        }
+        iter2_lines = _sse(_chunk("After."))
+
+        call_count = 0
+
+        class _TwoPhaseResponse:
+            status_code = 200
+
+            async def aread(self) -> bytes:
+                return b""
+
+            async def aiter_lines(self):  # type: ignore[return]
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    yield f"data: {json.dumps(iter1)}"
+                    yield "data: [DONE]"
+                else:
+                    for line in iter2_lines:
+                        yield line
+
+            async def __aenter__(self) -> _TwoPhaseResponse:
+                return self
+
+            async def __aexit__(self, *_: Any) -> None:
+                pass
+
+        class _TwoPhaseClient:
+            def stream(self, _method: str, _url: str, **_kw: Any) -> _TwoPhaseResponse:
+                return _TwoPhaseResponse()
+
+            async def __aenter__(self) -> _TwoPhaseClient:
+                return self
+
+            async def __aexit__(self, *_: Any) -> None:
+                pass
+
+        async def _handler(args: dict[str, Any], _root: Any) -> str:
+            return "kb content"
+
+        async def _inner() -> tuple[list[str], FinalPayload | None]:
+            previews: list[str] = []
+            final: FinalPayload | None = None
+            async for event in generate_stream(
+                MESSAGES,
+                self.root,
+                command_tool_handlers={"kb_get": _handler},
+            ):
+                if event.preview:
+                    previews.append(event.preview)
+                if event.final:
+                    final = event.final
+            return previews, final
+
+        def _make_client(**_kw: Any) -> _TwoPhaseClient:
+            return _TwoPhaseClient()
+
+        with patch("lens.core.llm.httpx.AsyncClient", _make_client):
+            previews, final = _asyncio.run(_inner())
+
+        assert final is not None
+        self.assertIn("Before.", previews)
+        self.assertIn("Before.", final.text)
+        self.assertIn("After.", final.text)
+        self.assertEqual(final.text, "Before.After.")
+
     def test_multiple_tool_calls_folded_into_chain(self) -> None:
         """When LLM returns two tool calls, they are folded: last becomes chain of first."""
         tc_section = {

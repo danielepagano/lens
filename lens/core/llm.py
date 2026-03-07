@@ -270,7 +270,7 @@ async def _stream_once(
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
 
-    raw_response_parts: list[str] = []
+    thinking_parts: list[str] = []  # reasoning_content deltas — verbose only, never narrative
     chunks: list[str] = []
     usage: dict[str, int] | None = None
     mid_comment = False
@@ -331,11 +331,11 @@ async def _stream_once(
 
                     content: str | None = delta.get("content")
                     reasoning_content: str | None = delta.get("reasoning_content")
-                    if reasoning_content and verbose:
-                        raw_response_parts.append(reasoning_content)
-                    if content:
+                    if reasoning_content:
+                        # Thinking tokens: log in verbose mode, never enter narrative.
                         if verbose:
-                            raw_response_parts.append(content)
+                            thinking_parts.append(reasoning_content)
+                    if content:
                         content, think_close = _strip_think_tags(content, think_close)
                         if content:
                             chunks.append(content)
@@ -426,11 +426,11 @@ async def _stream_once(
 
     if verbose:
         sep = "─" * 60
-        if raw_response_parts:
+        if thinking_parts:
             logger.info(
-                "LLM RESPONSE\n%s\n%s\n%s",
+                "LLM THINKING\n%s\n%s\n%s",
                 sep,
-                "".join(raw_response_parts),
+                "".join(thinking_parts),
                 sep,
             )
         if chunks:
@@ -496,6 +496,7 @@ async def generate_stream(
 
     working_messages: list[dict[str, Any]] = list(messages)
     last_usage: dict[str, int] | None = None
+    accumulated_text: str = ""  # text from command-tool iterations, prepended to final
     half_limit = _MAX_COMMAND_TOOL_ITERATIONS // 2
     warned_at_half = False
 
@@ -526,7 +527,7 @@ async def generate_stream(
             if final.interrupted:
                 yield StreamEvent(
                     final=FinalPayload(
-                        text=final.text,
+                        text=accumulated_text + final.text,
                         tool_call=final.tool_call,
                         usage=last_usage,
                         interrupted=True,
@@ -573,6 +574,7 @@ async def generate_stream(
                         result,
                     )
 
+                accumulated_text += final.text
                 working_messages.append(
                     {
                         "role": "assistant",
@@ -603,7 +605,7 @@ async def generate_stream(
             # ── Operator tool or normal end ───────────────────────────────
             yield StreamEvent(
                 final=FinalPayload(
-                    text=final.text,
+                    text=accumulated_text + final.text,
                     tool_call=final.tool_call,
                     usage=last_usage,
                     interrupted=False,
