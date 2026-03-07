@@ -24,8 +24,8 @@ from lens.core.annotations import encode_ai_secrets
 
 logger = logging.getLogger(__name__)
 
-# Maximum number of consecutive command-tool round-trips before aborting.
-_MAX_COMMAND_TOOL_ITERATIONS = 10
+# Maximum number of consecutive command-tool round-trips per response.
+_MAX_COMMAND_TOOL_ITERATIONS = 20
 
 CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
 
@@ -135,6 +135,51 @@ def _format_messages(messages: list[dict[str, Any]]) -> str:
     return f"{sep}\n" + f"\n{sep}\n".join(parts) + f"\n{sep}"
 
 
+# (open_tag, close_tag) for thinking blocks; order matters for "earliest" match.
+_THINK_TAG_PAIRS: list[tuple[str, str]] = [
+    ("<think>", "</think>"),
+    ("<thinking>", "</thinking>"),
+]
+
+
+def _strip_think_tags(chunk: str, inside_close: str | None) -> tuple[str, str | None]:
+    """Strip thinking blocks from chunk (streaming-safe). Supports multiple tag styles.
+
+    Returns (visible_text, new_inside_close). When inside_close is set we suppress
+    content until we see that closing tag.
+    """
+    if not chunk:
+        return ("", inside_close)
+    if inside_close is not None:
+        end_idx = chunk.find(inside_close)
+        if end_idx == -1:
+            return ("", inside_close)
+        rest = chunk[end_idx + len(inside_close) :]
+        return _strip_think_tags(rest, None)
+    result: list[str] = []
+    i = 0
+    while i < len(chunk):
+        best_open: int | None = None
+        best_open_len = 0
+        best_close = ""
+        for open_tag, close_tag in _THINK_TAG_PAIRS:
+            idx = chunk.find(open_tag, i)
+            if idx != -1 and (best_open is None or idx < best_open):
+                best_open = idx
+                best_open_len = len(open_tag)
+                best_close = close_tag
+        if best_open is None or not best_close:
+            result.append(chunk[i:])
+            return ("".join(result), None)
+        result.append(chunk[i:best_open])
+        end_idx = chunk.find(best_close, best_open + best_open_len)
+        if end_idx == -1:
+            result.append(chunk[best_open + best_open_len :])
+            return ("".join(result), best_close)
+        i = end_idx + len(best_close)
+    return ("".join(result), None)
+
+
 def _strip_preview(chunk: str, mid_comment: bool) -> tuple[str, bool]:
     """Strip HTML comments from chunk for safe streaming preview.
 
@@ -200,16 +245,29 @@ async def _stream_once(
         payload["tools"] = tools
         payload["tool_choice"] = "auto"
     if enable_thinking:
-        payload["reasoning"] = {"effort": "high"}
+        payload["reasoning"] = {"effort": "medium", "include_thought": False}
+    else:
+        payload["reasoning"] = {"effort": "none"}
+        payload["enable_thinking"] = False
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
+        working = [dict(m) for m in messages]
+        if working and working[0].get("role") == "system":
+            raw_content = working[0].get("content")
+            content = raw_content if isinstance(raw_content, str) else ""
+            if "/no_think" not in content and "/think" not in content:
+                working[0] = {**working[0], "content": "/no_think\n\n" + content}
+        payload["messages"] = working
 
     headers: dict[str, str] = {"Accept": "text/event-stream"}
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
 
     response_parts: list[str] = []
+    raw_response_parts: list[str] = []
     chunks: list[str] = []
     usage: dict[str, int] | None = None
     mid_comment = False
+    think_close: str | None = None
     interrupted = False
 
     tool_calls_by_index: dict[int, dict[str, Any]] = {}
@@ -265,13 +323,19 @@ async def _stream_once(
                     delta = choice.get("delta", {})
 
                     content: str | None = delta.get("content")
+                    reasoning_content: str | None = delta.get("reasoning_content")
+                    if reasoning_content and verbose:
+                        raw_response_parts.append(reasoning_content)
                     if content:
                         if verbose:
+                            raw_response_parts.append(content)
+                        content, think_close = _strip_think_tags(content, think_close)
+                        if content:
                             response_parts.append(content)
-                        chunks.append(content)
-                        preview, mid_comment = _strip_preview(content, mid_comment)
-                        if preview:
-                            yield StreamEvent(preview=preview)
+                            chunks.append(content)
+                            preview, mid_comment = _strip_preview(content, mid_comment)
+                            if preview:
+                                yield StreamEvent(preview=preview)
 
                     tc_list: list[Any] = delta.get("tool_calls") or []
                     for tc in tc_list:
@@ -354,9 +418,17 @@ async def _stream_once(
                     arguments=parsed_args if isinstance(parsed_args, dict) else {},  # pyright: ignore[reportUnnecessaryIsInstance]
                 )
 
-    if verbose and response_parts:
+    if verbose:
         sep = "─" * 60
-        logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, "".join(response_parts), sep)
+        if raw_response_parts:
+            logger.info(
+                "LLM RESPONSE (raw, reasoning/think tags not saved)\n%s\n%s\n%s",
+                sep,
+                "".join(raw_response_parts),
+                sep,
+            )
+        if response_parts:
+            logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, "".join(response_parts), sep)
 
     yield StreamEvent(
         final=FinalPayload(
@@ -418,9 +490,11 @@ async def generate_stream(
 
     working_messages: list[dict[str, Any]] = list(messages)
     last_usage: dict[str, int] | None = None
+    half_limit = _MAX_COMMAND_TOOL_ITERATIONS // 2
+    warned_at_half = False
 
     try:
-        for _iteration in range(_MAX_COMMAND_TOOL_ITERATIONS + 1):
+        for iteration in range(_MAX_COMMAND_TOOL_ITERATIONS + 1):
             final: FinalPayload | None = None
 
             async for event in _stream_once(
@@ -477,6 +551,15 @@ async def generate_stream(
                     if k != "chain"
                 }
                 result = await handler(handler_args, project_root)
+                if not warned_at_half and iteration + 1 >= half_limit:
+                    warned_at_half = True
+                    warning = (
+                        f"\n\n[Warning: you have used {iteration + 1} of "
+                        f"{_MAX_COMMAND_TOOL_ITERATIONS} allowed tool calls "
+                        "this response.]"
+                    )
+                    result = result + warning
+                    yield StreamEvent(preview=warning)
                 if verbose:
                     logger.info(
                         "LLM TOOL CALL RESPONSE — %s\n%s",
@@ -523,20 +606,23 @@ async def generate_stream(
             break
 
         else:
-            # Exceeded maximum command tool iterations
+            # Exceeded maximum command tool iterations; return message, do not abort
             logger.warning(
-                "generate_stream: exceeded %d command tool iterations; aborting",
+                "generate_stream: exceeded %d command tool iterations",
                 _MAX_COMMAND_TOOL_ITERATIONS,
+            )
+            limit_msg = (
+                "You have exceeded the maximum number of tool calls per response "
+                f"(limit: {_MAX_COMMAND_TOOL_ITERATIONS})."
             )
             yield StreamEvent(
                 final=FinalPayload(
-                    text="",
+                    text=limit_msg,
                     tool_call=None,
                     usage=last_usage,
-                    interrupted=True,
+                    interrupted=False,
                 )
             )
-            _interrupted = True
 
     finally:
         if _sigint_installed:

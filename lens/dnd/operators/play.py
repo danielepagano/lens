@@ -35,11 +35,13 @@ SYSTEM_PROMPT = (
 
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 
-INSTRUCTION_CONTINUE = "Continue the scene, then pause for player response."
+INSTRUCTION_CONTINUE = "Continue the scene, then pause for player response. \
+HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
 
 INSTRUCTION_WITH_PROMPT = (
-    "Continue the scene following these instructions: {prompt}. "
-    "Then yield to the user to allow their player(s) to act when appropriate."
+    "Continue the scene following these instructions: '{prompt}'. "
+    "Then yield to the user to allow their player(s) to act when appropriate. \
+HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
 )
 
 

@@ -55,7 +55,7 @@ each other when the tag is another entry id.
 There are usually entries already filled in and provided for context, and maybe \
 even an ongoing story. For example, we could have a character KB[person.alice] \
 going to a place KB[loc.wonderland] already defined, and you are asked to fill \
-a new KB[loc.croquet-field] that a tag of loc.wonderland to link to where it is in.
+a new KB[loc.croquet-field] that a tag of 'loc.wonderland' to link to where it is in.
 
 In some cases, like if working in a more structured system like a role-playing game, \
 you will also be provided more specific instructions, for example KB[design.encounter] \

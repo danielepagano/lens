@@ -17,7 +17,7 @@ app = typer.Typer(no_args_is_help=True, help="Pin or unpin knowledge objects for
 @app.command()
 def add(
     id: str | None = typer.Argument(None, help="Knowledge object ID (type.key)"),
-    node_pos: str | None = typer.Argument(None, help="Target node address (default: /@cursor)"),
+    node_pos: str | None = typer.Argument("/@cursor", help="Target node address (default: cursor)"),
     extra_ids: list[str] = typer.Option([], "--id", "-i", help="Additional IDs (repeatable)"),
     node_opt: str | None = typer.Option(None, "--node", "-n", help="Target node address"),
 ) -> None:
@@ -37,7 +37,7 @@ def add(
 @app.command()
 def remove(
     id: str | None = typer.Argument(None, help="Knowledge object ID to remove from kb_pin"),
-    node_pos: str | None = typer.Argument(None, help="Target node address (default: /@cursor)"),
+    node_pos: str | None = typer.Argument("/@cursor", help="Target node address (default: cursor)"),
     extra_ids: list[str] = typer.Option([], "--id", "-i", help="Additional IDs (repeatable)"),
     node_opt: str | None = typer.Option(None, "--node", "-n", help="Target node address"),
 ) -> None:
@@ -57,7 +57,7 @@ def remove(
 @app.command()
 def block(
     id: str | None = typer.Argument(None, help="Knowledge object ID to add to kb_unpin"),
-    node_pos: str | None = typer.Argument(None, help="Target node address (default: /@cursor)"),
+    node_pos: str | None = typer.Argument("/@cursor", help="Target node address (default: cursor)"),
     extra_ids: list[str] = typer.Option([], "--id", "-i", help="Additional IDs (repeatable)"),
     node_opt: str | None = typer.Option(None, "--node", "-n", help="Target node address"),
 ) -> None:
@@ -77,7 +77,7 @@ def block(
 @app.command()
 def unblock(
     id: str | None = typer.Argument(None, help="Knowledge object ID to remove from kb_unpin"),
-    node_pos: str | None = typer.Argument(None, help="Target node address (default: /@cursor)"),
+    node_pos: str | None = typer.Argument("/@cursor", help="Target node address (default: cursor)"),
     extra_ids: list[str] = typer.Option([], "--id", "-i", help="Additional IDs (repeatable)"),
     node_opt: str | None = typer.Option(None, "--node", "-n", help="Target node address"),
 ) -> None:

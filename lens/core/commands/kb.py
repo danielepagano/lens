@@ -147,8 +147,8 @@ def _filter_ids_by_tag_type(ids: list[str], tag: str) -> list[str]:
 def kb_with_tag(
     tags: list[str],
     *,
-    expand: bool,
-    recurse: int | None,
+    expand: bool = False,
+    recurse: int | None = None,
     same_type_only: bool = False,
 ) -> WithTagResult:
     if not tags:

@@ -134,7 +134,7 @@ register_command_tool(
         description=(
             "Retrieve one or more KB objects by canonical ID. Use to look up a specific "
             "entity before writing about it. Append '+' to an ID (e.g. 'npc.gandalf+') "
-            "to also fetch objects linked from it (only if needed!)."
+            "to also fetch objects linked from it (only if needed!)"
         ),
         parameters={
             "type": "object",
@@ -191,7 +191,7 @@ register_command_tool(
         description=(
             "Find KB objects matching tag groups. AND across groups, OR within (a b c). "
             'Examples: ["type:undead", "(cr:1 cr:2)"] = undead with CR 1 or 2. '
-            "Returns IDs (with tags) by default; set expand=true for full object text. Read-only."
+            "Returns matching IDs, each with its full set of tags."
         ),
         parameters={
             "type": "object",
@@ -202,23 +202,6 @@ register_command_tool(
                     "description": (
                         "Tag groups. Single tags ANDed; '(a b c)' = OR within. "
                         "Examples: [\"faction\"], [\"type:undead\", \"(cr:1 cr:2 cr:3)\"]"
-                    ),
-                },
-                "expand": {
-                    "type": "boolean",
-                    "description": (
-                        "If true, return the full text of each matched object in addition to IDs. "
-                        "Default false (IDs and tags for each ID only). WARNING: do NOT expand without "
-                        "an understanding of how many objects you will pull! You can easily saturate "
-                        "your content window. Run tool without expand first, then a targeted kb_get is often more useful."
-                    ),
-                },
-                "recurse": {
-                    "type": "integer",
-                    "description": (
-                        "If set, recursively follow dot-tags to this depth "
-                        "(0 = unlimited). Omit for a flat tag lookup."
-                        "EXTREME WARNING: NEVER call this with expand=tue without knowing what you'll get back!"
                     ),
                 },
             },
