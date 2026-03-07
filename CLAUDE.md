@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Install dependencies
 poetry install
 
-# Run all checks (lint + typecheck + tests)
+# Run all checks (lint + typecheck + tests + integration tests)
 poe check
 
 # Individual checks
@@ -28,7 +28,7 @@ poe lens <command>
 
 ## Definition of done
 
-Always run `poe check` before considering a task complete. It runs lint, typecheck, and tests in sequence — all three must pass.
+Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, and integration tests in sequence — all four must pass.
 
 ## Cloud environment (Claude Code on claude.ai)
 
@@ -52,8 +52,8 @@ Lens is a CLI tool for managing AI-assisted narrative creation. A **Lens project
 lens/
   cli/           # Typer CLI layer (argument parsing, error display)
     main.py      # Entry point + preflight callback
-    commands/    # Non-AI commands (init, use, kb, pin, stats, rollback, dnd)
-    operators/   # AI operator CLI adapters (write, edit, section, play)
+    commands/    # Non-AI commands (init, use, kb, pin, stats, rollback, commit, checkpoint, dnd)
+    operators/   # AI operator CLI adapters (write, edit, section, play, design)
     test/        # CLI unit tests
   core/          # Business logic (no Typer dependency)
     project.py   # Git/project root discovery, active narrative resolution
@@ -67,6 +67,7 @@ lens/
     address.py   # NarrativeAddress: typed path + line + operator location
     llm.py       # OpenAI-compatible LLM client (streaming + tool calls)
     tools.py     # OperatorToolDef + tool registry (operators as LLM tools)
+    command_tools.py # Inline KB lookup tools callable mid-LLM-generation (design uses these)
     chain.py     # ChainSpec: deferred operator chaining within a transaction
     exceptions.py # Shared exception types
     commands/    # Core implementations for non-operator commands
@@ -74,8 +75,8 @@ lens/
     test/        # Core unit tests
       integration/  # Integration tests
   dnd/           # Dataset-specific package (commands, operators when dnd in scope)
-    commands/
-    operators/
+    commands/    # D&D commands (balance_encounter)
+    operators/   # D&D operators (play)
     test/        # D&D unit tests
 datasets/
   testing/       # Minimal dataset for integration tests
@@ -109,7 +110,7 @@ Closing tags: `[/section:ch1]: #`. Self-closing: `[section:ch1/]: #`.
 
 Operators can register themselves as **LLM tools** via `tools.py` (`register_operator_tool`, `OperatorToolDef`). When the active session includes a dataset that unlocks an operator-tool, the LLM can invoke other operators as tool calls mid-response. Tool calls are dispatched by the `operator.py` loop and share the same storage transaction. Operators can also **chain** to another operator on completion via `chain.py` (`ChainSpec`) — chained operators inherit the same storage transaction.
 
-**`play` operator** (`operators/play.py`): GM-voice narrative operator. Requires at least one KB object tagged `pc` to be pinned — the LLM knows who the player characters are and writes from the GM's perspective without narrating PC decisions. Dataset-gated: only available when the `dnd` dataset (or another RPG dataset) is selected in `lens.toml`.
+**`play` operator** (`dnd/operators/play.py`): GM-voice narrative operator. Requires at least one KB object tagged `pc` to be pinned — the LLM knows who the player characters are and writes from the GM's perspective without narrating PC decisions. Dataset-gated: only available when the `dnd` dataset (or another RPG dataset) is selected in `lens.toml`.
 
 **Context assembly** (`context.py`): `crawl()` collects `kb_pin`/`kb_unpin` from ancestor front matters (walking from root to cursor), resolves linked KB objects, then passes everything to `assemble_prompt()` which formats `[RELEVANT KNOWLEDGE]`, `[PREVIOUS EVENTS SUMMARY]`, `[CURRENT PASSAGE]`, and `[TASK]` blocks into `[system, user]` messages.
 
