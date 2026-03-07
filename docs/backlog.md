@@ -37,7 +37,10 @@
 
 ## General Backlog
 
-- Add a role marker so we know which character is acting?
+- Make the `> [PLAYER]` marker smarter:
+    - Select a PC with `-as alice` (implies `pc.` type prefix, must be pinned PC) to say `> [ALICE]` (uppercase the key)
+    - Character sticks until you pick another one (operator needs to look back)
+    - If there is only one pinned PC, it's auto-selected (and therefore can't change)
 - **`attach` Operator** — Attach media (images, maps, references) within a node; optionally generate descriptive text from images.
 - **Background KB extraction** *(infrastructure, not a player operator)*
   Faceted context compression: the write-side complement to RAG. A cheap/fast model (8B or equivalent) runs over recently committed narrative and updates opted-in KB objects using per-type extraction instructions. This also replaces any need for a dedicated `lore` operator: mid-campaign world amendments are just free `agent` chat, and extraction at checkpoint makes them stick into the right KB objects. Key design decisions:

@@ -36,7 +36,7 @@ SYSTEM_PROMPT = (
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 
 INSTRUCTION_WITH_PROMPT = (
-    "> [Player] {prompt}\n\n---\n\n"
+    "> [PLAYER] {prompt}\n\n---\n\n"
     "Continue the scene following the player's input above. "
     "Then yield to the user so the player(s) can act when appropriate. "
     "HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
@@ -66,7 +66,7 @@ class PlayOperator(Operator):
 
     def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt") or ""
-        return f"> [Player] {prompt}\n\n---\n\n"
+        return f"> [PLAYER] {prompt}\n\n---\n\n"
 
     @classmethod
     def check_requirements(
