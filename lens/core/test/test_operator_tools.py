@@ -754,6 +754,7 @@ class TestRunInlineWithTools(unittest.TestCase):
             on_confirm: Any,
             *,
             storage: Any = None,
+            llm_id: Any = None,
         ) -> None:
             invoked.append(args)
 
@@ -875,8 +876,8 @@ class TestWritePlayToolChain(unittest.TestCase):
         self.assertIn("flickering campfire", content)
         self.assertEqual(call_count, 2)
 
-    def test_play_calls_write_tool(self) -> None:
-        """Simulate: play's LLM returns a tool call for write, write returns text."""
+    def test_play_cannot_call_write_tool(self) -> None:
+        """Play excludes write from its tools; a tool call for write is treated as unknown and play's text is written."""
         play_final = FinalPayload(
             text="You approach the gates of the city.",
             tool_call=ToolCall(
@@ -887,20 +888,13 @@ class TestWritePlayToolChain(unittest.TestCase):
             usage=None,
             interrupted=False,
         )
-        write_final = FinalPayload(
-            text="Inside the city, merchants hawked their wares.",
-            tool_call=None,
-            usage=None,
-            interrupted=False,
-        )
 
         call_count = 0
 
         async def _fake_stream(*args: Any, **kwargs: Any) -> Any:
             nonlocal call_count
             call_count += 1
-            final = play_final if call_count == 1 else write_final
-            yield StreamEvent(final=final)
+            yield StreamEvent(final=play_final)
 
         with patch("lens.core.operator.generate_stream", side_effect=_fake_stream):
             with patch.object(PlayOperator, "check_requirements"):
@@ -920,8 +914,7 @@ class TestWritePlayToolChain(unittest.TestCase):
         content = cursor.md_path().read_text(encoding="utf-8")
 
         self.assertIn("You approach the gates", content)
-        self.assertIn("merchants hawked", content)
-        self.assertEqual(call_count, 2)
+        self.assertEqual(call_count, 1)
 
     def test_depth_one_without_confirm_raises(self) -> None:
         """A second-level tool call with no on_confirm callback raises OperatorError."""
@@ -933,12 +926,11 @@ class TestWritePlayToolChain(unittest.TestCase):
         )
         second_final = FinalPayload(
             text="Stars appeared overhead.",
-            tool_call=ToolCall(id="c2", name="write", arguments={"prompt": "y"}),
+            tool_call=ToolCall(
+                id="c2", name="section", arguments={"id": "ch1", "prompt": "y"}
+            ),
             usage=None,
             interrupted=False,
-        )
-        third_final = FinalPayload(
-            text="The end.", tool_call=None, usage=None, interrupted=False
         )
 
         call_count = 0
@@ -948,10 +940,8 @@ class TestWritePlayToolChain(unittest.TestCase):
             call_count += 1
             if call_count == 1:
                 yield StreamEvent(final=first_final)
-            elif call_count == 2:
-                yield StreamEvent(final=second_final)
             else:
-                yield StreamEvent(final=third_final)
+                yield StreamEvent(final=second_final)
 
         with patch("lens.core.operator.generate_stream", side_effect=_fake_stream):
             with patch.object(PlayOperator, "check_requirements"):
@@ -985,6 +975,7 @@ class TestWritePlayToolChain(unittest.TestCase):
             on_confirm: Any,
             *,
             storage: Any = None,
+            llm_id: Any = None,
         ) -> None:
             invoked.append(args)
 

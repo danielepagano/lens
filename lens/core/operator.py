@@ -78,6 +78,9 @@ class Operator(ABC):
     ``write``) keep the default of ``False`` so there is no tool-call overhead.
     """
 
+    excluded_operator_tools: ClassVar[frozenset[str]] = frozenset()
+    """Operator tool names to omit from this operator's tool list (e.g. play excludes write)."""
+
     @property
     @abstractmethod
     def system_prompt(self) -> str: ...
@@ -483,6 +486,7 @@ class Operator(ABC):
             *,
             storage: Storage | None = None,
             cursor: NarrativeNode | None = None,
+            llm_id: str | None = None,
         ) -> None:
             raw = args or {}
             pins = cls.extract_list(raw, "kb_pin")
@@ -493,7 +497,7 @@ class Operator(ABC):
                 prompt=raw.get("prompt"),
                 pins=pins,
                 unpins=unpins,
-                llm_id=None,
+                llm_id=llm_id,
                 retry=False,
                 on_token=on_token,
                 on_confirm=on_confirm,
@@ -553,6 +557,13 @@ class Operator(ABC):
                 continue
             return seg.annotation
         return None
+
+    def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
+        """Optional text to write before the LLM output when starting a fresh inline run.
+
+        Override in subclasses (e.g. play) to persist the user prompt in the narrative.
+        """
+        return ""
 
     def write_start(self, node: NarrativeNode, tag: str, content: str) -> None:
         """Atomically write an open tag, generated content, and close tag to the node."""
@@ -774,7 +785,11 @@ class Operator(ABC):
         crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
 
         registry = get_tool_registry(session.project_root)
-        available_tools = {n: v for n, v in registry.items() if n != cls.name}
+        available_tools = {
+            n: v
+            for n, v in registry.items()
+            if n != cls.name and n not in cls.excluded_operator_tools
+        }
 
         content: str = ""
         tool_call: ToolCall | None = None
@@ -909,6 +924,9 @@ class Operator(ABC):
 
         storage = chain_storage if chain_storage is not None else session.new_storage(owner=owner)
         op = cls(storage, narrative)
+        content_prefix = op.content_prefix_for_fresh(ann_params)
+        if content_prefix:
+            content = content_prefix + content
         op.write_start(cursor, tag, content)
 
     @classmethod
@@ -964,6 +982,7 @@ class Operator(ABC):
         invoke_result = await invoke_fn(
             args_for_op, session, narrative, depth, on_token, on_confirm,
             storage=op.storage,
+            llm_id=llm_id,
         )
 
         chain_cursor: NarrativeNode | None = None
@@ -982,6 +1001,7 @@ class Operator(ABC):
                 on_token=on_token,
                 on_confirm=on_confirm,
                 cursor_override=chain_cursor,
+                llm_id=llm_id,
             )
 
     @classmethod
@@ -996,6 +1016,7 @@ class Operator(ABC):
         on_token: Callable[[str], Awaitable[None]] | None,
         on_confirm: Callable[[str, str], Awaitable[bool]] | None,
         cursor_override: NarrativeNode | None = None,
+        llm_id: str | None = None,
     ) -> None:
         """Run a chained operator, then recursively run any chain in its args."""
         registry = get_tool_registry(session.project_root)
@@ -1016,7 +1037,7 @@ class Operator(ABC):
             )
         next_args = dict(chain_spec.arguments)
         next_chain = ChainSpec.from_dict(next_args.pop("chain", None))
-        invoke_kwargs: dict[str, Any] = {"storage": storage}
+        invoke_kwargs: dict[str, Any] = {"storage": storage, "llm_id": llm_id}
         if cursor_override is not None:
             invoke_kwargs["cursor"] = cursor_override
         await invoke_fn(
@@ -1032,6 +1053,7 @@ class Operator(ABC):
                 depth=next_depth,
                 on_token=on_token,
                 on_confirm=on_confirm,
+                llm_id=llm_id,
             )
 
     @classmethod
@@ -1102,6 +1124,9 @@ class Operator(ABC):
         if not content.strip():
             return
 
+        content_prefix = op.content_prefix_for_fresh(existing_ann.params)
+        if content_prefix:
+            content = content_prefix + content
         op.write_append(cursor, fresh_ann, content)
         print(f"Retried {cls.name} in {cursor.path_str()}", file=sys.stderr)
 
@@ -1154,6 +1179,9 @@ class Operator(ABC):
         if not content.strip():
             return
 
+        content_prefix = op.content_prefix_for_fresh(new_params)
+        if content_prefix:
+            content = content_prefix + content
         op.write_append(cursor, fresh_ann, content)
         print(f"Updated and retried {cls.name} in {cursor.path_str()}", file=sys.stderr)
 

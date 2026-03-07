@@ -422,7 +422,7 @@ async def _stream_once(
         sep = "─" * 60
         if raw_response_parts:
             logger.info(
-                "LLM RESPONSE (raw, reasoning/think tags not saved)\n%s\n%s\n%s",
+                "LLM RESPONSE\n%s\n%s\n%s",
                 sep,
                 "".join(raw_response_parts),
                 sep,

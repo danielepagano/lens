@@ -35,13 +35,11 @@ SYSTEM_PROMPT = (
 
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 
-INSTRUCTION_CONTINUE = "Continue the scene, then pause for player response. \
-HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
-
 INSTRUCTION_WITH_PROMPT = (
-    "Continue the scene following these instructions: '{prompt}'. "
-    "Then yield to the user to allow their player(s) to act when appropriate. \
-HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
+    "> [Player] {prompt}\n\n---\n\n"
+    "Continue the scene following the player's input above. "
+    "Then yield to the user so the player(s) can act when appropriate. "
+    "HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
 )
 
 
@@ -54,6 +52,7 @@ class PlayOperator(Operator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = False
     limited_to_datasets: ClassVar[list[str]] = ['dnd']
+    excluded_operator_tools: ClassVar[frozenset[str]] = frozenset({"write"})
 
     @property
     def system_prompt(self) -> str:
@@ -61,7 +60,13 @@ class PlayOperator(Operator):
 
     def build_instruction(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt")
-        return INSTRUCTION_WITH_PROMPT.format(prompt=prompt) if prompt else INSTRUCTION_CONTINUE
+        if not prompt:
+            raise OperatorError("play requires a prompt (e.g. what the player says or does)")
+        return INSTRUCTION_WITH_PROMPT.format(prompt=prompt)
+
+    def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
+        prompt = params.get("prompt") or ""
+        return f"> [Player] {prompt}\n\n---\n\n"
 
     @classmethod
     def check_requirements(
@@ -122,6 +127,7 @@ PlayOperator.register_as_tool(
                     "description": "KB IDs to unpin for this call",
                 },
             },
+            "required": ["prompt"],
         },
         prompt_snippet=(
             "Use the 'play' tool when the narrative reaches a moment that requires player "

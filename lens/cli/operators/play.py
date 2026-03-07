@@ -21,9 +21,9 @@ async def _print_token(chunk: str) -> None:
 
 @app.callback()
 def play(
-    prompt: str | None = typer.Argument(
-        None,
-        help="Scene direction or situation for the player-facing moment",
+    prompt: str = typer.Argument(
+        ...,
+        help="Scene direction or situation for the player-facing moment (e.g. what the player says or does)",
     ),
     pin: list[str] = pin_option(
         "KB ID to pin (repeatable); at least one must be tagged 'pc'"
