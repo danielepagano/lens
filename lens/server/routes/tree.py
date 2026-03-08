@@ -16,7 +16,6 @@ def _node_to_dict(node: NarrativeNode) -> dict[str, Any]:
     return {
         "address": str(node.to_address()),
         "key": node.key_path[-1] if node.key_path else node.narrative_root.name,
-        "is_folder": node.is_folder_node(),
         "children": children,
     }
 

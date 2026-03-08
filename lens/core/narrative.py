@@ -141,6 +141,8 @@ class NarrativeNode:
         st.delete_file(leaf_md)
 
     def child_keys(self) -> list[str]:
+        if self.is_leaf():
+            return []
         parent = self.md_path().parent
         keys: set[str] = set()
         for p in parent.iterdir():

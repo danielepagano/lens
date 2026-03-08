@@ -35,6 +35,5 @@ def node(address: str, session: ProjectSession = Depends(get_session)) -> dict[s
     return {
         "address": str(addr.node_only()),
         "content": content,
-        "is_folder": node_obj.is_folder_node(),
         "children": node_obj.child_keys(),
     }

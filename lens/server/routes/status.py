@@ -11,8 +11,12 @@ from lens.server.dependencies import get_session
 router = APIRouter()
 
 
-@router.get("/status")
-def status(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
+@router.get("/health")
+def health(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
+    return {"status": "ok"}
+
+@router.get("/stats")
+def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     result = get_stats(session)
     return {
         "active_narrative": session.active_narrative.narrative_root.name
