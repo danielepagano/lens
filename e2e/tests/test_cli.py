@@ -14,7 +14,6 @@ Running::
 
 from __future__ import annotations
 
-import io
 import shutil
 import subprocess
 import sys
@@ -55,25 +54,9 @@ def dnd_llm() -> Generator[FakeLLMServer, None, None]:
 @pytest.fixture(scope="module")
 def dnd_project(dnd_llm: FakeLLMServer) -> Generator[Path, None, None]:
     """A Lens project with the ``dnd`` dataset enabled and a fake LLM."""
-    import tomllib
-    import tomli_w
-
     tmp = tempfile.mkdtemp(prefix="lens_cli_test_")
     project_dir = Path(tmp)
-
-    # Create the base project (uses "testing" dataset, with content).
-    setup_test_project(project_dir, dnd_llm.base_url)
-
-    # Swap the dataset from "testing" to "dnd".
-    lens_toml = project_dir / "lens.toml"
-    with lens_toml.open("rb") as fh:
-        cfg = tomllib.load(fh)
-    if isinstance(cfg.get("project"), dict):
-        cfg["project"]["datasets"] = ["dnd"]
-    with io.BytesIO() as buf:
-        tomli_w.dump(cfg, buf)
-        lens_toml.write_bytes(buf.getvalue())
-
+    setup_test_project(project_dir, dnd_llm.base_url, dataset="dnd")
     yield project_dir
     shutil.rmtree(tmp, ignore_errors=True)
 
