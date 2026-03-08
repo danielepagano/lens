@@ -11,6 +11,16 @@ Or as a context manager::
 
     with FakeLLMServer() as server:
         print(server.base_url)
+
+Special triggers
+----------------
+The fake LLM recognises one magic trigger in the request messages:
+
+``FAKE_SECRET_TRIGGER``
+    If this string appears anywhere in the concatenated message content, the
+    response includes an ``ai:secret:`` block with ``FAKE_SECRET_PLAINTEXT``.
+    The storage layer ROT13-encodes that block on write; tests can assert the
+    stored file contains ``FAKE_SECRET_ROT13`` and not the plaintext.
 """
 
 from __future__ import annotations
@@ -26,6 +36,11 @@ LOREM = (
     "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
 )
 
+# Secret-encoding test support.
+FAKE_SECRET_TRIGGER = "EMIT_FAKE_SECRET"
+FAKE_SECRET_PLAINTEXT = "the king betrayed everyone"
+FAKE_SECRET_ROT13 = "gur xvat orgenlrq rirelbar"
+
 
 class _FakeLLMHandler(BaseHTTPRequestHandler):
     """Serve one fake SSE streaming completion per POST to /v1/chat/completions."""
@@ -37,7 +52,14 @@ class _FakeLLMHandler(BaseHTTPRequestHandler):
             data: dict[str, Any] = json.loads(body) if body else {}
             messages: list[dict[str, Any]] = data.get("messages", [])
             total_chars = sum(len(m.get("content", "")) for m in messages)
-            response_text = f"{LOREM} [input:{total_chars}]"
+            msg_text = " ".join(m.get("content", "") for m in messages)
+
+            if FAKE_SECRET_TRIGGER in msg_text:
+                response_text = (
+                    f"{LOREM}\n\n<!-- ai:secret:\n{FAKE_SECRET_PLAINTEXT}\n-->"
+                )
+            else:
+                response_text = f"{LOREM} [input:{total_chars}]"
 
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -66,6 +88,9 @@ class FakeLLMServer:
     Responds to any POST request with a Lorem Ipsum stream followed by
     ``[input:<N>]`` where N is the total character count of the messages sent.
     This lets tests verify that context is being assembled and sent correctly.
+
+    If ``FAKE_SECRET_TRIGGER`` appears in the messages, responds with a Lorem
+    Ipsum stream that includes an ``ai:secret:`` block (see module docstring).
     """
 
     def __init__(self) -> None:
