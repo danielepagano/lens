@@ -209,3 +209,6 @@ __marimo__/
 # Lens
 .DS_Store
 datasets/dnd/ddb_out/
+
+# Lens dev/test project (created by scripts/dev_project.py and local testing)
+.dev-project/

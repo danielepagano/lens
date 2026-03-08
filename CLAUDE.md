@@ -28,7 +28,47 @@ poe lens <command>
 
 ## Definition of done
 
-Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, and integration tests in sequence — all four must pass.
+Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, integration tests, and e2e tests in sequence — all must pass.
+
+## End-to-end test infrastructure
+
+Everything under `e2e/` exercises the full stack against a real (but
+throwaway) Lens project.
+
+```bash
+poe test-e2e          # runs all e2e tests (no browser required)
+pytest e2e/ -n 0 -v   # same, verbose
+```
+
+### Building blocks
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `FakeLLMServer` | `lens/testing/fake_llm.py` | In-process HTTP server that streams Lorem Ipsum as OpenAI-compatible SSE. Start with `.start()`, use `.base_url` in `lens.toml`. |
+| `setup_test_project()` | `lens/testing/project.py` | Creates a full throwaway Lens project (git repo + `lens.toml` + KB objects + opening passage). Accepts `dataset=` to swap in any dataset (e.g. `"dnd"`). Returns a live `ProjectSession`. |
+| `e2e/conftest.py` | session fixtures | Wires `fake_llm_server` → `lens_project_dir` → `live_server_url` (uvicorn on a free port). Also sets `base_url` for Playwright. Supports `LENS_DEV_SERVER_URL` env override to test against a running dev server. |
+
+### Test files
+
+- **`e2e/tests/test_api_smoke.py`** — API tests using plain `urllib.request`. Covers `/health`, `/stats`, `/tree`, `/node/<name>`.
+- **`e2e/tests/test_cli.py`** — CLI tests with the `dnd` dataset. Runs `lens stats`, `lens kb get/with-tag`, and `lens write` as subprocesses. Has its own module-scoped `dnd_project` fixture (uses `setup_test_project(dataset="dnd")`).
+- **`e2e/tests/test_browser.py`** — Playwright placeholder. Auto-skipped when Chromium is not installed. Run `playwright install chromium` to enable.
+
+### Using `setup_test_project` in new tests
+
+```python
+from lens.testing.fake_llm import FakeLLMServer
+from lens.testing.project import setup_test_project
+
+with FakeLLMServer() as llm:
+    project_dir = Path(tempfile.mkdtemp())
+    session = setup_test_project(project_dir, llm.base_url, dataset="dnd")
+    # project_dir is a real git repo with lens.toml, narrative, KB, written passage
+```
+
+The fake LLM always responds with Lorem Ipsum followed by `[input:<N>]` where N
+is the total character count of the messages sent — useful for verifying context
+assembly.
 
 ## Cloud environment (Claude Code on claude.ai)
 

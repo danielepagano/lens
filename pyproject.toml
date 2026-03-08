@@ -28,17 +28,31 @@ poethepoet = "^0.27.0"
 pytest = "^8.0.0"
 pytest-xdist = "^3.0.0"
 
+[tool.poetry.group.e2e.dependencies]
+pytest-playwright = "^0.5.0"
+
 [tool.poe.tasks]
 lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
 pyright = "pyright"
 lint = "ruff check . --fix"
-test = "pytest lens/core/test lens/cli/test lens/dnd/test -n auto --ignore=lens/core/test/integration -q"
+test = "pytest lens/core/test lens/cli/test lens/server/test lens/dnd/test -n auto --ignore=lens/core/test/integration -q"
 test-integration = "pytest lens/core/test/integration -n 0 -q"
-check = { sequence = ["lint", "pyright", "test", "test-integration"] }
+test-e2e = "pytest e2e/ -n 0 -q"
+dev = { cmd = "python scripts/dev_project.py" }
+check = { sequence = ["lint", "pyright", "test", "test-integration", "test-e2e"] }
 
 [tool.pytest.ini_options]
 addopts = "-W ignore::SyntaxWarning:pysbd"
 testpaths = ["lens/core/test", "lens/cli/test", "lens/dnd/test"]
+filterwarnings = [
+    # Python 3.14 deprecations in third-party libs — not our code
+    "ignore:'asyncio\\.iscoroutinefunction' is deprecated",
+    "ignore:'asyncio\\.AbstractEventLoopPolicy' is deprecated",
+    "ignore:'asyncio\\.set_event_loop_policy' is deprecated",
+    # websockets library deprecating its legacy API
+    "ignore:websockets\\.legacy is deprecated",
+    "ignore:websockets\\.server\\.WebSocketServerProtocol is deprecated",
+]
 
 [build-system]
 requires = ["poetry-core>=1.9.0"]
