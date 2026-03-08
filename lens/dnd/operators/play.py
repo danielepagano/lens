@@ -14,10 +14,18 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from lens.core.narrative import NarrativeNode
+from lens.core.context import CrawlResult
 from lens.core.operator import Operator, OperatorError
-from lens.core.project import ProjectSession
 from lens.core.tools import OperatorToolDef
+
+
+def _pc_marker(params: dict[str, Any]) -> str:
+    key = params.get("pc_key")
+    if not key:
+        raise OperatorError(
+            "play could not resolve PC key (no pinned pc.* in context)"
+        )
+    return key.upper()
 
 # ---------------------------------------------------------------------------
 # Prompt constants
@@ -35,12 +43,13 @@ SYSTEM_PROMPT = (
 
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 
-INSTRUCTION_WITH_PROMPT = (
-    "> [PLAYER] {prompt}\n\n---\n\n"
-    "Continue the scene following the player's input above. "
-    "Then yield to the user so the player(s) can act when appropriate. "
-    "HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
-)
+def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
+    return (
+        f"> [{pc_marker}] {prompt}\n\n---\n\n"
+        "Continue the scene following the player's input above. "
+        "Then yield to the user so the player(s) can act when appropriate. "
+        "HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -58,37 +67,45 @@ class PlayOperator(Operator):
     def system_prompt(self) -> str:
         return SYSTEM_PROMPT
 
+    @classmethod
+    def enrich_params(cls, crawl_result: CrawlResult, params: dict[str, Any]) -> None:
+        pinned_pcs = [p for p in crawl_result.pinned_ids if p.startswith("pc.")]
+        as_pc = params.pop("as_pc", None)
+        if as_pc is not None:
+            pc_id = f"pc.{as_pc}" if not as_pc.startswith("pc.") else as_pc
+            if pc_id not in pinned_pcs:
+                raise OperatorError(
+                    f"-as {as_pc!r} is not a pinned PC (pinned pc.*: "
+                    + ", ".join(sorted(pinned_pcs))
+                    + ")"
+                )
+            params["pc_key"] = pc_id.split(".", 1)[1]
+            return
+        for pid in crawl_result.pinned_ids:
+            if pid.startswith("pc."):
+                params["pc_key"] = pid.split(".", 1)[1]
+                return
+
     def build_instruction(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt")
         if not prompt:
             raise OperatorError("play requires a prompt (e.g. what the player says or does)")
-        return INSTRUCTION_WITH_PROMPT.format(prompt=prompt)
+        return _instruction_with_prompt(prompt, _pc_marker(params))
 
     def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt") or ""
-        return f"> [PLAYER] {prompt}\n\n---\n\n"
+        return f"> [{_pc_marker(params)}] {prompt}\n\n---\n\n"
 
     @classmethod
-    def check_requirements(
-        cls,
-        session: ProjectSession,
-        cursor: NarrativeNode,
-        pins: list[str],
-    ) -> None:
+    def check_requirements(cls, crawl_result: CrawlResult) -> None:
         """Require ``rules.dnd``, ``rules.engagement``, and at least one ``pc.*`` pin.
 
-        Checks explicit *pins* plus any ``kb_pin`` entries in the cursor's
-        front matter.
+        Uses ``crawl_result.pinned_ids`` — the canonical effective pin list
+        after the full ancestor walk — so pins at any level in the hierarchy
+        (including ancestor nodes and operator annotations) are seen correctly.
         """
-        fm_raw = cursor.front_matter().get("kb_pin", [])
-        fm_pins: list[str] = (
-            [p for p in fm_raw if isinstance(p, str)]  # pyright: ignore[reportUnknownVariableType]
-            if isinstance(fm_raw, list) else []
-        )
-        all_pins = fm_pins + pins
-        bases = {p.rstrip("+") for p in all_pins}
-
-        missing = REQUIRED_PINS - bases
+        pinned = set(crawl_result.pinned_ids)
+        missing = REQUIRED_PINS - pinned
         if missing:
             raise OperatorError(
                 "play requires the following KB objects to be pinned: "
@@ -96,7 +113,7 @@ class PlayOperator(Operator):
                 + " — add them with --pin or kb_pin front matter"
             )
 
-        if not any(b.startswith("pc.") for b in bases):
+        if not any(pid.startswith("pc.") for pid in crawl_result.pinned_ids):
             raise OperatorError(
                 "play requires at least one player character (pc.*) to be pinned — "
                 "add a pc.* KB object with --pin or kb_pin front matter"

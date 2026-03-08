@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from lens.core.context import CrawlResult
 from lens.core.llm import FinalPayload, StreamEvent, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator, OperatorError
@@ -572,54 +573,85 @@ class TestDispatchToolCall(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
+def _play_result(pinned_ids: list[str]) -> CrawlResult:
+    return CrawlResult(knowledge=[], previous_summaries=[], current_content=None, pinned_ids=pinned_ids)
+
+
 class TestPlayOperatorRequirements(unittest.TestCase):
-    def setUp(self) -> None:
-        self._tmp = tempfile.TemporaryDirectory()
-        tmp = Path(self._tmp.name)
-        self.root, self.narrative = _make_project(_init_repo(tmp))
-        self.session = ProjectSession(git_root=self.root, project_root=self.root)
-        self.cursor = self.narrative.find_cursor()
-
-    def tearDown(self) -> None:
-        self._tmp.cleanup()
-
     def test_no_pins_raises(self) -> None:
         with self.assertRaises(OperatorError) as ctx:
-            PlayOperator.check_requirements(self.session, self.cursor, pins=[])
+            PlayOperator.check_requirements(_play_result([]))
         self.assertIn("rules.dnd", str(ctx.exception))
         self.assertIn("rules.engagement", str(ctx.exception))
 
     def test_missing_rules_pins_raises(self) -> None:
         # Has pc.hero but missing rules pins
         with self.assertRaises(OperatorError) as ctx:
-            PlayOperator.check_requirements(
-                self.session, self.cursor, pins=["pc.hero"]
-            )
+            PlayOperator.check_requirements(_play_result(["pc.hero"]))
         self.assertIn("rules.dnd", str(ctx.exception))
 
     def test_missing_pc_pin_raises(self) -> None:
         # Has rules pins but no pc.* pin
         with self.assertRaises(OperatorError) as ctx:
-            PlayOperator.check_requirements(
-                self.session, self.cursor,
-                pins=["rules.dnd", "rules.engagement"],
-            )
+            PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement"]))
         self.assertIn("pc.", str(ctx.exception))
 
     def test_all_required_pins_passes(self) -> None:
         # Should not raise with rules + pc.* pins
-        PlayOperator.check_requirements(
-            self.session, self.cursor,
-            pins=["rules.dnd", "rules.engagement", "pc.hero"],
-        )
+        PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement", "pc.hero"]))
 
-    def test_front_matter_pins_pass(self) -> None:
-        # Pin all required objects via front matter, no explicit pins
-        cursor_md = self.cursor.md_path()
-        cursor_md.write_text(
-            "[\n  kb_pin:\n  - rules.dnd\n  - rules.engagement\n  - pc.hero\n]: #\n# test\n"
+    def test_ancestor_pins_are_visible(self) -> None:
+        # Verifies the fix: pc.* resolved anywhere in the ancestor hierarchy is visible
+        PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement", "pc.theron"]))
+
+
+class TestPlayOperatorEnrichParams(unittest.TestCase):
+    def test_enrich_params_sets_pc_key_from_first_pinned_pc(self) -> None:
+        result = _play_result(
+            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
         )
-        PlayOperator.check_requirements(self.session, self.cursor, pins=[])
+        params: dict[str, Any] = {"prompt": "hello"}
+        PlayOperator.enrich_params(result, params)
+        self.assertEqual(params.get("pc_key"), "alice")
+
+    def test_enrich_params_as_pc_sets_pc_key_and_removes_as_pc(self) -> None:
+        result = _play_result(
+            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+        )
+        params: dict[str, Any] = {"prompt": "hello", "as_pc": "bob"}
+        PlayOperator.enrich_params(result, params)
+        self.assertEqual(params.get("pc_key"), "bob")
+        self.assertNotIn("as_pc", params)
+
+    def test_enrich_params_as_pc_invalid_raises(self) -> None:
+        result = _play_result(
+            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+        )
+        params: dict[str, Any] = {"prompt": "hello", "as_pc": "charlie"}
+        with self.assertRaises(OperatorError) as ctx:
+            PlayOperator.enrich_params(result, params)
+        self.assertIn("charlie", str(ctx.exception))
+        self.assertIn("pinned", str(ctx.exception))
+
+
+class TestPlayOperatorPcMarker(unittest.TestCase):
+    def test_build_instruction_uses_pc_key_uppercase(self) -> None:
+        op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
+        out = op.build_instruction({"prompt": "I roll 18", "pc_key": "alice"})
+        self.assertIn("> [ALICE] I roll 18", out)
+
+    def test_content_prefix_uses_pc_key_uppercase(self) -> None:
+        op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
+        out = op.content_prefix_for_fresh(
+            {"prompt": "I roll 18", "pc_key": "alice"}
+        )
+        self.assertEqual(out, "> [ALICE] I roll 18\n\n---\n\n")
+
+    def test_no_pc_key_raises(self) -> None:
+        op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
+        with self.assertRaises(OperatorError) as ctx:
+            op.content_prefix_for_fresh({"prompt": "hello"})
+        self.assertIn("pc key", str(ctx.exception).lower())
 
 
 # ---------------------------------------------------------------------------
@@ -807,12 +839,15 @@ class TestWritePlayToolChain(unittest.TestCase):
         )
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
 
-        # Create a PC in the knowledge base and tag it
+        # Create a PC in the knowledge base (play resolves pc_key from pinned pc.*)
         from lens.core.knowledge import KnowledgeStore
         KnowledgeStore.clear_registry()
         kb_dir = self.root / "knowledge" / "person"
         kb_dir.mkdir(parents=True)
         (kb_dir / "aria.md").write_text("Aria, a ranger.\n")
+        pc_dir = self.root / "knowledge" / "pc"
+        pc_dir.mkdir(parents=True)
+        (pc_dir / "aria.md").write_text("Aria, a ranger.\n")
         subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
         subprocess.run(["git", "commit", "-m", "kb"], cwd=self.root, capture_output=True, check=True)
         kb = KnowledgeStore.for_project(self.root)
@@ -833,7 +868,7 @@ class TestWritePlayToolChain(unittest.TestCase):
             tool_call=ToolCall(
                 id="call_1",
                 name="play",
-                arguments={"prompt": "approach the campfire"},
+                arguments={"prompt": "approach the campfire", "kb_pin": ["pc.aria"]},
             ),
             usage=None,
             interrupted=False,
@@ -903,7 +938,7 @@ class TestWritePlayToolChain(unittest.TestCase):
                         session=self.session,
                         narrative=self.narrative,
                         prompt="arrive at the city",
-                        pins=["person.aria"],
+                        pins=["pc.aria"],
                         unpins=[],
                         llm_id=None,
                         retry=False,
@@ -920,7 +955,11 @@ class TestWritePlayToolChain(unittest.TestCase):
         """A second-level tool call with no on_confirm callback raises OperatorError."""
         first_final = FinalPayload(
             text="The road continued.",
-            tool_call=ToolCall(id="c1", name="play", arguments={"prompt": "x"}),
+            tool_call=ToolCall(
+                id="c1",
+                name="play",
+                arguments={"prompt": "x", "kb_pin": ["pc.aria"]},
+            ),
             usage=None,
             interrupted=False,
         )

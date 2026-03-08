@@ -49,12 +49,15 @@ You must pin:
 - `rules.dnd` and `rules.engagement` (the ruleset and player–AI contract)
 - At least one `pc.*` KB object (so the LLM knows who the player characters are)
 
+Narrative output is prefixed with a player marker: `> [KEY]` where `KEY` is the pinned PC key (e.g. `pc.alice` → `[ALICE]`). With one pinned PC that key is used automatically; with multiple PCs use `-as <key>` to attribute the prompt to a specific pinned PC.
+
 ```bash
 lens play "the party enters a dimly lit tavern"
 lens play -p rules.dnd -p rules.engagement -p pc.hero
+lens play "I rolled 18" -as alice -p pc.alice -p pc.bob
 ```
 
-See the main [CLI reference](../cli/README.md#ai-operators) for shared options (`--pin`, `--unpin`, `--llm`, `--retry`).
+See the main [CLI reference](../cli/README.md#ai-operators) for shared options (`--pin`, `--unpin`, `--llm`, `--retry`). Use `-as` / `--as` to choose which pinned PC the prompt is attributed to (implies `pc.` prefix; the given key must be a pinned `pc.*`).
 
 ## D&D Beyond extractor (`tools/ddb-extract/`)
 
