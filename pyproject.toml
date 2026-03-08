@@ -45,6 +45,15 @@ check = { sequence = ["lint", "pyright", "test", "test-integration", "test-e2e"]
 [tool.pytest.ini_options]
 addopts = "-W ignore::SyntaxWarning:pysbd"
 testpaths = ["lens/core/test", "lens/cli/test", "lens/dnd/test"]
+filterwarnings = [
+    # Python 3.14 deprecations in third-party libs — not our code
+    "ignore:'asyncio\\.iscoroutinefunction' is deprecated",
+    "ignore:'asyncio\\.AbstractEventLoopPolicy' is deprecated",
+    "ignore:'asyncio\\.set_event_loop_policy' is deprecated",
+    # websockets library deprecating its legacy API
+    "ignore:websockets\\.legacy is deprecated",
+    "ignore:websockets\\.server\\.WebSocketServerProtocol is deprecated",
+]
 
 [build-system]
 requires = ["poetry-core>=1.9.0"]
