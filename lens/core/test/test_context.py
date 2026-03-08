@@ -89,6 +89,7 @@ class TestCrawlPinOrder(unittest.TestCase):
             self.assertEqual(len(r.knowledge), 2)
             self.assertIn("place.a", r.knowledge[0])
             self.assertIn("place.b", r.knowledge[1])
+            self.assertEqual(r.pinned_ids, ["place.a", "place.b"])
 
     def test_linked_expansion_preserves_pinning_order(self) -> None:
         """Crawl with + pin: explicit id before linked, and pinning order across levels."""
@@ -333,6 +334,8 @@ class TestCrawlMissingKb(unittest.TestCase):
             r = crawl(node)
             self.assertEqual(len(r.knowledge), 1)
             self.assertIn("place.a", r.knowledge[0])
+            # pinned_ids is parallel to knowledge — missing objects are excluded from both
+            self.assertEqual(r.pinned_ids, ["place.a"])
 
 
 class TestAssemblePrompt(unittest.TestCase):
@@ -440,6 +443,7 @@ class TestCrawlResultFromPins(unittest.TestCase):
             self.assertEqual(len(r.knowledge), 1)
             self.assertIn("person.amy", r.knowledge[0])
             self.assertIn("Amy is a hero", r.knowledge[0])
+            self.assertEqual(r.pinned_ids, ["person.amy"])
 
     def test_unpin_excludes_item(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -450,6 +454,7 @@ class TestCrawlResultFromPins(unittest.TestCase):
             self.assertEqual(len(r.knowledge), 1)
             self.assertIn("person.amy", r.knowledge[0])
             self.assertNotIn("place.x", r.knowledge[0])
+            self.assertEqual(r.pinned_ids, ["person.amy"])
 
     def test_linked_expansion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -463,6 +468,7 @@ class TestCrawlResultFromPins(unittest.TestCase):
             self.assertGreaterEqual(len(r.knowledge), 1)
             ids_found = [s for s in r.knowledge if "person.amy" in s or "place.market" in s]
             self.assertGreater(len(ids_found), 0)
+            self.assertGreaterEqual(len(r.pinned_ids), 1)
 
     def test_linked_expansion_order_deterministic(self) -> None:
         """Knowledge from linked expansion follows ordered_ids: explicit first, then linked."""
@@ -477,6 +483,7 @@ class TestCrawlResultFromPins(unittest.TestCase):
             self.assertEqual(len(r.knowledge), 2)
             self.assertIn("person.amy", r.knowledge[0])
             self.assertIn("place.market", r.knowledge[1])
+            self.assertEqual(r.pinned_ids, ["person.amy", "place.market"])
 
 
 class TestAssemblePromptKbEdit(unittest.TestCase):

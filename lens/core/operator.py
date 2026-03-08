@@ -456,16 +456,13 @@ class Operator(ABC):
         return found
 
     @classmethod
-    def check_requirements(
-        cls,
-        session: ProjectSession,
-        cursor: NarrativeNode,
-        pins: list[str],
-    ) -> None:
+    def check_requirements(cls, crawl_result: CrawlResult) -> None:
         """Override to raise :class:`OperatorError` if prerequisites are not met.
 
-        Called at the start of every fresh inline generation. The default
-        implementation imposes no requirements.
+        Called immediately after :func:`~lens.core.context.crawl` in fresh
+        inline generation.  Inspect ``crawl_result.pinned_ids`` for the
+        canonical effective pin list (ancestor hierarchy already resolved).
+        The default implementation imposes no requirements.
         """
 
     @classmethod
@@ -780,9 +777,8 @@ class Operator(ABC):
         probe_op = cls(session.new_storage(), narrative)
         tag = probe_op.build_open_tag(None, ann_params)
 
-        cls.check_requirements(session, cursor, pins)
-
         crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
+        cls.check_requirements(crawl_result)
 
         registry = get_tool_registry(session.project_root)
         available_tools = {

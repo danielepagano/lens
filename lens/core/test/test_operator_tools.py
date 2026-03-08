@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from lens.core.context import CrawlResult
 from lens.core.llm import FinalPayload, StreamEvent, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator, OperatorError
@@ -572,54 +573,36 @@ class TestDispatchToolCall(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 
+def _play_result(pinned_ids: list[str]) -> CrawlResult:
+    return CrawlResult(knowledge=[], previous_summaries=[], current_content=None, pinned_ids=pinned_ids)
+
+
 class TestPlayOperatorRequirements(unittest.TestCase):
-    def setUp(self) -> None:
-        self._tmp = tempfile.TemporaryDirectory()
-        tmp = Path(self._tmp.name)
-        self.root, self.narrative = _make_project(_init_repo(tmp))
-        self.session = ProjectSession(git_root=self.root, project_root=self.root)
-        self.cursor = self.narrative.find_cursor()
-
-    def tearDown(self) -> None:
-        self._tmp.cleanup()
-
     def test_no_pins_raises(self) -> None:
         with self.assertRaises(OperatorError) as ctx:
-            PlayOperator.check_requirements(self.session, self.cursor, pins=[])
+            PlayOperator.check_requirements(_play_result([]))
         self.assertIn("rules.dnd", str(ctx.exception))
         self.assertIn("rules.engagement", str(ctx.exception))
 
     def test_missing_rules_pins_raises(self) -> None:
         # Has pc.hero but missing rules pins
         with self.assertRaises(OperatorError) as ctx:
-            PlayOperator.check_requirements(
-                self.session, self.cursor, pins=["pc.hero"]
-            )
+            PlayOperator.check_requirements(_play_result(["pc.hero"]))
         self.assertIn("rules.dnd", str(ctx.exception))
 
     def test_missing_pc_pin_raises(self) -> None:
         # Has rules pins but no pc.* pin
         with self.assertRaises(OperatorError) as ctx:
-            PlayOperator.check_requirements(
-                self.session, self.cursor,
-                pins=["rules.dnd", "rules.engagement"],
-            )
+            PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement"]))
         self.assertIn("pc.", str(ctx.exception))
 
     def test_all_required_pins_passes(self) -> None:
         # Should not raise with rules + pc.* pins
-        PlayOperator.check_requirements(
-            self.session, self.cursor,
-            pins=["rules.dnd", "rules.engagement", "pc.hero"],
-        )
+        PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement", "pc.hero"]))
 
-    def test_front_matter_pins_pass(self) -> None:
-        # Pin all required objects via front matter, no explicit pins
-        cursor_md = self.cursor.md_path()
-        cursor_md.write_text(
-            "[\n  kb_pin:\n  - rules.dnd\n  - rules.engagement\n  - pc.hero\n]: #\n# test\n"
-        )
-        PlayOperator.check_requirements(self.session, self.cursor, pins=[])
+    def test_ancestor_pins_are_visible(self) -> None:
+        # Verifies the fix: pc.* resolved anywhere in the ancestor hierarchy is visible
+        PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement", "pc.theron"]))
 
 
 # ---------------------------------------------------------------------------

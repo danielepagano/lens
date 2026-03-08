@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lens.core.annotations import decode_ai_secrets, strip_markdown_comments
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
@@ -24,6 +24,7 @@ class CrawlResult:
     knowledge: list[str]
     previous_summaries: list[str]
     current_content: str | None
+    pinned_ids: list[str] = field(default_factory=list[str])
 
 
 def _block(title: str, body: str) -> str:
@@ -109,6 +110,7 @@ def crawl(
     all_unpinned: set[str] = set(unpin_levels.keys())
 
     knowledge_formatted: list[str] = []
+    pinned_ids: list[str] = []
     if include_kb:
         effective_ids: list[str] = []
         all_objects: dict[str, KnowledgeObject] = {}
@@ -129,6 +131,7 @@ def crawl(
             obj = all_objects.get(cid)
             if obj is not None:
                 knowledge_formatted.append(obj.format(include_comments=False))
+                pinned_ids.append(cid)
 
     previous_summaries: list[str] = []
     current_content: str | None = None
@@ -151,6 +154,7 @@ def crawl(
         knowledge=knowledge_formatted,
         previous_summaries=previous_summaries,
         current_content=current_content,
+        pinned_ids=pinned_ids,
     )
 
 
@@ -199,15 +203,18 @@ def crawl_result_from_pins(
     effective_ids = [cid for cid in ordered_ids if cid.lower() not in unpinned_bases]
 
     knowledge_formatted: list[str] = []
+    result_pinned_ids: list[str] = []
     for cid in effective_ids:
         obj = objects.get(cid) or kb_store.get_objects([cid]).get(cid)
         if obj is not None:
             knowledge_formatted.append(obj.format(include_comments=False))
+            result_pinned_ids.append(cid)
 
     return CrawlResult(
         knowledge=knowledge_formatted,
         previous_summaries=[],
         current_content=None,
+        pinned_ids=result_pinned_ids,
     )
 
 

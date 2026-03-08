@@ -14,9 +14,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from lens.core.narrative import NarrativeNode
+from lens.core.context import CrawlResult
 from lens.core.operator import Operator, OperatorError
-from lens.core.project import ProjectSession
 from lens.core.tools import OperatorToolDef
 
 # ---------------------------------------------------------------------------
@@ -69,26 +68,15 @@ class PlayOperator(Operator):
         return f"> [PLAYER] {prompt}\n\n---\n\n"
 
     @classmethod
-    def check_requirements(
-        cls,
-        session: ProjectSession,
-        cursor: NarrativeNode,
-        pins: list[str],
-    ) -> None:
+    def check_requirements(cls, crawl_result: CrawlResult) -> None:
         """Require ``rules.dnd``, ``rules.engagement``, and at least one ``pc.*`` pin.
 
-        Checks explicit *pins* plus any ``kb_pin`` entries in the cursor's
-        front matter.
+        Uses ``crawl_result.pinned_ids`` — the canonical effective pin list
+        after the full ancestor walk — so pins at any level in the hierarchy
+        (including ancestor nodes and operator annotations) are seen correctly.
         """
-        fm_raw = cursor.front_matter().get("kb_pin", [])
-        fm_pins: list[str] = (
-            [p for p in fm_raw if isinstance(p, str)]  # pyright: ignore[reportUnknownVariableType]
-            if isinstance(fm_raw, list) else []
-        )
-        all_pins = fm_pins + pins
-        bases = {p.rstrip("+") for p in all_pins}
-
-        missing = REQUIRED_PINS - bases
+        pinned = set(crawl_result.pinned_ids)
+        missing = REQUIRED_PINS - pinned
         if missing:
             raise OperatorError(
                 "play requires the following KB objects to be pinned: "
@@ -96,7 +84,7 @@ class PlayOperator(Operator):
                 + " — add them with --pin or kb_pin front matter"
             )
 
-        if not any(b.startswith("pc.") for b in bases):
+        if not any(pid.startswith("pc.") for pid in crawl_result.pinned_ids):
             raise OperatorError(
                 "play requires at least one player character (pc.*) to be pinned — "
                 "add a pc.* KB object with --pin or kb_pin front matter"
