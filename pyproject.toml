@@ -35,9 +35,8 @@ pytest-playwright = "^0.5.0"
 lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
 pyright = "pyright"
 lint = "ruff check . --fix"
-test = "pytest lens/core/test lens/cli/test lens/dnd/test -n auto --ignore=lens/core/test/integration -q"
+test = "pytest lens/core/test lens/cli/test lens/server/test lens/dnd/test -n auto --ignore=lens/core/test/integration -q"
 test-integration = "pytest lens/core/test/integration -n 0 -q"
-test-server = "pytest lens/server/test -n 0 -q"
 test-e2e = "pytest e2e/ -n 0 -q"
 dev = { cmd = "python scripts/dev_project.py" }
 check = { sequence = ["lint", "pyright", "test", "test-integration", "test-e2e"] }

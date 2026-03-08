@@ -130,7 +130,7 @@ def main() -> None:
     print("  CLI:")
     print(f"    cd {_PROJECT_DIR}")
     print("    lens stats")
-    print("    lens kb list")
+    print("    lens kb list-tags")
     print()
     print("  Press Ctrl-C to stop.")
     print("=" * 60)
