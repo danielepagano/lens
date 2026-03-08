@@ -17,7 +17,7 @@ from lens.core.project import (
     require_lens_context,
 )
 
-_DATASET_ALLOWED = frozenset({"stats", "kb", "commit", "rollback"})
+_DATASET_ALLOWED = frozenset({"stats", "kb", "commit", "rollback", "serve"})
 
 app = typer.Typer(
     name="lens",
@@ -50,7 +50,7 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
         raise typer.Exit(1)
     if is_dataset_root(project_root):
         return
-    _NO_NARRATIVE_NEEDED = ("kb", "pin", "commit", "checkpoint")
+    _NO_NARRATIVE_NEEDED = ("kb", "pin", "commit", "checkpoint", "serve")
     if sub not in _NO_NARRATIVE_NEEDED:
         if get_active_narrative(project_root) is None:
             typer.echo("lens: no active narrative (run 'lens use <slug>' first)", err=True)
