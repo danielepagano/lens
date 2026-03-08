@@ -25,17 +25,32 @@ once the frontend exists.  Replace or expand them as the UI is built.
 
 from __future__ import annotations
 
-from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
 
 def _chromium_available() -> bool:
-    try:
-        from playwright.sync_api import sync_playwright
+    """Ask playwright for its Chromium executable path and verify it exists.
 
-        with sync_playwright() as p:
-            return Path(p.chromium.executable_path).exists()
+    Runs in a subprocess so that importing playwright.sync_api (which triggers
+    websockets deprecation warnings) doesn't pollute the test session output.
+    Returns False on any error (playwright not installed, browser missing, etc.)
+    """
+    probe = (
+        "from playwright.sync_api import sync_playwright;"
+        "p=sync_playwright().__enter__();"
+        "import sys, pathlib;"
+        "sys.exit(0 if pathlib.Path(p.chromium.executable_path).exists() else 1)"
+    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-W", "ignore", "-c", probe],
+            capture_output=True,
+            timeout=15,
+        )
+        return result.returncode == 0
     except Exception:  # noqa: BLE001
         return False
 

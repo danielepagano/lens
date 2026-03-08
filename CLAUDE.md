@@ -28,7 +28,7 @@ poe lens <command>
 
 ## Definition of done
 
-Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, and integration tests in sequence — all four must pass.
+Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, integration tests, and e2e tests in sequence — all must pass.
 
 ## End-to-end test infrastructure
 

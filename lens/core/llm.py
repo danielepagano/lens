@@ -479,7 +479,7 @@ async def generate_stream(
     try:
         loop.add_signal_handler(signal.SIGINT, _handle_sigint)
         _sigint_installed = True
-    except (NotImplementedError, ValueError):
+    except (NotImplementedError, ValueError, RuntimeError):
         pass
 
     cfg, verbose = _load_config(project_root, llm_id)

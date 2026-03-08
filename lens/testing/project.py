@@ -19,6 +19,7 @@ import contextlib
 import io
 import os
 import subprocess
+import threading
 from collections.abc import Callable, Coroutine
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -39,8 +40,28 @@ def _quiet(fn: Callable[..., _T], *args: Any, **kwargs: Any) -> _T:
 
 
 def _quiet_async(coro: Coroutine[Any, Any, _T]) -> _T:
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-        return asyncio.run(coro)
+    """Run *coro* in a fresh thread so it gets its own event loop.
+
+    ``asyncio.run()`` raises if called from a thread that already has a
+    running event loop (e.g. when pytest-anyio or uvicorn is active in the
+    test session).  Spawning a dedicated thread avoids the conflict.
+    """
+    result: list[_T] = []
+    exc: list[BaseException] = []
+
+    def _run() -> None:
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            try:
+                result.append(asyncio.run(coro))
+            except BaseException as e:  # noqa: BLE001
+                exc.append(e)
+
+    t = threading.Thread(target=_run)
+    t.start()
+    t.join()
+    if exc:
+        raise exc[0]
+    return result[0]
 
 
 def setup_test_project(
