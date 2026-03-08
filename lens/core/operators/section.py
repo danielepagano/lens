@@ -116,8 +116,6 @@ class SectionOperator(Operator):
                 if event.preview:
                     if on_token:
                         await on_token(event.preview)
-                    else:
-                        print(event.preview, end="", flush=True)
                 if event.final:
                     if event.final.interrupted:
                         interrupted = True
@@ -126,8 +124,6 @@ class SectionOperator(Operator):
                     break
         except KeyboardInterrupt:
             interrupted = True
-        if on_token is None:
-            print()
 
         if interrupted:
             raise KeyboardInterrupt
@@ -250,8 +246,6 @@ class SectionOperator(Operator):
                 if event.preview:
                     if on_token:
                         await on_token(event.preview)
-                    else:
-                        print(event.preview, end="", flush=True)
                 if event.final:
                     if event.final.interrupted:
                         interrupted = True
@@ -260,8 +254,6 @@ class SectionOperator(Operator):
                     break
         except KeyboardInterrupt:
             interrupted = True
-        if on_token is None:
-            print()
 
         if interrupted:
             raise KeyboardInterrupt

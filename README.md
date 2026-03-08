@@ -72,6 +72,7 @@ With this enabled, each LLM call will emit a `[SYSTEM]` / `[USER]` / `[ASSISTANT
 
 - **[Design](docs/design.md)** - Lens Design doc
 - **[CLI reference](lens/cli/README.md)** — Commands (`kb`, `pin`, `section`), AI operators (`write`, `edit`, `design`), datasets, and LLM configuration.
+- **[API server](lens/server/README.md)** — `lens serve`, project/dataset context, and HTTP routes.
 - **[D&D](lens/dnd/README.md)** — D&D dataset, `lens dnd balance`, `lens play`, and the D&D Beyond extractor.
 
 ## Development

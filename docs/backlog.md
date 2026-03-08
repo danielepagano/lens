@@ -2,11 +2,6 @@
 
 ## RPG Play Sequencing
 
-### Phase 0: Foundations
-- Craft the `play` prompt and and the D&D rule templates and reference objects in the `dnd`
-- Test it out!
-- *Goal: a minimal but complete play context to test against*
-
 ### Phase 1: Single Scene Play
 - Iterate on `play` system prompt until the authority model holds — the AI authors the world without narrating PC choices or pre-declaring roll outcomes
 - Test flow mode: does the world breathe? Can a scene develop without manufactured pressure every beat?
@@ -55,14 +50,7 @@
 
 *Now I can do this from my phone!*
 
-### Milestone 1: The `lens serve` CLI & Basic API
-*   **`lens serve`**: Implement the command to launch the server from inside a project repo.
-*   **FastAPI Foundation**: Setup FastAPI with health checks and project loading/validation of `lens.toml`.
-*   **Read-only Endpoints**:
-    *   `GET /status`: Project config, current address (cursor), and transaction state.
-    *   `GET /tree`: Narrative hierarchy for the TreeBrowser.
-    *   `GET /node/{address}`: Raw content and metadata for a specific node.
-*   *Goal: A functional REST server capable of reporting project and node state.*
+### [DONE] Milestone 1: The `lens serve` CLI & Basic API
 
 ### Milestone 2: Web Shell & Read-Only Viewer
 *   **Frontend Setup**: Svelte + Vite + Pico.css project structure with mobile-first vertical stack.
