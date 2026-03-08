@@ -1,19 +1,121 @@
 """Extensible operator base class for Lens.
 
-An operator is a module that manipulates narrative text and structure via
-traceable annotation patterns.  Every operator subclass declares a ``name``
-(used in annotation tags like ``[name:id]: #``) and whether an annotation
-ID is required (``requires_id``).
+Operators are the units that manipulate narrative text and structure via
+traceable annotation patterns (e.g. ``[write]: #``, ``[section:ch1]: #``).
+Each subclass declares a ``name`` and ``requires_id``; the base class provides
+tag builders, annotation readers, node write helpers, and flow orchestration
+for the three modes below. Storage is always tied to an *owner address* so the
+storage layer can enforce single-pending-transaction semantics.
 
-Operators construct a :class:`~lens.storage.Storage` instance with their
-canonical *owner address* so that the storage layer can enforce single-pending-
-transaction semantics automatically.  The base class provides:
+-------------------------------------------------------------------------------
+Operating modes
+-------------------------------------------------------------------------------
 
-* **Tag builders** – produce well-formed annotation strings.
-* **Annotation readers** – find this operator's annotations / segments.
-* **Node write helpers** – append to narrative nodes via Storage.
-* **Mode helpers** – composable utilities for the three operating modes
-  described in the design document.
+1. **Inline** (write, play): append at the narrative cursor. One open
+   annotation per operator per cursor node; calling again continues, retries,
+   or update-retries that same annotation.
+
+2. **Sub-node** (section): create a child node and append an open tag to the
+   parent; the operator then runs at the child cursor.
+
+3. **Mutation** (edit): wrap a line range in claim tags and stream a proposed
+   replacement as an unstaged diff.
+
+-------------------------------------------------------------------------------
+Inline flow: run_inline → which path?
+-------------------------------------------------------------------------------
+
+Entry is :meth:`run_inline` (CLI or another operator's tool invoke_fn).
+It resolves the cursor, checks for an existing open annotation of this
+operator, and decides:
+
+- **No existing annotation** → :meth:`_do_fresh_inline`
+- **Existing annotation, same owner**: user passed new prompt/pins/llm or
+  ``--retry`` → :meth:`_do_update_retry` or :meth:`_do_retry`; else
+  → :meth:`_do_continue` (append to existing content)
+
+-------------------------------------------------------------------------------
+Fresh inline: _do_fresh_inline step-by-step
+-------------------------------------------------------------------------------
+
+1. **Build ann_params**  
+   From prompt, pins, unpins, llm_id, and **extra_params** (generic dict
+   from the caller; base class just merges it). Subclasses can pass
+   operator-specific keys (e.g. play passes ``as_pc`` via extra_params).
+
+2. **Crawl**  
+   :func:`~lens.core.context.crawl` with cursor and extra_pins/extra_unpins
+   → :class:`~lens.core.context.CrawlResult` (knowledge, summaries,
+   current_content, pinned_ids).
+
+3. **Requirements and param enrichment**  
+   :meth:`check_requirements`(crawl_result) — override to raise if e.g. pins
+   are missing.  
+   :meth:`enrich_params`(crawl_result, ann_params) — override to derive
+   params from crawl result and/or extra_params (e.g. play resolves
+   ``as_pc`` against pinned_ids, sets ``pc_key``, pops ``as_pc`` so it
+   isn’t stored in the tag).
+
+4. **Build tag and messages**  
+   Open tag is built from ann_params (so stored annotation reflects
+   enriched params). Messages come from :meth:`build_messages` (default:
+   :func:`~lens.core.context.assemble_prompt` with system_prompt and
+   :meth:`build_instruction`(ann_params)). If operator tools are
+   available, system prompt is augmented with tool snippets and
+   chaining instructions, and the LLM may receive tools.
+
+5. **Generate**  
+   :func:`~lens.core.llm.generate_stream` with optional tools. Result is
+   either plain text or a tool call.
+
+6. **Tool call path**  
+   If the LLM returned a tool call for a registered operator tool:
+   :meth:`_dispatch_tool_call` writes any kept text, then invokes that
+   operator’s run_inline (or run_sub_node) via the tool’s invoke_fn.
+   Chaining is supported: the tool call can include a ``chain`` spec to run
+   another operator in the same transaction after this one completes.
+
+7. **Normal path**  
+   No tool call (or unknown tool): :meth:`content_prefix_for_fresh`(ann_params)
+   can prepend text (e.g. play’s ``> [ALICE] prompt\\n\\n---\\n\\n``), then
+   :meth:`write_start`(cursor, tag, content) appends open tag + content +
+   close tag.
+
+-------------------------------------------------------------------------------
+Continue / retry / update-retry
+-------------------------------------------------------------------------------
+
+- **Continue**: crawl with existing ann params, build_messages, stream,
+  :meth:`write_append` (no new tag).
+
+- **Retry**: discard current content, re-crawl with existing params, stream,
+  content_prefix_for_fresh + write_append.
+
+- **Update-retry**: merge new prompt/pins/unpins/llm_id/extra_params into
+  existing params, discard, re-crawl, enrich_params (so update-retry also
+  runs enrichment), stream, content_prefix + write_append.
+
+-------------------------------------------------------------------------------
+Subclass integration points
+-------------------------------------------------------------------------------
+
+- **Class vars**: ``name``, ``requires_id``, ``limited_to_datasets``,
+  ``excluded_operator_tools``, ``use_command_tools``.
+
+- **Required**: :meth:`system_prompt`, :meth:`build_instruction`(params).
+
+- **Optional**: :meth:`check_requirements`(crawl_result),
+  :meth:`enrich_params`(crawl_result, params),
+  :meth:`content_prefix_for_fresh`(params),
+  :meth:`build_messages`(crawl_result, params) (default uses
+  assemble_prompt with instruction from build_instruction).
+
+- **Tool registration**: :meth:`register_as_tool`(tool_def) registers this
+  operator as an LLM-callable tool; :meth:`_make_invoke_fn` returns a
+  closure that calls this operator’s run_inline with args from the tool
+  call (prompt, kb_pin, kb_unpin, etc.). No extra_params from tool calls;
+  subclasses that need run-time context (e.g. which PC is speaking) use
+  enrich_params and crawl_result only.
 """
 
 from __future__ import annotations
@@ -562,6 +664,11 @@ class Operator(ABC):
         """
         return ""
 
+    @classmethod
+    def enrich_params(cls, crawl_result: CrawlResult, params: dict[str, Any]) -> None:
+        """Optional hook to fill params from crawl result (e.g. play sets pc_key from pinned PCs)."""
+        return None
+
     def write_start(self, node: NarrativeNode, tag: str, content: str) -> None:
         """Atomically write an open tag, generated content, and close tag to the node."""
         md = node.md_path()
@@ -681,6 +788,7 @@ class Operator(ABC):
         on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
         _chain_storage: Storage | None = None,
         _cursor_override: NarrativeNode | None = None,
+        extra_params: dict[str, Any] | None = None,
     ) -> None:
         """Run the inline-appending flow (fresh / continue / retry / update-retry).
 
@@ -721,6 +829,7 @@ class Operator(ABC):
                     session, narrative, cursor, rel_path,
                     existing_ann, prompt, pins, unpins, llm_id,
                     on_token=on_token,
+                    extra_params=extra_params,
                 )
             elif retry:
                 await cls._do_retry(
@@ -742,6 +851,7 @@ class Operator(ABC):
                 tool_call_depth=_tool_call_depth,
                 on_confirm=on_confirm,
                 chain_storage=_chain_storage,
+                extra_params=extra_params,
             )
 
     @classmethod
@@ -759,6 +869,7 @@ class Operator(ABC):
         tool_call_depth: int = 0,
         on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
         chain_storage: Storage | None = None,
+        extra_params: dict[str, Any] | None = None,
     ) -> None:
         ann_params: dict[str, Any] = {"steps": 1}
         if prompt:
@@ -769,16 +880,19 @@ class Operator(ABC):
             ann_params["kb_unpin"] = unpins
         if llm_id:
             ann_params["llm_id"] = llm_id
+        if extra_params:
+            ann_params.update(extra_params)
 
         current_text = cursor.md_path().read_text(encoding="utf-8")
         ann_line = cls.ann_line_for_append(current_text)
         owner = cls.owner_id(None, rel_path, line=ann_line)
 
-        probe_op = cls(session.new_storage(), narrative)
-        tag = probe_op.build_open_tag(None, ann_params)
-
         crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
         cls.check_requirements(crawl_result)
+        cls.enrich_params(crawl_result, ann_params)
+
+        probe_op = cls(session.new_storage(), narrative)
+        tag = probe_op.build_open_tag(None, ann_params)
 
         registry = get_tool_registry(session.project_root)
         available_tools = {
@@ -1070,6 +1184,7 @@ class Operator(ABC):
         op = cls(session.new_storage(owner=owner), narrative)
 
         crawl_result = crawl(cursor, extra_pins=ann_pins, extra_unpins=ann_unpins)
+        cls.enrich_params(crawl_result, existing_ann.params)
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
@@ -1104,6 +1219,7 @@ class Operator(ABC):
         op.write_discard(cursor, existing_ann)
 
         crawl_result = crawl(cursor, extra_pins=ann_pins, extra_unpins=ann_unpins)
+        cls.enrich_params(crawl_result, existing_ann.params)
         fresh_ann = op.find_open_annotation(cursor)
         if fresh_ann is None:
             raise OperatorError("lost annotation after discard")
@@ -1139,6 +1255,7 @@ class Operator(ABC):
         unpins: list[str],
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        extra_params: dict[str, Any] | None = None,
     ) -> None:
         new_params: dict[str, Any] = dict(existing_ann.params)
         if prompt is not None:
@@ -1149,6 +1266,8 @@ class Operator(ABC):
             new_params["kb_unpin"] = unpins
         if llm_id:
             new_params["llm_id"] = llm_id
+        if extra_params:
+            new_params.update(extra_params)
 
         eff_pins = cls.extract_list(new_params, "kb_pin")
         eff_unpins = cls.extract_list(new_params, "kb_unpin")
@@ -1159,6 +1278,7 @@ class Operator(ABC):
         op.write_discard(cursor, existing_ann, updated_params=new_params)
 
         crawl_result = crawl(cursor, extra_pins=eff_pins, extra_unpins=eff_unpins)
+        cls.enrich_params(crawl_result, new_params)
         fresh_ann = op.find_open_annotation(cursor)
         if fresh_ann is None:
             raise OperatorError("lost annotation after discard")

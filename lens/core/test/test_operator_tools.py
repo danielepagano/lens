@@ -605,6 +605,55 @@ class TestPlayOperatorRequirements(unittest.TestCase):
         PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement", "pc.theron"]))
 
 
+class TestPlayOperatorEnrichParams(unittest.TestCase):
+    def test_enrich_params_sets_pc_key_from_first_pinned_pc(self) -> None:
+        result = _play_result(
+            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+        )
+        params: dict[str, Any] = {"prompt": "hello"}
+        PlayOperator.enrich_params(result, params)
+        self.assertEqual(params.get("pc_key"), "alice")
+
+    def test_enrich_params_as_pc_sets_pc_key_and_removes_as_pc(self) -> None:
+        result = _play_result(
+            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+        )
+        params: dict[str, Any] = {"prompt": "hello", "as_pc": "bob"}
+        PlayOperator.enrich_params(result, params)
+        self.assertEqual(params.get("pc_key"), "bob")
+        self.assertNotIn("as_pc", params)
+
+    def test_enrich_params_as_pc_invalid_raises(self) -> None:
+        result = _play_result(
+            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+        )
+        params: dict[str, Any] = {"prompt": "hello", "as_pc": "charlie"}
+        with self.assertRaises(OperatorError) as ctx:
+            PlayOperator.enrich_params(result, params)
+        self.assertIn("charlie", str(ctx.exception))
+        self.assertIn("pinned", str(ctx.exception))
+
+
+class TestPlayOperatorPcMarker(unittest.TestCase):
+    def test_build_instruction_uses_pc_key_uppercase(self) -> None:
+        op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
+        out = op.build_instruction({"prompt": "I roll 18", "pc_key": "alice"})
+        self.assertIn("> [ALICE] I roll 18", out)
+
+    def test_content_prefix_uses_pc_key_uppercase(self) -> None:
+        op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
+        out = op.content_prefix_for_fresh(
+            {"prompt": "I roll 18", "pc_key": "alice"}
+        )
+        self.assertEqual(out, "> [ALICE] I roll 18\n\n---\n\n")
+
+    def test_no_pc_key_raises(self) -> None:
+        op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
+        with self.assertRaises(OperatorError) as ctx:
+            op.content_prefix_for_fresh({"prompt": "hello"})
+        self.assertIn("pc key", str(ctx.exception).lower())
+
+
 # ---------------------------------------------------------------------------
 # TestMakeInvokeFn
 # ---------------------------------------------------------------------------
@@ -790,12 +839,15 @@ class TestWritePlayToolChain(unittest.TestCase):
         )
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
 
-        # Create a PC in the knowledge base and tag it
+        # Create a PC in the knowledge base (play resolves pc_key from pinned pc.*)
         from lens.core.knowledge import KnowledgeStore
         KnowledgeStore.clear_registry()
         kb_dir = self.root / "knowledge" / "person"
         kb_dir.mkdir(parents=True)
         (kb_dir / "aria.md").write_text("Aria, a ranger.\n")
+        pc_dir = self.root / "knowledge" / "pc"
+        pc_dir.mkdir(parents=True)
+        (pc_dir / "aria.md").write_text("Aria, a ranger.\n")
         subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
         subprocess.run(["git", "commit", "-m", "kb"], cwd=self.root, capture_output=True, check=True)
         kb = KnowledgeStore.for_project(self.root)
@@ -816,7 +868,7 @@ class TestWritePlayToolChain(unittest.TestCase):
             tool_call=ToolCall(
                 id="call_1",
                 name="play",
-                arguments={"prompt": "approach the campfire"},
+                arguments={"prompt": "approach the campfire", "kb_pin": ["pc.aria"]},
             ),
             usage=None,
             interrupted=False,
@@ -886,7 +938,7 @@ class TestWritePlayToolChain(unittest.TestCase):
                         session=self.session,
                         narrative=self.narrative,
                         prompt="arrive at the city",
-                        pins=["person.aria"],
+                        pins=["pc.aria"],
                         unpins=[],
                         llm_id=None,
                         retry=False,
@@ -903,7 +955,11 @@ class TestWritePlayToolChain(unittest.TestCase):
         """A second-level tool call with no on_confirm callback raises OperatorError."""
         first_final = FinalPayload(
             text="The road continued.",
-            tool_call=ToolCall(id="c1", name="play", arguments={"prompt": "x"}),
+            tool_call=ToolCall(
+                id="c1",
+                name="play",
+                arguments={"prompt": "x", "kb_pin": ["pc.aria"]},
+            ),
             usage=None,
             interrupted=False,
         )

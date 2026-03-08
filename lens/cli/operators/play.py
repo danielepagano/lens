@@ -41,10 +41,17 @@ def play(
         "-r",
         help="Discard generated text and regenerate",
     ),
+    as_pc: str | None = typer.Option(
+        None,
+        "--as",
+        "-as",
+        help="PC key to attribute the prompt to (e.g. alice → [ALICE]); must be a pinned pc.*",
+    ),
 ) -> None:
     """Narrate a player-agency moment in GM voice, then pause for player response.
 
     Requires at least one player character (KB object tagged 'pc') to be pinned.
+    Use -as <key> to attribute the prompt to a specific pinned PC (e.g. -as alice → [ALICE]).
     """
     try:
         session = ProjectSession.from_cwd()
@@ -77,6 +84,7 @@ def play(
                 retry=retry,
                 on_token=_print_token,
                 on_confirm=confirm_tool_call,
+                extra_params={"as_pc": as_pc} if as_pc is not None else None,
             )
         )
         print()  # ensure final newline

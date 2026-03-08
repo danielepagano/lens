@@ -18,6 +18,15 @@ from lens.core.context import CrawlResult
 from lens.core.operator import Operator, OperatorError
 from lens.core.tools import OperatorToolDef
 
+
+def _pc_marker(params: dict[str, Any]) -> str:
+    key = params.get("pc_key")
+    if not key:
+        raise OperatorError(
+            "play could not resolve PC key (no pinned pc.* in context)"
+        )
+    return key.upper()
+
 # ---------------------------------------------------------------------------
 # Prompt constants
 # ---------------------------------------------------------------------------
@@ -34,12 +43,13 @@ SYSTEM_PROMPT = (
 
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 
-INSTRUCTION_WITH_PROMPT = (
-    "> [PLAYER] {prompt}\n\n---\n\n"
-    "Continue the scene following the player's input above. "
-    "Then yield to the user so the player(s) can act when appropriate. "
-    "HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
-)
+def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
+    return (
+        f"> [{pc_marker}] {prompt}\n\n---\n\n"
+        "Continue the scene following the player's input above. "
+        "Then yield to the user so the player(s) can act when appropriate. "
+        "HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -57,15 +67,34 @@ class PlayOperator(Operator):
     def system_prompt(self) -> str:
         return SYSTEM_PROMPT
 
+    @classmethod
+    def enrich_params(cls, crawl_result: CrawlResult, params: dict[str, Any]) -> None:
+        pinned_pcs = [p for p in crawl_result.pinned_ids if p.startswith("pc.")]
+        as_pc = params.pop("as_pc", None)
+        if as_pc is not None:
+            pc_id = f"pc.{as_pc}" if not as_pc.startswith("pc.") else as_pc
+            if pc_id not in pinned_pcs:
+                raise OperatorError(
+                    f"-as {as_pc!r} is not a pinned PC (pinned pc.*: "
+                    + ", ".join(sorted(pinned_pcs))
+                    + ")"
+                )
+            params["pc_key"] = pc_id.split(".", 1)[1]
+            return
+        for pid in crawl_result.pinned_ids:
+            if pid.startswith("pc."):
+                params["pc_key"] = pid.split(".", 1)[1]
+                return
+
     def build_instruction(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt")
         if not prompt:
             raise OperatorError("play requires a prompt (e.g. what the player says or does)")
-        return INSTRUCTION_WITH_PROMPT.format(prompt=prompt)
+        return _instruction_with_prompt(prompt, _pc_marker(params))
 
     def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt") or ""
-        return f"> [PLAYER] {prompt}\n\n---\n\n"
+        return f"> [{_pc_marker(params)}] {prompt}\n\n---\n\n"
 
     @classmethod
     def check_requirements(cls, crawl_result: CrawlResult) -> None:
