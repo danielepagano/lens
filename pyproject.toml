@@ -28,12 +28,18 @@ poethepoet = "^0.27.0"
 pytest = "^8.0.0"
 pytest-xdist = "^3.0.0"
 
+[tool.poetry.group.e2e.dependencies]
+pytest-playwright = "^0.5.0"
+
 [tool.poe.tasks]
 lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
 pyright = "pyright"
 lint = "ruff check . --fix"
 test = "pytest lens/core/test lens/cli/test lens/dnd/test -n auto --ignore=lens/core/test/integration -q"
 test-integration = "pytest lens/core/test/integration -n 0 -q"
+test-server = "pytest lens/server/test -n 0 -q"
+test-e2e = "pytest e2e/ -n 0 -q"
+dev = { cmd = "python scripts/dev_project.py" }
 check = { sequence = ["lint", "pyright", "test", "test-integration"] }
 
 [tool.pytest.ini_options]
