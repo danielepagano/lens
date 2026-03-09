@@ -46,9 +46,8 @@ REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
     return (
         f"> [{pc_marker}] {prompt}\n\n---\n\n"
-        "Continue the scene following the player's input above. "
-        "Then yield to the user so the player(s) can act when appropriate. "
-        "HARD RULE: DO NOT DECIDE OR ACT FOR THE PC CHARACTER."
+        "Continue the scene. "
+        "Run the gates: ADJUDICATE → NARRATE → RESOLVE → ENGAGE."
     )
 
 
