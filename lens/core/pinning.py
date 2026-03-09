@@ -20,7 +20,7 @@ def _render_front_matter(data: dict[str, Any]) -> str:
     if not payload:
         return ""
     yaml_text = yaml.dump(payload, default_flow_style=False).rstrip("\n")
-    indented = "\n".join("  " + line for line in yaml_text.split("\n"))
+    indented = "\n".join("    " + line for line in yaml_text.split("\n"))
     return f"[\n{indented}\n]: #"
 
 

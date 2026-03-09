@@ -59,7 +59,7 @@ See [API Design](./api-design.md) and [App Design](./app-design.md) for key guid
 *   *Goal: A mobile-friendly web explorer for Lens narratives.*
 
 ### Milestone 3: Deployment, Serving & Security
-*   **`lens serve prod`**: Serving built assets directly from the FastAPI server.
+*   **`lens serve`**: Serving built assets directly from the FastAPI server.
 *   **Security Layer**: Caddy configuration for HTTPS and Basic Auth as the primary security boundary.
 *   **Deployment Docs**: Documentation for deploying to fly.io or similar.
 *   *Goal: A secure, deployable, read-only view of the narrative.*

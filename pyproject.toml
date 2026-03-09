@@ -39,7 +39,8 @@ test = "pytest lens/core/test lens/cli/test lens/server/test lens/dnd/test -n au
 test-integration = "pytest lens/core/test/integration -n 0 -q"
 test-e2e = "pytest e2e/ -n 0 -q"
 dev = { cmd = "python scripts/dev_project.py" }
-check = { sequence = ["lint", "pyright", "test", "test-integration", "test-e2e"] }
+build-ui = { shell = "cd lens/server/ui && npm install --silent && npm run build" }
+check = { sequence = ["lint", "pyright", "test", "test-integration", "build-ui", "test-e2e"] }
 
 [tool.pytest.ini_options]
 addopts = "-W ignore::SyntaxWarning:pysbd"

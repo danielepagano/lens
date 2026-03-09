@@ -29,6 +29,15 @@ lens kb get person.hero       # fetch from the knowledge store
 lens stats                    # list narratives and object counts
 ```
 
+## Lens API and Web UI
+
+Besides the CLI, a REST server and UI live in `lens/server/`). To start the server from a Lens project directory:
+
+```bash
+lens serve    # Build frontend and serve at http://127.0.0.1:8000
+lens dev      # Vite dev server with HMR — open http://localhost:5173
+```
+
 ## LLM Configuration
 
 Lens uses LLM APIs (OpenAI-compatible) for AI operators like `write` and `edit`. Configure them in your project's `lens.toml`.
@@ -72,7 +81,7 @@ With this enabled, each LLM call will emit a `[SYSTEM]` / `[USER]` / `[ASSISTANT
 
 - **[Design](docs/design.md)** - Lens Design doc
 - **[CLI reference](lens/cli/README.md)** — Commands (`kb`, `pin`, `section`), AI operators (`write`, `edit`, `design`), datasets, and LLM configuration.
-- **[API server](lens/server/README.md)** — `lens serve`, project/dataset context, and HTTP routes.
+- **[Web UI & API server](lens/server/README.md)** — `lens serve`, `lens dev`, project/dataset context, and HTTP routes.
 - **[D&D](lens/dnd/README.md)** — D&D dataset, `lens dnd balance`, `lens play`, and the D&D Beyond extractor.
 
 ## Development

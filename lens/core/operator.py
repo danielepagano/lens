@@ -240,7 +240,7 @@ class Operator(ABC):
 
             [section:ch1]: #
             [write
-              prompt: hello
+                prompt: hello
             ]: #
         """
         header = f"[{self.name}"
@@ -249,7 +249,7 @@ class Operator(ABC):
         if not params:
             return f"{header}]: #"
         yaml_text = yaml.dump(params, default_flow_style=False).rstrip("\n")
-        indented = re.sub(r"^", "  ", yaml_text, flags=re.MULTILINE)
+        indented = re.sub(r"^", "    ", yaml_text, flags=re.MULTILINE)
         return f"{header}\n{indented}\n]: #"
 
     def build_close_tag(self, id: str | None = None) -> str:

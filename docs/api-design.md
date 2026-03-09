@@ -159,8 +159,8 @@ In a way, it's the content repo that's running the server to edit itself; all th
 The server is launched via the CLI:
 
 ```bash
-lens serve         # Launches FastAPI + Vite (dev)
-lens serve prod    # Launches FastAPI serving built static assets
+lens serve         # Build frontend and serve from FastAPI
+lens dev           # Vite dev server + FastAPI (HMR)
 ```
 
 The command must be run from inside a project repo. It validates and uses that repo's `lens.toml` for its lifetime.
@@ -298,7 +298,7 @@ In production:
 
 * `vite build`
 * Output to `/dist`
-* `lens serve prod` mounts the static directory.
+* `lens serve` mounts the static directory.
 
 Example structure:
 
@@ -323,14 +323,13 @@ No CORS needed.
 Development:
 
 * CLI works independently.
-* `lens serve` launches the API and optionally proxies to the Vite dev server.
-* Frontend runs via Vite dev server.
-* Vite proxies `/api` to FastAPI.
+* `lens dev` launches the API and Vite dev server with HMR.
+* Frontend runs via Vite; Vite proxies `/health`, `/stats`, `/tree`, `/node/` to FastAPI.
 
 Production:
 
 * Single container or process.
-* `lens serve prod` serves built static assets from the FastAPI server.
+* `lens serve` builds and serves the frontend bundle from FastAPI.
 * FastAPI serves both API and static UI.
 
 Keep environments symmetrical.
@@ -356,7 +355,7 @@ Each instance:
 * Pulls Lens code
 * Pulls content repo
 * Has injected secrets (git key, LLM API key)
-* Runs `lens serve prod`
+* Runs `lens serve`
 * Serves static UI
 * No external dependencies
 
@@ -373,7 +372,7 @@ Stateless server + persistent repo = clean separation.
 
 Add integration tests that:
 
-* Spin up FastAPI app (via `lens serve`)
+* Spin up FastAPI app (via `lens serve` or `lens dev`)
 * Call representative endpoints
 * Validate JSON structure
 * Validate SSE stream sequence

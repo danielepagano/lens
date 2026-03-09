@@ -212,3 +212,5 @@ datasets/dnd/ddb_out/
 
 # Lens dev/test project (created by scripts/dev_project.py and local testing)
 .dev-project/
+**/node_modules/**
+lens/server/static/**

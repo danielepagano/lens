@@ -382,7 +382,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
     def test_find_open_annotation_found(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            narrative.md_path().write_text("[cao\n  steps: 1\n]: #\n\nGenerated text\n")
+            narrative.md_path().write_text("[cao\n    steps: 1\n]: #\n\nGenerated text\n")
             op = _ConcreteCAO(Storage(root), narrative)
             ann = op.find_open_annotation(narrative)
             self.assertIsNotNone(ann)
@@ -399,7 +399,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         """Closed annotations are returned: pending state is tracked by git, not tag structure."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            narrative.md_path().write_text("[cao\n  steps: 1\n]: #\n\nText\n\n[/cao]: #\n")
+            narrative.md_path().write_text("[cao\n    steps: 1\n]: #\n\nText\n\n[/cao]: #\n")
             op = _ConcreteCAO(Storage(root), narrative)
             ann = op.find_open_annotation(narrative)
             self.assertIsNotNone(ann)
@@ -411,7 +411,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             owner = _ConcreteCAO.owner_id(None, "narrative/test/_node.md", line=3)
             op = _ConcreteCAO(Storage(root, owner=owner), narrative)
-            op.write_start(narrative, "[cao\n  steps: 1\n]: #", "Generated text")
+            op.write_start(narrative, "[cao\n    steps: 1\n]: #", "Generated text")
             text = narrative.md_path().read_text()
             self.assertIn("[cao", text)
             self.assertIn("steps: 1", text)
@@ -423,7 +423,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             narrative.md_path().write_text(
-                "[cao\n  steps: 1\n]: #\n\nFirst content\n\n[/cao]: #\n"
+                "[cao\n    steps: 1\n]: #\n\nFirst content\n\n[/cao]: #\n"
             )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
@@ -456,7 +456,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             narrative.md_path().write_text(
-                "[cao\n  steps: 3\n]: #\n\nContent to remove\n\n[/cao]: #\n"
+                "[cao\n    steps: 3\n]: #\n\nContent to remove\n\n[/cao]: #\n"
             )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
@@ -482,7 +482,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             narrative.md_path().write_text(
-                "[cao\n  steps: 2\n]: #\n\nOld content\n\n[/cao]: #\n"
+                "[cao\n    steps: 2\n]: #\n\nOld content\n\n[/cao]: #\n"
             )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(

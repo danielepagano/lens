@@ -177,7 +177,6 @@ Use `markdown-it` for rendering.
 Rules:
 
 * Rendering happens only in `MarkdownView.svelte`.
-* Rendered HTML must be sanitized.
 * No direct DOM injection elsewhere.
 
 Rendering flow:

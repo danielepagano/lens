@@ -62,24 +62,24 @@ Internally, nodes are annotated using invisible [comments](https://www.markdowng
   - Each operator annotation can have an ID after the operator, separated by colon, e.g. `[write:rest_1`; this ID has to be a valid filename (not an existing file, it has to follow filename patterns, like knowledge types and keys) and be unique within this node (across any operator types). If the operator uses a sub-node for storage, the node will have this name.
   - If an operator annotation has no content in the node, it should end with `/`, e.g. `[chat:reflect_about_feelings/]: #`
   - If an operator does have content in the node (its output), it should have a matching close tag later, e.g. `[write:rest_1]: #` then some lines of text, and empty line, then `[/write:rest_1]: #` (remember, ID is optional if there is no sub-node, in which case it does not have to be included)
-  - Annotations can span multiple lines, but the lines after the first need to be indented by at least one space (two preferred), and be valid YAML; this becomes structured configuration for the operator.
+  - Annotations can span multiple lines, but the lines after the first need to be indented by at least four spaces so they are not parsed as Markdown elements (which would break the invisible-comment rendering).
   - A special annotation called a "front matter" can be included at the beginning of a module without an operator or id, and contain YAML that is available to all operators in the node, and even its sub-nodes (if they query for it)
 
 Examples:
 
 ```markdown
 [ <-- "front matter" section for node-wide settings, used by operators
-  kb_pin: <-- knowledge-aware operators always add this content, even in child nodes!
+    kb_pin: <-- knowledge-aware operators always add this content, even in child nodes!
     - place.needle_street
     - place.capital_city
-  kb_unpin:  <-- you can un-pin irrelevant parent pins from this sub-tree
-    - front.the_demon_rises 
+    kb_unpin:  <-- you can un-pin irrelevant parent pins from this sub-tree
+    - front.the_demon_rises
 ]: #
 
 [write
-  prompt: hey you! how about a \
+    prompt: hey you! how about a \
 multiline prompt here?
-  kb_pin: 
+    kb_pin:
     - first.key
     - second.key
 ]: #

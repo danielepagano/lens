@@ -12,23 +12,23 @@ Then run with::
     # or directly:
     pytest e2e/tests/test_browser.py -v
 
-The module is automatically skipped when Chromium is not available, so it
-is safe to include in the normal ``poe test-e2e`` run on headless CI as long
-as the browser is installed there.
-
-UI not yet implemented
-----------------------
-The tests below are stubs — they confirm the server responds to HTTP requests
-that a browser would make (health + static root), providing a starting point
-once the frontend exists.  Replace or expand them as the UI is built.
+The module is automatically skipped when Chromium is not available or the
+frontend has not been built, so it is safe to include in the normal
+``poe test-e2e`` run.  ``poe check`` runs ``build-ui`` before ``test-e2e``
+so the static assets will be present.
 """
 
 from __future__ import annotations
 
+import pathlib
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from playwright.sync_api import Page
 
 
 def _chromium_available() -> bool:
@@ -55,23 +55,41 @@ def _chromium_available() -> bool:
         return False
 
 
+_STATIC_BUILT = (
+    pathlib.Path(__file__).parent.parent.parent / "lens/server/static/index.html"
+)
+
 pytestmark = pytest.mark.skipif(
-    not _chromium_available(),
-    reason="Playwright Chromium not installed — run: playwright install chromium",
+    not _chromium_available() or not _STATIC_BUILT.exists(),
+    reason="Run 'poe build-ui' and 'playwright install chromium' first",
 )
 
 
 class TestBrowser:
-    """Smoke tests exercising the running Lens server via a real browser."""
+    """UI tests exercising the Lens frontend via a real browser."""
 
-    def test_health_via_browser(self, page: "Page", live_server_url: str) -> None:  # type: ignore[name-defined]  # noqa: F821
-        """The /health endpoint is reachable and returns a 200 page."""
-        response = page.goto(f"{live_server_url}/health")
-        assert response is not None
-        assert response.status == 200
+    def test_page_loads(self, page: "Page", live_server_url: str) -> None:
+        """The root page loads and renders the top bar and tree browser."""
+        page.goto(live_server_url)  # type: ignore[union-attr]
+        page.wait_for_selector('[data-testid="top-bar"]')  # type: ignore[union-attr]
+        page.wait_for_selector('[data-testid="tree-browser"]')  # type: ignore[union-attr]
+        assert page.is_visible('[data-testid="top-bar"]')  # type: ignore[union-attr]
+        assert page.is_visible('[data-testid="tree-browser"]')  # type: ignore[union-attr]
 
-    def test_root_responds(self, page: "Page", live_server_url: str) -> None:  # type: ignore[name-defined]  # noqa: F821
-        """The server root responds (200 or 404 — either way it's up)."""
-        response = page.goto(live_server_url)
-        assert response is not None
-        assert response.status in (200, 404)
+    def test_tree_has_nodes(self, page: "Page", live_server_url: str) -> None:
+        """The tree browser renders at least one node button."""
+        page.goto(live_server_url)  # type: ignore[union-attr]
+        page.wait_for_selector('[data-testid="tree-browser"] button[data-address]')  # type: ignore[union-attr]
+        buttons = page.query_selector_all('[data-testid="tree-browser"] button[data-address]')  # type: ignore[union-attr]
+        assert len(buttons) >= 1  # type: ignore[arg-type]
+
+    def test_node_navigation(self, page: "Page", live_server_url: str) -> None:
+        """Clicking the 'story' node loads Lorem ipsum content in MarkdownView."""
+        page.goto(live_server_url)  # type: ignore[union-attr]
+        page.wait_for_selector('[data-testid="tree-browser"] button[data-address]')  # type: ignore[union-attr]
+        story_btn = page.query_selector('[data-testid="tree-browser"] button[data-address="story"]')  # type: ignore[union-attr]
+        assert story_btn is not None, "Expected a 'story' node button in the tree"
+        story_btn.click()
+        page.wait_for_selector('[data-testid="markdown-view"]')  # type: ignore[union-attr]
+        content: str = page.inner_text('[data-testid="markdown-view"]')  # type: ignore[union-attr]
+        assert "Lorem" in content, f"Expected Lorem ipsum in markdown view, got: {content[:200]}"

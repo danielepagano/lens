@@ -6,13 +6,19 @@ FastAPI server that exposes the current Lens project (or dataset) over HTTP.
 
 Run from a directory inside a Lens project (a repo that contains `lens.toml`):
 
-```bash
-lens serve
-# optional: --host 0.0.0.0 --port 8080
-# development: --reload to restart when lense code changes (default to true)
-```
+**`lens serve`** — build the frontend and serve the bundle:
 
-The server binds to `127.0.0.1:8000` by default. It uses the project (or dataset) rooted at the nearest `lens.toml` above the current working directory.
+- Runs `npm install && npm run build` if static assets are missing.
+- Single URL (e.g. `http://127.0.0.1:8000`) for both API and frontend.
+- No hot-reload; use for production or e2e.
+
+**`lens dev`** — development with HMR:
+
+- Starts the API server and the Vite dev server.
+- Open **http://localhost:5173** for the frontend with hot module reload.
+- Requires Node.js and npm.
+
+Both support `--host` and `--port` options. The server uses the project (or dataset) rooted at the nearest `lens.toml` above the current working directory.
 
 - **Project mode**: Full API. Narrative tree and node content are available; `active_narrative` and cursor come from `lens.toml`.
 - **Dataset mode**: If `lens.toml` declares a `[dataset]`, the server still runs but narrative routes return empty or 404 (no narrative nodes in a dataset).
