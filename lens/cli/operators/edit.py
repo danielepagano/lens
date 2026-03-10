@@ -23,7 +23,7 @@ def edit(
     address: str | None = typer.Argument(None, help="Narrative node address"),
     start_line: int | None = typer.Argument(None, help="First line to edit (1-based, inclusive)"),
     end_line: int | None = typer.Argument(None, help="Last line to edit (1-based, inclusive)"),
-    prompt: str | None = typer.Argument(None, help="Editing instruction"),
+    prompt: str | None = typer.Argument(None, help="Editing instruction or replacement text"),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(
@@ -38,11 +38,21 @@ def edit(
         "-r",
         help="Re-propose with same or updated parameters",
     ),
+    replace: bool = typer.Option(
+        False,
+        "--replace",
+        help="Replace the selected text directly with PROMPT (no LLM)",
+    ),
 ) -> None:
-    """Rewrite a line range in a narrative node using the LLM."""
+    """Rewrite a line range in a narrative node using the LLM, or replace it directly."""
     if address is None or start_line is None or end_line is None:
         typer.echo(ctx.get_help())
         raise typer.Exit(0)
+
+    if replace and retry:
+        typer.echo("lens edit: --retry is not supported together with --replace", err=True)
+        raise typer.Exit(1)
+
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:
@@ -83,6 +93,9 @@ def edit(
     rel_path = str(target_md.relative_to(session.git_root))
     ann_id = EditOperator.ann_id(start_line, end_line)
 
+    replacement = prompt if replace else None
+    effective_prompt = None if replace else prompt
+
     try:
         asyncio.run(
             EditOperator.run_mutation(
@@ -92,7 +105,9 @@ def edit(
                 ann_id=ann_id,
                 start_line=start_line,
                 end_line=end_line,
-                prompt=prompt,
+                prompt=effective_prompt,
+                manual=replace,
+                replacement=replacement,
                 pins=list(pin),
                 unpins=list(unpin),
                 llm_id=llm,

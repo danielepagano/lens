@@ -74,7 +74,8 @@ class TestCompensatingRollback(unittest.TestCase):
     def test_restores_original_text(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            _commit_content(root, narrative, "Line one.\nLine two.\nLine three.\n")
+            original = "Line one.\n\nLine two.\n\nLine three.\n"
+            _commit_content(root, narrative, original)
 
             rel_path = "narrative/test/_node.md"
             self._stage_claim(root, narrative, rel_path, "e2_2", 2, 2)
@@ -92,9 +93,9 @@ class TestCompensatingRollback(unittest.TestCase):
             compensating_rollback(Storage(root), owner, root)
 
             result = node_file.read_text()
-            self.assertIn("Line one.", result)
-            self.assertIn("Line two.", result)
-            self.assertIn("Line three.", result)
+            # File content after rollback should match the original exactly,
+            # without extra or missing blank lines.
+            self.assertEqual(result, original)
             self.assertNotIn("[edit:e2_2", result)
             self.assertNotIn("[/edit:e2_2", result)
             self.assertNotIn("PROPOSED", result)

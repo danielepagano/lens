@@ -66,11 +66,16 @@ def compensating_rollback(
             f"claim [{owner.operator}:{ann_id}] not found after rollback — "
             "the repository may be in an inconsistent state"
         )
-
     before = lines[: open_ann.line_start - 1]
-    original = lines[open_ann.line_end : close_ann.line_start - 1]
+    # Body between the open and close tags contains the original claimed lines,
+    # plus one synthetic blank line inserted by start_mutation right before the
+    # closing tag. Drop a single trailing empty line if present to recover the
+    # original range exactly.
+    body = lines[open_ann.line_end : close_ann.line_start - 1]
+    if body and body[-1] == "":
+        body = body[:-1]
     after = lines[close_ann.line_end :]
-    rebuilt = "\n".join(before) + "\n" + "\n".join(original) + "\n" + "\n".join(after)
-
+    rebuilt_lines = before + body + after
+    rebuilt = "\n".join(rebuilt_lines)
     file_path.write_text(rebuilt, encoding="utf-8")
     storage.stage_all()

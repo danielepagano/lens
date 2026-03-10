@@ -25,7 +25,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
    lens section    # start/end sections, or carve one from existing prose
    lens pin        # pin/unpin knowledge objects to nodes (see lens pin --help)
    lens write      # AI: generate narrative text at the cursor
-   lens edit       # AI: rewrite a selected line range in narrative
+   lens edit       # AI or manual: rewrite/replace a selected line range in narrative
    lens rewind     # move the cursor back to a node or line, deleting what comes after
    lens rollback   # discard or compensate a pending operator transaction
    lens commit     # stage all changes (git add -A)
@@ -422,22 +422,23 @@ lens write -p person.amy            # pin a knowledge object for this call
 
 ### `lens edit`
 
-Proposes an LLM rewrite of a specific line range in a node, staging a claim annotation.
+Proposes an LLM rewrite of a specific line range in a node, or performs a manual in-place replace, staging a claim annotation.
 
 ```bash
 lens edit /chapter-1 10 20 "make it more tense"
 lens edit /chapter-1 10 20 --retry            # regenerate with same instruction
 lens edit /chapter-1 10 20 "shorter"          # regenerate with new instruction
 lens edit /chapter-1 10 20 "fix it" -p place.inn
+lens edit /chapter-1 10 20 "New text" --replace   # replace lines 10–20 directly (no LLM)
 ```
 
 Arguments: `ADDRESS START_LINE END_LINE [PROMPT]`
 
 - `ADDRESS` — narrative node address (e.g. `/chapter-1`, `my-story/chapter-1`).
 - `START_LINE` / `END_LINE` — 1-based, inclusive line range to rewrite.
-- `PROMPT` — editing instruction (required for a fresh edit; optional on retry to reuse the previous instruction).
+- `PROMPT` — editing instruction (LLM mode) or replacement text (`--replace` mode). Required for a fresh edit; optional on retry to reuse the previous instruction in LLM mode.
 
-`edit` wraps the selected lines in a claim annotation (`[edit:eSTART_END]: #`) that is staged, then streams the proposed replacement as an unstaged diff. Use `lens rollback` to cancel, or `lens commit` to accept.
+`edit` wraps the selected lines in a claim annotation (`[edit:eSTART_END]: #`) that is staged, then either streams the proposed replacement as an unstaged diff (LLM mode) or applies the provided replacement text directly (`--replace` mode). Use `lens rollback` to cancel, or `lens commit` to accept.
 
 ### `lens design`
 

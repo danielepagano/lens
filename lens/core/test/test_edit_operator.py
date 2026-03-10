@@ -83,6 +83,8 @@ def _run_mutation(
     prompt: str | None = None,
     retry: bool = False,
     generate_mock: Any = None,
+    manual: bool = False,
+    replacement: str | None = None,
 ) -> None:
     mock = generate_mock or _fake_generate_stream
     with patch("lens.core.operator.generate_stream", new=mock):
@@ -97,6 +99,8 @@ def _run_mutation(
                         start_line=start_line,
                         end_line=end_line,
                         prompt=prompt,
+                        manual=manual,
+                        replacement=replacement,
                         pins=[],
                         unpins=[],
                         llm_id=None,
@@ -289,3 +293,50 @@ class TestEditOperatorRunMutation(unittest.TestCase):
                         retry=True,
                     )
                 )
+
+    def test_run_mutation_manual_replace_replaces_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(
+                root,
+                narrative,
+                self._REL_PATH,
+                "e1_1",
+                1,
+                1,
+                manual=True,
+                replacement="Manual replacement",
+            )
+
+            text = narrative.md_path().read_text()
+            self.assertIn("Manual replacement", text)
+            self.assertNotIn("Original line one.", text)
+            self.assertNotIn("[edit:e1_1]: #", text)
+
+    def test_run_mutation_manual_replace_stores_marker_in_claim(self) -> None:
+        """Manual replace stores a generic 'replace' marker in the claim tag."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(
+                root,
+                narrative,
+                self._REL_PATH,
+                "e1_1",
+                1,
+                1,
+                manual=True,
+                replacement="Some long replacement text",
+            )
+
+            result = __import__("subprocess").run(
+                ["git", "show", f":{self._REL_PATH}"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("prompt: replace", result.stdout)
+            self.assertNotIn("Some long replacement text", result.stdout)

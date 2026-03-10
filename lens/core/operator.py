@@ -1316,6 +1316,8 @@ class Operator(ABC):
         start_line: int,
         end_line: int,
         prompt: str | None,
+        manual: bool = False,
+        replacement: str | None = None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
@@ -1326,7 +1328,8 @@ class Operator(ABC):
 
         Raises :class:`OperatorError` on user-visible failures.
         """
-        mention_pins = cls.mention_pins(prompt, session.project_root)
+        effective_prompt = None if manual else prompt
+        mention_pins = cls.mention_pins(effective_prompt, session.project_root)
         if mention_pins:
             pins = pins + mention_pins
 
@@ -1339,11 +1342,16 @@ class Operator(ABC):
         pending_owner = probe_storage.detect_pending_owner() if has_pending else None
         is_owner = (pending_owner == owner) if has_pending else False
 
+        if manual and retry:
+            raise OperatorError("retry is not supported in replace mode")
+
         if retry and not is_owner:
             raise OperatorError(f"no pending {cls.name} transaction to retry")
 
         params: dict[str, Any] = {}
-        if prompt:
+        if manual:
+            params["prompt"] = "replace"
+        elif prompt:
             params["prompt"] = prompt
 
         if retry:
@@ -1357,6 +1365,8 @@ class Operator(ABC):
                 session, node, narrative_root, file_path,
                 rel_path, ann_id, owner, start_line, end_line,
                 pins, unpins, llm_id, params,
+                manual=manual,
+                replacement=replacement,
             )
 
     @classmethod
@@ -1376,8 +1386,11 @@ class Operator(ABC):
         llm_id: str | None,
         params: dict[str, Any],
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        *,
+        manual: bool = False,
+        replacement: str | None = None,
     ) -> None:
-        if not params.get("prompt"):
+        if not manual and not params.get("prompt"):
             raise OperatorError("a prompt is required for a fresh edit")
 
         text = file_path.read_text(encoding="utf-8")
@@ -1395,9 +1408,19 @@ class Operator(ABC):
         ).strip()
 
         op = cls(session.new_storage(owner=owner), narrative_root)
-        # params stored in claim tag contain only the prompt, not the target
+        # params stored in claim tag contain only the prompt (or mode), not the target
         # (the target is always recoverable from between the claim tags on retry)
         op.start_mutation(file_path, start_line, end_line, ann_id, params)
+
+        if manual:
+            if replacement is None:
+                raise OperatorError("replacement text is required in replace mode")
+            op.propose_mutation(file_path, ann_id, replacement)
+            print(
+                f"Proposed manual replace for {rel_path} lines {start_line}-{end_line}",
+                file=sys.stderr,
+            )
+            return
 
         crawl_result = crawl(node, extra_pins=pins, extra_unpins=unpins)
         crawl_result = CrawlResult(
