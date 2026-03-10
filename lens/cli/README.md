@@ -26,6 +26,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
    lens pin        # pin/unpin knowledge objects to nodes (see lens pin --help)
    lens write      # AI: generate narrative text at the cursor
    lens edit       # AI: rewrite a selected line range in narrative
+   lens rewind     # move the cursor back to a node or line, deleting what comes after
    lens rollback   # discard or compensate a pending operator transaction
    lens commit     # stage all changes (git add -A)
    lens checkpoint # stage, commit, and push; optional message and --no-push
@@ -58,6 +59,37 @@ Stage all changes in the project (`git add -A`). Use this to “commit” the cu
 Stage all changes, create a git commit (with *MESSAGE* or a default timestamped message), and push to the remote if one is configured.
 
 - `--no-push` — Create the commit but do not push.
+
+### `lens rewind`
+
+Move the cursor to an earlier point in the narrative, deleting everything after it.
+
+```bash
+lens rewind /chapter-1          # rewind to the end of chapter-1 (cursor moves there)
+lens rewind /                   # rewind to the narrative root
+lens rewind /@cursor            # clean up open tail at the current cursor (no-op if clean)
+lens rewind /chapter-1 42       # rewind to line 42 within chapter-1
+```
+
+Arguments: `ADDRESS [LINE]`
+
+- `ADDRESS` — narrative node to rewind to (e.g. `/chapter-1`, `my-story/chapter-1`).
+- `LINE` — optional 1-based line number within the node.
+
+**Node-level rewind (no line number):** The cursor is placed at the end of `ADDRESS`, deleting everything that comes after — later sibling sections (their summaries, close tags, and child nodes), and any unclosed section at the tail of `ADDRESS` itself. If the target is already the cursor position and its tail is clean, this is a no-op.
+
+**Line-level rewind:** The node's file is truncated at `LINE` with structural adjustments:
+
+| Line position | Behaviour |
+|---|---|
+| Front matter | Node is cleared entirely (empty file) |
+| Inside an opening annotation tag | Annotation and everything after is deleted |
+| On or in a closing annotation tag | Everything after the tag is deleted; tag is kept |
+| Inside a section's summary body | Entire section block + its child node are deleted |
+| Inside a write/edit body | Body truncated there; close tag moved to that position |
+| Free text | Simple truncation |
+
+In all cases, child nodes whose section annotations are no longer present are recursively deleted. Side effects such as KB objects created by `design` are never modified. The changes are left as a pending transaction; use `lens commit` or `lens checkpoint` to keep them.
 
 ### `lens rollback`
 
