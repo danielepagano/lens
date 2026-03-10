@@ -168,6 +168,12 @@ ul.tree-list ul.tree-list {
   color: var(--pico-primary-inverse);
 }
 
+.cursor-indicator {
+  color: #33ff77;
+  font-weight: bolder;
+  margin-left: 0.25em;
+}
+
 /* ---- Content area ---- */
 
 .content {

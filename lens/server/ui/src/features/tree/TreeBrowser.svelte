@@ -3,7 +3,7 @@
   import { getTree, getStats, setActiveNarrative } from '../../services/api'
   import type { TreeNode } from '../../services/api'
   import { treeOpen } from '../../stores/ui'
-  import { activeNarrative, availableNarratives } from '../../stores/session'
+  import { activeNarrative, availableNarratives, cursor } from '../../stores/session'
   import TreeNodeComp from './TreeNode.svelte'
 
   export let navigate: (addr: string) => Promise<void>
@@ -33,6 +33,7 @@
       await loadTree()
       const stats = await getStats()
       availableNarratives.set(stats.narratives ?? [])
+      cursor.set(stats.cursor ?? null)
       if (stats.cursor) {
         await navigate(stats.cursor)
       }

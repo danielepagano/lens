@@ -8,7 +8,7 @@
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
-  import { activeNarrative, availableNarratives } from './stores/session'
+  import { activeNarrative, availableNarratives, cursor } from './stores/session'
 
   async function navigate(addr: string): Promise<void> {
     try {
@@ -35,6 +35,7 @@
       const stats = await getStats()
       availableNarratives.set(stats.narratives ?? [])
       activeNarrative.set(stats.active_narrative)
+      cursor.set(stats.cursor ?? null)
       const initial = decodeURIComponent(window.location.hash.slice(1))
       await navigate(initial || stats.cursor || '')
     } catch (e) {
