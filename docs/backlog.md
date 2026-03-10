@@ -50,16 +50,9 @@ See [API Design](./api-design.md) and [App Design](./app-design.md) for key guid
 
 ### [DONE] Milestone 1: The `lens serve` CLI & Basic API. See [here](../lens/server/README.md).
 
-### Milestone 2: Web Shell & Read-Only Viewer
-*   **Frontend Setup**: Svelte + Vite + Pico.css project structure with mobile-first vertical stack.
-*   **TreeBrowser**: Sidebar/panel for navigating narrative nodes.
-*   **MarkdownView**: Render node content using `markdown-it`.
-*   **Session Persistence**: On app load, fetch `/stats` to restore user's current node and scroll position.
-*   **Tested**: Wired into e2e test framework.
-*   *Goal: A mobile-friendly web explorer for Lens narratives.*
+### [DONE] Milestone 2: Web Shell & Basic Read-Only Viewer with tree nav. Dev+prod server.
 
 ### Milestone 3: Deployment, Serving & Security
-*   **`lens serve`**: Serving built assets directly from the FastAPI server.
 *   **Security Layer**: Caddy configuration for HTTPS and Basic Auth as the primary security boundary.
 *   **Deployment Docs**: Documentation for deploying to fly.io or similar.
 *   *Goal: A secure, deployable, read-only view of the narrative.*
