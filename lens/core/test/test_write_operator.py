@@ -241,7 +241,38 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             self.assertIn("[/write]: #", text)
             self.assertLess(text.index("Retried content"), text.index("[/write]: #"))
 
-    def test_run_inline_update_retry(self) -> None:
+    def test_run_inline_new_prompt_starts_fresh(self) -> None:
+        """New prompt without --retry auto-commits the pending result and starts fresh."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            node_file = narrative.find_cursor().md_path()
+
+            _run_inline(root, narrative, prompt="original direction")
+
+            async def _fresh(*args: Any, **kwargs: Any) -> Any:
+                for chunk in ["Fresh", " content"]:
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Fresh content",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            _run_inline(root, narrative, prompt="new direction", generate_mock=_fresh)
+
+            text = node_file.read_text()
+            # Both write blocks present: first was committed, second is pending
+            self.assertIn("Generated content", text)
+            self.assertIn("Fresh content", text)
+            self.assertIn("new direction", text)
+            # Two separate close tags (one per block)
+            self.assertEqual(text.count("[/write]: #"), 2)
+
+    def test_run_inline_retry_with_new_prompt(self) -> None:
+        """--retry with a new prompt discards the pending result and regenerates."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             node_file = narrative.find_cursor().md_path()
@@ -260,13 +291,14 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                     )
                 )
 
-            _run_inline(root, narrative, prompt="new direction", generate_mock=_updated)
+            _run_inline(root, narrative, retry=True, prompt="new direction", generate_mock=_updated)
 
             text = node_file.read_text()
             self.assertIn("Updated content", text)
             self.assertIn("new direction", text)
             self.assertNotIn("Generated content", text)
             self.assertIn("[/write]: #", text)
+            self.assertEqual(text.count("[/write]: #"), 1)
             self.assertLess(text.index("Updated content"), text.index("[/write]: #"))
 
     def test_run_inline_retry_no_pending_errors(self) -> None:

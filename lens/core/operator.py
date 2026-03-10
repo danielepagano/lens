@@ -30,9 +30,12 @@ It resolves the cursor, checks for an existing open annotation of this
 operator, and decides:
 
 - **No existing annotation** → :meth:`_do_fresh_inline`
-- **Existing annotation, same owner**: user passed new prompt/pins/llm or
-  ``--retry`` → :meth:`_do_update_retry` or :meth:`_do_retry`; else
-  → :meth:`_do_continue` (append to existing content)
+- **Existing annotation, same owner, ``--retry``** → :meth:`_do_retry`
+  (discard + regenerate, optionally with updated params)
+- **Existing annotation, same owner, new prompt/pins/llm (no ``--retry``)** →
+  auto-commit pending, then :meth:`_do_fresh_inline`
+- **Existing annotation, same owner, no new args** →
+  :meth:`_do_continue` (append to existing content)
 
 -------------------------------------------------------------------------------
 Fresh inline: _do_fresh_inline step-by-step
@@ -822,20 +825,28 @@ class Operator(ABC):
 
         if is_owner:
             assert existing_ann is not None
-            if prompt or pins or unpins or (
+            if retry:
+                # --retry: discard and regenerate (optionally with updated params)
+                await cls._do_retry(
+                    session, narrative, cursor, rel_path, existing_ann,
+                    prompt=prompt, pins=pins or [], unpins=unpins or [],
+                    llm_id=llm_id, extra_params=extra_params,
+                    on_token=on_token,
+                )
+            elif prompt or pins or unpins or (
                 llm_id and llm_id != existing_ann.params.get("llm_id")
             ):
-                await cls._do_update_retry(
+                # New args without --retry → auto-commit previous, start fresh
+                session.new_storage().stage_all()
+                print(f"Committed pending {cls.name}. Starting fresh.", file=sys.stderr)
+                await cls._do_fresh_inline(
                     session, narrative, cursor, rel_path,
-                    existing_ann, prompt, pins, unpins, llm_id,
+                    prompt, pins, unpins, llm_id,
                     on_token=on_token,
+                    tool_call_depth=_tool_call_depth,
+                    on_confirm=on_confirm,
+                    chain_storage=_chain_storage,
                     extra_params=extra_params,
-                )
-            elif retry:
-                await cls._do_retry(
-                    session, narrative, cursor, rel_path,
-                    existing_ann,
-                    on_token=on_token,
                 )
             else:
                 await cls._do_continue(
@@ -1208,54 +1219,12 @@ class Operator(ABC):
         cursor: NarrativeNode,
         rel_path: str,
         existing_ann: ParsedAnnotation,
-        on_token: Callable[[str], Awaitable[None]] | None = None,
-    ) -> None:
-        ann_pins = cls.extract_list(existing_ann.params, "kb_pin")
-        ann_unpins = cls.extract_list(existing_ann.params, "kb_unpin")
-        ann_llm_id: str | None = existing_ann.params.get("llm_id")
-
-        owner = cls._owner_for_ann(existing_ann, rel_path)
-        op = cls(session.new_storage(owner=owner), narrative)
-        op.write_discard(cursor, existing_ann)
-
-        crawl_result = crawl(cursor, extra_pins=ann_pins, extra_unpins=ann_unpins)
-        cls.enrich_params(crawl_result, existing_ann.params)
-        fresh_ann = op.find_open_annotation(cursor)
-        if fresh_ann is None:
-            raise OperatorError("lost annotation after discard")
-
-        messages = op.build_messages(crawl_result, existing_ann.params)
-
-        try:
-            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token)
-        except KeyboardInterrupt:
-            return
-        except LLMError as e:
-            raise OperatorError(f"LLM error: {e}") from e
-
-        if not content.strip():
-            return
-
-        content_prefix = op.content_prefix_for_fresh(existing_ann.params)
-        if content_prefix:
-            content = content_prefix + content
-        op.write_append(cursor, fresh_ann, content)
-        print(f"Retried {cls.name} in {cursor.path_str()}", file=sys.stderr)
-
-    @classmethod
-    async def _do_update_retry(
-        cls,
-        session: ProjectSession,
-        narrative: NarrativeNode,
-        cursor: NarrativeNode,
-        rel_path: str,
-        existing_ann: ParsedAnnotation,
-        prompt: str | None,
-        pins: list[str],
-        unpins: list[str],
-        llm_id: str | None,
-        on_token: Callable[[str], Awaitable[None]] | None = None,
+        prompt: str | None = None,
+        pins: list[str] | None = None,
+        unpins: list[str] | None = None,
+        llm_id: str | None = None,
         extra_params: dict[str, Any] | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
     ) -> None:
         new_params: dict[str, Any] = dict(existing_ann.params)
         if prompt is not None:
@@ -1269,13 +1238,14 @@ class Operator(ABC):
         if extra_params:
             new_params.update(extra_params)
 
+        params_changed = new_params != existing_ann.params
         eff_pins = cls.extract_list(new_params, "kb_pin")
         eff_unpins = cls.extract_list(new_params, "kb_unpin")
         eff_llm_id: str | None = new_params.get("llm_id")
 
         owner = cls._owner_for_ann(existing_ann, rel_path)
         op = cls(session.new_storage(owner=owner), narrative)
-        op.write_discard(cursor, existing_ann, updated_params=new_params)
+        op.write_discard(cursor, existing_ann, updated_params=new_params if params_changed else None)
 
         crawl_result = crawl(cursor, extra_pins=eff_pins, extra_unpins=eff_unpins)
         cls.enrich_params(crawl_result, new_params)
@@ -1299,7 +1269,7 @@ class Operator(ABC):
         if content_prefix:
             content = content_prefix + content
         op.write_append(cursor, fresh_ann, content)
-        print(f"Updated and retried {cls.name} in {cursor.path_str()}", file=sys.stderr)
+        print(f"Retried {cls.name} in {cursor.path_str()}", file=sys.stderr)
 
     # ------------------------------------------------------------------
     # Mutation flow orchestrator (edit, …)
