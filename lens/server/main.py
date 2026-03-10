@@ -11,6 +11,7 @@ from lens.core.project import ProjectSession
 from lens.server.routes.narratives import router as narratives_router
 from lens.server.routes.node import router as node_router
 from lens.server.routes.status import router as status_router
+from lens.server.routes.transaction import router as transaction_router
 from lens.server.routes.tree import router as tree_router
 
 _STATIC_DIR = Path(__file__).parent / "static"
@@ -23,6 +24,7 @@ def create_app(session: ProjectSession) -> FastAPI:
     app.include_router(tree_router)
     app.include_router(node_router)
     app.include_router(narratives_router)
+    app.include_router(transaction_router)
 
     # Serve built frontend if present
     if _STATIC_DIR.exists():
