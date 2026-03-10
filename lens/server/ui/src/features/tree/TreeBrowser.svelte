@@ -16,12 +16,19 @@
   }
 
   onMount(async () => {
+    // Load tree and narratives independently so a narratives failure
+    // (e.g. missing proxy entry in dev mode) never breaks the tree.
     try {
-      const [narrativesData] = await Promise.all([getNarratives(), loadTree()])
+      await loadTree()
+    } catch (e) {
+      error = String(e)
+    }
+    try {
+      const narrativesData = await getNarratives()
       availableNarratives.set(narrativesData.narratives)
       activeNarrative.set(narrativesData.active)
     } catch (e) {
-      error = String(e)
+      console.error('Failed to load narratives:', e)
     }
   })
 

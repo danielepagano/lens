@@ -274,8 +274,9 @@ ul.tree-list ul.tree-list {
   cursor: pointer;
 }
 
-/* ---- Annotation dividers in rendered markdown ---- */
+/* ---- Annotation dividers and headings in rendered markdown ---- */
 
+/* Thin link bar for empty/self-closing annotations */
 .annotation-divider {
   display: flex;
   align-items: center;
@@ -293,5 +294,20 @@ ul.tree-list ul.tree-list {
 
 .annotation-divider a:hover {
   text-decoration: underline;
-  color: var(--pico-primary);
+}
+
+/* Section headings for annotations with body content.
+   Inherit heading color so the link doesn't look like a hyperlink. */
+.annotation-heading {
+  margin-top: 1.5rem;
+}
+
+.annotation-heading a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.annotation-heading a:hover {
+  text-decoration: underline;
+  opacity: 0.75;
 }

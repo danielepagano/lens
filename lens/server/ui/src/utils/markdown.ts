@@ -23,13 +23,33 @@ function renderDivider(label: string, href: string): string {
   return `<div class="annotation-divider"><a href="#${href}">${label}</a></div>`
 }
 
+function renderHeading(label: string, href: string): string {
+  // Use an explicit HTML element so CSS can target it precisely without
+  // affecting any other h2 elements in the rendered document.
+  return `<h2 class="annotation-heading"><a href="#${href}">${label}</a></h2>`
+}
+
+/** Return true if a line is some kind of annotation (single or multi-line open). */
+function isAnnotationLine(line: string): boolean {
+  return ANNOTATION_RE.test(line) || ANNOTATION_OPEN_RE.test(line)
+}
+
+/** Find the index of the next non-empty line at or after `start`, or -1. */
+function nextNonEmpty(lines: string[], start: number): number {
+  for (let k = start; k < lines.length; k++) {
+    if (lines[k].trim()) return k
+  }
+  return -1
+}
+
 /**
  * Pre-process raw Lens markdown before passing to markdown-it.
  *
- * - Opening annotation with id + non-empty body  → H2 heading link + body
+ * - Opening annotation with id + non-empty body  → HTML h2 heading link + body + optional ---
  * - Opening annotation with id + empty body       → thin divider link bar
  * - Self-closing annotation with id               → thin divider link bar
- * - All other annotations (no id, closing, multi-line blocks) → suppressed
+ * - Closing annotation (consumed or orphan) followed by regular text → ---
+ * - All other annotations (no id, multi-line blocks) → suppressed
  */
 export function preprocessAnnotations(
   markdown: string,
@@ -60,8 +80,19 @@ export function preprocessAnnotations(
     if (m && m.groups) {
       const { close, operator, id, self_close } = m.groups
 
-      if (!id || close) {
-        // No id (cursor/state markers) or closing annotation → suppress
+      if (!id) {
+        // No id (cursor/state marker) → suppress
+        i++
+        continue
+      }
+
+      if (close) {
+        // Orphaned closing annotation (not consumed by opener look-ahead).
+        // Emit --- if regular text follows.
+        const nxt = nextNonEmpty(lines, i + 1)
+        if (nxt >= 0 && !isAnnotationLine(lines[nxt])) {
+          result.push('\n---\n')
+        }
         i++
         continue
       }
@@ -77,7 +108,6 @@ export function preprocessAnnotations(
       }
 
       // Opening annotation with id: look ahead for body + matching close
-      const closeTag = `[/${operator}:${id}]: #`
       const bodyLines: string[] = []
       let j = i + 1
       let hasClose = false
@@ -100,10 +130,19 @@ export function preprocessAnnotations(
       const bodyText = bodyLines.join('\n').trim()
 
       if (bodyText) {
-        // Has content → heading link + body, suppress close
-        result.push(`## [${label}](#${childAddr})`)
+        // Has content → heading link + body.
+        // Emit --- after the body if regular text follows the close annotation.
+        result.push(renderHeading(label, childAddr))
         result.push(...bodyLines)
-        i = hasClose ? j + 1 : j
+        if (hasClose) {
+          const afterClose = nextNonEmpty(lines, j + 1)
+          if (afterClose >= 0 && !isAnnotationLine(lines[afterClose])) {
+            result.push('\n---\n')
+          }
+          i = j + 1
+        } else {
+          i = j
+        }
       } else {
         // Empty body → divider
         result.push(renderDivider(label, childAddr))
