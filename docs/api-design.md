@@ -182,7 +182,8 @@ The Application Core must provide structured APIs for both the CLI and FastAPI:
 
 ### 9.2 Raw Content Management
 *   **Raw Editing**: API to modify node files directly without breaking transaction state. This allows the Web UI to perform manual edits that are then treated as a single transaction.
-*   **Node CRUD**: Create nodes, delete nodes, and toggle between leaf/branch states.
+
+Note: narrative structure changes (creating nodes, moving the cursor, deleting content) are performed by invoking existing commands and operators (`section`, `rewind`, etc.) through their core APIs — not through standalone CRUD endpoints. Leaf/branch promotion is an internal implementation detail managed transparently by those operators.
 
 ---
 

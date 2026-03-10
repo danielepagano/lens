@@ -57,11 +57,12 @@ See [API Design](./api-design.md) and [App Design](./app-design.md) for key guid
 *   **Deployment Docs**: Documentation for deploying to fly.io or similar.
 *   *Goal: A secure, deployable, read-only view of the narrative.*
 
-### Milestone 4: Transactional Mutation & Node CRUD
+### Milestone 4: Transactional Mutation
 *   **Transaction Control**: Endpoints and UI for `POST /rollback` and `POST /commit`.
 *   **Visual Indicators**: Highlight unstaged changes and transaction boundaries in the UI.
-*   **Node CRUD**: APIs and UI for creating nodes and swapping between leaf/branch nodes.
-*   *Goal: Ability to modify narrative structure and manage transactions via the web UI.*
+*   *Goal: Ability to manage transactions and review pending changes via the web UI.*
+
+Note: narrative structure (creating or deleting nodes, moving the cursor) is managed exclusively through operators and commands (`lens section`, `lens rewind`, etc.), not through standalone CRUD APIs. The web UI invokes those same commands via the API.
 
 ### Milestone 5: The Editor & Knowledge Store
 *   **CodeMirror Integration**: Integrate CodeMirror 6 for manual markdown editing.
