@@ -211,3 +211,87 @@ ul.tree-list ul.tree-list {
   padding: 1rem 0.75rem;
   font-size: 0.85rem;
 }
+
+/* ---- TopBar mobile nav (parent link + current title) ---- */
+
+/* Hidden on desktop where sidebar is always visible */
+.parent-link {
+  display: none;
+}
+
+.node-title {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  /* Hide full address on mobile; show parent link + current title instead */
+  .top-bar .address {
+    display: none;
+  }
+
+  .parent-link {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--pico-muted-color);
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .parent-link:hover {
+    color: var(--pico-primary);
+  }
+
+  .node-title {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+}
+
+/* ---- Narrative switcher in sidebar ---- */
+
+.narrative-switcher {
+  padding: 0.4rem 1rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  flex-shrink: 0;
+}
+
+.narrative-switcher select {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+  cursor: pointer;
+}
+
+/* ---- Annotation dividers in rendered markdown ---- */
+
+.annotation-divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0 0.5rem;
+  border-top: 1px solid var(--pico-muted-border-color);
+  padding-top: 0.5rem;
+}
+
+.annotation-divider a {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.annotation-divider a:hover {
+  text-decoration: underline;
+  color: var(--pico-primary);
+}
