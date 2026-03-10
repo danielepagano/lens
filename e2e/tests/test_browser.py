@@ -20,12 +20,20 @@ so the static assets will be present.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import io
 import pathlib
 import subprocess
 import sys
+import threading
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+
+from lens.core.operators.edit import EditOperator
+from lens.core.project import ProjectSession
 
 if TYPE_CHECKING:
     from playwright.sync_api import Page
@@ -98,3 +106,89 @@ class TestBrowser:
         )  # type: ignore[union-attr]
         content: str = page.inner_text('[data-testid="markdown-view"]')  # type: ignore[union-attr]
         assert "Lorem" in content, f"Expected Lorem ipsum in markdown view, got: {content[:200]}"
+
+    def test_transaction_diff_rendering(
+        self,
+        page: "Page",
+        live_server_url: str,
+        lens_project_dir: Path | None,
+    ) -> None:
+        """Pending edit transaction for #story is rendered as green additions and red removals."""
+        if lens_project_dir is None:
+            pytest.skip("Requires local project dir; not supported in external-server mode")
+
+        session = ProjectSession(lens_project_dir, lens_project_dir)
+        narrative = session.active_narrative
+        assert narrative is not None
+
+        node = narrative
+        md_path = node.md_path()
+
+        # Overwrite the root node with simple, deterministic content and commit it as baseline.
+        md_path.write_text("Line one.\nLine two.\n")
+        subprocess.run(
+            ["git", "add", "-A"],
+            cwd=lens_project_dir,
+            capture_output=True,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "baseline for transaction diff"],
+            cwd=lens_project_dir,
+            capture_output=True,
+            check=True,
+        )
+
+        rel_path = str(md_path.relative_to(lens_project_dir).as_posix())
+        ann_id = EditOperator.ann_id(2, 2)
+
+        # Create a pending manual edit transaction replacing line 2.
+        def _run() -> None:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+                io.StringIO()
+            ):
+                asyncio.run(
+                    EditOperator.run_mutation(
+                        session=session,
+                        node=node,
+                        rel_path=rel_path,
+                        ann_id=ann_id,
+                        start_line=2,
+                        end_line=2,
+                        prompt="replace",
+                        manual=True,
+                        replacement="Replacement line two.",
+                        pins=[],
+                        unpins=[],
+                        llm_id=None,
+                        retry=False,
+                    )
+                )
+
+        t = threading.Thread(target=_run)
+        t.start()
+        t.join()
+
+        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        view = page.locator('[data-testid="markdown-view"]')  # type: ignore[union-attr]
+
+        added = view.locator(".transaction-added").filter(has_text="Replacement line two.")
+        removed = view.locator(".transaction-removed").filter(has_text="Line two.")
+
+        added.first.wait_for(timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        removed.first.wait_for(timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+
+        assert "Replacement line two." in added.first.inner_text()
+        assert "Line two." in removed.first.inner_text()
+
+        html = view.inner_html()
+        idx_removed = html.find("transaction-removed")
+        idx_replacement = html.find("Replacement line two.")
+        assert idx_removed >= 0 and idx_replacement >= 0
+        assert idx_removed < idx_replacement, (
+            "Expected .transaction-removed to appear before the replacement text in the DOM"
+        )

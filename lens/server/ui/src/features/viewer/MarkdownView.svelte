@@ -1,14 +1,20 @@
 <script lang="ts">
-  import { nodeContent, currentAddress } from '../../stores/document'
-  import { preprocessAnnotations, createMarkdownRenderer } from '../../utils/markdown'
+  import { nodeContent, currentAddress, transactionState } from '../../stores/document'
+  import {
+    preprocessAnnotations,
+    createMarkdownRenderer,
+    buildNodeTransactionOverlay,
+  } from '../../utils/markdown'
 
   // html: true so that <!-- comments --> are rendered as real HTML comments
   // (invisible in browser) rather than as literal text. Safe for a private
   // single-user tool — content comes from our own backend.
   const md = createMarkdownRenderer()
 
+  $: overlay = buildNodeTransactionOverlay($transactionState, $currentAddress)
+
   $: rendered = $nodeContent
-    ? md.render(preprocessAnnotations($nodeContent, $currentAddress))
+    ? md.render(preprocessAnnotations($nodeContent, $currentAddress, overlay))
     : ''
 </script>
 

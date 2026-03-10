@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { getTree, getStats, setActiveNarrative } from '../../services/api'
+  import { getTree, getStats, setActiveNarrative, getTransaction } from '../../services/api'
   import type { TreeNode } from '../../services/api'
   import { treeOpen } from '../../stores/ui'
   import { activeNarrative, availableNarratives, cursor } from '../../stores/session'
+  import { transactionState } from '../../stores/document'
   import TreeNodeComp from './TreeNode.svelte'
 
   export let navigate: (addr: string) => Promise<void>
@@ -34,6 +35,17 @@
       const stats = await getStats()
       availableNarratives.set(stats.narratives ?? [])
       cursor.set(stats.cursor ?? null)
+      if (stats.has_pending) {
+        try {
+          const tx = await getTransaction()
+          transactionState.set(tx)
+        } catch (err) {
+          console.error('Transaction fetch failed:', err)
+          transactionState.set(null)
+        }
+      } else {
+        transactionState.set(null)
+      }
       if (stats.cursor) {
         await navigate(stats.cursor)
       }

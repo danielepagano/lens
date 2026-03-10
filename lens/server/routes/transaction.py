@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from lens.core.commands.diff import get_staged_state, get_transaction_state
+from lens.core.address import NarrativeAddress
 from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
 
@@ -19,6 +20,15 @@ def _state_to_dict(state: Any) -> dict[str, Any]:
         "files": [
             {
                 "path": f.path,
+                "address": (
+                    str(
+                        NarrativeAddress.from_file_and_annotation(
+                            f.path,
+                        ).node_only(),
+                    )
+                    if f.path.startswith("narrative/")
+                    else None
+                ),
                 "hunks": [
                     {
                         "old_start": hunk.old_start,

@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it'
+import type { TransactionState, FileDiff, DiffHunk, DiffLine } from '../services/api'
 
 // Mirrors Python's ANNOTATION_RE: single-line [op(:id)?(/)?]: #
 const ANNOTATION_RE =
@@ -11,6 +12,45 @@ const ANNOTATION_OPEN_RE =
 
 // Closing line of a multi-line annotation: `]: #`
 const ANNOTATION_END_RE = /^\s*\]:\s*#\s*$/
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function pushRemovedBlockquotes(
+  into: string[],
+  removedByLine: Map<number, RemovedGroup[]>,
+  lineNo: number,
+  overlay: NodeTransactionOverlay | null,
+): void {
+  const groups = removedByLine.get(lineNo)
+  if (groups?.length) {
+    for (const g of groups) {
+      const body = g.lines.length ? g.lines.map(escapeHtml).join('\n') : ''
+      into.push(`<blockquote class="transaction-removed"><pre>${body}</pre></blockquote>`)
+    }
+  } else if (overlay?.removedGroups.length) {
+    for (const g of overlay.removedGroups) {
+      const body = g.lines.length ? g.lines.map(escapeHtml).join('\n') : ''
+      into.push(`<blockquote class="transaction-removed"><pre>${body}</pre></blockquote>`)
+    }
+  }
+}
+
+export interface RemovedGroup {
+  beforeLine: number
+  lines: string[]
+}
+
+export interface NodeTransactionOverlay {
+  addedLines: Set<number>
+  addedLineTexts: Set<string>
+  removedGroups: RemovedGroup[]
+}
 
 function toLabel(id: string): string {
   return id
@@ -45,6 +85,8 @@ function nextNonEmpty(lines: string[], start: number): number {
 /**
  * Shared look-ahead logic: given an opening annotation at `bodyStart`, find
  * the body and optional matching close, then render the annotation.
+ * If overlay and bodyStartLine are provided, transaction diff styling is
+ * applied to body lines (added-line wrap and removed-line blockquotes).
  *
  * Returns the result lines to append and the new value of `i`.
  */
@@ -55,6 +97,8 @@ function renderAnnotationWithBody(
   id: string,
   childAddr: string,
   label: string,
+  overlay: NodeTransactionOverlay | null,
+  removedByLine: Map<number, RemovedGroup[]>,
 ): { output: string[]; nextI: number } {
   const bodyLines: string[] = []
   let j = bodyStart
@@ -78,7 +122,20 @@ function renderAnnotationWithBody(
 
   if (bodyText) {
     output.push(renderHeading(label, childAddr))
-    output.push(...bodyLines)
+    const bodyStartLine = bodyStart + 1
+    for (let k = 0; k < bodyLines.length; k++) {
+      const fileLine = bodyStartLine + k
+      let outLine = bodyLines[k]
+      const isAdded =
+        overlay &&
+        (overlay.addedLineTexts.has(outLine.trim()) ||
+          (overlay.addedLines.has(fileLine) && outLine.trim() !== ''))
+      if (isAdded) {
+        pushRemovedBlockquotes(output, removedByLine, fileLine, overlay)
+        outLine = `<span class="transaction-added">${escapeHtml(outLine)}</span>`
+      }
+      output.push(outLine)
+    }
     if (hasClose) {
       const afterClose = nextNonEmpty(lines, j + 1)
       if (afterClose >= 0 && !isAnnotationLine(lines[afterClose])) {
@@ -104,12 +161,29 @@ function renderAnnotationWithBody(
 export function preprocessAnnotations(
   markdown: string,
   baseAddress: string | null,
-): string {
+  overlay: NodeTransactionOverlay | null = null,
+ ): string {
   const lines = markdown.split('\n')
   const result: string[] = []
+  const removedByLine = new Map<number, RemovedGroup[]>()
+  const trailingRemoved: RemovedGroup[] = []
+
+  if (overlay) {
+    for (const group of overlay.removedGroups) {
+      if (group.beforeLine <= lines.length) {
+        const existing = removedByLine.get(group.beforeLine) ?? []
+        existing.push(group)
+        removedByLine.set(group.beforeLine, existing)
+      } else {
+        trailingRemoved.push(group)
+      }
+    }
+  }
+
   let i = 0
 
   while (i < lines.length) {
+    const lineNo = i + 1
     const line = lines[i]
 
     // --- Multi-line annotation block: [op(:id)? ← whole line, no `]: #`
@@ -124,12 +198,11 @@ export function preprocessAnnotations(
       i++ // skip `]: #`; i now points to line after the block
 
       if (og?.id && !og.close && !og.self_close && og.operator) {
-        // Multi-line opening with id: same look-ahead as single-line
         const childAddr = baseAddress ? `${baseAddress}/${og.id}` : og.id
         const label =
           toLabel(og.id) + (og.operator !== 'section' ? ` (${toLabel(og.operator)})` : '')
         const { output, nextI } = renderAnnotationWithBody(
-          lines, i, og.operator, og.id, childAddr, label,
+          lines, i, og.operator, og.id, childAddr, label, overlay, removedByLine,
         )
         result.push(...output)
         i = nextI
@@ -169,15 +242,34 @@ export function preprocessAnnotations(
       }
 
       const { output, nextI } = renderAnnotationWithBody(
-        lines, i + 1, operator, id, childAddr, label,
+        lines, i + 1, operator, id, childAddr, label, overlay, removedByLine,
       )
       result.push(...output)
       i = nextI
       continue
     }
 
-    result.push(line)
+    let outLine = line
+    const isAdded =
+      overlay &&
+      !isAnnotationLine(line) &&
+      (overlay.addedLineTexts.has(line.trim()) ||
+        (overlay.addedLines.has(lineNo) && line.trim() !== ''))
+    if (isAdded) {
+      pushRemovedBlockquotes(result, removedByLine, lineNo, overlay)
+      outLine = `<span class="transaction-added">${escapeHtml(line)}</span>`
+    }
+    result.push(outLine)
     i++
+  }
+
+  if (trailingRemoved.length > 0) {
+    for (const g of trailingRemoved) {
+      const body = g.lines.length ? g.lines.map(escapeHtml).join('\n') : ''
+      result.push(
+        `<blockquote class="transaction-removed"><pre>${body}</pre></blockquote>`,
+      )
+    }
   }
 
   return result.join('\n')
@@ -186,4 +278,53 @@ export function preprocessAnnotations(
 /** Shared markdown-it instance with settings matching the app's rendering needs. */
 export function createMarkdownRenderer(): MarkdownIt {
   return new MarkdownIt({ html: true, linkify: true, typographer: true })
+}
+
+export function buildNodeTransactionOverlay(
+  tx: TransactionState | null,
+  currentAddress: string | null,
+): NodeTransactionOverlay | null {
+  if (!tx || !tx.has_pending || !currentAddress) return null
+  const file = tx.files.find((f: FileDiff) => f.address === currentAddress)
+  if (!file) return null
+
+  const addedLines = new Set<number>()
+  const addedLineTexts = new Set<string>()
+  const removedGroups: RemovedGroup[] = []
+
+  for (const hunk of file.hunks as DiffHunk[]) {
+    let newLine = hunk.new_start
+    let pendingRemoved: string[] = []
+    let pendingBefore = newLine
+
+    for (const line of hunk.lines as DiffLine[]) {
+      if (line.kind === 'add') {
+        if (!line.is_annotation) {
+          addedLines.add(newLine)
+          const t = line.text.trim()
+          if (t) addedLineTexts.add(t)
+        }
+        if (pendingRemoved.length > 0) {
+          removedGroups.push({ beforeLine: pendingBefore, lines: pendingRemoved })
+          pendingRemoved = []
+        }
+        newLine += 1
+      } else if (line.kind === 'remove') {
+        if (!line.is_annotation) {
+          if (pendingRemoved.length === 0) pendingBefore = newLine
+          pendingRemoved.push(line.text)
+        }
+      }
+    }
+
+    if (pendingRemoved.length > 0) {
+      removedGroups.push({ beforeLine: pendingBefore, lines: pendingRemoved })
+    }
+  }
+
+  if (addedLines.size === 0 && addedLineTexts.size === 0 && removedGroups.length === 0) {
+    return null
+  }
+
+  return { addedLines, addedLineTexts, removedGroups }
 }
