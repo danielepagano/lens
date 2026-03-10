@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
+  import { get } from 'svelte/store'
   import MainLayout from './layout/MainLayout.svelte'
   import TopBar from './layout/TopBar.svelte'
   import BottomBar from './layout/BottomBar.svelte'
@@ -7,18 +8,43 @@
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
+  import { activeNarrative, availableNarratives, cursor } from './stores/session'
+
+  async function navigate(addr: string): Promise<void> {
+    try {
+      const data = await getNode(addr)
+      currentAddress.set(data.address)
+      nodeContent.set(data.content)
+      window.location.hash = data.address
+    } catch (e) {
+      console.error('Navigation failed:', e)
+    }
+  }
+
+  function handleHashChange() {
+    const addr = decodeURIComponent(window.location.hash.slice(1))
+    if (addr && addr !== get(currentAddress)) {
+      navigate(addr)
+    }
+  }
 
   onMount(async () => {
+    window.addEventListener('hashchange', handleHashChange)
+
     try {
       const stats = await getStats()
-      if (stats.cursor) {
-        const data = await getNode(stats.cursor)
-        currentAddress.set(data.address)
-        nodeContent.set(data.content)
-      }
+      availableNarratives.set(stats.narratives ?? [])
+      activeNarrative.set(stats.active_narrative)
+      cursor.set(stats.cursor ?? null)
+      const initial = decodeURIComponent(window.location.hash.slice(1))
+      await navigate(initial || stats.cursor || '')
     } catch (e) {
       console.error('Init failed:', e)
     }
+  })
+
+  onDestroy(() => {
+    window.removeEventListener('hashchange', handleHashChange)
   })
 </script>
 
@@ -27,7 +53,7 @@
     <TopBar />
   </svelte:fragment>
 
-  <TreeBrowser />
+  <TreeBrowser {navigate} />
   <MarkdownView />
 
   <svelte:fragment slot="bottombar">

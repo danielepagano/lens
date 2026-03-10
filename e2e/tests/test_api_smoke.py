@@ -33,11 +33,16 @@ class TestApiSmoke:
         assert data["active_narrative"] == "story"
         assert data["kb_count"] >= 2
 
-    def test_tree_has_story(self, live_server_url: str) -> None:
+    def test_tree_returns_list(self, live_server_url: str) -> None:
         with urllib.request.urlopen(f"{live_server_url}/tree") as resp:
             data = json.loads(resp.read())
         assert isinstance(data, list)
-        assert any("story" in n.get("address", "") for n in data)
+        # /tree now returns the children of the active narrative (not the root level);
+        # each item must have address, key, and children fields if any items are present.
+        for node in data:
+            assert "address" in node
+            assert "key" in node
+            assert "children" in node
 
     def test_node_content(self, live_server_url: str) -> None:
         with urllib.request.urlopen(f"{live_server_url}/node/story") as resp:

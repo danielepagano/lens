@@ -17,6 +17,7 @@ export default defineConfig({
       '/stats': apiBase,
       '/tree': apiBase,
       '/node/': apiBase,
+      '/narratives': apiBase,
     },
   },
 })

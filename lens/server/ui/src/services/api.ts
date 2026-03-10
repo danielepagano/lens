@@ -4,8 +4,19 @@ async function get(path: string): Promise<unknown> {
   return r.json()
 }
 
+async function post(path: string, body: unknown): Promise<unknown> {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`)
+  return r.json()
+}
+
 export interface Stats {
   active_narrative: string | null
+  narratives: string[]
   cursor: string | null
   has_pending: boolean
   pending_owner: string | null
@@ -27,3 +38,5 @@ export const getStats = (): Promise<Stats> => get('/stats') as Promise<Stats>
 export const getTree = (): Promise<TreeNode[]> => get('/tree') as Promise<TreeNode[]>
 export const getNode = (addr: string): Promise<NodeData> =>
   get(`/node/${addr}`) as Promise<NodeData>
+export const setActiveNarrative = (slug: string): Promise<{ active: string }> =>
+  post('/narratives/active', { narrative: slug }) as Promise<{ active: string }>

@@ -31,6 +31,12 @@ class TestStats:
         data = test_client.get("/stats").json()
         assert data["active_narrative"] == "story"
 
+    def test_narratives_list_included(self, test_client: TestClient) -> None:
+        data = test_client.get("/stats").json()
+        assert "narratives" in data
+        assert isinstance(data["narratives"], list)
+        assert "story" in data["narratives"]
+
     def test_kb_count_positive(self, test_client: TestClient) -> None:
         data = test_client.get("/stats").json()
         # person.amy and place.forest were added during setup.
@@ -50,10 +56,15 @@ class TestTree:
         data = r.json()
         assert isinstance(data, list)
 
-    def test_story_root_present(self, test_client: TestClient) -> None:
+    def test_items_have_required_fields(self, test_client: TestClient) -> None:
+        # Tree now returns children of the active narrative, not all roots.
+        # The test project's root node may have no children, so the list
+        # may be empty — we just verify shape of any items that are present.
         data = test_client.get("/tree").json()
-        addresses = [n["address"] for n in data]
-        assert any("story" in a for a in addresses)
+        for item in data:
+            assert "address" in item
+            assert "key" in item
+            assert "children" in item
 
 
 class TestNode:
@@ -76,3 +87,32 @@ class TestNode:
     def test_children_is_list(self, test_client: TestClient) -> None:
         data = test_client.get("/node/story").json()
         assert isinstance(data["children"], list)
+
+
+class TestNarratives:
+    def test_list_contains_story(self, test_client: TestClient) -> None:
+        r = test_client.get("/narratives")
+        assert r.status_code == 200
+        data = r.json()
+        assert "story" in data["narratives"]
+
+    def test_active_matches_stats(self, test_client: TestClient) -> None:
+        narratives_data = test_client.get("/narratives").json()
+        stats_data = test_client.get("/stats").json()
+        assert narratives_data["active"] == stats_data["active_narrative"]
+
+    def test_set_and_restore(self, test_client: TestClient) -> None:
+        # Switch to a new narrative, verify, then restore "story" as active.
+        r = test_client.post("/narratives/active", json={"narrative": "api-test-narrative"})
+        assert r.status_code == 200
+        assert r.json()["active"] == "api-test-narrative"
+        assert test_client.get("/narratives").json()["active"] == "api-test-narrative"
+
+        # Restore original state.
+        r2 = test_client.post("/narratives/active", json={"narrative": "story"})
+        assert r2.status_code == 200
+        assert r2.json()["active"] == "story"
+
+    def test_invalid_slug_returns_422(self, test_client: TestClient) -> None:
+        r = test_client.post("/narratives/active", json={"narrative": "bad slug!"})
+        assert r.status_code == 422

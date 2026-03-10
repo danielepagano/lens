@@ -24,13 +24,11 @@ def _node_to_dict(node: NarrativeNode) -> dict[str, Any]:
 def tree(session: ProjectSession = Depends(get_session)) -> list[dict[str, Any]]:
     if is_dataset_root(session.project_root):
         return []
-    narrative_dir = session.project_root / "narrative"
-    if not narrative_dir.exists():
+    if session.active_narrative is None:
         return []
-    result: list[dict[str, Any]] = []
-    for d in sorted(narrative_dir.iterdir()):
-        if d.is_dir():
-            root_node = NarrativeNode(narrative_root=d, key_path=())
-            if root_node.exists():
-                result.append(_node_to_dict(root_node))
-    return result
+    # Return children of the active narrative root — the root itself is
+    # shown via the narrative switcher dropdown, so it would be redundant here.
+    return [
+        _node_to_dict(session.active_narrative.child_node(key))
+        for key in session.active_narrative.child_keys()
+    ]

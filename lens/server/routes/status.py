@@ -15,6 +15,7 @@ router = APIRouter()
 def health(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     return {"status": "ok"}
 
+
 @router.get("/stats")
 def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     result = get_stats(session)
@@ -22,6 +23,7 @@ def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
         "active_narrative": session.active_narrative.narrative_root.name
         if session.active_narrative is not None
         else None,
+        "narratives": [t[0] for t in result.trees],
         "cursor": str(result.cursor_addr) if result.cursor_addr is not None else None,
         "has_pending": result.has_pending,
         "pending_owner": str(result.pending_owner) if result.pending_owner is not None else None,
