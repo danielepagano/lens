@@ -20,6 +20,7 @@ export interface Stats {
   cursor: string | null
   has_pending: boolean
   pending_owner: string | null
+  transaction: TransactionState | null
 }
 
 export interface DiffLine {
@@ -65,5 +66,3 @@ export const getNode = (addr: string): Promise<NodeData> =>
   get(`/node/${addr}`) as Promise<NodeData>
 export const setActiveNarrative = (slug: string): Promise<{ active: string }> =>
   post('/narratives/active', { narrative: slug }) as Promise<{ active: string }>
-export const getTransaction = (): Promise<TransactionState> =>
-  get('/transaction') as Promise<TransactionState>

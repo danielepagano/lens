@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from lens.core.commands.diff import get_staged_state, get_transaction_state
+from lens.core.commands.diff import get_staged_state
 from lens.core.address import NarrativeAddress
 from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
@@ -12,7 +12,7 @@ from lens.server.dependencies import get_session
 router = APIRouter()
 
 
-def _state_to_dict(state: Any) -> dict[str, Any]:
+def transaction_state_to_dict(state: Any) -> dict[str, Any]:
     return {
         "has_pending": state.has_pending,
         "owner": state.owner,
@@ -50,15 +50,8 @@ def _state_to_dict(state: Any) -> dict[str, Any]:
     }
 
 
-@router.get("/transaction")
-def transaction(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
-    storage = session.new_storage(owner=None)
-    state = get_transaction_state(storage)
-    return _state_to_dict(state)
-
-
 @router.get("/staged")
 def staged(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     storage = session.new_storage(owner=None)
     state = get_staged_state(storage)
-    return _state_to_dict(state)
+    return transaction_state_to_dict(state)

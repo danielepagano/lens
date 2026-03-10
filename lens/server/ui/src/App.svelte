@@ -6,27 +6,19 @@
   import BottomBar from './layout/BottomBar.svelte'
   import TreeBrowser from './features/tree/TreeBrowser.svelte'
   import MarkdownView from './features/viewer/MarkdownView.svelte'
-  import { getStats, getNode, getTransaction } from './services/api'
+  import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent, transactionState } from './stores/document'
   import { activeNarrative, availableNarratives, cursor } from './stores/session'
 
   async function navigate(addr: string): Promise<void> {
     if (!addr) return
     try {
-      const [data, tx] = await Promise.all([
-        getNode(addr),
-        getTransaction().catch((e) => {
-          console.error('Transaction fetch failed:', e)
-          return null
-        }),
-      ])
+      const data = await getNode(addr)
       currentAddress.set(data.address)
       nodeContent.set(data.content)
-      transactionState.set(tx?.has_pending ? tx : null)
       window.location.hash = data.address
     } catch (e) {
       console.error('Navigation failed:', e)
-      transactionState.set(null)
     }
   }
 
@@ -45,6 +37,7 @@
       availableNarratives.set(stats.narratives ?? [])
       activeNarrative.set(stats.active_narrative)
       cursor.set(stats.cursor ?? null)
+      transactionState.set(stats.transaction ?? null)
 
       const initial = decodeURIComponent(window.location.hash.slice(1))
       await navigate(initial || stats.cursor || '')

@@ -18,7 +18,6 @@ export default defineConfig({
       '/tree': apiBase,
       '/node/': apiBase,
       '/narratives': apiBase,
-      '/transaction': apiBase,
       '/staged': apiBase,
     },
   },

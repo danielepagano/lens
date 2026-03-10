@@ -48,6 +48,12 @@ class TestStats:
         assert data["cursor"] is not None
         assert "story" in data["cursor"]
 
+    def test_includes_transaction(self, test_client: TestClient) -> None:
+        data = test_client.get("/stats").json()
+        assert "transaction" in data
+        assert data["has_pending"] is False
+        assert data["transaction"] is None
+
 
 class TestTree:
     def test_returns_list(self, test_client: TestClient) -> None:
@@ -116,32 +122,6 @@ class TestNarratives:
     def test_invalid_slug_returns_422(self, test_client: TestClient) -> None:
         r = test_client.post("/narratives/active", json={"narrative": "bad slug!"})
         assert r.status_code == 422
-
-
-class TestTransaction:
-    def test_returns_200(self, test_client: TestClient) -> None:
-        r = test_client.get("/transaction")
-        assert r.status_code == 200
-
-    def test_no_pending_on_clean_project(self, test_client: TestClient) -> None:
-        data = test_client.get("/transaction").json()
-        assert data["has_pending"] is False
-
-    def test_shape_on_clean_project(self, test_client: TestClient) -> None:
-        data = test_client.get("/transaction").json()
-        assert "has_pending" in data
-        assert "owner" in data
-        assert "is_mutation" in data
-        assert "files" in data
-        assert isinstance(data["files"], list)
-
-    def test_owner_none_when_no_pending(self, test_client: TestClient) -> None:
-        data = test_client.get("/transaction").json()
-        assert data["owner"] is None
-
-    def test_is_mutation_false_when_no_pending(self, test_client: TestClient) -> None:
-        data = test_client.get("/transaction").json()
-        assert data["is_mutation"] is False
 
 
 class TestStaged:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+import pkgutil
 from pathlib import Path
 from typing import Any
 
@@ -8,11 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from lens.core.project import ProjectSession
-from lens.server.routes.narratives import router as narratives_router
-from lens.server.routes.node import router as node_router
-from lens.server.routes.status import router as status_router
-from lens.server.routes.transaction import router as transaction_router
-from lens.server.routes.tree import router as tree_router
+from lens.server import routes as routes_pkg
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
@@ -20,11 +18,12 @@ _STATIC_DIR = Path(__file__).parent / "static"
 def create_app(session: ProjectSession) -> FastAPI:
     app = FastAPI(title="Lens API")
     app.state.session = session
-    app.include_router(status_router)
-    app.include_router(tree_router)
-    app.include_router(node_router)
-    app.include_router(narratives_router)
-    app.include_router(transaction_router)
+    for _importer, modname, _ispkg in sorted(
+        pkgutil.iter_modules(routes_pkg.__path__), key=lambda m: m[1]
+    ):
+        mod = importlib.import_module(f"{routes_pkg.__name__}.{modname}")
+        if hasattr(mod, "router"):
+            app.include_router(mod.router)
 
     # Serve built frontend if present
     if _STATIC_DIR.exists():
