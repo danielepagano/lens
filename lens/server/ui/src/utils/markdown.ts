@@ -4,10 +4,10 @@ import MarkdownIt from 'markdown-it'
 const ANNOTATION_RE =
   /^\s*\[(?<close>\/)?(?<operator>[a-zA-Z_][a-zA-Z0-9_]*)(:(?<id>[a-zA-Z0-9_-]+))?(?<self_close>\/)?\]:\s*#\s*$/
 
-// Mirrors Python's ANNOTATION_OPEN_RE: opening line of a multi-line annotation block
-// Line looks like `[operator(:id)?` with only whitespace after (no `]: #` ending)
+// Mirrors Python's ANNOTATION_OPEN_RE: opening line of a multi-line annotation block.
+// Named groups so we can extract operator/id from the opening line.
 const ANNOTATION_OPEN_RE =
-  /^\s*\[(?:\/)?(?:[a-zA-Z_][a-zA-Z0-9_]*)(?::[a-zA-Z0-9_-]+)?(?:\/)?\s*$/
+  /^\s*\[(?<close>\/)?(?<operator>[a-zA-Z_][a-zA-Z0-9_]*)(:(?<id>[a-zA-Z0-9_-]+))?(?<self_close>\/)?\s*$/
 
 // Closing line of a multi-line annotation: `]: #`
 const ANNOTATION_END_RE = /^\s*\]:\s*#\s*$/
@@ -43,13 +43,63 @@ function nextNonEmpty(lines: string[], start: number): number {
 }
 
 /**
+ * Shared look-ahead logic: given an opening annotation at `bodyStart`, find
+ * the body and optional matching close, then render the annotation.
+ *
+ * Returns the result lines to append and the new value of `i`.
+ */
+function renderAnnotationWithBody(
+  lines: string[],
+  bodyStart: number,
+  operator: string,
+  id: string,
+  childAddr: string,
+  label: string,
+): { output: string[]; nextI: number } {
+  const bodyLines: string[] = []
+  let j = bodyStart
+  let hasClose = false
+
+  while (j < lines.length) {
+    const candidate = lines[j]
+    if (ANNOTATION_RE.test(candidate) || ANNOTATION_OPEN_RE.test(candidate)) {
+      const cm = candidate.match(ANNOTATION_RE)
+      if (cm?.groups?.close && cm.groups.operator === operator && cm.groups.id === id) {
+        hasClose = true
+      }
+      break
+    }
+    bodyLines.push(candidate)
+    j++
+  }
+
+  const bodyText = bodyLines.join('\n').trim()
+  const output: string[] = []
+
+  if (bodyText) {
+    output.push(renderHeading(label, childAddr))
+    output.push(...bodyLines)
+    if (hasClose) {
+      const afterClose = nextNonEmpty(lines, j + 1)
+      if (afterClose >= 0 && !isAnnotationLine(lines[afterClose])) {
+        output.push('\n---\n')
+      }
+    }
+    return { output, nextI: hasClose ? j + 1 : j }
+  } else {
+    output.push(renderDivider(label, childAddr))
+    return { output, nextI: hasClose ? j + 1 : j }
+  }
+}
+
+/**
  * Pre-process raw Lens markdown before passing to markdown-it.
  *
  * - Opening annotation with id + non-empty body  → HTML h2 heading link + body + optional ---
  * - Opening annotation with id + empty body       → thin divider link bar
  * - Self-closing annotation with id               → thin divider link bar
  * - Closing annotation (consumed or orphan) followed by regular text → ---
- * - All other annotations (no id, multi-line blocks) → suppressed
+ * - All other annotations (no id, multi-line blocks without id) → suppressed
  */
 export function preprocessAnnotations(
   markdown: string,
@@ -63,15 +113,28 @@ export function preprocessAnnotations(
     const line = lines[i]
 
     // --- Multi-line annotation block: [op(:id)? ← whole line, no `]: #`
-    // But must NOT also match a single-line `]: #` pattern (ANNOTATION_RE).
-    // If the line ends with `]: #`, it's handled below as a single-line annotation.
     if (ANNOTATION_OPEN_RE.test(line) && !ANNOTATION_RE.test(line)) {
-      // Suppress the entire block until `]: #`
+      const openMatch = line.match(ANNOTATION_OPEN_RE)
+      const og = openMatch?.groups
+      // Advance past the parameter lines to the `]: #` closing line
       i++
       while (i < lines.length && !ANNOTATION_END_RE.test(lines[i])) {
         i++
       }
-      i++ // skip the `]: #` line
+      i++ // skip `]: #`; i now points to line after the block
+
+      if (og?.id && !og.close && !og.self_close && og.operator) {
+        // Multi-line opening with id: same look-ahead as single-line
+        const childAddr = baseAddress ? `${baseAddress}/${og.id}` : og.id
+        const label =
+          toLabel(og.id) + (og.operator !== 'section' ? ` (${toLabel(og.operator)})` : '')
+        const { output, nextI } = renderAnnotationWithBody(
+          lines, i, og.operator, og.id, childAddr, label,
+        )
+        result.push(...output)
+        i = nextI
+      }
+      // else: multi-line without id → already advanced, just continue
       continue
     }
 
@@ -87,8 +150,7 @@ export function preprocessAnnotations(
       }
 
       if (close) {
-        // Orphaned closing annotation (not consumed by opener look-ahead).
-        // Emit --- if regular text follows.
+        // Orphaned closing annotation → emit --- if regular text follows
         const nxt = nextNonEmpty(lines, i + 1)
         if (nxt >= 0 && !isAnnotationLine(lines[nxt])) {
           result.push('\n---\n')
@@ -101,53 +163,16 @@ export function preprocessAnnotations(
       const label = toLabel(id) + (operator !== 'section' ? ` (${toLabel(operator)})` : '')
 
       if (self_close) {
-        // Self-closing with id → divider
         result.push(renderDivider(label, childAddr))
         i++
         continue
       }
 
-      // Opening annotation with id: look ahead for body + matching close
-      const bodyLines: string[] = []
-      let j = i + 1
-      let hasClose = false
-
-      while (j < lines.length) {
-        const candidate = lines[j]
-        // Stop at any annotation line
-        if (ANNOTATION_RE.test(candidate) || ANNOTATION_OPEN_RE.test(candidate)) {
-          // Check if it's the matching close
-          const cm = candidate.match(ANNOTATION_RE)
-          if (cm && cm.groups && cm.groups.close && cm.groups.operator === operator && cm.groups.id === id) {
-            hasClose = true
-          }
-          break
-        }
-        bodyLines.push(candidate)
-        j++
-      }
-
-      const bodyText = bodyLines.join('\n').trim()
-
-      if (bodyText) {
-        // Has content → heading link + body.
-        // Emit --- after the body if regular text follows the close annotation.
-        result.push(renderHeading(label, childAddr))
-        result.push(...bodyLines)
-        if (hasClose) {
-          const afterClose = nextNonEmpty(lines, j + 1)
-          if (afterClose >= 0 && !isAnnotationLine(lines[afterClose])) {
-            result.push('\n---\n')
-          }
-          i = j + 1
-        } else {
-          i = j
-        }
-      } else {
-        // Empty body → divider
-        result.push(renderDivider(label, childAddr))
-        i = hasClose ? j + 1 : j
-      }
+      const { output, nextI } = renderAnnotationWithBody(
+        lines, i + 1, operator, id, childAddr, label,
+      )
+      result.push(...output)
+      i = nextI
       continue
     }
 

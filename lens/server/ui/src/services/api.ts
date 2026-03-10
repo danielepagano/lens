@@ -16,6 +16,7 @@ async function post(path: string, body: unknown): Promise<unknown> {
 
 export interface Stats {
   active_narrative: string | null
+  narratives: string[]
   cursor: string | null
   has_pending: boolean
   pending_owner: string | null
@@ -33,16 +34,9 @@ export interface NodeData {
   children: string[]
 }
 
-export interface NarrativesData {
-  narratives: string[]
-  active: string | null
-}
-
 export const getStats = (): Promise<Stats> => get('/stats') as Promise<Stats>
 export const getTree = (): Promise<TreeNode[]> => get('/tree') as Promise<TreeNode[]>
 export const getNode = (addr: string): Promise<NodeData> =>
   get(`/node/${addr}`) as Promise<NodeData>
-export const getNarratives = (): Promise<NarrativesData> =>
-  get('/narratives') as Promise<NarrativesData>
 export const setActiveNarrative = (slug: string): Promise<{ active: string }> =>
   post('/narratives/active', { narrative: slug }) as Promise<{ active: string }>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { getTree, getStats, getNarratives, setActiveNarrative } from '../../services/api'
+  import { getTree, getStats, setActiveNarrative } from '../../services/api'
   import type { TreeNode } from '../../services/api'
   import { treeOpen } from '../../stores/ui'
   import { activeNarrative, availableNarratives } from '../../stores/session'
@@ -16,19 +16,12 @@
   }
 
   onMount(async () => {
-    // Load tree and narratives independently so a narratives failure
-    // (e.g. missing proxy entry in dev mode) never breaks the tree.
+    // Narrative stores are seeded by App.svelte from the initial /stats call.
+    // TreeBrowser only needs to load the tree.
     try {
       await loadTree()
     } catch (e) {
       error = String(e)
-    }
-    try {
-      const narrativesData = await getNarratives()
-      availableNarratives.set(narrativesData.narratives)
-      activeNarrative.set(narrativesData.active)
-    } catch (e) {
-      console.error('Failed to load narratives:', e)
     }
   })
 
@@ -39,6 +32,7 @@
       activeNarrative.set(slug)
       await loadTree()
       const stats = await getStats()
+      availableNarratives.set(stats.narratives ?? [])
       if (stats.cursor) {
         await navigate(stats.cursor)
       }

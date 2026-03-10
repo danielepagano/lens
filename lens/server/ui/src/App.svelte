@@ -8,6 +8,7 @@
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
+  import { activeNarrative, availableNarratives } from './stores/session'
 
   async function navigate(addr: string): Promise<void> {
     try {
@@ -30,18 +31,14 @@
   onMount(async () => {
     window.addEventListener('hashchange', handleHashChange)
 
-    const initial = decodeURIComponent(window.location.hash.slice(1))
-    if (initial) {
-      await navigate(initial)
-    } else {
-      try {
-        const stats = await getStats()
-        if (stats.cursor) {
-          await navigate(stats.cursor)
-        }
-      } catch (e) {
-        console.error('Init failed:', e)
-      }
+    try {
+      const stats = await getStats()
+      availableNarratives.set(stats.narratives ?? [])
+      activeNarrative.set(stats.active_narrative)
+      const initial = decodeURIComponent(window.location.hash.slice(1))
+      await navigate(initial || stats.cursor || '')
+    } catch (e) {
+      console.error('Init failed:', e)
     }
   })
 

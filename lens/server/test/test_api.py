@@ -31,6 +31,12 @@ class TestStats:
         data = test_client.get("/stats").json()
         assert data["active_narrative"] == "story"
 
+    def test_narratives_list_included(self, test_client: TestClient) -> None:
+        data = test_client.get("/stats").json()
+        assert "narratives" in data
+        assert isinstance(data["narratives"], list)
+        assert "story" in data["narratives"]
+
     def test_kb_count_positive(self, test_client: TestClient) -> None:
         data = test_client.get("/stats").json()
         # person.amy and place.forest were added during setup.
@@ -50,10 +56,15 @@ class TestTree:
         data = r.json()
         assert isinstance(data, list)
 
-    def test_story_root_present(self, test_client: TestClient) -> None:
+    def test_items_have_required_fields(self, test_client: TestClient) -> None:
+        # Tree now returns children of the active narrative, not all roots.
+        # The test project's root node may have no children, so the list
+        # may be empty — we just verify shape of any items that are present.
         data = test_client.get("/tree").json()
-        addresses = [n["address"] for n in data]
-        assert any("story" in a for a in addresses)
+        for item in data:
+            assert "address" in item
+            assert "key" in item
+            assert "children" in item
 
 
 class TestNode:

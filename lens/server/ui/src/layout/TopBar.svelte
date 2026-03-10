@@ -18,7 +18,4 @@
   {#if currentTitle}
     <span class="node-title">{currentTitle}</span>
   {/if}
-  {#if $currentAddress}
-    <span class="address">{$currentAddress}</span>
-  {/if}
 </header>
