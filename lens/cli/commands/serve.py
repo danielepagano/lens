@@ -11,7 +11,7 @@ _LENS_ROOT = Path(__file__).resolve().parent.parent.parent
 _UI_DIR = _LENS_ROOT / "server" / "ui"
 _STATIC_INDEX = _LENS_ROOT / "server" / "static" / "index.html"
 
-app = typer.Typer(help="Build the frontend and start the Lens API server.")
+app = typer.Typer(help="Build the frontend and start the Lens API server.", add_completion=False)
 
 
 @app.callback(invoke_without_command=True)

@@ -5,7 +5,7 @@ import typer
 from lens.core.commands.use import use_narrative
 from lens.core.exceptions import LensException
 
-app = typer.Typer(invoke_without_command=True, no_args_is_help=True)
+app = typer.Typer(invoke_without_command=True, no_args_is_help=True, add_completion=False)
 
 @app.callback()
 def use(

@@ -8,8 +8,7 @@ body {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 /* ---- Shell layout ---- */
@@ -41,8 +40,11 @@ body {
   border-bottom: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
   min-width: 0;
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 250;
+  background: var(--pico-background-color);
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
 }
 
 .top-bar .title {
@@ -83,7 +85,7 @@ body {
     inset: 0;
     z-index: 200;
     overflow: hidden;
-    top: 42px;
+    top: calc(42px + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -185,6 +187,11 @@ ul.tree-list ul.tree-list {
   margin-left: 0.25em;
 }
 
+.cursor-indicator-preview {
+  display: block;
+  margin-top: 0.75rem;
+}
+
 /* ---- Content area ---- */
 
 .content {
@@ -203,6 +210,11 @@ ul.tree-list ul.tree-list {
   color: var(--pico-muted-color);
   border-top: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 250;
+  background: var(--pico-background-color);
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .cli-input-row {
@@ -227,6 +239,14 @@ ul.tree-list ul.tree-list {
   opacity: 0.8;
 }
 
+@media (max-width: 767px) {
+  /* iOS zooms inputs under 16px; keep CLI usable on mobile */
+  .cli-input {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+}
+
 .cli-busy {
   font-size: 0.8rem;
   color: var(--pico-muted-color);
@@ -237,7 +257,7 @@ ul.tree-list ul.tree-list {
 
 .cli-output-panel {
   position: fixed;
-  bottom: 4rem;
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   left: 1rem;
   right: 1.5rem;
   max-height: 50vh;
@@ -280,10 +300,15 @@ ul.tree-list ul.tree-list {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0rem 0.4rem;
+  padding: 0.25rem;
   font-size: 1rem;
   border-radius: 4px;
   color: var(--pico-muted-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .cli-cancel-btn:hover,

@@ -14,7 +14,14 @@
   let historyIndex = -1
 
   function focusCliInput() {
-    setTimeout(() => cliInputEl?.focus(), 0)
+    setTimeout(() => {
+      if (!cliInputEl) return
+      try {
+        cliInputEl.focus({ preventScroll: true })
+      } catch {
+        cliInputEl.focus()
+      }
+    }, 0)
   }
 
   function pushHistory(command: string) {
@@ -24,6 +31,30 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    const isTouchDevice =
+      typeof window !== 'undefined' && 'ontouchstart' in window
+
+    if (input.trim() === '') {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        // Empty Enter: do not send a command.
+        // On touch devices, treat this as a dismiss gesture.
+        e.preventDefault()
+        if (isTouchDevice) {
+          cliInputEl?.blur()
+        }
+        return
+      }
+
+      if (e.key === 'Backspace') {
+        // On touch devices, Backspace on an empty CLI acts as a dismiss gesture.
+        if (isTouchDevice) {
+          e.preventDefault()
+          cliInputEl?.blur()
+          return
+        }
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       submit()
@@ -54,8 +85,26 @@
     }
   }
 
+  function handleBeforeInput(e: InputEvent) {
+    // Mobile keyboards often emit line breaks via beforeinput rather than keydown.
+    if (busy) return
+    if (e.isComposing) return
+    if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+      e.preventDefault()
+      submit()
+    }
+  }
+
   async function submit() {
     const command = input.trim()
+    if (command === '') {
+      // Do not run or add empty commands to history.
+      if (typeof window !== 'undefined' && 'ontouchstart' in window) {
+        cliInputEl?.blur()
+      }
+      return
+    }
+
     pushHistory(command)
     busy = true
     busyMessage = null
@@ -106,6 +155,8 @@
       }
     } finally {
       busy = false
+      // Keep focusing after a run for quick desktop workflows; on mobile
+      // Safari this uses preventScroll to avoid jumping the viewport.
       focusCliInput()
     }
   }
@@ -118,7 +169,8 @@
       class="cli-input"
       bind:value={input}
       on:keydown={handleKeydown}
-      placeholder="lens CLI command (e.g. stats; blank for --help)"
+      on:beforeinput={handleBeforeInput}
+      placeholder="lens CLI"
       rows="1"
       disabled={busy}
       data-testid="cli-input"

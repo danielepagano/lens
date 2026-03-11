@@ -9,7 +9,7 @@ from lens.core.commands.rewind import rewind_to_line, rewind_to_node
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession, resolve_address
 
-app = typer.Typer(invoke_without_command=True, no_args_is_help=True)
+app = typer.Typer(invoke_without_command=True, no_args_is_help=True, add_completion=False)
 
 
 @app.callback()

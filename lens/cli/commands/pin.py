@@ -11,7 +11,11 @@ from lens.core.commands.pin import (
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
-app = typer.Typer(no_args_is_help=True, help="Pin or unpin knowledge objects for LLM context at narrative nodes.")
+app = typer.Typer(
+    no_args_is_help=True,
+    help="Pin or unpin knowledge objects for LLM context at narrative nodes.",
+    add_completion=False,
+)
 
 
 @app.command()

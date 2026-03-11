@@ -22,7 +22,11 @@ from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
 from pathlib import Path
 
-app = typer.Typer(no_args_is_help=True, help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete, with-tag, extract).")
+app = typer.Typer(
+    no_args_is_help=True,
+    help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete, with-tag, extract).",
+    add_completion=False,
+)
 
 
 @app.command(no_args_is_help=True)

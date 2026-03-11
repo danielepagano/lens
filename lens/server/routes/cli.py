@@ -27,6 +27,24 @@ _CLI_BLOCKLIST = frozenset({"init", "dev", "serve"})
 _MAX_COMMAND_LEN = 32 * 1024
 
 
+def _normalize_cli_argv(argv: list[str]) -> list[str]:
+    if not argv:
+        return argv
+    out: list[str] = [argv[0].lower()]
+    for arg in argv[1:]:
+        if arg.startswith("--"):
+            if "=" in arg:
+                key, value = arg.split("=", 1)
+                out.append(f"{key.lower()}={value}")
+            else:
+                out.append(arg.lower())
+        elif arg.startswith("-") and len(arg) > 1:
+            out.append(f"-{arg[1:].lower()}")
+        else:
+            out.append(arg)
+    return out
+
+
 def _read_stdout(process: Any, out_queue: queue.Queue[tuple[str, str | int]]) -> None:
     if process.stdout is None:
         return
@@ -69,7 +87,12 @@ async def cli_run(
             status_code=400,
             detail=f"Command length must not exceed {_MAX_COMMAND_LEN} characters",
         )
-    argv = shlex.split(command)
+    try:
+        argv = shlex.split(command)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid command string: {e}") from e
+
+    argv = _normalize_cli_argv(argv)
     subcommand = argv[0] if argv else ""
     if subcommand in _CLI_BLOCKLIST:
         raise HTTPException(

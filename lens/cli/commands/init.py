@@ -5,7 +5,7 @@ import typer
 from lens.core.commands.init import init_project
 from lens.core.exceptions import LensException
 
-app = typer.Typer(invoke_without_command=True)
+app = typer.Typer(invoke_without_command=True, add_completion=False)
 
 @app.callback()
 def init() -> None:

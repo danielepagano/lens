@@ -12,7 +12,7 @@ from lens.core.operators.edit import EditOperator
 from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession, resolve_address
 
-app = typer.Typer(invoke_without_command=True, no_args_is_help=True)
+app = typer.Typer(invoke_without_command=True, no_args_is_help=True, add_completion=False)
 
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)

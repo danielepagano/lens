@@ -6,7 +6,7 @@ from lens.core.commands.stats import get_stats
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True)
+app = typer.Typer(invoke_without_command=True, add_completion=False)
 
 
 @app.callback()

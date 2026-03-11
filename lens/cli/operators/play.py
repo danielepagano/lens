@@ -12,7 +12,7 @@ from lens.core.operator import OperatorError
 from lens.dnd.operators.play import PlayOperator
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True)
+app = typer.Typer(invoke_without_command=True, add_completion=False)
 
 
 async def _print_token(chunk: str) -> None:

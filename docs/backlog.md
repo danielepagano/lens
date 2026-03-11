@@ -54,19 +54,16 @@ See [API Design](./api-design.md) and [App Design](./app-design.md) for key guid
 
 ### [DONE] Milestone 3: Access full lens CLI from web app with streaming and show pend tx changes in markdown
 
-### Milestone 4: Deployment, Serving & Security
+### Milestone 4: Beyond the CLI
+*   **Streaming Content**: Stream content to markdown, not just console output 
+*   **Line-Aware Controls**: Implement the "After-the-fact sectioning", "Rewind", and "Edit range" UI (selecting lines/ranges from CLI not practical).
+
+### Milestone 5: Deployment, Serving & Security
 *   **Security Layer**: Caddy configuration for HTTPS and Basic Auth as the primary security boundary.
 *   **Deployment Docs**: Documentation for deploying to fly.io or similar.
-*   *Goal: A secure, deployable, read-only view of the narrative.*
 
-### Milestone 5: The Editor & Knowledge Store
-*   **CodeMirror Integration**: Integrate CodeMirror 6 for manual markdown editing.
-*   **KB Browsing & Editing**: UI for searching, browsing, editing, and managing knowledge objects.
-*   **KB Pinning**: UI for pinning/unpinning KB objects to nodes.
-*   *Goal: A full manual web editor and knowledge manager for Lens projects.*
-
-### Milestone 6: Beyond the CLI
-*   **Streaming Content**: Stream content to markdown, not just console output 
-*   **Commands**: UI for commands beyond knowing the CLI
-*   **Line-Aware Controls**: Implement the "After-the-fact sectioning" and "Edit range" UI in CodeMirror.
-*   *Goal: Full AI-assisted narrative creation in the web app.*
+### App Backlog
+*   **Commands**: Native commands and/or CLI autocomplete
+*   [Needed?] **CodeMirror Integration**: Integrate CodeMirror 6 for manual markdown editing.
+*   [Partial+CLI] **KB Browsing & Editing**: UI for searching, browsing, editing, and managing knowledge objects.
+*   [CLI] **KB Pinning**: UI for pinning/unpinning KB objects to nodes.

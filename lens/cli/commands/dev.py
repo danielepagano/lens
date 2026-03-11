@@ -12,7 +12,10 @@ import typer
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent
 _UI_DIR = _LENS_ROOT / "server" / "ui"
 
-app = typer.Typer(help="Start the Vite dev server and Lens API with hot reload.")
+app = typer.Typer(
+    help="Start the Vite dev server and Lens API with hot reload.",
+    add_completion=False,
+)
 
 
 @app.callback(invoke_without_command=True)

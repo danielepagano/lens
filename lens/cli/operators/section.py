@@ -13,7 +13,11 @@ from lens.core.llm import LLMError
 from lens.core.operators.section import SectionOperator
 
 
-app = typer.Typer(no_args_is_help=True, help="Manage narrative structure into sub-sections.")
+app = typer.Typer(
+    no_args_is_help=True,
+    help="Manage narrative structure into sub-sections.",
+    add_completion=False,
+)
 
 
 async def _print_token(chunk: str) -> None:
