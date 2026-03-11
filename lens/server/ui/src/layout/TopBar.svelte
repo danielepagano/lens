@@ -1,7 +1,7 @@
 <script lang="ts">
   import { currentAddress } from '../stores/document'
   import { cursor } from '../stores/session'
-  import { treeOpen } from '../stores/ui'
+  import { treeOpen, appMode } from '../stores/ui'
 
   $: parts = $currentAddress ? $currentAddress.split('/') : []
   $: parentAddr = parts.length > 1 ? parts.slice(0, -1).join('/') : null
@@ -14,10 +14,26 @@
     ☰
   </button>
   <span class="title">Lens</span>
-  {#if parentAddr}
-    <a href="#{parentAddr}" class="parent-link" aria-label="Go up to {parentAddr}">↑ {parts[parts.length - 2]}</a>
-  {/if}
-  {#if currentTitle}
-    <span class="node-title">{currentTitle}{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}</span>
+  <div class="mode-switch">
+    <button
+      class="mode-btn"
+      class:active={$appMode === 'narrative'}
+      on:click={() => appMode.set('narrative')}
+      aria-pressed={$appMode === 'narrative'}
+    >Narrative</button>
+    <button
+      class="mode-btn"
+      class:active={$appMode === 'kb'}
+      on:click={() => appMode.set('kb')}
+      aria-pressed={$appMode === 'kb'}
+    >KB</button>
+  </div>
+  {#if $appMode === 'narrative'}
+    {#if parentAddr}
+      <a href="#{parentAddr}" class="parent-link" aria-label="Go up to {parentAddr}">↑ {parts[parts.length - 2]}</a>
+    {/if}
+    {#if currentTitle}
+      <span class="node-title">{currentTitle}{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}</span>
+    {/if}
   {/if}
 </header>

@@ -7,9 +7,12 @@
   import TreeBrowser from './features/tree/TreeBrowser.svelte'
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
+  import KbBrowser from './features/kb/KbBrowser.svelte'
+  import KbViewer from './features/kb/KbViewer.svelte'
   import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent, transactionState } from './stores/document'
   import { activeNarrative, availableNarratives, cursor } from './stores/session'
+  import { appMode } from './stores/ui'
 
   async function navigate(addr: string): Promise<void> {
     if (!addr) return
@@ -79,8 +82,13 @@
     <TopBar />
   </svelte:fragment>
 
-  <TreeBrowser {navigate} />
-  <MarkdownView />
+  {#if $appMode === 'narrative'}
+    <TreeBrowser {navigate} />
+    <MarkdownView />
+  {:else}
+    <KbBrowser />
+    <KbViewer />
+  {/if}
   <CliOutputPanel />
 
   <svelte:fragment slot="bottombar">
