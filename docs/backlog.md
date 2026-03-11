@@ -52,28 +52,21 @@ See [API Design](./api-design.md) and [App Design](./app-design.md) for key guid
 
 ### [DONE] Milestone 2: Web Shell & Basic Read-Only Viewer with tree nav. Dev+prod server.
 
-### Milestone 3: Deployment, Serving & Security
+### [DONE] Milestone 3: Access full lens CLI from web app with streaming and show pend tx changes in markdown
+
+### Milestone 4: Deployment, Serving & Security
 *   **Security Layer**: Caddy configuration for HTTPS and Basic Auth as the primary security boundary.
 *   **Deployment Docs**: Documentation for deploying to fly.io or similar.
 *   *Goal: A secure, deployable, read-only view of the narrative.*
 
-### Milestone 4: Transactional Mutation
-*   **Transaction Control**: Endpoints and UI for `POST /rollback` and `POST /commit`.
-*   **Visual Indicators**: Highlight unstaged changes and transaction boundaries in the UI.
-*   *Goal: Ability to manage transactions and review pending changes via the web UI.*
-
-Note: narrative structure (creating or deleting nodes, moving the cursor) is managed exclusively through operators and commands (`lens section`, `lens rewind`, etc.), not through standalone CRUD APIs. The web UI invokes those same commands via the API.
-
 ### Milestone 5: The Editor & Knowledge Store
 *   **CodeMirror Integration**: Integrate CodeMirror 6 for manual markdown editing.
-*   **KB Browsing & Editing**: UI for browsing, editing, and deleting knowledge objects.
+*   **KB Browsing & Editing**: UI for searching, browsing, editing, and managing knowledge objects.
 *   **KB Pinning**: UI for pinning/unpinning KB objects to nodes.
 *   *Goal: A full manual web editor and knowledge manager for Lens projects.*
 
-### Milestone 6: AI Streaming & Operators
-*   **Streaming Endpoints**: Implement `write` and `edit` operators using Server-Sent Events (SSE).
-*   **Stream Management**:
-    *   `POST /cancel` to interrupt an active LLM stream.
-    *   Frontend **StreamPanel** to display real-time tokens before commitment.
+### Milestone 6: Beyond the CLI
+*   **Streaming Content**: Stream content to markdown, not just console output 
+*   **Commands**: UI for commands beyond knowing the CLI
 *   **Line-Aware Controls**: Implement the "After-the-fact sectioning" and "Edit range" UI in CodeMirror.
 *   *Goal: Full AI-assisted narrative creation in the web app.*

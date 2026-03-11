@@ -24,6 +24,8 @@ _LENS_ARGV = [sys.executable, "-W", "ignore::SyntaxWarning:pysbd", "-m", "lens.c
 
 _CLI_BLOCKLIST = frozenset({"init", "dev", "serve"})
 
+_MAX_COMMAND_LEN = 32 * 1024
+
 
 def _read_stdout(process: Any, out_queue: queue.Queue[tuple[str, str | int]]) -> None:
     if process.stdout is None:
@@ -57,7 +59,17 @@ async def cli_run(
 ) -> StreamingResponse:
     body = await request.json()
     command = body.get("command", "")
-    argv = shlex.split(command) if isinstance(command, str) else []
+    if not isinstance(command, str):
+        raise HTTPException(
+            status_code=400,
+            detail="Request body must include 'command' as a string",
+        )
+    if len(command) > _MAX_COMMAND_LEN:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Command length must not exceed {_MAX_COMMAND_LEN} characters",
+        )
+    argv = shlex.split(command)
     subcommand = argv[0] if argv else ""
     if subcommand in _CLI_BLOCKLIST:
         raise HTTPException(
@@ -72,6 +84,7 @@ async def cli_run(
             detail="CLI run already in progress",
         )
 
+    # No shell: argv is passed as a list so user input cannot inject shell metacharacters.
     process = subprocess.Popen(
         [*_LENS_ARGV, *argv],
         cwd=session.project_root,
