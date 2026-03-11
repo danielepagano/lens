@@ -14,6 +14,14 @@
     ☰
   </button>
   <span class="title">Lens</span>
+  {#if $appMode === 'narrative'}
+    {#if parentAddr}
+      <a href="#{parentAddr}" class="parent-link" aria-label="Go up to {parentAddr}">↑ {parts[parts.length - 2]}</a>
+    {/if}
+    {#if currentTitle}
+      <span class="node-title">{currentTitle}{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}</span>
+    {/if}
+  {/if}
   <div class="mode-switch">
     <button
       class="mode-btn"
@@ -28,12 +36,4 @@
       aria-pressed={$appMode === 'kb'}
     >KB</button>
   </div>
-  {#if $appMode === 'narrative'}
-    {#if parentAddr}
-      <a href="#{parentAddr}" class="parent-link" aria-label="Go up to {parentAddr}">↑ {parts[parts.length - 2]}</a>
-    {/if}
-    {#if currentTitle}
-      <span class="node-title">{currentTitle}{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}</span>
-    {/if}
-  {/if}
 </header>

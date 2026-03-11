@@ -2,12 +2,13 @@
   import { onMount } from 'svelte'
   import { getKbTypes, getKbTags, getKbItems, createKbItem } from '../../services/api'
   import type { KbItem } from '../../services/api'
-  import { selectedKbId } from '../../stores/ui'
+  import { kbFilters, selectedKbId } from '../../stores/ui'
 
   let types: string[] = []
   let allTags: string[] = []
   let items: KbItem[] = []
   let error = ''
+  let hasSearched = false
 
   let selectedType = ''
   let tagInput = ''
@@ -16,6 +17,24 @@
   let showSuggestions = false
 
   export let onSelect: ((id: string) => void) | undefined = undefined
+
+  let didInitFromStore = false
+
+  $: if (!didInitFromStore) {
+    selectedType = $kbFilters.type
+    activeTags = $kbFilters.tags
+    didInitFromStore = true
+  }
+
+  $: if (didInitFromStore) {
+    const next = { type: selectedType, tags: activeTags }
+    const prev = $kbFilters
+    const same =
+      prev.type === next.type &&
+      prev.tags.length === next.tags.length &&
+      prev.tags.every((t, i) => t === next.tags[i])
+    if (!same) kbFilters.set(next)
+  }
 
   async function loadTypes() {
     try {
@@ -36,6 +55,7 @@
   async function loadItems() {
     try {
       error = ''
+      hasSearched = true
       items = await getKbItems({
         type: selectedType || undefined,
         tags: activeTags.length ? activeTags.join(',') : undefined,
@@ -48,7 +68,9 @@
   onMount(async () => {
     await loadTypes()
     await loadTags()
-    await loadItems()
+    if (selectedType || activeTags.length > 0) {
+      await loadItems()
+    }
   })
 
   async function onTypeChange() {
@@ -104,7 +126,7 @@
   // New item form state
   let showNewForm = false
   let newId = ''
-  let newUseTemplate = false
+  let newUseTemplate = true
   let newError = ''
 
   async function createItem() {
@@ -115,12 +137,13 @@
     newError = ''
     try {
       const result = await createKbItem(newId.trim(), undefined, newUseTemplate)
-      await loadItems()
       selectedKbId.set(result.id)
       if (onSelect) onSelect(result.id)
+      // Refresh list after selection so the viewer opens immediately.
+      await loadItems()
       showNewForm = false
       newId = ''
-      newUseTemplate = false
+      newUseTemplate = true
     } catch (e) {
       newError = String(e)
     }
@@ -184,7 +207,11 @@
     {#if error}
       <p class="error-state">{error}</p>
     {:else if items.length === 0}
-      <p class="empty-state">No items found.</p>
+      {#if hasSearched}
+        <p class="empty-state">No items found.</p>
+      {:else}
+        <p class="empty-state">Select a type or add a tag filter to search KB.</p>
+      {/if}
     {:else}
       <ul class="kb-item-list">
         {#each items as item (item.id)}

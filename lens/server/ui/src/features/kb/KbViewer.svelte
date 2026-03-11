@@ -70,7 +70,7 @@
   {#if loadError}
     <p class="error-state">{loadError}</p>
   {:else if !item}
-    <p class="empty-state">Select a KB item from the list.</p>
+    <p class="empty-state">No KB item selected.</p>
   {:else}
     <div class="kb-viewer-header">
       <span class="kb-viewer-id">{item.id}</span>

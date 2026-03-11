@@ -17,3 +17,10 @@ export const treeRefreshTrigger = writable(0)
 
 // KB state
 export const selectedKbId = writable<string | null>(null)
+
+export interface KbFilterState {
+  type: string
+  tags: string[]
+}
+
+export const kbFilters = writable<KbFilterState>({ type: '', tags: [] })

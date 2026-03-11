@@ -222,10 +222,23 @@ class KnowledgeStore:
         self._ensure_storage().write_file(path, content)
 
     def get_template(self, type_name: str) -> str | None:
-        path = self._object_path(type_name.lower(), "_template")
-        if not path.exists():
-            return None
-        return path.read_text(encoding="utf-8")
+        """Return the template for *type_name* from project or datasets.
+
+        Project-local templates take precedence; among datasets, the last selected
+        dataset wins (mirroring object shadowing rules).
+        """
+        type_lower = type_name.lower()
+
+        path = self._object_path(type_lower, "_template")
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+
+        for ds in reversed(self._dataset_stores):
+            ds_path = ds._object_path(type_lower, "_template")
+            if ds_path.exists():
+                return ds_path.read_text(encoding="utf-8")
+
+        return None
 
     def set_template(self, type_name: str, content: str) -> None:
         if not _is_valid_token(type_name):

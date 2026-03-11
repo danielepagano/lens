@@ -7,7 +7,7 @@
   import TreeBrowser from './features/tree/TreeBrowser.svelte'
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
-  import KbBrowser from './features/kb/KbBrowser.svelte'
+  import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
   import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent, transactionState } from './stores/document'
@@ -86,7 +86,7 @@
     <TreeBrowser {navigate} />
     <MarkdownView />
   {:else}
-    <KbBrowser />
+    <KbSidebar />
     <KbViewer />
   {/if}
   <CliOutputPanel />

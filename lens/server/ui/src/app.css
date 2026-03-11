@@ -41,6 +41,8 @@ body {
   border-bottom: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
   min-width: 0;
+  position: relative;
+  z-index: 250;
 }
 
 .top-bar .title {
@@ -81,6 +83,7 @@ body {
     inset: 0;
     z-index: 200;
     overflow: hidden;
+    top: 42px;
   }
 }
 
@@ -89,7 +92,7 @@ body {
   .sidebar {
     display: flex;
     position: static;
-    width: 220px;
+    width: 260px;
     flex-shrink: 0;
     border-right: 1px solid var(--pico-muted-border-color);
     overflow-y: auto;
@@ -131,6 +134,13 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 0.25rem 0;
+}
+
+.kb-sidebar-body {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
 /* ---- Tree nodes ---- */
@@ -427,6 +437,7 @@ ul.tree-list ul.tree-list {
   display: flex;
   gap: 0.15rem;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .mode-btn {
@@ -456,19 +467,13 @@ ul.tree-list ul.tree-list {
 .kb-browser {
   display: flex;
   flex-direction: column;
-  width: 220px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--pico-muted-border-color);
   min-height: 0;
   overflow: hidden;
 }
 
 @media (max-width: 767px) {
   .kb-browser {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--pico-muted-border-color);
-    max-height: 40vh;
+    max-height: none;
   }
 }
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { defineConfig } from 'vite'
 import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 
@@ -13,13 +14,31 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/health': apiBase,
-      '/stats': apiBase,
-      '/tree': apiBase,
-      '/node/': apiBase,
-      '/narratives': apiBase,
-      '/staged': apiBase,
-      '/cli': apiBase,
+      '/': {
+        target: apiBase,
+        changeOrigin: true,
+        bypass(req) {
+          const url = req.url ?? '/'
+          const accept = req.headers?.accept ?? ''
+          const upgrade = req.headers?.upgrade ?? ''
+
+          // Let Vite serve the UI shell + HMR/internal assets.
+          if (
+            upgrade.toLowerCase() === 'websocket' ||
+            accept.includes('text/html') ||
+            url.startsWith('/@') ||
+            url.startsWith('/src/') ||
+            url.startsWith('/node_modules/') ||
+            url.startsWith('/__') ||
+            url.startsWith('/favicon')
+          ) {
+            return url
+          }
+
+          // Everything else (API calls) goes to the backend.
+          return null
+        },
+      },
     },
   },
 })
