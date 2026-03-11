@@ -14,6 +14,16 @@ async function post(path: string, body: unknown): Promise<unknown> {
   return r.json()
 }
 
+async function put(path: string, body: unknown): Promise<unknown> {
+  const r = await fetch(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`)
+  return r.json()
+}
+
 export class CliRunBusyError extends Error {
   constructor(
     message: string,
@@ -132,3 +142,52 @@ export async function cancelCliRun(): Promise<void> {
   const r = await fetch('/cli/cancel', { method: 'POST' })
   if (!r.ok) throw new Error(`HTTP ${r.status}: /cli/cancel`)
 }
+
+// ---- KB API ----
+
+export interface KbItem {
+  id: string
+  tags: string[]
+}
+
+export interface KbItemDetail {
+  id: string
+  type: string
+  content: string
+  tags: string[]
+}
+
+export const getKbTypes = (): Promise<string[]> =>
+  get('/kb/types') as Promise<string[]>
+
+export const getKbTags = (params?: { type?: string; prefix?: string }): Promise<string[]> => {
+  const qs = new URLSearchParams()
+  if (params?.type) qs.set('type', params.type)
+  if (params?.prefix) qs.set('prefix', params.prefix)
+  const query = qs.toString()
+  return get(`/kb/tags${query ? '?' + query : ''}`) as Promise<string[]>
+}
+
+export const getKbItems = (params?: { type?: string; tags?: string }): Promise<KbItem[]> => {
+  const qs = new URLSearchParams()
+  if (params?.type) qs.set('type', params.type)
+  if (params?.tags) qs.set('tags', params.tags)
+  const query = qs.toString()
+  return get(`/kb/items${query ? '?' + query : ''}`) as Promise<KbItem[]>
+}
+
+export const getKbItem = (id: string): Promise<KbItemDetail> =>
+  get(`/kb/item/${id}`) as Promise<KbItemDetail>
+
+export const saveKbItem = (id: string, content: string): Promise<{ id: string }> =>
+  put(`/kb/item/${id}`, { content }) as Promise<{ id: string }>
+
+export const createKbItem = (
+  id: string,
+  content?: string,
+  useTemplate?: boolean
+): Promise<{ id: string; content: string }> =>
+  post('/kb/items', { id, content, use_template: useTemplate ?? false }) as Promise<{
+    id: string
+    content: string
+  }>

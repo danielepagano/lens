@@ -222,10 +222,23 @@ class KnowledgeStore:
         self._ensure_storage().write_file(path, content)
 
     def get_template(self, type_name: str) -> str | None:
-        path = self._object_path(type_name.lower(), "_template")
-        if not path.exists():
-            return None
-        return path.read_text(encoding="utf-8")
+        """Return the template for *type_name* from project or datasets.
+
+        Project-local templates take precedence; among datasets, the last selected
+        dataset wins (mirroring object shadowing rules).
+        """
+        type_lower = type_name.lower()
+
+        path = self._object_path(type_lower, "_template")
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+
+        for ds in reversed(self._dataset_stores):
+            ds_path = ds._object_path(type_lower, "_template")
+            if ds_path.exists():
+                return ds_path.read_text(encoding="utf-8")
+
+        return None
 
     def set_template(self, type_name: str, content: str) -> None:
         if not _is_valid_token(type_name):
@@ -978,6 +991,40 @@ class KnowledgeStore:
                     obj_to_tags[oid].add(new_lower)
 
         self._save_tags(tag_to_objs, obj_to_tags)
+
+    def list_types(self) -> list[str]:
+        """Return all unique type names across project and dataset stores."""
+        types: set[str] = set()
+        if self._knowledge.exists():
+            for d in self._knowledge.iterdir():
+                if d.is_dir() and d.name not in ("__pycache__",):
+                    types.add(d.name)
+        for ds in self._dataset_stores:
+            types.update(ds.list_types())
+        return sorted(types)
+
+    def list_ids(self, type_filter: str | None = None) -> list[str]:
+        """Return all canonical IDs, optionally filtered by type, across project and datasets."""
+        ids: set[str] = set()
+        type_lower = type_filter.lower() if type_filter else None
+
+        def _scan_store(store: "KnowledgeStore") -> None:
+            if not store._knowledge.exists():
+                return
+            dirs = [store._knowledge / type_lower] if type_lower else (
+                [d for d in store._knowledge.iterdir() if d.is_dir() and d.name != "__pycache__"]
+            )
+            for type_dir in dirs:
+                if not type_dir.is_dir():
+                    continue
+                for f in type_dir.glob("*.md"):
+                    if f.stem != "_template":
+                        ids.add(f"{type_dir.name}.{f.stem}")
+
+        _scan_store(self)
+        for ds in self._dataset_stores:
+            _scan_store(ds)
+        return sorted(ids)
 
     def delete_object(self, canonical_id: str) -> None:
         # Deleting a dataset-only item is a no-op.
