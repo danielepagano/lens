@@ -135,17 +135,11 @@ So the minimum deployment is not a new platform. It is the current app with inte
 
 Recommended process model:
 
-- Caddy listens publicly on `:443`
+- Caddy listens on a public port (e.g. `:443` with sudo/setcap, or a high port such as `:8443` with the router forwarding 443 to it)
 - Lens serves only on `127.0.0.1:<port>`
 - Caddy reverse-proxies to Lens
 
-Example conceptual flow:
-
-1. phone/browser hits `lens.example.net`
-2. dynamic DNS resolves to home IP
-3. router forwards `443` to the machine
-4. Caddy terminates TLS and enforces Basic Auth
-5. Caddy proxies to local `lens serve`
+Example flow: browser hits the hostname; dynamic DNS resolves to home IP; router forwards 443 to the machine; Caddy terminates TLS and Basic Auth, then proxies to local `lens serve`.
 
 ### Security Requirements
 
@@ -196,136 +190,66 @@ Use the local-machine path when:
 - "good enough external access" matters more than host independence
 - you want the fastest route to personal remote access
 
-## 7. The Goal: Fly Single Machine
+### Reference: Concrete Local Setup (One Machine)
 
-### Why Fly Remains The Goal
+The following was used to get the minimum deployment working on a single home machine. Details are environment-specific but reproducible.
 
-Fly gives a cleaner "personal server" shape without introducing a large ops surface:
+**Caddy build.** Caddy was built with:
 
-- one public app
-- one machine
-- one mounted volume
-- straightforward HTTPS/domain handling
-- no need to keep the home machine on
+- [dynamic_dns](https://caddyserver.com/docs/modules/dynamic_dns) (e.g. [mholt/caddy-dynamicdns](https://github.com/mholt/caddy-dynamicdns))
+- [dns.providers.cloudflare](https://github.com/caddy-dns/cloudflare)
 
-This is the right target once you want the app available independently of the local machine.
+so that one binary handles both dynamic DNS (A record for the hostname) and ACME DNS-01 for TLS. A single Cloudflare API token with `Zone.Zone:Read` and `Zone.DNS:Edit` is used for both and stored in ENV `CF_API_TOKEN`.
 
-### Shape
+**Caddyfile shape.** Caddy runs as the current user (no root) and listens on a high port (e.g. `8443`) to avoid privileged ports. 
 
-- one Fly app
-- one machine
-- one volume mounted at a persistent path such as `/data`
-- one region
-- Caddy and Lens in the same runtime image
+```
+{
+	email me@example.com
 
-### Project Repo Layout
+	dynamic_dns {
+		provider cloudflare {env.CF_API_TOKEN}
+		domains {
+			example.com lens
+		}
+		ip_source simple_http https://icanhazip.com
+		check_interval 5m
+		versions ipv4
+		ttl 1h
+	}
+}
 
-Recommended volume layout:
-
-```text
-/data/
-  repo/
-    .git/
-    lens.toml
-    narrative/
-    knowledge/
+lens.example.com:8443 {
+	bind 0.0.0.0
+	encode gzip zstd
+	basic_auth {
+		user <hash from caddy hash-password --plaintext 'your-password'>
+	}
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+		resolvers 1.1.1.1
+	}
+	reverse_proxy 127.0.0.1:8000
+}
 ```
 
-Rules:
+**Router.** One port-forward rule: external TCP 443 → same machine’s LAN IP, internal port 8443. The host’s LAN IP is fixed (DHCP reservation or static). Clients use `https://lens.example.com` (port 443); they never see 8443.
 
-- `/data/repo` is the canonical server-side working copy
-- the application image must never overwrite `/data/repo`
-- Lens starts against `/data/repo`
+**Processes.** Lens runs first (`lens serve`, bound to `127.0.0.1:8000`). Caddy is started in the same environment so `CF_API_TOKEN` is set. No sudo; Caddy does not bind 443 on the host.
 
-### Bootstrap And Updates
+## 7. The Goal: Fly Single Machine
 
-First deployment:
+**Why Fly.** One app, one machine, one mounted volume; straightforward HTTPS and no dependency on the home machine being on. Use when you want the app available off-host or cleaner public hosting than home-network exposure.
 
-1. deploy image containing Lens code, built UI, and bundled datasets
-2. materialize secrets and SSH config
-3. clone the GitLab project repo into `/data/repo`
-4. validate that it is a Lens project
-5. start Lens behind Caddy
+**Shape.** One Fly app, one machine, one volume at e.g. `/data`. Caddy and Lens live in the same image; the project repo lives on the volume.
 
-Later deploys:
+**Volume layout.** `/data/repo/` is the canonical working copy (`.git/`, `lens.toml`, `narrative/`, `knowledge/`). The image must never overwrite it; Lens starts against `/data/repo`. Bootstrap: deploy image, inject secrets and SSH config, clone project repo into `/data/repo`, validate, start Lens behind Caddy. Later deploys replace only the image; do not reclone or overwrite uncheckpointed work.
 
-- keep `/data/repo`
-- replace only the application image
-- do not reclone
-- do not overwrite local uncheckpointed work
+**Refresh.** A `lens refresh` command runs a conservative `git pull` (or fetch + fast-forward); if the server has local uncommitted changes, refresh fails. No automatic merge. One primary branch, no rebases/force-pushes.
 
-### Refresh Behavior
+**Durability.** Fly volume data survives restart, redeploy, suspend/resume. The volume is still tied to one machine; snapshots are recovery help. GitLab is the primary durable copy; `lens checkpoint` exists to push work off-host. Use Fly volume for normal durability, GitLab for meaningful progress, snapshots for disaster recovery.
 
-This milestone should assume a simple refresh model.
-
-If the project changes elsewhere and the server needs to pull:
-
-- add a `lens refresh` command
-- it runs a conservative `git pull` or equivalent fetch + fast-forward flow against the configured branch
-- if the server repo has local uncommitted changes, refresh should fail rather than merge automatically
-
-This is intentionally simple:
-
-- no branches
-- no conflict workflows
-- no automatic merge resolution
-- "my headache if I do that" is the right operating assumption for this milestone
-
-### Volume Durability And `lens checkpoint`
-
-Important Fly-specific clarification:
-
-- stopping or suspending a machine does not discard Fly Volume data
-- redeploying the image does not discard Fly Volume data
-- volume data persists across restart, redeploy, and suspend/resume
-
-But:
-
-- a Fly Volume is still tied to a single machine and underlying host
-- automatic snapshots are recovery help, not the primary semantic durability boundary
-
-So `lens checkpoint` still matters.
-
-Its role is not:
-
-- "keep my repo alive across suspend"
-
-Its real role is:
-
-- push meaningful work to GitLab so the project state exists off-host
-
-The right mental model is:
-
-- Fly volume keeps the server-side working tree durable for ordinary operations
-- GitLab is the primary durable copy of meaningful progress
-- snapshots are disaster-recovery support
-
-### Cost Modes
-
-For Fly, the real decision is between two modes:
-
-1. cheaper mode: `auto_stop_machines = "suspend"` and `min_machines_running = 0`
-2. warmer mode: `min_machines_running = 1`
-
-Interpretation:
-
-- suspended mode minimizes compute cost and accepts first-request wake latency
-- `min_machines_running = 1` pays continuous compute to avoid that wake-up penalty
-
-Once you prefer always-warm behavior, the economic comparison becomes:
-
-- Fly always-on single machine
-- versus just running the service on your own local machine
-
-That is the right re-baselined comparison. The point is no longer "Fly versus many cloud options"; it is "independent remote availability versus home-host convenience."
-
-### When To Prefer It
-
-Use Fly when:
-
-- you want the app available even when the local machine is off
-- you want cleaner public hosting than home-network exposure
-- a single-machine, single-user model is still sufficient
+**Cost.** Either suspend when idle (`min_machines_running = 0`) and accept wake latency, or keep one machine running. The comparison is “remote availability vs. home-host convenience,” not Fly vs. many clouds.
 
 ## 8. Git Access Model
 
