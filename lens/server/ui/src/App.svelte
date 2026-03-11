@@ -6,6 +6,7 @@
   import BottomBar from './layout/BottomBar.svelte'
   import TreeBrowser from './features/tree/TreeBrowser.svelte'
   import MarkdownView from './features/viewer/MarkdownView.svelte'
+  import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
   import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent, transactionState } from './stores/document'
   import { activeNarrative, availableNarratives, cursor } from './stores/session'
@@ -19,6 +20,28 @@
       window.location.hash = data.address
     } catch (e) {
       console.error('Navigation failed:', e)
+    }
+  }
+
+  async function handleCliDone(): Promise<void> {
+    const prevCursor = get(cursor)
+    const addr = get(currentAddress)
+    try {
+      const stats = await getStats()
+      availableNarratives.set(stats.narratives ?? [])
+      activeNarrative.set(stats.active_narrative)
+      cursor.set(stats.cursor ?? null)
+      transactionState.set(stats.transaction ?? null)
+      if (addr) {
+        const data = await getNode(addr)
+        nodeContent.set(data.content)
+      }
+      const newCursor = get(cursor)
+      if (prevCursor === addr && newCursor !== prevCursor && newCursor) {
+        navigate(newCursor)
+      }
+    } catch (e) {
+      console.error('CLI done refresh failed:', e)
     }
   }
 
@@ -58,8 +81,9 @@
 
   <TreeBrowser {navigate} />
   <MarkdownView />
+  <CliOutputPanel />
 
   <svelte:fragment slot="bottombar">
-    <BottomBar />
+    <BottomBar onCliDone={handleCliDone} />
   </svelte:fragment>
 </MainLayout>

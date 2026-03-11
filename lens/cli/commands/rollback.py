@@ -9,14 +9,7 @@ from lens.core.project import ProjectSession
 app = typer.Typer(invoke_without_command=True)
 
 @app.callback()
-def rollback(
-    yes: bool = typer.Option(
-        False,
-        "--yes",
-        "-y",
-        help="Skip confirmation prompt.",
-    ),
-) -> None:
+def rollback() -> None:
     """Discard the pending transaction, reverting all unstaged changes."""
     try:
         session = ProjectSession.from_cwd()
@@ -39,9 +32,6 @@ def rollback(
             "Mutation operator detected — rollback will apply a compensating "
             "transaction (claim tags removed, original text restored)."
         )
-
-    if not yes:
-        typer.confirm("Roll back?", abort=True)
 
     try:
         execute_rollback(session)

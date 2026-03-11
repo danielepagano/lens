@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { getTree, getStats, setActiveNarrative } from '../../services/api'
   import type { TreeNode } from '../../services/api'
-  import { treeOpen } from '../../stores/ui'
+  import { treeOpen, treeRefreshTrigger } from '../../stores/ui'
   import { activeNarrative, availableNarratives, cursor } from '../../stores/session'
   import { transactionState } from '../../stores/document'
   import TreeNodeComp from './TreeNode.svelte'
@@ -16,9 +16,10 @@
     tree = await getTree()
   }
 
+  $: refreshTrigger = $treeRefreshTrigger
+  $: if (refreshTrigger > 0) void loadTree().catch((e) => { error = String(e) })
+
   onMount(async () => {
-    // Narrative stores are seeded by App.svelte from the initial /stats call.
-    // TreeBrowser only needs to load the tree.
     try {
       await loadTree()
     } catch (e) {
@@ -69,7 +70,7 @@
     {#if error}
       <p class="error-state">{error}</p>
     {:else if tree.length === 0}
-      <p class="empty-state">No nodes</p>
+      <p class="empty-state">No sub-nodes</p>
     {:else}
       <ul class="tree-list">
         {#each tree as root (root.address)}

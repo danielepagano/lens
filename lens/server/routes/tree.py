@@ -26,9 +26,8 @@ def tree(session: ProjectSession = Depends(get_session)) -> list[dict[str, Any]]
         return []
     if session.active_narrative is None:
         return []
-    # Return children of the active narrative root — the root itself is
-    # shown via the narrative switcher dropdown, so it would be redundant here.
-    return [
-        _node_to_dict(session.active_narrative.child_node(key))
-        for key in session.active_narrative.child_keys()
-    ]
+    root = session.active_narrative
+    keys = root.child_keys()
+    if not keys:
+        return [_node_to_dict(root)]
+    return [_node_to_dict(root.child_node(key)) for key in keys]

@@ -89,7 +89,7 @@ class TestDatasetCLI(unittest.TestCase):
 
     def test_rollback_works(self) -> None:
         result = subprocess.run(
-            _LENS_CMD + ["rollback", "--yes"],
+            _LENS_CMD + ["rollback"],
             cwd=self.dataset_dir,
             capture_output=True,
             text=True,

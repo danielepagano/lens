@@ -12,6 +12,10 @@ Coverage intent:
 
 from __future__ import annotations
 
+import json
+from typing import Any
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -136,3 +140,75 @@ class TestStaged:
         assert "is_mutation" in data
         assert "files" in data
         assert isinstance(data["files"], list)
+
+
+def _consume_sse_stream(response: object) -> list[dict[str, Any]]:
+    """Parse SSE events from a streaming response. Returns list of parsed data objects."""
+    events: list[dict[str, Any]] = []
+    assert hasattr(response, "iter_lines")
+    buffer = ""
+    for line in response.iter_lines():  # type: ignore[union-attr]
+        if line:
+            buffer += line + "\n"
+        else:
+            if buffer.startswith("data: "):
+                payload: str = buffer[6:].strip()
+                if payload:
+                    events.append(json.loads(payload))
+            buffer = ""
+    return events
+
+
+class TestCli:
+    def test_run_stats_returns_stream_and_done(self, test_client: TestClient) -> None:
+        r = test_client.post("/cli/run", json={"command": "stats"})
+        assert r.status_code == 200
+        assert "text/event-stream" in r.headers.get("content-type", "")
+        events = _consume_sse_stream(r)
+        assert len(events) >= 1
+        done = [e for e in events if e.get("type") == "done"]
+        assert len(done) == 1
+        assert done[0].get("exit_code") == 0
+
+    def test_empty_command_shows_help(self, test_client: TestClient) -> None:
+        r = test_client.post("/cli/run", json={"command": ""})
+        assert r.status_code == 200
+        events = _consume_sse_stream(r)
+        done = [e for e in events if e.get("type") == "done"]
+        assert len(done) == 1
+        output = "".join(
+            e.get("text", "") for e in events if e.get("type") in ("out", "err")
+        )
+        assert "Lens" in output or "usage" in output.lower() or "help" in output.lower()
+
+    def test_cancel_when_no_run_returns_ok(self, test_client: TestClient) -> None:
+        r = test_client.post("/cli/cancel")
+        assert r.status_code == 200
+        assert r.json().get("status") == "ok"
+
+    @pytest.mark.skip(
+        reason="timing-dependent: first run often completes before second POST in CI"
+    )
+    def test_second_run_while_first_running_returns_409(
+        self, test_client: TestClient
+    ) -> None:
+        import threading
+        import time
+
+        def run_first() -> None:
+            r = test_client.post(
+                "/cli/run", json={"command": "write continuing the story"}
+            )
+            if r.status_code == 200:
+                for _ in r.iter_lines():
+                    pass
+
+        t = threading.Thread(target=run_first)
+        t.start()
+        time.sleep(0.05)
+        r2 = test_client.post("/cli/run", json={"command": "stats"})
+        t.join(timeout=15)
+        if r2.status_code == 200:
+            for _ in r2.iter_lines():
+                pass
+        assert r2.status_code == 409

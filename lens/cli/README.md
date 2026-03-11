@@ -465,8 +465,6 @@ Discards the pending operator transaction. The behaviour differs by operator typ
 - **Mutation operators** (`edit`): a *compensating transaction* is applied — the staged claim tags are removed and the original text is restored, leaving no trace of the operator in the history.
 
 ```bash
-lens rollback        # prompts for confirmation
-lens rollback --yes  # skip confirmation
-lens rollback -y     # shorthand
+lens rollback
 ```
 

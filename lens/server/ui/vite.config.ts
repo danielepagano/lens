@@ -19,6 +19,7 @@ export default defineConfig({
       '/node/': apiBase,
       '/narratives': apiBase,
       '/staged': apiBase,
+      '/cli': apiBase,
     },
   },
 })
