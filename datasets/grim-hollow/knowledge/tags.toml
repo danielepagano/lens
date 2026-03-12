@@ -1,0 +1,895 @@
+[tags]
+"level:7" = [
+    "spell.arboreal-curse",
+    "spell.burst-forth",
+    "spell.fleshcrawl",
+    "spell.power-word-maim",
+    "spell.sanguine-fusillade",
+]
+"school:transmutation" = [
+    "spell.arboreal-curse",
+    "spell.blood-rush",
+    "spell.bloodbane-rune",
+    "spell.boil-blood",
+    "spell.call-the-rabid-beast",
+    "spell.creeping-touch",
+    "spell.earth-worm",
+    "spell.emmelines-essence-infusion",
+    "spell.extract-iron",
+    "spell.fiend-flesh",
+    "spell.intaglio",
+    "spell.investiture-of-venom",
+    "spell.melting-curse",
+    "spell.mortality",
+    "spell.overgrow",
+    "spell.preserve",
+    "spell.primordial-power",
+    "spell.sanguine-poppet",
+    "spell.serpent-tongue",
+    "spell.steal-immortality",
+    "spell.theft-of-vitae",
+    "spell.vampiric-claws",
+    "spell.wilting-smite",
+]
+"level:1" = [
+    "spell.arcane-aegis",
+    "spell.assisted-aim",
+    "spell.binding-pledge",
+    "spell.blood-rush",
+    "spell.bloodbane-rune",
+    "spell.boil-blood",
+    "spell.consumption",
+    "spell.creeping-touch",
+    "spell.crimson-lash",
+    "spell.ghost-light",
+    "spell.intaglio",
+    "spell.neutralize-aura",
+    "spell.shroud-blood",
+    "spell.somnolence",
+    "spell.thorn-armor",
+    "spell.tremor",
+    "spell.vampiric-claws",
+    "spell.vibrating-humors",
+]
+"school:abjuration" = [
+    "spell.arcane-aegis",
+    "spell.magic-mirror",
+    "spell.mirror-spell",
+    "spell.neutralize-aura",
+    "spell.perfection",
+    "spell.sanguine-shield",
+    "spell.seal-spellcasting",
+    "spell.splattering-smite",
+    "spell.thorn-armor",
+]
+"school:enchantment" = [
+    "spell.assisted-aim",
+    "spell.blood-bond",
+    "spell.curse-of-conceited-obsession",
+    "spell.curse-of-crushing-sensation",
+    "spell.curse-of-fastidious-pride",
+    "spell.curse-of-insatiable-greed",
+    "spell.curse-of-lost-sentiment",
+    "spell.curse-of-ravenous-hunger",
+    "spell.curse-of-uncontrollable-wrath",
+    "spell.incite-riot",
+    "spell.maelfas-quickened-class",
+    "spell.power-word-maim",
+    "spell.somnolence",
+]
+"school:divination" = [
+    "spell.binding-pledge",
+    "spell.curse-of-ill-fated-fortune",
+    "spell.hunter-sense",
+    "spell.sense-lifeblood",
+    "spell.weave-numen",
+]
+ritual = [
+    "spell.binding-pledge",
+    "spell.intaglio",
+]
+"level:2" = [
+    "spell.bloat",
+    "spell.blood-wisp",
+    "spell.bloodletter",
+    "spell.dazing-blast",
+    "spell.enspelled-armament",
+    "spell.fiend-flesh",
+    "spell.life-tether",
+    "spell.overgrow",
+    "spell.sanguine-shield",
+    "spell.seal-spellcasting",
+    "spell.sense-lifeblood",
+    "spell.summon-plant",
+    "spell.theft-of-vitae",
+    "spell.wilting-smite",
+    "spell.wrack",
+]
+"school:necromancy" = [
+    "spell.bloat",
+    "spell.bloodletter",
+    "spell.consume-mind",
+    "spell.creeping-death",
+    "spell.curse-of-damned-aging",
+    "spell.curse-of-foul-blight",
+    "spell.flash-fever",
+    "spell.flense",
+    "spell.fleshcrawl",
+    "spell.greater-animate-dead",
+    "spell.life-tether",
+    "spell.lifesink",
+    "spell.little-death",
+    "spell.spirit-swarm",
+    "spell.undead-enthrallment",
+    "spell.viscous-sheath",
+    "spell.wipe-face",
+    "spell.wrack",
+]
+"level:3" = [
+    "spell.blood-bond",
+    "spell.call-the-rabid-beast",
+    "spell.conjure-plants",
+    "spell.curse-of-fastidious-pride",
+    "spell.curse-of-ravenous-hunger",
+    "spell.elemental-exhalation",
+    "spell.emmelines-essence-infusion",
+    "spell.extract-iron",
+    "spell.flash-fever",
+    "spell.maelfas-quickened-class",
+    "spell.mirror-spell",
+    "spell.reanimate",
+    "spell.sanguine-poppet",
+    "spell.serpent-tongue",
+    "spell.suffocate",
+    "spell.summon-sea-spirit",
+]
+"level:6" = [
+    "spell.blood-tide",
+    "spell.chains-of-beleth",
+    "spell.crown-of-radiance",
+    "spell.curse-of-conceited-obsession",
+    "spell.curse-of-crushing-sensation",
+    "spell.curse-of-uncontrollable-wrath",
+    "spell.earth-worm",
+    "spell.heartseeker",
+    "spell.melting-curse",
+    "spell.weave-numen",
+]
+"school:conjuration" = [
+    "spell.blood-tide",
+    "spell.burst-forth",
+    "spell.chains-of-beleth",
+    "spell.conjure-plants",
+    "spell.crimson-lash",
+    "spell.enspelled-armament",
+    "spell.red-rain",
+    "spell.ride-the-lightning",
+    "spell.suffocate",
+    "spell.summon-plant",
+    "spell.summon-sea-spirit",
+    "spell.wall-of-gloom",
+]
+"school:evocation" = [
+    "spell.blood-wisp",
+    "spell.circle-of-scarlet",
+    "spell.consumption",
+    "spell.crown-of-radiance",
+    "spell.dark-sacrament",
+    "spell.dazing-blast",
+    "spell.elemental-exhalation",
+    "spell.ghost-light",
+    "spell.heartseeker",
+    "spell.holy-word",
+    "spell.phoenix-flames",
+    "spell.reanimate",
+    "spell.sanguine-fusillade",
+    "spell.shared-judgement",
+    "spell.supernal-smite",
+    "spell.tremor",
+    "spell.vibrating-humors",
+]
+"level:0" = [
+    "spell.calling-card",
+    "spell.frightful-start",
+    "spell.holy-word",
+    "spell.hunter-sense",
+    "spell.illusory-instrument",
+    "spell.preserve",
+]
+"school:illusion" = [
+    "spell.calling-card",
+    "spell.frightful-start",
+    "spell.illusory-instrument",
+    "spell.shroud-blood",
+]
+"level:4" = [
+    "spell.circle-of-scarlet",
+    "spell.consume-mind",
+    "spell.curse-of-damned-aging",
+    "spell.curse-of-foul-blight",
+    "spell.curse-of-lost-sentiment",
+    "spell.dark-sacrament",
+    "spell.primordial-power",
+    "spell.ride-the-lightning",
+    "spell.shared-judgement",
+    "spell.supernal-smite",
+    "spell.viscous-sheath",
+]
+"level:8" = [
+    "spell.creeping-death",
+    "spell.flense",
+    "spell.lifesink",
+    "spell.red-rain",
+    "spell.undead-enthrallment",
+    "spell.wall-of-gloom",
+]
+"level:5" = [
+    "spell.curse-of-ill-fated-fortune",
+    "spell.curse-of-insatiable-greed",
+    "spell.greater-animate-dead",
+    "spell.incite-riot",
+    "spell.investiture-of-venom",
+    "spell.little-death",
+    "spell.magic-mirror",
+    "spell.mortality",
+    "spell.spirit-swarm",
+    "spell.splattering-smite",
+]
+"level:9" = [
+    "spell.perfection",
+    "spell.phoenix-flames",
+    "spell.steal-immortality",
+    "spell.wipe-face",
+]
+"cr:1" = [
+    "stat.gasdra",
+]
+"type:monstrosity" = [
+    "stat.bloated-gastromorph",
+    "stat.body-snatcher",
+    "stat.gasdra",
+    "stat.plague-carrion",
+    "stat.sightless-agony",
+    "stat.verminous-abomination",
+]
+"size:small" = [
+    "stat.gasdra",
+]
+"cr:14" = [
+    "stat.avatar-of-slaughter",
+    "stat.plague-carrion",
+    "stat.weeping-willow",
+]
+"type:fiend" = [
+    "stat.avatar-of-slaughter",
+]
+"size:large" = [
+    "stat.avatar-of-slaughter",
+    "stat.mind-siphon",
+    "stat.plague-carrion",
+    "stat.verminous-abomination",
+    "stat.weeping-willow",
+]
+"cr:11" = [
+    "stat.bloated-gastromorph",
+    "stat.high-priest",
+]
+"size:gargantuan" = [
+    "stat.bloated-gastromorph",
+]
+"cr:6" = [
+    "stat.body-snatcher",
+    "stat.thaumaturge-initiated",
+]
+"size:medium" = [
+    "stat.body-snatcher",
+    "stat.dream-whisperer",
+    "stat.ebon-syndicate-elite-assassin",
+    "stat.ebon-syndicate-enforcer",
+    "stat.free-swords-archer",
+    "stat.free-swords-battlemage",
+    "stat.free-swords-captain",
+    "stat.free-swords-infiltrator",
+    "stat.free-swords-sapper",
+    "stat.free-swords-veteran",
+    "stat.herald-of-calamity",
+    "stat.high-priest",
+    "stat.preceptor",
+    "stat.sightless-agony",
+    "stat.thaumaturge-archmage",
+    "stat.thaumaturge-initiated",
+    "stat.trade-factor",
+    "stat.watchful-priest",
+]
+"cr:7" = [
+    "stat.dream-whisperer",
+]
+"type:aberration" = [
+    "stat.dream-whisperer",
+    "stat.mind-siphon",
+]
+"cr:10" = [
+    "stat.ebon-syndicate-elite-assassin",
+    "stat.free-swords-captain",
+    "stat.mind-siphon",
+    "stat.sightless-agony",
+]
+"type:humanoid" = [
+    "stat.ebon-syndicate-elite-assassin",
+    "stat.ebon-syndicate-enforcer",
+    "stat.free-swords-archer",
+    "stat.free-swords-battlemage",
+    "stat.free-swords-captain",
+    "stat.free-swords-infiltrator",
+    "stat.free-swords-sapper",
+    "stat.free-swords-veteran",
+    "stat.high-priest",
+    "stat.preceptor",
+    "stat.thaumaturge-archmage",
+    "stat.thaumaturge-initiated",
+    "stat.trade-factor",
+    "stat.watchful-priest",
+]
+"cr:2" = [
+    "stat.ebon-syndicate-enforcer",
+    "stat.trade-factor",
+]
+"cr:4" = [
+    "stat.free-swords-archer",
+    "stat.free-swords-battlemage",
+    "stat.free-swords-infiltrator",
+    "stat.free-swords-sapper",
+]
+"cr:3" = [
+    "stat.free-swords-veteran",
+    "stat.watchful-priest",
+]
+"cr:9" = [
+    "stat.herald-of-calamity",
+    "stat.preceptor",
+]
+"type:undead" = [
+    "stat.herald-of-calamity",
+]
+"cr:15" = [
+    "stat.thaumaturge-archmage",
+]
+"cr:5" = [
+    "stat.verminous-abomination",
+]
+"type:plant" = [
+    "stat.weeping-willow",
+]
+
+[objects]
+"spell.arboreal-curse" = [
+    "level:7",
+    "school:transmutation",
+]
+"spell.arcane-aegis" = [
+    "level:1",
+    "school:abjuration",
+]
+"spell.assisted-aim" = [
+    "level:1",
+    "school:enchantment",
+]
+"spell.binding-pledge" = [
+    "level:1",
+    "ritual",
+    "school:divination",
+]
+"spell.bloat" = [
+    "level:2",
+    "school:necromancy",
+]
+"spell.blood-bond" = [
+    "level:3",
+    "school:enchantment",
+]
+"spell.blood-rush" = [
+    "level:1",
+    "school:transmutation",
+]
+"spell.blood-tide" = [
+    "level:6",
+    "school:conjuration",
+]
+"spell.blood-wisp" = [
+    "level:2",
+    "school:evocation",
+]
+"spell.bloodbane-rune" = [
+    "level:1",
+    "school:transmutation",
+]
+"spell.bloodletter" = [
+    "level:2",
+    "school:necromancy",
+]
+"spell.boil-blood" = [
+    "level:1",
+    "school:transmutation",
+]
+"spell.burst-forth" = [
+    "level:7",
+    "school:conjuration",
+]
+"spell.call-the-rabid-beast" = [
+    "level:3",
+    "school:transmutation",
+]
+"spell.calling-card" = [
+    "level:0",
+    "school:illusion",
+]
+"spell.chains-of-beleth" = [
+    "level:6",
+    "school:conjuration",
+]
+"spell.circle-of-scarlet" = [
+    "level:4",
+    "school:evocation",
+]
+"spell.conjure-plants" = [
+    "level:3",
+    "school:conjuration",
+]
+"spell.consume-mind" = [
+    "level:4",
+    "school:necromancy",
+]
+"spell.consumption" = [
+    "level:1",
+    "school:evocation",
+]
+"spell.creeping-death" = [
+    "level:8",
+    "school:necromancy",
+]
+"spell.creeping-touch" = [
+    "level:1",
+    "school:transmutation",
+]
+"spell.crimson-lash" = [
+    "level:1",
+    "school:conjuration",
+]
+"spell.crown-of-radiance" = [
+    "level:6",
+    "school:evocation",
+]
+"spell.curse-of-conceited-obsession" = [
+    "level:6",
+    "school:enchantment",
+]
+"spell.curse-of-crushing-sensation" = [
+    "level:6",
+    "school:enchantment",
+]
+"spell.curse-of-damned-aging" = [
+    "level:4",
+    "school:necromancy",
+]
+"spell.curse-of-fastidious-pride" = [
+    "level:3",
+    "school:enchantment",
+]
+"spell.curse-of-foul-blight" = [
+    "level:4",
+    "school:necromancy",
+]
+"spell.curse-of-ill-fated-fortune" = [
+    "level:5",
+    "school:divination",
+]
+"spell.curse-of-insatiable-greed" = [
+    "level:5",
+    "school:enchantment",
+]
+"spell.curse-of-lost-sentiment" = [
+    "level:4",
+    "school:enchantment",
+]
+"spell.curse-of-ravenous-hunger" = [
+    "level:3",
+    "school:enchantment",
+]
+"spell.curse-of-uncontrollable-wrath" = [
+    "level:6",
+    "school:enchantment",
+]
+"spell.dark-sacrament" = [
+    "level:4",
+    "school:evocation",
+]
+"spell.dazing-blast" = [
+    "level:2",
+    "school:evocation",
+]
+"spell.earth-worm" = [
+    "level:6",
+    "school:transmutation",
+]
+"spell.elemental-exhalation" = [
+    "level:3",
+    "school:evocation",
+]
+"spell.emmelines-essence-infusion" = [
+    "level:3",
+    "school:transmutation",
+]
+"spell.enspelled-armament" = [
+    "level:2",
+    "school:conjuration",
+]
+"spell.extract-iron" = [
+    "level:3",
+    "school:transmutation",
+]
+"spell.fiend-flesh" = [
+    "level:2",
+    "school:transmutation",
+]
+"spell.flash-fever" = [
+    "level:3",
+    "school:necromancy",
+]
+"spell.flense" = [
+    "level:8",
+    "school:necromancy",
+]
+"spell.fleshcrawl" = [
+    "level:7",
+    "school:necromancy",
+]
+"spell.frightful-start" = [
+    "level:0",
+    "school:illusion",
+]
+"spell.ghost-light" = [
+    "level:1",
+    "school:evocation",
+]
+"spell.greater-animate-dead" = [
+    "level:5",
+    "school:necromancy",
+]
+"spell.heartseeker" = [
+    "level:6",
+    "school:evocation",
+]
+"spell.holy-word" = [
+    "level:0",
+    "school:evocation",
+]
+"spell.hunter-sense" = [
+    "level:0",
+    "school:divination",
+]
+"spell.illusory-instrument" = [
+    "level:0",
+    "school:illusion",
+]
+"spell.incite-riot" = [
+    "level:5",
+    "school:enchantment",
+]
+"spell.intaglio" = [
+    "level:1",
+    "ritual",
+    "school:transmutation",
+]
+"spell.investiture-of-venom" = [
+    "level:5",
+    "school:transmutation",
+]
+"spell.life-tether" = [
+    "level:2",
+    "school:necromancy",
+]
+"spell.lifesink" = [
+    "level:8",
+    "school:necromancy",
+]
+"spell.little-death" = [
+    "level:5",
+    "school:necromancy",
+]
+"spell.maelfas-quickened-class" = [
+    "level:3",
+    "school:enchantment",
+]
+"spell.magic-mirror" = [
+    "level:5",
+    "school:abjuration",
+]
+"spell.melting-curse" = [
+    "level:6",
+    "school:transmutation",
+]
+"spell.mirror-spell" = [
+    "level:3",
+    "school:abjuration",
+]
+"spell.mortality" = [
+    "level:5",
+    "school:transmutation",
+]
+"spell.neutralize-aura" = [
+    "level:1",
+    "school:abjuration",
+]
+"spell.overgrow" = [
+    "level:2",
+    "school:transmutation",
+]
+"spell.perfection" = [
+    "level:9",
+    "school:abjuration",
+]
+"spell.phoenix-flames" = [
+    "level:9",
+    "school:evocation",
+]
+"spell.power-word-maim" = [
+    "level:7",
+    "school:enchantment",
+]
+"spell.preserve" = [
+    "level:0",
+    "school:transmutation",
+]
+"spell.primordial-power" = [
+    "level:4",
+    "school:transmutation",
+]
+"spell.reanimate" = [
+    "level:3",
+    "school:evocation",
+]
+"spell.red-rain" = [
+    "level:8",
+    "school:conjuration",
+]
+"spell.ride-the-lightning" = [
+    "level:4",
+    "school:conjuration",
+]
+"spell.sanguine-fusillade" = [
+    "level:7",
+    "school:evocation",
+]
+"spell.sanguine-poppet" = [
+    "level:3",
+    "school:transmutation",
+]
+"spell.sanguine-shield" = [
+    "level:2",
+    "school:abjuration",
+]
+"spell.seal-spellcasting" = [
+    "level:2",
+    "school:abjuration",
+]
+"spell.sense-lifeblood" = [
+    "level:2",
+    "school:divination",
+]
+"spell.serpent-tongue" = [
+    "level:3",
+    "school:transmutation",
+]
+"spell.shared-judgement" = [
+    "level:4",
+    "school:evocation",
+]
+"spell.shroud-blood" = [
+    "level:1",
+    "school:illusion",
+]
+"spell.somnolence" = [
+    "level:1",
+    "school:enchantment",
+]
+"spell.spirit-swarm" = [
+    "level:5",
+    "school:necromancy",
+]
+"spell.splattering-smite" = [
+    "level:5",
+    "school:abjuration",
+]
+"spell.steal-immortality" = [
+    "level:9",
+    "school:transmutation",
+]
+"spell.suffocate" = [
+    "level:3",
+    "school:conjuration",
+]
+"spell.summon-plant" = [
+    "level:2",
+    "school:conjuration",
+]
+"spell.summon-sea-spirit" = [
+    "level:3",
+    "school:conjuration",
+]
+"spell.supernal-smite" = [
+    "level:4",
+    "school:evocation",
+]
+"spell.theft-of-vitae" = [
+    "level:2",
+    "school:transmutation",
+]
+"spell.thorn-armor" = [
+    "level:1",
+    "school:abjuration",
+]
+"spell.tremor" = [
+    "level:1",
+    "school:evocation",
+]
+"spell.undead-enthrallment" = [
+    "level:8",
+    "school:necromancy",
+]
+"spell.vampiric-claws" = [
+    "level:1",
+    "school:transmutation",
+]
+"spell.vibrating-humors" = [
+    "level:1",
+    "school:evocation",
+]
+"spell.viscous-sheath" = [
+    "level:4",
+    "school:necromancy",
+]
+"spell.wall-of-gloom" = [
+    "level:8",
+    "school:conjuration",
+]
+"spell.weave-numen" = [
+    "level:6",
+    "school:divination",
+]
+"spell.wilting-smite" = [
+    "level:2",
+    "school:transmutation",
+]
+"spell.wipe-face" = [
+    "level:9",
+    "school:necromancy",
+]
+"spell.wrack" = [
+    "level:2",
+    "school:necromancy",
+]
+"stat.gasdra" = [
+    "cr:1",
+    "size:small",
+    "type:monstrosity",
+]
+"stat.avatar-of-slaughter" = [
+    "cr:14",
+    "size:large",
+    "type:fiend",
+]
+"stat.bloated-gastromorph" = [
+    "cr:11",
+    "size:gargantuan",
+    "type:monstrosity",
+]
+"stat.body-snatcher" = [
+    "cr:6",
+    "size:medium",
+    "type:monstrosity",
+]
+"stat.dream-whisperer" = [
+    "cr:7",
+    "size:medium",
+    "type:aberration",
+]
+"stat.ebon-syndicate-elite-assassin" = [
+    "cr:10",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.ebon-syndicate-enforcer" = [
+    "cr:2",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.free-swords-archer" = [
+    "cr:4",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.free-swords-battlemage" = [
+    "cr:4",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.free-swords-captain" = [
+    "cr:10",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.free-swords-infiltrator" = [
+    "cr:4",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.free-swords-sapper" = [
+    "cr:4",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.free-swords-veteran" = [
+    "cr:3",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.herald-of-calamity" = [
+    "cr:9",
+    "size:medium",
+    "type:undead",
+]
+"stat.high-priest" = [
+    "cr:11",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.mind-siphon" = [
+    "cr:10",
+    "size:large",
+    "type:aberration",
+]
+"stat.plague-carrion" = [
+    "cr:14",
+    "size:large",
+    "type:monstrosity",
+]
+"stat.preceptor" = [
+    "cr:9",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.sightless-agony" = [
+    "cr:10",
+    "size:medium",
+    "type:monstrosity",
+]
+"stat.thaumaturge-archmage" = [
+    "cr:15",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.thaumaturge-initiated" = [
+    "cr:6",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.trade-factor" = [
+    "cr:2",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.verminous-abomination" = [
+    "cr:5",
+    "size:large",
+    "type:monstrosity",
+]
+"stat.watchful-priest" = [
+    "cr:3",
+    "size:medium",
+    "type:humanoid",
+]
+"stat.weeping-willow" = [
+    "cr:14",
+    "size:large",
+    "type:plant",
+]

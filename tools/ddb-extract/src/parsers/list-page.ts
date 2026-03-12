@@ -2,10 +2,10 @@ import type { Page } from "playwright";
 import type { ListItem } from "../types.js";
 
 // DnD Beyond list page URL patterns:
-//   /spells?filter-source={id}&page=N
-//   /monsters?filter-source={id}&page=N
-//   /magic-items?filter-source={id}&page=N
-//   /equipment?filter-source={id}&page=N
+//   /spells?filter-source={id}&filter-partnered-content=t&page=N
+//   /monsters?filter-source={id}&filter-partnered-content=t&page=N
+//   /magic-items?filter-source={id}&filter-partnered-content=t&page=N
+//   /equipment?filter-source={id}&filter-partnered-content=t&page=N
 //
 // Confirmed selectors (verified 2026-03-04 against live DOM):
 //   Spells/monsters/items: .listing-body [data-slug]  (row = div.info), span.name a or a.link
@@ -88,7 +88,7 @@ export async function extractListItems(
   let pageNum = 1;
 
   while (true) {
-    const url = `${BASE_URL}${listPath(type)}?filter-source=${filterId}&page=${pageNum}`;
+    const url = `${BASE_URL}${listPath(type)}?filter-source=${filterId}&filter-partnered-content=t&page=${pageNum}`;
     if (verbose) console.log(`  [list] ${url}`);
 
     await page.goto(url, { waitUntil: "networkidle" });
