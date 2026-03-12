@@ -2,9 +2,7 @@
   import { onMount } from 'svelte'
   import { getKbTypes, getKbTags, getKbItems, createKbItem } from '../../services/api'
   import type { KbItem } from '../../services/api'
-  import { kbFilters, selectedKbId } from '../../stores/ui'
-
-  let types: string[] = []
+  import { kbFilters, kbTypes, selectedKbId } from '../../stores/ui'
   let allTags: string[] = []
   let items: KbItem[] = []
   let error = ''
@@ -36,14 +34,6 @@
     if (!same) kbFilters.set(next)
   }
 
-  async function loadTypes() {
-    try {
-      types = await getKbTypes()
-    } catch (e) {
-      error = String(e)
-    }
-  }
-
   async function loadTags() {
     try {
       allTags = await getKbTags({ type: selectedType || undefined })
@@ -66,7 +56,6 @@
   }
 
   onMount(async () => {
-    await loadTypes()
     await loadTags()
     if (selectedType || activeTags.length > 0) {
       await loadItems()
@@ -137,6 +126,7 @@
     newError = ''
     try {
       const result = await createKbItem(newId.trim(), undefined, newUseTemplate)
+      kbTypes.set(await getKbTypes())
       selectedKbId.set(result.id)
       if (onSelect) onSelect(result.id)
       // Refresh list after selection so the viewer opens immediately.
@@ -159,7 +149,7 @@
       aria-label="Filter by type"
     >
       <option value="">All types</option>
-      {#each types as t (t)}
+      {#each $kbTypes as t (t)}
         <option value={t}>{t}</option>
       {/each}
     </select>

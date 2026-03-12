@@ -9,10 +9,10 @@
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
-  import { getStats, getNode } from './services/api'
+  import { getStats, getNode, getKbTypes } from './services/api'
   import { currentAddress, nodeContent, transactionState } from './stores/document'
   import { activeNarrative, availableNarratives, cursor } from './stores/session'
-  import { appMode } from './stores/ui'
+  import { appMode, kbTypes } from './stores/ui'
 
   async function navigate(addr: string): Promise<void> {
     if (!addr) return
@@ -35,6 +35,7 @@
       activeNarrative.set(stats.active_narrative)
       cursor.set(stats.cursor ?? null)
       transactionState.set(stats.transaction ?? null)
+      kbTypes.set(await getKbTypes())
       if (addr) {
         const data = await getNode(addr)
         nodeContent.set(data.content)
@@ -64,6 +65,7 @@
       activeNarrative.set(stats.active_narrative)
       cursor.set(stats.cursor ?? null)
       transactionState.set(stats.transaction ?? null)
+      kbTypes.set(await getKbTypes())
 
       const initial = decodeURIComponent(window.location.hash.slice(1))
       await navigate(initial || stats.cursor || '')
