@@ -335,7 +335,6 @@
         isFocused = false
         updateCommandState()
       }}
-      placeholder="lens CLI"
       rows="1"
       disabled={busy}
       data-testid="cli-input"

@@ -362,11 +362,17 @@ ul.tree-list ul.tree-list {
   border-color: var(--pico-del-color);
 }
 
+.cli-output-panel.command {
+  background: rgba(16, 40, 80, 0.9);
+  border-color: var(--pico-primary);
+}
+
 .cli-output-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0rem 0.3rem;
+  padding-left: 0.7rem;
+  height: 2rem;
   border-bottom: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
 }
@@ -381,6 +387,7 @@ ul.tree-list ul.tree-list {
 .cli-output-actions {
   display: flex;
   gap: 0.25rem;
+  margin-top: 1rem;
 }
 
 .cli-cancel-btn,

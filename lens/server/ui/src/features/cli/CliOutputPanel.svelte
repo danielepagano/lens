@@ -1,10 +1,26 @@
 <script lang="ts">
   import { get } from 'svelte/store'
+  import OutputPanel from '../../components/OutputPanel.svelte'
   import { cancelCliRun } from '../../services/api'
   import { cliOutput } from '../../stores/ui'
-  import CloseIcon from '../../components/icons/CloseIcon.svelte'
 
-  async function cancel() {
+  const DEFAULT_TITLE = 'CLI output'
+
+  export let title: string = DEFAULT_TITLE
+  export let autoClose = false
+
+  $: isOpen = $cliOutput !== null
+  $: isStreaming = $cliOutput?.streaming ?? false
+  $: panelTheme = resolveTheme()
+
+  function resolveTheme(): 'cli' | 'error' | 'command' {
+    if ($cliOutput && $cliOutput.exitCode !== null && $cliOutput.exitCode !== 0) {
+      return 'error'
+    }
+    return 'cli'
+  }
+
+  async function handleCancel() {
     try {
       await cancelCliRun()
     } catch (e) {
@@ -12,53 +28,22 @@
     }
   }
 
-  function close() {
+  function handleClose() {
     cliOutput.set(null)
-  }
-
-  function handleEscape(e: KeyboardEvent) {
-    if (e.key !== 'Escape') return
-    const out = get(cliOutput)
-    if (!out) return
-    if (out.streaming) {
-      cancel()
-    } else {
-      close()
-    }
   }
 </script>
 
-<svelte:window on:keydown={handleEscape} />
+<OutputPanel
+  {title}
+  theme={panelTheme}
+  open={isOpen}
+  streaming={isStreaming}
+  {autoClose}
+  hasContent={true}
+  showCancel={isStreaming}
+  on:cancel={handleCancel}
+  on:close={handleClose}
+>
+  <pre slot="content" class="cli-output-content">{$cliOutput?.output || ' '}</pre>
+</OutputPanel>
 
-{#if $cliOutput}
-  <div
-    class="cli-output-panel"
-    class:error={$cliOutput.exitCode !== null && $cliOutput.exitCode !== 0}
-    data-testid="cli-output-panel"
-  >
-    <div class="cli-output-header">
-      <span class="cli-output-title">CLI output</span>
-      <div class="cli-output-actions">
-        {#if $cliOutput.streaming}
-          <button
-            type="button"
-            class="cli-cancel-btn"
-            on:click={cancel}
-            aria-label="Cancel"
-          >
-            Cancel
-          </button>
-        {/if}
-        <button
-          type="button"
-          class="cli-close-btn"
-          on:click={close}
-          aria-label="Close"
-        >
-          <CloseIcon size={18} />
-        </button>
-      </div>
-    </div>
-    <pre class="cli-output-content">{$cliOutput.output || ' '}</pre>
-  </div>
-{/if}
