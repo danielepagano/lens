@@ -200,7 +200,9 @@ ul.tree-list ul.tree-list {
 }
 
 .cursor-indicator-preview {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.75rem;
 }
 
@@ -212,6 +214,37 @@ ul.tree-list ul.tree-list {
   padding: 1rem 1.25rem;
   min-width: 0;
   margin-bottom: 0;
+}
+
+/* ---- Pin pills (front matter + effective pins) ---- */
+
+.pin-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.pin-pills-front-matter {
+  margin-bottom: 0.75rem;
+}
+
+.pin-pills.effective-pins {
+  margin-left: 0.5rem;
+}
+
+.pin-pill {
+  border-radius: 9999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
+  background-color: var(--pico-secondary-background);
+  color: var(--pico-color);
+  border: 1px solid var(--pico-muted-border-color);
+}
+
+.pin-pill-unpin {
+  background-color: rgba(248, 113, 113, 0.08);
+  color: var(--pico-del-color);
+  border-color: rgba(248, 113, 113, 0.5);
 }
 
 /* ---- BottomBar ---- */

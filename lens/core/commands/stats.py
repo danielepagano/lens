@@ -3,12 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from lens.core.address import NarrativeAddress
+from lens.core.context import crawl_pins
 from lens.core.project import ProjectSession, is_dataset_root
+from lens.core.knowledge import KnowledgeStore
 
 
 @dataclass
 class StatsResult:
-    type_count: int
+    kb_types: list[str]
     kb_count: int
     trees: list[tuple[str, int]]
     cursor_addr: NarrativeAddress | None
@@ -17,18 +19,19 @@ class StatsResult:
     dataset_name: str | None = None
     pending_diff: str = field(default="")
     staged_diff: str = field(default="")
+    effective_pins_at_cursor: list[str] = field(default_factory=list[str])
 
 
 def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     root = session.project_root
     is_dataset = is_dataset_root(root)
-    knowledge = root / "knowledge"
-    kb_count = (
-        sum(1 for p in knowledge.rglob("*.md") if p.name != "_template.md")
-        if knowledge.exists()
-        else 0
-    )
-    type_count = sum(1 for d in knowledge.iterdir() if d.is_dir()) if knowledge.exists() else 0
+    kb_types: list[str] = []
+    kb_count = 0
+    kb_store = KnowledgeStore.for_project(root)
+    kb_types = kb_store.list_types()
+    # list_ids returns all canonical IDs (across project + datasets or dataset-only),
+    # excluding templates.
+    kb_count = len(kb_store.list_ids())
 
     narrative = root / "narrative"
     trees: list[tuple[str, int]] = []
@@ -55,8 +58,18 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         pending_diff = storage.pending_diff()
         staged_diff = storage.staged_diff()
 
+    effective_pins_at_cursor: list[str] = []
+    if not is_dataset and cursor_addr is not None:
+        node_addr = cursor_addr.node_only()
+        try:
+            node = node_addr.to_node(root)
+        except ValueError:
+            node = None  # type: ignore[assignment]
+        if node is not None:
+            effective_pins_at_cursor = crawl_pins(node)
+
     return StatsResult(
-        type_count=type_count,
+        kb_types=kb_types,
         kb_count=kb_count,
         trees=trees,
         cursor_addr=cursor_addr,
@@ -65,4 +78,5 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         dataset_name=root.name if is_dataset else None,
         pending_diff=pending_diff,
         staged_diff=staged_diff,
+        effective_pins_at_cursor=effective_pins_at_cursor,
     )

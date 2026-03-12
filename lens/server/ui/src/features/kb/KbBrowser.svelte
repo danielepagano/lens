@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { getKbTypes, getKbTags, getKbItems, createKbItem } from '../../services/api'
+  import { getKbTags, getKbItems, createKbItem } from '../../services/api'
   import type { KbItem } from '../../services/api'
   import { kbFilters, kbTypes, selectedKbId } from '../../stores/ui'
   let allTags: string[] = []
@@ -126,7 +126,6 @@
     newError = ''
     try {
       const result = await createKbItem(newId.trim(), undefined, newUseTemplate)
-      kbTypes.set(await getKbTypes())
       selectedKbId.set(result.id)
       if (onSelect) onSelect(result.id)
       // Refresh list after selection so the viewer opens immediately.

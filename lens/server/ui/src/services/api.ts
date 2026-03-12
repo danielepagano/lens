@@ -40,6 +40,10 @@ export interface Stats {
   cursor: string | null
   has_pending: boolean
   pending_owner: string | null
+  dataset_name: string | null
+  kb_types: string[]
+  kb_count: number
+  effective_pins_at_cursor: string[] | null
   transaction: TransactionState | null
 }
 
@@ -157,9 +161,6 @@ export interface KbItemDetail {
   content: string
   tags: string[]
 }
-
-export const getKbTypes = (): Promise<string[]> =>
-  get('/kb/types') as Promise<string[]>
 
 export const getKbTags = (params?: { type?: string; prefix?: string }): Promise<string[]> => {
   const qs = new URLSearchParams()

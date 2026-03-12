@@ -29,7 +29,10 @@ def stats(
     if result.dataset_name is not None:
         typer.echo(f"Dataset: {result.dataset_name}")
     typer.echo("Knowledge Store")
-    typer.echo(f"  Types: {result.type_count}")
+    if result.kb_types:
+        typer.echo(f"  Types: {', '.join(sorted(result.kb_types))}")
+    else:
+        typer.echo("  Types: (none)")
     typer.echo(f"  Objects: {result.kb_count}")
     if result.dataset_name is None:
         typer.echo("Narrative trees:")
@@ -38,6 +41,13 @@ def stats(
 
         if result.cursor_addr is not None:
             typer.echo(f"Active narrative cursor:  {result.cursor_addr}")
+            if result.effective_pins_at_cursor:
+                typer.echo("Effective pins at cursor:")
+                typer.echo("  kb_pin:")
+                for kid in result.effective_pins_at_cursor:
+                    typer.echo(f"    - {kid}")
+            else:
+                typer.echo("Effective pins at cursor: (none)")
         else:
             typer.echo("Active narrative cursor:  (no active narrative)")
 

@@ -3,7 +3,12 @@
   import { getTree, getStats, setActiveNarrative } from '../../services/api'
   import type { TreeNode } from '../../services/api'
   import { treeOpen, treeRefreshTrigger } from '../../stores/ui'
-  import { activeNarrative, availableNarratives, cursor } from '../../stores/session'
+  import {
+    activeNarrative,
+    availableNarratives,
+    cursor,
+    effectivePinsAtCursor,
+  } from '../../stores/session'
   import { transactionState } from '../../stores/document'
   import TreeNodeComp from './TreeNode.svelte'
 
@@ -36,6 +41,7 @@
       const stats = await getStats()
       availableNarratives.set(stats.narratives ?? [])
       cursor.set(stats.cursor ?? null)
+      effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
       transactionState.set(stats.transaction ?? null)
       if (stats.cursor) {
         await navigate(stats.cursor)

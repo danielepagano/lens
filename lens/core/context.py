@@ -46,18 +46,21 @@ def _ancestor_chain(node: NarrativeNode) -> list[NarrativeNode]:
     return chain
 
 
-def crawl(
-    node: NarrativeNode,
+def _resolve_pins_for_ancestors(
+    project_root: Path,
+    ancestors: list[NarrativeNode],
     *,
     extra_pins: list[str] | None = None,
     extra_unpins: list[str] | None = None,
-    include_kb: bool = True,
-    include_narrative: bool = True,
-) -> CrawlResult:
-    project_root = node.narrative_root.parent.parent
+    include_kb: bool,
+) -> tuple[list[str], list[str]]:
+    """Resolve pins/unpins across *ancestors* and optional extras.
+
+    Returns a pair ``(knowledge_formatted, pinned_ids)``. When ``include_kb`` is
+    false, both lists are empty but the pin resolution (which objects survive)
+    still follows the same rules as a full crawl.
+    """
     kb_store = KnowledgeStore.for_project(project_root)
-    ancestors = _ancestor_chain(node)
-    max_level = len(ancestors) - 1
 
     all_pins: list[tuple[int, str]] = []
     unpin_levels: dict[str, set[int]] = {}
@@ -83,6 +86,7 @@ def crawl(
         for kid in unpins_list:
             unpin_levels.setdefault(kid.rstrip("+"), set()).add(level)
 
+    max_level = len(ancestors) - 1
     extra_level = max_level + 1
     for kid in extra_pins or []:
         all_pins.append((extra_level, kid))
@@ -109,29 +113,54 @@ def crawl(
 
     all_unpinned: set[str] = set(unpin_levels.keys())
 
+    if not include_kb:
+        return [], []
+
     knowledge_formatted: list[str] = []
     pinned_ids: list[str] = []
-    if include_kb:
-        effective_ids: list[str] = []
-        all_objects: dict[str, KnowledgeObject] = {}
-        for _lev, raw in ordered_base:
-            base = raw.rstrip("+")
-            if not raw.endswith("+"):
-                effective_ids.append(base)
-                objs = kb_store.get_objects([base])
-                all_objects.update(objs)
-            else:
-                ordered_ids, objects = kb_store.get_objects_with_links([raw])
-                for cid in ordered_ids:
-                    if cid not in all_unpinned and cid not in effective_ids:
-                        effective_ids.append(cid)
-                all_objects.update(objects)
 
-        for cid in effective_ids:
-            obj = all_objects.get(cid)
-            if obj is not None:
-                knowledge_formatted.append(obj.format(include_comments=False))
-                pinned_ids.append(cid)
+    effective_ids: list[str] = []
+    all_objects: dict[str, KnowledgeObject] = {}
+    for _lev, raw in ordered_base:
+        base = raw.rstrip("+")
+        if not raw.endswith("+"):
+            effective_ids.append(base)
+            objs = kb_store.get_objects([base])
+            all_objects.update(objs)
+        else:
+            ordered_ids, objects = kb_store.get_objects_with_links([raw])
+            for cid in ordered_ids:
+                if cid not in all_unpinned and cid not in effective_ids:
+                    effective_ids.append(cid)
+            all_objects.update(objects)
+
+    for cid in effective_ids:
+        obj = all_objects.get(cid)
+        if obj is not None:
+            knowledge_formatted.append(obj.format(include_comments=False))
+            pinned_ids.append(cid)
+
+    return knowledge_formatted, pinned_ids
+
+
+def crawl(
+    node: NarrativeNode,
+    *,
+    extra_pins: list[str] | None = None,
+    extra_unpins: list[str] | None = None,
+    include_kb: bool = True,
+    include_narrative: bool = True,
+) -> CrawlResult:
+    project_root = node.narrative_root.parent.parent
+    ancestors = _ancestor_chain(node)
+
+    knowledge_formatted, pinned_ids = _resolve_pins_for_ancestors(
+        project_root,
+        ancestors,
+        extra_pins=extra_pins,
+        extra_unpins=extra_unpins,
+        include_kb=include_kb,
+    )
 
     previous_summaries: list[str] = []
     current_content: str | None = None
@@ -156,6 +185,30 @@ def crawl(
         current_content=current_content,
         pinned_ids=pinned_ids,
     )
+
+
+def crawl_pins(
+    node: NarrativeNode,
+    *,
+    extra_pins: list[str] | None = None,
+    extra_unpins: list[str] | None = None,
+) -> list[str]:
+    """Return the effective pinned KB IDs at *node*.
+
+    Resolution rules (ancestor aggregation, unpins, ``+`` expansion, and
+    deduplication) exactly match :func:`crawl`. Only KB items that actually
+    exist in the store are returned.
+    """
+    project_root = node.narrative_root.parent.parent
+    ancestors = _ancestor_chain(node)
+    _knowledge, pinned_ids = _resolve_pins_for_ancestors(
+        project_root,
+        ancestors,
+        extra_pins=extra_pins,
+        extra_unpins=extra_unpins,
+        include_kb=True,
+    )
+    return pinned_ids
 
 
 def _sections_from_crawl_result(result: CrawlResult) -> list[str]:

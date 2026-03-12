@@ -32,6 +32,7 @@ class TestApiSmoke:
             data = json.loads(resp.read())
         assert data["active_narrative"] == "story"
         assert data["kb_count"] >= 2
+        assert "effective_pins_at_cursor" in data
 
     def test_tree_returns_list(self, live_server_url: str) -> None:
         with urllib.request.urlopen(f"{live_server_url}/tree") as resp:

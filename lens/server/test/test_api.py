@@ -58,6 +58,12 @@ class TestStats:
         assert data["has_pending"] is False
         assert data["transaction"] is None
 
+    def test_includes_effective_pins_at_cursor(self, test_client: TestClient) -> None:
+        data = test_client.get("/stats").json()
+        assert "effective_pins_at_cursor" in data
+        value = data["effective_pins_at_cursor"]
+        assert isinstance(value, list)
+
 
 class TestTree:
     def test_returns_list(self, test_client: TestClient) -> None:

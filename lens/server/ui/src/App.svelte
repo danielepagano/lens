@@ -9,9 +9,14 @@
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
-  import { getStats, getNode, getKbTypes } from './services/api'
+  import { getStats, getNode } from './services/api'
   import { currentAddress, nodeContent, transactionState } from './stores/document'
-  import { activeNarrative, availableNarratives, cursor } from './stores/session'
+  import {
+    activeNarrative,
+    availableNarratives,
+    cursor,
+    effectivePinsAtCursor,
+  } from './stores/session'
   import { appMode, kbTypes } from './stores/ui'
 
   async function navigate(addr: string): Promise<void> {
@@ -34,8 +39,9 @@
       availableNarratives.set(stats.narratives ?? [])
       activeNarrative.set(stats.active_narrative)
       cursor.set(stats.cursor ?? null)
+      effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
       transactionState.set(stats.transaction ?? null)
-      kbTypes.set(await getKbTypes())
+      kbTypes.set(stats.kb_types ?? [])
       if (addr) {
         const data = await getNode(addr)
         nodeContent.set(data.content)
@@ -64,8 +70,9 @@
       availableNarratives.set(stats.narratives ?? [])
       activeNarrative.set(stats.active_narrative)
       cursor.set(stats.cursor ?? null)
+      effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
       transactionState.set(stats.transaction ?? null)
-      kbTypes.set(await getKbTypes())
+      kbTypes.set(stats.kb_types ?? [])
 
       const initial = decodeURIComponent(window.location.hash.slice(1))
       await navigate(initial || stats.cursor || '')
