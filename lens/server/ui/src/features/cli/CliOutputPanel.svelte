@@ -2,6 +2,7 @@
   import { get } from 'svelte/store'
   import { cancelCliRun } from '../../services/api'
   import { cliOutput } from '../../stores/ui'
+  import CloseIcon from '../../components/icons/CloseIcon.svelte'
 
   async function cancel() {
     try {
@@ -54,7 +55,7 @@
           on:click={close}
           aria-label="Close"
         >
-          ×
+          <CloseIcon size={18} />
         </button>
       </div>
     </div>

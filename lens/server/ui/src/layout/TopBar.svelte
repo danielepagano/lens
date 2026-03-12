@@ -2,6 +2,7 @@
   import { currentAddress } from '../stores/document'
   import { cursor } from '../stores/session'
   import { treeOpen, appMode } from '../stores/ui'
+  import HamburgerIcon from '../components/icons/HamburgerIcon.svelte'
 
   $: parts = $currentAddress ? $currentAddress.split('/') : []
   $: parentAddr = parts.length > 1 ? parts.slice(0, -1).join('/') : null
@@ -11,7 +12,7 @@
 
 <header class="top-bar" data-testid="top-bar">
   <button class="tree-toggle" on:click={() => treeOpen.update(v => !v)} aria-label="Toggle tree">
-    ☰
+    <HamburgerIcon size={20} />
   </button>
   <span class="title">Lens</span>
   {#if $appMode === 'narrative'}

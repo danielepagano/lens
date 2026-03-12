@@ -214,6 +214,7 @@ ul.tree-list ul.tree-list {
   padding: 1rem 1.25rem;
   min-width: 0;
   margin-bottom: 0;
+  padding-bottom: 3rem;
 }
 
 /* ---- Pin pills (front matter + effective pins) ---- */

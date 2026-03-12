@@ -11,6 +11,7 @@
   } from '../../stores/session'
   import { transactionState } from '../../stores/document'
   import TreeNodeComp from './TreeNode.svelte'
+  import CloseIcon from '../../components/icons/CloseIcon.svelte'
 
   export let navigate: (addr: string) => Promise<void>
 
@@ -61,7 +62,9 @@
 <div class="sidebar" class:open={$treeOpen} data-testid="tree-browser">
   <div class="sidebar-header">
     <strong>Navigation</strong>
-    <button class="sidebar-close" on:click={() => treeOpen.set(false)} aria-label="Close">✕</button>
+    <button class="sidebar-close" on:click={() => treeOpen.set(false)} aria-label="Close">
+      <CloseIcon size={18} />
+    </button>
   </div>
   {#if $availableNarratives.length > 0}
     <div class="narrative-switcher">
