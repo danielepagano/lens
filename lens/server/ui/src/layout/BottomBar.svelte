@@ -13,6 +13,16 @@
   let history: string[] = []
   let historyIndex = -1
 
+  function resizeCliInput(_value: string) {
+    if (!cliInputEl) return
+    cliInputEl.style.height = '0px'
+    const maxHeightPx = window.innerHeight ? Math.round(window.innerHeight * 0.4) : 240
+    const newHeight = Math.min(cliInputEl.scrollHeight, maxHeightPx)
+    cliInputEl.style.height = `${newHeight}px`
+  }
+
+  $: resizeCliInput(input)
+
   function focusCliInput() {
     setTimeout(() => {
       if (!cliInputEl) return

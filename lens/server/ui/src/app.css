@@ -243,7 +243,11 @@ ul.tree-list ul.tree-list {
   font-size: 0.8rem;
   padding: 0.35rem 0.5rem;
   resize: none;
-  max-height: 6em;
+  line-height: 1.3;
+  max-height: 40vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-break: break-word;
   margin: 4px 0px 10px 0px;
 }
 
