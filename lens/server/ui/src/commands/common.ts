@@ -13,3 +13,10 @@ export type CommandHandler = (
   ctx: CommandContext
 ) => Promise<CommandResult>
 
+export type CommandGroup = 'transactions' | 'cli' | (string & {})
+
+export interface CommandDefinition {
+  trigger: string
+  group: CommandGroup
+}
+

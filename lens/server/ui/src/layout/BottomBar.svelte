@@ -1,25 +1,15 @@
 <script lang="ts">
   import type { CommandContext, CommandResult } from '../commands/handlers'
-  import { resolveHandler } from '../commands/handlers'
+  import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
   import { cliOutput, transactionResult } from '../stores/ui'
+  import type { CommandGroup } from '../commands/common'
 
   const MAX_HISTORY = 50
 
-  const KNOWN_COMMANDS = [
-    'commit',
-    'checkpoint',
-    'design',
-    'dnd',
-    'edit',
-    'kb',
-    'pin',
-    'rewind',
-    'rollback',
-    'section',
-    'stats',
-    'use',
-    'write',
-  ].sort()
+  type CommandHint = {
+    trigger: string
+    group: CommandGroup
+  }
 
   export let onCliDone: (() => Promise<void>) | undefined = undefined
 
@@ -29,7 +19,7 @@
   let cliInputEl: HTMLTextAreaElement | null = null
   let history: string[] = []
   let historyIndex = -1
-  let suggestions: string[] = []
+  let suggestions: CommandHint[] = []
   let hasCommandText = false
   let hasPayload = false
   let isKnownCommand = true
@@ -97,11 +87,25 @@
       suggestions = []
     } else if (!hasCommandText && !hasPayload) {
       // Empty CLI while focused: show full list
-      suggestions = KNOWN_COMMANDS
+      suggestions = COMMAND_DEFINITIONS.map((def) => ({
+        trigger: def.trigger,
+        group: def.group,
+      }))
     } else if (hasCommandText && !hasPayload) {
-      const matches = KNOWN_COMMANDS.filter((c) => c.startsWith(lower))
+      const matches = COMMAND_DEFINITIONS.filter((def) =>
+        def.trigger.startsWith(lower)
+      ).map((def) => ({
+        trigger: def.trigger,
+        group: def.group,
+      }))
       // Keep showing the full list if there are no matches
-      suggestions = matches.length > 0 ? matches : KNOWN_COMMANDS
+      suggestions =
+        matches.length > 0
+          ? matches
+          : COMMAND_DEFINITIONS.map((def) => ({
+              trigger: def.trigger,
+              group: def.group,
+            }))
     } else {
       suggestions = []
     }
@@ -171,7 +175,7 @@
 
         if (!command || !isExactKnown) {
           // No command yet or partial prefix: pick the first suggestion
-          completeCommand(suggestions[0] ?? '')
+          completeCommand(suggestions[0]?.trigger ?? '')
           return
         }
 
@@ -179,7 +183,9 @@
         const currentIndex = KNOWN_COMMANDS.findIndex((c) => c === command)
         const nextIndex =
           currentIndex === -1 ? 0 : (currentIndex + 1) % KNOWN_COMMANDS.length
-        completeCommand(KNOWN_COMMANDS[nextIndex] ?? KNOWN_COMMANDS[0] ?? '')
+        completeCommand(
+          KNOWN_COMMANDS[nextIndex] ?? KNOWN_COMMANDS[0] ?? ''
+        )
         return
       }
     }
@@ -282,8 +288,13 @@
   {#if suggestions.length > 0}
     <div class="cli-suggestions" class:no-wrap={$cliOutput !== null}>
       {#each suggestions as cmd}
-        <button type="button" class="cli-suggestion" on:click={() => completeCommand(cmd)}>
-          /{cmd}
+        <button
+          type="button"
+          class="cli-suggestion"
+          class:cli-suggestion--cli={cmd.group === 'cli'}
+          on:click={() => completeCommand(cmd.trigger)}
+        >
+          /{cmd.trigger}
         </button>
       {/each}
     </div>

@@ -1,6 +1,23 @@
 import { CliRunBusyError, runCliStream } from '../services/api'
 import { cliOutput, treeRefreshTrigger } from '../stores/ui'
-import type { CommandContext, CommandHandler } from './common'
+import type {
+  CommandContext,
+  CommandDefinition,
+  CommandHandler,
+} from './common'
+
+export const CLI_COMMANDS: CommandDefinition[] = [
+  { trigger: 'design', group: 'cli' },
+  { trigger: 'dnd', group: 'cli' },
+  { trigger: 'edit', group: 'cli' },
+  { trigger: 'kb', group: 'cli' },
+  { trigger: 'pin', group: 'cli' },
+  { trigger: 'rewind', group: 'cli' },
+  { trigger: 'section', group: 'cli' },
+  { trigger: 'stats', group: 'cli' },
+  { trigger: 'use', group: 'cli' },
+  { trigger: 'write', group: 'cli' },
+]
 
 export const cliCommandHandler: CommandHandler = async (
   command,

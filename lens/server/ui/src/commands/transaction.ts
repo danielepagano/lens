@@ -5,7 +5,17 @@ import {
   type TransactionActionResponse,
 } from '../services/api'
 import { transactionResult, treeRefreshTrigger } from '../stores/ui'
-import type { CommandContext, CommandHandler } from './common'
+import type {
+  CommandContext,
+  CommandDefinition,
+  CommandHandler,
+} from './common'
+
+export const TRANSACTION_COMMANDS: CommandDefinition[] = [
+  { trigger: 'commit', group: 'transactions' },
+  { trigger: 'rollback', group: 'transactions' },
+  { trigger: 'checkpoint', group: 'transactions' },
+]
 
 async function executeTransactionAction(
   command: string

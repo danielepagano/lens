@@ -335,6 +335,12 @@ ul.tree-list ul.tree-list {
   cursor: pointer;
 }
 
+.cli-suggestion.cli-suggestion--cli {
+  border-color: rgba(16, 80, 40, 0.7);
+  background: rgba(16, 80, 40, 0.12);
+  color: #6ee7b7;
+}
+
 .cli-suggestion:hover,
 .cli-suggestion:focus-visible {
   background: rgba(255, 255, 255, 0.12);
