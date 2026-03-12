@@ -24,7 +24,18 @@ _LENS_ARGV = [sys.executable, "-W", "ignore::SyntaxWarning:pysbd", "-m", "lens.c
 
 _CLI_BLOCKLIST = frozenset({"init", "dev", "serve"})
 
+_KB_TAG_MUTATING_SUBS = frozenset({"tag", "delete", "copy", "rename", "extract", "edit"})
+
 _MAX_COMMAND_LEN = 32 * 1024
+
+
+def _cli_run_may_mutate_tags(argv: list[str]) -> bool:
+    if not argv:
+        return False
+    top = argv[0]
+    if top == "kb" and len(argv) > 1:
+        return argv[1] in _KB_TAG_MUTATING_SUBS
+    return False
 
 
 def _normalize_cli_argv(argv: list[str]) -> list[str]:
@@ -117,6 +128,7 @@ async def cli_run(
         bufsize=1,
     )
     app.state.cli_run = process
+    app.state.cli_run_tag_mutating = _cli_run_may_mutate_tags(argv)
 
     out_queue: queue.Queue[tuple[str, str | int]] = queue.Queue()
     threading.Thread(target=_read_stdout, args=(process, out_queue), daemon=True).start()
@@ -135,6 +147,9 @@ async def cli_run(
         finally:
             if getattr(app.state, "cli_run", None) is process:
                 app.state.cli_run = None
+                if getattr(app.state, "cli_run_tag_mutating", False):
+                    session.kb.evict_tag_cache()
+                app.state.cli_run_tag_mutating = False
             if process.poll() is None:
                 process.terminate()
                 try:
@@ -150,12 +165,19 @@ async def cli_run(
 
 
 @router.post("/cli/cancel")
-async def cli_cancel(request: Request) -> dict[str, str]:
+async def cli_cancel(
+    request: Request,
+    session: ProjectSession = Depends(get_session),
+) -> dict[str, str]:
     app = request.app
     process = getattr(app.state, "cli_run", None)
     if process is None:
         return {"status": "ok", "detail": "no run in progress"}
+    tag_mutating = getattr(app.state, "cli_run_tag_mutating", False)
     if process.poll() is None:
         process.terminate()
     app.state.cli_run = None
+    app.state.cli_run_tag_mutating = False
+    if tag_mutating:
+        session.kb.evict_tag_cache()
     return {"status": "ok", "detail": "cancelled"}

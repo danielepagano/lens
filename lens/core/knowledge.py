@@ -198,6 +198,9 @@ class KnowledgeStore:
         tomli_w.dump(cast(Any, payload), buf)
         self._ensure_storage().write_file_bytes(self._tags_path, buf.getvalue())
 
+    def evict_tag_cache(self) -> None:
+        self._tags_cache = None
+
     def store_object(
         self,
         canonical_id: str,
