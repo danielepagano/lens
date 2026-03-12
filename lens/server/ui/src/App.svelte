@@ -7,6 +7,7 @@
   import TreeBrowser from './features/tree/TreeBrowser.svelte'
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
+  import TransactionResultPanel from './features/transaction/TransactionResultPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
   import { getStats, getNode } from './services/api'
@@ -99,6 +100,7 @@
     <KbViewer />
   {/if}
   <CliOutputPanel />
+  <TransactionResultPanel />
 
   <svelte:fragment slot="bottombar">
     <BottomBar onCliDone={handleCliDone} />

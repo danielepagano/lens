@@ -426,6 +426,11 @@ ul.tree-list ul.tree-list {
   word-break: break-word;
 }
 
+.transaction-result-content {
+  background: transparent;
+  padding: 0.5rem;
+}
+
 /* ---- States ---- */
 
 .empty-state {

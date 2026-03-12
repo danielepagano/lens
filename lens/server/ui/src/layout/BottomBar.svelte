@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { runCliStream, cancelCliRun, CliRunBusyError } from '../services/api'
-  import { cliOutput, treeRefreshTrigger } from '../stores/ui'
+  import type { CommandContext, CommandResult } from '../commands/handlers'
+  import { resolveHandler } from '../commands/handlers'
+  import { cliOutput, transactionResult } from '../stores/ui'
 
   const MAX_HISTORY = 50
 
@@ -251,50 +252,20 @@
     pushHistory(raw)
     busy = true
     busyMessage = null
-    cliOutput.set({ output: '', exitCode: null, streaming: true })
+    cliOutput.set(null)
+    transactionResult.set(null)
+    const handler = resolveHandler(command)
+
+    const ctx: CommandContext = {
+      setBusyMessage(message: string | null) {
+        busyMessage = message
+      },
+      onDone: onCliDone,
+    }
 
     try {
-      await runCliStream(command, payload, (event) => {
-        if (event.type === 'out' || event.type === 'err') {
-          cliOutput.update((p) =>
-            p ? { ...p, output: p.output + (event.text ?? '') } : p
-          )
-        } else if (event.type === 'done') {
-          cliOutput.update((p) =>
-            p
-              ? {
-                  ...p,
-                  exitCode: event.exit_code ?? null,
-                  streaming: false,
-                }
-              : p
-          )
-        }
-      })
-      if (onCliDone) await onCliDone()
-      treeRefreshTrigger.update((n) => n + 1)
-      input = ''
-      updateCommandState()
-    } catch (err) {
-      if (err instanceof CliRunBusyError) {
-        busyMessage = err.message
-        cliOutput.update((p) =>
-          p
-            ? { ...p, output: p.output + err.message + '\n', streaming: false }
-            : p
-        )
-      } else {
-        cliOutput.update((p) =>
-          p
-            ? {
-                ...p,
-                output: p.output + (err instanceof Error ? err.message : String(err)),
-                exitCode: 1,
-                streaming: false,
-              }
-            : p
-        )
-        if (onCliDone) await onCliDone()
+      const result: CommandResult = await handler(command, payload, ctx)
+      if (result.clearInput) {
         input = ''
         updateCommandState()
       }

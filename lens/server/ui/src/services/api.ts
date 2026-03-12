@@ -193,3 +193,22 @@ export const createKbItem = (
     id: string
     content: string
   }>
+
+// ---- Transaction API ----
+
+export interface TransactionActionResponse {
+  status: 'ok' | 'error'
+  detail?: string
+  owner?: string | null
+  is_mutation?: boolean
+}
+
+export const rollbackTransaction = (): Promise<TransactionActionResponse> =>
+  post('/rollback', {}) as Promise<TransactionActionResponse>
+
+export const commitTransaction = (): Promise<TransactionActionResponse> =>
+  post('/commit', {}) as Promise<TransactionActionResponse>
+
+export const checkpointTransaction = (): Promise<TransactionActionResponse> =>
+  post('/checkpoint', {}) as Promise<TransactionActionResponse>
+

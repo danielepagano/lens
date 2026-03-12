@@ -15,6 +15,13 @@ export const cliOutput = writable<CliOutputState | null>(null)
 
 export const treeRefreshTrigger = writable(0)
 
+export interface TransactionResultState {
+  title: string
+  message: string
+}
+
+export const transactionResult = writable<TransactionResultState | null>(null)
+
 // KB state
 export const selectedKbId = writable<string | null>(null)
 
