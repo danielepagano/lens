@@ -113,12 +113,13 @@ async function errorDetail(r: Response): Promise<string> {
 
 export async function runCliStream(
   command: string,
+  payload: string,
   onEvent: (event: CliEvent) => void
 ): Promise<{ exit_code: number }> {
   const r = await fetch('/cli/run', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ command }),
+    body: JSON.stringify({ command, payload }),
   })
   if (r.status === 409 || r.status === 423) {
     throw new CliRunBusyError(await errorDetail(r), r.status)

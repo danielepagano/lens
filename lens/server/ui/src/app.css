@@ -251,6 +251,23 @@ ul.tree-list ul.tree-list {
   margin: 4px 0px 10px 0px;
 }
 
+.cli-input.invalid {
+  border-color: var(--pico-del-color);
+}
+
+.cli-input.flash-invalid {
+  animation: cli-input-flash 150ms ease-out;
+}
+
+@keyframes cli-input-flash {
+  from {
+    box-shadow: 0 0 0 0 var(--pico-del-color);
+  }
+  to {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
 .cli-input:disabled {
   opacity: 0.8;
 }
@@ -261,11 +278,39 @@ ul.tree-list ul.tree-list {
   white-space: nowrap;
 }
 
+.cli-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+}
+
+.cli-suggestions.no-wrap {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.cli-suggestion {
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  padding: 0.1rem 0.4rem;
+  cursor: pointer;
+}
+
+.cli-suggestion:hover,
+.cli-suggestion:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* ---- CLI output panel ---- */
 
 .cli-output-panel {
   position: fixed;
-  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
   left: 1rem;
   right: 1.5rem;
   max-height: 50vh;

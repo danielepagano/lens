@@ -4,6 +4,22 @@
 
   const MAX_HISTORY = 50
 
+  const KNOWN_COMMANDS = [
+    'commit',
+    'checkpoint',
+    'design',
+    'dnd',
+    'edit',
+    'kb',
+    'pin',
+    'rewind',
+    'rollback',
+    'section',
+    'stats',
+    'use',
+    'write',
+  ].sort()
+
   export let onCliDone: (() => Promise<void>) | undefined = undefined
 
   let input = ''
@@ -12,6 +28,13 @@
   let cliInputEl: HTMLTextAreaElement | null = null
   let history: string[] = []
   let historyIndex = -1
+  let suggestions: string[] = []
+  let hasCommandText = false
+  let hasPayload = false
+  let isKnownCommand = true
+  let flashInvalid = false
+  let showInvalid = false
+  let isFocused = false
 
   function resizeCliInput(_value: string) {
     if (!cliInputEl) return
@@ -40,11 +63,79 @@
     historyIndex = -1
   }
 
+  function parseCommandAndPayload(value: string): {
+    command: string | null
+    payload: string
+  } {
+    const trimmed = value.trim()
+    if (!trimmed.startsWith('/')) {
+      return { command: null, payload: '' }
+    }
+    const withoutSlash = trimmed.slice(1)
+    if (!withoutSlash) return { command: null, payload: '' }
+    const parts = withoutSlash.split(/\s+/)
+    const command = parts[0]?.toLowerCase() ?? null
+    const payload = parts.slice(1).join(' ').trimStart()
+    return { command, payload }
+  }
+
+  function updateCommandState() {
+    const trimmed = input.trim()
+    const startsWithSlash = trimmed.startsWith('/')
+    const withoutSlash = startsWithSlash ? trimmed.slice(1) : trimmed
+    const parts = withoutSlash.split(/\s+/).filter((p) => p.length > 0)
+    const commandPart = parts[0] ?? ''
+    const payloadPart = parts.slice(1).join(' ').trimStart()
+
+    hasCommandText = commandPart.length > 0
+    hasPayload = payloadPart.length > 0
+
+    const lower = commandPart.toLowerCase()
+
+    if (!isFocused) {
+      suggestions = []
+    } else if (!hasCommandText && !hasPayload) {
+      // Empty CLI while focused: show full list
+      suggestions = KNOWN_COMMANDS
+    } else if (hasCommandText && !hasPayload) {
+      const matches = KNOWN_COMMANDS.filter((c) => c.startsWith(lower))
+      // Keep showing the full list if there are no matches
+      suggestions = matches.length > 0 ? matches : KNOWN_COMMANDS
+    } else {
+      suggestions = []
+    }
+
+    isKnownCommand = !hasCommandText || KNOWN_COMMANDS.includes(lower)
+    showInvalid = !busy && startsWithSlash && hasCommandText && !isKnownCommand
+  }
+
+  function handleInput(e: Event) {
+    if (!(e.target instanceof HTMLTextAreaElement)) return
+    let value = e.target.value
+    if (!value.startsWith('/')) {
+      value = '/' + value.replace(/^\/+/, '')
+    }
+    input = value
+    updateCommandState()
+  }
+
+  function completeCommand(cmd: string) {
+    const { payload } = parseCommandAndPayload(input)
+    const suffix = payload ? ` ${payload}` : ' '
+    input = `/${cmd}${suffix}`
+    updateCommandState()
+    resizeCliInput(input)
+    focusCliInput()
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     const isTouchDevice =
       typeof window !== 'undefined' && 'ontouchstart' in window
 
-    if (input.trim() === '') {
+    const trimmed = input.trim()
+    const isLogicalEmpty = trimmed === '' || trimmed === '/'
+
+    if (isLogicalEmpty) {
       if (e.key === 'Enter' && !e.shiftKey) {
         // Empty Enter: do not send a command.
         // On touch devices, treat this as a dismiss gesture.
@@ -56,12 +147,39 @@
       }
 
       if (e.key === 'Backspace') {
-        // On touch devices, Backspace on an empty CLI acts as a dismiss gesture.
+        // Backspace on an empty CLI: close the CLI output panel if open,
+        // or dismiss on touch devices.
+        if ($cliOutput) {
+          e.preventDefault()
+          cliOutput.set(null)
+          return
+        }
         if (isTouchDevice) {
           e.preventDefault()
           cliInputEl?.blur()
           return
         }
+      }
+    }
+
+    if (e.key === 'Tab') {
+      if (!hasPayload && suggestions.length > 0) {
+        e.preventDefault()
+        const { command } = parseCommandAndPayload(input)
+        const isExactKnown = !!command && KNOWN_COMMANDS.includes(command)
+
+        if (!command || !isExactKnown) {
+          // No command yet or partial prefix: pick the first suggestion
+          completeCommand(suggestions[0] ?? '')
+          return
+        }
+
+        // Exact known command with no payload: cycle through the global, sorted list
+        const currentIndex = KNOWN_COMMANDS.findIndex((c) => c === command)
+        const nextIndex =
+          currentIndex === -1 ? 0 : (currentIndex + 1) % KNOWN_COMMANDS.length
+        completeCommand(KNOWN_COMMANDS[nextIndex] ?? KNOWN_COMMANDS[0] ?? '')
+        return
       }
     }
 
@@ -106,8 +224,8 @@
   }
 
   async function submit() {
-    const command = input.trim()
-    if (command === '') {
+    const raw = input.trim()
+    if (raw === '') {
       // Do not run or add empty commands to history.
       if (typeof window !== 'undefined' && 'ontouchstart' in window) {
         cliInputEl?.blur()
@@ -115,13 +233,28 @@
       return
     }
 
-    pushHistory(command)
+    const { command, payload } = parseCommandAndPayload(raw)
+    if (!command) {
+      return
+    }
+
+    if (!KNOWN_COMMANDS.includes(command)) {
+      flashInvalid = true
+      showInvalid = true
+      setTimeout(() => {
+        flashInvalid = false
+      }, 150)
+      focusCliInput()
+      return
+    }
+
+    pushHistory(raw)
     busy = true
     busyMessage = null
     cliOutput.set({ output: '', exitCode: null, streaming: true })
 
     try {
-      await runCliStream(command, (event) => {
+      await runCliStream(command, payload, (event) => {
         if (event.type === 'out' || event.type === 'err') {
           cliOutput.update((p) =>
             p ? { ...p, output: p.output + (event.text ?? '') } : p
@@ -141,6 +274,7 @@
       if (onCliDone) await onCliDone()
       treeRefreshTrigger.update((n) => n + 1)
       input = ''
+      updateCommandState()
     } catch (err) {
       if (err instanceof CliRunBusyError) {
         busyMessage = err.message
@@ -162,6 +296,7 @@
         )
         if (onCliDone) await onCliDone()
         input = ''
+        updateCommandState()
       }
     } finally {
       busy = false
@@ -173,13 +308,33 @@
 </script>
 
 <div class="bottom-bar" data-testid="bottom-bar">
+  {#if suggestions.length > 0}
+    <div class="cli-suggestions" class:no-wrap={$cliOutput !== null}>
+      {#each suggestions as cmd}
+        <button type="button" class="cli-suggestion" on:click={() => completeCommand(cmd)}>
+          /{cmd}
+        </button>
+      {/each}
+    </div>
+  {/if}
   <div class="cli-input-row">
     <textarea
       bind:this={cliInputEl}
       class="cli-input"
+      class:invalid={showInvalid}
+      class:flash-invalid={flashInvalid}
       bind:value={input}
+      on:input={handleInput}
       on:keydown={handleKeydown}
       on:beforeinput={handleBeforeInput}
+      on:focus={() => {
+        isFocused = true
+        updateCommandState()
+      }}
+      on:blur={() => {
+        isFocused = false
+        updateCommandState()
+      }}
       placeholder="lens CLI"
       rows="1"
       disabled={busy}

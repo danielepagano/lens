@@ -22,7 +22,23 @@ router = APIRouter()
 
 _LENS_ARGV = [sys.executable, "-W", "ignore::SyntaxWarning:pysbd", "-m", "lens.cli.main"]
 
-_CLI_BLOCKLIST = frozenset({"init", "dev", "serve"})
+_CLI_ALLOWLIST = frozenset(
+    {
+        "use",
+        "stats",
+        "kb",
+        "section",
+        "pin",
+        "write",
+        "edit",
+        "rewind",
+        "rollback",
+        "commit",
+        "checkpoint",
+        "design",
+        "dnd",
+    }
+)
 
 _KB_TAG_MUTATING_SUBS = frozenset({"tag", "delete", "copy", "rename", "extract", "edit"})
 
@@ -87,25 +103,40 @@ async def cli_run(
     session: ProjectSession = Depends(get_session),
 ) -> StreamingResponse:
     body = await request.json()
-    command = body.get("command", "")
+    command = body.get("command")
+    payload = body.get("payload", "")
     if not isinstance(command, str):
         raise HTTPException(
             status_code=400,
             detail="Request body must include 'command' as a string",
         )
-    if len(command) > _MAX_COMMAND_LEN:
+    if not isinstance(payload, str):
+        raise HTTPException(
+            status_code=400,
+            detail="Request body 'payload' must be a string",
+        )
+    full_len = len(command) + (1 + len(payload) if payload else 0)
+    if full_len > _MAX_COMMAND_LEN:
         raise HTTPException(
             status_code=400,
             detail=f"Command length must not exceed {_MAX_COMMAND_LEN} characters",
         )
-    try:
-        argv = shlex.split(command)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid command string: {e}") from e
+    if command == "" and payload == "":
+        argv: list[str] = []
+    else:
+        argv = [command]
+        if payload:
+            try:
+                argv.extend(shlex.split(payload))
+            except ValueError as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid payload string: {e}",
+                ) from e
 
     argv = _normalize_cli_argv(argv)
     subcommand = argv[0] if argv else ""
-    if subcommand in _CLI_BLOCKLIST:
+    if subcommand and subcommand not in _CLI_ALLOWLIST:
         raise HTTPException(
             status_code=400,
             detail=f"Command '{subcommand}' is not allowed from the web UI",
