@@ -170,3 +170,39 @@ Read-only knowledge stores bundled with the Lens tool, declared in `lens.toml` u
 ### Tools
 
 `tools/ddb-extract/` is a standalone TypeScript CLI (Playwright + CDP) that extracts D&D Beyond content into Lens KB-formatted Markdown files. Run `npm install` inside the directory, then invoke via `tsx src/cli.ts`. See `tools/ddb-extract/README.md`. The `ddb-extract-design.md` in `docs/` describes the original design (may be removed).
+
+### Server (`lens/server/`)
+
+The server is a FastAPI adapter over `lens/core/`. CLI and server are sibling interfaces — both are thin adapters; all business logic lives in `core/`.
+
+**Critical rules:**
+- Routes validate input (Pydantic), call core functions, and map domain exceptions to HTTP errors. No business logic in routes.
+- `server/` imports only from `core/`, never from `cli/`.
+- Core is synchronous. Do not make core code async. Use `run_in_threadpool` only at the route boundary if truly needed. Async is contagious — contain it at the edges.
+- Core must raise explicit exceptions, not call `sys.exit()` or `print()`.
+- Routes must catch domain exceptions and return HTTP 400/500. Stack traces must not leak to clients.
+- One CLI subprocess at a time (enforced via `app.state.cli_run`). New routes must not bypass this.
+
+**Authentication:** Handled entirely at the Caddy reverse proxy layer. FastAPI trusts all incoming requests as authenticated. Do not add auth logic to routes. If Caddy is removed, the server must not be exposed to the public internet.
+
+**Static frontend:** In production, `vite build` output is served by FastAPI from `server/static/`. Frontend and API share the same origin — no CORS needed.
+
+### Frontend (`lens/server/ui/`)
+
+Svelte + Vite + Pico.css + CodeMirror 6 + markdown-it. No additional frameworks or UI libraries.
+
+**Hard constraints (architecture violations must be rejected):**
+1. No component may exceed ~300 lines.
+2. CodeMirror is configured only in the editor component — nowhere else.
+3. Network logic (fetch, EventSource) lives only in `services/` — never in components.
+4. Global state lives only in `stores/` — never derived or duplicated in components.
+5. Layout structure is defined in `MainLayout.svelte` and must not be redefined by feature code.
+6. No inline `innerHTML` manipulation outside the markdown renderer (`MarkdownView.svelte`).
+7. No feature may reach into another feature's internal implementation.
+8. Always use narrative address paths (e.g. `/chapter-1`) for node identification — never internal IDs.
+
+**UX rules:**
+- No git terminology in the UI. Use "Checkpoint" not "Push", "Save" not "Commit", "Discard" not "Rollback".
+- Unstaged changes must be visually distinct (badge, border, or background indicator).
+- On page load/refresh, fetch current project state (including cursor) from the backend — do not rely on client-side routing or cached state.
+- If a 401 is received, treat it as fatal; let the browser re-authenticate via HTTP Basic challenge. Do not implement login UI or handle 401 programmatically.
