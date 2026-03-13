@@ -24,9 +24,9 @@ export const NARRATIVE_COMMANDS: CommandDefinition[] = [
     group: 'narrative',
     params: { kind: 'none' },
     subOptions: PIN_OPERATIONS.map((v) => ({ value: v })),
-    payloadHint: 'KB object IDs',
+    payloadHint: 'KB object ID',
     payloadSuggest: PIN_PAYLOAD_SUGGEST,
-    payloadOpts: [{ flag: 'node', hint: 'narrative node' }],
+    payloadOpts: [{ flag: 'node', hint: 'narrative address' }],
   },
 ]
 

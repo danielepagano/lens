@@ -55,6 +55,7 @@
   // Node address autocomplete state
   let nodeTreeCache: TreeNode[] | null = null
   let nodeTreeFetchPending = false
+  let currentOptFlagHint: string | null = null
 
   $: $treeRefreshTrigger, (nodeTreeCache = null), (nodeTreeFetchPending = false)
 
@@ -108,10 +109,12 @@
     isKnownCommand
   )
 
-  // Show payload hint after sub-option is selected
-  $: computedHint = activeSubOption && activeCommandDef?.payloadHint
-    ? activeCommandDef.payloadHint
-    : (activeSchema?.hint ?? activeCommandDef?.hint ?? '')
+  // Show payload hint after sub-option is selected (prefer optional flag hint when entering one)
+  $: computedHint = currentOptFlagHint
+    ? currentOptFlagHint
+    : activeSubOption && activeCommandDef?.payloadHint
+      ? activeCommandDef.payloadHint
+      : (activeSchema?.hint ?? activeCommandDef?.hint ?? '')
 
   $: showHint = !!computedHint && isKnownCommand && (
     !!activeSubOption || (!hasPayload && !activeCommandDef?.subOptions)
@@ -205,6 +208,7 @@
   }
 
   function updateCommandState() {
+    currentOptFlagHint = null
     const trimmed = input.trim()
     const startsWithSlash = trimmed.startsWith('/')
     const withoutSlash = startsWithSlash ? trimmed.slice(1) : trimmed
@@ -301,6 +305,8 @@
 
         // Node address building mode: last completed token is --node
         if (isInNodeMode) {
+          const nodeOpt = newDef.payloadOpts?.find((o) => o.flag === 'node')
+          currentOptFlagHint = nodeOpt?.hint ?? null
           suggestions = buildNodeSuggestions(kbCurrentToken)
           return
         }
