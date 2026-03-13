@@ -9,16 +9,31 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandHandler,
+  ResolvedParams,
 } from './common'
 
 export const TRANSACTION_COMMANDS: CommandDefinition[] = [
-  { trigger: 'commit', group: 'transactions' },
-  { trigger: 'rollback', group: 'transactions' },
-  { trigger: 'checkpoint', group: 'transactions' },
+  { trigger: 'commit', group: 'transactions', params: { kind: 'none' } },
+  { trigger: 'rollback', group: 'transactions', params: { kind: 'none' } },
+  {
+    trigger: 'checkpoint',
+    group: 'transactions',
+    params: {
+      kind: 'form',
+      schema: {
+        hint: '[commit message]',
+        fields: [
+          { kind: 'string', name: 'message', hint: 'Commit message', optional: true },
+          { kind: 'bool', name: 'push', label: 'Push to remote', default: true },
+        ],
+      },
+    },
+  },
 ]
 
 async function executeTransactionAction(
-  command: string
+  command: string,
+  resolvedParams?: ResolvedParams
 ): Promise<TransactionActionResponse> {
   switch (command) {
     case 'rollback':
@@ -26,7 +41,12 @@ async function executeTransactionAction(
     case 'commit':
       return commitTransaction()
     case 'checkpoint':
-      return checkpointTransaction()
+      return checkpointTransaction({
+        message: (resolvedParams?.['message'] as string | undefined) || undefined,
+        push: resolvedParams?.['push'] !== undefined
+          ? (resolvedParams['push'] as boolean)
+          : true,
+      })
     default:
       throw new Error(`Unsupported transaction command: ${command}`)
   }
@@ -40,7 +60,7 @@ export const transactionCommandHandler: CommandHandler = async (
   transactionResult.set(null)
 
   try {
-    const result = await executeTransactionAction(command)
+    const result = await executeTransactionAction(command, ctx.resolvedParams)
 
     if (result.status === 'ok') {
       if (ctx.onDone) {
@@ -63,4 +83,3 @@ export const transactionCommandHandler: CommandHandler = async (
     return { clearInput: false }
   }
 }
-

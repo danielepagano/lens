@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from lens.core.commands.checkpoint import execute_checkpoint
 from lens.core.commands.commit import execute_commit
@@ -54,6 +55,11 @@ def transaction_state_to_dict(state: Any) -> dict[str, Any]:
     }
 
 
+class CheckpointRequest(BaseModel):
+    message: str | None = None
+    push: bool | None = None
+
+
 @router.get("/staged")
 def staged(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     storage = session.new_storage(owner=None)
@@ -88,9 +94,14 @@ def commit(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
 
 
 @router.post("/checkpoint")
-def checkpoint(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
+def checkpoint(
+    body: CheckpointRequest | None,
+    session: ProjectSession = Depends(get_session),
+) -> dict[str, Any]:
     try:
-        execute_checkpoint(session)
+        message = body.message if body is not None else None
+        push = body.push if body is not None and body.push is not None else True
+        execute_checkpoint(session, message=message, push=push)
         return {"status": "ok"}
     except (RuntimeError, LensException) as e:
         return {"status": "error", "detail": str(e)}

@@ -209,6 +209,9 @@ export const rollbackTransaction = (): Promise<TransactionActionResponse> =>
 export const commitTransaction = (): Promise<TransactionActionResponse> =>
   post('/commit', {}) as Promise<TransactionActionResponse>
 
-export const checkpointTransaction = (): Promise<TransactionActionResponse> =>
-  post('/checkpoint', {}) as Promise<TransactionActionResponse>
+export const checkpointTransaction = (opts?: {
+  message?: string
+  push?: boolean
+}): Promise<TransactionActionResponse> =>
+  post('/checkpoint', opts ?? {}) as Promise<TransactionActionResponse>
 

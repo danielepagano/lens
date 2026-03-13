@@ -6,17 +6,26 @@ import type {
   CommandHandler,
 } from './common'
 
+const CLI_HINT = 'args or --help'
+const CLI_PARAMS: CommandDefinition['params'] = {
+  kind: 'form',
+  schema: {
+    hint: CLI_HINT,
+    fields: [{ kind: 'string', name: 'args', optional: true }],
+  },
+}
+
 export const CLI_COMMANDS: CommandDefinition[] = [
-  { trigger: 'design', group: 'cli' },
-  { trigger: 'dnd', group: 'cli' },
-  { trigger: 'edit', group: 'cli' },
-  { trigger: 'kb', group: 'cli' },
-  { trigger: 'pin', group: 'cli' },
-  { trigger: 'rewind', group: 'cli' },
-  { trigger: 'section', group: 'cli' },
-  { trigger: 'stats', group: 'cli' },
-  { trigger: 'use', group: 'cli' },
-  { trigger: 'write', group: 'cli' },
+  { trigger: 'design',  group: 'cli', params: CLI_PARAMS },
+  { trigger: 'dnd',     group: 'cli', params: CLI_PARAMS },
+  { trigger: 'edit',    group: 'cli', params: CLI_PARAMS },
+  { trigger: 'kb',      group: 'cli', params: CLI_PARAMS },
+  { trigger: 'pin',     group: 'cli', params: CLI_PARAMS },
+  { trigger: 'rewind',  group: 'cli', params: CLI_PARAMS },
+  { trigger: 'section', group: 'cli', params: CLI_PARAMS },
+  { trigger: 'stats',   group: 'cli', params: CLI_PARAMS },
+  { trigger: 'use',     group: 'cli', params: CLI_PARAMS },
+  { trigger: 'write',   group: 'cli', params: CLI_PARAMS },
 ]
 
 export const cliCommandHandler: CommandHandler = async (
@@ -76,4 +85,3 @@ export const cliCommandHandler: CommandHandler = async (
     return { clearInput: true }
   }
 }
-

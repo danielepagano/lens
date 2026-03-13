@@ -270,19 +270,58 @@ ul.tree-list ul.tree-list {
   min-width: 0;
 }
 
-.cli-input {
+.cli-input-wrapper {
   flex: 1;
   min-width: 0;
+  position: relative;
+  margin: 4px 0px 10px 0px;
+}
+
+.cli-input {
+  width: 100%;
+  margin: 0;
   font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.5rem;
+  font-size: 16px;
+  padding: 0.2rem 0.5rem;
   resize: none;
-  line-height: 1.3;
+  line-height: 1;
   max-height: 40vh;
   overflow-y: auto;
   overflow-x: hidden;
   word-break: break-word;
-  margin: 4px 0px 10px 0px;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.cli-input-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 16px;
+  /* match textarea padding + 1px border on each side */
+  padding: calc(0.21rem + var(--pico-border-width, 1px)) calc(0.5rem + var(--pico-border-width, 1px));
+  line-height: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ghost-spacer {
+  color: transparent;
+}
+
+.ghost-hint {
+  color: var(--pico-muted-color);
+}
+
+.ghost-hint--warn {
+  color: #f59e0b;
+  font-style: normal;
 }
 
 .cli-input.invalid {
@@ -316,9 +355,7 @@ ul.tree-list ul.tree-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
-  margin-bottom: 0.25rem;
   font-family: ui-monospace, monospace;
-  font-size: 0.75rem;
 }
 
 .cli-suggestions.no-wrap {
@@ -333,6 +370,8 @@ ul.tree-list ul.tree-list {
   color: inherit;
   padding: 0.1rem 0.4rem;
   cursor: pointer;
+  font-size: 16px;
+  margin-bottom: 0.1rem;
 }
 
 .cli-suggestion.cli-suggestion--cli {
@@ -344,6 +383,22 @@ ul.tree-list ul.tree-list {
 .cli-suggestion:hover,
 .cli-suggestion:focus-visible {
   background: rgba(255, 255, 255, 0.12);
+}
+
+.command-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.25rem 0;
+}
+
+.param-bool {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--pico-color);
+  cursor: pointer;
 }
 
 /* ---- CLI output panel ---- */

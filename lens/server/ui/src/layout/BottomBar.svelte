@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CommandContext, CommandResult } from '../commands/handlers'
+  import type { CommandContext, CommandResult, CommandDefinition, BoolField, ResolvedParams } from '../commands/common'
   import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
   import { cliOutput, transactionResult } from '../stores/ui'
   import type { CommandGroup } from '../commands/common'
@@ -26,16 +26,33 @@
   let flashInvalid = false
   let showInvalid = false
   let isFocused = false
+  let activeCommandDef: CommandDefinition | null = null
+  let resolvedParams: ResolvedParams = {}
+  let paramRefs: Array<HTMLInputElement | null> = []
 
   function resizeCliInput(_value: string) {
     if (!cliInputEl) return
     cliInputEl.style.height = '0px'
     const maxHeightPx = window.innerHeight ? Math.round(window.innerHeight * 0.4) : 240
-    const newHeight = Math.min(cliInputEl.scrollHeight, maxHeightPx)
+    const newHeight = Math.min(cliInputEl.scrollHeight + 3, maxHeightPx)
     cliInputEl.style.height = `${newHeight}px`
   }
 
   $: resizeCliInput(input)
+
+  $: activeSchema = activeCommandDef?.params?.kind === 'form'
+    ? activeCommandDef.params.schema
+    : null
+
+  $: boolFields = (activeSchema?.fields.filter((f) => f.kind === 'bool') ?? []) as BoolField[]
+
+  $: hasParamControls = boolFields.length > 0 && isKnownCommand
+
+  $: showParamWarning = activeCommandDef?.params?.kind === 'none' && hasPayload && isKnownCommand
+
+  $: showHint = !!(activeSchema?.hint ?? activeCommandDef?.hint) && !hasPayload && isKnownCommand
+
+  $: activeHint = activeSchema?.hint ?? activeCommandDef?.hint ?? ''
 
   function focusCliInput() {
     setTimeout(() => {
@@ -112,6 +129,36 @@
 
     isKnownCommand = !hasCommandText || KNOWN_COMMANDS.includes(lower)
     showInvalid = !busy && startsWithSlash && hasCommandText && !isKnownCommand
+
+    // Resolve active command definition
+    const newDef = hasCommandText
+      ? (COMMAND_DEFINITIONS.find((d) => d.trigger === lower) ?? null)
+      : null
+
+    if (newDef?.trigger !== activeCommandDef?.trigger) {
+      activeCommandDef = newDef
+      // Re-initialize resolvedParams from defaults
+      const newParams: ResolvedParams = {}
+      for (const field of newDef?.params?.kind === 'form' ? newDef.params.schema.fields : []) {
+        if (field.kind === 'bool') {
+          newParams[field.name] = field.default ?? false
+        }
+      }
+      resolvedParams = newParams
+      // Pre-allocate paramRefs for bind:this to work on first render
+      const boolCount = newDef?.params?.kind === 'form'
+        ? newDef.params.schema.fields.filter((f) => f.kind === 'bool').length
+        : 0
+      paramRefs = new Array(boolCount).fill(null)
+    }
+
+    // Hide suggestions once a command with its own hint/params UI is fully typed
+    if (newDef && !hasPayload && (
+      newDef.params?.kind === 'none' ||
+      (newDef.params?.kind === 'form' && newDef.params.schema.hint)
+    )) {
+      suggestions = []
+    }
   }
 
   function handleInput(e: Event) {
@@ -168,6 +215,13 @@
     }
 
     if (e.key === 'Tab') {
+      // If param controls exist and user has typed a payload, Tab moves focus there
+      if (hasParamControls && hasPayload && !e.shiftKey) {
+        e.preventDefault()
+        paramRefs[0]?.focus()
+        return
+      }
+
       if (!hasPayload && suggestions.length > 0) {
         e.preventDefault()
         const { command } = parseCommandAndPayload(input)
@@ -262,11 +316,18 @@
     transactionResult.set(null)
     const handler = resolveHandler(command)
 
+    // Populate the first string field from the textarea payload
+    const firstStringField = activeSchema?.fields.find((f) => f.kind === 'string')
+    const params: ResolvedParams = firstStringField
+      ? { ...resolvedParams, [firstStringField.name]: payload || undefined }
+      : resolvedParams
+
     const ctx: CommandContext = {
       setBusyMessage(message: string | null) {
         busyMessage = message
       },
       onDone: onCliDone,
+      resolvedParams: params,
     }
 
     try {
@@ -299,28 +360,60 @@
       {/each}
     </div>
   {/if}
+  {#if hasParamControls}
+    <div class="command-params">
+      {#each boolFields as field, i}
+        <label class="param-bool">
+          <input
+            type="checkbox"
+            bind:this={paramRefs[i]}
+            checked={!!resolvedParams[field.name]}
+            on:change={(e) => {
+              resolvedParams = { ...resolvedParams, [field.name]: e.currentTarget.checked }
+            }}
+            on:keydown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); submit() }
+              if (e.key === 'Tab' && !e.shiftKey && i === boolFields.length - 1) {
+                e.preventDefault(); cliInputEl?.focus()
+              }
+              if (e.key === 'Tab' && e.shiftKey && i === 0) {
+                e.preventDefault(); cliInputEl?.focus()
+              }
+            }}
+            disabled={busy}
+          />
+          {field.label}
+        </label>
+      {/each}
+    </div>
+  {/if}
   <div class="cli-input-row">
-    <textarea
-      bind:this={cliInputEl}
-      class="cli-input"
-      class:invalid={showInvalid}
-      class:flash-invalid={flashInvalid}
-      bind:value={input}
-      on:input={handleInput}
-      on:keydown={handleKeydown}
-      on:beforeinput={handleBeforeInput}
-      on:focus={() => {
-        isFocused = true
-        updateCommandState()
-      }}
-      on:blur={() => {
-        isFocused = false
-        updateCommandState()
-      }}
-      rows="1"
-      disabled={busy}
-      data-testid="cli-input"
-    />
+    <div class="cli-input-wrapper">
+      <textarea
+        bind:this={cliInputEl}
+        class="cli-input"
+        class:invalid={showInvalid}
+        class:flash-invalid={flashInvalid}
+        bind:value={input}
+        on:input={handleInput}
+        on:keydown={handleKeydown}
+        on:beforeinput={handleBeforeInput}
+        on:focus={() => {
+          isFocused = true
+          updateCommandState()
+        }}
+        on:blur={() => {
+          isFocused = false
+          updateCommandState()
+        }}
+        rows="1"
+        disabled={busy}
+        data-testid="cli-input"
+      />
+      {#if showHint || showParamWarning}
+        <div class="cli-input-ghost" aria-hidden="true"><span class="ghost-spacer">{input}</span>&nbsp;<span class="ghost-hint" class:ghost-hint--warn={showParamWarning}>{showHint ? activeHint : 'no parameters'}</span></div>
+      {/if}
+    </div>
     {#if busyMessage}
       <span class="cli-busy">{busyMessage}</span>
     {/if}
