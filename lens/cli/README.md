@@ -366,7 +366,6 @@ A section creates a `[section:id]: #` annotation in the parent node and moves th
 
 - `-p` / `--pin` — KB ID to pin in the new section’s front matter (repeatable). Add `+` to include linked objects, or `++` for full traversal.
 - `-u` / `--unpin` — KB ID to unpin in the new section’s front matter (repeatable).
-- `-w` / `--write` — Chain a `write` operator immediately after starting the section; the value is the write prompt (e.g. `lens section start intro -w "open with dialogue"`).
 
 ### `lens section end`
 

@@ -24,7 +24,6 @@ from lens.core.knowledge import validate_ids_exist
 from lens.core.context import CrawlResult, crawl
 from lens.core.llm import generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
-from lens.core.chain import ChainSpec
 from lens.core.operator import Operator
 from lens.core.storage import Storage
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
@@ -312,9 +311,6 @@ class SectionOperator(Operator):
         id: str,
         pins: list[str] | None = None,
         unpins: list[str] | None = None,
-        write_prompt: str | None = None,
-        on_token: Callable[[str], Awaitable[None]] | None = None,
-        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
     ) -> NarrativeNode:
         if not validate_slug(id):
             raise ValueError(f"invalid section ID '{id}' (alphanumeric, underscores, hyphens only)")
@@ -323,20 +319,7 @@ class SectionOperator(Operator):
         owner = cls.owner_id(id, rel)
         storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
-        child = op.start(id, pins=pins or [], unpins=unpins or [])
-        if write_prompt is not None:
-            chain_spec = ChainSpec(name="write", id=None, arguments={"prompt": write_prompt})
-            await Operator._run_chained_operator(  # pyright: ignore[reportPrivateUsage]
-                chain_spec=chain_spec,
-                storage=storage,
-                session=session,
-                narrative=narrative,
-                depth=0,
-                on_token=on_token,
-                on_confirm=on_confirm,
-                cursor_override=child,
-            )
-        return child
+        return op.start(id, pins=pins or [], unpins=unpins or [])
 
     @classmethod
     async def run_end(

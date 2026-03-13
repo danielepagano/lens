@@ -43,12 +43,6 @@ def start(
     id: str | None = typer.Argument(None, help="Section ID (alphanumeric, underscores, hyphens)"),
     pin: list[str] = pin_option("KB ID to pin in the new section's front matter (repeatable)"),
     unpin: list[str] = unpin_option("KB ID to unpin in the new section's front matter (repeatable)"),
-    write: str | None = typer.Option(
-        None,
-        "--write",
-        "-w",
-        help="Chain a write operator after section start with this prompt",
-    ),
 ) -> None:
     """Create a child node at the cursor and open a section tag."""
     if not id or not id.strip():
@@ -64,18 +58,10 @@ def start(
     try:
         asyncio.run(SectionOperator.run_start(
             session=session, narrative=narrative, id=id.strip(),
-            pins=pin, unpins=unpin, write_prompt=write,
-            on_token=_print_token, on_confirm=None,
+            pins=pin, unpins=unpin,
         ))
-        print()
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
-    except LLMError as e:
-        typer.echo(f"lens section start --write: LLM error: {e}", err=True)
-        raise typer.Exit(1)
-    except KeyboardInterrupt:
-        typer.echo("\nlens section start --write: interrupted", err=True)
         raise typer.Exit(1)
     typer.echo(f"Started section '{id.strip()}'")
 
