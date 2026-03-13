@@ -14,6 +14,7 @@ The operation is one-shot and fully reversible via ``lens rollback``.
 
 from __future__ import annotations
 
+import asyncio
 import shutil
 from collections.abc import Callable, Awaitable
 from typing import Any, ClassVar, cast
@@ -82,7 +83,7 @@ class SectionOperator(Operator):
             unpin_at_node(child, unpins, self.storage)
         return child
 
-    async def end(self, session: ProjectSession, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None) -> None:
+    async def end(self, session: ProjectSession, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None, cancel_event: asyncio.Event | None = None) -> None:
         """Close the current section by generating an LLM summary and appending it."""
         cursor = self.narrative_root.find_cursor()
         if not cursor.key_path:
@@ -110,7 +111,8 @@ class SectionOperator(Operator):
         interrupted = False
         try:
             async for event in generate_stream(
-                messages, session.project_root, llm_id=llm_id
+                messages, session.project_root, llm_id=llm_id,
+                cancel_event=cancel_event,
             ):
                 if event.preview:
                     if on_token:
@@ -142,6 +144,7 @@ class SectionOperator(Operator):
         unpins: list[str],
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         """Create a section after the fact by extracting a line range into a child node.
 
@@ -241,7 +244,7 @@ class SectionOperator(Operator):
         summary = ""
         interrupted = False
         try:
-            async for event in generate_stream(messages, session.project_root, llm_id=llm_id):
+            async for event in generate_stream(messages, session.project_root, llm_id=llm_id, cancel_event=cancel_event):
                 if event.preview:
                     if on_token:
                         await on_token(event.preview)
@@ -329,6 +332,7 @@ class SectionOperator(Operator):
         narrative: NarrativeNode,
         llm_id: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> str:
         cursor = narrative.find_cursor()
         if not cursor.key_path:
@@ -339,7 +343,7 @@ class SectionOperator(Operator):
         owner = cls.owner_id(key, rel)
         storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
-        await op.end(session, llm_id=llm_id, on_token=on_token)
+        await op.end(session, llm_id=llm_id, on_token=on_token, cancel_event=cancel_event)
         return key
 
     @classmethod
@@ -356,6 +360,7 @@ class SectionOperator(Operator):
         unpins: list[str] | None = None,
         llm_id: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         if not validate_slug(id):
             raise ValueError(f"invalid section ID '{id}' (alphanumeric, underscores, hyphens only)")
@@ -371,7 +376,7 @@ class SectionOperator(Operator):
         await op.section_range(
             target_node=target_node, id=id, start_line=start_line, end_line=end_line,
             session=session, pins=pins or [], unpins=unpins or [],
-            llm_id=llm_id, on_token=on_token,
+            llm_id=llm_id, on_token=on_token, cancel_event=cancel_event,
         )
 
 

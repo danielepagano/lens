@@ -145,9 +145,195 @@ export async function runCliStream(
 }
 
 export async function cancelCliRun(): Promise<void> {
-  const r = await fetch('/cli/cancel', { method: 'POST' })
-  if (!r.ok) throw new Error(`HTTP ${r.status}: /cli/cancel`)
+  await cancelStream()
 }
+
+// ---- Unified stream cancel ----
+
+export async function cancelStream(): Promise<void> {
+  const r = await fetch('/stream/cancel', { method: 'POST' })
+  if (!r.ok) throw new Error(`HTTP ${r.status}: /stream/cancel`)
+}
+
+// ---- Operator streaming API ----
+
+export interface OperatorTokenEvent {
+  type: 'token'
+  text: string
+  node: string
+}
+
+export interface OperatorDoneEvent {
+  type: 'done'
+  operator: string
+  node: string
+  interrupted: boolean
+  inserted?: string[]
+  updated?: string[]
+  errors?: string[]
+  section_key?: string
+}
+
+export interface OperatorErrorEvent {
+  type: 'error'
+  message: string
+}
+
+export type OperatorEvent = OperatorTokenEvent | OperatorDoneEvent | OperatorErrorEvent
+
+export class StreamBusyError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message)
+    this.name = 'StreamBusyError'
+  }
+}
+
+async function runStreamingOp(
+  url: string,
+  body: unknown,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (r.status === 409 || r.status === 423) {
+    throw new StreamBusyError(await errorDetail(r), r.status)
+  }
+  if (!r.ok) throw new Error(await errorDetail(r))
+  const responseBody = r.body
+  if (responseBody === null) throw new Error('No response body')
+  const { parseSSEFromStream } = await import('./sse')
+  let lastEvent: OperatorDoneEvent | OperatorErrorEvent = {
+    type: 'error',
+    message: 'Stream ended without done event',
+  }
+  for await (const event of parseSSEFromStream(responseBody)) {
+    const parsed = JSON.parse(event.data) as OperatorEvent
+    onEvent(parsed)
+    if (parsed.type === 'done' || parsed.type === 'error') {
+      lastEvent = parsed
+    }
+  }
+  return lastEvent
+}
+
+export interface WriteParams {
+  prompt?: string
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+  retry?: boolean
+}
+
+export const runWrite = (
+  params: WriteParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/write', params, onEvent)
+
+export interface PlayParams {
+  prompt: string
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+  retry?: boolean
+  as_pc?: string
+}
+
+export const runPlay = (
+  params: PlayParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/play', params, onEvent)
+
+export interface DesignParams {
+  id: string
+  prompt?: string
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+}
+
+export const runDesign = (
+  params: DesignParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/design', params, onEvent)
+
+export interface DesignEndResult {
+  inserted: string[]
+  updated: string[]
+  errors: string[]
+}
+
+export const runDesignEnd = (): Promise<DesignEndResult> =>
+  post('/operator/design/end', {}) as Promise<DesignEndResult>
+
+export interface EditParams {
+  address: string
+  start_line: number
+  end_line: number
+  prompt?: string
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+  retry?: boolean
+  replace?: boolean
+  replacement?: string
+}
+
+export const runEdit = (
+  params: EditParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/edit', params, onEvent)
+
+export interface SectionStartParams {
+  id: string
+  pins?: string[]
+  unpins?: string[]
+}
+
+export interface SectionStartResult {
+  status: string
+  node: string
+}
+
+export const runSectionStart = (
+  params: SectionStartParams
+): Promise<SectionStartResult> =>
+  post('/operator/section/start', params) as Promise<SectionStartResult>
+
+export interface SectionEndParams {
+  llm_id?: string
+}
+
+export const runSectionEnd = (
+  params: SectionEndParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/section/end', params, onEvent)
+
+export interface SectionRangeParams {
+  id: string
+  address: string
+  start_line: number
+  end_line: number
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+}
+
+export const runSectionRange = (
+  params: SectionRangeParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/section/range', params, onEvent)
 
 // ---- KB API ----
 

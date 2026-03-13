@@ -21,6 +21,7 @@ can continue.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar
@@ -157,6 +158,7 @@ class DesignOperator(Operator):
         unpins: list[str],
         llm_id: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> KbExtractResult:
         """Create (or continue) a design sub-node, generate content, apply kb fences.
 
@@ -251,6 +253,7 @@ class DesignOperator(Operator):
                 tools=tools_payload if tools_payload else None,
                 command_tool_handlers=command_handlers if command_handlers else None,
                 enable_thinking=True,
+                cancel_event=cancel_event,
             ):
                 if event.preview and on_token:
                     await on_token(event.preview)

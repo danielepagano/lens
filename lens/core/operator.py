@@ -123,6 +123,7 @@ Subclass integration points
 
 from __future__ import annotations
 
+import asyncio
 import re
 import sys
 from abc import ABC, abstractmethod
@@ -623,11 +624,13 @@ class Operator(ABC):
         project_root: Path,
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> str:
         """Stream LLM output and return the full collected text."""
         try:
             async for event in generate_stream(
-                messages, project_root, llm_id=llm_id, tools=None
+                messages, project_root, llm_id=llm_id, tools=None,
+                cancel_event=cancel_event,
             ):
                 if event.preview and on_token:
                     await on_token(event.preview)
@@ -792,6 +795,7 @@ class Operator(ABC):
         _chain_storage: Storage | None = None,
         _cursor_override: NarrativeNode | None = None,
         extra_params: dict[str, Any] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         """Run the inline-appending flow (fresh / continue / retry / update-retry).
 
@@ -831,7 +835,7 @@ class Operator(ABC):
                     session, narrative, cursor, rel_path, existing_ann,
                     prompt=prompt, pins=pins or [], unpins=unpins or [],
                     llm_id=llm_id, extra_params=extra_params,
-                    on_token=on_token,
+                    on_token=on_token, cancel_event=cancel_event,
                 )
             elif prompt or pins or unpins or (
                 llm_id and llm_id != existing_ann.params.get("llm_id")
@@ -847,12 +851,13 @@ class Operator(ABC):
                     on_confirm=on_confirm,
                     chain_storage=_chain_storage,
                     extra_params=extra_params,
+                    cancel_event=cancel_event,
                 )
             else:
                 await cls._do_continue(
                     session, narrative, cursor, rel_path,
                     existing_ann,
-                    on_token=on_token,
+                    on_token=on_token, cancel_event=cancel_event,
                 )
         else:
             await cls._do_fresh_inline(
@@ -863,6 +868,7 @@ class Operator(ABC):
                 on_confirm=on_confirm,
                 chain_storage=_chain_storage,
                 extra_params=extra_params,
+                cancel_event=cancel_event,
             )
 
     @classmethod
@@ -881,6 +887,7 @@ class Operator(ABC):
         on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
         chain_storage: Storage | None = None,
         extra_params: dict[str, Any] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         ann_params: dict[str, Any] = {"steps": 1}
         if prompt:
@@ -996,6 +1003,7 @@ class Operator(ABC):
                 llm_id=llm_id,
                 tools=tools_payload if tools_payload else None,
                 command_tool_handlers=command_handlers,
+                cancel_event=cancel_event,
             ):
                 if event.preview and on_token:
                     await on_token(event.preview)
@@ -1186,6 +1194,7 @@ class Operator(ABC):
         rel_path: str,
         existing_ann: ParsedAnnotation,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         ann_pins = cls.extract_list(existing_ann.params, "kb_pin")
         ann_unpins = cls.extract_list(existing_ann.params, "kb_unpin")
@@ -1199,7 +1208,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token, cancel_event=cancel_event)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1225,6 +1234,7 @@ class Operator(ABC):
         llm_id: str | None = None,
         extra_params: dict[str, Any] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         new_params: dict[str, Any] = dict(existing_ann.params)
         if prompt is not None:
@@ -1256,7 +1266,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, new_params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token, cancel_event=cancel_event)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1293,6 +1303,7 @@ class Operator(ABC):
         llm_id: str | None,
         retry: bool,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         """Run the text-replacement flow (fresh / retry / update-retry).
 
@@ -1328,7 +1339,7 @@ class Operator(ABC):
             await cls._do_retry_mutation(
                 session, node, narrative_root, file_path,
                 rel_path, ann_id, owner, pins, unpins, llm_id, params,
-                probe_storage,
+                probe_storage, cancel_event=cancel_event,
             )
         else:
             await cls._do_fresh_mutation(
@@ -1337,6 +1348,7 @@ class Operator(ABC):
                 pins, unpins, llm_id, params,
                 manual=manual,
                 replacement=replacement,
+                cancel_event=cancel_event,
             )
 
     @classmethod
@@ -1359,6 +1371,7 @@ class Operator(ABC):
         *,
         manual: bool = False,
         replacement: str | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         if not manual and not params.get("prompt"):
             raise OperatorError("a prompt is required for a fresh edit")
@@ -1403,7 +1416,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, build_params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1434,6 +1447,7 @@ class Operator(ABC):
         params: dict[str, Any],
         probe_storage: Storage,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
     ) -> None:
         probe_storage.rollback()
 
@@ -1477,7 +1491,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, effective_params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, llm_id, on_token)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event)
         except KeyboardInterrupt:
             return
         except LLMError as e:

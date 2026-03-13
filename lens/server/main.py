@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from lens.core.project import ProjectSession
 from lens.server import routes as routes_pkg
+from lens.server.streaming import StreamLock
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
@@ -18,6 +19,7 @@ _STATIC_DIR = Path(__file__).parent / "static"
 def create_app(session: ProjectSession) -> FastAPI:
     app = FastAPI(title="Lens API")
     app.state.session = session
+    app.state.stream_lock = StreamLock()
     for _importer, modname, _ispkg in sorted(
         pkgutil.iter_modules(routes_pkg.__path__), key=lambda m: m[1]
     ):
