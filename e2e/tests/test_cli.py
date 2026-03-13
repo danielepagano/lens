@@ -151,5 +151,5 @@ class TestCliWrite:
         """write leaves an open transaction (unstaged changes)."""
         _lens("write", "one more beat", "--llm", "mock", cwd=dnd_project)
         stats = _lens("stats", cwd=dnd_project)
-        # stats prints "Open transaction:         yes"
-        assert "Open transaction:         yes" in stats.stdout
+        # stats prints "Open transaction: yes"
+        assert "Open transaction: yes" in stats.stdout

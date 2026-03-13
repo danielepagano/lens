@@ -41,6 +41,7 @@ export interface Stats {
   has_pending: boolean
   pending_owner: string | null
   dataset_name: string | null
+  current_datasets: string[] | null
   kb_types: string[]
   kb_count: number
   effective_pins_at_cursor: string[] | null

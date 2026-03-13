@@ -19,6 +19,8 @@
     effectivePinsAtCursor,
   } from './stores/session'
   import { appMode, kbTypes } from './stores/ui'
+  import { currentDatasets } from './stores/session'
+  import { updateDatasetCommands } from './commands/handlers'
 
   async function navigate(addr: string): Promise<void> {
     if (!addr) return
@@ -43,6 +45,8 @@
       effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
       transactionState.set(stats.transaction ?? null)
       kbTypes.set(stats.kb_types ?? [])
+      currentDatasets.set(stats.current_datasets ?? [])
+      updateDatasetCommands(stats.current_datasets ?? [])
       if (addr) {
         const data = await getNode(addr)
         nodeContent.set(data.content)
@@ -74,6 +78,8 @@
       effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
       transactionState.set(stats.transaction ?? null)
       kbTypes.set(stats.kb_types ?? [])
+      currentDatasets.set(stats.current_datasets ?? [])
+      updateDatasetCommands(stats.current_datasets ?? [])
 
       const initial = decodeURIComponent(window.location.hash.slice(1))
       await navigate(initial || stats.cursor || '')

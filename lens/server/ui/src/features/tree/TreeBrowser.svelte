@@ -12,6 +12,8 @@
   import { transactionState } from '../../stores/document'
   import TreeNodeComp from './TreeNode.svelte'
   import CloseIcon from '../../components/icons/CloseIcon.svelte'
+  import { currentDatasets } from '../../stores/session'
+  import { updateDatasetCommands } from '../../commands/handlers'
 
   export let navigate: (addr: string) => Promise<void>
 
@@ -44,6 +46,8 @@
       cursor.set(stats.cursor ?? null)
       effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
       transactionState.set(stats.transaction ?? null)
+      currentDatasets.set(stats.current_datasets ?? [])
+      updateDatasetCommands(stats.current_datasets ?? [])
       if (stats.cursor) {
         await navigate(stats.cursor)
       }

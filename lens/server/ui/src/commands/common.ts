@@ -1,4 +1,4 @@
-export type AutocompleteSource = 'narratives' | 'kb-ids' | 'kb-types' | 'nodes'
+export type AutocompleteSource = 'narratives' | 'kb-ids' | 'nodes'
 
 export interface StringField {
   kind: 'string'

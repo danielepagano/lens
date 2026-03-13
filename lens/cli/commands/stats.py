@@ -30,33 +30,35 @@ def stats(
         typer.echo(f"Dataset: {result.dataset_name}")
     typer.echo("Knowledge Store")
     if result.kb_types:
-        typer.echo(f"  Types: {', '.join(sorted(result.kb_types))}")
+        typer.echo(f"  Types: {','.join(sorted(result.kb_types))}")
     else:
         typer.echo("  Types: (none)")
     typer.echo(f"  Objects: {result.kb_count}")
     if result.dataset_name is None:
+        if result.current_datasets:
+            typer.echo(f"Current datasets: {','.join(result.current_datasets)}")
+        else:
+            typer.echo("Current datasets: (none)")
+
         typer.echo("Narrative trees:")
         for name, count in result.trees:
             typer.echo(f"  {name} ({count} nodes)")
 
         if result.cursor_addr is not None:
-            typer.echo(f"Active narrative cursor:  {result.cursor_addr}")
+            typer.echo(f"Active narrative cursor: {result.cursor_addr}")
             if result.effective_pins_at_cursor:
-                typer.echo("Effective pins at cursor:")
-                typer.echo("  kb_pin:")
-                for kid in result.effective_pins_at_cursor:
-                    typer.echo(f"    - {kid}")
+                typer.echo(f"Effective pins at cursor: {','.join(result.effective_pins_at_cursor)}")
             else:
                 typer.echo("Effective pins at cursor: (none)")
         else:
             typer.echo("Active narrative cursor:  (no active narrative)")
 
-    typer.echo(f"Open transaction:         {'yes' if result.has_pending else 'no'}")
+    typer.echo(f"Open transaction: {'yes' if result.has_pending else 'no'}")
     if result.has_pending:
         if result.pending_owner is not None:
-            typer.echo(f"Transaction owner:        {result.pending_owner}")
+            typer.echo(f"Transaction owner: {result.pending_owner}")
         else:
-            typer.echo("Transaction owner:        (non-operator changes)")
+            typer.echo("Transaction owner: (non-operator changes)")
 
     if verbose:
         typer.echo("")

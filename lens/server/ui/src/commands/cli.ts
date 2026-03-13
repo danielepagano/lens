@@ -17,7 +17,6 @@ const CLI_PARAMS: CommandDefinition['params'] = {
 
 export const CLI_COMMANDS: CommandDefinition[] = [
   { trigger: 'design',  group: 'cli', params: CLI_PARAMS },
-  { trigger: 'dnd',     group: 'cli', params: CLI_PARAMS },
   { trigger: 'edit',    group: 'cli', params: CLI_PARAMS },
   { trigger: 'kb',      group: 'cli', params: CLI_PARAMS },
   { trigger: 'pin',     group: 'cli', params: CLI_PARAMS },

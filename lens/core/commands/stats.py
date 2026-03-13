@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from lens.core.address import NarrativeAddress
 from lens.core.context import crawl_pins
-from lens.core.project import ProjectSession, is_dataset_root
+from lens.core.project import ProjectSession, get_selected_datasets, is_dataset_root
 from lens.core.knowledge import KnowledgeStore
 
 
@@ -17,6 +17,7 @@ class StatsResult:
     has_pending: bool
     pending_owner: NarrativeAddress | None
     dataset_name: str | None = None
+    current_datasets: list[str] = field(default_factory=list[str])
     pending_diff: str = field(default="")
     staged_diff: str = field(default="")
     effective_pins_at_cursor: list[str] = field(default_factory=list[str])
@@ -40,6 +41,9 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             if d.is_dir():
                 node_count = sum(1 for _ in d.rglob("*.md"))
                 trees.append((d.name, node_count))
+    current_datasets: list[str] = []
+    if not is_dataset:
+        current_datasets = get_selected_datasets(root)
 
     active = session.active_narrative
     cursor_addr = (
@@ -76,6 +80,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         has_pending=has_pending,
         pending_owner=pending_owner,
         dataset_name=root.name if is_dataset else None,
+        current_datasets=current_datasets,
         pending_diff=pending_diff,
         staged_diff=staged_diff,
         effective_pins_at_cursor=effective_pins_at_cursor,

@@ -30,6 +30,7 @@ def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
         "has_pending": result.has_pending,
         "pending_owner": str(result.pending_owner) if result.pending_owner is not None else None,
         "dataset_name": result.dataset_name,
+        "current_datasets": result.current_datasets if result.dataset_name is None else [],
         "kb_types": result.kb_types,
         "kb_count": result.kb_count,
         "effective_pins_at_cursor": result.effective_pins_at_cursor,
