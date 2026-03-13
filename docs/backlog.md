@@ -8,15 +8,19 @@
   - **`converse`** for chatting if needed
   - **`advance`** to maitnain front
   - **`design`** is always expanding for more use cases
-- **`attach`** — Attach media (images, maps, references) within a node. Store the media in an S3 bucket.
+- **`attach`** — Attach media (images, maps, references) within a node. 
+  - Store the media under a mount location specified in the project.
+  - App can upload to mount (or content can already be prrsent)
+  - Support drive mounts or cloud storage (s3 etc as needed) via adapters
+  - Attaching an uploaded file creates an appropriate viewer: img tag, video player, etc. in the given spot of the markdown doc
+  - Can browse directories and files in mount to provide autocomplete when attaching orselecting upload location
 
 ## Platform
 
 - **UI for cursor operators**: invoke from UI so we can stream content to markdown, not just console output 
 - **UI for editing operators**: Implement the "After-the-fact sectioning", "Rewind", and "Edit range" UI (selecting lines/ranges from CLI is not practical).
 - Additional UI for **KB operations**
-- Any other commands
-- **Deployment & Security**: See [Deployment Design](./deployment-design.md).
+- *Cloud Deployment**: See [Deployment Design](./deployment-design.md). Local machine deploy wirh dynamic dns and caddy already implemented.
 
 ## Ideas
 
