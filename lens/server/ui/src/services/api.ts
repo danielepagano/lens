@@ -216,3 +216,28 @@ export const checkpointTransaction = (opts?: {
 }): Promise<TransactionActionResponse> =>
   post('/checkpoint', opts ?? {}) as Promise<TransactionActionResponse>
 
+// ---- Narrative API ----
+
+export type PinOperation = 'add' | 'remove' | 'block' | 'unblock'
+
+export interface PinResponse {
+  status: 'ok' | 'error'
+  count?: number
+  target?: string
+  detail?: string
+}
+
+export const narrativePin = (
+  operation: PinOperation,
+  ids: string[],
+  node?: string
+): Promise<PinResponse> =>
+  post('/narrative/pin', { operation, ids, node }) as Promise<PinResponse>
+
+export const getNodeAddresses = async (): Promise<string[]> => {
+  const tree = await getTree()
+  function flatten(nodes: TreeNode[]): string[] {
+    return nodes.flatMap((n) => [n.address, ...flatten(n.children)])
+  }
+  return flatten(tree)
+}

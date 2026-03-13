@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CommandContext, CommandResult, CommandDefinition, BoolField, ResolvedParams } from '../commands/common'
+  import type { CommandContext, CommandResult, CommandDefinition, BoolField, SelectField, AutocompleteField, ResolvedParams } from '../commands/common'
   import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
   import { cliOutput, transactionResult } from '../stores/ui'
   import type { CommandGroup } from '../commands/common'
@@ -9,6 +9,8 @@
   type CommandHint = {
     trigger: string
     group: CommandGroup
+    isSubOption?: boolean
+    parentCommand?: string
   }
 
   export let onCliDone: (() => Promise<void>) | undefined = undefined
@@ -22,6 +24,7 @@
   let suggestions: CommandHint[] = []
   let hasCommandText = false
   let hasPayload = false
+  let payloadFirstWord = ''
   let isKnownCommand = true
   let flashInvalid = false
   let showInvalid = false
@@ -29,6 +32,22 @@
   let activeCommandDef: CommandDefinition | null = null
   let resolvedParams: ResolvedParams = {}
   let paramRefs: Array<HTMLInputElement | null> = []
+  let firstParamRef: HTMLElement | null = null
+
+  function captureFirstParam(node: HTMLElement, isFirst: boolean) {
+    if (isFirst) firstParamRef = node
+    return { destroy() { if (isFirst) firstParamRef = null } }
+  }
+
+  function selectValue(name: string, fallback: string): string {
+    const v = resolvedParams[name]
+    return typeof v === 'string' ? v : fallback
+  }
+
+  function chipValues(name: string): string[] {
+    const v = resolvedParams[name]
+    return Array.isArray(v) ? v : []
+  }
 
   function resizeCliInput(_value: string) {
     if (!cliInputEl) return
@@ -45,14 +64,30 @@
     : null
 
   $: boolFields = (activeSchema?.fields.filter((f) => f.kind === 'bool') ?? []) as BoolField[]
+  $: selectFields = (activeSchema?.fields.filter((f) => f.kind === 'select') ?? []) as SelectField[]
+  $: autocompleteFields = (activeSchema?.fields.filter((f) => f.kind === 'autocomplete') ?? []) as AutocompleteField[]
 
-  $: hasParamControls = boolFields.length > 0 && isKnownCommand
+  $: hasParamControls = (boolFields.length > 0 || selectFields.length > 0 || autocompleteFields.length > 0) && isKnownCommand
 
-  $: showParamWarning = activeCommandDef?.params?.kind === 'none' && hasPayload && isKnownCommand
+  // Sub-option selected = first payload word is a valid sub-option
+  $: activeSubOption = activeCommandDef?.subOptions?.find((s) => s.value === payloadFirstWord) ?? null
 
-  $: showHint = !!(activeSchema?.hint ?? activeCommandDef?.hint) && !hasPayload && isKnownCommand
+  // "no parameters" warning: suppress for commands that use sub-options or have a payload hint
+  $: showParamWarning = (
+    activeCommandDef?.params?.kind === 'none' &&
+    !activeCommandDef?.subOptions &&
+    hasPayload &&
+    isKnownCommand
+  )
 
-  $: activeHint = activeSchema?.hint ?? activeCommandDef?.hint ?? ''
+  // Show payload hint after sub-option is selected
+  $: computedHint = activeSubOption && activeCommandDef?.payloadHint
+    ? activeCommandDef.payloadHint
+    : (activeSchema?.hint ?? activeCommandDef?.hint ?? '')
+
+  $: showHint = !!computedHint && isKnownCommand && (
+    !!activeSubOption || (!hasPayload && !activeCommandDef?.subOptions)
+  )
 
   function focusCliInput() {
     setTimeout(() => {
@@ -99,33 +134,7 @@
     hasPayload = payloadPart.length > 0
 
     const lower = commandPart.toLowerCase()
-
-    if (!isFocused) {
-      suggestions = []
-    } else if (!hasCommandText && !hasPayload) {
-      // Empty CLI while focused: show full list
-      suggestions = COMMAND_DEFINITIONS.map((def) => ({
-        trigger: def.trigger,
-        group: def.group,
-      }))
-    } else if (hasCommandText && !hasPayload) {
-      const matches = COMMAND_DEFINITIONS.filter((def) =>
-        def.trigger.startsWith(lower)
-      ).map((def) => ({
-        trigger: def.trigger,
-        group: def.group,
-      }))
-      // Keep showing the full list if there are no matches
-      suggestions =
-        matches.length > 0
-          ? matches
-          : COMMAND_DEFINITIONS.map((def) => ({
-              trigger: def.trigger,
-              group: def.group,
-            }))
-    } else {
-      suggestions = []
-    }
+    payloadFirstWord = payloadPart.split(/\s+/)[0]?.toLowerCase() ?? ''
 
     isKnownCommand = !hasCommandText || KNOWN_COMMANDS.includes(lower)
     showInvalid = !busy && startsWithSlash && hasCommandText && !isKnownCommand
@@ -137,19 +146,72 @@
 
     if (newDef?.trigger !== activeCommandDef?.trigger) {
       activeCommandDef = newDef
-      // Re-initialize resolvedParams from defaults
       const newParams: ResolvedParams = {}
       for (const field of newDef?.params?.kind === 'form' ? newDef.params.schema.fields : []) {
         if (field.kind === 'bool') {
           newParams[field.name] = field.default ?? false
+        } else if (field.kind === 'select') {
+          newParams[field.name] = field.options[0]?.value ?? ''
+        } else if (field.kind === 'autocomplete' && field.repeatable) {
+          newParams[field.name] = []
         }
       }
       resolvedParams = newParams
-      // Pre-allocate paramRefs for bind:this to work on first render
       const boolCount = newDef?.params?.kind === 'form'
         ? newDef.params.schema.fields.filter((f) => f.kind === 'bool').length
         : 0
       paramRefs = new Array(boolCount).fill(null)
+    }
+
+    if (!isFocused) {
+      suggestions = []
+      return
+    }
+
+    // Sub-option suggestions for commands like /pin
+    if (newDef?.subOptions && hasCommandText && isKnownCommand) {
+      const firstWord = payloadFirstWord
+      const isCompleteOp = newDef.subOptions.some((s) => s.value === firstWord)
+      if (!isCompleteOp) {
+        // Show sub-options that match the partial first word (or all if empty)
+        const matches = firstWord
+          ? newDef.subOptions.filter((s) => s.value.startsWith(firstWord))
+          : newDef.subOptions
+        suggestions = (matches.length > 0 ? matches : newDef.subOptions).map((s) => ({
+          trigger: s.value,
+          group: newDef.group,
+          isSubOption: true,
+          parentCommand: lower,
+        }))
+        return
+      }
+      // Complete op selected — hide suggestions (hint takes over)
+      suggestions = []
+      return
+    }
+
+    // Standard command suggestions
+    if (!hasCommandText && !hasPayload) {
+      suggestions = COMMAND_DEFINITIONS.map((def) => ({
+        trigger: def.trigger,
+        group: def.group,
+      }))
+    } else if (hasCommandText && !hasPayload) {
+      const matches = COMMAND_DEFINITIONS.filter((def) =>
+        def.trigger.startsWith(lower)
+      ).map((def) => ({
+        trigger: def.trigger,
+        group: def.group,
+      }))
+      suggestions =
+        matches.length > 0
+          ? matches
+          : COMMAND_DEFINITIONS.map((def) => ({
+              trigger: def.trigger,
+              group: def.group,
+            }))
+    } else {
+      suggestions = []
     }
 
     // Hide suggestions once a command with its own hint/params UI is fully typed
@@ -180,6 +242,13 @@
     focusCliInput()
   }
 
+  function completeSubOption(parentCommand: string, subValue: string) {
+    input = `/${parentCommand} ${subValue} `
+    updateCommandState()
+    resizeCliInput(input)
+    focusCliInput()
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     const isTouchDevice =
       typeof window !== 'undefined' && 'ontouchstart' in window
@@ -189,8 +258,6 @@
 
     if (isLogicalEmpty) {
       if (e.key === 'Enter' && !e.shiftKey) {
-        // Empty Enter: do not send a command.
-        // On touch devices, treat this as a dismiss gesture.
         e.preventDefault()
         if (isTouchDevice) {
           cliInputEl?.blur()
@@ -199,8 +266,6 @@
       }
 
       if (e.key === 'Backspace') {
-        // Backspace on an empty CLI: close the CLI output panel if open,
-        // or dismiss on touch devices.
         if ($cliOutput) {
           e.preventDefault()
           cliOutput.set(null)
@@ -215,25 +280,32 @@
     }
 
     if (e.key === 'Tab') {
-      // If param controls exist and user has typed a payload, Tab moves focus there
-      if (hasParamControls && hasPayload && !e.shiftKey) {
+      // If param controls exist and the command is fully typed, Tab moves focus there
+      if (hasParamControls && isKnownCommand && hasCommandText && !e.shiftKey) {
         e.preventDefault()
-        paramRefs[0]?.focus()
+        firstParamRef?.focus()
         return
       }
 
-      if (!hasPayload && suggestions.length > 0) {
+      if (suggestions.length > 0 && !e.shiftKey) {
         e.preventDefault()
+        const first = suggestions[0]
+        if (!first) return
+
+        if (first.isSubOption && first.parentCommand) {
+          completeSubOption(first.parentCommand, first.trigger)
+          return
+        }
+
         const { command } = parseCommandAndPayload(input)
         const isExactKnown = !!command && KNOWN_COMMANDS.includes(command)
 
         if (!command || !isExactKnown) {
-          // No command yet or partial prefix: pick the first suggestion
-          completeCommand(suggestions[0]?.trigger ?? '')
+          completeCommand(first.trigger)
           return
         }
 
-        // Exact known command with no payload: cycle through the global, sorted list
+        // Exact known command: cycle through global sorted list
         const currentIndex = KNOWN_COMMANDS.findIndex((c) => c === command)
         const nextIndex =
           currentIndex === -1 ? 0 : (currentIndex + 1) % KNOWN_COMMANDS.length
@@ -275,7 +347,6 @@
   }
 
   function handleBeforeInput(e: InputEvent) {
-    // Mobile keyboards often emit line breaks via beforeinput rather than keydown.
     if (busy) return
     if (e.isComposing) return
     if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
@@ -287,7 +358,6 @@
   async function submit() {
     const raw = input.trim()
     if (raw === '') {
-      // Do not run or add empty commands to history.
       if (typeof window !== 'undefined' && 'ontouchstart' in window) {
         cliInputEl?.blur()
       }
@@ -295,16 +365,12 @@
     }
 
     const { command, payload } = parseCommandAndPayload(raw)
-    if (!command) {
-      return
-    }
+    if (!command) return
 
     if (!KNOWN_COMMANDS.includes(command)) {
       flashInvalid = true
       showInvalid = true
-      setTimeout(() => {
-        flashInvalid = false
-      }, 150)
+      setTimeout(() => { flashInvalid = false }, 150)
       focusCliInput()
       return
     }
@@ -316,16 +382,13 @@
     transactionResult.set(null)
     const handler = resolveHandler(command)
 
-    // Populate the first string field from the textarea payload
     const firstStringField = activeSchema?.fields.find((f) => f.kind === 'string')
     const params: ResolvedParams = firstStringField
       ? { ...resolvedParams, [firstStringField.name]: payload || undefined }
       : resolvedParams
 
     const ctx: CommandContext = {
-      setBusyMessage(message: string | null) {
-        busyMessage = message
-      },
+      setBusyMessage(message: string | null) { busyMessage = message },
       onDone: onCliDone,
       resolvedParams: params,
     }
@@ -338,8 +401,6 @@
       }
     } finally {
       busy = false
-      // Keep focusing after a run for quick desktop workflows; on mobile
-      // Safari this uses preventScroll to avoid jumping the viewport.
       focusCliInput()
     }
   }
@@ -353,15 +414,67 @@
           type="button"
           class="cli-suggestion"
           class:cli-suggestion--cli={cmd.group === 'cli'}
-          on:click={() => completeCommand(cmd.trigger)}
+          class:cli-suggestion--narrative={cmd.group === 'narrative'}
+          on:click={() => cmd.isSubOption && cmd.parentCommand
+            ? completeSubOption(cmd.parentCommand, cmd.trigger)
+            : completeCommand(cmd.trigger)}
         >
-          /{cmd.trigger}
+          {cmd.isSubOption ? cmd.trigger : `/${cmd.trigger}`}
         </button>
       {/each}
     </div>
   {/if}
   {#if hasParamControls}
     <div class="command-params">
+      {#each selectFields as field, i}
+        <div class="param-select-wrap">
+          <select
+            class="param-select"
+            use:captureFirstParam={i === 0 && autocompleteFields.length === 0 && boolFields.length === 0}
+            value={selectValue(field.name, field.options[0]?.value ?? '')}
+            on:change={(e) => { resolvedParams = { ...resolvedParams, [field.name]: e.currentTarget.value } }}
+            on:keydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submit() } }}
+            disabled={busy}
+          >
+            {#each field.options as opt}
+              <option value={opt.value}>{opt.label}</option>
+            {/each}
+          </select>
+        </div>
+      {/each}
+
+      {#each autocompleteFields as field, i}
+        <div class="param-ac-wrap">
+          {#if field.repeatable}
+            <div class="param-ac-chips">
+              {#each chipValues(field.name) as chip}
+                <span class="param-ac-chip">
+                  {chip}
+                  <button
+                    type="button"
+                    class="param-ac-chip-remove"
+                    on:click={() => {
+                      const v = chipValues(field.name)
+                      resolvedParams = { ...resolvedParams, [field.name]: v.filter((c) => c !== chip) }
+                    }}
+                    disabled={busy}
+                  >×</button>
+                </span>
+              {/each}
+            </div>
+          {/if}
+          <div class="param-ac-input-wrap">
+            <input
+              type="text"
+              class="param-ac-input"
+              placeholder={field.hint ?? (field.optional ? `${field.name} (optional)` : field.name)}
+              use:captureFirstParam={i === 0}
+              disabled={busy}
+            />
+          </div>
+        </div>
+      {/each}
+
       {#each boolFields as field, i}
         <label class="param-bool">
           <input
@@ -411,7 +524,7 @@
         data-testid="cli-input"
       />
       {#if showHint || showParamWarning}
-        <div class="cli-input-ghost" aria-hidden="true"><span class="ghost-spacer">{input}</span>&nbsp;<span class="ghost-hint" class:ghost-hint--warn={showParamWarning}>{showHint ? activeHint : 'no parameters'}</span></div>
+        <div class="cli-input-ghost" aria-hidden="true"><span class="ghost-spacer">{input}</span>&nbsp;<span class="ghost-hint" class:ghost-hint--warn={showParamWarning}>{showHint ? computedHint : 'no parameters'}</span></div>
       {/if}
     </div>
     {#if busyMessage}

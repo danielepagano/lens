@@ -70,9 +70,17 @@ export type CommandHandler = (
 
 export type CommandGroup = 'transactions' | 'cli' | (string & {})
 
+export interface SubOption {
+  value: string
+}
+
 export interface CommandDefinition {
   trigger: string
   group: CommandGroup
   hint?: string
   params?: CommandParams
+  /** Sub-options shown as suggestion chips when payload is empty or a partial match */
+  subOptions?: SubOption[]
+  /** Hint shown in textarea ghost after a valid sub-option is selected */
+  payloadHint?: string
 }

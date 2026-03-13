@@ -8,12 +8,14 @@ import type {
 import { cliCommandHandler, CLI_COMMANDS } from './cli'
 import { transactionCommandHandler, TRANSACTION_COMMANDS } from './transaction'
 import { dndCommandHandler, DND_COMMANDS } from './dnd'
+import { narrativeCommandHandler, NARRATIVE_COMMANDS } from './narrative'
 
 export type { CommandContext, CommandResult, CommandHandler }
 
 const GROUP_ORDER: Record<CommandGroup, number> = {
   transactions: 0,
-  cli: 1,
+  narrative: 1,
+  cli: 2,
 }
 
 let ALL_COMMAND_DEFINITIONS: CommandDefinition[] = []
@@ -21,6 +23,7 @@ let ALL_COMMAND_DEFINITIONS: CommandDefinition[] = []
 function buildAllCommandDefinitions(includeDnd: boolean): CommandDefinition[] {
   const base: CommandDefinition[] = [
     ...TRANSACTION_COMMANDS,
+    ...NARRATIVE_COMMANDS,
     ...CLI_COMMANDS,
   ]
   const extra: CommandDefinition[] = includeDnd ? DND_COMMANDS : []
@@ -61,6 +64,8 @@ export function resolveHandler(command: string): CommandHandler {
     case 'rollback':
     case 'checkpoint':
       return transactionCommandHandler
+    case 'pin':
+      return narrativeCommandHandler
     default:
       return cliCommandHandler
   }

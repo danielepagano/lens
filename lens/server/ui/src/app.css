@@ -380,6 +380,12 @@ ul.tree-list ul.tree-list {
   color: #6ee7b7;
 }
 
+.cli-suggestion.cli-suggestion--narrative {
+  border-color: rgba(30, 64, 175, 0.6);
+  background: rgba(30, 64, 175, 0.1);
+  color: #93c5fd;
+}
+
 .cli-suggestion:hover,
 .cli-suggestion:focus-visible {
   background: rgba(255, 255, 255, 0.12);
@@ -399,6 +405,115 @@ ul.tree-list ul.tree-list {
   font-size: 0.8rem;
   color: var(--pico-color);
   cursor: pointer;
+}
+
+/* ---- Param select ---- */
+
+.param-select-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.param-select {
+  font-size: 0.8rem !important;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+  cursor: pointer;
+}
+
+/* ---- Param autocomplete ---- */
+
+.param-ac-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 140px;
+  max-width: 260px;
+}
+
+.param-ac-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.param-ac-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  background: rgba(30, 64, 175, 0.1);
+  border: 1px solid rgba(30, 64, 175, 0.4);
+  color: #93c5fd;
+  border-radius: 3px;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+}
+
+.param-ac-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.param-ac-chip-remove:hover {
+  opacity: 1;
+}
+
+.param-ac-input-wrap {
+  position: relative;
+}
+
+.param-ac-input {
+  width: 100%;
+  font-size: 0.8rem !important;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+  font-family: ui-monospace, monospace;
+}
+
+.param-ac-suggestions {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 400;
+  background: var(--pico-background-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 4px;
+  list-style: none;
+  padding: 0.15rem 0;
+  margin: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.param-ac-suggestions li button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--pico-color);
+  font-family: ui-monospace, monospace;
+}
+
+.param-ac-suggestions li button:hover {
+  background: var(--pico-secondary-hover-background);
 }
 
 /* ---- CLI output panel ---- */
