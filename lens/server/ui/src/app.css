@@ -1087,6 +1087,16 @@ ul.kb-item-list {
   flex: 1;
 }
 
+.kb-viewer-tag-link {
+  color: var(--pico-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.kb-viewer-tag-link:hover {
+  color: var(--pico-primary-hover);
+}
+
 .kb-viewer-actions {
   display: flex;
   gap: 0.3rem;
@@ -1160,4 +1170,32 @@ ul.kb-item-list {
 
 .kb-rendered {
   overflow-y: auto;
+}
+
+.kb-linked-from {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  border-top: 1px solid var(--pico-muted-border-color);
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .kb-linked-from {
+    margin-bottom: 36px;
+  }
+}
+
+.kb-linked-from-label {
+  color: var(--pico-muted-color);
+  margin-right: 0.25rem;
+}
+
+.kb-linked-from-link {
+  color: var(--pico-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.kb-linked-from-link:hover {
+  color: var(--pico-primary-hover);
 }

@@ -195,6 +195,13 @@ export const createKbItem = (
     content: string
   }>
 
+export interface KbWithTagResponse {
+  ids: string[]
+}
+
+export const getKbWithTag = (tags: string[]): Promise<KbWithTagResponse> =>
+  post('/kb/with-tag', { tags }) as Promise<KbWithTagResponse>
+
 // ---- Transaction API ----
 
 export interface TransactionActionResponse {
