@@ -18,9 +18,39 @@
     cursor,
     effectivePinsAtCursor,
   } from './stores/session'
-  import { appMode, kbTypes } from './stores/ui'
+  import { appMode, kbTypes, selectedKbId, kbFilters } from './stores/ui'
   import { currentDatasets } from './stores/session'
   import { updateDatasetCommands } from './commands/handlers'
+
+  interface ParsedHash {
+    path: string
+    kb: string | null
+  }
+
+  function parseHash(hash: string): ParsedHash {
+    const raw = decodeURIComponent(hash.slice(1))
+    const qIndex = raw.indexOf('?')
+    if (qIndex === -1) {
+      return { path: raw, kb: null }
+    }
+    const path = raw.slice(0, qIndex)
+    const query = raw.slice(qIndex + 1)
+    const params = new URLSearchParams(query)
+    return { path, kb: params.get('kb') }
+  }
+
+  function buildHash(path: string, kb: string | null): string {
+    if (!kb) return path
+    return `${path}?kb=${encodeURIComponent(kb)}`
+  }
+
+  function updateUrlKb(kb: string | null) {
+    const currentPath = get(currentAddress) || ''
+    const newHash = buildHash(currentPath, kb)
+    if (window.location.hash.slice(1) !== newHash) {
+      window.location.hash = newHash
+    }
+  }
 
   async function navigate(addr: string): Promise<void> {
     if (!addr) return
@@ -28,7 +58,8 @@
       const data = await getNode(addr)
       currentAddress.set(data.address)
       nodeContent.set(data.content)
-      window.location.hash = data.address
+      const currentKb = get(selectedKbId)
+      window.location.hash = buildHash(data.address, currentKb)
     } catch (e) {
       console.error('Navigation failed:', e)
     }
@@ -60,11 +91,29 @@
     }
   }
 
-  function handleHashChange() {
-    const addr = decodeURIComponent(window.location.hash.slice(1))
-    if (addr && addr !== get(currentAddress)) {
-      navigate(addr)
+  function applyKbFromUrl(kb: string | null) {
+    const currentKb = get(selectedKbId)
+    if (kb === currentKb) return
+
+    if (kb) {
+      const dotIndex = kb.indexOf('.')
+      const type = dotIndex > 0 ? kb.slice(0, dotIndex) : ''
+      kbFilters.set({ type, tags: [] })
+      selectedKbId.set(kb)
+      appMode.set('kb')
+    } else {
+      selectedKbId.set(null)
+      appMode.set('narrative')
     }
+  }
+
+  function handleHashChange() {
+    const { path, kb } = parseHash(window.location.hash)
+    const addr = get(currentAddress)
+    if (path && path !== addr) {
+      navigate(path)
+    }
+    applyKbFromUrl(kb)
   }
 
   onMount(async () => {
@@ -81,8 +130,9 @@
       currentDatasets.set(stats.current_datasets ?? [])
       updateDatasetCommands(stats.current_datasets ?? [])
 
-      const initial = decodeURIComponent(window.location.hash.slice(1))
-      await navigate(initial || stats.cursor || '')
+      const { path, kb } = parseHash(window.location.hash)
+      await navigate(path || stats.cursor || '')
+      applyKbFromUrl(kb)
     } catch (e) {
       console.error('Init failed:', e)
     }

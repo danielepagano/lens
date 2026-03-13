@@ -8,6 +8,11 @@
   $: parentAddr = parts.length > 1 ? parts.slice(0, -1).join('/') : null
   $: currentTitle = parts.length > 0 ? parts[parts.length - 1] : null
   $: isCursor = $cursor !== null && $cursor === $currentAddress
+
+  function switchToNarrative() {
+    const path = $currentAddress || ''
+    window.location.hash = path
+  }
 </script>
 
 <header class="top-bar" data-testid="top-bar">
@@ -27,7 +32,7 @@
     <button
       class="mode-btn"
       class:active={$appMode === 'narrative'}
-      on:click={() => appMode.set('narrative')}
+      on:click={switchToNarrative}
       aria-pressed={$appMode === 'narrative'}
     >Narrative</button>
     <button

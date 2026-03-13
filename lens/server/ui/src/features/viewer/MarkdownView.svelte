@@ -92,6 +92,11 @@
   }
 
   $: frontMatterPins = $nodeContent ? extractFrontMatterPins($nodeContent) : { pins: [], unpins: [] }
+
+  function openKbItem(id: string) {
+    const path = $currentAddress || ''
+    window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
+  }
 </script>
 
 <article data-testid="markdown-view" class="content">
@@ -99,10 +104,10 @@
     {#if frontMatterPins.pins.length || frontMatterPins.unpins.length}
       <div class="pin-pills pin-pills-front-matter" data-testid="front-matter-pins">
         {#each frontMatterPins.pins as id}
-          <span class="pin-pill">{id}</span>
+          <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
         {/each}
         {#each frontMatterPins.unpins as id}
-          <span class="pin-pill pin-pill-unpin">-{id}</span>
+          <button class="pin-pill pin-pill-unpin" on:click={() => openKbItem(id)}>-{id}</button>
         {/each}
       </div>
     {/if}
@@ -113,7 +118,7 @@
         {#if $effectivePinsAtCursor.length}
           <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
             {#each $effectivePinsAtCursor as id}
-              <span class="pin-pill">{id}</span>
+              <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
             {/each}
           </div>
         {/if}

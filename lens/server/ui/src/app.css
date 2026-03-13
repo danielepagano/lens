@@ -237,15 +237,28 @@ ul.tree-list ul.tree-list {
   border-radius: 9999px;
   padding: 0.1rem 0.5rem;
   font-size: 0.8rem;
+  font-family: inherit;
   background-color: var(--pico-secondary-background);
   color: var(--pico-color);
   border: 1px solid var(--pico-muted-border-color);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.pin-pill:hover {
+  background-color: var(--pico-primary-background);
+  border-color: var(--pico-primary);
 }
 
 .pin-pill-unpin {
   background-color: rgba(248, 113, 113, 0.08);
   color: var(--pico-del-color);
   border-color: rgba(248, 113, 113, 0.5);
+}
+
+.pin-pill-unpin:hover {
+  background-color: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.8);
 }
 
 /* ---- BottomBar ---- */

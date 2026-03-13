@@ -3,6 +3,7 @@
   import { getKbTags, getKbItems, createKbItem } from '../../services/api'
   import type { KbItem } from '../../services/api'
   import { kbFilters, kbTypes, selectedKbId } from '../../stores/ui'
+  import { currentAddress } from '../../stores/document'
   let allTags: string[] = []
   let items: KbItem[] = []
   let error = ''
@@ -108,7 +109,8 @@
   }
 
   function onItemClick(id: string) {
-    selectedKbId.set(id)
+    const path = $currentAddress || ''
+    window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
     if (onSelect) onSelect(id)
   }
 
@@ -126,9 +128,9 @@
     newError = ''
     try {
       const result = await createKbItem(newId.trim(), undefined, newUseTemplate)
-      selectedKbId.set(result.id)
+      const path = $currentAddress || ''
+      window.location.hash = `${path}?kb=${encodeURIComponent(result.id)}`
       if (onSelect) onSelect(result.id)
-      // Refresh list after selection so the viewer opens immediately.
       await loadItems()
       showNewForm = false
       newId = ''
