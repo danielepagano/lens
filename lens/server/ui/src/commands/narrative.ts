@@ -4,9 +4,19 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandHandler,
+  PayloadSuggest,
 } from './common'
 
 const PIN_OPERATIONS: PinOperation[] = ['add', 'remove', 'block', 'unblock']
+
+const PIN_PAYLOAD_SUGGEST: PayloadSuggest = {
+  levelSeparator: '.',
+  valueSeparator: ' ',
+  levels: [
+    { source: 'kb-types', separator: '.' },
+    { source: 'kb-keys', separator: ' ', threshold: 10 },
+  ],
+}
 
 export const NARRATIVE_COMMANDS: CommandDefinition[] = [
   {
@@ -15,6 +25,7 @@ export const NARRATIVE_COMMANDS: CommandDefinition[] = [
     params: { kind: 'none' },
     subOptions: PIN_OPERATIONS.map((v) => ({ value: v })),
     payloadHint: 'KB object IDs',
+    payloadSuggest: PIN_PAYLOAD_SUGGEST,
   },
 ]
 

@@ -304,8 +304,7 @@ ul.tree-list ul.tree-list {
   /* match textarea padding + 1px border on each side */
   padding: calc(0.21rem + var(--pico-border-width, 1px)) calc(0.5rem + var(--pico-border-width, 1px));
   line-height: 1;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: nowrap;
   overflow: hidden;
   pointer-events: none;
   z-index: 0;

@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { CommandContext, CommandResult, CommandDefinition, BoolField, SelectField, AutocompleteField, ResolvedParams } from '../commands/common'
   import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
-  import { cliOutput, transactionResult } from '../stores/ui'
+  import { cliOutput, transactionResult, kbTypes } from '../stores/ui'
+  import { getKbItems } from '../services/api'
   import type { CommandGroup } from '../commands/common'
 
   const MAX_HISTORY = 50
@@ -11,6 +12,8 @@
     group: CommandGroup
     isSubOption?: boolean
     parentCommand?: string
+    isKbSuggest?: boolean
+    kbLevel?: 'type' | 'key'
   }
 
   export let onCliDone: (() => Promise<void>) | undefined = undefined
@@ -34,6 +37,15 @@
   let paramRefs: Array<HTMLInputElement | null> = []
   let firstParamRef: HTMLElement | null = null
 
+  // KB payload autocomplete state
+  let kbCurrentToken = ''
+  let kbCompletedTokens: string[] = []
+  let kbCommandForBase = ''
+  let kbOpForBase = ''
+  let kbKeyCache = new Map<string, string[]>()
+  let kbKeys: string[] = []
+  let kbKeyFetchType: string | null = null
+
   function captureFirstParam(node: HTMLElement, isFirst: boolean) {
     if (isFirst) firstParamRef = node
     return { destroy() { if (isFirst) firstParamRef = null } }
@@ -51,10 +63,14 @@
 
   function resizeCliInput(_value: string) {
     if (!cliInputEl) return
-    cliInputEl.style.height = '0px'
-    const maxHeightPx = window.innerHeight ? Math.round(window.innerHeight * 0.4) : 240
-    const newHeight = Math.min(cliInputEl.scrollHeight + 3, maxHeightPx)
-    cliInputEl.style.height = `${newHeight}px`
+    // Measure after DOM has applied the latest value (covers programmatic changes like Tab completion)
+    requestAnimationFrame(() => {
+      if (!cliInputEl) return
+      cliInputEl.style.height = '0px'
+      const maxHeightPx = window.innerHeight ? Math.round(window.innerHeight * 0.4) : 240
+      const newHeight = Math.min(cliInputEl.scrollHeight + 3, maxHeightPx)
+      cliInputEl.style.height = `${newHeight}px`
+    })
   }
 
   $: resizeCliInput(input)
@@ -183,9 +199,64 @@
           isSubOption: true,
           parentCommand: lower,
         }))
+        kbCurrentToken = ''
+        kbCompletedTokens = []
         return
       }
-      // Complete op selected — hide suggestions (hint takes over)
+
+      // Complete op selected — check for KB payload autocomplete
+      if (newDef.payloadSuggest) {
+        const ps = newDef.payloadSuggest
+        const kbSection = payloadPart.slice(firstWord.length).trim()
+        const allKbTokens = kbSection ? kbSection.split(/\s+/).filter(Boolean) : []
+        const endsWithSpace = input.endsWith(' ')
+        kbCurrentToken = endsWithSpace ? '' : (allKbTokens[allKbTokens.length - 1] ?? '')
+        kbCompletedTokens = endsWithSpace ? allKbTokens : allKbTokens.slice(0, -1)
+        kbCommandForBase = lower
+        kbOpForBase = firstWord
+
+        const dotIdx = kbCurrentToken.indexOf(ps.levelSeparator)
+        if (dotIdx < 0) {
+          // Type level: show KB types matching current prefix
+          const prefix = kbCurrentToken
+          const types = $kbTypes
+          const matches = prefix ? types.filter((t) => t.startsWith(prefix)) : types
+          suggestions = matches.map((t) => ({
+            trigger: t,
+            group: newDef.group,
+            isKbSuggest: true,
+            kbLevel: 'type' as const,
+          }))
+        } else {
+          // Key level: show KB keys for the typed type
+          const typeName = kbCurrentToken.slice(0, dotIdx)
+          const keyPrefix = kbCurrentToken.slice(dotIdx + 1)
+          const threshold = ps.levels[1].threshold ?? 10
+          if (typeName && typeName !== kbKeyFetchType) {
+            kbKeyFetchType = typeName
+            if (kbKeyCache.has(typeName)) {
+              kbKeys = kbKeyCache.get(typeName)!
+            } else {
+              fetchKbKeys(typeName)
+            }
+          }
+          const allKeys = kbKeyFetchType === typeName ? kbKeys : []
+          if (keyPrefix.length === 0 && allKeys.length >= threshold) {
+            suggestions = []
+          } else {
+            const matches = keyPrefix ? allKeys.filter((k) => k.startsWith(keyPrefix)) : allKeys
+            suggestions = matches.map((k) => ({
+              trigger: k,
+              group: newDef.group,
+              isKbSuggest: true,
+              kbLevel: 'key' as const,
+            }))
+          }
+        }
+        return
+      }
+
+      // No payloadSuggest: hide suggestions (hint takes over)
       suggestions = []
       return
     }
@@ -238,15 +309,49 @@
     const suffix = payload ? ` ${payload}` : ' '
     input = `/${cmd}${suffix}`
     updateCommandState()
-    resizeCliInput(input)
     focusCliInput()
   }
 
   function completeSubOption(parentCommand: string, subValue: string) {
     input = `/${parentCommand} ${subValue} `
     updateCommandState()
-    resizeCliInput(input)
     focusCliInput()
+  }
+
+  function kbBase(): string {
+    const completed = kbCompletedTokens.length > 0 ? kbCompletedTokens.join(' ') + ' ' : ''
+    return `/${kbCommandForBase} ${kbOpForBase} ${completed}`
+  }
+
+  function completeKbType(typeName: string) {
+    input = kbBase() + typeName + '.'
+    updateCommandState()
+    focusCliInput()
+  }
+
+  function completeKbKey(keyName: string) {
+    const dotIdx = kbCurrentToken.indexOf('.')
+    const typePrefix = dotIdx >= 0 ? kbCurrentToken.slice(0, dotIdx + 1) : ''
+    input = kbBase() + typePrefix + keyName + ' '
+    updateCommandState()
+    focusCliInput()
+  }
+
+  async function fetchKbKeys(type: string) {
+    try {
+      const items = await getKbItems({ type })
+      const keys = items.map((item) => item.id.slice(item.id.indexOf('.') + 1))
+      kbKeyCache.set(type, keys)
+      if (kbKeyFetchType === type) {
+        kbKeys = keys
+        updateCommandState()
+      }
+    } catch {
+      if (kbKeyFetchType === type) {
+        kbKeys = []
+        updateCommandState()
+      }
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -294,6 +399,12 @@
 
         if (first.isSubOption && first.parentCommand) {
           completeSubOption(first.parentCommand, first.trigger)
+          return
+        }
+
+        if (first.isKbSuggest) {
+          if (first.kbLevel === 'type') completeKbType(first.trigger)
+          else completeKbKey(first.trigger)
           return
         }
 
@@ -415,11 +526,18 @@
           class="cli-suggestion"
           class:cli-suggestion--cli={cmd.group === 'cli'}
           class:cli-suggestion--narrative={cmd.group === 'narrative'}
-          on:click={() => cmd.isSubOption && cmd.parentCommand
-            ? completeSubOption(cmd.parentCommand, cmd.trigger)
-            : completeCommand(cmd.trigger)}
+          on:click={() => {
+            if (cmd.isSubOption && cmd.parentCommand) {
+              completeSubOption(cmd.parentCommand, cmd.trigger)
+            } else if (cmd.isKbSuggest) {
+              if (cmd.kbLevel === 'type') completeKbType(cmd.trigger)
+              else completeKbKey(cmd.trigger)
+            } else {
+              completeCommand(cmd.trigger)
+            }
+          }}
         >
-          {cmd.isSubOption ? cmd.trigger : `/${cmd.trigger}`}
+          {cmd.isSubOption || cmd.isKbSuggest ? cmd.trigger : `/${cmd.trigger}`}
         </button>
       {/each}
     </div>

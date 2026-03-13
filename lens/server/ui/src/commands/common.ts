@@ -74,6 +74,22 @@ export interface SubOption {
   value: string
 }
 
+export interface PayloadSuggestLevel {
+  source: 'kb-types' | 'kb-keys'
+  /** Character(s) appended to input after completing this level */
+  separator: string
+  /** For 'kb-keys': show all keys if total < threshold, otherwise require ≥1 char typed */
+  threshold?: number
+}
+
+export interface PayloadSuggest {
+  /** Character that separates levels within a single value (e.g. '.' in 'person.amy') */
+  levelSeparator: string
+  /** Character that separates multiple values in the payload (e.g. ' ') */
+  valueSeparator: string
+  levels: [PayloadSuggestLevel, PayloadSuggestLevel]
+}
+
 export interface CommandDefinition {
   trigger: string
   group: CommandGroup
@@ -83,4 +99,6 @@ export interface CommandDefinition {
   subOptions?: SubOption[]
   /** Hint shown in textarea ghost after a valid sub-option is selected */
   payloadHint?: string
+  /** Multi-level inline autocomplete for the payload section after the sub-option */
+  payloadSuggest?: PayloadSuggest
 }
