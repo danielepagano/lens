@@ -66,7 +66,7 @@ function renderDivider(label: string, href: string): string {
 function renderHeading(label: string, href: string): string {
   // Use an explicit HTML element so CSS can target it precisely without
   // affecting any other h2 elements in the rendered document.
-  return `<h2 class="annotation-heading"><a href="#${href}">${label}</a></h2>`
+  return `<h3 class="annotation-heading"><a href="#${href}">${label}</a></h3>`
 }
 
 /** Return true if a line is some kind of annotation (single or multi-line open). */

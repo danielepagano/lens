@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { CommandContext, CommandResult, CommandDefinition, BoolField, SelectField, AutocompleteField, ResolvedParams } from '../commands/common'
   import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
-  import { cliOutput, transactionResult, kbTypes } from '../stores/ui'
-  import { getKbItems } from '../services/api'
+  import { cliOutput, transactionResult, kbTypes, treeRefreshTrigger } from '../stores/ui'
+  import { getKbItems, getTree } from '../services/api'
+  import type { TreeNode } from '../services/api'
   import type { CommandGroup } from '../commands/common'
 
   const MAX_HISTORY = 50
@@ -14,6 +15,11 @@
     parentCommand?: string
     isKbSuggest?: boolean
     kbLevel?: 'type' | 'key'
+    isOptFlag?: boolean
+    optFlag?: string
+    isNodeSuggest?: boolean
+    nodeAddress?: string
+    hasChildren?: boolean
   }
 
   export let onCliDone: (() => Promise<void>) | undefined = undefined
@@ -45,6 +51,12 @@
   let kbKeyCache = new Map<string, string[]>()
   let kbKeys: string[] = []
   let kbKeyFetchType: string | null = null
+
+  // Node address autocomplete state
+  let nodeTreeCache: TreeNode[] | null = null
+  let nodeTreeFetchPending = false
+
+  $: $treeRefreshTrigger, (nodeTreeCache = null), (nodeTreeFetchPending = false)
 
   function captureFirstParam(node: HTMLElement, isFirst: boolean) {
     if (isFirst) firstParamRef = node
@@ -138,6 +150,60 @@
     return { command, payload }
   }
 
+  async function fetchNodeTree() {
+    if (nodeTreeFetchPending || nodeTreeCache !== null) return
+    nodeTreeFetchPending = true
+    try {
+      nodeTreeCache = await getTree()
+      updateCommandState()
+    } catch {
+      nodeTreeCache = []
+    } finally {
+      nodeTreeFetchPending = false
+    }
+  }
+
+  function buildNodeSuggestions(partial: string): CommandHint[] {
+    if (nodeTreeCache === null) {
+      fetchNodeTree()
+      return []
+    }
+    const endsWithSlash = partial.endsWith('/')
+    const rawSegments = partial ? partial.split('/').filter(Boolean) : []
+    let nodes: TreeNode[] = nodeTreeCache
+    // Navigate to current level
+    const navigateSegments = endsWithSlash ? rawSegments : rawSegments.slice(0, -1)
+    for (const seg of navigateSegments) {
+      const found = nodes.find((n) => n.key === seg)
+      if (!found) return []
+      nodes = found.children
+    }
+    const currentPrefix = endsWithSlash ? '' : (rawSegments[rawSegments.length - 1] ?? '')
+    const addressBase = rawSegments.slice(0, endsWithSlash ? rawSegments.length : rawSegments.length - 1).join('/')
+    const baseWithSlash = addressBase ? addressBase + '/' : ''
+    const filtered = currentPrefix ? nodes.filter((n) => n.key.startsWith(currentPrefix)) : nodes
+    const group = activeCommandDef?.group ?? 'narrative'
+    return filtered.map((n) => ({
+      trigger: n.key,
+      group,
+      isNodeSuggest: true,
+      nodeAddress: baseWithSlash + n.key,
+      hasChildren: n.children.length > 0,
+    }))
+  }
+
+  function completeOptFlag(_flagName: string) {
+    input = kbBase() + '--node '
+    updateCommandState()
+    focusCliInput()
+  }
+
+  function completeNodeAddress(nodeAddr: string, hasChildren: boolean) {
+    input = kbBase() + nodeAddr + (hasChildren ? '/' : ' ')
+    updateCommandState()
+    focusCliInput()
+  }
+
   function updateCommandState() {
     const trimmed = input.trim()
     const startsWithSlash = trimmed.startsWith('/')
@@ -207,6 +273,7 @@
       // Complete op selected — check for KB payload autocomplete
       if (newDef.payloadSuggest) {
         const ps = newDef.payloadSuggest
+        const hasNodeOpt = !!(newDef.payloadOpts?.some((o) => o.flag === 'node'))
         const kbSection = payloadPart.slice(firstWord.length).trim()
         const allKbTokens = kbSection ? kbSection.split(/\s+/).filter(Boolean) : []
         const endsWithSpace = input.endsWith(' ')
@@ -215,18 +282,58 @@
         kbCommandForBase = lower
         kbOpForBase = firstWord
 
+        // Detect --node state from completed tokens
+        let isNodeResolved = false
+        let isInNodeMode = false
+        let hasCompletedKbIds = false
+        if (hasNodeOpt) {
+          const nodeFlagIdx = kbCompletedTokens.indexOf('--node')
+          const nodeValue = nodeFlagIdx !== -1 ? kbCompletedTokens[nodeFlagIdx + 1] : undefined
+          isNodeResolved = nodeValue !== undefined
+          isInNodeMode =
+            !isNodeResolved && kbCompletedTokens[kbCompletedTokens.length - 1] === '--node'
+          // KB IDs are completed tokens that are not the --node flag or its value
+          const nodeValueIdx = nodeFlagIdx !== -1 ? nodeFlagIdx + 1 : -1
+          hasCompletedKbIds = kbCompletedTokens.some(
+            (t, i) => i !== nodeFlagIdx && i !== nodeValueIdx && !t.startsWith('--')
+          )
+        }
+
+        // Node address building mode: last completed token is --node
+        if (isInNodeMode) {
+          suggestions = buildNodeSuggestions(kbCurrentToken)
+          return
+        }
+
+        // Typing a --flag token (handle single or double dash)
+        if (hasNodeOpt && !isNodeResolved && kbCurrentToken.startsWith('-')) {
+          suggestions = '--node'.startsWith(kbCurrentToken)
+            ? [{ trigger: '--node', group: newDef.group, isOptFlag: true, optFlag: 'node' }]
+            : []
+          return
+        }
+
         const dotIdx = kbCurrentToken.indexOf(ps.levelSeparator)
         if (dotIdx < 0) {
           // Type level: show KB types matching current prefix
           const prefix = kbCurrentToken
           const types = $kbTypes
           const matches = prefix ? types.filter((t) => t.startsWith(prefix)) : types
-          suggestions = matches.map((t) => ({
+          const kbSugs = matches.map((t) => ({
             trigger: t,
             group: newDef.group,
             isKbSuggest: true,
             kbLevel: 'type' as const,
           }))
+          // Prepend --node chip once at least one KB ID is entered (required field satisfied)
+          if (hasNodeOpt && !isNodeResolved && !kbCurrentToken && hasCompletedKbIds) {
+            suggestions = [
+              { trigger: '--node', group: newDef.group, isOptFlag: true, optFlag: 'node' },
+              ...kbSugs,
+            ]
+          } else {
+            suggestions = kbSugs
+          }
         } else {
           // Key level: show KB keys for the typed type
           const typeName = kbCurrentToken.slice(0, dotIdx)
@@ -402,6 +509,16 @@
           return
         }
 
+        if (first.isOptFlag && first.optFlag) {
+          completeOptFlag(first.optFlag)
+          return
+        }
+
+        if (first.isNodeSuggest && first.nodeAddress !== undefined) {
+          completeNodeAddress(first.nodeAddress, first.hasChildren ?? false)
+          return
+        }
+
         if (first.isKbSuggest) {
           if (first.kbLevel === 'type') completeKbType(first.trigger)
           else completeKbKey(first.trigger)
@@ -525,10 +642,16 @@
           type="button"
           class="cli-suggestion"
           class:cli-suggestion--cli={cmd.group === 'cli'}
-          class:cli-suggestion--narrative={cmd.group === 'narrative'}
+          class:cli-suggestion--narrative={cmd.group === 'narrative' && !cmd.isOptFlag && !cmd.isNodeSuggest}
+          class:cli-suggestion--opt-flag={cmd.isOptFlag}
+          class:cli-suggestion--node-suggest={cmd.isNodeSuggest}
           on:click={() => {
             if (cmd.isSubOption && cmd.parentCommand) {
               completeSubOption(cmd.parentCommand, cmd.trigger)
+            } else if (cmd.isOptFlag && cmd.optFlag) {
+              completeOptFlag(cmd.optFlag)
+            } else if (cmd.isNodeSuggest && cmd.nodeAddress !== undefined) {
+              completeNodeAddress(cmd.nodeAddress, cmd.hasChildren ?? false)
             } else if (cmd.isKbSuggest) {
               if (cmd.kbLevel === 'type') completeKbType(cmd.trigger)
               else completeKbKey(cmd.trigger)
@@ -537,7 +660,13 @@
             }
           }}
         >
-          {cmd.isSubOption || cmd.isKbSuggest ? cmd.trigger : `/${cmd.trigger}`}
+          {#if cmd.isOptFlag}
+            --{cmd.optFlag}
+          {:else if cmd.isSubOption || cmd.isKbSuggest || cmd.isNodeSuggest}
+            {cmd.trigger}
+          {:else}
+            /{cmd.trigger}
+          {/if}
         </button>
       {/each}
     </div>

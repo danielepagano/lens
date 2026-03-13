@@ -385,6 +385,19 @@ ul.tree-list ul.tree-list {
   color: #93c5fd;
 }
 
+.cli-suggestion.cli-suggestion--opt-flag {
+  border-color: rgba(30, 64, 175, 0.9);
+  background: rgba(30, 64, 175, 0.75);
+  color: #fff;
+  font-weight: 500;
+}
+
+.cli-suggestion.cli-suggestion--node-suggest {
+  border-color: rgba(100, 140, 220, 0.4);
+  background: rgba(30, 64, 175, 0.06);
+  color: #7eb8f7;
+}
+
 .cli-suggestion:hover,
 .cli-suggestion:focus-visible {
   background: rgba(255, 255, 255, 0.12);

@@ -22,7 +22,6 @@ export const CLI_COMMANDS: CommandDefinition[] = [
   { trigger: 'rewind',  group: 'cli', params: CLI_PARAMS },
   { trigger: 'section', group: 'cli', params: CLI_PARAMS },
   { trigger: 'stats',   group: 'cli', params: CLI_PARAMS },
-  { trigger: 'use',     group: 'cli', params: CLI_PARAMS },
   { trigger: 'write',   group: 'cli', params: CLI_PARAMS },
 ]
 

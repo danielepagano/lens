@@ -90,6 +90,12 @@ export interface PayloadSuggest {
   levels: [PayloadSuggestLevel, PayloadSuggestLevel]
 }
 
+export interface PayloadOpt {
+  /** Flag name without dashes, e.g. 'node' → '--node' in UI */
+  flag: string
+  hint?: string
+}
+
 export interface CommandDefinition {
   trigger: string
   group: CommandGroup
@@ -101,4 +107,6 @@ export interface CommandDefinition {
   payloadHint?: string
   /** Multi-level inline autocomplete for the payload section after the sub-option */
   payloadSuggest?: PayloadSuggest
+  /** Optional --flag parameters that can appear anywhere in the payload */
+  payloadOpts?: PayloadOpt[]
 }

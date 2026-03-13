@@ -37,6 +37,7 @@ _CLI_ALLOWLIST = frozenset(
         "checkpoint",
         "design",
         "dnd",
+        "play",
     }
 )
 

@@ -57,8 +57,8 @@ export function updateDatasetCommands(currentDatasets: string[] | null): void {
 
 export function resolveHandler(command: string): CommandHandler {
   switch (command) {
+    case 'dnd':
     case 'play':
-    case 'balance':
       return dndCommandHandler
     case 'commit':
     case 'rollback':
