@@ -48,6 +48,12 @@ Both support `--host` and `--port` options. The server uses the project (or data
 |--------|------|-------------|
 | POST | `/narrative/pin` | Add, remove, block, or unblock KB pins on a node. Body: `{"operation": "add"\|"remove"\|"block"\|"unblock", "ids": [...], "node": "<address>"}`. `node` defaults to `/@cursor`. |
 
+### Rewind
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/narrative/rewind` | Rewind the cursor to a node or line, deleting everything after. Body: `{"address": "<address>", "line": <optional int>}`. |
+
 ### Knowledge base
 
 | Method | Path | Description |
@@ -57,7 +63,14 @@ Both support `--host` and `--port` options. The server uses the project (or data
 | GET | `/kb/items` | List KB items, optionally filtered by `?type=` and `?tags=` (comma-separated, supports group syntax). |
 | GET | `/kb/item/{id}` | Fetch a single KB object: `id`, `type`, `content`, `tags`. |
 | PUT | `/kb/item/{id}` | Save (overwrite) a KB object. Body: `{"content": "<markdown>"}`. |
+| DELETE | `/kb/item/{id}` | Delete a KB object. |
 | POST | `/kb/items` | Create a new KB object. Body: `{"id": "<id>", "content": "...", "use_template": false}`. |
+| POST | `/kb/copy` | Copy a KB object. Body: `{"source_id": "...", "target_id": "..."}`. |
+| POST | `/kb/rename` | Rename a KB object. Body: `{"old_id": "...", "new_id": "..."}`. |
+| PATCH | `/kb/item/{id}/tags` | Modify tags on a KB object. Body: `{"add": [...], "remove": [...]}`. |
+| GET | `/kb/template/{type}` | Get the template for a KB object type. |
+| PUT | `/kb/template/{type}` | Set the template for a KB object type. Body: `{"content": "..."}`. |
+| POST | `/kb/with-tag` | Query KB objects by tag with optional recursion. Body: `{"tags": [...], "expand": false, "recurse": null, "same_type_only": false}`. |
 
 ### Transaction
 
@@ -67,6 +80,12 @@ Both support `--host` and `--port` options. The server uses the project (or data
 | POST | `/rollback` | Discard all unstaged changes (pending transaction). |
 | POST | `/commit` | Stage the current pending transaction (moves unstaged → staged). |
 | POST | `/checkpoint` | Commit all staged changes and push to the remote repo. Body: `{"message": "...", "push": true}` (both optional). |
+
+### D&D (dataset-gated)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/dnd/balance` | Calculate balanced combat encounters. Body: `{"required": [{"id": "...", "count": N}], "optional": [...], "difficulty": "low"\|"moderate"\|"high", "pcs": [...], "allies": [...]}`. Returns 404 if `dnd` dataset not active. |
 
 ### CLI streaming
 
