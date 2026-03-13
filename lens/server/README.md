@@ -16,6 +16,7 @@ Run from a directory inside a Lens project (a repo that contains `lens.toml`):
 
 - Starts the API server and the Vite dev server.
 - Open **http://localhost:5173** for the frontend with hot module reload.
+- Vite proxies `/health`, `/stats`, `/tree`, `/node/` and all other API paths to FastAPI.
 - Requires Node.js and npm.
 
 Both support `--host` and `--port` options. The server uses the project (or dataset) rooted at the nearest `lens.toml` above the current working directory.
@@ -25,11 +26,82 @@ Both support `--host` and `--port` options. The server uses the project (or data
 
 ## Routes
 
+### Status
+
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/health` | Liveness; returns `{"status": "ok"}`. |
-| GET | `/stats` | Project stats: active narrative, cursor, pending state, dataset, KB counts. |
-| GET | `/tree` | Narrative tree: list of root nodes with recursive `children` (address, key, is_folder). Empty in dataset mode. |
-| GET | `/node/{address}` | Node by address (e.g. `design-test/dragon-kurmat`). Returns `address`, `content`, `is_folder`, `children`. 404 in dataset mode or if node not found. |
+| GET | `/stats` | Project stats: active narrative, cursor, pending transaction state, dataset, KB counts. Includes inline transaction diff when `has_pending` is true. |
+
+### Narrative tree
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/narratives` | List all narrative names and the active one. |
+| POST | `/narratives/active` | Switch the active narrative (`{"narrative": "<slug>"}`). |
+| GET | `/tree` | Recursive tree of narrative nodes (address, key, children). Empty in dataset mode. |
+| GET | `/node/{address}` | Node content by address (e.g. `chapter-1/scene-2`). Returns `address`, `content`, `is_folder`, `children`. 404 in dataset mode or if node not found. |
+
+### Pinning
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/narrative/pin` | Add, remove, block, or unblock KB pins on a node. Body: `{"operation": "add"\|"remove"\|"block"\|"unblock", "ids": [...], "node": "<address>"}`. `node` defaults to `/@cursor`. |
+
+### Knowledge base
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/kb/types` | List all KB object types. |
+| GET | `/kb/tags` | List unique tags, optionally filtered by `?type=` and `?prefix=`. |
+| GET | `/kb/items` | List KB items, optionally filtered by `?type=` and `?tags=` (comma-separated, supports group syntax). |
+| GET | `/kb/item/{id}` | Fetch a single KB object: `id`, `type`, `content`, `tags`. |
+| PUT | `/kb/item/{id}` | Save (overwrite) a KB object. Body: `{"content": "<markdown>"}`. |
+| POST | `/kb/items` | Create a new KB object. Body: `{"id": "<id>", "content": "...", "use_template": false}`. |
+
+### Transaction
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/staged` | Full diff of currently staged (not yet committed) changes. |
+| POST | `/rollback` | Discard all unstaged changes (pending transaction). |
+| POST | `/commit` | Stage the current pending transaction (moves unstaged → staged). |
+| POST | `/checkpoint` | Commit all staged changes and push to the remote repo. Body: `{"message": "...", "push": true}` (both optional). |
+
+### CLI streaming
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/cli/run` | Run a lens CLI command as a subprocess, streaming stdout/stderr as SSE. Body: `{"command": "<subcommand>", "payload": "<args string>"}`. Only allowlisted commands accepted; only one run at a time (409 if busy). |
+| POST | `/cli/cancel` | Terminate the currently running CLI subprocess. |
+
+#### CLI SSE events
+
+Each event is a JSON object on the `data:` field:
+
+| `type` | Meaning |
+|--------|---------|
+| `out` | A line of stdout (`text` field) |
+| `err` | A line of stderr (`text` field) |
+| `done` | Process exited (`exit_code` field) |
 
 All routes use the same `ProjectSession` (project/dataset and active narrative) fixed when the server starts.
+
+## Architecture
+
+The server is a thin adapter over `lens/core/`. Routes validate input, call core functions, and translate domain exceptions to HTTP errors. No business logic lives in routes.
+
+- `server/` imports only from `core/`, never from `cli/`.
+- `core/` is synchronous. Routes call blocking core functions directly or via `run_in_threadpool` when needed. Do not make core code async.
+- All domain exceptions must be caught in routes and mapped to HTTP 400/500. Core code must not call `sys.exit()` or `print()`.
+- One CLI subprocess at a time is enforced via `app.state.cli_run`.
+
+## Authentication
+
+Authentication is handled entirely by the reverse proxy (Caddy). FastAPI trusts all incoming requests as authenticated — it performs no token validation, no session management, and no auth headers. If Caddy is removed, the server must not be exposed to the public internet.
+
+Caddy is configured to:
+- Terminate HTTPS
+- Enforce HTTP Basic Authentication
+- Forward authenticated traffic to FastAPI (localhost only)
+- Pass through SSE (`text/event-stream`) without buffering (`X-Accel-Buffering: no`)
