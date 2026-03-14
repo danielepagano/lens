@@ -398,6 +398,12 @@ ul.tree-list ul.tree-list {
   color: #93c5fd;
 }
 
+.cli-suggestion.cli-suggestion--dnd {
+  border-color: rgba(127, 29, 29, 0.7);
+  background: rgba(127, 29, 29, 0.12);
+  color: #fca5a5;
+}
+
 .cli-suggestion.cli-suggestion--opt-flag {
   border-color: rgba(30, 64, 175, 0.9);
   background: rgba(30, 64, 175, 0.75);

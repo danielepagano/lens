@@ -8,9 +8,10 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandHandler,
+  CommandModule,
 } from './common'
 
-export const TRANSACTION_COMMANDS: CommandDefinition[] = [
+const commands: CommandDefinition[] = [
   { trigger: 'commit', group: 'transactions' },
   { trigger: 'rollback', group: 'transactions' },
   {
@@ -21,7 +22,7 @@ export const TRANSACTION_COMMANDS: CommandDefinition[] = [
   },
 ]
 
-export const transactionCommandHandler: CommandHandler = async (
+const handler: CommandHandler = async (
   command,
   _payload,
   ctx: CommandContext
@@ -66,3 +67,5 @@ export const transactionCommandHandler: CommandHandler = async (
     return { clearInput: false }
   }
 }
+
+export const transactionModule: CommandModule = { commands: () => commands, handler }

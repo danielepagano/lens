@@ -4,18 +4,18 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandHandler,
+  CommandModule,
 } from './common'
 
-export const CLI_COMMANDS: CommandDefinition[] = [
+const commands: CommandDefinition[] = [
   { trigger: 'design',  group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
-  { trigger: 'edit',    group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'kb',      group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'rewind',  group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'section', group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'stats',   group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
 ]
 
-export const cliCommandHandler: CommandHandler = async (
+const handler: CommandHandler = async (
   command,
   payload,
   ctx: CommandContext
@@ -72,3 +72,7 @@ export const cliCommandHandler: CommandHandler = async (
     return { clearInput: true }
   }
 }
+
+export const cliModule: CommandModule = { commands: () => commands, handler }
+
+export { handler as cliCommandHandler }

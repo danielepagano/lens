@@ -1,76 +1,52 @@
-import type {
-  CommandContext,
-  CommandDefinition,
-  CommandGroup,
-  CommandResult,
-  CommandHandler,
-} from './common'
-import { cliCommandHandler, CLI_COMMANDS } from './cli'
-import { transactionCommandHandler, TRANSACTION_COMMANDS } from './transaction'
-import { dndCommandHandler, DND_COMMANDS } from './dnd'
-import { narrativeCommandHandler, NARRATIVE_COMMANDS } from './narrative'
-import { operatorCommandHandler, OPERATOR_COMMANDS } from './operators'
+import type { CommandDefinition, CommandHandler, CommandModule } from './common'
+import { cliModule } from './cli'
+import { transactionModule } from './transaction'
+import { dndModule } from './dnd'
+import { narrativeModule } from './narrative'
+import { operatorModule } from './operators'
 
-export type { CommandContext, CommandResult, CommandHandler }
+export type { CommandHandler }
 
-const GROUP_ORDER: Record<CommandGroup, number> = {
-  transactions: 0,
-  narrative: 1,
-  cli: 2,
-}
+const MODULES: CommandModule[] = [
+  transactionModule,
+  narrativeModule,
+  operatorModule,
+  cliModule,
+  dndModule,
+]
 
-let ALL_COMMAND_DEFINITIONS: CommandDefinition[] = []
+function buildFromModules(
+  modules: CommandModule[],
+  datasets: string[] | null
+): { definitions: CommandDefinition[]; handlerMap: Map<string, CommandHandler> } {
+  const definitions: CommandDefinition[] = []
+  const handlerMap = new Map<string, CommandHandler>()
 
-function buildAllCommandDefinitions(includeDnd: boolean): CommandDefinition[] {
-  const base: CommandDefinition[] = [
-    ...TRANSACTION_COMMANDS,
-    ...NARRATIVE_COMMANDS,
-    ...OPERATOR_COMMANDS,
-    ...CLI_COMMANDS,
-  ]
-  const extra: CommandDefinition[] = includeDnd ? DND_COMMANDS : []
-  return [...base, ...extra].sort((a, b) => {
-    const aOrder = GROUP_ORDER[a.group] ?? Number.MAX_SAFE_INTEGER
-    const bOrder = GROUP_ORDER[b.group] ?? Number.MAX_SAFE_INTEGER
-    if (aOrder !== bOrder) {
-      return aOrder - bOrder
+  for (const mod of modules) {
+    for (const cmd of mod.commands(datasets)) {
+      definitions.push(cmd)
+      handlerMap.set(cmd.trigger, mod.handler)
     }
-    return a.trigger.localeCompare(b.trigger)
-  })
+  }
+
+  definitions.sort((a, b) => a.group.localeCompare(b.group) || a.trigger.localeCompare(b.trigger))
+
+  return { definitions, handlerMap }
 }
 
-ALL_COMMAND_DEFINITIONS = buildAllCommandDefinitions(false)
+let current = buildFromModules(MODULES, null)
 
-export let COMMAND_DEFINITIONS: readonly CommandDefinition[] =
-  ALL_COMMAND_DEFINITIONS
-
-export let KNOWN_COMMANDS: readonly string[] = ALL_COMMAND_DEFINITIONS.map(
-  (c) => c.trigger
-)
+export let COMMAND_DEFINITIONS: readonly CommandDefinition[] = current.definitions
+export let KNOWN_COMMANDS: readonly string[] = current.definitions.map((c) => c.trigger)
 
 export function updateDatasetCommands(currentDatasets: string[] | null): void {
-  const hasDnd = Array.isArray(currentDatasets)
-    ? currentDatasets.includes('dnd')
-    : false
-  ALL_COMMAND_DEFINITIONS = buildAllCommandDefinitions(hasDnd)
-  COMMAND_DEFINITIONS = ALL_COMMAND_DEFINITIONS
-  KNOWN_COMMANDS = ALL_COMMAND_DEFINITIONS.map((c) => c.trigger)
+  current = buildFromModules(MODULES, currentDatasets)
+  COMMAND_DEFINITIONS = current.definitions
+  KNOWN_COMMANDS = current.definitions.map((c) => c.trigger)
 }
 
 export function resolveHandler(command: string): CommandHandler {
-  switch (command) {
-    case 'dnd':
-    case 'play':
-      return dndCommandHandler
-    case 'commit':
-    case 'rollback':
-    case 'checkpoint':
-      return transactionCommandHandler
-    case 'pin':
-      return narrativeCommandHandler
-    case 'write':
-      return operatorCommandHandler
-    default:
-      return cliCommandHandler
-  }
+  const handler = current.handlerMap.get(command)
+  if (!handler) throw new Error(`Unknown command: ${command}`)
+  return handler
 }

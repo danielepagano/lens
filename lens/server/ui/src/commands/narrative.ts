@@ -4,11 +4,13 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandHandler,
+  CommandModule,
 } from './common'
+import { normalizeAddress } from './common'
 
 const PIN_OPERATIONS: PinOperation[] = ['add', 'remove', 'block', 'unblock']
 
-export const NARRATIVE_COMMANDS: CommandDefinition[] = [
+const commands: CommandDefinition[] = [
   {
     trigger: 'pin',
     group: 'narrative',
@@ -22,7 +24,7 @@ export const NARRATIVE_COMMANDS: CommandDefinition[] = [
   },
 ]
 
-export const narrativeCommandHandler: CommandHandler = async (
+const handler: CommandHandler = async (
   _command,
   _payload,
   ctx: CommandContext
@@ -31,9 +33,7 @@ export const narrativeCommandHandler: CommandHandler = async (
 
   const operation = ctx.args.positional['action'] as string | undefined
   const ids = ctx.args.positional['ids'] as string[] | undefined
-  const rawNode = ctx.args.options['node'] as string | undefined
-  const normalizedNode = rawNode?.replace(/\/+$/, '') // trim trailing slashes
-  const node = normalizedNode ? (normalizedNode.startsWith('/') ? normalizedNode : '/' + normalizedNode) : undefined
+  const node = normalizeAddress(ctx.args.options['node'] as string | undefined)
 
   if (!operation || !PIN_OPERATIONS.includes(operation as PinOperation) || !ids || ids.length === 0) {
     return { clearInput: false }
@@ -59,3 +59,5 @@ export const narrativeCommandHandler: CommandHandler = async (
     return { clearInput: false }
   }
 }
+
+export const narrativeModule: CommandModule = { commands: () => commands, handler }

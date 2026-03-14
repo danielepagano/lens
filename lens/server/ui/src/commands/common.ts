@@ -20,11 +20,9 @@ export interface ParsedArgs {
 
 // ---- Command definition ----
 
-export type CommandGroup = 'transactions' | 'cli' | (string & {})
-
 export interface CommandDefinition {
   trigger: string
-  group: CommandGroup
+  group: string
   hint?: string
   positional?: CliPayload[]
   options?: CliPayload[]
@@ -47,3 +45,18 @@ export type CommandHandler = (
   payload: string,
   ctx: CommandContext
 ) => Promise<CommandResult>
+
+export interface CommandModule {
+  commands: (datasets: string[] | null) => CommandDefinition[]
+  handler: CommandHandler
+}
+
+/**
+ * Normalize a narrative address: ensure it starts with `/` and does not end with `/`.
+ */
+export function normalizeAddress(addr: string | undefined): string | undefined {
+  if (!addr) return undefined
+  let normalized = addr.replace(/\/+$/, '')
+  if (!normalized.startsWith('/')) normalized = '/' + normalized
+  return normalized
+}

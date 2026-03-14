@@ -1,19 +1,17 @@
 import { cliCommandHandler } from './cli'
 import type {
+  CommandContext,
   CommandDefinition,
-  CommandHandler,
+  CommandModule,
 } from './common'
 
-export const DND_COMMANDS: CommandDefinition[] = [
-  { trigger: 'play', group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
-  { trigger: 'dnd',  group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+const commands: CommandDefinition[] = [
+  { trigger: 'play', group: 'dnd', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+  { trigger: 'dnd',  group: 'dnd', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
 ]
 
-export const dndCommandHandler: CommandHandler = async (
-  command,
-  payload,
-  ctx: CommandContext
-) => {
-  return cliCommandHandler(command, payload, ctx)
+export const dndModule: CommandModule = {
+  commands: (datasets) => datasets?.includes('dnd') ? commands : [],
+  handler: (command, payload, ctx: CommandContext) => cliCommandHandler(command, payload, ctx),
 }
 
