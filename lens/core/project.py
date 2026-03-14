@@ -44,6 +44,34 @@ def get_selected_datasets(project_root: Path) -> list[str]:
     return result
 
 
+def list_available_llms(project_root: Path) -> list[str]:
+    """Return selectable LLM IDs from lens.toml.
+
+    The first ``[[llm]]`` entry returns its id if present, otherwise ``[default]``.
+    Subsequent entries are only included if they have an explicit id.
+    Returns empty list if lens.toml doesn't exist or has no ``[[llm]]`` entries.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return []
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_llm_list = config.get("llm", [])
+    llm_list: list[Any] = cast(list[Any], raw_llm_list) if isinstance(raw_llm_list, list) else []
+
+    result: list[str] = []
+    for i, raw_entry in enumerate(llm_list):
+        if not isinstance(raw_entry, dict):
+            continue
+        entry = cast(dict[str, Any], raw_entry)
+        entry_id = entry.get("id")
+        if i == 0:
+            result.append(entry_id if isinstance(entry_id, str) else "[default]")
+        elif isinstance(entry_id, str):
+            result.append(entry_id)
+    return result
+
+
 def find_git_root_from(start: Path) -> Path:
     """Walk up from *start* and return the nearest directory containing ``.git``.
 

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from lens.core.address import NarrativeAddress
 from lens.core.context import crawl_pins
-from lens.core.project import ProjectSession, get_selected_datasets, is_dataset_root
+from lens.core.project import ProjectSession, get_selected_datasets, is_dataset_root, list_available_llms
 from lens.core.knowledge import KnowledgeStore
 
 
@@ -21,6 +21,7 @@ class StatsResult:
     pending_diff: str = field(default="")
     staged_diff: str = field(default="")
     effective_pins_at_cursor: list[str] = field(default_factory=list[str])
+    available_llms: list[str] = field(default_factory=list[str])
 
 
 def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
@@ -72,6 +73,8 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         if node is not None:
             effective_pins_at_cursor = crawl_pins(node)
 
+    available_llms = list_available_llms(root)
+
     return StatsResult(
         kb_types=kb_types,
         kb_count=kb_count,
@@ -84,4 +87,5 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         pending_diff=pending_diff,
         staged_diff=staged_diff,
         effective_pins_at_cursor=effective_pins_at_cursor,
+        available_llms=available_llms,
     )

@@ -40,6 +40,12 @@ def stats(
         else:
             typer.echo("Current datasets: (none)")
 
+    if result.available_llms:
+        typer.echo(f"Available LLMs: {','.join(result.available_llms)}")
+    else:
+        typer.echo("Available LLMs: (none)")
+
+    if result.dataset_name is None:
         typer.echo("Narrative trees:")
         for name, count in result.trees:
             typer.echo(f"  {name} ({count} nodes)")

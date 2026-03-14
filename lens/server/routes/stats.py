@@ -34,5 +34,6 @@ def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
         "kb_types": result.kb_types,
         "kb_count": result.kb_count,
         "effective_pins_at_cursor": result.effective_pins_at_cursor,
+        "available_llms": result.available_llms,
         "transaction": transaction,
     }
