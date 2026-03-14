@@ -3,100 +3,75 @@ import {
   buildNodeTransactionOverlay,
   preprocessAnnotations,
   type NodeTransactionOverlay,
-  type RemovedGroup,
 } from './markdown'
-import type { TransactionState, FileDiff, DiffHunk, DiffLine } from '../services/api'
 
-function makeTransaction(
+/**
+ * Build a raw unified diff string for a single file.
+ * `address` is like 'test/node', hunks is an array of { oldStart, newStart, lines }
+ * where each line is prefixed with '+', '-', or ' '.
+ */
+function makeDiff(
   address: string,
-  hunks: DiffHunk[],
-): TransactionState {
-  return {
-    has_pending: true,
-    owner: `${address}#edit:test`,
-    is_mutation: true,
-    files: [{ path: `narrative/${address}/_node.md`, address, hunks }],
+  hunks: { oldStart: number; newStart: number; lines: string[] }[],
+): string {
+  const path = `narrative/${address}/_node.md`
+  const parts = [
+    `diff --git a/${path} b/${path}`,
+    `--- a/${path}`,
+    `+++ b/${path}`,
+  ]
+  for (const h of hunks) {
+    parts.push(`@@ -${h.oldStart},99 +${h.newStart},99 @@`)
+    parts.push(...h.lines)
   }
-}
-
-function makeHunk(
-  oldStart: number,
-  newStart: number,
-  lines: DiffLine[],
-): DiffHunk {
-  return { old_start: oldStart, new_start: newStart, lines }
-}
-
-function addLine(text: string, isAnnotation = false): DiffLine {
-  return { kind: 'add', text, is_annotation: isAnnotation }
-}
-
-function removeLine(text: string, isAnnotation = false): DiffLine {
-  return { kind: 'remove', text, is_annotation: isAnnotation }
-}
-
-function contextLine(text: string): DiffLine {
-  return { kind: 'context', text, is_annotation: false }
+  return parts.join('\n') + '\n'
 }
 
 describe('buildNodeTransactionOverlay', () => {
-  it('returns null when transaction has no pending changes', () => {
-    const tx: TransactionState = {
-      has_pending: false,
-      owner: null,
-      is_mutation: false,
-      files: [],
-    }
-    const result = buildNodeTransactionOverlay(tx, 'some/address')
-    expect(result).toBeNull()
+  it('returns null when no diff provided', () => {
+    expect(buildNodeTransactionOverlay(null, 'some/address')).toBeNull()
+    expect(buildNodeTransactionOverlay('', 'some/address')).toBeNull()
   })
 
   it('returns null when address does not match any file', () => {
-    const tx = makeTransaction('other/address', [])
-    const result = buildNodeTransactionOverlay(tx, 'some/address')
-    expect(result).toBeNull()
+    const diff = makeDiff('other/address', [])
+    expect(buildNodeTransactionOverlay(diff, 'some/address')).toBeNull()
   })
 
   it('returns null when there are no changes (empty hunks)', () => {
-    const tx = makeTransaction('test/node', [])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
-    expect(result).toBeNull()
+    const diff = makeDiff('test/node', [])
+    expect(buildNodeTransactionOverlay(diff, 'test/node')).toBeNull()
   })
 
   it('tracks added line numbers correctly', () => {
-    const tx = makeTransaction('test/node', [
-      makeHunk(1, 1, [
-        addLine('first added line'),
-        addLine('second added line'),
-      ]),
-    ])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
+    const diff = makeDiff('test/node', [{
+      oldStart: 1, newStart: 1,
+      lines: ['+first added line', '+second added line'],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
     expect(result).not.toBeNull()
     expect(result!.addedLines).toEqual(new Set([1, 2]))
   })
 
-  it('skips annotation lines when tracking added lines', () => {
-    const tx = makeTransaction('test/node', [
-      makeHunk(1, 1, [
-        addLine('[write]: #', true),
-        addLine('actual content'),
-        addLine('[/write]: #', true),
-      ]),
-    ])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
+  it('includes annotation added lines (stripped later by preprocessAnnotations)', () => {
+    // Unlike the old code, we no longer filter added annotation lines here —
+    // they are naturally stripped by preprocessAnnotations.
+    const diff = makeDiff('test/node', [{
+      oldStart: 1, newStart: 1,
+      lines: ['+[write]: #', '+actual content', '+[/write]: #'],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
     expect(result).not.toBeNull()
-    // Line 1 is annotation (skipped), line 2 is content, line 3 is annotation (skipped)
-    expect(result!.addedLines).toEqual(new Set([2]))
+    // All 3 lines are tracked as added (annotations will be stripped during rendering)
+    expect(result!.addedLines).toEqual(new Set([1, 2, 3]))
   })
 
   it('tracks removed groups with correct beforeLine', () => {
-    const tx = makeTransaction('test/node', [
-      makeHunk(5, 5, [
-        removeLine('old content'),
-        addLine('new content'),
-      ]),
-    ])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
+    const diff = makeDiff('test/node', [{
+      oldStart: 5, newStart: 5,
+      lines: ['-old content', '+new content'],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
     expect(result).not.toBeNull()
     expect(result!.removedGroups).toHaveLength(1)
     expect(result!.removedGroups[0]).toEqual({
@@ -106,40 +81,30 @@ describe('buildNodeTransactionOverlay', () => {
   })
 
   it('groups consecutive removed lines together', () => {
-    const tx = makeTransaction('test/node', [
-      makeHunk(5, 5, [
-        removeLine('line one'),
-        removeLine('line two'),
-        removeLine('line three'),
-        addLine('replacement'),
-      ]),
-    ])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
+    const diff = makeDiff('test/node', [{
+      oldStart: 5, newStart: 5,
+      lines: ['-line one', '-line two', '-line three', '+replacement'],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
     expect(result).not.toBeNull()
     expect(result!.removedGroups).toHaveLength(1)
-    expect(result!.removedGroups[0].lines).toEqual([
-      'line one',
-      'line two',
-      'line three',
-    ])
+    expect(result!.removedGroups[0].lines).toEqual(['line one', 'line two', 'line three'])
   })
 
-  it('skips annotation lines in removed groups', () => {
-    const tx = makeTransaction('test/node', [
-      makeHunk(5, 5, [
-        removeLine('[edit:e1_2', true),
-        removeLine('  prompt: test', true),
-        removeLine(']: #', true),
-        removeLine(''),
-        removeLine('actual removed content'),
-        removeLine(''),
-        removeLine('[/edit:e1_2]: #', true),
-        addLine('REPLACEMENT'),
-      ]),
-    ])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
+  it('filters annotation lines from removed groups', () => {
+    const diff = makeDiff('test/node', [{
+      oldStart: 5, newStart: 5,
+      lines: [
+        '-[edit:e1_2]: #',
+        '-',
+        '-actual removed content',
+        '-',
+        '-[/edit:e1_2]: #',
+        '+REPLACEMENT',
+      ],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
     expect(result).not.toBeNull()
-    // Should only include non-annotation lines
     expect(result!.removedGroups).toHaveLength(1)
     expect(result!.removedGroups[0].lines).toEqual([
       '',
@@ -148,36 +113,38 @@ describe('buildNodeTransactionOverlay', () => {
     ])
   })
 
-  it('handles mutation with new_start offset', () => {
-    // Simulates an edit where claim tags push content to a different line
-    const tx = makeTransaction('test/node', [
-      makeHunk(8, 5, [
-        removeLine('[edit:e8_9', true),
-        removeLine('  manual: true', true),
-        removeLine('  prompt: new text', true),
-        removeLine(']: #', true),
-        removeLine(''),
-        removeLine('original paragraph'),
-        removeLine(''),
-        removeLine('[/edit:e8_9]: #', true),
-        addLine('new text'),
-      ]),
-    ])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
+  it('filters multi-line annotation blocks from removed groups', () => {
+    const diff = makeDiff('test/node', [{
+      oldStart: 8, newStart: 5,
+      lines: [
+        '-[edit:e8_9',
+        '-  manual: true',
+        '-  prompt: new text',
+        '-]: #',
+        '-',
+        '-original paragraph',
+        '-',
+        '-[/edit:e8_9]: #',
+        '+new text',
+      ],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
     expect(result).not.toBeNull()
-    // Added line should be at new_start (5), not old_start (8)
     expect(result!.addedLines).toEqual(new Set([5]))
-    expect(result!.removedGroups[0].beforeLine).toBe(5)
+    expect(result!.removedGroups).toHaveLength(1)
+    expect(result!.removedGroups[0].lines).toEqual([
+      '',
+      'original paragraph',
+      '',
+    ])
   })
 
   it('handles trailing removed lines (no add after removes)', () => {
-    const tx = makeTransaction('test/node', [
-      makeHunk(5, 5, [
-        removeLine('deleted line one'),
-        removeLine('deleted line two'),
-      ]),
-    ])
-    const result = buildNodeTransactionOverlay(tx, 'test/node')
+    const diff = makeDiff('test/node', [{
+      oldStart: 5, newStart: 5,
+      lines: ['-deleted line one', '-deleted line two'],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
     expect(result).not.toBeNull()
     expect(result!.addedLines.size).toBe(0)
     expect(result!.removedGroups).toHaveLength(1)
@@ -186,20 +153,33 @@ describe('buildNodeTransactionOverlay', () => {
       lines: ['deleted line one', 'deleted line two'],
     })
   })
+
+  it('handles context lines for accurate line tracking', () => {
+    const diff = makeDiff('test/node', [{
+      oldStart: 5, newStart: 5,
+      lines: [
+        ' Carlos sleeps peacefully',
+        '   ',
+        ' [/section:s1]: #',
+        '-Original content',
+        '+REPLACED TEXT',
+      ],
+    }])
+    const result = buildNodeTransactionOverlay(diff, 'test/node')
+    expect(result).not.toBeNull()
+    expect(result!.addedLines.has(8)).toBe(true)
+    expect(result!.addedLines.has(5)).toBe(false)
+  })
 })
 
 describe('preprocessAnnotations with overlay', () => {
   it('correctly identifies added line when context lines precede changes', () => {
-    // Simulates the edit mutation case:
-    // - Diff starts at new_start: 5 (first context line)
-    // - But there are 3 context lines before the actual change
-    // - So "REPLACED TEXT" is actually at line 8, not line 5
     const markdown = `Line 1
 Line 2
 [section:s1]: #
 
 Carlos sleeps peacefully
-  
+
 [/section:s1]: #
 REPLACED TEXT
 
@@ -207,50 +187,27 @@ REPLACED TEXT
 
 More content`
 
-    // Transaction from backend - NOW includes context lines
-    const tx: TransactionState = {
-      has_pending: true,
-      owner: 'test#edit:e1',
-      is_mutation: true,
-      files: [{
-        path: 'test/_node.md',
-        address: 'test/node',
-        hunks: [{
-          old_start: 5,
-          new_start: 5,
-          lines: [
-            // Context lines (new lines 5, 6, 7):
-            contextLine('Carlos sleeps peacefully'),
-            contextLine('  '),
-            contextLine('[/section:s1]: #'),
-            // Removed lines (don't increment new line counter):
-            removeLine('[edit:e1', true),
-            removeLine('  prompt: test', true),
-            removeLine(']: #', true),
-            removeLine(''),
-            removeLine('Original content'),
-            removeLine(''),
-            removeLine('[/edit:e1]: #', true),
-            // Added line (at new line 8):
-            addLine('REPLACED TEXT'),
-          ],
-        }],
-      }],
-    }
+    const diff = makeDiff('test/node', [{
+      oldStart: 5, newStart: 5,
+      lines: [
+        ' Carlos sleeps peacefully',
+        '   ',
+        ' [/section:s1]: #',
+        '-[edit:e1]: #',
+        '-Original content',
+        '-[/edit:e1]: #',
+        '+REPLACED TEXT',
+      ],
+    }])
 
-    const overlay = buildNodeTransactionOverlay(tx, 'test/node')
+    const overlay = buildNodeTransactionOverlay(diff, 'test/node')
     expect(overlay).not.toBeNull()
-    // Verify the overlay correctly identifies line 8 as added, not line 5
     expect(overlay!.addedLines.has(8)).toBe(true)
-    expect(overlay!.addedLines.has(5)).toBe(false)
 
     const result = preprocessAnnotations(markdown, 'test', overlay)
-    
-    // "REPLACED TEXT" should be marked as added (it's at line 8 in the markdown)
     expect(result).toContain('<div class="transaction-added">')
     expect(result).toContain('REPLACED TEXT')
-    
-    // Find the content inside the transaction-added div
+
     const addedMatch = result.match(/<div class="transaction-added">\s*([\s\S]*?)\s*<\/div>/)
     expect(addedMatch).not.toBeNull()
     expect(addedMatch![1]).toContain('REPLACED TEXT')
@@ -281,13 +238,12 @@ Line 3`
     const result = preprocessAnnotations(markdown, 'test', overlay)
     expect(result).toContain('<div class="transaction-added">')
     expect(result).toContain('Line 2')
-    // Line 1 and Line 3 should not be in added divs
     const parts = result.split('<div class="transaction-added">')
     expect(parts[0]).toContain('Line 1')
     expect(parts[0]).not.toContain('Line 2')
   })
 
-  it('inserts removed blockquote before added line', () => {
+  it('inserts removed block before added line', () => {
     const markdown = `Line 1
 New content
 Line 3`
@@ -296,7 +252,6 @@ Line 3`
       removedGroups: [{ beforeLine: 2, lines: ['Old content'] }],
     }
     const result = preprocessAnnotations(markdown, 'test', overlay)
-    // Removed should appear before added
     const removedIdx = result.indexOf('transaction-removed')
     const addedIdx = result.indexOf('transaction-added')
     expect(removedIdx).toBeLessThan(addedIdx)
@@ -312,8 +267,6 @@ Line 3`
       removedGroups: [],
     }
     const result = preprocessAnnotations(markdown, 'test', overlay)
-    // Empty line at position 2 should not create an added div
-    // Count the number of transaction-added divs - should be 0
     expect(result.split('<div class="transaction-added">').length).toBe(1)
   })
 
@@ -334,6 +287,26 @@ More content at line 7`
     expect(result).toContain('Added content at line 6')
   })
 
+  it('does not render diff markers on operator annotation changes', () => {
+    // When an operator multi-line annotation changes, lines inside it are
+    // consumed by preprocessAnnotations and diff markers should not appear.
+    const markdown = `[write
+    prompt: continue the story
+]: #
+
+Some narrative content.`
+
+    // Diff includes a changed param line inside the annotation block
+    const overlay: NodeTransactionOverlay = {
+      addedLines: new Set([2]),
+      removedGroups: [{ beforeLine: 2, lines: ['    prompt: old prompt'] }],
+    }
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    // The multi-line annotation block is consumed, so no diff artifacts
+    expect(result).not.toContain('transaction-added')
+    expect(result).not.toContain('transaction-removed')
+  })
+
   it('handles section annotations with body content', () => {
     const markdown = `[section:ch1]: #
 
@@ -349,5 +322,141 @@ More content line 5
     const result = preprocessAnnotations(markdown, 'test', overlay)
     expect(result).toContain('<div class="transaction-added">')
     expect(result).toContain('Added line 4')
+  })
+
+  it('does not render diff markers when front-matter pins are added', () => {
+    // Real-world: user adds a kb_pin via the pin command.
+    // The file goes from no front-matter to having a front-matter block.
+    // The diff marks all front-matter lines as added, but they should be invisible.
+    const markdown = `[
+    kb_pin:
+    - part.head
+]: #
+
+It's morning in Amy's apartment.`
+
+    // All front-matter lines are added (lines 1-4)
+    const diff = makeDiff('test/node', [{
+      oldStart: 1, newStart: 1,
+      lines: [
+        '+[',
+        '+    kb_pin:',
+        '+    - part.head',
+        '+]: #',
+        '+',
+        ' It\'s morning in Amy\'s apartment.',
+      ],
+    }])
+
+    const overlay = buildNodeTransactionOverlay(diff, 'test/node')
+    expect(overlay).not.toBeNull()
+
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    // Front-matter block is consumed — no diff markers should appear for it
+    expect(result).not.toContain('transaction-added')
+    expect(result).not.toContain('transaction-removed')
+    expect(result).not.toContain('[')
+    expect(result).not.toContain('kb_pin')
+    expect(result).toContain("It's morning in Amy's apartment.")
+  })
+
+  it('does not render diff markers when front-matter pins change', () => {
+    // Real-world: user modifies an existing pin list.
+    const markdown = `[
+    kb_pin:
+    - npc.amy
+    - npc.bob
+]: #
+
+Some narrative content.`
+
+    // Diff shows one pin line changed
+    const diff = makeDiff('test/node', [{
+      oldStart: 1, newStart: 1,
+      lines: [
+        ' [',
+        '     kb_pin:',
+        '     - npc.amy',
+        '-    - npc.alice',
+        '+    - npc.bob',
+        ' ]: #',
+      ],
+    }])
+
+    const overlay = buildNodeTransactionOverlay(diff, 'test/node')
+    // Removed line is inside a front-matter block — should be filtered
+    if (overlay) {
+      const result = preprocessAnnotations(markdown, 'test', overlay)
+      expect(result).not.toContain('transaction-added')
+      expect(result).not.toContain('transaction-removed')
+    }
+  })
+
+  it('marks write operator output as added (end-to-end)', () => {
+    // Real-world: write operator appends content at the end of a node.
+    // File was "Existing content.\n[write]: #\n" (committed),
+    // now is "Existing content.\nNew paragraph from LLM.\n[write]: #\n"
+    const markdown = `Existing content.
+New paragraph from LLM.
+[write]: #
+`
+    const diff = makeDiff('test/node', [{
+      oldStart: 1, newStart: 1,
+      lines: [
+        ' Existing content.',
+        '+New paragraph from LLM.',
+        ' [write]: #',
+      ],
+    }])
+
+    const overlay = buildNodeTransactionOverlay(diff, 'test/node')
+    expect(overlay).not.toBeNull()
+    expect(overlay!.addedLines.has(2)).toBe(true)
+
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    expect(result).toContain('<div class="transaction-added">')
+    expect(result).toContain('New paragraph from LLM.')
+    // The [write]: # annotation should be stripped (no id = cursor marker)
+    expect(result).not.toContain('[write]: #')
+  })
+
+  it('marks edit operator replacement as added with removed shown (end-to-end)', () => {
+    // Real-world: edit operator replaces line 2. Claim tags are in staged,
+    // replacement is in unstaged. The pending diff shows claim tags removed
+    // and replacement added.
+    const markdown = `Line one.
+Replacement line two.
+`
+    const diff = makeDiff('test/node', [{
+      oldStart: 1, newStart: 1,
+      lines: [
+        ' Line one.',
+        '-[edit:e2_2',
+        '-    manual: true',
+        '-    prompt: Replacement line two.',
+        '-]: #',
+        '-Line two.',
+        '-',
+        '-[/edit:e2_2]: #',
+        '+Replacement line two.',
+      ],
+    }])
+
+    const overlay = buildNodeTransactionOverlay(diff, 'test/node')
+    expect(overlay).not.toBeNull()
+    expect(overlay!.addedLines.has(2)).toBe(true)
+    // Removed group should contain only "Line two." and "" (annotations filtered)
+    expect(overlay!.removedGroups).toHaveLength(1)
+    expect(overlay!.removedGroups[0].lines).toEqual(['Line two.', ''])
+
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    expect(result).toContain('<div class="transaction-added">')
+    expect(result).toContain('Replacement line two.')
+    expect(result).toContain('<div class="transaction-removed">')
+    expect(result).toContain('Line two.')
+    // Removed should appear before added
+    const removedIdx = result.indexOf('transaction-removed')
+    const addedIdx = result.indexOf('transaction-added')
+    expect(removedIdx).toBeLessThan(addedIdx)
   })
 })

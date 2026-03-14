@@ -49,29 +49,11 @@ export interface Stats {
   transaction: TransactionState | null
 }
 
-export interface DiffLine {
-  kind: 'add' | 'remove' | 'context'
-  text: string
-  is_annotation: boolean
-}
-
-export interface DiffHunk {
-  old_start: number
-  new_start: number
-  lines: DiffLine[]
-}
-
-export interface FileDiff {
-  path: string
-  address: string | null
-  hunks: DiffHunk[]
-}
-
 export interface TransactionState {
   has_pending: boolean
   owner: string | null
   is_mutation: boolean
-  files: FileDiff[]
+  raw_diff: string
 }
 
 export interface TreeNode {

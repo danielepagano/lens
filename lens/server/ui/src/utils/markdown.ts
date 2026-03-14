@@ -1,5 +1,5 @@
 import MarkdownIt from 'markdown-it'
-import type { TransactionState, FileDiff, DiffHunk, DiffLine } from '../services/api'
+import { findFileHunks, type ParsedHunk } from './diff'
 
 // Mirrors Python's ANNOTATION_RE: single-line [op(:id)?(/)?]: #
 const ANNOTATION_RE =
@@ -13,26 +13,9 @@ const ANNOTATION_OPEN_RE =
 // Closing line of a multi-line annotation: `]: #`
 const ANNOTATION_END_RE = /^\s*\]:\s*#\s*$/
 
-function pushRemovedContent(
-  into: string[],
-  removedByLine: Map<number, RemovedGroup[]>,
-  lineNo: number,
-): void {
-  const groups = removedByLine.get(lineNo)
-  if (!groups?.length) return
-  for (const g of groups) {
-    const content = g.lines.join('\n').trim()
-    if (!content) continue
-    // Output raw markdown inside a div - blank lines let markdown-it process content
-    into.push('')
-    into.push('<div class="transaction-removed">')
-    into.push('')
-    into.push(content)
-    into.push('')
-    into.push('</div>')
-    into.push('')
-  }
-}
+// Front-matter block opener: bare `[` on its own line (no operator name).
+// These blocks contain YAML-like content (kb_pin, kb_unpin) and close with `]: #`.
+const FRONT_MATTER_OPEN_RE = /^\s*\[\s*$/
 
 export interface RemovedGroup {
   beforeLine: number
@@ -56,14 +39,12 @@ function renderDivider(label: string, href: string): string {
 }
 
 function renderHeading(label: string, href: string): string {
-  // Use an explicit HTML element so CSS can target it precisely without
-  // affecting any other h2 elements in the rendered document.
   return `<h3 class="annotation-heading"><a href="#${href}">${label}</a></h3>`
 }
 
-/** Return true if a line is some kind of annotation (single or multi-line open). */
+/** Return true if a line is some kind of annotation (single, multi-line open, or front-matter open). */
 function isAnnotationLine(line: string): boolean {
-  return ANNOTATION_RE.test(line) || ANNOTATION_OPEN_RE.test(line)
+  return ANNOTATION_RE.test(line) || ANNOTATION_OPEN_RE.test(line) || FRONT_MATTER_OPEN_RE.test(line)
 }
 
 /** Find the index of the next non-empty line at or after `start`, or -1. */
@@ -75,10 +56,53 @@ function nextNonEmpty(lines: string[], start: number): number {
 }
 
 /**
+ * Filter annotation lines out of a list of removed lines.
+ * Uses stateful tracking for multi-line annotation blocks.
+ */
+function filterAnnotationLines(lines: string[]): string[] {
+  const result: string[] = []
+  let inBlock = false
+  for (const line of lines) {
+    const stripped = line.trim()
+    if (ANNOTATION_RE.test(stripped)) continue
+    if (ANNOTATION_END_RE.test(stripped)) {
+      inBlock = false
+      continue
+    }
+    if (inBlock) continue
+    if (ANNOTATION_OPEN_RE.test(stripped) || FRONT_MATTER_OPEN_RE.test(stripped)) {
+      inBlock = true
+      continue
+    }
+    result.push(line)
+  }
+  return result
+}
+
+function pushRemovedContent(
+  into: string[],
+  removedByLine: Map<number, RemovedGroup[]>,
+  lineNo: number,
+): void {
+  const groups = removedByLine.get(lineNo)
+  if (!groups?.length) return
+  for (const g of groups) {
+    const content = g.lines.join('\n').trim()
+    if (!content) continue
+    into.push('')
+    into.push('<div class="transaction-removed">')
+    into.push('')
+    into.push(content)
+    into.push('')
+    into.push('</div>')
+    into.push('')
+  }
+}
+
+/**
  * Shared look-ahead logic: given an opening annotation at `bodyStart`, find
  * the body and optional matching close, then render the annotation.
- * If overlay and bodyStartLine are provided, transaction diff styling is
- * applied to body lines (added-line wrap and removed-line blockquotes).
+ * Overlay is applied to body content lines (added-line wrap and removed-line blocks).
  *
  * Returns the result lines to append and the new value of `i`.
  */
@@ -119,13 +143,12 @@ function renderAnnotationWithBody(
       const fileLine = bodyStartLine + k
       pushRemovedContent(output, removedByLine, fileLine)
 
-      let outLine = bodyLines[k]
+      const outLine = bodyLines[k]
       const isAdded =
         overlay &&
         overlay.addedLines.has(fileLine) &&
         outLine.trim() !== ''
       if (isAdded) {
-        // Wrap in div, blank lines let markdown-it process content inside
         output.push('')
         output.push('<div class="transaction-added">')
         output.push('')
@@ -153,7 +176,11 @@ function renderAnnotationWithBody(
 /**
  * Pre-process raw Lens markdown before passing to markdown-it.
  *
- * - Opening annotation with id + non-empty body  → HTML h2 heading link + body + optional ---
+ * When an overlay is provided, diff markers are applied to content lines
+ * in the main loop only — annotation lines are never diff-marked, which
+ * prevents artifacts from front-matter or operator annotation changes.
+ *
+ * - Opening annotation with id + non-empty body  → HTML h3 heading link + body + optional ---
  * - Opening annotation with id + empty body       → thin divider link bar
  * - Self-closing annotation with id               → thin divider link bar
  * - Closing annotation (consumed or orphan) followed by regular text → ---
@@ -186,6 +213,17 @@ export function preprocessAnnotations(
   while (i < lines.length) {
     const lineNo = i + 1
     const line = lines[i]
+
+    // --- Front-matter block: bare `[` ... `]: #` (no operator name)
+    // Contains YAML-like content (kb_pin, kb_unpin). Consumed silently.
+    if (FRONT_MATTER_OPEN_RE.test(line)) {
+      i++
+      while (i < lines.length && !ANNOTATION_END_RE.test(lines[i])) {
+        i++
+      }
+      i++ // skip `]: #`
+      continue
+    }
 
     // --- Multi-line annotation block: [op(:id)? ← whole line, no `]: #`
     if (ANNOTATION_OPEN_RE.test(line) && !ANNOTATION_RE.test(line)) {
@@ -250,15 +288,14 @@ export function preprocessAnnotations(
       continue
     }
 
+    // --- Regular content line: apply diff overlay if present
     pushRemovedContent(result, removedByLine, lineNo)
 
     const isAdded =
       overlay &&
-      !isAnnotationLine(line) &&
       overlay.addedLines.has(lineNo) &&
       line.trim() !== ''
     if (isAdded) {
-      // Wrap in div, blank lines let markdown-it process content inside
       result.push('')
       result.push('<div class="transaction-added">')
       result.push('')
@@ -295,43 +332,39 @@ export function createMarkdownRenderer(): MarkdownIt {
 }
 
 export function buildNodeTransactionOverlay(
-  tx: TransactionState | null,
+  rawDiff: string | null,
   currentAddress: string | null,
 ): NodeTransactionOverlay | null {
-  if (!tx || !tx.has_pending || !currentAddress) return null
-  const file = tx.files.find((f: FileDiff) => f.address === currentAddress)
-  if (!file) return null
+  if (!rawDiff || !currentAddress) return null
+
+  const hunks = findFileHunks(rawDiff, currentAddress)
+  if (!hunks || hunks.length === 0) return null
 
   const addedLines = new Set<number>()
   const removedGroups: RemovedGroup[] = []
 
-  for (const hunk of file.hunks as DiffHunk[]) {
-    let newLine = hunk.new_start
+  for (const hunk of hunks) {
+    let newLine = hunk.newStart
     let pendingRemoved: string[] = []
     let pendingBefore = newLine
 
-    for (const line of hunk.lines as DiffLine[]) {
+    for (const line of hunk.lines) {
       if (line.kind === 'context') {
-        // Context lines exist in new file, increment line counter
         if (pendingRemoved.length > 0) {
           removedGroups.push({ beforeLine: pendingBefore, lines: pendingRemoved })
           pendingRemoved = []
         }
         newLine += 1
       } else if (line.kind === 'add') {
-        if (!line.is_annotation) {
-          addedLines.add(newLine)
-        }
+        addedLines.add(newLine)
         if (pendingRemoved.length > 0) {
           removedGroups.push({ beforeLine: pendingBefore, lines: pendingRemoved })
           pendingRemoved = []
         }
         newLine += 1
       } else if (line.kind === 'remove') {
-        if (!line.is_annotation) {
-          if (pendingRemoved.length === 0) pendingBefore = newLine
-          pendingRemoved.push(line.text)
-        }
+        if (pendingRemoved.length === 0) pendingBefore = newLine
+        pendingRemoved.push(line.text)
       }
     }
 
@@ -340,9 +373,18 @@ export function buildNodeTransactionOverlay(
     }
   }
 
-  if (addedLines.size === 0 && removedGroups.length === 0) {
+  // Filter annotation lines out of removed groups
+  const filteredGroups: RemovedGroup[] = []
+  for (const g of removedGroups) {
+    const filtered = filterAnnotationLines(g.lines)
+    if (filtered.length > 0) {
+      filteredGroups.push({ beforeLine: g.beforeLine, lines: filtered })
+    }
+  }
+
+  if (addedLines.size === 0 && filteredGroups.length === 0) {
     return null
   }
 
-  return { addedLines, removedGroups }
+  return { addedLines, removedGroups: filteredGroups }
 }

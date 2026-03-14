@@ -4,11 +4,9 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from lens.core.commands.diff import get_transaction_state
 from lens.core.commands.stats import get_stats
 from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
-from lens.server.routes.transaction import transaction_state_to_dict
 
 router = APIRouter()
 
@@ -19,7 +17,12 @@ def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     transaction: dict[str, Any] | None = None
     if result.has_pending:
         storage = session.new_storage(owner=None)
-        transaction = transaction_state_to_dict(get_transaction_state(storage))
+        transaction = {
+            "has_pending": True,
+            "owner": str(result.pending_owner) if result.pending_owner is not None else None,
+            "is_mutation": result.pending_owner is not None and result.pending_owner.operator == "edit",
+            "raw_diff": storage.pending_diff(),
+        }
 
     return {
         "active_narrative": session.active_narrative.narrative_root.name

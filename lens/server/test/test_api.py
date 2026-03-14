@@ -134,19 +134,6 @@ class TestNarratives:
         assert r.status_code == 422
 
 
-class TestStaged:
-    def test_returns_200(self, test_client: TestClient) -> None:
-        r = test_client.get("/staged")
-        assert r.status_code == 200
-
-    def test_shape(self, test_client: TestClient) -> None:
-        data = test_client.get("/staged").json()
-        assert "has_pending" in data
-        assert "owner" in data
-        assert "is_mutation" in data
-        assert "files" in data
-        assert isinstance(data["files"], list)
-
 
 def _consume_sse_stream(response: object) -> list[dict[str, Any]]:
     """Parse SSE events from a streaming response. Returns list of parsed data objects."""

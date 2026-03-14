@@ -12,7 +12,7 @@
   // single-user tool — content comes from our own backend.
   const md = createMarkdownRenderer()
 
-  $: overlay = buildNodeTransactionOverlay($stats?.transaction ?? null, $currentAddress)
+  $: overlay = buildNodeTransactionOverlay($stats?.transaction?.raw_diff ?? null, $currentAddress)
 
   $: isStreamingToCurrentNode =
     $streamingPreview !== null && $currentAddress === $streamingPreview.targetNode
