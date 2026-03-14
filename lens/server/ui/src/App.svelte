@@ -3,7 +3,7 @@
   import { get } from 'svelte/store'
   import MainLayout from './layout/MainLayout.svelte'
   import TopBar from './layout/TopBar.svelte'
-  import BottomBar from './layout/BottomBar.svelte'
+  import Cli from './layout/Cli.svelte'
   import TreeBrowser from './features/tree/TreeBrowser.svelte'
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
@@ -159,6 +159,6 @@
   <TransactionResultPanel />
 
   <svelte:fragment slot="bottombar">
-    <BottomBar onCliDone={handleCliDone} />
+    <Cli onCliDone={handleCliDone} />
   </svelte:fragment>
 </MainLayout>

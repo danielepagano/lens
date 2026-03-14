@@ -9,6 +9,7 @@ import { cliCommandHandler, CLI_COMMANDS } from './cli'
 import { transactionCommandHandler, TRANSACTION_COMMANDS } from './transaction'
 import { dndCommandHandler, DND_COMMANDS } from './dnd'
 import { narrativeCommandHandler, NARRATIVE_COMMANDS } from './narrative'
+import { operatorCommandHandler, OPERATOR_COMMANDS } from './operators'
 
 export type { CommandContext, CommandResult, CommandHandler }
 
@@ -24,6 +25,7 @@ function buildAllCommandDefinitions(includeDnd: boolean): CommandDefinition[] {
   const base: CommandDefinition[] = [
     ...TRANSACTION_COMMANDS,
     ...NARRATIVE_COMMANDS,
+    ...OPERATOR_COMMANDS,
     ...CLI_COMMANDS,
   ]
   const extra: CommandDefinition[] = includeDnd ? DND_COMMANDS : []
@@ -66,6 +68,8 @@ export function resolveHandler(command: string): CommandHandler {
       return transactionCommandHandler
     case 'pin':
       return narrativeCommandHandler
+    case 'write':
+      return operatorCommandHandler
     default:
       return cliCommandHandler
   }

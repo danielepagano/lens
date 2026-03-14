@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { get } from 'svelte/store'
   import OutputPanel from '../../components/OutputPanel.svelte'
   import { cancelCliRun } from '../../services/api'
   import { cliOutput } from '../../stores/ui'
@@ -11,14 +10,9 @@
 
   $: isOpen = $cliOutput !== null
   $: isStreaming = $cliOutput?.streaming ?? false
-  $: panelTheme = resolveTheme()
-
-  function resolveTheme(): 'cli' | 'error' | 'command' {
-    if ($cliOutput && $cliOutput.exitCode !== null && $cliOutput.exitCode !== 0) {
-      return 'error'
-    }
-    return 'cli'
-  }
+  $: isError = $cliOutput !== null && $cliOutput.exitCode !== null && $cliOutput.exitCode !== 0
+  $: panelTheme = isError ? 'error' as const : 'cli' as const
+  $: displayTitle = isError ? 'Error' : title
 
   async function handleCancel() {
     try {
@@ -34,7 +28,7 @@
 </script>
 
 <OutputPanel
-  {title}
+  title={displayTitle}
   theme={panelTheme}
   open={isOpen}
   streaming={isStreaming}

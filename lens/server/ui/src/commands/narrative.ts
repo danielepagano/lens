@@ -4,59 +4,43 @@ import type {
   CommandContext,
   CommandDefinition,
   CommandHandler,
-  PayloadSuggest,
 } from './common'
 
 const PIN_OPERATIONS: PinOperation[] = ['add', 'remove', 'block', 'unblock']
-
-const PIN_PAYLOAD_SUGGEST: PayloadSuggest = {
-  levelSeparator: '.',
-  valueSeparator: ' ',
-  levels: [
-    { source: 'kb-types', separator: '.' },
-    { source: 'kb-keys', separator: ' ', threshold: 10 },
-  ],
-}
 
 export const NARRATIVE_COMMANDS: CommandDefinition[] = [
   {
     trigger: 'pin',
     group: 'narrative',
-    params: { kind: 'none' },
-    subOptions: PIN_OPERATIONS.map((v) => ({ value: v })),
-    payloadHint: 'KB object ID',
-    payloadSuggest: PIN_PAYLOAD_SUGGEST,
-    payloadOpts: [{ flag: 'node', hint: 'narrative address' }],
+    positional: [
+      { name: 'action', valueType: 'slug', required: true, slugSource: 'add,remove,block,unblock' },
+      { name: 'ids', valueType: 'kb-id', required: true, repeatable: true, hint: 'KB object ID' },
+    ],
+    options: [
+      { name: 'node', valueType: 'address', hint: 'narrative address' },
+    ],
   },
 ]
 
-function extractNodeFlag(parts: string[]): { node: string | undefined; ids: string[] } {
-  const idx = parts.indexOf('--node')
-  if (idx === -1 || idx + 1 >= parts.length) {
-    return { node: undefined, ids: parts.filter((p) => !p.startsWith('--')) }
-  }
-  const rawNode = parts[idx + 1]
-  const node = rawNode.startsWith('/') ? rawNode : '/' + rawNode
-  const ids = parts.filter((_, i) => i !== idx && i !== idx + 1 && !parts[i].startsWith('--'))
-  return { node, ids }
-}
-
 export const narrativeCommandHandler: CommandHandler = async (
   _command,
-  payload,
+  _payload,
   ctx: CommandContext
 ) => {
   transactionResult.set(null)
-  const parts = payload.trim().split(/\s+/).filter(Boolean)
-  const operation = parts[0] as PinOperation | undefined
-  const { node, ids } = extractNodeFlag(parts.slice(1))
 
-  if (!operation || !PIN_OPERATIONS.includes(operation) || ids.length === 0) {
+  const operation = ctx.args.positional['action'] as string | undefined
+  const ids = ctx.args.positional['ids'] as string[] | undefined
+  const rawNode = ctx.args.options['node'] as string | undefined
+  const normalizedNode = rawNode?.replace(/\/+$/, '') // trim trailing slashes
+  const node = normalizedNode ? (normalizedNode.startsWith('/') ? normalizedNode : '/' + normalizedNode) : undefined
+
+  if (!operation || !PIN_OPERATIONS.includes(operation as PinOperation) || !ids || ids.length === 0) {
     return { clearInput: false }
   }
 
   try {
-    const result = await narrativePin(operation, ids, node)
+    const result = await narrativePin(operation as PinOperation, ids, node)
     if (result.status === 'ok') {
       if (ctx.onDone) await ctx.onDone()
       treeRefreshTrigger.update((n) => n + 1)

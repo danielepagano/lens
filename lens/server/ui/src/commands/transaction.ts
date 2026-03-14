@@ -2,55 +2,24 @@ import {
   rollbackTransaction,
   commitTransaction,
   checkpointTransaction,
-  type TransactionActionResponse,
 } from '../services/api'
 import { transactionResult, treeRefreshTrigger } from '../stores/ui'
 import type {
   CommandContext,
   CommandDefinition,
   CommandHandler,
-  ResolvedParams,
 } from './common'
 
 export const TRANSACTION_COMMANDS: CommandDefinition[] = [
-  { trigger: 'commit', group: 'transactions', params: { kind: 'none' } },
-  { trigger: 'rollback', group: 'transactions', params: { kind: 'none' } },
+  { trigger: 'commit', group: 'transactions' },
+  { trigger: 'rollback', group: 'transactions' },
   {
     trigger: 'checkpoint',
     group: 'transactions',
-    params: {
-      kind: 'form',
-      schema: {
-        hint: '[commit message]',
-        fields: [
-          { kind: 'string', name: 'message', hint: 'Commit message', optional: true },
-          { kind: 'bool', name: 'push', label: 'Push to remote', default: true },
-        ],
-      },
-    },
+    positional: [{ name: 'message', valueType: 'string', hint: '(optional message)' }],
+    options: [{ name: 'no-push' }],
   },
 ]
-
-async function executeTransactionAction(
-  command: string,
-  resolvedParams?: ResolvedParams
-): Promise<TransactionActionResponse> {
-  switch (command) {
-    case 'rollback':
-      return rollbackTransaction()
-    case 'commit':
-      return commitTransaction()
-    case 'checkpoint':
-      return checkpointTransaction({
-        message: (resolvedParams?.['message'] as string | undefined) || undefined,
-        push: resolvedParams?.['push'] !== undefined
-          ? (resolvedParams['push'] as boolean)
-          : true,
-      })
-    default:
-      throw new Error(`Unsupported transaction command: ${command}`)
-  }
-}
 
 export const transactionCommandHandler: CommandHandler = async (
   command,
@@ -60,12 +29,26 @@ export const transactionCommandHandler: CommandHandler = async (
   transactionResult.set(null)
 
   try {
-    const result = await executeTransactionAction(command, ctx.resolvedParams)
+    let result
+    switch (command) {
+      case 'rollback':
+        result = await rollbackTransaction()
+        break
+      case 'commit':
+        result = await commitTransaction()
+        break
+      case 'checkpoint': {
+        const message = (ctx.args.positional['message'] as string | undefined) || undefined
+        const noPush = ctx.args.options['no-push'] === true
+        result = await checkpointTransaction({ message, push: !noPush })
+        break
+      }
+      default:
+        throw new Error(`Unsupported transaction command: ${command}`)
+    }
 
     if (result.status === 'ok') {
-      if (ctx.onDone) {
-        await ctx.onDone()
-      }
+      if (ctx.onDone) await ctx.onDone()
       treeRefreshTrigger.update((n) => n + 1)
       return { clearInput: true }
     }

@@ -6,23 +6,13 @@ import type {
   CommandHandler,
 } from './common'
 
-const CLI_HINT = 'args or --help'
-const CLI_PARAMS: CommandDefinition['params'] = {
-  kind: 'form',
-  schema: {
-    hint: CLI_HINT,
-    fields: [{ kind: 'string', name: 'args', optional: true }],
-  },
-}
-
 export const CLI_COMMANDS: CommandDefinition[] = [
-  { trigger: 'design',  group: 'cli', params: CLI_PARAMS },
-  { trigger: 'edit',    group: 'cli', params: CLI_PARAMS },
-  { trigger: 'kb',      group: 'cli', params: CLI_PARAMS },
-  { trigger: 'rewind',  group: 'cli', params: CLI_PARAMS },
-  { trigger: 'section', group: 'cli', params: CLI_PARAMS },
-  { trigger: 'stats',   group: 'cli', params: CLI_PARAMS },
-  { trigger: 'write',   group: 'cli', params: CLI_PARAMS },
+  { trigger: 'design',  group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+  { trigger: 'edit',    group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+  { trigger: 'kb',      group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+  { trigger: 'rewind',  group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+  { trigger: 'section', group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+  { trigger: 'stats',   group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
 ]
 
 export const cliCommandHandler: CommandHandler = async (
