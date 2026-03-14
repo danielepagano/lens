@@ -93,9 +93,6 @@ def edit(
     rel_path = str(target_md.relative_to(session.git_root))
     ann_id = EditOperator.ann_id(start_line, end_line)
 
-    replacement = prompt if replace else None
-    effective_prompt = None if replace else prompt
-
     try:
         asyncio.run(
             EditOperator.run_mutation(
@@ -105,9 +102,8 @@ def edit(
                 ann_id=ann_id,
                 start_line=start_line,
                 end_line=end_line,
-                prompt=effective_prompt,
+                prompt=prompt,
                 manual=replace,
-                replacement=replacement,
                 pins=list(pin),
                 unpins=list(unpin),
                 llm_id=llm,

@@ -58,7 +58,6 @@ class EditBody(BaseModel):
     llm_id: str | None = None
     retry: bool = False
     replace: bool = False
-    replacement: str | None = None
 
 
 class SectionStartBody(BaseModel):
@@ -332,8 +331,6 @@ async def operator_edit(
     node_addr = str(resolved)
     rel_path = str(target_node.md_path().relative_to(session.git_root))
     ann_id = EditOperator.ann_id(body.start_line, body.end_line)
-    replacement = body.replacement if body.replace else None
-    effective_prompt = None if body.replace else body.prompt
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
@@ -347,9 +344,8 @@ async def operator_edit(
             ann_id=ann_id,
             start_line=body.start_line,
             end_line=body.end_line,
-            prompt=effective_prompt,
+            prompt=body.prompt,
             manual=body.replace,
-            replacement=replacement,
             pins=body.pins,
             unpins=body.unpins,
             llm_id=body.llm_id,

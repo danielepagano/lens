@@ -1297,7 +1297,6 @@ class Operator(ABC):
         end_line: int,
         prompt: str | None,
         manual: bool = False,
-        replacement: str | None = None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
@@ -1330,24 +1329,23 @@ class Operator(ABC):
             raise OperatorError(f"no pending {cls.name} transaction to retry")
 
         params: dict[str, Any] = {}
-        if manual:
-            params["prompt"] = "replace"
-        elif prompt:
+        if prompt:
             params["prompt"] = prompt
+        if manual:
+            params["manual"] = True
 
         if retry:
             await cls._do_retry_mutation(
                 session, node, narrative_root, file_path,
                 rel_path, ann_id, owner, pins, unpins, llm_id, params,
-                probe_storage, cancel_event=cancel_event,
+                probe_storage, on_token=on_token, cancel_event=cancel_event,
             )
         else:
             await cls._do_fresh_mutation(
                 session, node, narrative_root, file_path,
                 rel_path, ann_id, owner, start_line, end_line,
                 pins, unpins, llm_id, params,
-                manual=manual,
-                replacement=replacement,
+                on_token=on_token,
                 cancel_event=cancel_event,
             )
 
@@ -1369,12 +1367,15 @@ class Operator(ABC):
         params: dict[str, Any],
         on_token: Callable[[str], Awaitable[None]] | None = None,
         *,
-        manual: bool = False,
-        replacement: str | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
-        if not manual and not params.get("prompt"):
+        manual = params.get("manual", False)
+        prompt = params.get("prompt")
+
+        if not manual and not prompt:
             raise OperatorError("a prompt is required for a fresh edit")
+        if manual and not prompt:
+            raise OperatorError("replacement text is required in replace mode")
 
         text = file_path.read_text(encoding="utf-8")
         lines = text.split("\n")
@@ -1391,14 +1392,11 @@ class Operator(ABC):
         ).strip()
 
         op = cls(session.new_storage(owner=owner), narrative_root)
-        # params stored in claim tag contain only the prompt (or mode), not the target
-        # (the target is always recoverable from between the claim tags on retry)
         op.start_mutation(file_path, start_line, end_line, ann_id, params)
 
         if manual:
-            if replacement is None:
-                raise OperatorError("replacement text is required in replace mode")
-            op.propose_mutation(file_path, ann_id, replacement)
+            assert prompt is not None  # validated above
+            op.propose_mutation(file_path, ann_id, prompt)
             print(
                 f"Proposed manual replace for {rel_path} lines {start_line}-{end_line}",
                 file=sys.stderr,

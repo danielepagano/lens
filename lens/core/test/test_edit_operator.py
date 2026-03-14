@@ -84,7 +84,6 @@ def _run_mutation(
     retry: bool = False,
     generate_mock: Any = None,
     manual: bool = False,
-    replacement: str | None = None,
 ) -> None:
     mock = generate_mock or _fake_generate_stream
     with patch("lens.core.operator.generate_stream", new=mock):
@@ -100,7 +99,6 @@ def _run_mutation(
                         end_line=end_line,
                         prompt=prompt,
                         manual=manual,
-                        replacement=replacement,
                         pins=[],
                         unpins=[],
                         llm_id=None,
@@ -306,8 +304,8 @@ class TestEditOperatorRunMutation(unittest.TestCase):
                 "e1_1",
                 1,
                 1,
+                prompt="Manual replacement",
                 manual=True,
-                replacement="Manual replacement",
             )
 
             text = narrative.md_path().read_text()
@@ -315,8 +313,8 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             self.assertNotIn("Original line one.", text)
             self.assertNotIn("[edit:e1_1]: #", text)
 
-    def test_run_mutation_manual_replace_stores_marker_in_claim(self) -> None:
-        """Manual replace stores a generic 'replace' marker in the claim tag."""
+    def test_run_mutation_manual_replace_stores_params_in_claim(self) -> None:
+        """Manual replace stores manual flag and prompt in the claim tag."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
@@ -328,8 +326,8 @@ class TestEditOperatorRunMutation(unittest.TestCase):
                 "e1_1",
                 1,
                 1,
+                prompt="Some long replacement text",
                 manual=True,
-                replacement="Some long replacement text",
             )
 
             result = __import__("subprocess").run(
@@ -338,5 +336,5 @@ class TestEditOperatorRunMutation(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertIn("prompt: replace", result.stdout)
-            self.assertNotIn("Some long replacement text", result.stdout)
+            self.assertIn("manual: true", result.stdout)
+            self.assertIn("prompt: Some long replacement text", result.stdout)
