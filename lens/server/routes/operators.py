@@ -451,10 +451,22 @@ async def stream_cancel(
     request: Request,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, str]:
+    from lens.core.commands.rollback import execute_rollback
+
     lock: StreamLock = request.app.state.stream_lock
     if lock.kind is None:
         return {"status": "ok", "detail": "no stream in progress"}
     kind = lock.kind
     lock.cancel()
+
+    # Wait briefly for the task to finish so any in-flight writes complete
+    if lock.task is not None:
+        try:
+            await asyncio.wait_for(asyncio.shield(lock.task), timeout=0.5)
+        except (asyncio.TimeoutError, asyncio.CancelledError):
+            pass
+
+    # Roll back any partial changes left by the interrupted operator
+    execute_rollback(session)
     session.kb.evict_tag_cache()
     return {"status": "ok", "detail": f"cancelled {kind}"}

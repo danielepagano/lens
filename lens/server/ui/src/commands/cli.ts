@@ -13,6 +13,8 @@ const commands: CommandDefinition[] = [
   { trigger: 'rewind',  group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'section', group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'stats',   group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
+  { trigger: 'dnd',     group: 'dnd', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help', 
+    requiresDataset: 'dnd' },
 ]
 
 const handler: CommandHandler = async (
@@ -73,6 +75,10 @@ const handler: CommandHandler = async (
   }
 }
 
-export const cliModule: CommandModule = { commands: () => commands, handler }
+export const cliModule: CommandModule = { 
+  commands: (stats) => commands.filter(c => 
+    c.requiresDataset == null || stats.current_datasets?.includes(c.requiresDataset)), 
+  handler 
+}
 
 export { handler as cliCommandHandler }

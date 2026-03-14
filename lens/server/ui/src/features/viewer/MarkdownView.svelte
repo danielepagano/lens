@@ -106,21 +106,22 @@
   {#if rendered}
     {#if frontMatterPins.pins.length || frontMatterPins.unpins.length}
       <div class="pin-pills pin-pills-front-matter" data-testid="front-matter-pins">
-        {#each frontMatterPins.pins as id}
+        {#each frontMatterPins.pins as id (id)}
           <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
         {/each}
-        {#each frontMatterPins.unpins as id}
+        {#each frontMatterPins.unpins as id (id)}
           <button class="pin-pill pin-pill-unpin" on:click={() => openKbItem(id)}>-{id}</button>
         {/each}
       </div>
     {/if}
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
     {@html rendered}
     {#if isCursorNode}
       <div class="cursor-indicator-preview">
         <span class="cursor-indicator">&gt;</span>
         {#if $stats?.effective_pins_at_cursor?.length}
           <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
-            {#each $stats.effective_pins_at_cursor as id}
+            {#each $stats.effective_pins_at_cursor as id (id)}
               <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
             {/each}
           </div>

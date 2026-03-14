@@ -1,4 +1,4 @@
-import type { CommandGroup, CommandDefinition } from '../../commands/common'
+import type { CommandDefinition } from '../../commands/common'
 import type { ParseState } from '../../commands/parser'
 import type { TreeNode, Stats } from '../../services/api'
 
@@ -6,7 +6,7 @@ export interface Suggestion {
   label: string
   value: string
   kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node'
-  group: CommandGroup
+  group: string
   nodeHasChildren?: boolean
 }
 
@@ -96,7 +96,7 @@ export function getSuggestions(
 function getPositionalSuggestions(
   payload: import('../../commands/common').CliPayload,
   currentToken: string,
-  group: CommandGroup,
+  group: string,
   sources: DataSources,
 ): Suggestion[] {
   switch (payload.valueType ?? 'flag') {
@@ -114,7 +114,7 @@ function getPositionalSuggestions(
 function getSlugSuggestions(
   slugSource: string,
   prefix: string,
-  group: CommandGroup,
+  group: string,
   stats: Stats | null,
 ): Suggestion[] {
   let values: string[]
@@ -141,7 +141,7 @@ function getSlugSuggestions(
 
 function getKbIdSuggestions(
   currentToken: string,
-  group: CommandGroup,
+  group: string,
   sources: DataSources,
 ): Suggestion[] {
   const dotIdx = currentToken.indexOf('.')
@@ -185,7 +185,7 @@ function getKbIdSuggestions(
 
 function getAddressSuggestions(
   partial: string,
-  group: CommandGroup,
+  group: string,
   sources: DataSources,
 ): Suggestion[] {
   if (sources.nodeTree === null) {

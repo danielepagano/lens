@@ -1,4 +1,5 @@
 // ---- CLI Payload Type System ----
+import type { Stats } from '../services/api'
 
 export type CliPayloadType = 'flag' | 'string' | 'slug' | 'kb-id' | 'address' | 'int'
 
@@ -26,6 +27,7 @@ export interface CommandDefinition {
   hint?: string
   positional?: CliPayload[]
   options?: CliPayload[]
+  requiresDataset?: string
 }
 
 // ---- Handler types ----
@@ -47,7 +49,7 @@ export type CommandHandler = (
 ) => Promise<CommandResult>
 
 export interface CommandModule {
-  commands: (datasets: string[] | null) => CommandDefinition[]
+  commands: (stats: Stats) => CommandDefinition[]
   handler: CommandHandler
 }
 

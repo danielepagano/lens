@@ -23,6 +23,15 @@ def check_rollback_status(session: ProjectSession) -> RollbackStatus:
     has_pending = storage.has_pending()
     owner = storage.detect_pending_owner() if has_pending else None
     is_mutation = owner is not None and owner.operator == "edit"
+
+    # Also check for staged mutation claims (edit cancelled before proposal)
+    if owner is None and storage.has_staged():
+        staged_owner = storage.detect_staged_owner()
+        if staged_owner is not None and staged_owner.operator == "edit":
+            return RollbackStatus(
+                has_pending=True, owner=staged_owner, is_mutation=True
+            )
+
     return RollbackStatus(has_pending, owner, is_mutation)
 
 def execute_rollback(session: ProjectSession) -> None:
@@ -33,8 +42,22 @@ def execute_rollback(session: ProjectSession) -> None:
     if is_mutation:
         assert owner is not None
         compensating_rollback(storage, owner, session.project_root)
-    else:
+    elif owner is not None:
+        # Non-mutation operator with unstaged changes
         storage.rollback()
+    else:
+        # No unstaged owner found - check for staged mutation claims.
+        # This happens when edit is cancelled before propose_mutation() is called:
+        # the claim tags are staged but there are no unstaged changes yet.
+        staged_owner = storage.detect_staged_owner()
+        if staged_owner is not None and staged_owner.operator == "edit":
+            # Unstage the claim tags, then discard them from working tree.
+            # This restores the file to its original state (HEAD).
+            storage.unstage_all()
+            storage.rollback()
+        else:
+            # No pending transaction - just ensure working tree is clean
+            storage.rollback()
 
 def compensating_rollback(
     storage: Storage,

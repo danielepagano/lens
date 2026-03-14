@@ -1,5 +1,5 @@
 import MarkdownIt from 'markdown-it'
-import { findFileHunks, type ParsedHunk } from './diff'
+import { findFileHunks } from './diff'
 
 // Mirrors Python's ANNOTATION_RE: single-line [op(:id)?(/)?]: #
 const ANNOTATION_RE =

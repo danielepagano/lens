@@ -4,6 +4,7 @@
   import { cancelStream } from '../../services/api'
 
   $: isOpen = $streamingPreview !== null
+  $: isWaiting = $streamingPreview !== null && $streamingPreview.text === ''
 
   async function handleCancel() {
     try {
@@ -32,7 +33,7 @@
 
 {#if isOpen}
   <div class="streaming-panel" data-testid="streaming-panel">
-    <span class="streaming-label">Streaming...</span>
+    <span class="streaming-label">{isWaiting ? 'Waiting...' : 'Streaming...'}</span>
     <button
       type="button"
       class="streaming-cancel-btn"

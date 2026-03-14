@@ -1,4 +1,4 @@
-import { runWrite, runEdit, StreamBusyError, type OperatorEvent } from '../services/api'
+import { runWrite, runEdit, runPlay, StreamBusyError, type OperatorEvent } from '../services/api'
 import { cliOutput, treeRefreshTrigger } from '../stores/ui'
 import { streamingPreview } from '../stores/document'
 import type {
@@ -36,6 +36,18 @@ const commands: CommandDefinition[] = [
     ],
   },
   {
+    trigger: 'play',
+    group: 'dnd',
+    requiresDataset: 'dnd',
+    positional: [{ name: 'prompt', valueType: 'string', required: true, hint: 'what do you do?' }],
+    options: [
+      { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
+      { name: 'retry' },
+    ],
+  },
+  {
     trigger: 'edit',
     group: 'narrative',
     positional: [
@@ -59,14 +71,16 @@ const handler: CommandHandler = async (
   _payload,
   ctx: CommandContext
 ) => {
-  if (command !== 'write' && command !== 'edit') {
+  if (!commands.map(c => c.trigger).includes(command)) {
     throw new Error(`Unsupported operator command: ${command}`)
   }
 
   const prompt = (ctx.args.positional['prompt'] as string | undefined) || undefined
+
   const pins = (ctx.args.options['pin'] as string[] | undefined) ?? []
   const unpins = (ctx.args.options['unpin'] as string[] | undefined) ?? []
   const llmId = (ctx.args.options['llm'] as string | undefined) || undefined
+  const as_pc = (ctx.args.options['as_pc'] as string | undefined) || undefined
   const retry = ctx.args.options['retry'] === true
 
   let errorOutput = ''
@@ -88,12 +102,23 @@ const handler: CommandHandler = async (
   // Scroll to bottom when starting the command
   scrollContentToBottom()
 
+  // Show waiting state immediately (before first token arrives)
+  streamingPreview.set({ targetNode: '', text: '' })
+
   try {
     let result
 
     if (command === 'write') {
       result = await runWrite(
         { prompt, pins, unpins, llm_id: llmId, retry },
+        handleEvent
+      )
+    } if (command === 'play') {
+      if (prompt === undefined) {
+        throw new Error(`Play requires a prompt`)
+      }
+      result = await runPlay(
+        { prompt, pins, unpins, llm_id: llmId, retry, as_pc },
         handleEvent
       )
     } else {
@@ -154,4 +179,46 @@ const handler: CommandHandler = async (
   }
 }
 
-export const operatorModule: CommandModule = { commands: () => commands, handler }
+const PLAY_REQUIRED_PINS = ['rules.dnd', 'rules.engagement'] as const
+
+export const operatorModule: CommandModule = { 
+  commands: (stats) => {
+    const result: CommandDefinition[] = []
+    
+    for (const cmd of commands) {
+      // Dataset check
+      if (cmd.requiresDataset != null && !stats.current_datasets?.includes(cmd.requiresDataset)) {
+        continue
+      }
+      
+      // Special handling for play: requires rules + at least one PC pinned
+      if (cmd.trigger === 'play') {
+        const pins = stats.effective_pins_at_cursor ?? []
+        const hasRequiredRules = PLAY_REQUIRED_PINS.every(r => pins.includes(r))
+        const pcPins = pins.filter(p => p.startsWith('pc.'))
+        
+        if (!hasRequiredRules || pcPins.length === 0) {
+          continue
+        }
+        
+        // If more than one PC, add as_pc option with PC keys as slugSource
+        if (pcPins.length > 1) {
+          const pcKeys = pcPins.map(p => p.slice(3)).join(',')
+          result.push({
+            ...cmd,
+            options: [
+              { name: 'as_pc', valueType: 'slug', hint: 'acting as', slugSource: pcKeys },
+              ...(cmd.options ?? [])
+            ]
+          })
+          continue
+        }
+      }
+      
+      result.push(cmd)
+    }
+    
+    return result
+  }, 
+  handler 
+}

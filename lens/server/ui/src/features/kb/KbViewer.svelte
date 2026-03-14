@@ -89,7 +89,7 @@
       <span class="kb-viewer-id">{item.id}</span>
       {#if item.tags.length > 0}
         <span class="kb-viewer-tags">
-          {#each item.tags as tag, i}
+          {#each item.tags as tag, i (tag)}
             {#if i > 0}<span class="kb-viewer-tag-sep"> · </span>{/if}
             {#if isDotTag(tag)}
               <a class="kb-viewer-tag kb-viewer-tag-link" href="#{tag}" on:click|preventDefault={() => openKbItem(tag)}>{tag}</a>
@@ -124,6 +124,7 @@
       ></textarea>
     {:else}
       <article class="content kb-rendered">
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
         {@html rendered}
       </article>
     {/if}
@@ -131,7 +132,7 @@
     {#if linkedFrom.length > 0}
       <div class="kb-linked-from">
         <span class="kb-linked-from-label">Linked from:</span>
-        {#each linkedFrom as linkedId, i}
+        {#each linkedFrom as linkedId, i (linkedId)}
           {#if i > 0}<span class="kb-linked-from-sep">, </span>{/if}
           <a class="kb-linked-from-link" href="#{linkedId}" on:click|preventDefault={() => openKbItem(linkedId)}>{linkedId}</a>
         {/each}

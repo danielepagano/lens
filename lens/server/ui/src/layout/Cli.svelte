@@ -33,7 +33,12 @@
   let nodeTreeCache: TreeNode[] | null = null
   let nodeTreeFetchPending = false
 
-  $: $treeRefreshTrigger, (nodeTreeCache = null), (nodeTreeFetchPending = false)
+  $: {
+    void $treeRefreshTrigger
+    nodeTreeCache = null
+    nodeTreeFetchPending = false
+    kbKeyCache = new Map()
+  }
 
   function resizeCliInput(_value: string) {
     if (!cliInputEl) return

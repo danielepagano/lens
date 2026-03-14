@@ -38,7 +38,7 @@
     return `${path}?kb=${encodeURIComponent(kb)}`
   }
 
-  function updateUrlKb(kb: string | null) {
+  function _updateUrlKb(kb: string | null) {
     const currentPath = get(currentAddress) || ''
     const newHash = buildHash(currentPath, kb)
     if (window.location.hash.slice(1) !== newHash) {
@@ -80,15 +80,17 @@
 
   function applyKbFromUrl(kb: string | null) {
     const currentKb = get(selectedKbId)
-    if (kb === currentKb) return
+    const currentMode = get(appMode)
 
     if (kb) {
+      if (kb === currentKb && currentMode === 'kb') return
       const dotIndex = kb.indexOf('.')
       const type = dotIndex > 0 ? kb.slice(0, dotIndex) : ''
       kbFilters.set({ type, tags: [] })
       selectedKbId.set(kb)
       appMode.set('kb')
     } else {
+      if (currentKb === null && currentMode === 'narrative') return
       selectedKbId.set(null)
       appMode.set('narrative')
     }

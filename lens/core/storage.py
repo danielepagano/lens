@@ -258,6 +258,32 @@ class Storage:
                 return last_addr
         return None
 
+    def detect_staged_owner(self) -> NarrativeAddress | None:
+        """Return the owner of a staged mutation claim.
+
+        Checks the staged diff (``git diff --cached``) for edit claim tags.
+        This is used to detect mutations where the claim tags are staged but
+        no proposal has been written yet (i.e., no unstaged changes).
+        """
+        return detect_pending_owner_from_diff(self.staged_diff())
+
+    def has_staged(self) -> bool:
+        """Return ``True`` if there are staged changes (``git diff --cached``)."""
+        r = subprocess.run(
+            [self._GIT, "diff", "--cached", "--quiet"],
+            cwd=self._root,
+            capture_output=True,
+        )
+        return r.returncode != 0
+
+    def unstage_all(self) -> None:
+        """Unstage all staged changes (``git reset HEAD``)."""
+        subprocess.run(
+            [self._GIT, "reset", "HEAD"],
+            cwd=self._root,
+            capture_output=True,
+        )
+
     # ------------------------------------------------------------------
     # Transaction lifecycle
     # ------------------------------------------------------------------

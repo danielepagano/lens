@@ -10,8 +10,7 @@
   $: isCursor = $stats?.cursor !== null && $stats?.cursor === $currentAddress
 
   function switchToNarrative() {
-    const path = $currentAddress || ''
-    window.location.hash = path
+    appMode.set('narrative')
   }
 </script>
 

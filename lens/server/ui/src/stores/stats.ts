@@ -9,5 +9,5 @@ export const stats = writable<Stats | null>(null)
 
 export function applyStats(data: Stats): void {
   stats.set(data)
-  updateDatasetCommands(data.current_datasets ?? [])
+  updateDatasetCommands(data)
 }

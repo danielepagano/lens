@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { getKbTags, getKbItems, createKbItem } from '../../services/api'
+  import { getKbTags, getKbItems, createKbItem, getStats } from '../../services/api'
   import type { KbItem } from '../../services/api'
-  import { kbFilters, selectedKbId } from '../../stores/ui'
+  import { kbFilters, selectedKbId, treeRefreshTrigger } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
-  import { stats } from '../../stores/stats'
+  import { stats, applyStats } from '../../stores/stats'
   let allTags: string[] = []
   let items: KbItem[] = []
   let error = ''
@@ -133,6 +133,10 @@
       window.location.hash = `${path}?kb=${encodeURIComponent(result.id)}`
       if (onSelect) onSelect(result.id)
       await loadItems()
+      // Refresh stats (for kb_types) and invalidate CLI autocomplete caches
+      const newStats = await getStats()
+      applyStats(newStats)
+      treeRefreshTrigger.update((n) => n + 1)
       showNewForm = false
       newId = ''
       newUseTemplate = true

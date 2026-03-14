@@ -8,7 +8,7 @@
 
 {#if suggestions.length > 0}
   <div class="cli-suggestions" class:no-wrap={noWrap}>
-    {#each suggestions as sug}
+    {#each suggestions as sug (sug.value)}
       <button
         type="button"
         class="cli-suggestion"
