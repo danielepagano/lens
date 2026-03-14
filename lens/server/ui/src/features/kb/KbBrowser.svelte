@@ -2,8 +2,9 @@
   import { onMount } from 'svelte'
   import { getKbTags, getKbItems, createKbItem } from '../../services/api'
   import type { KbItem } from '../../services/api'
-  import { kbFilters, kbTypes, selectedKbId } from '../../stores/ui'
+  import { kbFilters, selectedKbId } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
+  import { stats } from '../../stores/stats'
   let allTags: string[] = []
   let items: KbItem[] = []
   let error = ''
@@ -150,7 +151,7 @@
       aria-label="Filter by type"
     >
       <option value="">All types</option>
-      {#each $kbTypes as t (t)}
+      {#each $stats?.kb_types ?? [] as t (t)}
         <option value={t}>{t}</option>
       {/each}
     </select>

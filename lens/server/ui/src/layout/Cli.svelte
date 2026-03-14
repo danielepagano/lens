@@ -5,7 +5,8 @@
   import type { ParseState } from '../commands/parser'
   import { getCommandSuggestions, getSuggestions, type Suggestion, type DataSources } from '../features/cli/CliAutocomplete'
   import CliSuggestions from '../features/cli/CliSuggestions.svelte'
-  import { cliOutput, transactionResult, kbTypes, treeRefreshTrigger } from '../stores/ui'
+  import { cliOutput, transactionResult, treeRefreshTrigger } from '../stores/ui'
+  import { stats } from '../stores/stats'
   import { getKbItems, getTree } from '../services/api'
   import type { TreeNode } from '../services/api'
 
@@ -101,7 +102,7 @@
 
   function makeDataSources(): DataSources {
     return {
-      kbTypes: $kbTypes,
+      kbTypes: $stats?.kb_types ?? [],
       kbKeyCache,
       fetchKbKeys,
       nodeTree: nodeTreeCache,

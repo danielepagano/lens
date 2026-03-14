@@ -31,4 +31,3 @@ export interface KbFilterState {
 }
 
 export const kbFilters = writable<KbFilterState>({ type: '', tags: [] })
-export const kbTypes = writable<string[]>([])

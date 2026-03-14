@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { nodeContent, currentAddress, transactionState } from '../../stores/document'
-  import { cursor, effectivePinsAtCursor } from '../../stores/session'
+  import { nodeContent, currentAddress } from '../../stores/document'
+  import { stats } from '../../stores/stats'
   import {
     preprocessAnnotations,
     createMarkdownRenderer,
@@ -12,9 +12,9 @@
   // single-user tool — content comes from our own backend.
   const md = createMarkdownRenderer()
 
-  $: overlay = buildNodeTransactionOverlay($transactionState, $currentAddress)
+  $: overlay = buildNodeTransactionOverlay($stats?.transaction ?? null, $currentAddress)
 
-  $: isCursorNode = Boolean($currentAddress && $cursor && $currentAddress === $cursor)
+  $: isCursorNode = Boolean($currentAddress && $stats?.cursor && $currentAddress === $stats.cursor)
 
   $: rendered = $nodeContent
     ? md.render(preprocessAnnotations($nodeContent, $currentAddress, overlay))
@@ -115,9 +115,9 @@
     {#if isCursorNode}
       <div class="cursor-indicator-preview">
         <span class="cursor-indicator">&gt;</span>
-        {#if $effectivePinsAtCursor.length}
+        {#if $stats?.effective_pins_at_cursor?.length}
           <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
-            {#each $effectivePinsAtCursor as id}
+            {#each $stats.effective_pins_at_cursor as id}
               <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
             {/each}
           </div>

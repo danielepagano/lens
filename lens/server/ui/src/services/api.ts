@@ -45,6 +45,7 @@ export interface Stats {
   kb_types: string[]
   kb_count: number
   effective_pins_at_cursor: string[] | null
+  available_llms: string[]
   transaction: TransactionState | null
 }
 

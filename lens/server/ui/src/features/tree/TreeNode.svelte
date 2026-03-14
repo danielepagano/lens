@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { TreeNode } from '../../services/api'
   import { currentAddress } from '../../stores/document'
-  import { cursor } from '../../stores/session'
+  import { stats } from '../../stores/stats'
 
   export let node: TreeNode
   export let onNavigate: (addr: string) => void
 
-  $: isCursor = $cursor === node.address
+  $: isCursor = $stats?.cursor === node.address
 </script>
 
 <li>

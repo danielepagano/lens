@@ -3,17 +3,9 @@
   import { getTree, getStats, setActiveNarrative } from '../../services/api'
   import type { TreeNode } from '../../services/api'
   import { treeOpen, treeRefreshTrigger } from '../../stores/ui'
-  import {
-    activeNarrative,
-    availableNarratives,
-    cursor,
-    effectivePinsAtCursor,
-  } from '../../stores/session'
-  import { transactionState } from '../../stores/document'
+  import { applyStats, stats } from '../../stores/stats'
   import TreeNodeComp from './TreeNode.svelte'
   import CloseIcon from '../../components/icons/CloseIcon.svelte'
-  import { currentDatasets } from '../../stores/session'
-  import { updateDatasetCommands } from '../../commands/handlers'
 
   export let navigate: (addr: string) => Promise<void>
 
@@ -39,17 +31,11 @@
     const slug = (e.target as HTMLSelectElement).value
     try {
       await setActiveNarrative(slug)
-      activeNarrative.set(slug)
       await loadTree()
-      const stats = await getStats()
-      availableNarratives.set(stats.narratives ?? [])
-      cursor.set(stats.cursor ?? null)
-      effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
-      transactionState.set(stats.transaction ?? null)
-      currentDatasets.set(stats.current_datasets ?? [])
-      updateDatasetCommands(stats.current_datasets ?? [])
-      if (stats.cursor) {
-        await navigate(stats.cursor)
+      const newStats = await getStats()
+      applyStats(newStats)
+      if (newStats.cursor) {
+        await navigate(newStats.cursor)
       }
       treeOpen.set(false)
     } catch (err) {
@@ -70,10 +56,10 @@
       <CloseIcon size={18} />
     </button>
   </div>
-  {#if $availableNarratives.length > 0}
+  {#if $stats && $stats.narratives.length > 0}
     <div class="narrative-switcher">
-      <select value={$activeNarrative} on:change={onNarrativeChange} aria-label="Active narrative">
-        {#each $availableNarratives as slug (slug)}
+      <select value={$stats.active_narrative} on:change={onNarrativeChange} aria-label="Active narrative">
+        {#each $stats.narratives as slug (slug)}
           <option value={slug}>{slug}</option>
         {/each}
       </select>

@@ -11,16 +11,9 @@
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
   import { getStats, getNode } from './services/api'
-  import { currentAddress, nodeContent, transactionState } from './stores/document'
-  import {
-    activeNarrative,
-    availableNarratives,
-    cursor,
-    effectivePinsAtCursor,
-  } from './stores/session'
-  import { appMode, kbTypes, selectedKbId, kbFilters } from './stores/ui'
-  import { currentDatasets } from './stores/session'
-  import { updateDatasetCommands } from './commands/handlers'
+  import { currentAddress, nodeContent } from './stores/document'
+  import { applyStats, stats } from './stores/stats'
+  import { appMode, selectedKbId, kbFilters } from './stores/ui'
 
   interface ParsedHash {
     path: string
@@ -66,23 +59,16 @@
   }
 
   async function handleCliDone(): Promise<void> {
-    const prevCursor = get(cursor)
+    const prevCursor = get(stats)?.cursor ?? null
     const addr = get(currentAddress)
     try {
-      const stats = await getStats()
-      availableNarratives.set(stats.narratives ?? [])
-      activeNarrative.set(stats.active_narrative)
-      cursor.set(stats.cursor ?? null)
-      effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
-      transactionState.set(stats.transaction ?? null)
-      kbTypes.set(stats.kb_types ?? [])
-      currentDatasets.set(stats.current_datasets ?? [])
-      updateDatasetCommands(stats.current_datasets ?? [])
+      const newStats = await getStats()
+      applyStats(newStats)
       if (addr) {
         const data = await getNode(addr)
         nodeContent.set(data.content)
       }
-      const newCursor = get(cursor)
+      const newCursor = newStats.cursor ?? null
       if (prevCursor === addr && newCursor !== prevCursor && newCursor) {
         navigate(newCursor)
       }
@@ -121,14 +107,7 @@
 
     try {
       const stats = await getStats()
-      availableNarratives.set(stats.narratives ?? [])
-      activeNarrative.set(stats.active_narrative)
-      cursor.set(stats.cursor ?? null)
-      effectivePinsAtCursor.set(stats.effective_pins_at_cursor ?? [])
-      transactionState.set(stats.transaction ?? null)
-      kbTypes.set(stats.kb_types ?? [])
-      currentDatasets.set(stats.current_datasets ?? [])
-      updateDatasetCommands(stats.current_datasets ?? [])
+      applyStats(stats)
 
       const { path, kb } = parseHash(window.location.hash)
       await navigate(path || stats.cursor || '')

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { currentAddress } from '../stores/document'
-  import { cursor } from '../stores/session'
+  import { stats } from '../stores/stats'
   import { treeOpen, appMode } from '../stores/ui'
   import HamburgerIcon from '../components/icons/HamburgerIcon.svelte'
 
   $: parts = $currentAddress ? $currentAddress.split('/') : []
   $: parentAddr = parts.length > 1 ? parts.slice(0, -1).join('/') : null
   $: currentTitle = parts.length > 0 ? parts[parts.length - 1] : null
-  $: isCursor = $cursor !== null && $cursor === $currentAddress
+  $: isCursor = $stats?.cursor !== null && $stats?.cursor === $currentAddress
 
   function switchToNarrative() {
     const path = $currentAddress || ''
