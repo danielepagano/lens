@@ -50,7 +50,7 @@ export interface Stats {
 }
 
 export interface DiffLine {
-  kind: 'add' | 'remove'
+  kind: 'add' | 'remove' | 'context'
   text: string
   is_annotation: boolean
 }

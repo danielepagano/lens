@@ -43,21 +43,25 @@ index abc1234..def5678 100644
         assert hunk.old_start == 10
         assert hunk.new_start == 10
 
-    def test_context_lines_excluded(self) -> None:
+    def test_context_lines_included(self) -> None:
         lines = parse_unified_diff(self._WRITE_DIFF)[0].hunks[0].lines
-        # Only add lines; the context line "Last context line" is dropped.
-        assert all(ln.kind == "add" for ln in lines)
-        assert len(lines) == 3
+        # Context line is now included for accurate line number tracking
+        assert len(lines) == 4
+        assert lines[0].kind == "context"
+        assert lines[0].text == "Last context line"
+        assert all(ln.kind == "add" for ln in lines[1:])
 
     def test_annotation_flags(self) -> None:
         lines = parse_unified_diff(self._WRITE_DIFF)[0].hunks[0].lines
-        assert [ln.is_annotation for ln in lines] == [True, False, True]
+        # First line is context (not annotation), then add lines
+        assert [ln.is_annotation for ln in lines] == [False, True, False, True]
 
     def test_text_content(self) -> None:
         lines = parse_unified_diff(self._WRITE_DIFF)[0].hunks[0].lines
-        assert lines[0].text == "[write:abc123]: #"
-        assert lines[1].text == "Generated story content."
-        assert lines[2].text == "[/write:abc123]: #"
+        assert lines[0].text == "Last context line"
+        assert lines[1].text == "[write:abc123]: #"
+        assert lines[2].text == "Generated story content."
+        assert lines[3].text == "[/write:abc123]: #"
 
 
 class TestParseUnifiedDiffMultiLineAnnotation:

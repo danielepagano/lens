@@ -222,7 +222,7 @@ function emptyState(phase: ParseState['phase']): ParseState {
  * Also folds the currentToken into its slot so that values without a trailing
  * space (e.g. `--node /chapter-1` submitted by pressing Enter) are captured.
  */
-export function buildArgs(state: ParseState): ParsedArgs {
+export function buildArgs(state: ParseState, def: CommandDefinition | null = null): ParsedArgs {
   const positional: Record<string, string | string[]> = { ...state.completedPositional }
   const options: Record<string, string | boolean | string[]> = { ...state.completedOptions }
 
@@ -246,6 +246,15 @@ export function buildArgs(state: ParseState): ParsedArgs {
       } else {
         positional[name] = state.currentToken
       }
+    }
+  }
+
+  // Handle trailing flag without space (e.g. "--replace" typed but not yet followed by space)
+  if (state.currentToken.startsWith('--') && def?.options) {
+    const flagName = state.currentToken.slice(2)
+    const opt = def.options.find((o) => o.name === flagName)
+    if (opt && (opt.valueType ?? 'flag') === 'flag') {
+      options[flagName] = true
     }
   }
 

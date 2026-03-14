@@ -13,31 +13,24 @@ const ANNOTATION_OPEN_RE =
 // Closing line of a multi-line annotation: `]: #`
 const ANNOTATION_END_RE = /^\s*\]:\s*#\s*$/
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function pushRemovedBlockquotes(
+function pushRemovedContent(
   into: string[],
   removedByLine: Map<number, RemovedGroup[]>,
   lineNo: number,
-  overlay: NodeTransactionOverlay | null,
 ): void {
   const groups = removedByLine.get(lineNo)
-  if (groups?.length) {
-    for (const g of groups) {
-      const body = g.lines.length ? g.lines.map(escapeHtml).join('\n') : ''
-      into.push(`<blockquote class="transaction-removed"><pre>${body}</pre></blockquote>`)
-    }
-  } else if (overlay?.removedGroups.length) {
-    for (const g of overlay.removedGroups) {
-      const body = g.lines.length ? g.lines.map(escapeHtml).join('\n') : ''
-      into.push(`<blockquote class="transaction-removed"><pre>${body}</pre></blockquote>`)
-    }
+  if (!groups?.length) return
+  for (const g of groups) {
+    const content = g.lines.join('\n').trim()
+    if (!content) continue
+    // Output raw markdown inside a div - blank lines let markdown-it process content
+    into.push('')
+    into.push('<div class="transaction-removed">')
+    into.push('')
+    into.push(content)
+    into.push('')
+    into.push('</div>')
+    into.push('')
   }
 }
 
@@ -48,7 +41,6 @@ export interface RemovedGroup {
 
 export interface NodeTransactionOverlay {
   addedLines: Set<number>
-  addedLineTexts: Set<string>
   removedGroups: RemovedGroup[]
 }
 
@@ -125,16 +117,25 @@ function renderAnnotationWithBody(
     const bodyStartLine = bodyStart + 1
     for (let k = 0; k < bodyLines.length; k++) {
       const fileLine = bodyStartLine + k
+      pushRemovedContent(output, removedByLine, fileLine)
+
       let outLine = bodyLines[k]
       const isAdded =
         overlay &&
-        (overlay.addedLineTexts.has(outLine.trim()) ||
-          (overlay.addedLines.has(fileLine) && outLine.trim() !== ''))
+        overlay.addedLines.has(fileLine) &&
+        outLine.trim() !== ''
       if (isAdded) {
-        pushRemovedBlockquotes(output, removedByLine, fileLine, overlay)
-        outLine = `<span class="transaction-added">${escapeHtml(outLine)}</span>`
+        // Wrap in div, blank lines let markdown-it process content inside
+        output.push('')
+        output.push('<div class="transaction-added">')
+        output.push('')
+        output.push(outLine)
+        output.push('')
+        output.push('</div>')
+        output.push('')
+      } else {
+        output.push(outLine)
       }
-      output.push(outLine)
     }
     if (hasClose) {
       const afterClose = nextNonEmpty(lines, j + 1)
@@ -249,26 +250,39 @@ export function preprocessAnnotations(
       continue
     }
 
-    let outLine = line
+    pushRemovedContent(result, removedByLine, lineNo)
+
     const isAdded =
       overlay &&
       !isAnnotationLine(line) &&
-      (overlay.addedLineTexts.has(line.trim()) ||
-        (overlay.addedLines.has(lineNo) && line.trim() !== ''))
+      overlay.addedLines.has(lineNo) &&
+      line.trim() !== ''
     if (isAdded) {
-      pushRemovedBlockquotes(result, removedByLine, lineNo, overlay)
-      outLine = `<span class="transaction-added">${escapeHtml(line)}</span>`
+      // Wrap in div, blank lines let markdown-it process content inside
+      result.push('')
+      result.push('<div class="transaction-added">')
+      result.push('')
+      result.push(line)
+      result.push('')
+      result.push('</div>')
+      result.push('')
+    } else {
+      result.push(line)
     }
-    result.push(outLine)
     i++
   }
 
   if (trailingRemoved.length > 0) {
     for (const g of trailingRemoved) {
-      const body = g.lines.length ? g.lines.map(escapeHtml).join('\n') : ''
-      result.push(
-        `<blockquote class="transaction-removed"><pre>${body}</pre></blockquote>`,
-      )
+      const content = g.lines.join('\n').trim()
+      if (!content) continue
+      result.push('')
+      result.push('<div class="transaction-removed">')
+      result.push('')
+      result.push(content)
+      result.push('')
+      result.push('</div>')
+      result.push('')
     }
   }
 
@@ -289,7 +303,6 @@ export function buildNodeTransactionOverlay(
   if (!file) return null
 
   const addedLines = new Set<number>()
-  const addedLineTexts = new Set<string>()
   const removedGroups: RemovedGroup[] = []
 
   for (const hunk of file.hunks as DiffHunk[]) {
@@ -298,11 +311,16 @@ export function buildNodeTransactionOverlay(
     let pendingBefore = newLine
 
     for (const line of hunk.lines as DiffLine[]) {
-      if (line.kind === 'add') {
+      if (line.kind === 'context') {
+        // Context lines exist in new file, increment line counter
+        if (pendingRemoved.length > 0) {
+          removedGroups.push({ beforeLine: pendingBefore, lines: pendingRemoved })
+          pendingRemoved = []
+        }
+        newLine += 1
+      } else if (line.kind === 'add') {
         if (!line.is_annotation) {
           addedLines.add(newLine)
-          const t = line.text.trim()
-          if (t) addedLineTexts.add(t)
         }
         if (pendingRemoved.length > 0) {
           removedGroups.push({ beforeLine: pendingBefore, lines: pendingRemoved })
@@ -322,9 +340,9 @@ export function buildNodeTransactionOverlay(
     }
   }
 
-  if (addedLines.size === 0 && addedLineTexts.size === 0 && removedGroups.length === 0) {
+  if (addedLines.size === 0 && removedGroups.length === 0) {
     return null
   }
 
-  return { addedLines, addedLineTexts, removedGroups }
+  return { addedLines, removedGroups }
 }

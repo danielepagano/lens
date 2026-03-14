@@ -17,7 +17,7 @@ _ANNOTATION_END_RE = re.compile(r"^\s*\]:\s*#\s*$")
 
 @dataclass
 class DiffLine:
-    kind: Literal["add", "remove"]
+    kind: Literal["add", "remove", "context"]
     text: str
     is_annotation: bool
 
@@ -137,7 +137,10 @@ def parse_unified_diff(text: str) -> list[FileDiff]:
             content = raw[1:]
             is_ann, in_remove_annotation = _classify_annotation(content, in_remove_annotation)
             current_hunk.lines.append(DiffLine(kind="remove", text=content, is_annotation=is_ann))
-        # Context lines are skipped — line numbers on the hunk are sufficient.
+        elif raw.startswith(" "):
+            # Context line - include for accurate line number tracking
+            content = raw[1:]
+            current_hunk.lines.append(DiffLine(kind="context", text=content, is_annotation=False))
 
     return files
 

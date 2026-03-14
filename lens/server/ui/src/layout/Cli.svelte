@@ -346,7 +346,7 @@
     const handler = resolveHandler(command)
     const def = COMMAND_DEFINITIONS.find((d) => d.trigger === command) ?? null
     const state = parseCliInput(raw, def)
-    const args = buildArgs(state)
+    const args = buildArgs(state, def)
 
     const ctx: CommandContext = {
       setBusyMessage(message: string | null) { busyMessage = message },
