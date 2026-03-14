@@ -8,6 +8,7 @@
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
   import TransactionResultPanel from './features/transaction/TransactionResultPanel.svelte'
+  import StreamingPreviewPanel from './features/streaming/StreamingPreviewPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
   import { getStats, getNode } from './services/api'
@@ -136,6 +137,7 @@
   {/if}
   <CliOutputPanel />
   <TransactionResultPanel />
+  <StreamingPreviewPanel />
 
   <svelte:fragment slot="bottombar">
     <Cli onCliDone={handleCliDone} />

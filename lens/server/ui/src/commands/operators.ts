@@ -1,5 +1,6 @@
 import { runWrite, runEdit, StreamBusyError, type OperatorEvent } from '../services/api'
 import { cliOutput, treeRefreshTrigger } from '../stores/ui'
+import { streamingPreview } from '../stores/document'
 import type {
   CommandContext,
   CommandDefinition,
@@ -7,6 +8,20 @@ import type {
   CommandModule,
 } from './common'
 import { normalizeAddress } from './common'
+
+function scrollContentToBottom(): void {
+  const content = document.querySelector('[data-testid="markdown-view"]')
+  if (content) {
+    content.scrollTop = content.scrollHeight
+  }
+}
+
+function scrollPreviewIntoView(): void {
+  const preview = document.querySelector('[data-testid="streaming-preview"]')
+  if (preview) {
+    preview.scrollIntoView({ block: 'end', behavior: 'instant' })
+  }
+}
 
 const commands: CommandDefinition[] = [
   {
@@ -59,8 +74,19 @@ const handler: CommandHandler = async (
   const handleEvent = (event: OperatorEvent): void => {
     if (event.type === 'error') {
       errorOutput += event.message
+    } else if (event.type === 'token') {
+      streamingPreview.update((prev) => {
+        if (prev && prev.targetNode === event.node) {
+          return { ...prev, text: prev.text + event.text }
+        }
+        return { targetNode: event.node, text: event.text }
+      })
+      requestAnimationFrame(scrollPreviewIntoView)
     }
   }
+
+  // Scroll to bottom when starting the command
+  scrollContentToBottom()
 
   try {
     let result
@@ -92,6 +118,9 @@ const handler: CommandHandler = async (
       )
     }
 
+    // Clear streaming preview before refreshing
+    streamingPreview.set(null)
+
     if (ctx.onDone) await ctx.onDone()
     treeRefreshTrigger.update((n) => n + 1)
 
@@ -107,6 +136,9 @@ const handler: CommandHandler = async (
     cliOutput.set(null)
     return { clearInput: !result.interrupted }
   } catch (err) {
+    // Clear streaming preview on error
+    streamingPreview.set(null)
+
     if (err instanceof StreamBusyError) {
       ctx.setBusyMessage(err.message)
       return { clearInput: false }

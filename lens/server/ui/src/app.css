@@ -755,6 +755,72 @@ ul.tree-list ul.tree-list {
   opacity: 0.7;
 }
 
+.streaming-preview {
+  margin-top: 0.5rem;
+}
+
+.streaming-preview code {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: transparent;
+  padding: 0;
+}
+
+/* ---- Streaming preview panel ---- */
+
+.streaming-panel {
+  position: fixed;
+  bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  left: 8px;
+  width: 242px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: rgba(16, 40, 80, 0.95);
+  border: 1px solid var(--pico-primary);
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  z-index: 300;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 767px) {
+  .streaming-panel {
+    top: calc(42px + env(safe-area-inset-top, 0px));
+    bottom: auto;
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid var(--pico-primary);
+    border-radius: 0;
+  }
+}
+
+.streaming-label {
+  font-size: 0.8rem;
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.streaming-cancel-btn {
+  background: none;
+  border: 1px solid rgba(147, 197, 253, 0.4);
+  color: #93c5fd;
+  cursor: pointer;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 3px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.streaming-cancel-btn:hover {
+  background: rgba(147, 197, 253, 0.15);
+  border-color: rgba(147, 197, 253, 0.6);
+}
+
 /* ---- Mode switch in TopBar ---- */
 
 .mode-switch {

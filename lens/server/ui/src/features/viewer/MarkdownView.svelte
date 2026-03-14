@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { nodeContent, currentAddress } from '../../stores/document'
+  import { nodeContent, currentAddress, streamingPreview } from '../../stores/document'
   import { stats } from '../../stores/stats'
   import {
     preprocessAnnotations,
@@ -13,6 +13,9 @@
   const md = createMarkdownRenderer()
 
   $: overlay = buildNodeTransactionOverlay($stats?.transaction ?? null, $currentAddress)
+
+  $: isStreamingToCurrentNode =
+    $streamingPreview !== null && $currentAddress === $streamingPreview.targetNode
 
   $: isCursorNode = Boolean($currentAddress && $stats?.cursor && $currentAddress === $stats.cursor)
 
@@ -122,6 +125,11 @@
             {/each}
           </div>
         {/if}
+      </div>
+    {/if}
+    {#if isStreamingToCurrentNode && $streamingPreview}
+      <div class="transaction-added streaming-preview" data-testid="streaming-preview">
+        <code>{$streamingPreview.text}</code>
       </div>
     {/if}
   {:else}
