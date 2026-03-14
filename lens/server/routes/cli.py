@@ -18,20 +18,12 @@ _LENS_ARGV = [sys.executable, "-W", "ignore::SyntaxWarning:pysbd", "-m", "lens.c
 
 _CLI_ALLOWLIST = frozenset(
     {
-        "use",
         "stats",
         "kb",
         "section",
-        "pin",
-        "write",
-        "edit",
         "rewind",
-        "rollback",
-        "commit",
-        "checkpoint",
         "design",
         "dnd",
-        "play",
     }
 )
 

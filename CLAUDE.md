@@ -12,8 +12,7 @@ poetry install
 poe check
 
 # Individual checks
-poe lint       # ruff (auto-fix)
-poe pyright    # type checking
+poe lint       # ruff (auto-fix) + pyright + eslint
 poe test       # pytest (unit tests under lens/core/test, lens/cli/test, lens/dnd/test)
 
 # Run a single test module
@@ -50,7 +49,7 @@ pytest e2e/ -n 0 -v   # same, verbose
 
 ### Test files
 
-- **`e2e/tests/test_api_smoke.py`** — API tests using plain `urllib.request`. Covers `/health`, `/stats`, `/tree`, `/node/<name>`.
+- **`e2e/tests/test_api_smoke.py`** — API tests using plain `urllib.request`. Covers `/health`, `/stats`, `/narrative/tree`, `/narrative/node/<name>`.
 - **`e2e/tests/test_cli.py`** — CLI tests with the `dnd` dataset. Runs `lens stats`, `lens kb get/with-tag`, and `lens write` as subprocesses. Has its own module-scoped `dnd_project` fixture (uses `setup_test_project(dataset="dnd")`).
 - **`e2e/tests/test_browser.py`** — Playwright placeholder. Auto-skipped when Chromium is not installed. Run `playwright install chromium` to enable.
 

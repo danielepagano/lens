@@ -16,7 +16,7 @@ Run from a directory inside a Lens project (a repo that contains `lens.toml`):
 
 - Starts the API server and the Vite dev server.
 - Open **http://localhost:5173** for the frontend with hot module reload.
-- Vite proxies `/health`, `/stats`, `/tree`, `/node/` and all other API paths to FastAPI.
+- Vite proxies `/health`, `/stats`, `/narrative/` and all other API paths to FastAPI.
 - Requires Node.js and npm.
 
 Both support `--host` and `--port` options. The server uses the project (or dataset) rooted at the nearest `lens.toml` above the current working directory.
@@ -33,14 +33,13 @@ Both support `--host` and `--port` options. The server uses the project (or data
 | GET | `/health` | Liveness; returns `{"status": "ok"}`. |
 | GET | `/stats` | Project stats: active narrative, cursor, pending transaction state, dataset, KB counts. Includes inline transaction diff when `has_pending` is true. |
 
-### Narrative tree
+### Narrative
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/narratives` | List all narrative names and the active one. |
-| POST | `/narratives/active` | Switch the active narrative (`{"narrative": "<slug>"}`). |
-| GET | `/tree` | Recursive tree of narrative nodes (address, key, children). Empty in dataset mode. |
-| GET | `/node/{address}` | Node content by address (e.g. `chapter-1/scene-2`). Returns `address`, `content`, `is_folder`, `children`. 404 in dataset mode or if node not found. |
+| POST | `/narrative/narratives/active` | Switch the active narrative (`{"narrative": "<slug>"}`). Narrative list and active come from `/stats`. |
+| GET | `/narrative/tree` | Recursive tree of narrative nodes (address, key, children). Empty in dataset mode. |
+| GET | `/narrative/node/{address}` | Node content by address (e.g. `chapter-1/scene-2`). Returns `address`, `content`, `children`. 404 in dataset mode or if node not found. |
 
 ### Pinning
 

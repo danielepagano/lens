@@ -126,7 +126,7 @@ def main() -> None:
     print("  Quick checks:")
     print(f"    curl {api_url}/health")
     print(f"    curl {api_url}/stats")
-    print(f"    curl {api_url}/tree")
+    print(f"    curl {api_url}/narrative/tree")
     print()
     print("  CLI:")
     print(f"    cd {_PROJECT_DIR}")

@@ -9,8 +9,6 @@ from lens.server.dependencies import get_session
 
 router = APIRouter()
 
-
 @router.get("/health")
 def health(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     return {"status": "ok"}
-

@@ -69,11 +69,14 @@ export interface NodeData {
 }
 
 export const getStats = (): Promise<Stats> => get('/stats') as Promise<Stats>
-export const getTree = (): Promise<TreeNode[]> => get('/tree') as Promise<TreeNode[]>
+export const getTree = (): Promise<TreeNode[]> =>
+  get('/narrative/tree') as Promise<TreeNode[]>
 export const getNode = (addr: string): Promise<NodeData> =>
-  get(`/node/${addr}`) as Promise<NodeData>
+  get(`/narrative/node/${addr}`) as Promise<NodeData>
 export const setActiveNarrative = (slug: string): Promise<{ active: string }> =>
-  post('/narratives/active', { narrative: slug }) as Promise<{ active: string }>
+  post('/narrative/narratives/active', { narrative: slug }) as Promise<{
+    active: string
+  }>
 
 export interface CliEventOut {
   type: 'out'

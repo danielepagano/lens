@@ -36,14 +36,14 @@ lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
 pyright = "pyright"
 lint-py = "ruff check . --fix"
 lint-ts = { shell = "cd lens/server/ui && npm run lint" }
-lint = { sequence = ["lint-py", "lint-ts"] }
+lint = { sequence = ["lint-py", "lint-ts", "pyright"] }
 test = "pytest lens/core/test lens/cli/test lens/server/test lens/dnd/test -n auto --ignore=lens/core/test/integration -q"
 test-integration = "pytest lens/core/test/integration -n 0 -q"
 test-e2e = "pytest e2e/ -n 0 -q"
 test-ui = { shell = "cd lens/server/ui && npm install --silent && npm test" }
 dev = { cmd = "python scripts/dev_project.py" }
 build-ui = { shell = "cd lens/server/ui && npm install --silent && npm run build" }
-check = { sequence = ["lint", "pyright", "test", "test-integration", "test-ui", "build-ui", "test-e2e"] }
+check = { sequence = ["lint", "test", "test-integration", "test-ui", "build-ui", "test-e2e"] }
 
 [tool.pytest.ini_options]
 addopts = "-W ignore::SyntaxWarning:pysbd"

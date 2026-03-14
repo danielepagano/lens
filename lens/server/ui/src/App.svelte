@@ -16,6 +16,10 @@
   import { applyStats, stats } from './stores/stats'
   import { appMode, selectedKbId, kbFilters } from './stores/ui'
 
+  function hashKbParam(): string | null {
+    return get(appMode) === 'kb' ? get(selectedKbId) : null
+  }
+
   interface ParsedHash {
     path: string
     kb: string | null
@@ -52,8 +56,7 @@
       const data = await getNode(addr)
       currentAddress.set(data.address)
       nodeContent.set(data.content)
-      const currentKb = get(selectedKbId)
-      window.location.hash = buildHash(data.address, currentKb)
+      window.location.hash = buildHash(data.address, hashKbParam())
     } catch (e) {
       console.error('Navigation failed:', e)
     }

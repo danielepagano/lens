@@ -35,10 +35,10 @@ class TestApiSmoke:
         assert "effective_pins_at_cursor" in data
 
     def test_tree_returns_list(self, live_server_url: str) -> None:
-        with urllib.request.urlopen(f"{live_server_url}/tree") as resp:
+        with urllib.request.urlopen(f"{live_server_url}/narrative/tree") as resp:
             data = json.loads(resp.read())
         assert isinstance(data, list)
-        # /tree now returns the children of the active narrative (not the root level);
+        # /narrative/tree returns the children of the active narrative (not the root level);
         # each item must have address, key, and children fields if any items are present.
         for node in data:
             assert "address" in node
@@ -46,6 +46,6 @@ class TestApiSmoke:
             assert "children" in node
 
     def test_node_content(self, live_server_url: str) -> None:
-        with urllib.request.urlopen(f"{live_server_url}/node/story") as resp:
+        with urllib.request.urlopen(f"{live_server_url}/narrative/node/story") as resp:
             data = json.loads(resp.read())
         assert "Lorem ipsum" in data["content"]
