@@ -108,6 +108,7 @@
       nodeTree: nodeTreeCache,
       fetchNodeTree,
       kbKeyThreshold: 10,
+      stats: $stats,
     }
   }
 

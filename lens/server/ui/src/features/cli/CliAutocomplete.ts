@@ -1,6 +1,6 @@
 import type { CommandGroup, CommandDefinition } from '../../commands/common'
 import type { ParseState } from '../../commands/parser'
-import type { TreeNode } from '../../services/api'
+import type { TreeNode, Stats } from '../../services/api'
 
 export interface Suggestion {
   label: string
@@ -17,6 +17,7 @@ export interface DataSources {
   nodeTree: TreeNode[] | null
   fetchNodeTree: () => void
   kbKeyThreshold: number
+  stats: Stats | null
 }
 
 /** Build command-level suggestions (no definition resolved yet). */
@@ -100,7 +101,7 @@ function getPositionalSuggestions(
 ): Suggestion[] {
   switch (payload.valueType ?? 'flag') {
     case 'slug':
-      return getSlugSuggestions(payload.slugSource ?? '', currentToken, group)
+      return getSlugSuggestions(payload.slugSource ?? '', currentToken, group, sources.stats)
     case 'kb-id':
       return getKbIdSuggestions(currentToken, group, sources)
     case 'address':
@@ -114,9 +115,21 @@ function getSlugSuggestions(
   slugSource: string,
   prefix: string,
   group: CommandGroup,
+  stats: Stats | null,
 ): Suggestion[] {
-  // Comma-separated static list
-  const values = slugSource.split(',').map((s) => s.trim()).filter(Boolean)
+  let values: string[]
+
+  // Dynamic stats reference: [stats.field_name]
+  const statsMatch = slugSource.match(/^\[stats\.(\w+)\]$/)
+  if (statsMatch) {
+    const field = statsMatch[1] as keyof Stats
+    const statsValue = stats?.[field]
+    values = Array.isArray(statsValue) ? statsValue : []
+  } else {
+    // Comma-separated static list
+    values = slugSource.split(',').map((s) => s.trim()).filter(Boolean)
+  }
+
   const matches = prefix ? values.filter((v) => v.startsWith(prefix)) : values
   return (matches.length > 0 ? matches : values).map((v) => ({
     label: v,

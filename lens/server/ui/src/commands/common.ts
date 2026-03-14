@@ -6,7 +6,7 @@ export interface CliPayload {
   name: string
   hint?: string
   valueType?: CliPayloadType  // default: 'flag'
-  slugSource?: string         // comma-separated static list OR store key (e.g. 'llms')
+  slugSource?: string         // comma-separated static list OR data from stats (e.g. '[stats.available_llms])')
   repeatable?: boolean
   required?: boolean
 }

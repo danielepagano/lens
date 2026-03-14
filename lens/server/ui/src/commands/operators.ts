@@ -14,7 +14,7 @@ export const OPERATOR_COMMANDS: CommandDefinition[] = [
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
-      { name: 'llm', valueType: 'slug', slugSource: 'local,cloud' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
       { name: 'retry' },
     ],
   },
