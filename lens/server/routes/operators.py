@@ -164,14 +164,9 @@ async def _run_operator_task(
 
 def _make_on_token(
     event_queue: asyncio.Queue[dict[str, Any] | None],
-    node_address: str | Callable[[], str],
 ) -> Any:
     async def on_token(chunk: str) -> None:
-        await event_queue.put({
-            "type": "token",
-            "text": chunk,
-            "node": _resolve_node(node_address),
-        })
+        await event_queue.put({"type": "token", "text": chunk})
     return on_token
 
 
@@ -185,6 +180,7 @@ def _start_operator_stream(
 ) -> StreamingResponse:
     """Acquire the stream lock, launch operator task, return SSE response."""
     lock.acquire(operator_name)
+    event_queue.put_nowait({"type": "target", "node": _resolve_node(node_address)})
 
     task = asyncio.ensure_future(
         _run_operator_task(
@@ -215,7 +211,7 @@ async def operator_write(
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue, node_addr)
+    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return WriteOperator.run_inline(
@@ -248,7 +244,7 @@ async def operator_play(
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue, node_addr)
+    on_token = _make_on_token(event_queue)
 
     extra_params = {"as_pc": body.as_pc} if body.as_pc is not None else None
 
@@ -282,12 +278,14 @@ async def operator_design(
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
-    async def on_stream_target(addr: str) -> None:
-        target_ref[0] = addr
-
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue, lambda: target_ref[0])
+
+    async def on_stream_target(addr: str) -> None:
+        target_ref[0] = addr
+        await event_queue.put({"type": "target", "node": addr})
+
+    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return DesignOperator.run_design(
@@ -356,7 +354,7 @@ async def operator_edit(
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue, node_addr)
+    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return EditOperator.run_mutation(
@@ -415,7 +413,7 @@ async def operator_section_end(
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue, node_addr)
+    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return SectionOperator.run_end(
@@ -443,7 +441,7 @@ async def operator_collate(
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue, node_addr)
+    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return CollateOperator.run_collate(

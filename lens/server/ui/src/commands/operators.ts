@@ -128,16 +128,19 @@ const handler: CommandHandler = async (
   const handleEvent = (event: OperatorEvent): void => {
     if (event.type === 'error') {
       errorOutput += event.message
-    } else if (event.type === 'token') {
+    } else if (event.type === 'target') {
       const current = get(currentAddress)
-      if (event.node && current !== event.node) {
+      if (current !== event.node) {
         ctx.navigate?.(event.node)
       }
+      streamingPreview.update((prev) => ({
+        targetNode: event.node,
+        text: prev?.text ?? '',
+      }))
+    } else if (event.type === 'token') {
       streamingPreview.update((prev) => {
-        if (prev && prev.targetNode === event.node) {
-          return { ...prev, text: prev.text + event.text }
-        }
-        return { targetNode: event.node, text: event.text }
+        if (prev) return { ...prev, text: prev.text + event.text }
+        return { targetNode: '', text: event.text }
       })
       requestAnimationFrame(scrollPreviewIntoView)
     }
