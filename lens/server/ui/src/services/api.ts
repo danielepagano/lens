@@ -160,10 +160,14 @@ export async function cancelStream(): Promise<void> {
 
 // ---- Operator streaming API ----
 
+export interface OperatorTargetEvent {
+  type: 'target'
+  node: string
+}
+
 export interface OperatorTokenEvent {
   type: 'token'
   text: string
-  node: string
 }
 
 export interface OperatorDoneEvent {
@@ -182,7 +186,7 @@ export interface OperatorErrorEvent {
   message: string
 }
 
-export type OperatorEvent = OperatorTokenEvent | OperatorDoneEvent | OperatorErrorEvent
+export type OperatorEvent = OperatorTargetEvent | OperatorTokenEvent | OperatorDoneEvent | OperatorErrorEvent
 
 export class StreamBusyError extends Error {
   constructor(
