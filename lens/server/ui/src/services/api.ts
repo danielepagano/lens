@@ -413,6 +413,21 @@ export const narrativePin = (
 ): Promise<PinResponse> =>
   post('/narrative/pin', { operation, ids, node }) as Promise<PinResponse>
 
+export interface RewindParams {
+  address: string
+  line?: number | null
+}
+
+export interface RewindResponse {
+  status: 'ok' | 'error'
+  address?: string
+  line?: number | null
+  detail?: string
+}
+
+export const narrativeRewind = (params: RewindParams): Promise<RewindResponse> =>
+  post('/narrative/rewind', params) as Promise<RewindResponse>
+
 export const getNodeAddresses = async (): Promise<string[]> => {
   const tree = await getTree()
   function flatten(nodes: TreeNode[]): string[] {
