@@ -20,6 +20,7 @@
   let busy = false
   let busyMessage: string | null = null
   let cliInputEl: HTMLTextAreaElement | null = null
+  let bottomBarEl: HTMLDivElement | null = null
   let history: string[] = []
   let historyIndex = -1
   let suggestions: Suggestion[] = []
@@ -479,7 +480,7 @@
   $: showHint = !!computedHint && isKnownCommand
 </script>
 
-<div class="bottom-bar" data-testid="bottom-bar">
+<div class="bottom-bar" data-testid="bottom-bar" bind:this={bottomBarEl}>
   <CliSuggestions
     {suggestions}
     noWrap={$cliOutput !== null}
@@ -500,7 +501,11 @@
           isFocused = true
           updateCommandState()
         }}
-        on:blur={() => {
+        on:blur={(e) => {
+          const next = e.relatedTarget
+          if (next instanceof Node && bottomBarEl?.contains(next)) {
+            return
+          }
           isFocused = false
           updateCommandState()
         }}

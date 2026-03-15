@@ -17,6 +17,7 @@
         class:cli-suggestion--dnd={sug.group === 'dnd'}
         class:cli-suggestion--opt-flag={sug.kind === 'flag'}
         class:cli-suggestion--node-suggest={sug.kind === 'node'}
+        on:pointerdown|preventDefault
         on:click={() => onSelect(sug)}
       >
         {sug.label}
