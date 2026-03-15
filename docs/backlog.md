@@ -18,7 +18,6 @@
 ## Platform
 
 - **Direct editing** of markdown nodes; also surfaces line numbers 
-- **UI for selecting lines/ranges**: use cannot see line numbers in UI!
 - Remaining UI for **KB operations**
 - *Cloud Deployment**: See [Deployment Design](./deployment-design.md). Local machine deploy wirh dynamic dns and caddy already implemented.
 

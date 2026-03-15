@@ -5,7 +5,9 @@
     preprocessAnnotations,
     createMarkdownRenderer,
     buildNodeTransactionOverlay,
+    buildAnnotationLineSet,
   } from '../../utils/markdown'
+  import { linePickMode, linePickSelection } from '../../stores/ui'
 
   // html: true so that <!-- comments --> are rendered as real HTML comments
   // (invisible in browser) rather than as literal text. Safe for a private
@@ -100,6 +102,18 @@
     const path = $currentAddress || ''
     window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
   }
+
+  $: isLinePicking = $linePickMode !== null && $linePickMode.address === $currentAddress
+
+  $: sourceLines = (() => {
+    if (!isLinePicking || !$nodeContent) return []
+    const annoSet = buildAnnotationLineSet($nodeContent)
+    return $nodeContent.split('\n').map((text, i) => ({
+      lineNo: i + 1,
+      text,
+      pickable: !annoSet.has(i + 1),
+    }))
+  })()
 </script>
 
 <article data-testid="markdown-view" class="content">
@@ -114,26 +128,44 @@
         {/each}
       </div>
     {/if}
-    {#if rendered}
-      <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
-      {@html rendered}
-    {/if}
-    {#if isCursorNode}
-      <div class="cursor-indicator-preview">
-        <span class="cursor-indicator">&gt;</span>
-        {#if $stats?.effective_pins_at_cursor?.length}
-          <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
-            {#each $stats.effective_pins_at_cursor as id (id)}
-              <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
-            {/each}
+    {#if isLinePicking}
+      <div class="line-picker" data-testid="line-picker">
+        {#each sourceLines as { lineNo, text, pickable } (lineNo)}
+          <div
+            class="line-row"
+            class:pickable
+            class:annotation={!pickable}
+            role={pickable ? 'button' : 'presentation'}
+            tabindex={pickable ? 0 : -1}
+            on:click={() => pickable && linePickSelection.set(lineNo)}
+            on:keydown={(e) => { if (pickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); linePickSelection.set(lineNo) } }}
+          >
+            <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
           </div>
-        {/if}
+        {/each}
       </div>
-    {/if}
-    {#if isStreamingToCurrentNode && $streamingPreview}
-      <div class="transaction-added streaming-preview" data-testid="streaming-preview">
-        <code>{$streamingPreview.text}</code>
-      </div>
+    {:else}
+      {#if rendered}
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
+        {@html rendered}
+      {/if}
+      {#if isCursorNode}
+        <div class="cursor-indicator-preview">
+          <span class="cursor-indicator">&gt;</span>
+          {#if $stats?.effective_pins_at_cursor?.length}
+            <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
+              {#each $stats.effective_pins_at_cursor as id (id)}
+                <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+      {#if isStreamingToCurrentNode && $streamingPreview}
+        <div class="transaction-added streaming-preview" data-testid="streaming-preview">
+          <code>{$streamingPreview.text}</code>
+        </div>
+      {/if}
     {/if}
   {:else}
     <p class="empty-state">Select a node from the tree.</p>

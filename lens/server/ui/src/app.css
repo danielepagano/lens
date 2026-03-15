@@ -716,6 +716,55 @@ ul.tree-list li {
   cursor: pointer;
 }
 
+/* ---- Line picker (source view for line-number selection) ---- */
+
+.line-picker {
+  font-family: monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.line-row {
+  display: flex;
+  background-color: transparent;
+  gap: 0.6rem;
+  padding: 0;
+  border-radius: 0;
+}
+
+.line-row.pickable {
+  cursor: pointer;
+}
+
+.line-row.pickable:hover,
+.line-row.pickable:focus {
+  background: var(--pico-primary-background, rgba(99, 102, 241, 0.12));
+  outline: none;
+}
+
+.line-number {
+  color: var(--pico-muted-color, #888);
+  min-width: 2.5rem;
+  text-align: right;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.line-text {
+  white-space: pre;
+  text-wrap: auto;
+  text-align: left;
+  overflow-x: hidden;
+  font-size: 0.8rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.line-row.annotation .line-number,
+.line-row.annotation .line-text {
+  opacity: 0.3;
+}
+
 /* ---- Annotation dividers and headings in rendered markdown ---- */
 
 /* Thin link bar for empty/self-closing annotations */

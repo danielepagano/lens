@@ -5,7 +5,8 @@
   import type { ParseState } from '../commands/parser'
   import { getCommandSuggestions, getSuggestions, type Suggestion, type DataSources } from '../features/cli/CliAutocomplete'
   import CliSuggestions from '../features/cli/CliSuggestions.svelte'
-  import { cliOutput, transactionResult, treeRefreshTrigger } from '../stores/ui'
+  import { cliOutput, transactionResult, treeRefreshTrigger, linePickMode, linePickSelection } from '../stores/ui'
+  import { currentAddress } from '../stores/document'
   import { stats } from '../stores/stats'
   import { getKbItems, getTree } from '../services/api'
   import type { TreeNode } from '../services/api'
@@ -65,6 +66,20 @@
     if (!command) return
     history = [...history, command].slice(-MAX_HISTORY)
     historyIndex = -1
+  }
+
+  /**
+   * Convert a display-format address (e.g. '/', '/chapter-1') to the API-format
+   * address that navigate() and $currentAddress use (e.g. 'story', 'story/chapter-1').
+   * Returns null if the tree cache isn't loaded yet.
+   */
+  function displayAddrToNavAddr(displayAddr: string): string | null {
+    if (!nodeTreeCache || nodeTreeCache.length === 0) return null
+    const root = nodeTreeCache[0]!
+    const normalized = displayAddr.replace(/\/+$/g, '')
+    if (normalized === '' || normalized === '/') return root.address
+    if (normalized.startsWith('/')) return root.address + normalized
+    return normalized
   }
 
   function parseCommandAndPayload(value: string): { command: string | null; payload: string } {
@@ -170,6 +185,28 @@
 
     // Get payload-level suggestions from the autocomplete engine
     suggestions = getSuggestions(state, activeCommandDef, makeDataSources())
+
+    // Line pick mode: activate when the current slot is 'line' and an address is available
+    const activeType = currentParseState?.activePayload?.valueType
+    if (activeType === 'line' && activeCommandDef) {
+      const addrPos = activeCommandDef.positional?.find((p) => p.valueType === 'address')
+      const displayAddr = addrPos
+        ? (currentParseState!.completedPositional[addrPos.name] as string | undefined)
+        : undefined
+      if (displayAddr) {
+        fetchNodeTree() // ensure cache is available; triggers updateCommandState() on load
+        const navAddr = displayAddrToNavAddr(displayAddr)
+        if (navAddr) {
+          linePickMode.set({ address: navAddr })
+          if (navAddr !== $currentAddress) void navigate?.(navAddr)
+        }
+        // else: tree not loaded yet — updateCommandState() will rerun once it loads
+      } else {
+        linePickMode.set(null)
+      }
+    } else {
+      linePickMode.set(null)
+    }
   }
 
   // --- Completion helpers ---
@@ -202,7 +239,8 @@
         // Insert the flag and a space
         replaceCurrentToken(sug.value + ' ')
         return
-      case 'node':
+      case 'node': {
+        const inAddressSlot = currentParseState?.activePayload?.valueType === 'address'
         if (sug.value === '/') {
           // Root: insert bare '/' (no trailing space) when it has children so the parser
           // keeps '/' as the current typing token and autocomplete can show children.
@@ -212,7 +250,13 @@
           // Non-root: drill into children with trailing '/', or complete with space.
           replaceCurrentToken(sug.value + (sug.nodeHasChildren ? '/' : ' '))
         }
+        if (inAddressSlot) {
+          const displayAddr = sug.value.replace(/\/+$/, '') || '/'
+          const navAddr = displayAddrToNavAddr(displayAddr)
+          if (navAddr && navAddr !== $currentAddress) void navigate?.(navAddr)
+        }
         return
+      }
     }
   }
 
@@ -247,6 +291,13 @@
     }
     input = value
     updateCommandState()
+    // Auto-navigate when the user manually drills into an address with /
+    if (currentParseState?.activePayload?.valueType === 'address' &&
+        currentParseState.currentToken.endsWith('/')) {
+      const displayPartial = currentParseState.currentToken.replace(/\/+$/, '') || '/'
+      const navAddr = displayAddrToNavAddr(displayPartial)
+      if (navAddr && navAddr !== $currentAddress) void navigate?.(navAddr)
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -356,6 +407,8 @@
     pushHistory(raw)
     busy = true
     busyMessage = null
+    linePickMode.set(null)
+    linePickSelection.set(null)
     cliOutput.set(null)
     transactionResult.set(null)
 
@@ -384,6 +437,14 @@
   }
 
   // --- Computed hint ---
+
+  // Inject a picked line number into the CLI input
+  $: if ($linePickSelection !== null) {
+    const n = $linePickSelection
+    linePickSelection.set(null)
+    replaceCurrentToken(String(n) + ' ')
+    focusCliInput()
+  }
 
   $: computedHint = (() => {
     if (!activeCommandDef || !isKnownCommand) return ''

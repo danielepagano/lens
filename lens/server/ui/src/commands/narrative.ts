@@ -27,7 +27,7 @@ const commands: CommandDefinition[] = [
     group: 'narrative',
     positional: [
       { name: 'address', valueType: 'address', required: true, hint: 'node address' },
-      { name: 'line', valueType: 'int', required: false, hint: 'line number' },
+      { name: 'line', valueType: 'line', required: false, hint: 'line number' },
     ],
   },
 ]

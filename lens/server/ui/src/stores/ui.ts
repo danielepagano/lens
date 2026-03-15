@@ -25,6 +25,13 @@ export const transactionResult = writable<TransactionResultState | null>(null)
 // KB state
 export const selectedKbId = writable<string | null>(null)
 
+// Line pick mode: active when CLI is waiting for a line number input
+export interface LinePickState {
+  address: string
+}
+export const linePickMode = writable<LinePickState | null>(null)
+export const linePickSelection = writable<number | null>(null)
+
 export interface KbFilterState {
   type: string
   tags: string[]

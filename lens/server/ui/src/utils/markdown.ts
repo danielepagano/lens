@@ -331,6 +331,31 @@ export function preprocessAnnotations(
   return result.join('\n')
 }
 
+/**
+ * Return the set of 1-indexed line numbers that are part of annotation or
+ * front-matter blocks in the given raw markdown content. These lines are
+ * structural and not valid targets for line-pick operations.
+ */
+export function buildAnnotationLineSet(content: string): Set<number> {
+  const lines = content.split('\n')
+  const result = new Set<number>()
+  let inBlock = false
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!
+    const lineNo = i + 1
+    if (inBlock) {
+      result.add(lineNo)
+      if (ANNOTATION_END_RE.test(line)) inBlock = false
+    } else if (ANNOTATION_RE.test(line)) {
+      result.add(lineNo)
+    } else if (ANNOTATION_OPEN_RE.test(line) || FRONT_MATTER_OPEN_RE.test(line)) {
+      result.add(lineNo)
+      inBlock = true
+    }
+  }
+  return result
+}
+
 /** Shared markdown-it instance with settings matching the app's rendering needs. */
 export function createMarkdownRenderer(): MarkdownIt {
   return new MarkdownIt({ html: true, linkify: true, typographer: true })

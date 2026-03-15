@@ -66,8 +66,8 @@ const commands: CommandDefinition[] = [
     group: 'narrative',
     positional: [
       { name: 'address', valueType: 'address', required: true, hint: "node to edit" },
-      { name: 'start', valueType: 'int', required: true, hint: 'start line number' },
-      { name: 'end', valueType: 'int', required: true, hint: 'end line number' },
+      { name: 'start', valueType: 'line', required: true, hint: 'start line number' },
+      { name: 'end', valueType: 'line', required: true, hint: 'end line number' },
       { name: 'prompt', valueType: 'string', required: false, hint: "prompt or text to --replace" },
     ],
     options: [
@@ -95,8 +95,8 @@ const commands: CommandDefinition[] = [
     positional: [
       { name: 'id', valueType: 'slug', required: true, hint: 'section ID for the new child' },
       { name: 'address', valueType: 'address', required: true, hint: 'node address to section' },
-      { name: 'start', valueType: 'int', required: true, hint: 'start line' },
-      { name: 'end', valueType: 'int', required: true, hint: 'end line' },
+      { name: 'start', valueType: 'line', required: true, hint: 'start line' },
+      { name: 'end', valueType: 'line', required: true, hint: 'end line' },
     ],
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true },
