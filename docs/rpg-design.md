@@ -13,10 +13,10 @@ With that said, aiming for "just as good as the table" or "just as polished as a
 Let's look at some GM tasks, and what a Lens with AI does the job:  
 - **Understand what the players are trying to do, and which rules apply, then make mechanical decisions about what the players are trying to do**: we always need this, but we can compartmentalize some of this knowledge as we don't need combat rules out of combat, etc.
 - **Control non-player characters and have them follow (mostly) the same rules**: we need to specifically classify player characters as such and pin them to the session at all time; NPC's would be different objects and the AI is free to control the, as they are differently annotated. Very specific operators could simulate an NPC generating dialog, reinforcing their voice, and even limiting or distorting the information available to that NPC, running then in "their own AI sandbox" so to speak.
-- **Bring the world to life in an actionable way to players through words, and have it react appropriately**: having dedicated operators and pins greatly improves our ability to surface the right details, as the same room would have very different interaction hooks during exploration, social interaction, or combat.
+- **Bring the world to life in an actionable way to players through words, and have it react appropriately**: the pinning system surfaces the right details for the current scene. An encounter object carries the specific interaction hooks — the same bridge can be a peaceful crossing or an ambush depending on what's prepared. `play` reads the encounter and adapts.
 - **Enforce the world's continuity**: When something interesting happens, we have mechanisms to remember it in the KB; maybe a location changed, or an NPC has something new to remember. This is on top of fractal summarization, which keeps more relevant details closer and keeps the context size small for the far past.
-- **Let players have agency while also letting the story move forward**: this is careful operator engineering, and situational operators help a lot with this, because it sets us up to have the players learn, do, or "be between things" and if we notice that we can move things along with a different operator.
-- **Put the players in interesting and difficult situations so they can use their skills and guile to succeed**: a lot of this is good setup with can use with design operators that mostly seed KB objects. We can even obfuscate secrets in narrative or KB nodes.
+- **Let players have agency while also letting the story move forward**: the player drives all action through `play`; preparation through encounter objects and fronts ensures the world has momentum and surprises. The `advance` operator moves fronts forward when time passes, creating pressure and consequences without the player having to manage it.
+- **Put the players in interesting and difficult situations so they can use their skills and guile to succeed**: this is the job of `design` — building encounter objects that are fun, fair, and have secrets. The encounter object is the DM's prep; `play` is the DM's execution. Secrets can be encoded so even the player running `design` doesn't see them until play reveals them.
 
 ### The Player-AI Contract
 
@@ -215,69 +215,120 @@ Gathered knowledge about any other object or topic
 <!-- TAG POLICY: tag a `lore` object to point to the object it is about (if any), and not the other way around (it's a separate object to keep it isolated/secret)  -->
 ```
 
+### Encounter (`encounter.*`)
+
+An encounter is any prepared situation for `play` — not just combat. It's the DM's script for a scene that has stakes, participants, and rules beyond "the world is there." A friendly conversation with a merchant who has information, an ambush at a bridge, a chase through a burning market, a puzzle door in a dungeon, a courtroom trial — these are all encounter objects. The encounter carries what `play` needs to run the scene well, and links to the detailed objects (stat blocks, NPC objects, location) that provide depth.
+
+Most encounters are short. If the rules for a situation are simple ("you're talking to a nervous informant who knows X and Y but won't reveal Z"), the encounter object is a few lines. If the rules are complex (a multi-phase boss fight with environmental hazards), the encounter says so concisely and links to a `lore.*` object with the full breakdown. This keeps the encounter object itself always pinnable without blowing the context budget.
+
+```kb
+---
+id: encounter._template
+---
+<!-- A prepared situation for play. Usage: pin this when the scene starts; play reads it as a script. Can be any situation type: combat, social, chase, puzzle, heist, or any mix. Link to participants and relevant objects. -->
+Encounter name (short, evocative)
+
+- Situation: (what's happening, in one or two sentences)
+- Stakes: (what can go wrong, what's at risk)
+- Participants: (who's involved; link npc/faction/stat objects)
+- Scene rules: (special mechanics for this situation — tactical features, environmental effects, conversation goals, chase rules, puzzle mechanics, time pressure. Keep short; link lore object if complex.)
+- Triggers: (what causes the situation to shift — dialog escalates, timer expires, reinforcements arrive, secret is revealed)
+- Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
+
+<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
+<!-- TAG POLICY: tag an encounter with the loc where it takes place and any driving front or npc. For combat encounters, tag with difficulty:low/moderate/high. -->
+```
+
 ## RPG Operators
 
-As we discussed above, we want to cleanly separate "Planning VS Play", so each RPG operator lives in one or other.
+We cleanly separate "Planning VS Play". The key insight: **play needs exactly one operator because the encounter object IS the operator prompt.** A conversation, a combat, a chase, an interrogation, a puzzle — these are not different operators, they are different _preparations_. The encounter object carries the rules, the stakes, the NPCs, and the situation. `play` reads those objects and adapts. This means:
+
+- No rigid mode switching between "combat operator" and "dialog operator"
+- The player can design "you meet NPC X at the bridge" without deciding in advance if it's a friendly chat or a horrible ambush — that's in the encounter object, possibly encoded as a secret
+- Situations can mix freely: a conversation can escalate to combat, a chase can pause for negotiation, all within the same `play` flow
+- Less spoilery: the player directs `design` to set up a meeting, and the encounter object encodes what actually happens
 
 | Operator | Mode | Purpose | Trigger |
 |---|---|---|---|
-| `design` | Plan | Create/update KB objects | As needed |
-| `play` | Play | Prose + roll requests | Default |
-| `converse` | Play | Better conversation via prompts | Player wants dialog |
-| `encounter` | Plan | Aid player in running combat | Rolled initiative |
+| `design` | Plan | Create/update KB objects via design workflows | As needed |
+| `play` | Play | All narrative: prose, dialog, combat, chases, puzzles | Default during play |
 | `advance` | Plan | Updates `front` objects as time passes | Player explicitly passes time |
 
-### Create and Refine Knowledge For Your Game with `design` 
+### Create and Refine Knowledge For Your Game with `design`
 
 A dedicated narrative sub-tree where the conversation is not story, it's collaborative design workspace, with KB objects changes are the product. We can start from a dedicate narrative tree, or create a self-closing tag anywhere in the narrative so we have the story so far. Sub-sections may open for dedicated sub-tasks with specialized prompts.
 
 The model emits certainly emits discursive text and collects answers from the user, but the replies also include fenced blocks compliant with the `kb extract` command format. This lets the model focus on content rather than prose style, and makes extraction deterministic. Secrets work because they are encoded as they come out of the LLM.
 
-The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing but pinning an expanded object like `loc.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
+The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing by pinning an expanded object like `loc.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
 
 The operator _does not_ author static high-level objects like `lore.world` that setup the general setting and tone. Those are added by the player, or they can use a normal edit operator for assistance.
 
-Other Considerations:  
+Other Considerations:
   - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `loc.springfield` by the rules of `loc` there will an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
   - It would be pretty easy to create a `map` operator that uses the `loc` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing non-advance way to remember things.
 
 #### Design objects
-The bulk of the knowledge that drives the design flow lives not in the system prompt but in `design` KB objects that can be pinned into the design sub-tree. The root prompt has a knowledge of what they are and what's in them, and then asks the user what they want to do: a session zero phase sequence, create or refine objects like locations and factions, create example adventure hooks, plan encounters, etc. 
+
+The bulk of the knowledge that drives the design flow lives not in the system prompt but in `design` KB objects that can be pinned into the design sub-tree. The root prompt has knowledge of what they are and what's in them, and then asks the user what they want to do: a session zero phase sequence, create or refine objects like locations and factions, create example adventure hooks, plan encounters, etc.
 
 The operator then creates sub-sections that have that type of design task pinned in their front matter, and can even chain a write operator from what the user asked to do to get the section content started without repetition. When the user is done, we simply call `kb extract` on that design sub-folder and import all the knowledge created! The user can of course skip the chat and create a design operator already pointed to a specific design object, and get going right away.
 
-#### Location build-out
+##### Design workflows and their objects
 
-> TODO: edit one or more locations, correctly linked. Large geography, cities, or structures to explore, from homes to dungeons
+Each design workflow is guided by a `design.*` KB object that the `design` operator pins when the user selects that task. These objects contain instructions for the AI on how to approach that specific build-out task — what to ask, what to look up, what to produce. See the `design.*` objects in the dataset for their content.
 
-#### Adventure build-out
+| Workflow | Design Object | What it produces | Notes |
+|---|---|---|---|
+| Session Zero | `design.session-zero` | `lore.world`, initial `loc.*`, `faction.*`, `front.*` | First thing to run for a new game |
+| Player Character | `design.pc` | `pc.*` objects from character sheets | Player fills most of this; design helps structure it |
+| Location | `design.location` | `loc.*` network with parent links | Geography at any scale |
+| Adventure | `design.adventure` | `front.*` with linked `npc.*`, `faction.*`, `loc.*` | The "what happens next" builder |
+| Encounter | `design.encounter` | `encounter.*` objects | Prepared situations for play (see below) |
+| NPC | `design.npc` | `npc.*` with links and secrets | Recurring characters worth tracking |
 
-> TODO: create or update a front, including related factions and NPCs
+#### Encounter objects: the script for `play`
 
-#### Encounter design
+The central design insight: **an encounter object is not "combat." It's any prepared situation.** A conversation that could go wrong, a negotiation with hidden stakes, a chase through a burning building, a combat with tactical complexity, a puzzle with mechanical rules — or any combination of these in sequence or simultaneously. The encounter object is the _script_ that `play` follows.
 
-The `design.encounter` object's prompt instructs the AI to plan combat encounters using `kb with-tag` and the `balance_encounter` tool: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` with required monsters (fixed IDs and counts), a ranked optional list, difficulty, PC levels (from pinned `pc.*` `level:N` tags), and optional ally CRs. The tool returns up to three proposals as count tables (no XP shown). This could be an iterative process.  
-  - **How encounters are calculated**: the party has an XP budget from PC levels and chosen difficulty (low/moderate/high); allies reduce that budget. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by rank) or, if required alone exceed the budget, suggests reduced counts. The AI picks a proposal and writes the encounter into the narrative.
+This is powerful because:
+1. **The encounter carries its own rules.** If combat is complex, the object says so and links the relevant stat blocks. If it's a simple bar chat, the object just describes the NPC's goals and what they know. No operator switch needed.
+2. **Situations mix naturally.** An encounter that starts as dialog can have a secret trigger for combat. A chase can pause when the quarry turns to negotiate. The object describes the full possibility space; `play` navigates it.
+3. **Secrets stay secret.** The player can tell `design` "I'm going to the bridge to meet the informant" and the encounter object can encode that the informant is actually an ambush. The player doesn't see the encounter object contents during design — they see the design conversation. During play, the AI sees the encounter and acts accordingly.
+4. **Reuse and adaptation.** An encounter object can be re-used (the patrol at the checkpoint is the same every time) or adapted (the party's reputation has changed, so the guards react differently — update the encounter or let `play` figure it out from the pinned front).
 
-If we use this with the `design` it can only emits KB objects, so we must design an **encounter object** (e.g. `encounter.*`) that can be referenced when initiative is rolled; the shape of that object and the workflow will be designed separately, but is should:  
-  - Give an overview of the situation and stakes
-  - Tactical overview of who's figthing, any locations or start conditions, changing conditions, etc. So... the map, without a map.
-  - Link to the selected stat blocks from above. Also include the paramters used, so we know if they are still current.
-  - Link to any relevant objects so we have narrative. This is optional: sometimes it's just a cemetery with zombies (nothing to refer to), while other times it's a known location with a NPC with a front etc.
+##### The `encounter.*` template
 
-Encounters can get stale fast! Situations, allies, character levels all can change. We could have an incomplete encounter with all the parameters, but we can re-balance it on the fly even as initiative is rolled to pick the final set of enemies (this is why we have required VS filler opponents, and are able to add ally stat blocks). This means the `encounter` operator should be able to run this process, and even use the same prompt and NOT emit an encounter object, just do so directly in narrative?
+An encounter object is compact and links to everything `play` needs:
 
-### Play General Scenes with `play`
+- **Situation**: what's happening and why (one or two sentences)
+- **Stakes**: what can go wrong, what's at risk
+- **Participants**: who's involved, linking to `npc.*`, `faction.*`, or `stat.*` objects
+- **Scene rules**: any special mechanics — tactical features, environmental effects, chase rules, conversation goals, puzzle mechanics, time pressure. For most situations this is short. If a situation is mechanically complex (a multi-room dungeon, a heist with phases), the encounter object says so concisely and links to a `lore.*` object with the full rules.
+- **Triggers and transitions**: what causes the situation to shift (dialog escalates to combat, the timer runs out, reinforcements arrive)
+- **Resolution**: how it ends and what changes
 
-The primary operator. Receives directorial intent from the player, authors the scene, maintains the authority model. This is where most time is spent.
+The `design.encounter` workflow uses the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
 
-**Two modes — not a rigid template**:
+##### How encounters are balanced (combat-specific)
 
-*Flow*: Default. The AI narrates freely. The world breathes. NPCs have texture. Scenes develop without requiring stakes at every beat. The AI should hold flow mode for extended stretches — not every paragraph needs pressure, and trying to inject it produces a mechanical, exhausting rhythm.
+The party has an XP budget from PC levels and chosen difficulty (low/moderate/high); allies reduce that budget. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by narrative-fit rank) or, if required alone exceed the budget, suggests reduced counts. Encounters can be re-balanced on the fly — situations change, allies join, character levels shift — so the encounter object stores the parameters used, and `design` can refresh the balance without rebuilding the whole encounter.
+
+### Play with `play`
+
+**One operator. Fast, flexible, and prepared.**
+
+`play` is the only narrative operator during play. It receives directorial intent from the player, authors the scene, and maintains the authority model. Whether the current beat is exploration, conversation, combat, a chase, or a quiet campfire — it's all `play`. What changes is not the operator, but the **preparation**: the knowledge objects pinned to the current scene.
+
+When an `encounter.*` object is pinned, `play` reads it as a script: it knows the situation, the stakes, the participants, and the rules for this specific scene. When no encounter is pinned, `play` operates in general mode — the world breathes, NPCs react, and the AI follows the baseline rules in `rules.engagement`. The transition is seamless and invisible to the operator machinery.
+
+**Two postures — not a mode switch, a continuum**:
+
+*Flow*: Default. The AI narrates freely. Scenes develop without requiring stakes at every beat. Not every paragraph needs pressure, and trying to inject it produces a mechanical, exhausting rhythm. The AI should hold flow for extended stretches — walking through a market, sharing a meal, arriving at a new place.
 
 *Stakes*: When risk is live — something can go wrong, a decision is being forced, a check is warranted. The AI establishes what's at risk, names the check type and DC if needed, and narrates the consequence after the player reports results. The AI never describes outcomes before the roll.
 
-Transitions between modes are fluid, driven by the fiction. The mode is not a piece of data, is a continuum to balance. 
+Transitions between postures are fluid, driven by the fiction. An encounter object may push toward stakes immediately (an ambush) or start in flow (a conversation that could go wrong). The AI reads the room.
 
 **The authority model in practice**:
 - Player input is character intent; the AI authors the attempt and the world's response
@@ -286,37 +337,36 @@ Transitions between modes are fluid, driven by the fiction. The mode is not a pi
 - Declared success is treated as goal, not result; the AI decides if it works or calls for a check
 - The AI holds these limits while staying cooperative — the resistance is the world working correctly, not the AI working against the player
 
-**System prompt idea**: Critical to get right. Posture + authority model + flow/stakes mode description + when to suggest `converse` (long dialogue developing) and `encounter` (initiative is called for). Knows the to call for a `design` session.
+**What encounter objects change about play behavior**:
 
-## Chat with NPC's (or among PC's) with `converse`
+When `play` sees a pinned `encounter.*` object, it uses the encounter's scene rules to calibrate:
+- In combat-heavy encounters: state enemy intent before they act, track tactical features, respect the action economy, direct groups by faction behavior
+- In social encounters: voice NPCs with their concealed goals, let conversations breathe, call for checks only when the PC pushes past what the NPC would naturally give
+- In chase/escape encounters: track distance narratively, introduce complications, respect the exhaustion mechanics
+- In mixed encounters: follow the triggers and transitions defined in the object — a negotiation breaks down into combat, a chase ends in a standoff
+- In encounters with secrets: the AI knows the secret and plays toward revealing it naturally through the fiction
 
-An explicit "we're in conversation" mode. Long conversations are not information-dense but they are often the best parts of a session — relationship-building, deception, revelation under pressure, negotiation. They need room to breathe without the AI feeling compelled to move the plot forward. `play` has authorial impetus to advance the scene; `converse` has explicit direction to resist that impetus.
+Without a pinned encounter, `play` defaults to open-world general narration guided by whatever loc, npc, and front objects are pinned.
 
-Not targeted at a single NPC. The mode covers any conversational scene — one NPC, several, a group council, an interrogation with two suspects in the room. Making it character-specific would be brittle; making it "we're in conversation" gives the player a clear lever they control directly.
+**System prompt**: The `play` system prompt establishes the GM voice, the authority model, and the gates (ADJUDICATE → NARRATE → RESOLVE → ENGAGE from `rules.engagement`). It does NOT hard-code situation types — it tells the AI to read the pinned encounter object (if any) and follow its scene rules. This keeps the system prompt stable across all situation types.
 
-**How it works**: Sub-node. The player directs conversational goals ("Elara probes him about the shipment without revealing what she knows"). The AI voices all participants, including the PC's side if the player's direction is high-level. When the node closes, it summarizes as what changed — relationships shifted, information revealed, commitments made — not as a transcript. Consequences that need to land in the fiction go to `play` or `advance` after.
+### Why not separate operators for dialog and combat?
 
-**System prompt idea**: "You are in a conversation. Voice all participants with their own goals, limits, and things they won't say. The player directs what their character is trying to accomplish. Do not advance the plot or resolve the scene — let the conversation develop. On close, summarize: what changed in relationships, what was revealed, what was decided."
+The original design proposed `converse` and `encounter` as separate operators. We consolidated to just `play` for these reasons:
 
-**Trigger**: Player invokes directly when a conversation warrants it, or `play` suggests it when a dialogue is clearly developing depth.
+1. **Situations are not discrete categories.** A conversation can become combat mid-sentence. A combat encounter can pause for negotiation. Chase and stealth can overlap. Separate operators create artificial boundaries that the fiction doesn't respect.
+2. **The encounter object already does the work.** `converse` was "play with a prompt that says 'we're in conversation'" — but that's just an encounter object with conversational scene rules. `encounter` was "play with stat blocks pinned" — that's just an encounter object with combat scene rules. The abstraction was hiding in the data, not the operator.
+3. **Less for the player to learn.** One operator, one verb. The complexity lives in preparation (design), not execution (play).
+4. **Less spoilery.** The player doesn't signal "I'm entering combat now" by switching operators — they just play, and what happens emerges from what was prepared. The player can tell design "set up a meeting with the informant" without knowing it's actually an ambush; the encounter object encodes that, and `play` reveals it.
+5. **The `play` prompt stays lean.** Instead of a fat system prompt covering all situation types, `play` has a stable core prompt and reads situation-specific rules from the encounter object. Context budget goes to relevant details, not generic instructions.
 
-## Roll initiative! It's an `encounter`
+### Context economy during play
 
-A focused sub-node for structured combat. Applies exactly while initiative is being tracked; exits when initiative ends.
+`play` doesn't need the full campaign graph at every beat. The pinning system already handles this: a scene section pins what's relevant (the encounter, the location, the NPCs present) and unpins what isn't. A combat encounter naturally pins stat blocks and unpins distant lore. A campfire scene pins the location and the NPC present, nothing more. The fractal summarization ensures distant context is available at appropriate resolution.
 
-**Trigger**: Operator, can be called by the player or DM when initiative is rolled. However, the AI needs to have sufficient mechanical content to offer a meaningful encounter. Calling the `design` operator for this task may be required before the encounter can start if it was not planned.
+For particularly heavy encounters (a major boss fight with many stat blocks and environmental rules), the player can open a `section` to focus context. This is an existing mechanism, not a new operator — and it's the player's choice, not forced by the system.
 
-**Setup phase**: The AI describes the encounter — location, what the enemies are trying to accomplish (not fine-grained or "attack," but tactics, and why they're here and what they want... could be just hungry zombies too), and what tactical features of the environment matter. Encounter weight is established narratively here: skirmish, grind, or something to potentially flee from.
-
-**Running phase**: Player describes character actions and reports outcomes. The player actually controls everyone, but the AI is charged to state enemy intent as a director before they act (e.g. "the wounded one falls back, the captain tries to cut off the exit"). The AI will know the skills, powers, and strengths of enemies via stat blocks, and will need to use those facts: casters evade and fire, pack hunters swarm, flyers swoop, etc. Enemies are also characters with goals: a bandit losing may break and run, while the leader may pivot to a hostage gambit when cornered; cultists will sacrifice themselves to complete the ritual; and so on. Player-reported outcomes ("the flanking guard is down, the captain is bloodied") drive the AI's next beat.
-
-**Why not `play`**: Context economy. Combat needs enemy KB objects, terrain, and tactical state — not the full campaign graph. The sub-node architecture enforces this focus naturally.
-
-**System prompt idea**: Something like "Direct enemy tactical intent as a narrator. The player handles all mechanics. Respond to player-reported outcomes. Enemies are characters with goals — let them react, adapt, and make decisions under pressure." but probably more complex so that the AI is smart and respects boundaries.
-
-Sub-node closes with a specialized summary that surfaces to the parent section, focusing on outcome and the state of survivors.
-
-## Pass The Time with `advance` 
+## Pass The Time with `advance`
 
 The world takes its turn the player skips time. This is a lot of like `design`, but specifically designed to update `front` objects in targeted ways; it will also pick up at least one level of objects linked to each front, for context.
 
@@ -349,3 +399,85 @@ The world takes its turn the player skips time. This is a lot of like `design`, 
   - Generates a line to append to the state log (Lens will only look at the last line anyway) 
   - Closes and returns to parent, generating a summary of anything the players would have heard about
   - Emits a follow-up operator to determines how to continue the story: PC's wake up, a messenger arrives, wolfs attack the camp, etc.
+
+## Starting a New Game: The Cold-Start Problem
+
+Starting a new game in Lens requires enough preparation that `play` has something to work with. Without at least a world frame, a PC, and an opening situation, the AI has nothing to ground — it will produce generic, aimless narrative. This section outlines the minimum viable setup and the process to get there.
+
+### The minimum to start playing
+
+To call `play` and get a meaningful response, you need:
+1. **Rules pinned**: `rules.dnd` and `rules.engagement` (provided by the dnd dataset)
+2. **A world frame**: `lore.world` — a compact object describing tone, setting, genre, and key constraints. This is pinned at the narrative root and never changes. The player writes this by hand or adapts it from a source book.
+3. **At least one PC**: `pc.<name>` — enough to describe and voice the character. The player fills this from their character sheet.
+4. **An opening situation**: at minimum, a `loc.*` where you are and some sense of what's happening. Ideally an `encounter.*` for the first scene.
+
+That's it. Everything else — NPCs, factions, fronts, deeper location networks — can be built as you go through `design` sessions between play.
+
+### The setup process
+
+The process has distinct phases, each producing objects that feed the next. The `design.session-zero` workflow guides phase 1–3 in a single design session.
+
+#### Phase 0: Import your setting (optional, manual)
+
+If you have source books (e.g. Grim Hollow), extract or adapt the relevant reference material:
+- Extract rules, spells, stat blocks, items via `ddb-extract` or manual creation
+- These go into the dataset or project knowledge as reference data
+- This is a one-time investment per setting; once done, it's available for any campaign in that setting
+
+#### Phase 1: World frame (`lore.world`)
+
+A compact object (aim for under 500 words) that establishes:
+- Setting name and genre (dark fantasy, space opera, etc.)
+- Tone and atmosphere (grim, whimsical, gritty, mythic)
+- Key constraints (technology level, magic prevalence, social structures)
+- What makes this world different from generic fantasy
+
+This is NOT exhaustive world-building. It's the minimum the AI needs to establish voice and atmosphere. Think of it as the back-of-the-book blurb for the setting.
+
+For deeper world knowledge that `design` needs but `play` doesn't need all the time, create additional `lore.*` objects: `lore.history`, `lore.cosmology`, `lore.factions-overview`, etc. These are pinned during design sessions but NOT during play — they inform the objects that design creates, which are optimized for play use.
+
+#### Phase 2: Player characters (`pc.*`)
+
+For each PC, create an object from the `pc._template`. The player has their character sheet — the object captures what the AI needs to describe and voice the character:
+- Appearance and mannerisms (how they present)
+- How they solve problems (key strengths, not power lists)
+- Context (enough background to flavor interactions)
+
+Tag with `level:N` for encounter balancing. Don't overload — the AI will latch onto every detail you provide. Keep it tight and let the character develop through play.
+
+The `design.pc` workflow helps structure this from a character sheet, asking the right questions and producing a properly tagged object.
+
+#### Phase 3: Starting geography and situation
+
+At minimum, one `loc.*` for where the adventure begins. The `design.session-zero` workflow helps here by asking: where are the PCs, what's the immediate situation, what's the first problem they'll face?
+
+This phase should produce:
+- 1–3 `loc.*` objects (where you are, what's nearby)
+- 0–1 `faction.*` objects (any group relevant to the opening)
+- 0–1 `npc.*` objects (anyone the PCs will interact with immediately)
+- 1 `front.*` (the first dramatic pressure)
+- 1 `encounter.*` (the opening scene)
+
+This is enough to start playing. More objects are built through design sessions as the game progresses.
+
+#### Phase 4: Play and iterate
+
+Once you have the minimum, start playing. After each session (or when the fiction reaches a natural pause), run `design` to:
+- Build encounters for the next scenes you anticipate
+- Create NPCs and locations as the story demands them
+- Update fronts to reflect what happened
+- Run `advance` when time passes
+
+The cycle is: **play → design → play → advance → play → design → ...**
+
+### Objects that help with cold-start
+
+The `design.*` objects in the dataset guide each build-out task. They're not rules — they're instructions for the `design` operator on how to approach a specific type of world-building. See the individual `design.*` objects for their content. The key ones for cold-start:
+
+- `design.session-zero`: Guides the full session-zero process — world frame questions, initial geography, opening situation, first front
+- `design.pc`: Helps structure a PC object from a character sheet
+- `design.encounter`: Builds prepared situations for play, including combat balancing
+- `design.adventure`: Creates fronts with linked NPCs, factions, and locations — the "what happens next" builder
+- `design.location`: Builds location networks with proper parent links
+- `design.npc`: Creates recurring characters with links, goals, and secrets
