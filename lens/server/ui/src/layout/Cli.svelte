@@ -174,6 +174,30 @@
     const state = parseCliInput(input, activeCommandDef)
     currentParseState = state
 
+    // Line pick mode: always update from current input so it clears when history is navigated
+    const activeType = state.activePayload?.valueType
+    if (activeType === 'line' && activeCommandDef) {
+      const addrPos = activeCommandDef.positional?.find((p) => p.valueType === 'address')
+      const displayAddr = addrPos
+        ? (state.completedPositional[addrPos.name] as string | undefined)
+        : undefined
+      if (displayAddr) {
+        fetchNodeTree() // ensure cache is available; triggers updateCommandState() on load
+        const navAddr = displayAddrToNavAddr(displayAddr)
+        if (navAddr) {
+          linePickMode.set({ address: navAddr })
+          if (navAddr !== $currentAddress) void navigate?.(navAddr)
+        }
+        // else: tree not loaded yet — updateCommandState() will rerun once it loads
+      } else {
+        linePickMode.set(null)
+        linePickSelection.set(null)
+      }
+    } else {
+      linePickMode.set(null)
+      linePickSelection.set(null)
+    }
+
     if (!isFocused) {
       suggestions = []
       return
@@ -203,28 +227,6 @@
 
     // Get payload-level suggestions from the autocomplete engine
     suggestions = getSuggestions(state, activeCommandDef, makeDataSources())
-
-    // Line pick mode: activate when the current slot is 'line' and an address is available
-    const activeType = currentParseState?.activePayload?.valueType
-    if (activeType === 'line' && activeCommandDef) {
-      const addrPos = activeCommandDef.positional?.find((p) => p.valueType === 'address')
-      const displayAddr = addrPos
-        ? (currentParseState!.completedPositional[addrPos.name] as string | undefined)
-        : undefined
-      if (displayAddr) {
-        fetchNodeTree() // ensure cache is available; triggers updateCommandState() on load
-        const navAddr = displayAddrToNavAddr(displayAddr)
-        if (navAddr) {
-          linePickMode.set({ address: navAddr })
-          if (navAddr !== $currentAddress) void navigate?.(navAddr)
-        }
-        // else: tree not loaded yet — updateCommandState() will rerun once it loads
-      } else {
-        linePickMode.set(null)
-      }
-    } else {
-      linePickMode.set(null)
-    }
   }
 
   // --- Completion helpers ---
@@ -378,18 +380,21 @@
         historyIndex--
         input = history[historyIndex] ?? ''
       }
+      updateCommandState()
       return
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      if (historyIndex === -1) return
-      if (historyIndex < history.length - 1) {
+      if (historyIndex === -1) {
+        input = ''
+      } else if (historyIndex < history.length - 1) {
         historyIndex++
         input = history[historyIndex] ?? ''
       } else {
         historyIndex = -1
         input = ''
       }
+      updateCommandState()
     }
   }
 
