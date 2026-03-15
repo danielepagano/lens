@@ -1006,7 +1006,11 @@ class KnowledgeStore:
             types.update(ds.list_types())
         return sorted(types)
 
-    def list_ids(self, type_filter: str | None = None) -> list[str]:
+    def list_ids(
+        self,
+        type_filter: str | None = None,
+        include_templates: bool = False,
+    ) -> list[str]:
         """Return all canonical IDs, optionally filtered by type, across project and datasets."""
         ids: set[str] = set()
         type_lower = type_filter.lower() if type_filter else None
@@ -1021,7 +1025,7 @@ class KnowledgeStore:
                 if not type_dir.is_dir():
                     continue
                 for f in type_dir.glob("*.md"):
-                    if f.stem != "_template":
+                    if include_templates or f.stem != "_template":
                         ids.add(f"{type_dir.name}.{f.stem}")
 
         _scan_store(self)

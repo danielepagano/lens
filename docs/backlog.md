@@ -17,8 +17,7 @@
 
 ## Platform
 
-- **Direct editing** of markdown nodes; also surfaces line numbers 
-- Remaining UI for **KB operations**
+- **Direct editing** of markdown nodes 
 - *Cloud Deployment**: See [Deployment Design](./deployment-design.md). Local machine deploy wirh dynamic dns and caddy already implemented.
 
 ## Ideas

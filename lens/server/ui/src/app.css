@@ -1198,7 +1198,7 @@ ul.kb-item-list {
 
 .kb-viewer-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
@@ -1217,6 +1217,172 @@ ul.kb-item-list {
   flex: 1;
 }
 
+.kb-viewer-tags-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.kb-viewer-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  background: var(--pico-secondary-background);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 3px;
+  padding: 0.05rem 0.2rem;
+  font-size: 0.75rem;
+}
+
+.kb-viewer-tag-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.kb-viewer-tag-remove:hover {
+  opacity: 1;
+}
+
+.kb-viewer-tag-input-wrap {
+  position: relative;
+  min-width: 6rem;
+}
+
+.kb-viewer-tag-input {
+  width: 100%;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+}
+
+.kb-viewer-actions {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.kb-viewer-action-strip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.75rem;
+}
+
+.kb-viewer-action-strip .kb-action-btn {
+  height: 1.75rem;
+  padding: 0 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1;
+  border-radius: 3px;
+  border: 1px solid var(--pico-muted-border-color);
+  background: none;
+  color: var(--pico-muted-color);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kb-viewer-action-strip .kb-action-btn:hover:not(:disabled) {
+  background: var(--pico-secondary-hover-background);
+  color: var(--pico-color);
+}
+
+.kb-viewer-action-strip .kb-action-btn-primary {
+  border-color: var(--pico-primary-background);
+  background: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+}
+
+.kb-viewer-action-strip .kb-action-btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.kb-viewer-action-strip .kb-action-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kb-viewer-action-strip .kb-action-btn-icon {
+  padding: 0 0.4rem;
+  font-size: 0.9rem;
+}
+
+.kb-viewer-menu-wrap {
+  position: relative;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.kb-viewer-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 100;
+  min-width: 10rem;
+  padding: 0.35rem;
+  background: var(--pico-background-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.kb-viewer-menu [role="menuitem"],
+.kb-viewer-menu button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--pico-color);
+  border-radius: 3px;
+}
+
+.kb-viewer-menu [role="menuitem"]:hover,
+.kb-viewer-menu button:hover {
+  background: var(--pico-secondary-hover-background);
+}
+
+.kb-menu-delete-confirm,
+.kb-menu-rename,
+.kb-menu-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.kb-menu-delete-confirm span,
+.kb-menu-rename input,
+.kb-menu-copy input {
+  flex: 1;
+  min-width: 8rem;
+  font-size: 0.8rem;
+}
+
+.kb-menu-confirm-btn {
+  color: var(--pico-del-color);
+}
+
+.kb-menu-error {
+  margin: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--pico-del-color);
+}
+
 .kb-viewer-tag-link {
   color: var(--pico-primary);
   text-decoration: underline;
@@ -1227,53 +1393,6 @@ ul.kb-item-list {
   color: var(--pico-primary-hover);
 }
 
-.kb-viewer-actions {
-  display: flex;
-  gap: 0.3rem;
-  margin-left: auto;
-}
-
-.kb-edit-btn,
-.kb-save-btn,
-.kb-cancel-edit-btn {
-  font-size: 0.78rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.kb-edit-btn {
-  border: 1px solid var(--pico-muted-border-color);
-  background: none;
-  color: var(--pico-muted-color);
-}
-
-.kb-edit-btn:hover {
-  background: var(--pico-secondary-hover-background);
-  color: var(--pico-color);
-}
-
-.kb-save-btn {
-  border: 1px solid var(--pico-primary-background);
-  background: var(--pico-primary-background);
-  color: var(--pico-primary-inverse);
-}
-
-.kb-save-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.kb-cancel-edit-btn {
-  border: 1px solid var(--pico-muted-border-color);
-  background: none;
-  color: var(--pico-muted-color);
-}
-
-.kb-cancel-edit-btn:hover {
-  background: var(--pico-secondary-hover-background);
-  color: var(--pico-color);
-}
 
 .kb-save-error {
   padding: 0.25rem 1rem;

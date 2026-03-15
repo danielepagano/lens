@@ -10,7 +10,7 @@ async function post(path: string, body: unknown): Promise<unknown> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`)
+  if (!r.ok) throw new Error(await errorDetail(r))
   return r.json()
 }
 
@@ -22,6 +22,23 @@ async function put(path: string, body: unknown): Promise<unknown> {
   })
   if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`)
   return r.json()
+}
+
+async function patch(path: string, body: unknown): Promise<unknown> {
+  const r = await fetch(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!r.ok) throw new Error(await errorDetail(r))
+  return r.json()
+}
+
+async function del(path: string): Promise<unknown> {
+  const r = await fetch(path, { method: 'DELETE' })
+  if (!r.ok) throw new Error(await errorDetail(r))
+  const text = await r.text()
+  return text ? JSON.parse(text) : undefined
 }
 
 export class CliRunBusyError extends Error {
@@ -367,8 +384,42 @@ export const createKbItem = (
     content: string
   }>
 
+export interface KbTagResponse {
+  id: string
+  tags: string[]
+  invalid_dot_tags?: string[]
+}
+
+export interface KbCopyResponse {
+  source_id: string
+  target_id: string
+}
+
+export interface KbRenameResponse {
+  old_id: string
+  new_id: string
+}
+
+export const patchKbItemTags = (
+  id: string,
+  body: { add: string[]; remove: string[] }
+): Promise<KbTagResponse> =>
+  patch(`/kb/item/${encodeURIComponent(id)}/tags`, body) as Promise<KbTagResponse>
+
+export const deleteKbItem = (id: string): Promise<{ id: string }> =>
+  del(`/kb/item/${encodeURIComponent(id)}`) as Promise<{ id: string }>
+
+export const renameKbItem = (oldId: string, newId: string): Promise<KbRenameResponse> =>
+  post('/kb/rename', { old_id: oldId, new_id: newId }) as Promise<KbRenameResponse>
+
+export const copyKbItem = (sourceId: string, targetId: string): Promise<KbCopyResponse> =>
+  post('/kb/copy', { source_id: sourceId, target_id: targetId }) as Promise<KbCopyResponse>
+
 export interface KbWithTagResponse {
   ids: string[]
+  layers?: { parent: string; children: string[] }[]
+  objects?: Record<string, KbItemDetail>
+  id_to_tags?: Record<string, string[]>
 }
 
 export const getKbWithTag = (tags: string[]): Promise<KbWithTagResponse> =>

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
@@ -19,6 +17,64 @@ from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
 
 router = APIRouter()
+
+
+class KbItemOut(BaseModel):
+    id: str
+    tags: list[str]
+
+
+class KbItemDetailOut(BaseModel):
+    id: str
+    type: str
+    content: str
+    tags: list[str]
+
+
+class KbItemSaveResponse(BaseModel):
+    id: str
+
+
+class KbItemCreateResponse(BaseModel):
+    id: str
+    content: str
+
+
+class KbTagResponse(BaseModel):
+    id: str
+    tags: list[str]
+    invalid_dot_tags: list[str] | None = None
+
+
+class KbCopyResponse(BaseModel):
+    source_id: str
+    target_id: str
+
+
+class KbRenameResponse(BaseModel):
+    old_id: str
+    new_id: str
+
+
+class KbTemplateResponse(BaseModel):
+    type: str
+    content: str | None
+
+
+class KbTemplateSetResponse(BaseModel):
+    type: str
+
+
+class KbWithTagLayerOut(BaseModel):
+    parent: str
+    children: list[str]
+
+
+class KbWithTagResponse(BaseModel):
+    ids: list[str]
+    layers: list[KbWithTagLayerOut] | None = None
+    objects: dict[str, KbItemDetailOut] | None = None
+    id_to_tags: dict[str, list[str]] | None = None
 
 
 @router.get("/kb/types")
@@ -40,7 +96,7 @@ def kb_items(
     type: str | None = Query(None),
     tags: str | None = Query(None),
     session: ProjectSession = Depends(get_session),
-) -> list[dict[str, Any]]:
+) -> list[KbItemOut]:
     kb = session.kb
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
     if tag_list:
@@ -52,15 +108,15 @@ def kb_items(
             type_prefix = type.lower() + "."
             ids = [i for i in ids if i.startswith(type_prefix)]
     else:
-        ids = kb.list_ids(type_filter=type)
-    return [{"id": id_, "tags": kb.get_tags(id_)} for id_ in ids]
+        ids = kb.list_ids(type_filter=type, include_templates=True)
+    return [KbItemOut(id=id_, tags=kb.get_tags(id_)) for id_ in ids]
 
 
 @router.get("/kb/item/{id:path}")
 def kb_get_item(
     id: str,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbItemDetailOut:
     try:
         parse_id(id)
     except ValueError as e:
@@ -70,7 +126,7 @@ def kb_get_item(
     obj = objs.get(id)
     if obj is None:
         raise HTTPException(status_code=404, detail=f"KB item not found: {id}")
-    return {"id": obj.id, "type": obj.type, "content": obj.text, "tags": obj.tags}
+    return KbItemDetailOut(id=obj.id, type=obj.type, content=obj.text, tags=obj.tags)
 
 
 class KbSaveRequest(BaseModel):
@@ -82,7 +138,7 @@ def kb_save_item(
     id: str,
     body: KbSaveRequest,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbItemSaveResponse:
     try:
         parse_id(id)
     except ValueError as e:
@@ -90,7 +146,7 @@ def kb_save_item(
     storage = session.new_storage(owner=None)
     kb = KnowledgeStore.for_project(session.project_root, storage=storage)
     kb.store_object(id, body.content)
-    return {"id": id}
+    return KbItemSaveResponse(id=id)
 
 
 class KbCreateRequest(BaseModel):
@@ -103,7 +159,7 @@ class KbCreateRequest(BaseModel):
 def kb_create_item(
     body: KbCreateRequest,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbItemCreateResponse:
     try:
         parse_id(body.id)
     except ValueError as e:
@@ -114,19 +170,23 @@ def kb_create_item(
     objs = kb.get_objects([body.id])
     obj = objs.get(body.id)
     content = obj.text if obj else (body.content or "")
-    return {"id": body.id, "content": content}
+    return KbItemCreateResponse(id=body.id, content=content)
 
 
 @router.delete("/kb/item/{id:path}")
 def kb_delete_item(
     id: str,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbItemSaveResponse:
+    try:
+        parse_id(id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     try:
         kb_delete(id)
-        return {"status": "ok", "id": id}
+        return KbItemSaveResponse(id=id)
     except LensException as e:
-        return {"status": "error", "detail": str(e)}
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 class KbCopyRequest(BaseModel):
@@ -138,12 +198,12 @@ class KbCopyRequest(BaseModel):
 def kb_copy_item(
     body: KbCopyRequest,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbCopyResponse:
     try:
         kb_copy(body.source_id, body.target_id)
-        return {"status": "ok", "source_id": body.source_id, "target_id": body.target_id}
+        return KbCopyResponse(source_id=body.source_id, target_id=body.target_id)
     except LensException as e:
-        return {"status": "error", "detail": str(e)}
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 class KbRenameRequest(BaseModel):
@@ -155,12 +215,12 @@ class KbRenameRequest(BaseModel):
 def kb_rename_item(
     body: KbRenameRequest,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbRenameResponse:
     try:
         kb_rename(body.old_id, body.new_id)
-        return {"status": "ok", "old_id": body.old_id, "new_id": body.new_id}
+        return KbRenameResponse(old_id=body.old_id, new_id=body.new_id)
     except LensException as e:
-        return {"status": "error", "detail": str(e)}
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 class KbTagRequest(BaseModel):
@@ -173,15 +233,16 @@ def kb_tag_item(
     id: str,
     body: KbTagRequest,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbTagResponse:
+    try:
+        parse_id(id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     try:
         current_tags, invalid_tags = kb_tag(id, body.add, body.remove)
-        result: dict[str, Any] = {"status": "ok", "id": id, "tags": current_tags}
-        if invalid_tags:
-            result["invalid_dot_tags"] = invalid_tags
-        return result
+        return KbTagResponse(id=id, tags=current_tags, invalid_dot_tags=invalid_tags or None)
     except LensException as e:
-        return {"status": "error", "detail": str(e)}
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 class KbTemplateRequest(BaseModel):
@@ -192,11 +253,9 @@ class KbTemplateRequest(BaseModel):
 def kb_get_template(
     type: str,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbTemplateResponse:
     content = kb_template(type, None)
-    if content is None:
-        return {"type": type, "content": None}
-    return {"type": type, "content": content}
+    return KbTemplateResponse(type=type, content=content)
 
 
 @router.put("/kb/template/{type}")
@@ -204,9 +263,9 @@ def kb_set_template(
     type: str,
     body: KbTemplateRequest,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbTemplateSetResponse:
     kb_template(type, body.content)
-    return {"status": "ok", "type": type}
+    return KbTemplateSetResponse(type=type)
 
 
 class KbWithTagRequest(BaseModel):
@@ -220,7 +279,7 @@ class KbWithTagRequest(BaseModel):
 def kb_with_tag_query(
     body: KbWithTagRequest,
     session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
+) -> KbWithTagResponse:
     try:
         result = kb_with_tag(
             body.tags,
@@ -228,19 +287,23 @@ def kb_with_tag_query(
             recurse=body.recurse,
             same_type_only=body.same_type_only,
         )
-        response: dict[str, Any] = {"ids": result.ids}
+        layers_out = None
         if result.layers is not None:
-            response["layers"] = [
-                {"parent": parent, "children": children}
+            layers_out = [
+                KbWithTagLayerOut(parent=parent, children=children)
                 for parent, children in result.layers
             ]
+        objects_out = None
         if result.objects is not None:
-            response["objects"] = {
-                obj_id: {"id": obj.id, "type": obj.type, "content": obj.text, "tags": obj.tags}
+            objects_out = {
+                obj_id: KbItemDetailOut(id=obj.id, type=obj.type, content=obj.text, tags=obj.tags)
                 for obj_id, obj in result.objects.items()
             }
-        if result.id_to_tags is not None:
-            response["id_to_tags"] = result.id_to_tags
-        return response
+        return KbWithTagResponse(
+            ids=result.ids,
+            layers=layers_out,
+            objects=objects_out,
+            id_to_tags=result.id_to_tags,
+        )
     except LensException as e:
-        return {"status": "error", "detail": str(e)}
+        raise HTTPException(status_code=400, detail=str(e)) from e

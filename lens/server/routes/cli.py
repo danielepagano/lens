@@ -19,24 +19,11 @@ _LENS_ARGV = [sys.executable, "-W", "ignore::SyntaxWarning:pysbd", "-m", "lens.c
 _CLI_ALLOWLIST = frozenset(
     {
         "stats",
-        "kb",
-        "design",
         "dnd",
     }
 )
 
-_KB_TAG_MUTATING_SUBS = frozenset({"tag", "delete", "copy", "rename", "extract", "edit"})
-
 _MAX_COMMAND_LEN = 32 * 1024
-
-
-def _cli_run_may_mutate_tags(argv: list[str]) -> bool:
-    if not argv:
-        return False
-    top = argv[0]
-    if top == "kb" and len(argv) > 1:
-        return argv[1] in _KB_TAG_MUTATING_SUBS
-    return False
 
 
 def _normalize_cli_argv(argv: list[str]) -> list[str]:
@@ -105,8 +92,6 @@ async def cli_run(
     lock: StreamLock = request.app.state.stream_lock
     lock.acquire("cli")
 
-    tag_mutating = _cli_run_may_mutate_tags(argv)
-
     # No shell: argv is passed as a list so user input cannot inject shell metacharacters.
     process = subprocess.Popen(
         [*_LENS_ARGV, *argv],
@@ -118,11 +103,7 @@ async def cli_run(
     )
     lock.process = process
 
-    def on_done() -> None:
-        if tag_mutating:
-            session.kb.evict_tag_cache()
-
-    return cli_stream_response(process, lock, on_done=on_done)
+    return cli_stream_response(process, lock)
 
 
 @router.post("/cli/cancel")

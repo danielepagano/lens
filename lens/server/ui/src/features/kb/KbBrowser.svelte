@@ -52,17 +52,26 @@
         type: selectedType || undefined,
         tags: activeTags.length ? activeTags.join(',') : undefined,
       })
+      lastRefreshTrigger = $treeRefreshTrigger
     } catch (e) {
       error = String(e)
     }
   }
 
+  let lastRefreshTrigger = -1
+
   onMount(async () => {
     await loadTags()
     if (selectedType || activeTags.length > 0) {
       await loadItems()
+      lastRefreshTrigger = $treeRefreshTrigger
     }
   })
+
+  $: if (hasSearched && $treeRefreshTrigger !== lastRefreshTrigger) {
+    lastRefreshTrigger = $treeRefreshTrigger
+    void loadItems()
+  }
 
   async function onTypeChange() {
     activeTags = []
