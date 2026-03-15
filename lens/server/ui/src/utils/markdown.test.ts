@@ -324,6 +324,33 @@ More content line 5
     expect(result).toContain('Added line 4')
   })
 
+  it('shows all removed groups for a section when replacement spans opening to closing line', () => {
+    // Section replaces multiple blocks (e.g. two play blocks). Removed content is keyed
+    // to opening line and to a line before the closing; both must appear.
+    const markdown = `Preamble one
+Preamble two
+[section:fortress-arrival]: #
+
+New body line
+
+[/section:fortress-arrival]: #`
+    const overlay: NodeTransactionOverlay = {
+      addedLines: new Set([5]),
+      removedGroups: [
+        { beforeLine: 3, lines: ['First removed block.', '> [FRIDA] prompt', 'Narrative from first play.'] },
+        { beforeLine: 5, lines: ['Second removed block.', '> [DM] response', 'Narrative from second play.'] },
+      ],
+    }
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    expect(result).toContain('<div class="transaction-removed">')
+    expect(result).toContain('First removed block.')
+    expect(result).toContain('Narrative from first play.')
+    expect(result).toContain('Second removed block.')
+    expect(result).toContain('Narrative from second play.')
+    const removedBlocks = result.match(/<div class="transaction-removed">/g)
+    expect(removedBlocks).toHaveLength(2)
+  })
+
   it('does not render diff markers when front-matter pins are added', () => {
     // Real-world: user adds a kb_pin via the pin command.
     // The file goes from no front-matter to having a front-matter block.

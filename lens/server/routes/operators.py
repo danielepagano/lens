@@ -70,7 +70,7 @@ class SectionEndBody(BaseModel):
     llm_id: str | None = None
 
 
-class SectionRangeBody(BaseModel):
+class CollateBody(BaseModel):
     id: str
     address: str
     start_line: int
@@ -137,6 +137,13 @@ async def _run_operator_task(
     except LensException as e:
         await event_queue.put({"type": "error", "message": str(e)})
     except asyncio.CancelledError:
+        await event_queue.put({
+            "type": "done",
+            "operator": operator_name,
+            "node": node_address,
+            "interrupted": True,
+        })
+    except KeyboardInterrupt:
         await event_queue.put({
             "type": "done",
             "operator": operator_name,
@@ -407,25 +414,24 @@ async def operator_section_end(
     return _start_operator_stream(lock, event_queue, session, "section", node_addr, coro_fn)
 
 
-@router.post("/operator/section/range")
-async def operator_section_range(
-    body: SectionRangeBody,
+@router.post("/operator/collate")
+async def operator_collate(
+    body: CollateBody,
     request: Request,
     session: ProjectSession = Depends(get_session),
 ) -> StreamingResponse:
-    from lens.core.operators.section import SectionOperator
+    from lens.core.operators.collate import CollateOperator
 
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
-    cursor = narrative.find_cursor()
-    node_addr = str(cursor.to_address())
+    node_addr = body.address
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
     on_token = _make_on_token(event_queue, node_addr)
 
     def coro_fn() -> Any:
-        return SectionOperator.run_range(
+        return CollateOperator.run_collate(
             session=session,
             narrative=narrative,
             id=body.id,
@@ -439,7 +445,7 @@ async def operator_section_range(
             cancel_event=lock.cancel_event,
         )
 
-    return _start_operator_stream(lock, event_queue, session, "section", node_addr, coro_fn)
+    return _start_operator_stream(lock, event_queue, session, "collate", node_addr, coro_fn)
 
 
 # ---------------------------------------------------------------------------

@@ -319,6 +319,8 @@ class DesignOperator(Operator):
         rel_path = str(parent.md_path().relative_to(session.git_root))
         owner = cls.owner_id(id, rel_path)
         storage = session.new_storage(owner=owner)
+        if storage.has_pending() and storage.detect_pending_owner() == owner:
+            storage.stage_all()
         op = cls(storage, narrative)
         result = kb_extract_from_text(child_text, session.project_root, storage)
         for err in result.errors:

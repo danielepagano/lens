@@ -22,7 +22,8 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
    ```bash
    lens stats      # count objects and list narratives (-v for transaction diffs)
    lens kb         # knowledge store (see lens kb --help)
-   lens section    # start/end sections, or carve one from existing prose
+   lens section    # start or end a section at cursor
+   lens collate    # crete a section after the fact from completed prose
    lens pin        # pin/unpin knowledge objects to nodes (see lens pin --help)
    lens write      # AI: generate narrative text at the cursor
    lens edit       # AI or manual: rewrite/replace a selected line range in narrative
@@ -356,28 +357,24 @@ Node addresses follow the format `[<narrative>/]<key>[/<key>...]` or `/@cursor`.
 Sections structure the narrative tree by creating child nodes under the cursor.
 
 ```bash
-lens section start intro   # create child node "intro" and open section tag
-lens section end           # close the current section (appends summary to parent)
+lens section intro          # create child node "intro" and open section tag at cursor
+lens section intro -p loc.tavern
+lens section --end         # close the current section (appends summary to parent)
+lens section --end -l fast
 ```
 
-A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `lens section end` appends a summary and the closing tag, then moves the cursor back up.
+A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `lens section --end` appends a summary and the closing tag, then moves the cursor back up.
 
-### `lens section start`
+- **Start:** `lens section <id>` — optional `-p` / `--pin`, `-u` / `--unpin` (repeatable). Add `+` to pin IDs to include linked objects, or `++` for full traversal.
+- **End:** `lens section --end` — optional `-l` / `--llm` for the summary LLM.
 
-- `-p` / `--pin` — KB ID to pin in the new section’s front matter (repeatable). Add `+` to include linked objects, or `++` for full traversal.
-- `-u` / `--unpin` — KB ID to unpin in the new section’s front matter (repeatable).
+## Collate (`lens collate`)
 
-### `lens section end`
-
-- `-l` / `--llm` — LLM ID to use for generating the summary (overrides project default).
-
-### After-the-fact sectioning (`lens section range`)
-
-Carve a section out of already-written prose by specifying a line range:
+Carve a section out of already-written prose at an arbitrary node by specifying a line range:
 
 ```bash
-lens section range intro /chapter-1 10 30
-lens section range intro /chapter-1 10 30 -p place.tavern -l fast
+lens collate intro /chapter-1 10 30
+lens collate intro /chapter-1 10 30 -p place.tavern -l fast
 ```
 
 Arguments: `ID ADDRESS START_LINE END_LINE`

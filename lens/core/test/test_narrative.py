@@ -558,7 +558,7 @@ class TestSectionOperator(unittest.TestCase):
             p = Path(tmp)
             self._make_project(p)
             result = subprocess.run(
-                ["lens", "section", "start", "event_1"],
+                ["lens", "section", "event_1"],
                 cwd=p,
                 capture_output=True,
                 text=True,
@@ -585,7 +585,7 @@ class TestSectionOperator(unittest.TestCase):
             )
             result = subprocess.run(
                 [
-                    "lens", "section", "start", "castle-dorn",
+                    "lens", "section", "castle-dorn",
                     "--pin", "location.castle-dorn",
                     "--pin", "location.capital-city+",
                     "--unpin", "location.capital-city",
@@ -617,7 +617,7 @@ class TestSectionOperator(unittest.TestCase):
                 cwd=p, capture_output=True, check=True,
             )
             result = subprocess.run(
-                ["lens", "section", "start", "ch1"],
+                ["lens", "section", "ch1"],
                 cwd=p,
                 capture_output=True,
                 text=True,
@@ -631,7 +631,7 @@ class TestSectionOperator(unittest.TestCase):
             p = Path(tmp)
             self._make_project(p)
             subprocess.run(
-                ["lens", "section", "start", "event_1"],
+                ["lens", "section", "event_1"],
                 cwd=p,
                 capture_output=True,
                 check=True,
@@ -663,7 +663,7 @@ class TestSectionOperator(unittest.TestCase):
             p = Path(tmp)
             self._make_project(p)
             result = subprocess.run(
-                ["lens", "section", "end"],
+                ["lens", "section", "--end"],
                 cwd=p,
                 capture_output=True,
                 text=True,

@@ -1,4 +1,4 @@
-"""Tests for the SectionOperator.section_range ("after the fact") feature."""
+"""Tests for the CollateOperator (after-the-fact sectioning at an arbitrary address)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
-from lens.core.operators.section import SectionOperator
+from lens.core.operators.collate import CollateOperator
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
@@ -75,7 +75,7 @@ async def _fake_summary(*args: Any, **kwargs: Any) -> Any:
     )
 
 
-def _run_section_range(
+def _run_collate(
     root: Path,
     narrative: NarrativeNode,
     target_node: NarrativeNode,
@@ -86,21 +86,22 @@ def _run_section_range(
     generate_mock: Any = None,
 ) -> None:
     mock = generate_mock or _fake_summary
-    target_md = target_node.md_path()
-    rel_path = str(target_md.relative_to(root))
-    owner = SectionOperator.owner_id(section_id, rel_path)
-    storage = Storage(root, owner=owner)
-    op = SectionOperator(storage, narrative)
+    address_str = (
+        "/".join([target_node.narrative_root.name] + list(target_node.key_path))
+        if target_node.key_path
+        else target_node.narrative_root.name
+    )
 
-    with patch("lens.core.operators.section.generate_stream", new=mock):
+    with patch("lens.core.operators.collate.generate_stream", new=mock):
         with contextlib.redirect_stdout(io.StringIO()):
             asyncio.run(
-                op.section_range(
-                    target_node=target_node,
+                CollateOperator.run_collate(
+                    session=ProjectSession(root, root),
+                    narrative=narrative,
                     id=section_id,
+                    address_str=address_str,
                     start_line=start_line,
                     end_line=end_line,
-                    session=ProjectSession(root, root),
                     pins=[],
                     unpins=[],
                     llm_id=None,
@@ -112,7 +113,7 @@ def _run_section_range(
 # Happy-path: plain text selection (no sub-nodes)
 # ---------------------------------------------------------------------------
 
-class TestSectionRangePlainText(unittest.TestCase):
+class TestCollatePlainText(unittest.TestCase):
 
     def test_child_node_created_with_selected_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -120,7 +121,7 @@ class TestSectionRangePlainText(unittest.TestCase):
             content = "Preamble line.\nSelected line one.\nSelected line two.\nTrailing line.\n"
             _commit_content(root, narrative, content)
 
-            _run_section_range(root, narrative, narrative, "aside", 2, 3)
+            _run_collate(root, narrative, narrative, "aside", 2, 3)
 
             child = narrative.child_node("aside")
             self.assertTrue(child.exists())
@@ -128,13 +129,36 @@ class TestSectionRangePlainText(unittest.TestCase):
             self.assertIn("Selected line one.", child_text)
             self.assertIn("Selected line two.", child_text)
 
+    def test_creates_leaf_node_when_no_sections_under_range(self) -> None:
+        """Collating a plain range (no sub-sections) creates a leaf file, not a folder."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            content = "Preamble.\nSelected content.\nTrailing.\n"
+            _commit_content(root, narrative, content)
+
+            _run_collate(root, narrative, narrative, "aside", 2, 2)
+
+            child = narrative.child_node("aside")
+            self.assertTrue(child.exists())
+            self.assertTrue(
+                child.is_leaf(),
+                "child should be a leaf when range has no sections",
+            )
+            self.assertEqual(
+                child.md_path(),
+                narrative.md_path().parent / "aside.md",
+            )
+            self.assertFalse(
+                (narrative.md_path().parent / "aside" / "_node.md").exists(),
+            )
+
     def test_parent_contains_section_annotation_with_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = "Preamble line.\nSelected line one.\nSelected line two.\nTrailing line.\n"
             _commit_content(root, narrative, content)
 
-            _run_section_range(root, narrative, narrative, "aside", 2, 3)
+            _run_collate(root, narrative, narrative, "aside", 2, 3)
 
             parent_text = narrative.md_path().read_text()
             self.assertIn("[section:aside]: #", parent_text)
@@ -147,7 +171,7 @@ class TestSectionRangePlainText(unittest.TestCase):
             content = "Preamble line.\nSelected line one.\nSelected line two.\nTrailing line.\n"
             _commit_content(root, narrative, content)
 
-            _run_section_range(root, narrative, narrative, "aside", 2, 3)
+            _run_collate(root, narrative, narrative, "aside", 2, 3)
 
             parent_text = narrative.md_path().read_text()
             self.assertNotIn("Selected line one.", parent_text)
@@ -159,7 +183,7 @@ class TestSectionRangePlainText(unittest.TestCase):
             content = "Preamble line.\nSelected line one.\nSelected line two.\nTrailing line.\n"
             _commit_content(root, narrative, content)
 
-            _run_section_range(root, narrative, narrative, "aside", 2, 3)
+            _run_collate(root, narrative, narrative, "aside", 2, 3)
 
             parent_text = narrative.md_path().read_text()
             self.assertIn("Preamble line.", parent_text)
@@ -170,7 +194,7 @@ class TestSectionRangePlainText(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_content(root, narrative, "Alpha.\nBeta.\nGamma.\n")
 
-            _run_section_range(root, narrative, narrative, "mid", 2, 2)
+            _run_collate(root, narrative, narrative, "mid", 2, 2)
 
             self.assertTrue(Storage(root).has_pending())
 
@@ -178,7 +202,6 @@ class TestSectionRangePlainText(unittest.TestCase):
         """A leaf root node (unlikely but possible for child nodes) gets promoted."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            # Create a leaf child node to use as the target
             child_dir = narrative.md_path().parent / "scene"
             child_dir.mkdir()
             child_md = child_dir / "_node.md"
@@ -186,7 +209,6 @@ class TestSectionRangePlainText(unittest.TestCase):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "scene"], cwd=root, capture_output=True, check=True)
 
-            # Convert to a leaf so we can test promotion
             scene_leaf = narrative.md_path().parent / "scene.md"
             scene_leaf.write_text("Opening.\nAction.\nConclusion.\n")
             child_dir_md = child_dir / "_node.md"
@@ -195,7 +217,6 @@ class TestSectionRangePlainText(unittest.TestCase):
             if child_dir.exists() and not any(child_dir.iterdir()):
                 child_dir.rmdir()
 
-            # Re-create as a proper leaf
             scene_leaf.write_text("Opening.\nAction.\nConclusion.\n")
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "leaf"], cwd=root, capture_output=True, check=True)
@@ -206,9 +227,8 @@ class TestSectionRangePlainText(unittest.TestCase):
             )
             self.assertTrue(scene_node.is_leaf())
 
-            _run_section_range(root, narrative, scene_node, "action", 2, 2)
+            _run_collate(root, narrative, scene_node, "action", 2, 2)
 
-            # scene should now be a folder node
             self.assertFalse(scene_node.is_leaf())
             self.assertTrue(scene_node.child_node("action").exists())
 
@@ -217,12 +237,11 @@ class TestSectionRangePlainText(unittest.TestCase):
 # Happy-path: selection containing a fully-enclosed annotation + sub-node
 # ---------------------------------------------------------------------------
 
-class TestSectionRangeWithSubnodes(unittest.TestCase):
+class TestCollateWithSubnodes(unittest.TestCase):
 
     def _setup_with_child(
         self, root: Path, narrative: NarrativeNode
     ) -> tuple[NarrativeNode, str]:
-        """Set up a node with a closed section annotation and a matching child node."""
         parent_dir = narrative.md_path().parent
         content = (
             "Intro text.\n"
@@ -248,14 +267,15 @@ class TestSectionRangeWithSubnodes(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             self._setup_with_child(root, narrative)
 
-            # The section annotation spans lines 3–7 (open, blank, summary, blank, close)
-            # We select lines 1–9 to wrap everything in a new section.
-            _run_section_range(root, narrative, narrative, "chapter", 1, 9)
+            _run_collate(root, narrative, narrative, "chapter", 1, 9)
 
             chapter = narrative.child_node("chapter")
             self.assertTrue(chapter.exists())
+            self.assertFalse(
+                chapter.is_leaf(),
+                "child should be a folder when range contains sub-sections",
+            )
 
-            # The quest sub-node should now live inside chapter/
             quest_inside_chapter = chapter.child_node("quest")
             self.assertTrue(quest_inside_chapter.exists())
 
@@ -264,11 +284,10 @@ class TestSectionRangeWithSubnodes(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             self._setup_with_child(root, narrative)
 
-            _run_section_range(root, narrative, narrative, "chapter", 1, 9)
+            _run_collate(root, narrative, narrative, "chapter", 1, 9)
 
             parent_dir = narrative.md_path().parent
             old_quest_dir = parent_dir / "quest"
-            # The original location should be gone (moved inside chapter/).
             self.assertFalse(old_quest_dir.exists())
 
     def test_child_content_preserved_in_moved_subnode(self) -> None:
@@ -276,19 +295,18 @@ class TestSectionRangeWithSubnodes(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             self._setup_with_child(root, narrative)
 
-            _run_section_range(root, narrative, narrative, "chapter", 1, 9)
+            _run_collate(root, narrative, narrative, "chapter", 1, 9)
 
             chapter = narrative.child_node("chapter")
             quest_inside = chapter.child_node("quest")
             self.assertIn("Quest detail content.", quest_inside.md_path().read_text())
 
     def test_section_annotation_preserved_in_child_node(self) -> None:
-        """The extracted content (including its own annotations) lands in the child node."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             self._setup_with_child(root, narrative)
 
-            _run_section_range(root, narrative, narrative, "chapter", 1, 9)
+            _run_collate(root, narrative, narrative, "chapter", 1, 9)
 
             chapter = narrative.child_node("chapter")
             child_text = chapter.md_path().read_text()
@@ -296,7 +314,6 @@ class TestSectionRangeWithSubnodes(unittest.TestCase):
             self.assertIn("[/section:quest]: #", child_text)
 
     def test_leaf_subnode_moved_correctly(self) -> None:
-        """A leaf child .md file is moved, not just a folder."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             parent_dir = narrative.md_path().parent
@@ -312,7 +329,7 @@ class TestSectionRangeWithSubnodes(unittest.TestCase):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "leaf-child"], cwd=root, capture_output=True, check=True)
 
-            _run_section_range(root, narrative, narrative, "wrapper", 1, 5)
+            _run_collate(root, narrative, narrative, "wrapper", 1, 5)
 
             wrapper = narrative.child_node("wrapper")
             self.assertTrue(wrapper.exists())
@@ -324,10 +341,9 @@ class TestSectionRangeWithSubnodes(unittest.TestCase):
 
 # ---------------------------------------------------------------------------
 # Happy-path: selection that only partially overlaps child annotations
-# (the annotation is fully inside — this is valid)
 # ---------------------------------------------------------------------------
 
-class TestSectionRangeAnnotationFullyInside(unittest.TestCase):
+class TestCollateAnnotationFullyInside(unittest.TestCase):
 
     def test_fully_contained_self_closing_annotation_is_allowed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -341,8 +357,7 @@ class TestSectionRangeAnnotationFullyInside(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            # Lines 2–4 contain the self-closing annotation — fully inside.
-            _run_section_range(root, narrative, narrative, "chunk", 2, 4)
+            _run_collate(root, narrative, narrative, "chunk", 2, 4)
 
             parent_text = narrative.md_path().read_text()
             self.assertIn("[section:chunk]: #", parent_text)
@@ -354,7 +369,7 @@ class TestSectionRangeAnnotationFullyInside(unittest.TestCase):
 # Validation: line range errors
 # ---------------------------------------------------------------------------
 
-class TestSectionRangeValidation(unittest.TestCase):
+class TestCollateValidation(unittest.TestCase):
 
     def test_out_of_bounds_start_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -362,7 +377,7 @@ class TestSectionRangeValidation(unittest.TestCase):
             _commit_content(root, narrative, "Only one line.\n")
 
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 0, 1)
+                _run_collate(root, narrative, narrative, "bad", 0, 1)
 
     def test_out_of_bounds_end_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -370,7 +385,7 @@ class TestSectionRangeValidation(unittest.TestCase):
             _commit_content(root, narrative, "Only one line.\n")
 
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 1, 99)
+                _run_collate(root, narrative, narrative, "bad", 1, 99)
 
     def test_start_greater_than_end_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -378,7 +393,7 @@ class TestSectionRangeValidation(unittest.TestCase):
             _commit_content(root, narrative, "Line one.\nLine two.\n")
 
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 3, 1)
+                _run_collate(root, narrative, narrative, "bad", 3, 1)
 
     def test_duplicate_section_id_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -386,19 +401,15 @@ class TestSectionRangeValidation(unittest.TestCase):
             parent_dir = narrative.md_path().parent
             content = "Line one.\nLine two.\n"
             narrative.md_path().write_text(content)
-            # Create a pre-existing child node with the same id.
             existing = parent_dir / "aside.md"
             existing.write_text("Existing.\n")
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "dup"], cwd=root, capture_output=True, check=True)
 
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "aside", 1, 2)
-
-    # --- Annotation splitting ---
+                _run_collate(root, narrative, narrative, "aside", 1, 2)
 
     def test_split_open_tag_raises(self) -> None:
-        """Selection starts inside an annotation block (after its open tag)."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -412,12 +423,10 @@ class TestSectionRangeValidation(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            # start_line=2 is inside the multi-line open tag (lines 1–3)
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 2, 7)
+                _run_collate(root, narrative, narrative, "bad", 2, 7)
 
     def test_split_close_tag_not_included_raises(self) -> None:
-        """Selection ends before the close tag of a block that started inside."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -433,12 +442,10 @@ class TestSectionRangeValidation(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            # Selection covers the open tag (line 3) but cuts off before close (line 7)
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 3, 5)
+                _run_collate(root, narrative, narrative, "bad", 3, 5)
 
     def test_open_tag_before_range_body_inside_raises(self) -> None:
-        """Open tag is before the range but body content is inside — must error."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -450,12 +457,10 @@ class TestSectionRangeValidation(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            # Range starts at line 2 (inside body), open tag is at line 1
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 2, 5)
+                _run_collate(root, narrative, narrative, "bad", 2, 5)
 
     def test_close_tag_after_range_raises(self) -> None:
-        """Block starts inside range but close tag is after range end — must error."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -471,12 +476,10 @@ class TestSectionRangeValidation(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            # Range ends at line 6 — the close tag is on line 7
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 3, 6)
+                _run_collate(root, narrative, narrative, "bad", 3, 6)
 
     def test_unclosed_annotation_in_range_raises(self) -> None:
-        """An unclosed cursor annotation that overlaps the range is rejected."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -487,10 +490,9 @@ class TestSectionRangeValidation(unittest.TestCase):
             _commit_content(root, narrative, content)
 
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 1, 3)
+                _run_collate(root, narrative, narrative, "bad", 1, 3)
 
     def test_front_matter_split_raises(self) -> None:
-        """A selection that cuts through the front matter block is rejected."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -503,16 +505,15 @@ class TestSectionRangeValidation(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            # Lines 2–4 are inside the front matter; line 1 is the opening bracket
             with self.assertRaises(ValueError):
-                _run_section_range(root, narrative, narrative, "bad", 2, 6)
+                _run_collate(root, narrative, narrative, "bad", 2, 6)
 
 
 # ---------------------------------------------------------------------------
 # Rollback
 # ---------------------------------------------------------------------------
 
-class TestSectionRangeRollback(unittest.TestCase):
+class TestCollateRollback(unittest.TestCase):
 
     def test_rollback_restores_parent_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -520,7 +521,7 @@ class TestSectionRangeRollback(unittest.TestCase):
             original = "First line.\nSecond line.\nThird line.\n"
             _commit_content(root, narrative, original)
 
-            _run_section_range(root, narrative, narrative, "mid", 2, 2)
+            _run_collate(root, narrative, narrative, "mid", 2, 2)
             self.assertTrue(Storage(root).has_pending())
 
             Storage(root).rollback()
@@ -534,14 +535,13 @@ class TestSectionRangeRollback(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_content(root, narrative, "Alpha.\nBeta.\nGamma.\n")
 
-            _run_section_range(root, narrative, narrative, "beta_section", 2, 2)
+            _run_collate(root, narrative, narrative, "beta_section", 2, 2)
 
             Storage(root).rollback()
 
             self.assertFalse(narrative.child_node("beta_section").exists())
 
     def test_rollback_restores_moved_subnode(self) -> None:
-        """A sub-node moved into the new section is restored to its original location."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             parent_dir = narrative.md_path().parent
@@ -559,15 +559,13 @@ class TestSectionRangeRollback(unittest.TestCase):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "quest"], cwd=root, capture_output=True, check=True)
 
-            _run_section_range(root, narrative, narrative, "chapter", 1, 5)
+            _run_collate(root, narrative, narrative, "chapter", 1, 5)
 
-            # quest is now inside chapter/
             chapter = narrative.child_node("chapter")
             self.assertTrue(chapter.child_node("quest").exists())
 
             Storage(root).rollback()
 
-            # quest should be back at the root level
             self.assertTrue(narrative.child_node("quest").exists())
             self.assertFalse((parent_dir / "chapter").exists())
 
@@ -576,7 +574,7 @@ class TestSectionRangeRollback(unittest.TestCase):
 # Edge cases
 # ---------------------------------------------------------------------------
 
-class TestSectionRangeEdgeCases(unittest.TestCase):
+class TestCollateEdgeCases(unittest.TestCase):
 
     def test_empty_llm_response_raises(self) -> None:
         async def _empty(*args: Any, **kwargs: Any) -> Any:
@@ -594,7 +592,7 @@ class TestSectionRangeEdgeCases(unittest.TestCase):
             _commit_content(root, narrative, "Some content.\n")
 
             with self.assertRaises(ValueError):
-                _run_section_range(
+                _run_collate(
                     root, narrative, narrative, "empty", 1, 1,
                     generate_mock=_empty,
                 )
@@ -604,7 +602,7 @@ class TestSectionRangeEdgeCases(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_content(root, narrative, "Line one.\nLine two.\n")
 
-            _run_section_range(root, narrative, narrative, "all", 1, 2)
+            _run_collate(root, narrative, narrative, "all", 1, 2)
 
             parent_text = narrative.md_path().read_text()
             self.assertIn("[section:all]: #", parent_text)
@@ -613,7 +611,6 @@ class TestSectionRangeEdgeCases(unittest.TestCase):
             self.assertIn("Line two.", child_text)
 
     def test_annotation_fully_before_range_is_not_moved(self) -> None:
-        """A sub-node whose annotation is entirely before the selection stays put."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             parent_dir = narrative.md_path().parent
@@ -633,15 +630,12 @@ class TestSectionRangeEdgeCases(unittest.TestCase):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "early"], cwd=root, capture_output=True, check=True)
 
-            # Section only line 7 (the plain line), not the early section block.
-            _run_section_range(root, narrative, narrative, "later", 7, 7)
+            _run_collate(root, narrative, narrative, "later", 7, 7)
 
-            # early/ should remain at the root level — it was outside the range.
             self.assertTrue((parent_dir / "early").is_dir())
             self.assertTrue(narrative.child_node("early").exists())
 
     def test_annotation_fully_after_range_is_not_moved(self) -> None:
-        """A sub-node whose annotation is entirely after the selection stays put."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             parent_dir = narrative.md_path().parent
@@ -661,13 +655,12 @@ class TestSectionRangeEdgeCases(unittest.TestCase):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "late"], cwd=root, capture_output=True, check=True)
 
-            _run_section_range(root, narrative, narrative, "early", 1, 1)
+            _run_collate(root, narrative, narrative, "early", 1, 1)
 
             self.assertTrue((parent_dir / "late").is_dir())
             self.assertTrue(narrative.child_node("late").exists())
 
     def test_unclosed_annotation_outside_range_does_not_error(self) -> None:
-        """An unclosed cursor annotation that is entirely after the range is fine."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -677,8 +670,7 @@ class TestSectionRangeEdgeCases(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            # The unclosed annotation is at line 3; we section only line 1.
-            _run_section_range(root, narrative, narrative, "chunk", 1, 1)
+            _run_collate(root, narrative, narrative, "chunk", 1, 1)
 
             self.assertIn("[section:chunk]: #", narrative.md_path().read_text())
 
@@ -707,7 +699,7 @@ class TestSectionRangeEdgeCases(unittest.TestCase):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "multi"], cwd=root, capture_output=True, check=True)
 
-            _run_section_range(root, narrative, narrative, "combined", 1, 12)
+            _run_collate(root, narrative, narrative, "combined", 1, 12)
 
             combined = narrative.child_node("combined")
             self.assertTrue(combined.exists())

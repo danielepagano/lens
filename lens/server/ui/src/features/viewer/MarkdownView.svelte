@@ -103,7 +103,7 @@
 </script>
 
 <article data-testid="markdown-view" class="content">
-  {#if rendered}
+  {#if $currentAddress}
     {#if frontMatterPins.pins.length || frontMatterPins.unpins.length}
       <div class="pin-pills pin-pills-front-matter" data-testid="front-matter-pins">
         {#each frontMatterPins.pins as id (id)}
@@ -114,8 +114,10 @@
         {/each}
       </div>
     {/if}
-    <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
-    {@html rendered}
+    {#if rendered}
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
+      {@html rendered}
+    {/if}
     {#if isCursorNode}
       <div class="cursor-indicator-preview">
         <span class="cursor-indicator">&gt;</span>

@@ -20,7 +20,6 @@ _CLI_ALLOWLIST = frozenset(
     {
         "stats",
         "kb",
-        "section",
         "rewind",
         "design",
         "dnd",

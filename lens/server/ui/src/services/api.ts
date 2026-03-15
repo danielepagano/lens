@@ -305,7 +305,7 @@ export const runSectionEnd = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/section/end', params, onEvent)
 
-export interface SectionRangeParams {
+export interface CollateParams {
   id: string
   address: string
   start_line: number
@@ -315,11 +315,11 @@ export interface SectionRangeParams {
   llm_id?: string
 }
 
-export const runSectionRange = (
-  params: SectionRangeParams,
+export const runCollate = (
+  params: CollateParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/section/range', params, onEvent)
+  runStreamingOp('/operator/collate', params, onEvent)
 
 // ---- KB API ----
 

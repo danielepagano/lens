@@ -16,7 +16,7 @@
 ## Implemented Operators
 - `write` — inline narrative generation (cursor node)
 - `edit` — LLM rewrite of a line range (mutation mode, staged diff)
-- `section` — creates child node; `section start/end/range`
+- `section` — start/end section at cursor (`section <id>`, `section --end`); `collate` for after-the-fact range
 - `design` — **implemented** — Session Zero planning operator; uses command_tools (inline KB lookup mid-generation); lives in `lens/core/operators/design.py`
 - `play` — **implemented** — GM-voice narrative; requires `pc`-tagged KB object pinned; dataset-gated (dnd); lives in `lens/dnd/operators/play.py`
 

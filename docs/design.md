@@ -166,11 +166,8 @@ These are the core built-in core operators:
    - The usage of this operator (and many others) is tracked in the parent node using a comment block to track that it was triggered, how, and what it created
  - `edit` makes targeted changes to a contiguous text selection using AI (for example, to shorten or correct something).  
     - Unlike other operators, this is a destructive operation (previous version would be in git history). Note that users can always edit any file themselves (original or summaries) since they are just markdown files; this is an AI-assisted version of that.
- - `section` lets the user create a child node (with a slug unique for this level) with its own content, which when closed is summarized in parent node using an LLM. It can be used in two ways:
-    - A section can be explicitly started with empty content, which just creates a node, for example if we wanted to track a gaming session in its own section. Once the section is closed, the operator summarizes the entire node and sets it as its output in the original node.
-    - Users can also create sections "after the fact" by selecting a contiguous section of node text that must span whole sub-nodes (if any). The selection is placed in a new sub-node, immediately summarized, and the summary placed where the original selection was.  
-      - Because this operation can move sub-nodes in the selected range one level down, it may make large file operations, which are captured in git history.  
-      - This feature is important because we don't want the user to always be worried about structure: they should be able to keep adding, then compress sections (like a conversation or a side quest) after the fact to keep the current node at the right level of detail.
+- `section` lets the user create a child node at the cursor (with a slug unique for this level) with its own content; when closed, the operator summarizes the entire node and sets it as its output in the parent. Start with `lens section <id>`, close with `lens section --end`.
+- `collate` creates a section "after the fact" by selecting a contiguous line range at an arbitrary node. The selection is placed in a new sub-node, immediately summarized, and the summary placed where the original selection was. Because this operation can move sub-nodes in the selected range one level down, it may make large file operations, which are captured in git history. This lets users keep adding, then compress sections (e.g. a conversation or side quest) after the fact to keep the current node at the right level of detail.
 - The front-matter (node-level YAML storage) is used to share configuration across the node, and also to child nodes. It can be used by any operator, but initially it will be used to pin/un-pin knowledge items for Context-aware operators (see more below)
 
 ## Context-aware operator prompt assembly
@@ -213,6 +210,6 @@ Ultimately, Lens should have a simple, text-centric UX that's like a "markdown e
  - Most of the UI is about authoring or previewing markdown files.
  - At the bottom, a command strip that can navigate (replace main UI with results or a tree matching the file system), enter editing mode, or call operators.
    - For example we are running the simulation, and I can just say `/write "introduce a suspicious vendor" -pin npc.forgery_guy` and it will generate and run that write operator with that extra pin
-   - You also need to be able to mark begin/end of text for creating sections, being able to zoom in and out of sections, etc. so something like `/section my-aside 123-133` those being line numbers, but after you write `/section my-aside` the UI lets you go to the doc and mark the start and end 
+   - You also need to be able to mark begin/end of text for creating sections, being able to zoom in and out of sections, etc. so something like `/collate my-aside /chapter-1 123 133` (or after `/collate my-aside` the UI lets you pick the node and mark the start and end) 
    - Lifecycle features like committing a checkpoint, like `/commit went shopping and found a forger`
  - Sufficiently user-friendly, with hints and auto-complete, and works well on a phone... maybe not as much typing if you can just tap on things.

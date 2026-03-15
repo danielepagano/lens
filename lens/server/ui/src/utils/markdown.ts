@@ -109,6 +109,7 @@ function pushRemovedContent(
 function renderAnnotationWithBody(
   lines: string[],
   bodyStart: number,
+  openingLineNo: number,
   operator: string,
   id: string,
   childAddr: string,
@@ -135,13 +136,16 @@ function renderAnnotationWithBody(
 
   const bodyText = bodyLines.join('\n').trim()
   const output: string[] = []
+  const closingLineNo = j + 1
 
   if (bodyText) {
     output.push(renderHeading(label, childAddr))
     const bodyStartLine = bodyStart + 1
+    for (let lineNo = openingLineNo; lineNo <= closingLineNo; lineNo++) {
+      pushRemovedContent(output, removedByLine, lineNo)
+    }
     for (let k = 0; k < bodyLines.length; k++) {
       const fileLine = bodyStartLine + k
-      pushRemovedContent(output, removedByLine, fileLine)
 
       const outLine = bodyLines[k]
       const isAdded =
@@ -229,6 +233,7 @@ export function preprocessAnnotations(
     if (ANNOTATION_OPEN_RE.test(line) && !ANNOTATION_RE.test(line)) {
       const openMatch = line.match(ANNOTATION_OPEN_RE)
       const og = openMatch?.groups
+      const multiLineOpeningLineNo = lineNo
       // Advance past the parameter lines to the `]: #` closing line
       i++
       while (i < lines.length && !ANNOTATION_END_RE.test(lines[i])) {
@@ -241,7 +246,7 @@ export function preprocessAnnotations(
         const label =
           toLabel(og.id) + (og.operator !== 'section' ? ` (${toLabel(og.operator)})` : '')
         const { output, nextI } = renderAnnotationWithBody(
-          lines, i, og.operator, og.id, childAddr, label, overlay, removedByLine,
+          lines, i, multiLineOpeningLineNo, og.operator, og.id, childAddr, label, overlay, removedByLine,
         )
         result.push(...output)
         i = nextI
@@ -281,7 +286,7 @@ export function preprocessAnnotations(
       }
 
       const { output, nextI } = renderAnnotationWithBody(
-        lines, i + 1, operator, id, childAddr, label, overlay, removedByLine,
+        lines, i + 1, lineNo, operator, id, childAddr, label, overlay, removedByLine,
       )
       result.push(...output)
       i = nextI

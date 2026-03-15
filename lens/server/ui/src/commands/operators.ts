@@ -1,4 +1,4 @@
-import { runWrite, runEdit, runPlay, StreamBusyError, type OperatorEvent } from '../services/api'
+import { runWrite, runEdit, runPlay, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent } from '../services/api'
 import { cliOutput, treeRefreshTrigger } from '../stores/ui'
 import { streamingPreview } from '../stores/document'
 import type {
@@ -64,6 +64,32 @@ const commands: CommandDefinition[] = [
       { name: 'replace', hint: "don't use AI, replace text with prompt directly" },
     ],
   },
+  {
+    trigger: 'section',
+    group: 'narrative',
+    positional: [{ name: 'id', valueType: 'slug', required: false, hint: 'section ID to start (or use --end to close)' }],
+    options: [
+      { name: 'end', hint: 'close the current section' },
+      { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM for summary (when ending)' },
+    ],
+  },
+  {
+    trigger: 'collate',
+    group: 'narrative',
+    positional: [
+      { name: 'id', valueType: 'slug', required: true, hint: 'section ID for the new child' },
+      { name: 'address', valueType: 'address', required: true, hint: 'node address to section' },
+      { name: 'start', valueType: 'int', required: true, hint: 'start line' },
+      { name: 'end', valueType: 'int', required: true, hint: 'end line' },
+    ],
+    options: [
+      { name: 'pin', valueType: 'kb-id', repeatable: true },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
+    ],
+  },
 ]
 
 const handler: CommandHandler = async (
@@ -106,19 +132,49 @@ const handler: CommandHandler = async (
   streamingPreview.set({ targetNode: '', text: '' })
 
   try {
-    let result
+    let result: { type: string; message?: string; interrupted?: boolean } | { status: string; node: string }
 
     if (command === 'write') {
       result = await runWrite(
         { prompt, pins, unpins, llm_id: llmId, retry },
         handleEvent
       )
-    } if (command === 'play') {
+    } else if (command === 'play') {
       if (prompt === undefined) {
         throw new Error(`Play requires a prompt`)
       }
       result = await runPlay(
         { prompt, pins, unpins, llm_id: llmId, retry, as_pc },
+        handleEvent
+      )
+    } else if (command === 'section') {
+      const endSection = ctx.args.options['end'] === true
+      const sectionId = ctx.args.positional['id'] as string | undefined
+      if (endSection && sectionId) {
+        throw new Error('Cannot use section ID and --end together')
+      }
+      if (endSection) {
+        result = await runSectionEnd({ llm_id: llmId }, handleEvent)
+      } else if (sectionId) {
+        result = await runSectionStart({ id: sectionId, pins, unpins })
+      } else {
+        throw new Error('Section requires an ID or --end')
+      }
+    } else if (command === 'collate') {
+      const address = normalizeAddress(ctx.args.positional['address'] as string)
+      const startLine = parseInt(ctx.args.positional['start'] as string, 10)
+      const endLine = parseInt(ctx.args.positional['end'] as string, 10)
+      const collateId = ctx.args.positional['id'] as string
+      result = await runCollate(
+        {
+          id: collateId,
+          address: address!,
+          start_line: startLine,
+          end_line: endLine,
+          pins,
+          unpins,
+          llm_id: llmId,
+        },
         handleEvent
       )
     } else {
@@ -149,9 +205,10 @@ const handler: CommandHandler = async (
     if (ctx.onDone) await ctx.onDone()
     treeRefreshTrigger.update((n) => n + 1)
 
-    if (result.type === 'error' || errorOutput) {
+    const isError = 'type' in result && result.type === 'error'
+    if (isError || errorOutput) {
       cliOutput.set({
-        output: errorOutput || (result.type === 'error' ? result.message : ''),
+        output: errorOutput || (isError ? (result as { message?: string }).message : ''),
         exitCode: 1,
         streaming: false,
       })
@@ -159,7 +216,8 @@ const handler: CommandHandler = async (
     }
 
     cliOutput.set(null)
-    return { clearInput: !result.interrupted }
+    const interrupted = 'interrupted' in result && result.interrupted
+    return { clearInput: !interrupted }
   } catch (err) {
     // Clear streaming preview on error
     streamingPreview.set(null)

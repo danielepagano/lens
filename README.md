@@ -4,7 +4,7 @@ Filesystem-native, forward-only narrative trees and a knowledge store for modula
 
 ## Overview
 
-Lens is a filesystem-native narrative engine for collaborative AI-assisted storytelling. Stories live in a **fractal tree** of Markdown nodes, grounded in a **knowledge store** (places, people, lore). Humans and AI work via **operators** like `write`, `edit`, and `section`; changes are **transactional** (Git unstaged = preview, commit when ready).
+Lens is a filesystem-native narrative engine for collaborative AI-assisted storytelling. Stories live in a **fractal tree** of Markdown nodes, grounded in a **knowledge store** (places, people, lore). Humans and AI work via **operators** like `write`, `edit`, `section`, and `collate`; changes are **transactional** (Git unstaged = preview, commit when ready).
 
 - **Forward-only narrative** — Once committed, it’s canon; the system evolves from the current state.
 - **Fractal summarization** — High-level nodes summarize detail below so the AI keeps long-term continuity.

@@ -18,7 +18,7 @@
 ## Platform
 
 - **UI for cursor operators**: invoke from UI so we can stream content to markdown, not just console output 
-- **UI for editing operators**: Implement the "After-the-fact sectioning", "Rewind", and "Edit range" UI (selecting lines/ranges from CLI is not practical).
+- **UI for editing operators**: Implement the "Collate" (after-the-fact sectioning), "Rewind", and "Edit range" UI (selecting lines/ranges from CLI is not practical).
 - Additional UI for **KB operations**
 - *Cloud Deployment**: See [Deployment Design](./deployment-design.md). Local machine deploy wirh dynamic dns and caddy already implemented.
 

@@ -139,13 +139,23 @@ class TestDatasetCLI(unittest.TestCase):
 
     def test_section_blocked(self) -> None:
         result = subprocess.run(
-            _LENS_CMD + ["section", "start", "ch1"],
+            _LENS_CMD + ["section", "ch1"],
             cwd=self.dataset_dir,
             capture_output=True,
             text=True,
         )
         self.assertEqual(result.returncode, 1)
         self.assertIn("section is not available in dataset mode", result.stderr)
+
+    def test_collate_blocked(self) -> None:
+        result = subprocess.run(
+            _LENS_CMD + ["collate", "ch1", "/story", "1", "5"],
+            cwd=self.dataset_dir,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("collate is not available in dataset mode", result.stderr)
 
     def test_write_blocked(self) -> None:
         result = subprocess.run(

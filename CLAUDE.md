@@ -92,7 +92,7 @@ lens/
   cli/           # Typer CLI layer (argument parsing, error display)
     main.py      # Entry point + preflight callback
     commands/    # Non-AI commands (init, use, kb, pin, stats, rollback, commit, checkpoint, dnd)
-    operators/   # AI operator CLI adapters (write, edit, section, play, design)
+    operators/   # AI operator CLI adapters (write, edit, section, collate, play, design)
     test/        # CLI unit tests
   core/          # Business logic (no Typer dependency)
     project.py   # Git/project root discovery, active narrative resolution
@@ -110,7 +110,7 @@ lens/
     chain.py     # ChainSpec: deferred operator chaining within a transaction
     exceptions.py # Shared exception types
     commands/    # Core implementations for non-operator commands
-    operators/   # Core implementations for AI operators (write, edit, section, design)
+    operators/   # Core implementations for AI operators (write, edit, section, collate, design)
     test/        # Core unit tests
       integration/  # Integration tests
   dnd/           # Dataset-specific package (commands, operators when dnd in scope)
