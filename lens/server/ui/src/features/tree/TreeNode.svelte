@@ -5,6 +5,7 @@
 
   export let node: TreeNode
   export let onNavigate: (addr: string) => void
+  export let isRoot = false
 
   $: isCursor = $stats?.cursor === node.address
 </script>
@@ -12,6 +13,7 @@
 <li>
   <button
     class="tree-node-btn"
+    class:tree-node-root={isRoot}
     class:active={$currentAddress === node.address}
     class:cursor-node={isCursor}
     on:click={() => onNavigate(node.address)}

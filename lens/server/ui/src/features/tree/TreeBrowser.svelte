@@ -31,7 +31,7 @@
     const slug = (e.target as HTMLSelectElement).value
     try {
       await setActiveNarrative(slug)
-      await loadTree()
+      treeRefreshTrigger.update((n) => n + 1)
       const newStats = await getStats()
       applyStats(newStats)
       if (newStats.cursor) {
@@ -71,9 +71,9 @@
     {:else if tree.length === 0}
       <p class="empty-state">No sub-nodes</p>
     {:else}
-      <ul class="tree-list">
-        {#each tree as root (root.address)}
-          <TreeNodeComp node={root} onNavigate={onNodeNavigate} />
+      <ul class="tree-list tree-list-top">
+        {#each tree as node, i (node.address)}
+          <TreeNodeComp node={node} isRoot={i === 0} onNavigate={onNodeNavigate} />
         {/each}
       </ul>
     {/if}

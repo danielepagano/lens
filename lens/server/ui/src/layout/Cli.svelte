@@ -202,8 +202,15 @@
         replaceCurrentToken(sug.value + ' ')
         return
       case 'node':
-        // Node address: if has children, append slash; otherwise space
-        replaceCurrentToken(sug.value + (sug.nodeHasChildren ? '/' : ' '))
+        if (sug.value === '/') {
+          // Root: insert bare '/' (no trailing space) when it has children so the parser
+          // keeps '/' as the current typing token and autocomplete can show children.
+          // If root is a leaf, add a space to mark it complete.
+          replaceCurrentToken(sug.nodeHasChildren ? '/' : '/ ')
+        } else {
+          // Non-root: drill into children with trailing '/', or complete with space.
+          replaceCurrentToken(sug.value + (sug.nodeHasChildren ? '/' : ' '))
+        }
         return
     }
   }

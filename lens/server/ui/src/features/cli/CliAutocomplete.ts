@@ -193,8 +193,17 @@ function getAddressSuggestions(
     return []
   }
 
-  const endsWithSlash = partial.endsWith('/')
-  const rawSegments = partial ? partial.split('/').filter(Boolean) : []
+  // The tree always has the narrative root as its single top-level node.
+  // Address values use leading-slash form ('/' for root, '/ch1' for child), but tree
+  // keys are rootKey-prefixed. Map leading-slash partials to rootKey-prefixed navigation
+  // paths so tree traversal works correctly.
+  // e.g. partial='/'    → navPartial='story/'   (navigate into root's children)
+  //      partial='/ch1'  → navPartial='story/ch1' (match ch1 inside root)
+  const rootKey = sources.nodeTree.length > 0 ? sources.nodeTree[0].key : null
+  const navPartial = rootKey && partial.startsWith('/') ? rootKey + partial : partial
+
+  const endsWithSlash = navPartial.endsWith('/')
+  const rawSegments = navPartial ? navPartial.split('/').filter(Boolean) : []
   let nodes: TreeNode[] = sources.nodeTree
 
   // Navigate to current level
@@ -215,11 +224,16 @@ function getAddressSuggestions(
     ? nodes.filter((n) => n.key.startsWith(currentPrefix))
     : nodes
 
-  return filtered.map((n) => ({
-    label: n.key,
-    value: baseWithSlash + n.key,
-    kind: 'node' as const,
-    group,
-    nodeHasChildren: n.children.length > 0,
-  }))
+  return filtered.map((n) => {
+    const raw = baseWithSlash + n.key
+    let value: string
+    if (rootKey) {
+      if (raw === rootKey) value = '/'
+      else if (raw.startsWith(rootKey + '/')) value = raw.slice(rootKey.length)
+      else value = raw
+    } else {
+      value = raw
+    }
+    return { label: n.key, value, kind: 'node' as const, group, nodeHasChildren: n.children.length > 0 }
+  })
 }

@@ -161,11 +161,23 @@ select {
 
 ul.tree-list {
   list-style: none;
-  padding: 0 0 0 1.5rem;
+  padding: 0;
+  padding-inline-start: 0; /* override browser UA 40px default */
+  margin: 0;
+}
+
+ul.tree-list.tree-list-top {
+  padding-left: 0;
 }
 
 ul.tree-list ul.tree-list {
-  padding-left: 0.5rem;
+  padding-left: 1rem;
+  padding-inline-start: 1rem;
+}
+
+ul.tree-list li {
+  list-style: none;
+  margin: 0;
 }
 
 .tree-node-btn {
@@ -173,12 +185,12 @@ ul.tree-list ul.tree-list {
   border: none;
   cursor: pointer;
   text-align: left;
-  padding: 0.35rem;
+  padding: 0.2rem 0.35rem;
   width: 100%;
   border-radius: 4px;
   display: block;
   color: #777;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -186,6 +198,11 @@ ul.tree-list ul.tree-list {
 
 .tree-node-btn:hover {
   background: var(--pico-secondary-hover-background);
+}
+
+.tree-node-btn.tree-node-root {
+  font-weight: bold;
+  color: var(--pico-color);
 }
 
 .tree-node-btn.active {

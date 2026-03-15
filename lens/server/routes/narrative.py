@@ -28,10 +28,7 @@ def tree(session: ProjectSession = Depends(get_session)) -> list[dict[str, Any]]
     if session.active_narrative is None:
         return []
     root = session.active_narrative
-    keys = root.child_keys()
-    if not keys:
-        return [_node_to_dict(root)]
-    return [_node_to_dict(root.child_node(key)) for key in keys]
+    return [_node_to_dict(root)]
 
 
 @router.get("/narrative/node/{address:path}")
