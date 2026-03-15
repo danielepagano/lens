@@ -113,8 +113,8 @@ export function parseCliInput(raw: string, def: CommandDefinition | null): Parse
     const pos = positionals[posIdx]
     if (!pos) break
     const vt = pos.valueType ?? 'flag'
-    if (vt === 'string') {
-      // String positional: consume all remaining non-option tokens
+    if (vt === 'string' || vt === 'prompt') {
+      // String/prompt positional: consume all remaining non-option tokens
       completedPositional[pos.name] = nonOptionTokens.slice(nonOptIdx).join(' ')
       nonOptIdx = nonOptionTokens.length
       break
@@ -178,7 +178,7 @@ export function parseCliInput(raw: string, def: CommandDefinition | null): Parse
   function nextPositionalSlot(): CliPayload | undefined {
     for (const pos of positionals) {
       const vt = pos.valueType ?? 'flag'
-      if (vt === 'string') return pos  // string is always the active slot once reached
+      if (vt === 'string' || vt === 'prompt') return pos  // string/prompt is always the active slot once reached
       const filled = completedPositional[pos.name]
       if (filled === undefined) return pos
       if (pos.repeatable) return pos  // repeatable can always take more
@@ -237,7 +237,7 @@ export function buildArgs(state: ParseState, def: CommandDefinition | null = nul
       }
     } else if (state.phase === 'positional') {
       const vt = valueType ?? 'flag'
-      if (vt === 'string') {
+      if (vt === 'string' || vt === 'prompt') {
         const existing = positional[name] as string | undefined
         positional[name] = existing ? existing + ' ' + state.currentToken : state.currentToken
       } else if (repeatable) {

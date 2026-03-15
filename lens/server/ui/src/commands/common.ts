@@ -1,7 +1,7 @@
 // ---- CLI Payload Type System ----
 import type { Stats } from '../services/api'
 
-export type CliPayloadType = 'flag' | 'string' | 'slug' | 'kb-id' | 'address' | 'line'
+export type CliPayloadType = 'flag' | 'string' | 'slug' | 'kb-id' | 'address' | 'line' | 'prompt'
 
 export interface CliPayload {
   name: string
