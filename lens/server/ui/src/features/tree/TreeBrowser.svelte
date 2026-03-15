@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { getTree, getStats, setActiveNarrative } from '../../services/api'
   import type { TreeNode } from '../../services/api'
-  import { treeOpen, treeRefreshTrigger } from '../../stores/ui'
+  import { treeOpen, treeRefreshTrigger, scrollContentToBottom } from '../../stores/ui'
   import { applyStats, stats } from '../../stores/stats'
   import TreeNodeComp from './TreeNode.svelte'
   import CloseIcon from '../../components/icons/CloseIcon.svelte'
@@ -43,9 +43,13 @@
     }
   }
 
-  function onNodeNavigate(addr: string) {
-    navigate(addr)
+  async function onNodeNavigate(addr: string) {
+    const isCursor = $stats?.cursor === addr
+    await navigate(addr)
     treeOpen.set(false)
+    if (isCursor) {
+      scrollContentToBottom.update((n) => n + 1)
+    }
   }
 </script>
 

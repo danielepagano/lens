@@ -1,6 +1,6 @@
 import type { CommandDefinition } from '../../commands/common'
 import type { ParseState } from '../../commands/parser'
-import type { TreeNode, Stats } from '../../services/api'
+import type { TreeNode, Stats, MountEntry } from '../../services/api'
 
 export interface Suggestion {
   label: string
@@ -18,6 +18,8 @@ export interface DataSources {
   fetchNodeTree: () => void
   kbKeyThreshold: number
   stats: Stats | null
+  mountDirCache: Map<string, MountEntry[]>
+  fetchMountDir: (path: string) => void
 }
 
 /** Build command-level suggestions (no definition resolved yet). */
@@ -126,6 +128,8 @@ function getPositionalSuggestions(
       const rawSuggestions = getKbIdSuggestions(kbPart, group, sources)
       return rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
     }
+    case 'file-path':
+      return getFileSuggestions(currentToken, group, sources)
     default:
       return []
   }
@@ -256,4 +260,35 @@ function getAddressSuggestions(
     }
     return { label: n.key, value, kind: 'node' as const, group, nodeHasChildren: n.children.length > 0 }
   })
+}
+
+function getFileSuggestions(
+  partial: string,
+  group: string,
+  sources: DataSources,
+): Suggestion[] {
+  // Split partial into directory prefix and filename prefix
+  const lastSlash = partial.lastIndexOf('/')
+  const dirPrefix = lastSlash >= 0 ? partial.slice(0, lastSlash + 1) : ''
+  const namePrefix = lastSlash >= 0 ? partial.slice(lastSlash + 1) : partial
+
+  const cacheKey = dirPrefix || ''
+  if (!sources.mountDirCache.has(cacheKey)) {
+    sources.fetchMountDir(cacheKey)
+    return []
+  }
+
+  const entries = sources.mountDirCache.get(cacheKey) ?? []
+  const lowerPrefix = namePrefix.toLowerCase()
+  const filtered = namePrefix
+    ? entries.filter((e) => e.name.toLowerCase().startsWith(lowerPrefix))
+    : entries
+
+  return filtered.map((e) => ({
+    label: e.name + (e.is_dir ? '/' : ''),
+    value: dirPrefix + e.name,
+    kind: 'node' as const,
+    group,
+    nodeHasChildren: e.is_dir,
+  }))
 }

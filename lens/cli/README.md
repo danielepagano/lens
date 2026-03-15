@@ -464,3 +464,44 @@ Discards the pending operator transaction. The behaviour differs by operator typ
 lens rollback
 ```
 
+## Media attachments (`lens attach`)
+
+Attach a local media file at the narrative cursor. The file must live inside the project's configured `mount_point` directory (see below). The server proxies these files so the web UI can display them.
+
+```bash
+lens attach hero.jpg                 # embed image at cursor
+lens attach sub/clip.mp4             # embed video from a subdirectory
+lens attach docs/brief.pdf           # embed document link
+lens attach hero.jpg --preview       # validate only — print type without writing
+```
+
+Arguments: `PATH`
+
+- `PATH` — path relative to `mount_point`. Subdirectories are allowed (e.g. `photos/hero.jpg`).
+
+Options: `--preview` — validate the file exists and report its type without inserting anything.
+
+Supported file types:
+
+| Type     | Extensions                          | Embed format        |
+|----------|-------------------------------------|---------------------|
+| image    | `.jpg` `.jpeg` `.png` `.webp` `.gif` | `![name](url)`      |
+| video    | `.mp4` `.webm` `.mov` `.avi`        | `<video>` tag       |
+| document | `.pdf` `.txt` `.md`                 | `[name](url)` link  |
+
+The command is only available when `mount_point` is set in `lens.toml`. If the project has no mount point, `lens attach` does not appear.
+
+### Configuring `mount_point`
+
+Add `mount_point` to the `[project]` section of your `lens.toml`:
+
+```toml
+[project]
+narrative   = "my-campaign"
+mount_point = "media"          # relative to the project root, or an absolute path
+```
+
+The `media/` directory (or whatever path you choose) is the root for all attached files. It is not managed by Lens — create and organise it however you like. Only files inside this directory can be attached.
+
+A relative path is resolved from the project root. An absolute path is used as-is.
+

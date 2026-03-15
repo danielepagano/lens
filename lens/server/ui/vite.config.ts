@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 
@@ -11,6 +12,12 @@ export default defineConfig({
   build: {
     outDir: '../static',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        preview: resolve(__dirname, 'preview.html'),
+      },
+    },
   },
   server: {
     proxy: {
@@ -21,6 +28,12 @@ export default defineConfig({
           const url = req.url ?? '/'
           const accept = req.headers?.accept ?? ''
           const upgrade = req.headers?.upgrade ?? ''
+
+          // Preview sub-app: serve preview.html from the Vite dev server.
+          if (url.startsWith('/mount/preview/')) return '/preview.html'
+
+          // All other mount requests proxy to the backend (file downloads send Accept: text/html).
+          if (url.startsWith('/mount/')) return null
 
           // Let Vite serve the UI shell + HMR/internal assets.
           if (

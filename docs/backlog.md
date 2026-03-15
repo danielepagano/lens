@@ -18,7 +18,8 @@
 ## Platform
 
 - **Direct editing** of markdown nodes 
-- *Cloud Deployment**: See [Deployment Design](./deployment-design.md). Local machine deploy wirh dynamic dns and caddy already implemented.
+- **Cloud Deployment**: See [Deployment Design](./deployment-design.md).  
+  - Local machine deploy with dynamic DNS and caddy already implemented.
 
 ## Ideas
 

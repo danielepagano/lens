@@ -38,5 +38,6 @@ def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
         "kb_count": result.kb_count,
         "effective_pins_at_cursor": result.effective_pins_at_cursor,
         "available_llms": result.available_llms,
+        "has_mount": result.has_mount,
         "transaction": transaction,
     }

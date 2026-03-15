@@ -1,4 +1,5 @@
 import type { CommandDefinition, CommandHandler, CommandModule } from './common'
+import { attachModule } from './attach'
 import { cliModule } from './cli'
 import { transactionModule } from './transaction'
 import { narrativeModule } from './narrative'
@@ -12,6 +13,7 @@ const MODULES: CommandModule[] = [
   narrativeModule,
   operatorModule,
   cliModule,
+  attachModule,
 ]
 
 function buildFromModules(

@@ -65,17 +65,21 @@ api_key_env      = "OPENAI_API_KEY"
 
 Any OpenAI-compatible endpoint works (e.g. Anthropic via openai-compat proxy, Ollama, Together AI, etc.) — just set `base_url` accordingly.
 
-### Verbose LLM logging
+### `[project]` settings
 
-To log full prompts and responses in a human-readable format (useful for debugging operator output), add `verbose_llm = true` to the `[project]` section:
+The `[project]` section in `lens.toml` controls project-level options:
 
 ```toml
 [project]
-narrative    = "my-campaign"
-verbose_llm  = true
+narrative    = "my-campaign"   # active narrative (set by `lens use`)
+datasets     = ["dnd"]         # optional dataset bundles to include
+mount_point  = "media"         # optional: local directory for attached media files
+verbose_llm  = true            # optional: log full LLM prompts/responses at INFO level
 ```
 
-With this enabled, each LLM call will emit a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` formatted block to the logger at `INFO` level — showing the exact prompt sent and the full response received, with no raw protocol noise.
+**`mount_point`** — enables the `lens attach` command and the web UI's media browser. Set it to a path relative to the project root (or an absolute path) where you keep images, videos, and documents you want to embed in narrative nodes. The directory is not managed by Lens; organise it however you like. Only files inside this directory can be attached.
+
+**`verbose_llm`** — when `true`, each LLM call emits a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` block to the logger at `INFO` level — showing the exact prompt and full response with no raw protocol noise.
 
 ## More Documentation
 

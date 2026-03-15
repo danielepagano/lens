@@ -38,3 +38,6 @@ export interface KbFilterState {
 }
 
 export const kbFilters = writable<KbFilterState>({ type: '', tags: [] })
+
+/** Increment to request the main content area to scroll to bottom (e.g. when opening cursor node from tree). */
+export const scrollContentToBottom = writable(0)

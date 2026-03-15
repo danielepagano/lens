@@ -63,6 +63,7 @@ export interface Stats {
   kb_count: number
   effective_pins_at_cursor: string[] | null
   available_llms: string[]
+  has_mount: boolean
   transaction: TransactionState | null
 }
 
@@ -482,6 +483,24 @@ export interface RewindResponse {
 
 export const narrativeRewind = (params: RewindParams): Promise<RewindResponse> =>
   post('/narrative/rewind', params) as Promise<RewindResponse>
+
+export interface MountEntry {
+  name: string
+  is_dir: boolean
+}
+
+export interface AttachResponse {
+  status: string
+  type?: string
+  embed?: string
+  detail?: string
+}
+
+export const browseMountDir = (path = ''): Promise<MountEntry[]> =>
+  get(`/mount/browse?path=${encodeURIComponent(path)}`) as Promise<MountEntry[]>
+
+export const attachFile = (path: string): Promise<AttachResponse> =>
+  post('/attach', { path }) as Promise<AttachResponse>
 
 export const getNodeAddresses = async (): Promise<string[]> => {
   const tree = await getTree()

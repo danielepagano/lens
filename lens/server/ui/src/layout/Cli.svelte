@@ -8,8 +8,8 @@
   import { cliOutput, transactionResult, treeRefreshTrigger, linePickMode, linePickSelection } from '../stores/ui'
   import { currentAddress } from '../stores/document'
   import { stats } from '../stores/stats'
-  import { getKbItems, getTree } from '../services/api'
-  import type { TreeNode } from '../services/api'
+  import { getKbItems, getTree, browseMountDir } from '../services/api'
+  import type { TreeNode, MountEntry } from '../services/api'
 
   const MAX_HISTORY = 50
 
@@ -34,6 +34,8 @@
   let kbKeyCache = new Map<string, string[]>()
   let nodeTreeCache: TreeNode[] | null = null
   let nodeTreeFetchPending = false
+  let mountDirCache = new Map<string, MountEntry[]>()
+  let mountDirFetchPending = new Set<string>()
 
   $: {
     void $treeRefreshTrigger
@@ -108,6 +110,19 @@
     })
   }
 
+  function fetchMountDir(path: string) {
+    if (mountDirFetchPending.has(path)) return
+    mountDirFetchPending.add(path)
+    browseMountDir(path).then((entries) => {
+      mountDirCache = new Map(mountDirCache).set(path, entries)
+      updateCommandState()
+    }).catch(() => {
+      mountDirCache = new Map(mountDirCache).set(path, [])
+    }).finally(() => {
+      mountDirFetchPending.delete(path)
+    })
+  }
+
   function fetchNodeTree() {
     if (nodeTreeFetchPending || nodeTreeCache !== null) return
     nodeTreeFetchPending = true
@@ -130,6 +145,8 @@
       fetchNodeTree,
       kbKeyThreshold: 10,
       stats: $stats,
+      mountDirCache,
+      fetchMountDir,
     }
   }
 

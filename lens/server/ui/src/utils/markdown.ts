@@ -358,7 +358,19 @@ export function buildAnnotationLineSet(content: string): Set<number> {
 
 /** Shared markdown-it instance with settings matching the app's rendering needs. */
 export function createMarkdownRenderer(): MarkdownIt {
-  return new MarkdownIt({ html: true, linkify: true, typographer: true })
+  const md = new MarkdownIt({ html: true, linkify: true, typographer: true })
+  const fallback: NonNullable<typeof md.renderer.rules.link_open> = (tokens, idx, options, _env, self) =>
+    self.renderToken(tokens, idx, options)
+  const defaultLinkOpen = md.renderer.rules.link_open ?? fallback
+  md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+    const href = tokens[idx].attrGet('href')
+    if (href?.startsWith('/mount/file/') || href?.startsWith('/mount/preview/')) {
+      tokens[idx].attrSet('target', '_blank')
+      tokens[idx].attrSet('rel', 'noopener')
+    }
+    return defaultLinkOpen(tokens, idx, options, env, self)
+  }
+  return md
 }
 
 export function buildNodeTransactionOverlay(

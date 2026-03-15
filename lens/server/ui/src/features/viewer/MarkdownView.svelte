@@ -7,7 +7,8 @@
     buildNodeTransactionOverlay,
     buildAnnotationLineSet,
   } from '../../utils/markdown'
-  import { linePickMode, linePickSelection } from '../../stores/ui'
+  import { linePickMode, linePickSelection, scrollContentToBottom } from '../../stores/ui'
+  import { tick } from 'svelte'
 
   // html: true so that <!-- comments --> are rendered as real HTML comments
   // (invisible in browser) rather than as literal text. Safe for a private
@@ -105,6 +106,15 @@
 
   $: isLinePicking = $linePickMode !== null && $linePickMode.address === $currentAddress
 
+  let contentEl: HTMLElement | null = null
+
+  $: _scrollTrigger = $scrollContentToBottom
+  $: if (_scrollTrigger > 0 && contentEl) {
+    tick().then(() => {
+      if (contentEl) contentEl.scrollTo({ top: contentEl.scrollHeight, behavior: 'smooth' })
+    })
+  }
+
   $: sourceLines = (() => {
     if (!isLinePicking || !$nodeContent) return []
     const annoSet = buildAnnotationLineSet($nodeContent)
@@ -116,7 +126,7 @@
   })()
 </script>
 
-<article data-testid="markdown-view" class="content">
+<article data-testid="markdown-view" class="content" bind:this={contentEl}>
   {#if $currentAddress}
     {#if frontMatterPins.pins.length || frontMatterPins.unpins.length}
       <div class="pin-pills pin-pills-front-matter" data-testid="front-matter-pins">

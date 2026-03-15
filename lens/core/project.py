@@ -155,6 +155,24 @@ def require_lens_context(start: Path) -> tuple[Path, Path]:
     )
 
 
+def get_mount_point(project_root: Path) -> Path | None:
+    """Return the resolved mount_point path from [project] in lens.toml, or None."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return None
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    p = Path(raw.strip())
+    return p if p.is_absolute() else (project_root / p).resolve()
+
+
 def get_active_narrative(project_root: Path) -> NarrativeNode | None:
     lens_toml = project_root / "lens.toml"
     if not lens_toml.exists():
