@@ -131,7 +131,12 @@ const handler: CommandHandler = async (
     } else if (event.type === 'target') {
       const current = get(currentAddress)
       if (current !== event.node) {
+        // Set immediately so isStreamingToCurrentNode becomes true right away,
+        // then load node content in the background.
+        currentAddress.set(event.node)
         ctx.navigate?.(event.node)
+        // Refresh tree so newly created nodes (e.g. design sub-nodes) appear.
+        treeRefreshTrigger.update((n) => n + 1)
       }
       streamingPreview.update((prev) => ({
         targetNode: event.node,

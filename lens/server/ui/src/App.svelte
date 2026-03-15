@@ -68,11 +68,17 @@
     try {
       const newStats = await getStats()
       applyStats(newStats)
-      if (addr) {
-        const data = await getNode(addr)
-        nodeContent.set(data.content)
-      }
       const newCursor = newStats.cursor ?? null
+      if (addr) {
+        try {
+          const data = await getNode(addr)
+          nodeContent.set(data.content)
+        } catch {
+          // Node was deleted (e.g. rollback after cancel) — go to cursor.
+          if (newCursor) await navigate(newCursor)
+          return
+        }
+      }
       if (prevCursor === addr && newCursor !== prevCursor && newCursor) {
         navigate(newCursor)
       }
