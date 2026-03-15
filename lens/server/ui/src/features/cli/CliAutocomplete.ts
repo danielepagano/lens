@@ -62,12 +62,22 @@ export function getSuggestions(
       }))
   }
 
-  // Empty token, or typing in a string positional: show option chips + positional suggestions
-  // so the list doesn't pop in/out while editing. For string positionals we pass '' so we
+  // @mention autocomplete in prompt positionals: when typing @word, show KB type/key suggestions
+  if (
+    state.phase === 'positional' &&
+    state.activePayload?.valueType === 'prompt' &&
+    state.currentToken.startsWith('@')
+  ) {
+    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources)
+  }
+
+  // Empty token, or typing in a string/prompt positional: show option chips + positional suggestions
+  // so the list doesn't pop in/out while editing. For string/prompt positionals we pass '' so we
   // only show option chips (no positional suggestions for free-form text).
   const showChipsAndPositional =
     state.currentToken === '' ||
-    (state.phase === 'positional' && state.activePayload?.valueType === 'string')
+    (state.phase === 'positional' &&
+      (state.activePayload?.valueType === 'string' || state.activePayload?.valueType === 'prompt'))
   if (showChipsAndPositional) {
     const enteringOptionValue = state.phase === 'option-value'
     const optionChips: Suggestion[] = !enteringOptionValue && state.canOfferOptions && def?.options
@@ -109,6 +119,13 @@ function getPositionalSuggestions(
       return getKbIdSuggestions(currentToken, group, sources)
     case 'address':
       return getAddressSuggestions(currentToken, group, sources)
+    case 'prompt': {
+      // Only suggest when typing an @mention; strip the '@' for the KB lookup
+      if (!currentToken.startsWith('@')) return []
+      const kbPart = currentToken.slice(1)
+      const rawSuggestions = getKbIdSuggestions(kbPart, group, sources)
+      return rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
+    }
     default:
       return []
   }

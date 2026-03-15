@@ -28,7 +28,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'write',
     group: 'narrative',
-    positional: [{ name: 'prompt', valueType: 'string', hint: 'prompt text' }],
+    positional: [{ name: 'prompt', valueType: 'prompt', hint: 'prompt text' }],
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
@@ -41,7 +41,7 @@ const commands: CommandDefinition[] = [
     group: 'narrative',
     positional: [
       { name: 'id', valueType: 'slug', required: true, hint: 'design section ID' },
-      { name: 'prompt', valueType: 'string', hint: 'design prompt' },
+      { name: 'prompt', valueType: 'prompt', hint: 'design prompt' },
     ],
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
@@ -53,7 +53,7 @@ const commands: CommandDefinition[] = [
     trigger: 'play',
     group: 'dnd',
     requiresDataset: 'dnd',
-    positional: [{ name: 'prompt', valueType: 'string', required: true, hint: 'what do you do?' }],
+    positional: [{ name: 'prompt', valueType: 'prompt', required: true, hint: 'what do you do?' }],
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
@@ -68,7 +68,7 @@ const commands: CommandDefinition[] = [
       { name: 'address', valueType: 'address', required: true, hint: "node to edit" },
       { name: 'start', valueType: 'line', required: true, hint: 'start line number' },
       { name: 'end', valueType: 'line', required: true, hint: 'end line number' },
-      { name: 'prompt', valueType: 'string', required: false, hint: "prompt or text to --replace" },
+      { name: 'prompt', valueType: 'prompt', required: false, hint: "prompt or text to --replace" },
     ],
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true },
