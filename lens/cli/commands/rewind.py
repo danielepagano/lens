@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 from lens.core.address import NarrativeAddress
-from lens.core.commands.rewind import rewind_to_line, rewind_to_node
+from lens.core.commands.rewind import rewind as rewind_core
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession, resolve_address
 
@@ -89,10 +89,7 @@ def rewind(
     storage = session.new_storage()
 
     try:
-        if line is None:
-            rewind_to_node(target_node, storage)
-        else:
-            rewind_to_line(target_node, line, storage)
+        rewind_core(target_node, line, storage)
     except LensException as e:
         typer.echo(f"lens rewind: {e}", err=True)
         raise typer.Exit(1)

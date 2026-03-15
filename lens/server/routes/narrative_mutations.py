@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from lens.core.address import NarrativeAddress
 from lens.core.commands.pin import pin_add, pin_remove, pin_block, pin_unblock
-from lens.core.commands.rewind import rewind_to_line, rewind_to_node
+from lens.core.commands.rewind import rewind
 from lens.core.commands.use import use_narrative_for_project
 from lens.core.exceptions import LensException
 from lens.core.project import (
@@ -106,10 +106,7 @@ def narrative_rewind(
     storage = session.new_storage()
 
     try:
-        if body.line is None:
-            rewind_to_node(target_node, storage)
-        else:
-            rewind_to_line(target_node, body.line, storage)
+        rewind(target_node, body.line, storage)
     except LensException as e:
         return {"status": "error", "detail": str(e)}
 

@@ -56,6 +56,22 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
+def rewind(target: NarrativeNode, line: int | None, storage: Storage) -> None:
+    """Rewind the narrative to *target* (and optionally to *line* within it).
+
+    When *line* is None, the cursor is placed at the end of *target* (node-level).
+    When *line* is set, the target's file is truncated at that line, then the
+    cursor is placed at *target* (so later siblings in the parent are removed).
+
+    Raises ``LensException`` if the node does not exist or rewind cannot be applied.
+    """
+    if line is None:
+        rewind_to_node(target, storage)
+    else:
+        rewind_to_line(target, line, storage)
+        rewind_to_node(target, storage)
+
+
 def rewind_to_node(target: NarrativeNode, storage: Storage) -> None:
     """Make *target* the cursor by opening the path to it and cleaning its tail.
 

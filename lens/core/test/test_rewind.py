@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.core.commands.rewind import rewind_to_line, rewind_to_node
+from lens.core.commands.rewind import rewind, rewind_to_line, rewind_to_node
 from lens.core.exceptions import LensException
 from lens.core.narrative import NarrativeNode
 from lens.core.storage import Storage
@@ -832,3 +832,84 @@ class TestRewindToNodeFolderDeletion(unittest.TestCase):
 
         cursor = self.narrative.find_cursor()
         self.assertEqual(cursor.key_path, ("intro",))
+
+
+class TestRewindToTextInSection(unittest.TestCase):
+    """Rewind to a specific text line inside a section: line rewind then node rewind."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        tmp = Path(self._tmp)
+        _init_repo(tmp)
+        self.root, self.narrative = _make_project(tmp)
+        nd = self.narrative.md_path().parent
+
+        (nd / "a").mkdir()
+        (nd / "a" / "_node.md").write_text(
+            "text 2\n"
+            "[section:a1]: #\n"
+            "\n"
+            "a1 summary\n"
+            "\n"
+            "[/section:a1]: #\n",
+            encoding="utf-8",
+        )
+        (nd / "a" / "a1.md").write_text("text 3\n", encoding="utf-8")
+        (nd / "b.md").write_text("b content\n", encoding="utf-8")
+
+        self.narrative.md_path().write_text(
+            "text 1\n"
+            "[section:a]: #\n"
+            "\n"
+            "a summary\n"
+            "\n"
+            "[/section:a]: #\n"
+            "text 4\n"
+            "[section:b]: #\n"
+            "\n"
+            "b summary\n"
+            "\n"
+            "[/section:b]: #\n"
+            "text 5\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "rewind-to-text setup"],
+            cwd=self.root, capture_output=True, check=True,
+        )
+
+        self.section_a = self.narrative.child_node("a")
+        self.section_a1 = self.section_a.child_node("a1")
+        self.section_b = self.narrative.child_node("b")
+
+    def test_rewind_to_text2_removes_a1_text3_and_main_tail_cursor_at_section_a(self) -> None:
+        """
+        main has: text 1, section a (closed), text 4, section b (closed), text 5; cursor at end.
+        section a has: text 2, section a1 (closed); section a1 has text 3.
+
+        Rewind to text 2: first truncate section a at line 1, then rewind to node section a.
+        Assert: section a1 and text 3 deleted; text 4, section b, text 5 deleted from main;
+        cursor at end of section a after text 2.
+        """
+        storage = _new_storage(self.root)
+        rewind(self.section_a, 1, storage)
+
+        self.assertFalse(self.section_a1.exists())
+        self.assertFalse(self.section_b.exists())
+
+        section_a_text = self.section_a.md_path().read_text()
+        self.assertIn("text 2", section_a_text)
+        self.assertNotIn("[section:a1]", section_a_text)
+        self.assertNotIn("text 3", section_a_text)
+
+        root_text = self.narrative.md_path().read_text()
+        self.assertIn("text 1", root_text)
+        self.assertIn("[section:a]: #", root_text)
+        self.assertNotIn("[/section:a]", root_text)
+        self.assertNotIn("text 4", root_text)
+        self.assertNotIn("[section:b]", root_text)
+        self.assertNotIn("text 5", root_text)
+
+        cursor = self.narrative.find_cursor()
+        self.assertEqual(cursor.key_path, ("a",))
