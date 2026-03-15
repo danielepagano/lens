@@ -35,6 +35,7 @@ export interface CommandDefinition {
 export interface CommandContext {
   setBusyMessage(message: string | null): void
   onDone?: () => Promise<void>
+  navigate?: (addr: string) => Promise<void>
   args: ParsedArgs
 }
 

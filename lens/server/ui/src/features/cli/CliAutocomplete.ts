@@ -62,10 +62,13 @@ export function getSuggestions(
       }))
   }
 
-  // Empty token: show option chips + positional suggestions.
-  // While entering an option value (phase === 'option-value'), suppress other option chips
-  // so the user only sees suggestions for the value being typed — not other flags.
-  if (state.currentToken === '') {
+  // Empty token, or typing in a string positional: show option chips + positional suggestions
+  // so the list doesn't pop in/out while editing. For string positionals we pass '' so we
+  // only show option chips (no positional suggestions for free-form text).
+  const showChipsAndPositional =
+    state.currentToken === '' ||
+    (state.phase === 'positional' && state.activePayload?.valueType === 'string')
+  if (showChipsAndPositional) {
     const enteringOptionValue = state.phase === 'option-value'
     const optionChips: Suggestion[] = !enteringOptionValue && state.canOfferOptions && def?.options
       ? def.options

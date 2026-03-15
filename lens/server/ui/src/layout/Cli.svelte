@@ -13,6 +13,7 @@
   const MAX_HISTORY = 50
 
   export let onCliDone: (() => Promise<void>) | undefined = undefined
+  export let navigate: ((addr: string) => Promise<void>) | undefined = undefined
 
   let input = ''
   let busy = false
@@ -226,7 +227,10 @@
       input = (endsWithSpace ? input : input + ' ') + replacement
     } else {
       // Replace the last token
-      const beforeLastToken = input.slice(0, input.lastIndexOf(allTokens[allTokens.length - 1]!))
+      let beforeLastToken = input.slice(0, input.lastIndexOf(allTokens[allTokens.length - 1]!))
+      if (replacement.startsWith('-') && beforeLastToken.length > 0 && !beforeLastToken.endsWith(' ')) {
+        beforeLastToken += ' '
+      }
       input = beforeLastToken + replacement
     }
     updateCommandState()
@@ -363,6 +367,7 @@
     const ctx: CommandContext = {
       setBusyMessage(message: string | null) { busyMessage = message },
       onDone: onCliDone,
+      navigate,
       args,
     }
 

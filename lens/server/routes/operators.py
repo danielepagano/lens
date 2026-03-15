@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -102,11 +103,15 @@ def _validate_pins(session: ProjectSession, pins: list[str], unpins: list[str]) 
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+def _resolve_node(node_address: str | Callable[[], str]) -> str:
+    return node_address() if callable(node_address) else node_address
+
+
 async def _run_operator_task(
     coro_fn: Any,
     event_queue: asyncio.Queue[dict[str, Any] | None],
     operator_name: str,
-    node_address: str,
+    node_address: str | Callable[[], str],
     session: ProjectSession,
     *,
     extra_done_fields: dict[str, Any] | None = None,
@@ -117,7 +122,7 @@ async def _run_operator_task(
         done_payload: dict[str, Any] = {
             "type": "done",
             "operator": operator_name,
-            "node": node_address,
+            "node": _resolve_node(node_address),
             "interrupted": False,
         }
         if extra_done_fields:
@@ -140,14 +145,14 @@ async def _run_operator_task(
         await event_queue.put({
             "type": "done",
             "operator": operator_name,
-            "node": node_address,
+            "node": _resolve_node(node_address),
             "interrupted": True,
         })
     except KeyboardInterrupt:
         await event_queue.put({
             "type": "done",
             "operator": operator_name,
-            "node": node_address,
+            "node": _resolve_node(node_address),
             "interrupted": True,
         })
     except Exception as e:
@@ -159,10 +164,14 @@ async def _run_operator_task(
 
 def _make_on_token(
     event_queue: asyncio.Queue[dict[str, Any] | None],
-    node_address: str,
+    node_address: str | Callable[[], str],
 ) -> Any:
     async def on_token(chunk: str) -> None:
-        await event_queue.put({"type": "token", "text": chunk, "node": node_address})
+        await event_queue.put({
+            "type": "token",
+            "text": chunk,
+            "node": _resolve_node(node_address),
+        })
     return on_token
 
 
@@ -171,7 +180,7 @@ def _start_operator_stream(
     event_queue: asyncio.Queue[dict[str, Any] | None],
     session: ProjectSession,
     operator_name: str,
-    node_address: str,
+    node_address: str | Callable[[], str],
     coro_fn: Any,
 ) -> StreamingResponse:
     """Acquire the stream lock, launch operator task, return SSE response."""
@@ -271,11 +280,14 @@ async def operator_design(
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
     cursor = narrative.find_cursor()
-    node_addr = str(cursor.to_address())
+    target_ref: list[str] = [str(cursor.to_address())]
+
+    async def on_stream_target(addr: str) -> None:
+        target_ref[0] = addr
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue, node_addr)
+    on_token = _make_on_token(event_queue, lambda: target_ref[0])
 
     def coro_fn() -> Any:
         return DesignOperator.run_design(
@@ -287,10 +299,13 @@ async def operator_design(
             unpins=body.unpins,
             llm_id=body.llm_id,
             on_token=on_token,
+            on_stream_target=on_stream_target,
             cancel_event=lock.cancel_event,
         )
 
-    return _start_operator_stream(lock, event_queue, session, "design", node_addr, coro_fn)
+    return _start_operator_stream(
+        lock, event_queue, session, "design", lambda: target_ref[0], coro_fn
+    )
 
 
 @router.post("/operator/design/end")

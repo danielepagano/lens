@@ -145,6 +145,6 @@
   <StreamingPreviewPanel />
 
   <svelte:fragment slot="bottombar">
-    <Cli onCliDone={handleCliDone} />
+    <Cli onCliDone={handleCliDone} navigate={navigate} />
   </svelte:fragment>
 </MainLayout>

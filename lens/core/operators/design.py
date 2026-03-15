@@ -158,6 +158,7 @@ class DesignOperator(Operator):
         unpins: list[str],
         llm_id: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> KbExtractResult:
         """Create (or continue) a design sub-node, generate content, apply kb fences.
@@ -241,6 +242,9 @@ class DesignOperator(Operator):
             for name, (cmd_def, _) in cmd_registry.items()
         ]
         command_handlers = {name: fn for name, (_, fn) in cmd_registry.items()}
+
+        if on_stream_target is not None:
+            await on_stream_target(str(design_child.to_address()))
 
         # Generate with extended thinking + command tools.
         content = ""

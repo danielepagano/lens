@@ -8,7 +8,6 @@ import type {
 } from './common'
 
 const commands: CommandDefinition[] = [
-  { trigger: 'design',  group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'kb',      group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'stats',   group: 'cli', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help' },
   { trigger: 'dnd',     group: 'dnd', positional: [{ name: 'args', valueType: 'string' }], hint: 'args or --help',

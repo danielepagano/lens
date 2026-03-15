@@ -1,6 +1,7 @@
-import { runWrite, runEdit, runPlay, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent } from '../services/api'
+import { get } from 'svelte/store'
+import { runWrite, runEdit, runPlay, runDesign, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent } from '../services/api'
 import { cliOutput, treeRefreshTrigger } from '../stores/ui'
-import { streamingPreview } from '../stores/document'
+import { streamingPreview, currentAddress } from '../stores/document'
 import type {
   CommandContext,
   CommandDefinition,
@@ -33,6 +34,19 @@ const commands: CommandDefinition[] = [
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
       { name: 'retry' },
+    ],
+  },
+  {
+    trigger: 'design',
+    group: 'narrative',
+    positional: [
+      { name: 'id', valueType: 'slug', required: true, hint: 'design section ID' },
+      { name: 'prompt', valueType: 'string', hint: 'design prompt' },
+    ],
+    options: [
+      { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
     ],
   },
   {
@@ -115,6 +129,10 @@ const handler: CommandHandler = async (
     if (event.type === 'error') {
       errorOutput += event.message
     } else if (event.type === 'token') {
+      const current = get(currentAddress)
+      if (event.node && current !== event.node) {
+        ctx.navigate?.(event.node)
+      }
       streamingPreview.update((prev) => {
         if (prev && prev.targetNode === event.node) {
           return { ...prev, text: prev.text + event.text }
@@ -145,6 +163,16 @@ const handler: CommandHandler = async (
       }
       result = await runPlay(
         { prompt, pins, unpins, llm_id: llmId, retry, as_pc },
+        handleEvent
+      )
+    } else if (command === 'design') {
+      const designId = ctx.args.positional['id'] as string | undefined
+      if (!designId) {
+        throw new Error('Design requires an ID')
+      }
+      const designPrompt = (ctx.args.positional['prompt'] as string | undefined) || undefined
+      result = await runDesign(
+        { id: designId, prompt: designPrompt, pins, unpins, llm_id: llmId },
         handleEvent
       )
     } else if (command === 'section') {
@@ -208,7 +236,7 @@ const handler: CommandHandler = async (
     const isError = 'type' in result && result.type === 'error'
     if (isError || errorOutput) {
       cliOutput.set({
-        output: errorOutput || (isError ? (result as { message?: string }).message : ''),
+        output: errorOutput || (isError ? (result as { message?: string }).message ?? '' : ''),
         exitCode: 1,
         streaming: false,
       })
