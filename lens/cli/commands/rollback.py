@@ -2,26 +2,28 @@ from __future__ import annotations
 
 import typer
 
-from lens.core.commands.rollback import check_rollback_status, execute_rollback
+from lens.core.commands.rollback import rollback as rollback_core
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
 app = typer.Typer(invoke_without_command=True, add_completion=False)
+
 
 @app.callback()
 def rollback() -> None:
     """Discard the pending transaction, reverting all unstaged changes."""
     try:
         session = ProjectSession.from_cwd()
-        status = check_rollback_status(session)
+        result = rollback_core(session)
     except (RuntimeError, LensException) as e:
         typer.echo(f"lens rollback: {e}", err=True)
         raise typer.Exit(1)
 
-    if not status.has_pending:
+    if not result.performed:
         typer.echo("No pending transaction to roll back.")
         raise typer.Exit(0)
 
+    status = result.status
     if status.owner is not None:
         typer.echo(f"Pending transaction owner: {status.owner}")
     else:
@@ -33,12 +35,7 @@ def rollback() -> None:
             "transaction (claim tags removed, original text restored)."
         )
 
-    try:
-        execute_rollback(session)
-        if status.is_mutation:
-            typer.echo("Compensating transaction applied.")
-        else:
-            typer.echo("Transaction rolled back.")
-    except LensException as e:
-        typer.echo(f"lens rollback: {e}", err=True)
-        raise typer.Exit(1)
+    if status.is_mutation:
+        typer.echo("Compensating transaction applied.")
+    else:
+        typer.echo("Transaction rolled back.")

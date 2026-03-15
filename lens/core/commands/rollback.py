@@ -18,6 +18,27 @@ class RollbackStatus:
     owner: NarrativeAddress | None
     is_mutation: bool
 
+
+@dataclass
+class RollbackResult:
+    """Result of a rollback operation. ``performed`` is True if changes were discarded."""
+    performed: bool
+    status: RollbackStatus
+
+
+def rollback(session: ProjectSession) -> RollbackResult:
+    """Check for a pending transaction and, if present, discard it.
+
+    Returns a result with ``performed=True`` when a rollback was executed,
+    ``performed=False`` when there was nothing to roll back.
+    """
+    status = check_rollback_status(session)
+    if not status.has_pending:
+        return RollbackResult(performed=False, status=status)
+    execute_rollback(session)
+    return RollbackResult(performed=True, status=status)
+
+
 def check_rollback_status(session: ProjectSession) -> RollbackStatus:
     storage = session.new_storage()
     has_pending = storage.has_pending()

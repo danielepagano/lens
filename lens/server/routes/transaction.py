@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from lens.core.commands.checkpoint import execute_checkpoint
 from lens.core.commands.commit import execute_commit
-from lens.core.commands.rollback import check_rollback_status, execute_rollback
+from lens.core.commands.rollback import rollback
 from lens.core.project import ProjectSession
 from lens.core.exceptions import LensException
 from lens.server.dependencies import get_session
@@ -21,17 +21,17 @@ class CheckpointRequest(BaseModel):
 
 
 @router.post("/rollback")
-def rollback(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
+def rollback_route(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     try:
-        status = check_rollback_status(session)
-        if not status.has_pending:
+        result = rollback(session)
+        if not result.performed:
             return {"status": "ok", "detail": "no pending transaction"}
-        execute_rollback(session)
+        s = result.status
         return {
             "status": "ok",
             "detail": "transaction rolled back",
-            "owner": str(status.owner) if status.owner is not None else None,
-            "is_mutation": status.is_mutation,
+            "owner": str(s.owner) if s.owner is not None else None,
+            "is_mutation": s.is_mutation,
         }
     except (RuntimeError, LensException) as e:
         return {"status": "error", "detail": str(e)}
