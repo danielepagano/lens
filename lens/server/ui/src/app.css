@@ -734,6 +734,7 @@ ul.tree-list li {
 
 .line-row.pickable {
   cursor: pointer;
+  width: 100%;
 }
 
 .line-row.pickable:hover,
@@ -758,6 +759,7 @@ ul.tree-list li {
   font-size: 0.8rem;
   flex: 1;
   min-width: 0;
+  padding-right: 0.5rem;
 }
 
 .line-row.annotation .line-number,

@@ -80,12 +80,6 @@ Both support `--host` and `--port` options. The server uses the project (or data
 | POST | `/commit` | Stage the current pending transaction (moves unstaged → staged). |
 | POST | `/checkpoint` | Commit all staged changes and push to the remote repo. Body: `{"message": "...", "push": true}` (both optional). |
 
-### D&D (dataset-gated)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/dnd/balance` | Calculate balanced combat encounters. Body: `{"required": [{"id": "...", "count": N}], "optional": [...], "difficulty": "low"\|"moderate"\|"high", "pcs": [...], "allies": [...]}`. Returns 404 if `dnd` dataset not active. |
-
 ### CLI streaming
 
 | Method | Path | Description |

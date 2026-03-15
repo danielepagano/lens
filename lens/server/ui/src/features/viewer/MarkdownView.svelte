@@ -131,17 +131,15 @@
     {#if isLinePicking}
       <div class="line-picker" data-testid="line-picker">
         {#each sourceLines as { lineNo, text, pickable } (lineNo)}
-          <div
-            class="line-row"
-            class:pickable
-            class:annotation={!pickable}
-            role={pickable ? 'button' : 'presentation'}
-            tabindex={pickable ? 0 : -1}
-            on:click={() => pickable && linePickSelection.set(lineNo)}
-            on:keydown={(e) => { if (pickable && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); linePickSelection.set(lineNo) } }}
-          >
-            <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
-          </div>
+          {#if pickable}
+            <button class="line-row pickable" on:click={() => linePickSelection.set(lineNo)}>
+              <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
+            </button>
+          {:else}
+            <div class="line-row annotation">
+              <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
+            </div>
+          {/if}
         {/each}
       </div>
     {:else}
