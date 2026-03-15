@@ -5,7 +5,7 @@
   import type { ParseState } from '../commands/parser'
   import { getCommandSuggestions, getSuggestions, type Suggestion, type DataSources } from '../features/cli/CliAutocomplete'
   import CliSuggestions from '../features/cli/CliSuggestions.svelte'
-  import { cliOutput, transactionResult, treeRefreshTrigger, linePickMode, linePickSelection } from '../stores/ui'
+  import { cliOutput, transactionResult, treeRefreshTrigger, linePickMode, linePickSelection, mountCacheRefreshTrigger } from '../stores/ui'
   import { currentAddress } from '../stores/document'
   import { stats } from '../stores/stats'
   import { getKbItems, getTree, browseMountDir } from '../services/api'
@@ -43,6 +43,12 @@
     nodeTreeCache = null
     nodeTreeFetchPending = false
     kbKeyCache = new Map()
+  }
+
+  $: {
+    void $mountCacheRefreshTrigger
+    mountDirCache = new Map()
+    mountDirFetchPending = new Set()
   }
 
   function resizeCliInput(_value: string) {

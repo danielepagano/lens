@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -81,6 +82,52 @@ def proxy_mount_file(
     if not full.exists() or not full.is_file():
         raise HTTPException(status_code=404, detail=f"file not found: {path}")
     return FileResponse(str(full))
+
+
+@router.post("/mount/upload")
+async def upload_mount_file(
+    dir: str = Form(...),
+    file: UploadFile = File(...),
+    session: ProjectSession = Depends(get_session),
+) -> dict[str, Any]:
+    """Upload a file to a mount-relative directory, creating it if needed."""
+    mount = get_mount_point(session.project_root)
+    if mount is None:
+        raise HTTPException(status_code=400, detail="no mount configured")
+    target_dir = _resolve_mount_path(mount, dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    filename = Path(file.filename or "upload").name
+    dest = target_dir / filename
+    if dest.exists():
+        raise HTTPException(
+            status_code=409,
+            detail=f"file already exists: {dir.rstrip('/')}/{filename}",
+        )
+    with dest.open("wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return {"status": "ok", "path": str(dest.relative_to(mount))}
+
+
+@router.delete("/mount/file/{path:path}")
+def delete_mount_file(
+    path: str,
+    session: ProjectSession = Depends(get_session),
+) -> dict[str, Any]:
+    """Delete a mount-relative file or empty directory."""
+    mount = get_mount_point(session.project_root)
+    if mount is None:
+        raise HTTPException(status_code=404, detail="no mount configured")
+    full = _resolve_mount_path(mount, path)
+    if not full.exists():
+        raise HTTPException(status_code=404, detail=f"not found: {path}")
+    if full.is_dir():
+        try:
+            full.rmdir()
+        except OSError:
+            raise HTTPException(status_code=409, detail="directory is not empty")
+    else:
+        full.unlink()
+    return {"status": "ok", "path": path}
 
 
 class AttachRequest(BaseModel):

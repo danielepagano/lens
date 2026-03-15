@@ -9,6 +9,8 @@
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
   import TransactionResultPanel from './features/transaction/TransactionResultPanel.svelte'
   import StreamingPreviewPanel from './features/streaming/StreamingPreviewPanel.svelte'
+  import MediaUploadPanel from './features/cli/MediaUploadPanel.svelte'
+  import MediaRemovePanel from './features/cli/MediaRemovePanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
   import { getStats, getNode } from './services/api'
@@ -149,6 +151,8 @@
   <CliOutputPanel />
   <TransactionResultPanel />
   <StreamingPreviewPanel />
+  <MediaUploadPanel />
+  <MediaRemovePanel />
 
   <svelte:fragment slot="bottombar">
     <Cli onCliDone={handleCliDone} navigate={navigate} />

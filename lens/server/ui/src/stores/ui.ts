@@ -18,6 +18,7 @@ export const treeRefreshTrigger = writable(0)
 export interface TransactionResultState {
   title: string
   message: string
+  theme?: 'error' | 'info'
 }
 
 export const transactionResult = writable<TransactionResultState | null>(null)
@@ -41,3 +42,16 @@ export const kbFilters = writable<KbFilterState>({ type: '', tags: [] })
 
 /** Increment to request the main content area to scroll to bottom (e.g. when opening cursor node from tree). */
 export const scrollContentToBottom = writable(0)
+
+export interface MediaUploadRequest {
+  dir: string
+}
+export const mediaUploadRequest = writable<MediaUploadRequest | null>(null)
+
+export interface MediaRemoveRequest {
+  path: string
+}
+export const mediaRemoveRequest = writable<MediaRemoveRequest | null>(null)
+
+/** Increment to force the mount directory autocomplete cache to reload. */
+export const mountCacheRefreshTrigger = writable(0)

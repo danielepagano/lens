@@ -5,6 +5,7 @@
   $: isOpen = $transactionResult !== null
   $: title = $transactionResult?.title ?? 'Transaction'
   $: message = $transactionResult?.message ?? ''
+  $: panelTheme = $transactionResult?.theme === 'info' ? 'command' : 'error'
 
   function handleClose() {
     transactionResult.set(null)
@@ -13,7 +14,7 @@
 
 <OutputPanel
   {title}
-  theme="error"
+  theme={panelTheme}
   open={isOpen}
   streaming={false}
   autoClose={false}

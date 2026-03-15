@@ -502,6 +502,34 @@ export const browseMountDir = (path = ''): Promise<MountEntry[]> =>
 export const attachFile = (path: string): Promise<AttachResponse> =>
   post('/attach', { path }) as Promise<AttachResponse>
 
+async function postFormData(path: string, body: FormData): Promise<unknown> {
+  const r = await fetch(path, { method: 'POST', body })
+  if (!r.ok) throw new Error(await errorDetail(r))
+  return r.json()
+}
+
+export interface UploadMountFileResponse {
+  status: string
+  path?: string
+  detail?: string
+}
+
+export const uploadMountFile = (dir: string, file: File): Promise<UploadMountFileResponse> => {
+  const form = new FormData()
+  form.append('dir', dir)
+  form.append('file', file)
+  return postFormData('/mount/upload', form) as Promise<UploadMountFileResponse>
+}
+
+export interface DeleteMountPathResponse {
+  status: string
+  path?: string
+  detail?: string
+}
+
+export const deleteMountPath = (path: string): Promise<DeleteMountPathResponse> =>
+  del(`/mount/file/${path}`) as Promise<DeleteMountPathResponse>
+
 export const getNodeAddresses = async (): Promise<string[]> => {
   const tree = await getTree()
   function flatten(nodes: TreeNode[]): string[] {
