@@ -2,211 +2,64 @@
 
 # Chapter 9: Etharis Timeline
 
-## History of Etharis
+Etharis is ancient. Its histories are written in blood, preserved through oral tradition and fragmentary records. Knowledge has been lost, myths contradict each other, and calamities have erased whole eras. What follows is the broad arc of history — not a precise chronicle, but the defining moments that shaped the world as it is.
 
-The histories of Etharis have been written in the blood of the fallen by those who remain, honoring their ancestors through recorded and oral traditions. Yet Etharis is an ancient continent of diverse cultures. Knowledge has been lost or misremembered, great heroes have been glorified beyond their actual deeds, and calamities have erased much of Etharis’s past.
+## Era of Antiquity
 
-This timeline charts the history of Etharis in rough order of events, though it’s impossible to pinpoint exactly when each moment occurred. The mythologies of different cultures clash. There are no records of whether the dreamers were already asleep when Ember Cairn fell. Therefore, these histories are left open for the scholars of Etharis to reconstruct and debate.
+The mythic prehistory of Etharis. Creation stories conflict across cultures.
 
-Furthermore, the order of events as we’ve imagined them may not suit the sorts of stories you wish to tell at your table. For example, the lore written in this book suggests the Darkfall is a recent tragedy. However, you may desire to set your campaign in Ostoya during a time after centuries of vampiric rule. Move the Darkfall forward or back on the timeline, or add new entries to the recent past of your Etharis, moving the timeline forward.
+**The Gods Awaken.** According to Büracher scripture, the gods are the first beings to awaken and sculpt the mortal world, shaping land, sea, and the creatures that populate them.
 
-As with everything in this campaign guide, the intent is to give you the tools to craft stories in Etharis of your own dark fantasies!
+**The Primordic Cycle.** The Valikan Clans hold a different origin: Gormadraug, the Great Prismatic Wyrm, was the first being to exist. The mortal world was formed from his body after the hero Kentigern slew him — though the Primordials believe Gormadraug merely slumbers, not truly dead.
 
-### Era of Antiquity
-An era of myth and prehistory, filled with conflicting creation stories. The distance of time is unknown. Many events in this era have no recorded accounts, only the evidence of their occurrence, which has survived to the modern day.
+**The Aetheric War.** At the height of their power, the gods attacked the Aether Kindred — incomprehensible beings of pure chaos that predated the gods themselves. The war was catastrophic. Most gods were destroyed or consumed. Only four young gods survived by holding back: Galt, Maligant, Ulmyr, and Aurelia.
 
-### The Gods Awaken
-According to Büracher scriptures, the gods are the first beings to awaken and sculpt the mortal world.
-"The Aetheric War and Gods’ End" in Chapter 13
-"Dangerous Celebrations" in Chapter 8
+**The Netherworld Forms.** The Heavens were ruptured by the Aetheric War. Legions of seraphs, leaderless and cast down, twisted into fiends in the wreckage. The strongest among them — the Arch Daemons — carved out hellish domains in the newly formed Netherworld.
 
-### The Primordic Cycle
-The kin of the Valikan Clans tell of Gormadraug, the Great Prismatic Wyrm, as the first being to exist.
-"The Primordic Cycle" in Chapter 13
+**Birth of Caer Neiada.** The archfey cultivate Caer Neiada (later Charneault). Elves believe them fallen seraphs; others worship them as deities. The Ulufey, ancestors of the elves, settle the region.
 
-### Hymn of Viduami
-In Ostoya, a myth is told about a death god, entombed in the depths of the City Below by its kindred deities.
-"Hymn of Viduami" in Chapter 3
+**Fall of Ember Cairn.** The ancient homeland of the dragonborn is destroyed. Their people scatter across Etharis.
 
-### Kentigern’s Saga
-After Gormadraug is slain by the hero Kentigern, Valikan sagas say the Great Wyrm’s corpse is used to craft the mortal realm.
-"The Great Prismatic Wyrm" in Chapter 6
-"The Kentigern Saga" in Chapter 13
+## Era of Expansion
 
-### The Aetheric War
-The Aether Kindred emerge from the void and destroy the gods. Only Aurelia, Galt, Ulmyr, and Maligant survive.
-"The Aetheric War" in Chapter 13
+Humans spread from west-central Etharis northward, southward, and east. Centuries of bloodshed. Smaller kingdoms rise and fall.
 
-### The Netherworld
-The heavens are ruptured by the Aetheric War, forming the Netherworld. Arch Seraphs of dead gods fall from grace.
-"Netherworld" in Chapter 12
+**Four Kingdoms of the Divines.** The Norden, Raulfolk, Unters, and Abendlanders become the dominant human kingdoms in central Etharis.
 
-### Birth of Caer Neiada
-The archfey cultivate Caer Neiada. Some believe them to be fallen seraphs, while the elves of Charneault worship them as deities.
-"History" in Chapter 4
+**Writings of Numena.** Archmage Raakan el-Adakar publishes his foundational research on arcane magic — the basis for all magical theory that follows. He names the source plane "Numena."
 
-### Twilight of the Dreamers
-The dreamers fall into a slumber that will last an epoch, escaping an unknown cataclysm.
-"Dreamers" in Chapter 10
+**The Bürach Empire Founded.** Emperor Indorius I is ordained by the Hearthkeepers, establishing the Bürach Empire as a continent-spanning civilization under divine sanction from the four surviving gods.
 
-### Descent to the City Below
-A civilization rises and falls, swallowed by the earth beneath a realm that would one day be named Ostoya.
-"The City Below" in Chapter 3
+**Pact of the Sacred Land.** Aymeric Noblecoeur signs the Pact of the Sacred Land, founding the Charneault Kingdom.
 
-### The Ulufey
-The ancestors of the elves, believing themselves children of archfey, settle Caer Neiada.
-"The Ulufey" in Chapter 4
+**Ulmyr's Gate Destroyed.** Mages attempt to open a permanent rift to the Ethereal Plane; the entire city is torn through a rift and obliterated along with thousands of its inhabitants. The disembodied — souls perpetually caught between realities — emerge in the aftermath.
 
-### Fall of Ember Cairn
-Ember Cairn, the ancient home of the dragonborn, is destroyed. Their people scatter across Etharis.
-"History" in Chapter 5
+## Era of Descent
 
-### Kingdoms of Stone
-The dwarves build their fortress cities in the heartland of Etharis, raising kingdoms of their own.
-"Dwarves" in Chapter 10
+At the height of its dominance, the Bürach Empire endures two hundred years of cascading tragedies that culminate in the Gods' End.
 
-### Human Tribes
-Humans wander the Büracher forests, forming into small tribes that grow into kingdoms.
-"History" in Chapter 2
-"Humans" in Chapter 10
+**First Ostoyan War.** Ostoya secedes from the Bürach Empire, winning independence at the Battle of Fallowheart.
 
-### Exodus of the Orcs
-The people known as orcs sail from northern Etharis, heading west to distant lands.
-"Grudgels" in Chapter 10
+**Unification of Castinella.** Sagrado Valieda unites the Castinellan Provinces and founds the Arcanist Inquisition.
 
-### Era of Expansion
-Humans spread from west-central Etharis to settle in regions to the north, south, and east. This is an era of bloodshed and mourning. As history unfolds through centuries of human expansion, smaller kingdoms rise and fall until the modern civilizations of Etharis take shape.
+**The Red Mourning.** The Bürach Empire's attempt to annex Liesech ends in catastrophe — the supernatural Weeping Pox is unleashed.
 
-### Four Kingdoms of the Divines
-The Norden, Raulfolk, Unters, and Abendlanders become the dominant human kingdoms in central Etharis.
-"History" in Chapter 2
+**Crowning of Emperor Leopold I.** The Mad Emperor's coronation triggers civil war. When Leopold touches the four divine artifacts of his bloodline, his fractured mind connects with the Four Divines — driving them all to madness.
 
-### Cold Iron Keep
-The wicked mage, Mordu, raises Cold Iron Keep as his fortress. He’s soon after slain by the Valikans.
-"Cold Iron Keep" in Chapter 6
+**The Gods' End.** The last four gods of Etharis — Aurelia, Galt, Ulmyr, and Maligant — destroy each other in divine civil war. Divine magic collapses across the continent. Etharis enters a godless dark age.
 
-### Thorgard’s Saga
-Valikan hero, Thorgard av Holgar, unites the clans and conquers southwards. He then sails his fleet west in search of new lands and his orcish kin.
-"Thorgard’s Saga" in Chapter 6
+## Era of Beast (Current Age)
 
-### Writings of Numena
-Raakan el-Adakar’s research on the nature of arcane magic forms the basis for magical theory.
-"Arcane Magic in Etharis" in Chapter 12
+Humanity clings to survival in a godless world. Every realm is haunted by the shadow of annihilation.
 
-### Rise of the Prismatic Circle
-The archdruid Kybard has a vision that Gormadraug merely slumbers, forming the Prismatic Circle.
-"The Prismatic Circle" in Chapter 6
+**Watchers of the Faithful.** The Castinellan theocracy ordains itself the Watchers of the Faithful in the aftermath of the Gods' End, claiming divine authority to fill the vacuum left by the dead gods.
 
-### Arrival of the First Men
-The earliest human settlers reach Caer Neiada, journeying through the Grove Maze.
-"Arrival of the First Men" in Chapter 4
+**The Darkfall.** The sun vanishes from the Ostoyan Empire. The Crimson Court — seven vampires — seize power in the permanent darkness. The Second Ostoyan War sees Bürach attempt to reclaim territory.
 
-### Wars of Stehlenwald & Grabenstein
-The dwarven city of Grabenstein falls to the Unters, whilst Stehlenwald endures.
-"Unterland" in Chapter 2
-"Dwarves" in Chapter 10
+**Shadow of the Great Beast.** The first stories of the Great Beast begin circulating in the Bürach Empire — a creature of colossal size whose very presence corrupts and mutates the land.
 
-### The Lord Edda
-The Lord Edda is written, compiling Valika’s myths and sagas from earlier centuries.
-"History" in Chapter 6
+**The Raevo Rebellion.** The province of Raevo secedes from the Ostoyan Empire. The Order of Dawn is founded.
 
-### The Bürach Empire
-Emperor Indorius I is ordained by the Hearthkeepers, founding the Bürach Empire.
-"History" in Chapter 16
-
-### Crossing the Grey Spine
-Büracher migrants cross the Grey Spine, discovering Kaer Vena and new lands in the east.
-"History" in Chapter 3
-
-### Flickers of Coldfire
-The first sightings of coldfire occur on Volgen, and the beginning of the ice bridge forms.
-"Geography" in Chapter 6
-
-### Castinellan Peninsula
-The Bürach Empire extends its reach to the Castinellan peninsula, discovering the shattered kingdom of the dragonborn.
-"Dragonborn" in Chapter 10
-
-### Founding of Morencia
-The city of Morencia is founded as a settlement, and it becomes a haven for folk fleeing the Bürach Empire.
-"History" in Chapter 8
-
-### Pact of the Sacred Land
-Thuridan Sarador crowns Aymeric Noblecoeur, signing the Pact of the Sacred Land and founding the Charneault Kingdom.
-"Pact of the Sacred Land" in Chapter 4
-
-### Era of Descent
-At the height of its dominance, the Bürach Empire endured two hundred years of cascading tragedies and defeats, which eroded its might and culminated in the Gods’ End. Historians call this period the Era of Descent.
-
-### First Ostoyan War
-Ostoya secedes from the Bürach Empire, declaring its independence and winning victory at Fallowheart.
-"History" in Chapter 3
-"Lady of Vengeance" in Chapter 3
-
-### Unification
-The Unifier, Sagrado Valieda, unites the Castinellan Provinces of Faro, Toletum, and Therpena, founding the Arcanist Inquisition.
-"Unification" in Chapter 5
-"Arcanist Inquisition" in Chapter 11
-
-### Company of Free Swords
-Darion Harkin founds the Company of Free Swords in the wake of the Falaris resistance.
-"Company of Free Swords" in Chapter 11
-
-### Augustine Trading Company
-Manoch Augustus leaves the clergy to found the Augustine Trading Company in Morencia
-"Augustine Trading Company" in Chapter 11
-
-### Ebon Syndicate
-Hiram Greyman narrowly escapes death by the fortune of a hawk moth and founds the Ebon Syndicate.
-"Ebon Syndicate" in Chapter 11
-
-### Ulmyr’s Gate
-The mages of Ulmyr’s Gate attempt to open a permanent rift to the Ethereal Plane, destroying their entire city.
-"Nordenland" in Chapter 2
-"Disembodied" in Chapter 10
-
-### The Red Mourning
-The Bürach Empire attempts to annex Liesech through Analita von Raiza, culminating in unleashing the Weeping Pox.
-"The Red Mourning" in Chapter 7
-
-### Crowning of Emperor Leopold I
-The coronation of Emperor Leopold I leads the Bürach Empire into civil war, and the emperor’s assassination leads to the Gods’ End.
-"Gods’ End" in Chapter 2
-
-### Era of Beast
-In the current dark age of Etharis, humanity clings to survival. Every realm is haunted by the shadow of annihilation through this godless era, marked by the arrival of the Great Beast.
-
-### The Gods’ End
-The last gods of Etharis--Aurelia, Galt, Ulmyr, and Maligant—destroy each other, leading to a new dark age.
-"Gods’ End" in Chapter 2
-
-### Watchers of the Faithful
-The Castinellan theocracy ordain themselves the Watchers of the Faithful in the aftermath of the Gods’ End.
-"Watchers of the Faithful" in Chapter 11
-
-### Second Ostoyan War
-The Bürach Empire invades Ostoya, trying to stabilize its strength by reclaiming territories.
-"The Darkfall" in Chapter 3
-
-### Shadow of the Great Beast
-The first stories of the Great Beast begin circulating in the Bürach Empire.
-"Rising Shadows" in Chapter 2
-
-### Order of Kentigern
-The Order of Kentigern becomes the last shield against the coldfire crisis, now erupting from Volgen.
-"Fort Kentigern" in Chapter 6
-
-### The Darkfall
-The sun vanishes from the Ostoyan Empire, giving rise to the Crimson Court, who seize power.
-"The Darkfall" in Chapter 3
-"Geography" in Chapter 3
-
-### The Raevo Rebellion
-The province of Raevo secedes from the Ostoyan Empire, and the Order of Dawn is founded.
-"Raevo" in Chapter 3
-"Order of Dawn" in Chapter 11
-
-### The Dark Mist
-Princess Tiphaine de Sauveterre disappears, and the Pact of the Sacred Land is broken.
-"The Dark Mist" in Chapter 4
+**The Dark Mist.** Princess Tiphaine de Sauveterre of Charneault disappears; the Pact of the Sacred Land is broken, unleashing the dark mist that now spreads across the kingdom.
 
 [ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/etharis-timeline
