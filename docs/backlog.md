@@ -8,18 +8,13 @@
   - **`converse`** for chatting if needed
   - **`advance`** to maitnain front
   - **`design`** is always expanding for more use cases
-- **`attach`** — Attach media (images, maps, references) within a node. 
-  - Store the media under a mount location specified in the project.
-  - App can upload to mount (or content can already be prrsent)
-  - Support drive mounts or cloud storage (s3 etc as needed) via adapters
-  - Attaching an uploaded file creates an appropriate viewer: img tag, video player, etc. in the given spot of the markdown doc
-  - Can browse directories and files in mount to provide autocomplete when attaching orselecting upload location
 
 ## Platform
 
 - **Direct editing** of markdown nodes 
 - **Cloud Deployment**: See [Deployment Design](./deployment-design.md).  
   - Local machine deploy with dynamic DNS and caddy already implemented.
+  - Add S3 bucket support to `attach`/media system
 
 ## Ideas
 
