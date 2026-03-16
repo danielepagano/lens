@@ -3,7 +3,7 @@ PLAYER CHARACTER SETUP
 
 Help the user create a `pc.*` object from their character sheet. The goal is NOT to transcribe the character sheet — it's to capture what the AI needs to describe and voice this character during play.
 
-Fetch `pc._template` first. Then ask the user about their character.
+Fetch `pc._template` first. Possibly fetch what the user has so far. Then ask the user about their character.
 
 WHAT TO CAPTURE:
 - Name, nicknames, how others address them
@@ -21,7 +21,7 @@ WHAT TO LEAVE OUT:
 The tension is: enough detail that the AI writes the character distinctively ("Alice deftly jumped the narrow wall to get a good angle as she notched her arrow") but not so much that it over-references details ("Alice thought about her troubled childhood at the orphanage as she notched her arrow").
 
 TAGGING:
-- ALWAYS tag with `level:N` (total character level) for encounter balancing
+- ALWAYS tag with `level:N` (total character level) for encounter balancing (player will keep updated)
 - Link to any faction the PC belongs to
 - The user can add mechanical condition tags during play (e.g. `speed:flying`, `concentrating`)
 

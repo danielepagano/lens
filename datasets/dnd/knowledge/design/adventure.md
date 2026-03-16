@@ -27,9 +27,9 @@ Each front may need:
 - `npc.*` for key characters driving or affected by the front
 - `faction.*` for groups with stakes in the outcome
 - `loc.*` for places where the front plays out
-- `encounter.*` for prepared scenes the front will produce
+- `encounter.*` more or less prepared scenes the front may produce
 
-Check existing objects before creating new ones. Link everything: NPCs to factions, locations to parent locations, fronts to their driving NPC or faction.
+Check existing objects before creating new ones. Link object as instructed in the templates: NPCs to factions, locations to parent locations, fronts to their driving NPC or faction. DO NOT over-tag objects, follow tagging rules.
 
 STEP 4: PREPARE ENCOUNTERS
 For each front, think about what scenes it produces. Not every scene needs a prepared encounter — `play` handles routine interactions fine with just pinned NPCs and locations. Prepare encounters for:
