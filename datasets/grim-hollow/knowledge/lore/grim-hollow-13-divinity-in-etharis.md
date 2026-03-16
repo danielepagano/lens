@@ -1,5 +1,3 @@
-**Chapter 13: Divinity in Etharis**
-
 # Chapter 13: Divinity in Etharis
 
 The Gods’ End
@@ -132,12 +130,6 @@ Morael’s most ardent followers believe that virtue cannot exist without suffer
 
 A noble house might hire mercenaries to protect them from Morael’s worshippers, who see tyrants everywhere. Conversely, a priest might offer blessings to adventurers about to undertake a difficult quest. One they’re unlikely to escape from unscathed.
 
-> Healing Magic in Etharis
-> The gods are dead. Divine power has waned in Etharis. Many temples that once revered the gods have now been converted to glorify the Arch Seraphs instead, and any new churches built are constructed in the Arch Seraphs’ names.
-> Most of the clergy are simple priests. Perhaps the most devout among them can conjure basic magic, but truly talented divine healers such as clerics or paladins are extremely rare. Viewed as living prophets, these individuals are celebrated in Etharis—or feared.
-> As possible wielders of divine magic, your characters are truly remarkable. This blessing is both a gift and a burden. Commoners are starved for guidance and want to believe in a power greater than themselves. They may look to a cleric as a beacon of hope and beg for aid or counsel, while equally, they flee from the gaze of a paladin who they fear has come to judge them.
-> The characters cannot rely on divine healers outside of their own group. A donation to the church does not guarantee a cure for disease or a resurrection. Such things are beyond the capabilities of common priests. Indeed, necromancy is reviled in many places, even when performed with good intentions, meaning most temples won’t revive a character even if it were within their capabilities.
-> If your characters are in need of healing, they’re more likely to find success seeking the aid of a surgeon, apothecary, or plague doctor. Such individuals are found in crowded cities where disease and danger are common, and there’s plenty of coin to pay for their services or Potions of Healing. They might also be found travelling the roads between settlements. Alternatively, stories of herbalists living on the edge of villages or deep in the woods exist across Etharis, if you dare to trust such folk.
 
 #### Miklas
 
@@ -319,14 +311,7 @@ Thus, Kentigern and his companions slew Gormadraug and used his massive body to 
 
 Yet all four Primordials know that their sire was not truly destroyed, but merely slumbers in a state of hibernation. Even now, mortals obtain command over the elements from the Prismatic Wyrm. The day may come when Gormadraug awakens to wreak his vengeance across Etharis. The Primordials and mortals continually seek to prevent this from happening. Yet with the appearance of coldfire, it seems the Prismatic Wyrm’s resurrection is coming ever closer.
 
-> Contradicting Mythology
-> There are many different faiths and religions in Etharis. The details between them can contradict each other, as is the nature of scriptures and ancient stories.
-> In some versions of The Primordic Cycle, Gormadraug clashed with the ancient gods of Etharis before the Aetheric War. The gods tried chaining the Prismatic Wyrm at first, but his size made him unable to be restrained. Gormadraug sired the four lesser primordials as weapons against the gods. All were defeated before being cast from the heavens.
-> In the Bürach Empire, it’s explained that Gormadraug was created by the gods, though his appearance is rare in sermons or scripture. Valikan stories claim the Prismatic Wyrm awoke first and that the gods followed later.
-> The version of the story told depends on where one travels in Nordenland or Grarjord. Which version of the story is true, no mortal can ever know.
 
-> The tales the Prismatic Circle tells you about Gormadraug are lies. The Great Prismatic Wyrm is our salvation and the only thing holding back Valika's destruction. We must awaken the Great Wyrm before it is too late.
-> —Cult of the Great Wyrm Druid
 
 ### Primordials
 

@@ -1,8 +1,4 @@
-**Chapter 1: Realms of Etharis**
-
 # Chapter 1: Realms of Etharis
-
-Slain Ithjar
 
 ## Dark Fantasy Stories
 

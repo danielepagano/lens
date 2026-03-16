@@ -1,8 +1,4 @@
-**Chapter 15: Guide to Dark Fantasy**
-
 # Chapter 15: Guide to Dark Fantasy
-
-Gruesome Sunrise
 
 What makes a dark fantasy campaign different from a typical 5e campaign? What does a Game Master need to do to bring a horror-flavored tinge to the encounters and adventures? How can the players—and the characters they bring into the story—add to the style of dark fantasy?
 
@@ -106,14 +102,8 @@ If you find yourself stuck for ideas, this campaign guide contains plenty of cul
 
 Remember to focus on what the characters are trying to achieve when imagining these conflicts. It’s not enough for the party to learn about the sorcerer Gorm while they are saving the noble—they might decide it’s not their problem, as long as the noble is safe. To ensure the heroes care about this new conflict, it needs to get in the way of the goal they are already pursuing.
 
-> The Goal is Fun
-> Whether a campaign is grimdark, horror-based, dark fairy tales, or sword-and-sorcery, remember the goal is still to have fun. A campaign full of relentless cruelty and darkness can get exhausting if that’s all you present.
-> Dark fantasy can have a reputation that jokes and laughter are not welcome in the genre. On the contrary, these moments of brightness and levity can help accentuate the darkness and tragedy experienced later. Let there be moments of peace, triumph, humor, and lightheartedness to let the players rest before going back into the fray. As with anything, variety and contrast is crucial to highlighting all elements of the genre.
-> When tragedy and violence do return to the story, its impact is so much greater if your players enjoy spending time with the characters being affected. Encourage your group to embrace the mood, but don’t let your campaign turn humorless.
 
 ### World
-
-Left Behind
 
 World conflicts occur as the backdrop to your party’s adventures and character- or party-based conflicts. The scale of these conflicts might be local, regional, or global. They include such things as the decimation of a village by the minions of the Great Beast, the war between nations like Ostoya and the Bürach Empire, a shadow war between various factions like the Arcanist Inquisition and an arcane college, ongoing disasters such as the Weeping Pox, or any trouble that is larger than a single string of adventures can address.
 

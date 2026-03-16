@@ -1,8 +1,4 @@
-**Chapter 3: The Ostoyan Empire**
-
 # Chapter 3: The Ostoyan Empire
-
-Diana Franco
 
 The sun never rises on the Ostoyan Empire. Ruled by an aristocracy of vampires and their servants, the Crimson Court governs the nation with their greedy claws, sharp eyes, and sharper fangs.
 
@@ -60,9 +56,6 @@ Regardless of the weather, Ostoya never sees the sun. There are few still alive 
 
 Folks who travel from distant lands witness their days getting shorter as they approach Ostoya. By journeys end, the sun barely breaks the horizon before one day it simply never rises again. The exact cause of this darkness is a mystery. Yet one thing is for certain; the vampiric nobility that rule Ostoya revel in its presence.
 
-> At Fallowheart, we made our stand,
-> and drove the tyrants from our land!
-> —Verse from an Ostoyan Tavern Song
 
 ## History
 
@@ -123,8 +116,6 @@ The Crimson Court is composed of seven ruling nobles who, through a tenuous alli
 Currently, the Court is ruled by Grand Duke Drago Koshevek. The remaining six members each rule over a province of the Ostoyan Empire, assigned to them by the Grand Duke.
 
 ### Vampiric Bloodlines
-
-Ostoyan Slaughter
 
 The sanguine curse is ancient. Through the uncounted centuries its manifestations have divided into vampiric bloodlines, which vary greatly in appearance, abilities, and attitudes. The bloodline a vampire belongs to may be determined by their mortal heritage, as described in the Grim Hollow Monster Grimoire, or it may reflect the nature of their sire. The following are a few of the bloodlines established in Etharis:
 
@@ -232,8 +223,6 @@ Countess Augustine Vasinesca. Surprisingly for an ecoukrylo, Countess Vasinesca 
 
 As the overseer of Terinima, Countess Vasinesca advises the Grand Duke on issues of food production and supply in Ostoya. But her true value to the court is finding the most delightful blends of blood to please even the most demanding vampiric palette. This talent has made her popular among her fellow sovereigns, even if they find her compulsive and chittering behavior uncouth.
 
-> Oh yes. I like this one. Bring him with us.
-> —Countess Augustine Vasinesca, on a Walk Through Town
 
 ### Bezcodru
 
@@ -305,8 +294,6 @@ Many believe that she knows secrets about the Grand Duke himself, which she wiel
 
 ### Other Locations of Interest
 
-Ravencourt Sanctuary
-
 The following are other locations of interest in Ostoya.
 
 #### The Ravencourt Sanctuary
@@ -359,15 +346,8 @@ Folk brave or foolish enough to descend into the fissures of Soma find themselve
 
 What remains a mystery is how deep the necropolis descends into Etharis. It’s an underworld infested with zombies, ghouls, skeletons, and wraiths, making it dangerous to explore the city’s secrets. These revenants are believed to have once been the citizens of the old civilization.
 
-Incorporeal Undead
-
 The Crimson Court are content spreading the lie that they are the most ancient and dangerous creatures to awaken from the City Below. But archeological evidence suggests there is something even greater buried in the dark, which the vampires themselves dread and revere.
 
-> Hymn of Viduami
-> At the dawn of time there was darkness. A darkness so black it smothered every light it touched and snuffed every life it crept over. A god of death, most ancient even among its own kin. The Viduami.
-> This god was fascinated by light. It was enamored by every flickering candle, every burning campfire, and spark of light within living creatures. It longed to feel warmth, for it was cold. But everything it touched perished. Eventually, its amorousness turned towards the stars and the sun herself. Viduami sought Aurelia’s heat, but the pantheon knew if the sun was extinguished then all their mortal creations would wither and die. So, Viduami was betrayed and imprisoned within the furthest place the gods’ could find. Deep in the darkness beneath the earth.
-> Centuries have turned into millennia. Eventually, early mortals discovered Viduami’s tomb. They awakened and worshipped the old god, hoping that to appease death was to escape it. The Viduami heeded their prayers but remained trapped. The gift of its divine blood was all it could give.
-> But a god of death cannot grant eternal life. Its worshippers died, yet their souls remained trapped. They were transformed. The first undead and the progenitors of all undying things. The first vampires.
 
 ## Quest Hooks
 
@@ -383,8 +363,6 @@ Sylina offers a small handful Solarwood stakes to the party who undertake this a
 
 The adventurer’s will know they’ve made it when they first see the sun.
 
-> How did you manage to lose all of the sheep?
-> —An Inconsolable Ciril Meri
 
 ### An Evening to Remember
 
@@ -445,8 +423,6 @@ The Ravencourt Sanctuary will of course make each apprentice more powerful. Wiza
 When seven years have passed, the apprentices will return to Raevo. One will carry a wax sealed envelope of their own. In the aftermath of their training at the Ravencourt Sanctuary, what sort of mages will they become? A beacon of light in the darkness of Ostoya? Or the very villains the Arcanist Inquisition warns Etharis against?
 
 ## The City of Fallowheart
-
-Bram Willemot
 
 Fallowheart is a city caught in the jaws of conflict. It lies on the western border of Ostoya, the first bastion against invasion from the Bürach Empire. Throughout its long history, Fallowheart has repelled countless assaults and sieges; as the gateway into the Ostoyan Empire, any invasion is doomed to fail if it cannot first capture Fallowheart.
 
@@ -588,8 +564,6 @@ Maintaining resource production to ensure the Viscount’s wealth requires a fun
 
 Nevertheless, Langkirk Warlow’s violent and obsessive nature leaves little doubt of the spiteful lengths he would go to ensure he is never deposed.
 
-> Look at my lovely children. I wish I could have them all for dinner.
-> —Viscount Langkirk Warlow
 
 #### Sister Abigail Florentine
 
@@ -666,8 +640,6 @@ Unwilling to make martyrs of Sister Abigail and her congregation, the Viscount r
 Sister Abigail and her congregation are not formidable warriors. They’re defended by a small militia of Raevo soldiers, though their true protector is Solyma’s Champion, the Pactbreaker. Defeating the celestial construct and slaying Sister Abigail will close the Crimson Court’s bloody grip on Fallowheart and earn high rewards from Viscount Warlow.
 
 ## The Free City of Malkovia
-
-Bram Willemot
 
 The “Free City” of Malkovia is conflicted in its identity and allegiance. Bisected by the Roiling River and split between warring provinces, Malkovia was founded as an international market that accepted business from everywhere in Etharis. The city has had to fight fiercely to maintain their open trade policies. After the Darkfall, Malkovia became torn, as both Raevo and Soma clutched for control of the city’s location and commerce, making it vulnerable to swindlers and opportunists. Anything goes in Malkovian markets, so long as you pay the proper taxes.
 
@@ -809,10 +781,6 @@ Malkovia’s money is reposited south of the Roiling River to further avoid taxa
 
 In the darkness of Ostoya, the Ebon Syndicate uses the Malkovian banks to siphon funds for themselves. This arrangement is not entirely unknown, and the Syndicate is a quiet supporter of Matriarch Király for as long as she sanctions their activities. In exchange for the coin they steal from Malkovia, the Ebon Syndicate feeds information to the Matriarch from across Ostoya, acquires particularly difficult to obtain objects from distant places, and makes the Matriarch’s most dangerous rivals disappear when the situation calls for subtlety.
 
-> Using Malkovia in a Campaign
-> Malkovia is a city in a perilous and unique situation, with its northern and southern sections split by the Roiling River, and its ruler attempting to keep the city free from the military and political turmoil that threatens to turn the place to a war zone. With so many potential conflicts and intrigues simmering just below the surface, and so many individuals and groups with competing goals in the same vicinity, Malkovia is a wonderful crucible in which to concoct memorable stories and adventures.
-> Many of the power groups with representatives in Malkovia are desperate to gain any kind of advantage over their enemies or to achieve their goals. People in this position, even those with a functional moral compass, can see the sacrifice of a few pawns in the larger game as a regrettable but necessary step in winning the larger conflict. These people may see the characters as just such pawns.
-> Characters might be sent on missions by any group, ostensibly to perform some noble tasks, when in reality the mission has a far more devious goal. If the characters realize that they’ve been misled, the people who’ve used them may blame the characters for any illegal or immoral activity—or try to eliminate them entirely from the board. Keep such traitorous and devious plots in mind as you imagine adventures taking place in Malkovia.
 
 ### Important Individuals
 
@@ -854,8 +822,6 @@ A tragic martyr. A divine prophet. A bloodthirsty deceiver. Father Elijah is all
 
 Even Malkovia’s nobility find the Father fascinating. His promises of power through the divine providence of vampirism is intoxicating. He has masses of followers from every district of the city, threatening Malkovian leadership with a new banner for its people to unite beneath. Elijah has plans to do just that, and perhaps instead of indoctrinating the city into the influence of the Crimson Court, he’ll take it for himself. After all, what’s greater than a Grand Duke? A god.
 
-> Look at what he can do? How is that not a divine gift?
-> —One of Father Elijah's Flock
 
 ### Quest Hooks
 

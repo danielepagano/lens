@@ -1,8 +1,4 @@
-**Chapter 7: The City of Liesech**
-
 # Chapter 7: The City of Liesech
-
-Bram Willemot
 
 Liesech is a poisoned apple many powerful hands have tried to grip. The city-state festers inside the Bite Bay like a rotted tooth just north of the Charneault Kingdom. On a clear day, the peaks of the Rock-Teeth Mountains are seen in the distant east. But there are few clear days in Liesech.
 
@@ -16,8 +12,6 @@ White Horn Analita von Raiza A green haze perpetually hovers over Liesech’s sk
 
 During the wintry season, snowfall is dry and winds are merciful. Liesechers watch for regional predators, who fearlessly wander from the forest, mountains, or waters into the city in search of food to keep them during hibernation.
 
-> Be careful. Be vigilant. We're close to shore and facing the most danger of the entire journey.
-> —Ship Captain Approaching Liesech
 
 ## History
 
@@ -123,9 +117,6 @@ Since the death of Liesech’s first families and the spread of the Weeping Pox,
 
 Despite these inconveniences, trade relations grow. The Market Week continues to draw more regional and renown celebrants, much to the ire of officials of the Bürach Empire, who refuse the countess’s invitations. Of recent note, the acclaimed magizoology scholar Professor Terrence Myron von Küfen was spotted setting up a vendor booth when he was surrounded by Morbus Doctore. Witnesses claim that he was escorted to The High Belfry and has not been seen since.
 
-> Roleplaying Liesechers
-> Citizens of Liesech have lived with death for years. They are well past wondering what is happening to them or why. Even the most generous and empathetic of the Liesecher population may not have the same caring attitudes of others throughout Etharis.
-> This traumatic tableau throughout Etharis can be portrayed in not just the villains, but the common folk and heroes as well. What others might consider a horrible catastrophe might be seen by the Liesechers as a better way to die than suffering through the Weeping Pox. While characters can still find help in the citizens, they are less likely to find sympathy or kindess.
 
 ## Districts
 
@@ -178,8 +169,6 @@ As von Raiza’s spawn and family, they perform overt and covert acts to bolster
 The cult has vampiric and non-vampiric members, allowing them to protect the High Belfry and the countess, day or night. They distrust the Morbus Doctore and are hyper-protective of the countess during the healers’ visits to the High Belfry. During the day, cultists claim they have heard the Countess cry out in her sleep about someone some powerful force in the sea. They don’t know who or what that is.
 
 ### Golden Barge Company (G.B.C.)
-
-Liesech Docks
 
 The company’s founders trace their history to the Bouwengracht family. Their ancestors were devotees of Aphaleon, the Arch Seraph of Temperance. They dismissed Otto Bouwengracht’s prophetic claim that the fishers would grow rich through offerings of their dead to the ocean, claiming that this blasphemed the reverent honoring of the dead.
 

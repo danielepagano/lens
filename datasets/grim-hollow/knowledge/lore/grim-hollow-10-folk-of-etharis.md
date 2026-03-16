@@ -1,8 +1,4 @@
-**Chapter 10: Folk of Etharis**
-
 # Chapter 10: Folk of Etharis
-
-Daniel Alessi
 
 The people of Etharis tend to be hardy folk, as one needs to be when dealing with the hardship and strife of a world lacking in sympathy but teeming with monsters. Whether thinking about the common heritages of a typical fantasy setting, the rare heritages unique to Grim Hollow, or the eldritch heritages of magical and terrifying origin, the folk of Etharis leave plenty of room for interesting and dramatic stories.
 
@@ -18,8 +14,6 @@ Players might want to embody the lore of these less common heritages, playing a 
 
 As with any campaign, the world of Etharis that you present to your players—and the stories of the people that make up that world—are yours to tailor for the stories and adventures taking place there. The folk described here, and their histories and legends, are a starting point for your imagination!
 
-> Common Heritages
-> Etharis’s common heritages are found throughout the world across every social class, occupation, and belief system. While they are often associated with a particular region, any settlement of moderate size will have examples of every common heritage.
 
 ### Dragonborn
 
@@ -125,8 +119,6 @@ If venturing north to Valika, characters may meet a renegade longship captain. C
 
 Unlike most Valikan raiders, the Frostfang’s captain refuses to take captives, though she readily relieves southern ships of their treasures. A distinctive jagged silver scar runs across her right fist and occasionally gleams with faint blue light when her heart races—the result of a childhood encounter with coldfire.
 
-> Rare Heritages
-> The rare heritages of Etharis have long existed in seclusion, inhabiting the shadowed boundaries between more numerous peoples and their domains. Individuals of these scarcer lineages confront hardships familiar to all who walk Etharis, yet they frequently harbor perspectives on existence that the common folk find alien or unsettling.
 
 ### Dreamers
 
@@ -190,7 +182,6 @@ The true rarity of the ogresh stems from peculiarities of their biological natur
 
 Given their dependence on other folk for sustenance, many ogresh naturally develop an uncanny mastery of social manipulation. Yet some who have gazed too long into their deep-set eyes maintain that the ogresh capacity to extract insights from others possesses a disquieting, almost supernatural quality—as though they perceive more than merely what is spoken, gleaning secrets others would never willingly divulge. Whether this represents an evolved survival adaptation or something more sinister remains a subject of hushed debate in settlements harboring these enigmatic giants.
 
-> Sometimes I forget my own strength. I was carrying a fat woolly sheep under each arm the other day, and I couldn't understand why the farmers at the market were staring.
 
 #### Using Ogresh in Your Campaign
 
@@ -200,8 +191,6 @@ Consider portraying an ogresh as a village’s respected advisor whose counsel, 
 
 For adventures, an ogresh settlement site might contain remnants of previous civilizations they’ve outlived, with disturbing implications about their longevity and the fate of communities that no longer produced sufficient resources. Ancient ogresh might possess knowledge of forgotten rituals or the true origins of arcane curses.
 
-> Eldritch Heritages
-> Grim Hollow’s eldritch heritages represent people born of arcane workings, otherworldly powers, or the effects of ancient curses. These people are often feared and do not incorporate themselves into Etharis’s societies. These heritages are often found well outside of city walls, making a hard life for themselves in the darkness.
 
 ### Accursed
 
@@ -301,8 +290,6 @@ Downcast characters are affected in some way by the loss of their immortality an
 
 Other mortals may not notice a downcast's former divine presence unless they look closely. Once they recognize what they are—or more precisely what they were—others might look at the downcast with a variety of emotions and attitudes. Pity is common, as mortals try to grapple with the loss they can only imagine must have been endured. Hope can shine through others’ eyes towards a downcast's direction, as they are reminded that if gods once oversaw their lives, they might again someday, but fear is never far behind. Divine powers once wielded for good may still be adrift in the world, untethered from their once altruistic forms, and perhaps, now used for ill. There’s always something else, some emotion that is unknown and unnamable but that nevertheless reminds the downcast that they are different, and always will be.
 
-> He walked into the tavern, and it was like an angel fell from the sky.
-> —Lovestruck Cobbler
 
 ### Wechselkind
 

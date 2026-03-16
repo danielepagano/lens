@@ -1,8 +1,4 @@
-**Chapter 4: The Charneault Kingdom**
-
 # Chapter 4: The Charneault Kingdom
-
-Siraj Fakhri
 
 A land of broken vows, mystical fey, and a tense but strained peace between once-warring cultures, the Charneault Kingdom is a seemingly idyllic realm atop a tinderbox of complex intrigues and inevitable conflict waiting to ignite.
 
@@ -65,8 +61,6 @@ The dark mist turns the natural foliage hostile. Spores become noxious. Vines aw
 The Spirits of Nature themselves appear corrupted by the dark mist. Pixies lose their wings and transform into vengeful pucks—corpse gardeners who fertilize their groves with peoples’ innards. Sylvan archers stalk into settlements and hunt the occupants as if for sport. Entire towns become a pale-spun nest of giant spiders. The sounds of fey merrily singing are gone—only mortals screaming in the darkness, and the echoes of whimsical laughter like children playing a game.
 
 ## History
-
-Fey Conflict
 
 Before there was a kingdom called Charneault, there was Caer Neiada, the “land of countless rivers” in the Elvish tongue. A verdant paradise of rolling hills and fertile wilderness that was isolated from other nations, Caer Neiada flourished on its own for centuries before the Era of Expansion.
 
@@ -192,11 +186,7 @@ Stories whispered in taverns say the Severe Templars did the killing, intentiona
 
 A romantic tale imagines Guilhem and Tiphaine reunited and fled far from Charneault to be happy in a distant land. But such fairy tales are rarely true, and both have been seen as apparitions in the dark mist, calling for help to lift their curse.
 
-Knightly Power
-
 ## Provinces
-
-Lucas Torquato
 
 Charneault is comprised of seven provinces, each with its own expressions of elven and northern culture. Gran Croix is the realm of the Grove Maze. The western provinces of Beaumont, De la Fontaine, and Faucher have higher elven populations and greater reverence for the Spirits of Nature. Gagnon, Lamar, and Chaplin are home to more urbanized settlements and tend toward worship of the Arch Seraphs. Dividing the provinces in this way doesn’t paint the nuances of Charnelaise society, and influences from the Realm of Faerie are found everywhere.
 
@@ -204,8 +194,6 @@ Before the Pact of the Sacred Land united them, each province was its own territ
 
 Honor and reputation are influential in Charneault, even if the heads of house are not a knight themselves. Marriage and trade are other levers of power. As ambition circles the kingdom’s throne, those who cannot wield a sword to wear the crown instead offer their children and riches to remain within the king or queen’s graces.
 
-> Losing one's honor at a tournament is a setback. Fortunately, another tournament is never far away.
-> —Hopeful Squire
 
 ### Chaplin
 
@@ -285,8 +273,6 @@ Duchess Descoteaux is a puzzle solver. She works to make the mines beneath Mont 
 
 When the dark mist rolls over Mont de Lancey, the Duchess instructs her people to flee into the city’s walls for better safety: another disheartening strategy to her mother. Vivian would rather have fresh corpses to study after the dark mist disperses.
 
-> I watched Lady Vivian slay a whole troupe of twisted goblins once. They came out of the mist, shrieking and gibbering like they do. Those were the last sounds they ever made.
-> —Fairweather Knight
 
 ### Grand Croix
 
@@ -390,8 +376,6 @@ Few who venture to the Sailgraves return. Reports suggest there had once been se
 
 Many of these rumors come from Menchâtel, a tiny village on the Charnelaise coast closest to the Sailgraves. The residents in Menchâtel are used to folk disappearing to the islands, and don’t dissuade those who attempt the voyage. Instead, they make a good living providing boats and supplies for adventurers, benefiting from the regional coin that’s made their township wealthy. Local superstitions believe the folk of Menchâtel have a pact with a sea hag or some other Spirit of Nature to lure explorers to their doom upon the Sailgraves.
 
-> They can say that the mists are natural or supernatural, daemonic or faerie made. But I know the truth. It's the breath of the Lich Princess, and it's coming for us all.
-> —Drunk Merchant
 
 ## Quest Hooks
 
@@ -433,8 +417,6 @@ The Hildebury folk seem unharmed, aside from their mania. The satyr’s song may
 
 ### The Wolf & Loon
 
-Wood Song
-
 The Wolf & Loon is a wildly popular traveling theater troupe, headed by a wulven acrobat named Mattéo and a fortune teller named Ariel. They can be found putting on productions and participating in festivals in towns and cities across Charneault. Whilst their reviews are raving, they’re prone to quickly wearing out their welcome. People tend to go missing when the Wolf & Loon are in town.
 
 If their caravan rests too long on a settlement’s edge, a knight may be fetched to ask them to leave. Failing that, paid mercenaries are just as good. The pair rarely seem eager to fight, despite Mattéo’s reputation as an acrobat and swordsman. Part of his act is rending steel with his claws.
@@ -447,18 +429,9 @@ Whatever Ariel is, she always welcomes strange or unwanted people. The true purp
 
 Whether the Wolf & Loon are a harmless troupe righting wrongs in the world, or a vengeful scourge who need to be stopped, is a question that needs an answer if they’re to continue travelling the Charneault Kingdom.
 
-> The Wolf and Loon are coming to town.
-> I'm saving my spare coins for the shows!
-> —Excited Youngster
 
-> Encounters in the Sailgraves
-> The actual threats inhabiting the Sailgraves are left up to the GM, but the mystery should keep the players guessing and offer either a great challenge or a greater surprise. The crescendo of mystery and excitement, and the difficulty the characters have in reaching the Sailgraves safely, should either lead to a grand climactic adventure or a startling twist.
-> Is the last remaining dragon hiding there, fleeing from whatever force wiped dragonkind from Etharis. Is it the home to one of the Arch Seraphs or Arch Daemons, needing privacy to carry out some plot? Or is the threat only the mist and reefs, and a single person, immune to the mist’s effects, living a solitary life there?
-> Regardless of what is there, unless the revelation leads to the climactic encounters of a campaign, the denouement of such an encounter should lead to the next large quest. Is the dragon friendly or hostile, and what can the characters learn from it that helps them on their overall story arc? Does the Arch Seraph or Arch Daemon ask or demand something of the characters? What does the hermit’s immunity to the mists offer the characters in terms of knowledge?
 
 ## Castle Lamesdhonneur
-
-Bram Willemot
 
 The capital city of the Charneault Kingdom, Castle Lamesdhonneur, once stood as the beacon of humanity’s glory and the cradle of all knighthood. From within its fortified walls, the king and the Royal Council guided the kingdom’s future with valour, the Knight Chapters gathered to train and carry out their noble duties, and the common folk labored tirelessly to feed and arm the guardians of the land. For generations, people from across Charneault looked to Castle Lamesdhonneur as the pinnacle of what humans can accomplish when guided by the virtues of honor and justice.
 
@@ -592,8 +565,6 @@ When the Severe Templars declared that taverns were a wasteful distraction, the 
 
 With the sheer number of squires clamoring to become a Chapter Knight, armor and weaponry are in extremely short supply. The Ferforger was established to keep up with the demand, a smithy staffed by inexperienced but zealous citizens who devote their spare time to support the knightly orders. They hammer iron into crude breastplates and crooked swords over roaring furnaces, laboring until their hands can no longer grip their tools. Those who collapse are carried away to recuperate for the day, and another person is always at the ready to step in and continue the work with little disruption.
 
-> Good beer, but don't look anyone in the eye.
-> —Traveling Merchant at the Stone Anvil
 
 #### Verdeaux
 
@@ -611,8 +582,6 @@ These days, very few dare to approach the burnt-out husk of the shrine. Black ne
 
 Dug into the heart of Verdeaux is a great bonfire that burns every hour of the day, belching out plumes of black smoke and leaving behind a soot on the crops below. This fire pit is used by the Knights of the Severe Templars to dispose of refuse, profane magical or elven artifacts, and bodies of criminals who don’t deserve to be buried in the city cemeteries. The people who are given the bleak task of tending the fire wear masks to avoid breathing in the smoke and smell of charred flesh.
 
-> I left Stehlenwald to escape the smoke. Now look at me.
-> —Attendant to the Burning Maw
 
 ### Important Individuals
 
@@ -672,8 +641,6 @@ Chased by shouting severe templars, a figure in a red cloak and an owl mask turn
 
 If the characters let l’Hibou escape, the vigilante leaves behind a simple iron key and encoded coordinates to a hideaway.
 
-> You would not catch me saying a bad word about the Severe Templar.
-> —Lady Mireille de Bayeux
 
 #### Sickle and Blood
 
@@ -702,8 +669,6 @@ Lady Mireille de Bayeux sent along a confidential letter of sympathy to Ser Nico
 Map: Castle LamesdhonneurView Player Version
 
 ## Tol Leyemil
-
-Erel Maatita
 
 One of the most beautiful places that remain in Etharis, and the last refuge of the elves, Tol Leyemil blooms from the depths of the forest like a glade of vibrant wildflowers. Music flows through its stone archways. Art flourishes in every overgrown street. The scent of flowers upon the air and sound of flowing water create a quiet sense of peace and unity. But this calm exists only because the wars are long over. Tol Leyemil is a city of mourning.
 
@@ -797,9 +762,6 @@ The focus on patience and observation makes studying with Sarmar last decades an
 
 Aemanyir House was founded by Alren Corynthios, and lies south of Tol Leyemil, on the forest’s edge in Beaumont. This small settlement was built to mimic the function of the Academy Tower, a place of contemplation and magical practice. Many in Tol Leyemil refuse to recognize Aemanyir House as a branch of the Sarmar Academy, yet pupils trained there are done so in the same traditions that Alren learned in Tol Leyemil.
 
-> Ah yes, I remember learning my first spell.
-> That was the best decade of my life.
-> —Elven Apprentice at the Sarmar Academy
 
 #### The Preservation
 
@@ -859,8 +821,6 @@ Eifre is a frequent visitor in Tol Leyemil, bringing desired commodities that ca
 
 Many elves disapprove of Eifre disseminating artifacts of their history outside the sacred city. She’s even been accused of pilfering from the Preservation itself. But as a mostly benign nature spirit, she enjoys a degree of reverence that has kept her from harm whenever she visits Tol Leyemil. If ever she’s in actual danger, Eifre somehow manages to vanish just in the nick of time.
 
-> Let me see what I have in my pack that might tickle your fancy? Need a goblin skull that's been burned in the fires of the Summer Court, by any chance?
-> —Eifre
 
 #### Benoît the Brave
 

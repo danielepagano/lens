@@ -1,8 +1,4 @@
-**Chapter 12: Magic in Etharis**
-
 # Chapter 12: Magic in Etharis
-
-Nurturing Hope
 
 ## Arcane Magic in Etharis
 
@@ -74,8 +70,6 @@ As such, magic-using arcanists must be careful when entering and traveling withi
 
 The Castinellans have yet to move against nations that employ magic, such as the Bürach Empire and the Charneault Kingdom. But should the theocracy grow more powerful, a “righteous war” would certainly be in the cards. It would only take one international incident of arcane treachery—real, imagined, or staged—to incite a holy war between Castinella and a neighboring nation.
 
-> Magic is Life. Life is Magic. There is no other truth.
-> —Elvish Scholar
 
 ## Colleges of Magic
 
@@ -140,8 +134,6 @@ Magical training in Valika is handled in a much different manner. Clan Rune trea
 
 Bardic training in Valika teaches practitioners a different type of arcane magic, with additional instruction in performance, history, mythology, poetics, and more. This training ranges from individual instruction to small schools with a master skald teaching students the skills necessary to act as a bard or skald.
 
-> A drop of blood. A lifetime of certainty.
-> —A Ravencourt Aphorism
 
 ## The Planes
 
@@ -153,10 +145,6 @@ Talented mages, victims of misfortune, and those who dream of the Aether Kindred
 
 Those who’ve never seen past the mortal realm might imagine the endless expanse of the multiverse and feel wonder. Those who have feel only terror.
 
-> Planar Adventures in Dark Fantasy
-> Tales of magical portals leading to wondrous realms are common in fantasy, especially in stories where magic frequently intersects with daily life. Faeries step from their magical kingdom to elicit aid from brave knights. Eclectic characters travel together across the stars, sailing aboard a ship on the astral winds to visit all types of peculiar realms.
-> Such tales are filled with exciting adventures, but they struggle to capture the dark fantasy atmosphere of Grim Hollow. The more planar travel becomes part of the everyday, the less forbidding it seems. Therefore, excursions into other planes of existence should be infrequent and occur only in the direst of circumstances.
-> In a dark fantasy story, the planes serve to explore themes of cosmic horror and existential dread more than providing exotic locations to visit. There are no welcoming cities or safe havens in the depths of other realities. The planes are not a frontier for exploration. They’re a terrifying and crushing ocean threatening to drown the Material Plane, a reminder of the insignificance of mortal existence.
 
 ## Realm of Faerie
 
@@ -181,8 +169,6 @@ There’s no knowledge of how many other realities the Ethereal Plane connects w
 The veil between the Ethereal Plane and the mortal one is fragile, like fabric. It can be difficult to pierce without accidentally creating a tear, leading to unintended consequences.
 
 ## Primordial Realms
-
-Arcane College
 
 The Valikan Clans believe that the Material Plane is cradled between the four Primordial Realms of Air, Fire, Water, and Earth. Where these roiling elements crash together, they form the mortal realm.
 

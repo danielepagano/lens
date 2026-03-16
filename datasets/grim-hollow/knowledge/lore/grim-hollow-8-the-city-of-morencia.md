@@ -1,8 +1,4 @@
-**Chapter 8: The City of Morencia**
-
 # Chapter 8: The City of Morencia
-
-Bram Willemot
 
 Ship captains know when they are near Morencia. The gulf’s water becomes choppy. The temperature noticeably drops. Skies abruptly become overcast. Passengers are ushered below decks. And the mist obscures everything from view.
 
@@ -76,12 +72,8 @@ The ritualistic killings take place on nights when the moon is shrouded in cloud
 
 Rumors mill throughout the districts. Some claim the victims were those being punished for forgetting the sacrifices of their ancestors. Other believe Castinellan inquisitors have found their way to Morencia’s shores. Scared citizens demanded answers and the Supreme Council has none. In hopes to solve the killings, the Supreme Council has hired the famous monster hunter Vedemir Kaltstahl to investigate. His arrival pacified Morencians but has caused consternation among armada sentries, who do not want citizens to lose faith in their own soldiery to protect them.
 
-> All I can say is that the people disappear, and then they die. Brutally. We don't know why, but they brought in some monster hunter to deal with it.
-> —Morencian Innkeeper
 
 ### The Morencian Way
-
-Dangerous Celebrations
 
 The people attempt to embody the virtues of their ancestors: determined, resilient, hard-working and family oriented. They understand that sacrifice for the community is honorable and the importance of fair trade. Morencians are naturally cautious. They don’t need to be reminded of the ancestor’s hardships.
 
@@ -169,8 +161,6 @@ In the aftermath of the Castinellan Provinces invasion, lucrative loans were wri
 
 Councilmembers and citizens suspect Kolyhs corrupted the council, but they haven’t quite figured the extent of the corruption. The entrepreneur avoids questioning by Vendemir Kaltstahl. While not thought to be complicit in the Moonless Night Murders, she fears that any investigations into the machinations of the powers-that-be in Morencia might lead to unwanted revelations.
 
-> Flabenici talks real nice, but every time he smiles, someone ends up dead or broke. Or both.
-> —Morencian Dockworker
 
 ## Important Factions
 
@@ -240,8 +230,6 @@ While traveling through any of Morencia’s districts, the characters continuall
 
 Chasing the crow takes the characters into the business of an antiquities collector with close ties to the Banker’s Guild. This noble’s trap-laden sub-basements are a macabre museum of historic treasures. Included in them is the skeletal remains of Brieuc Guillame, and the perfectly preserved dissected eye of Admiral Endoria Onaglie. A transcribed eye-witness account from that time insists that the Admiral lost her mind and killed Brieuc as a sacrifice to the spirits of the mists. If these discoveries were made public, they could outrage the city and may besmirch the reputation of one of Morencia’s great heroes and member of the Supreme Council.
 
-> Some say those lights on the Water Strider are evil! Well, here's a crazy idea. What if they're the ones killing people? You know it sounds convincing, don't it? Might take it to the Council!
-> —Tavern Patron, After Three Too Many
 
 Map: The City of MorenciaView Player Version
 

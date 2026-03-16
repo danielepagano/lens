@@ -1,8 +1,4 @@
-**Chapter 16: Dark Fantasy Rules**
-
 # Chapter 16: Dark Fantasy Rules
-
-Wooded Ambush
 
 Creating campaigns, adventure, and encounters that promote a dark fantasy feel can be difficult with the core rules of fifth edition. Those rules present and encourage campaigns where the characters are powerful and capable compared to the threats that they face. Frequent rests and resource renewal, forgiving encounter design, and a predictable encounter-rest loop: these elements make for a very stable and predictable game that but push against the essence of what makes the dark fantasy genre special.
 
@@ -93,11 +89,6 @@ A Long Rest is stopped by the following interruptions:
 
 If you rested at least 8 hours, including at least 6 hours of sleep, before the interruption, you gain the benefits of a Short Rest. You can only take 1 Short Rest during an attempt of a Long Rest.
 
-> The Point of Alternative Resting
-> Intentions of rules are just as important to understand as the rules themselves. The intention of the alternative resting rules is to challenge characters, not to destroy them. The main reason some campaigns seem too easy or not challenging enough is the abundance of resources that characters have, and those resources are regained through Short and Long Rests.
-> This alternative resting system is meant to ensure that characters can regain the Hit Points necessary to take part in encounters without always having the most powerful of their abilities to use every time.
-> Even more important than survivability with this new resting variant is story-driven decision making. In order to take a Long Rest, characters must not just rest longer, they must rest in a place of safety. This can mean making a hard choice: should we push further into the monster’s lair or the hostile territory, or should we retreat to a place of safety?
-> It also places an emphasis on the characters making it a priority to find, cultivate, or maybe even create a place of safety. That threatened village may not mean much to the characters in terms of the connections they’ve made, but it means much more when it might be the only place they are able to rest in the area. You’ll find that the people and places of Etharis become much more important to the players when their valuable adventuring resources hinge on having a safe place to sleep.
 
 ## Grievous Wounds
 
@@ -135,8 +126,6 @@ The following new conditions are used by certain effects in the Grim Hollow rule
 
 If you have the Bleeding condition, you cannot regain Hit Points except by spending Hit Point Dice or completing a Long Rest. The condition ends when a creature finishes a Quick, Short, or Long Rest.
 
-> There's a good reason why it's called Bloodwood.
-> —Traveling Merchant
 
 ### Corruption
 
@@ -190,8 +179,6 @@ Here are some examples of when a Mutation check could be relevant and evocative:
 - When a shocking or devastating event occurs outside of combat.
 - When a character with two failed Death Saving Throws succeeds on a Death Saving Throw.
 
-> I ain't never seen it, but I know it's real. There were rumors the Great Beast was sighted near Niederhalde. Now the village is abandoned and overrun by monsters.
-> —Villager from Unterland
 
 Great Beast Mutations 1d20 Mutations 1 Roll twice on the table, ignoring this result if rolled again. 2 Spawning Pit. Your skin begins to crawl moments before vermin chew through your flesh and erupt from your body. 1d3 hostile Swarms of Crawling Claws, Insects, or Rats appear in unoccupied spaces within 10 feet of you. This also happens the first time you are Bloodied after an Initiative check. 3 Bloodless. You cannot spend Hit Point Dice for any reason, including as the result of a spell or other magical effect. 4 Corporeal Decay. Your body begins to rapidly decay, giving you a corpselike appearance. When you gain this mutation, roll a number of d8s equal to your character level and take Necrotic damage equal to the result. You have the Undead type in addition to other creature types. 5 Lignify. Your limbs stiffen and woody tree shoots pierce from beneath your skin. You have Vulnerability to Fire damage and your Speed (all movement types) is reduced by 5 feet per your level of Corruption. 6 Scion of the Beast. You speak with the Beast’s terrifying voice. As a Magic action on your turn, you and another creature of your choice you can see within 60 feet of you each make a Mutation check. 7 Third Eye. You grow a third eye. You have Advantage on saving throws to avoid or remove the Blinded condition, but you have Disadvantage on Wisdom (Perception) checks. 8 Extra Digits. Your grow several extra fingers. You have Advantage on checks to avoid being disarmed, but you have Disadvantage on Dexterity (Sleight of Hand) checks. 9 Chameleon. Your skin changes color in stressful situations. You have Advantage on Dexterity (Stealth) checks, but Disadvantage on Charisma checks. 10 Oily Skin. You have Advantage on checks made to escape a grapple, but you have Vulnerability to Cold and Fire damage. 11 Corrosive Blood. When you become Bloodied for the first time after an Initiative roll, creatures within 5 feet of you take Acid damage equal to your character level. 12 Sticky Feet. You gain a Climb Speed of 15 feet, but your Speed is reduced by 10 feet. 13 Luminescent. You glow with Dim Light to a range of 30 feet. You have Disadvantage on Dexterity (Stealth) checks. 14 Thinning Blood. Your bodily fluids become thin and watery. You have the Bleeding condition. 15 Stone Shell. Your skin swells and hardens into a tumorous rocky texture. You gain Resistance to Piercing and Slashing damage, and Vulnerability to Acid and Thunder damage. 16 Arcane Conduit. Your body becomes a conduit of magic. Add your current Corruption level to your spell save DC and your spell attack rolls. When you cast a spell using a spell slot, make a Mutation check. 17 Malformed Wings. Spiny, tattered wings burst painfully from your back, giving you a Fly Speed of 20 feet. You cannot move by any other means. 18 Blood-Fueled Frenzy. If you are Bloodied, you have Advantage on melee attack rolls, and attack rolls against you have Advantage. On each of your turns, you must first move as far as possible toward the nearest Bloodied creature you can see. If you are within 5 feet of it after moving, you must take the Attack action to attack that creature with a melee weapon or an Unarmed Strike. 19 Eldritch Combustion. Your body fills with unstable eldritch power. If you are reduced to 0 Hit Points you die instantly, and each creature within 20 feet of you must make a Mutation check. 20 Permanent Transformation. You gain the Aberrant Horror Transformation. If you already have this or another Transformation, you move to the next stage of that Transformation instead.
 
@@ -253,12 +240,8 @@ After 72 hours, these original symptoms transition to delirium, burning fever, i
 
 ## Creating Legendary Foes
 
-Tainted Flesh
-
 When creating encounters, it is often situationally appropriate to pit the party against a singular enemy. However, what is meant to be a dangerous and climactic boss fight sometimes ends as a one-way romp, not presenting a challenge for the players. This is largely due to the single creature taking far fewer actions per round of combat than the party. Legendary templates are designed to assist in this process and help make non-legendary creatures present a greater threat.
 
-> No one could knock him down. He seemed unstoppable.
-> —Fighting Pit Veteran
 
 ### Legendary Templates
 
@@ -382,16 +365,6 @@ Brutal Strike. Whenever a creature is hit by an attack roll, the attacker may sp
 
 Stroke of Luck. By spending two dice, the GM or a player may cause a minor alteration to the environment, such as adding a small item or feature, moving an existing object five feet, or slightly altering weather conditions or lighting. Examples would be a dropped weapon rolling out of reach or suggesting that phosphorescent fungi might bring a cave’s lighting up to dim light rather than total darkness.
 
-> At first we saw just a pair of wolves, but soon there were dozens. I was one of the lucky few to escape.
-> —Valikan Guide
 
-> Using Optional Rules
-> The rules in this chapter are offered as suggestions, not core rules that must be followed. Before implementing them, a discussion between GM and players is highly recommended to make sure everyone agrees these rules would add fun and flavor to the adventures and campaigns.
-> Similarly, don’t be afraid to stop using them when appropriate. Better yet, groups should look to expanding, retracting, or customizing these rules to best fit the themes and play style of their game.
-> Once the group is accustomed to the Resolve and Beast Pool rules, the GM might decide to allow players to spend Resolve Dice to gain benefits listed for the Beast Pool, particularly when their actions align with goals of a villain. The GM might also be allowed to spend Beast Dice to gain benefits from the Resolve Pool to give adversaries a boost.
-> Another method of customization is by altering the abilities themselves. The Outnumbered ability from the Beast Pool, for example, can easily be adapted to summoning spells and moved over to the Resolve Pool. Inner Strength can be used to boost the healing of a fighter’s Second Wind ability or to increase the level of a Cure Wounds spell. Summoning the Beast can easily be swapped out for an appearance by whatever villain the GM has set as the primary antagonist of the campaign. All of these are appropriate uses of Influence Dice.
-> If you find either dice pool remaining filled for an extended period of time, consider adjusting the rules to encourage more spending. For instance, a filled pool could lose one die at the start of the next session. Or, when a die would be added to a pool, the owner(s) of that pool could choose instead to remove a die from a filled pool. This creates a tug-of-war on the weave of Fate's tapestry.
-> The GM can also use the Beast Pool to discourage conflict within the party. When characters pit themselves against one another in a way that causes strife at the table, the GM can add dice to the Beast Pool as a reminder for everyone to cool down.
-> To summarize, the goal of the game should be for the players to have fun and tell memorable stories together. Where bending or even breaking the rules is necessary for that to happen, the rules should never be an impediment to fun.
 
 [ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/dark-fantasy-rules

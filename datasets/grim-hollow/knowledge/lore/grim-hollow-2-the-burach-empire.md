@@ -1,8 +1,4 @@
-**Chapter 2: The Bürach Empire**
-
 # Chapter 2: The Bürach Empire
-
-Daniel Correia
 
 Languishing in the withered shadow of its former glory, the Bürach Empire is a land of relentless greed and infamous struggles for power and control. With its faith fractured and its people divided, the Hearthkeepers of Bürach manage the remains of this once-great nation. They siphon the flow of information to better control where it leads and upon which ears it lands, hoping to slow the dissolution of the empire’s power and its people’s hopes and dreams.
 
@@ -72,8 +68,6 @@ Between the marshlands, the forests, the mountain valleys, and the coastlines, B
 
 Provided the plants continue to grow, the rains bring fresh water, and the mines yield enough minerals, the Empire has always been thought able to survive any calamity it may have to endure. A lack of trade, due to the hazards and monsters spreading through the empire, adds to the darkening mood of Bürach’s citizenry.
 
-> Each citizen claims their province is the most beautiful. If you've seen one ugly mountain forest, you've seen them all.
-> —Merchant from Charneault
 
 ## History
 
@@ -93,9 +87,6 @@ From his side, Maligant unsheathed a longsword and presented it to the Emperor. 
 
 With indomitable blessings laid down by the heavens upon the Bürach Empire’s gleaming fate, there was none that could oppose them. One region after another fell into line, as the empire marched, slaughtered, negotiated, and conquered their neighboring territories. With their bold momentum, they saw fit to unite the world and stamp out their foes. For the glory of the Four Divines the provinces put their faith in the emperor’s leadership and confidence.
 
-> An adventurer, huh?
-> Keep a safe distance and we’ll get along famously.
-> —Altenheim Tavernkeep
 
 ### Gods’ End
 
@@ -175,8 +166,6 @@ Meanwhile, tensions within the Hearthkeepers rise. Many feel Pope Murrich no lon
 
 Meanwhile, a bishop in Altenheim has set the hearts of the faithful ablaze with his impassioned and prophetic sermons. His surging popularity among the crowds has led to an eventual summons to speak with Odalric I at the Imperial Palace. Little is known of Karlos Reinach’s life before joining the Hearthkeepers, yet the church has seen mounting support for him to succeed Murrich, if indeed Karlos has captured the Emperor’s ear.
 
-Hearthkeeper Priest
-
 #### Notable Individuals
 
 Emperor Odalric Pongor Aurelius I. Practically coronated in the womb, no other child’s birth was more anticipated than Odalric I. The babe knew nothing of his father, Aratron II, and was raised between his mother Valeria and Pope Murrich. Throughout his life, the empress and the pope would hover over him in desperate attempts to mold his mind.
@@ -235,8 +224,6 @@ Alfric, the “Red Hart.” Archdruid to the Order of the Golden Bough, Alfric i
 
 Alfric detests the children of civilization. His body is scarred by Imperial assassins. Therefore, every outsider entering Nordenland’s primordial forests is treated with suspicion until they can prove themselves harmless or peaceful. Despite this, the Archdruid’s goal is the same as any ruler’s—protect his people from the Great Beast. To this end, he secretly trades knowledge with the few Erlefurt mages he trusts.
 
-> You may continue, traveler, but if you set one toe out of line, you won't soon forget your visit here.
-> —Alfric, the “Red Hart”
 
 Professor Franciszka Welgirson. A powerful archmage and expert on the nature of the planes, Professor Welgirson is the court mage and arcane tutor to Emperor Odalric I. The young ruler values Franciszka’s lessons with breathless attention. The power of the Säullan Council means the professor can advise the emperor in private, without oversight from the Hearthkeepers—a dangerous proposition to some, considering the unpredictable nature of magic and those who wield it. The professor is despised at court as the “Wraith of Welgirson Hall.” She was present during the destruction of Ulmyr’s Gate. Courtly gossip ponders whether Franciszka’s mind is as corrupted as her spectral body. What eldritch schemes could she be whispering into the mind of an impressionable emperor? Gonzalo Vega Erlefort Mage
 
@@ -278,8 +265,6 @@ If there’s one quality about Master Lorand that no one can argue, it’s his d
 
 Izsak has taught Odalric I that failure is inevitable, but to carry on in the face of uncertainty is the spirit of invention. As he once told the young emperor, “To be brave is to be scared but kind. To be fearless is to be foolish and dead.”
 
-> Even our most well-forged weapons have no hope against the darkness within these walls.
-> —Archduke Ulrich Eizenherz
 
 ### Unterland
 
@@ -321,8 +306,6 @@ Tormach believes violence is the truth of war. Killing is the only virtue. Survi
 
 With countless threats looming over Unterland, a growing movement believes Empyreus has failed as a deity. Captain Andval leads these voices, though he must bide his time to convert more soldiers to the cult of Tormach. Their belief is that with the Arch Daemon’s strength, the shadow of Ostoya can be cleansed, the Valikans subdued, and the Great Beast destroyed. Many fear Andval will try to overthrow Lord General Roemer’s command.
 
-Sandra Grygierzec
-
 ### Other Locations of Interest
 
 #### Walstein
@@ -361,9 +344,6 @@ Martorius’ magnificent castle appeared over Rauland after the Gods’ End. Its
 
 Given Martorius’ stature, both the Hearthkeepers and the Säullan Council have chosen to accommodate him. In return, the archmage offers his counsel on matters plaguing the realm. For all this, no one in the imperial court believes Martorius is truly benevolent. Some wonder in secret if he’s even of this world. Throughout the Empire, the archmage’s agents have made inquiries, searching high and low for the Sacred Artifacts.
 
-> Do you ever think about what's out there?
-> Beyond everything?
-> —Vulf Avorrs
 
 ## Quest Hooks
 
@@ -447,8 +427,6 @@ Minions of the Great Beast seem to pursue Pope Murrich’s agents. The cult atte
 
 ## The City of Stehlenwald
 
-Bram Willemot
-
 The profile of the ash-covered city of Stehlenwald leaves many travelers fearful of their next breath. Thick clouds of smoke rise from ever-lit furnaces. Falling white flakes of soot cover the streets as footsteps reveal quality cobblestone roads crafted long ago. The heat vented into the granite and marble walls makes the city cozy in the winter but stifling in the summer.
 
 The grey ash builds and builds into clouds that gather to block sunlight. They dissolve, however, before any rain can fall to clean the streets of the soot. It’s like the sky itself is determined to rob the people below of any comfort. Intention is inside every brick and carved slab, illustrating the industry of the people who call Stehlenwald home.
@@ -493,8 +471,6 @@ The lightning moves so quickly that it begins to pulse and makes reverberating n
 
 This project is led by one of the city’s provisional council advisors, Professor Leguntor, a leading expert in lightning manifestation. This regular phenomenon has affected the city in strange ways. Static electricity is rampant throughout the afternoon and late into the evening, and odd blue hazes can be seen around objects and people. Right before the explosion occurs each day, many people have reported seeing the clouds overhead darken and a strange smell enter the air for only a moment before both return to normal after the explosion.
 
-> You can tell a resident of Stehlenwald from a visitor very easily. There's an explosion, bolt of lightning, or gout of flame coming from somewhere many times a day. The people who jump, flinch, or shriek? Those are the visitors.
-> —Stehlenwald tour guide
 
 ### History
 
@@ -564,8 +540,6 @@ Governance Grave. The Office District is filled with bureaucratic buildings, a m
 
 Quartz Palace. The main administrative building of Stehlenwald is a dazzling structure of polished marble with carved statues of two dwarves standing guard at the entrance of the palace. One grasps a pickaxe along with gems in his other hand, while the other holds a hammer aloft with a bottle of alcohol raised in celebration. The building is covered in gold trim and embossed with copper and brass, which emphasizes the white marble. Inside, you’ll find the headquarters of Stehlenwald’s provisional council advisors.
 
-Suzanne Helmigh
-
 #### Underways and Undercity
 
 From points throughout the overcity, entrances allow access to the underground network of tunnels that comprise the undercity. These old tunnels have been filled with ductwork, cables, and other arcane trappings, and some pathways have been left to crumble or are so reinforced they may one day outlast the city.
@@ -626,10 +600,6 @@ Doctor Veirgeld Reisenheim is a dwarven surgeon who has been placed in charge of
 
 Reisenheim himself recognizes this fascination in himself, laughing along with the jests. However, the humor hides a potentially darker and more accurate truth: Reisenheim definitely does not fear stepping over the line that separates medical curiosity from butchery. He has not yet crossed the line to the point that it would be seen as felonious, but he is one interesting case away from flirting with that distinction.
 
-> Prosthetics in Etharis
-> Doctor Veirgeld Reisenheim is one of the leaders in the art and science of creating and fitting prosthetics in the medical circles of Etharis. The Grim Hollow Player’s Guide introduces rules for Grievous Wounds and Permanent Wounds, and using those rules might find players in need of Doctor Reisenheim’s particular specialty.
-> Characters questioning anyone with medical training quickly learn that Reisenheim of Stehlenwald is the world’s leading expert on both magical and mundane prosthetics. The mechanical and technological marvels available in Stehlenwald, in conjunction with the doctor’s careful research and study, make a trip to the dwarven city a valuable asset in the life of an injured adventurer.
-> Once arriving in the city, the character would not have trouble gaining an audience with Reisenheim, particularly if they have some extra coin to fund his continuing research. The character finds the doctor enthusiastic to fit the character with his most recent inventions—many of which may not have been carefully tested. Interactions with Reisenheim can range from helpful to unsettling to humorously morbid, depending on the direction you want to take the story.
 
 Olivia Rea Klyde Sosa
 
@@ -659,7 +629,6 @@ Stehlenwald holds but the heart of this machine. Other sects of the cult could e
 
 A young human frantically looks through the side streets as though he’s lost something. He begs for aid from anyone who takes interest, introducing himself as Detlef Hagen, a lab assistant who’s lost track of a rather dangerous experiment. He explains how his mentor is Professor Alarica Deiderich, one of the provisional aides of the city.
 
-> “I followed her instructions exactly. I did everything the same. But when her arisen awaken and begin moving, they’re already intelligent and powerful. I can’t figure out why mine’s eyes were just so distractingly grotesque. It just stared at me blankly.”
 
 He further describes how the creature tried to attack him, and now he can’t locate it. He believes it to be extremely violent and dangerous, so he’s seeking mercenaries to kill it. Tracking this wayward creation through the city reveals clues that the arisen has entered the upper tiers of Stehlenwald.
 

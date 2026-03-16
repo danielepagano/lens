@@ -1,8 +1,4 @@
-**Chapter 6: The Valikan Clans**
-
 # Chapter 6: The Valikan Clans
-
-Andreia Ugrai
 
 The lands of Valika cover the very northernmost region of Etharis, crowning the continent with an icy splendor that few outside of the clans can appreciate. The six largest clans—Rune, Sýr, Völgr, Mithra, Morgöng, and Limgri—claim dominance over much of the land, though minor tribes can be found scattered throughout the harsh wilds.
 
@@ -101,8 +97,6 @@ There are few codified laws among Clan Limgri, although each community may have 
 Hospitality is the one governing law of Clan Limgri. Any strangers found in the northern wilds are welcomed to stay as long as they need. Strangers are never denied food and drink; all that the Limgri have is shared with those they encounter in the wilderness. For this reason, the Limgri frequently find themselves victims of Völgr raids; their generosity is taken advantage of by scouts, who then report the nomads’ location to Völgr raiding parties. Unwilling to change their own cultural laws, the Limgri, through Jarl Grata and Taala Brightstar, have petitioned for the Clan Mithra armies to extend their outposts further north. Queen Andrea has provided those warriors in exchange for Clan Limgri taking control of Cold Iron Keep, which houses the most dangerous, non-Valikan criminals in Kandar.
 
 ## Provinces
-
-Lucas Torquato
 
 Unlike the other kingdoms, borders in Valika are more of a nebulous concept. Each province flows into the next without much regard for boundaries, unless there is a physical feature, such as a river or mountain range, that easily delineates the divide. Which often means that clan members might cross into the territory of a rival clan without knowing—until they come across a rival clan’s hunting party.
 
@@ -206,8 +200,6 @@ As the seat of Clan Völgr and the seat of the Thrull Province, this bustling po
 
 Further adding to the city’s reputation, the Prismatic Circle and its leader, Hjadana, established their base of operations in Tyburn. As a result, the circle has been able to heavily project their influence into the government, enough so that one could argue that Thrull is a theocracy dictated by the edicts of the Prismatic Circle.
 
-Irina Nordsol
-
 #### Borgund
 
 The city of Borgund in the Armarka Mountains is the largest settlement in Thrull’s north, and the seat of Clan Sýr. Said to have been first settled while Sýr the Seven-Bladed still lived, the upper levels of Borgund spread along a series of stepped mountainside terraces lined with stone-walled houses.
@@ -300,8 +292,6 @@ Unfortunately for the party, the night they discover Sarvenka’s body shines br
 
 ### A Crucible of Fire
 
-Valikan Raiders
-
 Always seeking a solution to the spread of coldfire that threatens all of Etharis, the Order of Kentigern has hired an expedition to travel to Cinderghast to research a resurgence of flame-bearing monsters from the Netherworld.
 
 The expedition is destined a small warren of tunnels on the southern edge of the island alongside one of the larger volcanic peaks. In these tunnels, a group of four Malcinder and their Malcinder Alpha have made a cozy home, hunting and enjoying the relative solitude on Cinderghast. These creatures are content to be observed and will even allow small samples of their rock-like bodies to be harvested if approached with care.
@@ -319,8 +309,6 @@ Two Frostbite Foxes have been tailing the characters for hours, and now that the
 Once Angr has been rescued, she could use assistance recovering her strength and health, but then she is more than happy to share tales of what brought her out in such a storm to begin with. She beseeches the party to help her hunt down the elk she was tracking to take back to her brother once the storm clears up, promising her gratitude and hospitality in return, along with whatever other meager payment she can scrounge up.
 
 ## Cold Iron Keep
-
-Bram Willemot
 
 Far to the north, in the frigid peaks of the Jakkan Mountains, rests Cold Iron Keep. Silent battlements loom two hundred feet above the glassy surface of Lake Jakkan. To reach the step of the gate, guests must cross the large body of water—but not all who enter will exit Cold Iron Keep again.
 
@@ -448,11 +436,6 @@ Flooded Deepvaults. Sealed by magic and deathly cold water, the Flooded Deepvaul
 
 Inside, Bruhvelving is believed to conceal extensive passages to vaults even deeper and more secret beneath the flooded levels. Savvy adventurers have theorized that because it’s so deep and unflooded, Bruhvelving might have no physical connection to Cold Iron Keep other than the sealed portals, and might have been installed in a separate part of the mountains.
 
-> Commander Bodil Garðr
-> As an accomplished skald in Solheim, Bodil Garðr never imagined she would one day spend her days tending the locks of a prison. When her Røkkva prophecies of cataclysm and bloodshed caused unrest, Queen Andrea Helsing gave her the “great honor” of becoming warden of Cold Iron Keep—away from the ears of the people. In her honorable exile, Garðr redoubled her desire to hasten the end of the world, and found she had been handed just the tools to do it.
-> Garðr is tall, with rich walnut skin and a knifebright smile. Everything in how she presents herself is calculated for effect. Her shield and iron club can be used for metal-drumming in the skaldic tradition. She wears no emblem of her rank, dressing like the commonfolk whose respect and awe she has earned. Even her hair is plaited in runic designs that create a subtle protective aura over her.
-> Runesmithing provided Garðr insight into the seals and enchantments left at Cold Iron Keep by its builder, Mordu. Excited by the possibilities held within the mage’s Deepvaults and high chambers, she invited scholars and like-minded Røkkva believers to glean what they could from its magic. In time, she became hostess and patron to a wide variety of mages, entertainers, and scoundrels, all vying for her favor.
-> Most recently, Commander Garðr obtained significant resources through Queen Andrea for master runesmith Tove av Eikenbu to develop a method of inking Geas enchantments onto the bodies of select prisoners. These runic tattoos allow the warden to assign the prisoners tasks outside their cells, keep them under tight control, and even kill them remotely. Combined with the strange and dangerous nature of Cold Iron Keep’s prisoners, this project has become Garðr’s utmost priority as she sends them to plumb the depths of the Deepvaults, halt the raids of Clan Völgr, and secure herself against the ending of the world.
 
 ### Important Individuals
 

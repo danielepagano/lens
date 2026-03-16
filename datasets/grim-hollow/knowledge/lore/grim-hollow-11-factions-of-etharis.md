@@ -1,5 +1,3 @@
-**Chapter 11: Factions of Etharis**
-
 # Chapter 11: Factions of Etharis
 
 Well-Earned Rest
@@ -40,11 +38,6 @@ Order of Dawn. The Order of Dawn formed when Ostoyans fled the rule of their vam
 
 Prismatic Circle. The Prismatic Circle is an order of druids who believe that only war and bloodshed can keep the world safe from the reawakening of Gormadraug, the Prismatic Wyrm. Several of the Valikan Clans follow their teachings, turning their home region of Thrull into an area of constant warfare and occasional human sacrifice.
 
-> Tips for Using Grim Hollow Factions
-> Regardless of whether the factions mentioned here are global or regional; economic, social, political, or religious; beneficent or malicious, they all have the capacity to have a great influence over the adventures that the characters in your campaigns undertake. The trick for using these factions to their greatest effect is subtlety and a light touch.
-> Every one of them could be a patron organization for the characters, asking them to perform important, and possibly even life-saving, tasks. At the same time, each of them is capable of perpetuating great evil, whether in a mistaken striving for good or through purely diabolical motives.
-> The most resounding and impactful use of these organizations is not to use them as monolithic machines that churn only in the direction of ultimate good and pure evil. Likewise, it is suggested that you don’t simply paint all members of a faction with the same brush. One member of a group could seem benevolent as they hire adventurers to deal with a terrible problem that terrorizes innocent people. Then, as the characters get more invested in the goals of that individual, they could realize the person is the face of a group with less-than-noble intentions.
-> It should only be after several interactions with members of a faction that the characters even realize that there is a larger faction behind the contacts. Only after foiling the plans of a local den of thieves might the characters realized they’ve actually struck a blow to the Ebon Syndicate, and now they’ll have to deal with that group.
 
 ## Augustine Trading Company
 
@@ -76,8 +69,6 @@ This leaves many of the other factions with a conundrum. The Arcanist Inquisitio
 
 Perhaps only the Company of the Free Swords understands the Augustine Trading Company. The latter pays good coin, provides powerful weapons, and then expects the former to complete a contract. When the contract is closed, there is no further connection until the next contract is negotiated. Their relationship is coldly transactional, as it should be.
 
-> Behind every problem is a deal waiting to happen.
-> —Manoch Augustus
 
 ### Goals
 
@@ -134,8 +125,6 @@ The Augustine Trading Company has employees from middle managers and trade facto
 
 Local branch directors cultivate their own specialists, deploying them only for the most important missions where their talents are critical to success. Instead, mercenaries and adventurers make disposable employees when situations are dangerous or require deniability. Pay is quite generous, as are the perks that often accompany such missions, so being selected by the Augustine Trading Company is quite a triumph for an adventuring party. The tasks are usually quite clear and uncomplicated, as long as the party has few morals and even fewer scruples.
 
-> Even a child understands that more coin means more leverage.
-> —Trade Factor Sauros
 
 Trade Factor Medium Humanoid, Neutral AC 13 Initiative +2 (12) HP 33 (6d8 + 6) Speed 30 ft. Ability Score Mod Save Str 8 -1 -1 Dex 14 +2 +2 Con 12 +1 +1 Ability Score Mod Save Int 15 +2 +4 Wis 13 +1 +1 Cha 17 +3 +5 Skills Deception +5, Insight +3, Intimidation +5, Persuasion +5 Gear Rapier Senses Passive Perception 11 Languages Any three languages CR 2 (XP 450; PB +2) Traits Silver Tongue. The trade factor has Advantage on Deception, Insight, and Persuasion checks when discussing trade deals or contracts. Actions Multiattack. The trade factor makes two attacks using its Rapier. Rapier. Melee Attack Roll: +5, reach 5 ft., Hit: 5 (1d8 + 1) Piercing damage and 3 (1d6) Poison damage. Bonus Actions Gold Talks. The trade factor throws 10 GP to creature within 30 feet. The creature must succeed on a DC 13 Wisdom saving throw or gain the Charmed condition until the end of the factor’s next turn. Reactions Paper Shield (1/Day): Trigger: A creature that the trade factor can see makes an attack roll against the factor. Response: The trade factor produces a legal document sealed with a magical ward and imposes Disadvantage on the attacker’s roll.
 
@@ -189,11 +178,6 @@ Bookeeper’s Secrets. Lonzol, a Company bookkeeper, turns up face-down in a Mor
 
 Burning Warehouses. A warehouse goes up in flames; the third one this month. Officially, it was an accident. Unofficially, it was sabotage, and the Company’s losing patience. They want the party to find out who’s torching their assets and make an example of them. The problem is, the more they dig, the more they realize these fires might be the only honest thing they’ve been told. Each warehouse contained off-books caged daemons, to be sent for experimentation by Project Warbreed. Exposing the truth risks alienating another department of the Company.
 
-> Faction Rewards
-> For those with flexible morality, the Augustine Trading Company provides financial rewards in excess of any other faction or nation. Loyal and successful minions might expect coin, luxurious gifts, land, servants, jewels, fashions, and objects of art. Characters might even expect powerful magic items, especially if the item would be useful in service to the Company. Should the characters hunt an elemental in service to the Company, they might requisition Armor of Fire Resistance and then be allowed to keep it if they are successful. Werewolf hunters might be gifted Silvered Weapons. In search of a griffon, Wings of Flying or a Figurine of Wondrous Power makes an appropriate gift.
-> Agents that become indispensable might expect even more lucrative or exotic rewards. Characters might be given shares in a trading caravan or vessel that generate a passive income for the party, and provide them a reliable mode of transportation, as well as a cover for visiting settlements that might not look kindly on the approach of adventurers. Such passive investments might earn the party as much as 100 GP per level each month.
-> The Company might also offer experimental potions or drugs that provide combat enhancements. Some of these experimental potions might even start a Transformation, especially if the loyalty of the characters is in question. Once the Transformation is advanced enough, such characters might be sent on particularly dangerous missions to test the efficacy of using the drug to create other super soldiers.
-> Loyal characters that get into trouble can expect the finest financial and legal support, as long as their survival is more useful than their mysterious demise. Show unwavering devotion, and you’ll be wrapped in layers of legal armor, fed coin by the chestful, and praised in quarterly reports as a model of progress. But the Company doesn’t traffic in sentiment. It runs on ledgers, not loyalty. The moment a character’s survival costs more than their silence, contracts go missing, testimonies get rewritten, and the next assignment is a one-way expedition. You won’t get a farewell party. You’ll get a eulogy buried in a profit-loss statement and a plaque in a hallway no one walks.
 
 ## Company of Free Swords
 
@@ -325,23 +309,6 @@ Free Swords Captain Medium or Small Humanoid, Neutral AC 20 Initiative +9 (19) H
 
 Free Swords Pikemen
 
-> Free Swords Specialists
-> Specialists of the Company of Free Swords are some of the company’s best Veterans and pack nasty surprises beyond their sword and shield. Four specialists are detailed below: Sapper, Battlemage, Archer, and Infiltrator.
-> To create a Free Swords Specialist, take the Free Swords Veteran, increase its HP by 10, increase its CR by 1, and apply the indicated changes to its stat block.
-> ARCHER
-> Adjusted Skill: Perception +6
-> Trait: Power Shot. The first time the archer deals damage with a Ranged Weapon on its turn, it deals an additional 9 (2d8) Piercing damage to the target, and the target’s Speed is reduced by 10 feet until the end of the archer’s next turn.
-> BATTLEMAGE
-> Intelligence 16, +3 MOD, +5 SAVE
-> Additional Skill Arcana +5
-> Bonus Action: Battle Spellcasting. The Battlemage casts one of the following spells, requiring no Material component and using Intelligence as its spellcasting ability (spell save DC 13).
-> 1/Day each: Dispel Magic, Fireball, Haste
-> INFILTRATOR
-> Additional Skill: Stealth +7
-> Trait: Poisonous Blade. The first time the infiltrator deals damage with a Melee Weapon on its turn, it deals an additional 10 (3d6) poison damage, and the target has the Poisoned condition until the end of the infiltrator’s next turn.
-> SAPPER
-> Initiative +6 (16)
-> Bonus Action: Acid Bomb(2/day). Dexterity Saving Throw: DC 15, each creature in a 20-foot-radius Disengage centered on a point within 60 feet. Failure: 22 (4d8 + 4) Acid damage. Success: Half damage only. Success or Fail: The area becomes Heavily Obscured for 1 minute or until dispersed by a Strong wind.
 
 For several years after their founding, the Free Swords operated out of Harkin’s Hold—the keep they’d won as part of their founding insurrection. Although the company soon outgrew its confines, the small keep remains a Free Swords outpost. Darion Harkin’s grave and many artifacts from the company’s founding are kept here, and company members often make a pilgrimage to see the original tenets—painted by Harkin himself upon simple planks of wood. Harkin’s Hands—a small chapter of the company, many of whose members trace their lineage back to the original members—operates out of the outpost.
 
@@ -383,12 +350,6 @@ Contractual Delay. The Swords of the Canopy, a famed Free Swords branch in Charn
 
 Sword Proxy. The Golden Glaives, a well-respected Free Swords branch in Castinella, were approached by the wealthy owner of a mine in the hills of Corova. Her mine has been invaded by fiendish creatures coming through a magical rift. Some miners were slaughtered, while others have fled and won’t return until the mine is cleared and the rift sealed. The problem clearly requires magical intervention, but the Arcanist Inquisition is slow to respond. The Golden Glaives do not wish to directly intervene because of political concerns with the Inquisition. However, they are willing to discreetly hire an independent group to intervene, thereby maintaining good relations with the mine owner and preventing unwanted attention from the Inquisition.
 
-> Faction Rewards
-> For characters who join the Free Swords individually, payments increase with rank in the company, and are always a share of the total contract and any spoils. Characters who join as a group or (in time) create their own chapter can expect lucrative contracts to be sent their way through the Free Swords offices, and via the company’s reputation.
-> Beyond coin, larger Lions Dens and company keeps can offer exclusive and difficult-to-procure equipment. This includes armor, weapons, potions, mounts, and other more unique implements of war. Some locations even offer enchanting and spellcasting.
-> In practical terms, the equipment offered may include advanced equipment from the Grim Hollow Player’s Guide, or even magic items themed around weapons and armor. However, the more exclusive and rarer offerings are likely reserved for company members in good standing and not offered to outsiders. Then again, coin does tend to solve many arguments with the Free Swords.
-> Finally, simply being associated with the Company of Free Swords can help earn bigger rewards. Nobles are willing to pay more, and villains may be more willing to surrender to those associated with the formidable Free Swords.
-> Individuals who are highly favored by the company might be offered a stronghold or the command of a warband or military division.
 
 ## Ebon Syndicate
 
@@ -406,8 +367,6 @@ Hiram saw the moth as a sign of divine favor, sent by the gods themselves. As he
 
 As the syndicate grew in prominence late in Hiram’s life, he became a more and more elusive figure by necessity. Few knew his true face, and getting an audience with “the Greyman” became a unique honor. This started the tradition of the Syndicate’s leaders taking the title of “Greyman.”
 
-> With the right motivation, any secret is within reach.
-> —Morencian Listener
 
 #### The Red Gondola
 
@@ -541,11 +500,6 @@ Past Ties. Caravis Voss, the Burgermeister of Tolensk, hires the characters to r
 
 Walk Away. The characters find themselves approached by several Syndicate enforcers, who tell them to walk away from whatever quest they are currently pursuing. If the characters refuse, the enforcers rough them up, attempting to teach them a lesson. If the enforcers win, they do not kill the characters; they just leave them beaten. The enforcers themselves do not know why they were sent, and the characters are left to wonder about the Syndicate’s goals, or to investigate further.
 
-> Faction Rewards
-> The Ebon Syndicate trades in illicit substances, contraband, poisons, sinister magic items, and of course, gold. There are few limits to the rewards for being in the Syndicate’s service, but often the greatest and easily most valuable thing that they can offer is information. As outsiders, the characters are often left with information and leads for things the Syndicate wants them to pursue. However, this doesn’t mean the information is good.
-> As the characters become wealthier and more renowned, they may gain contacts in various cities. These Syndicate contacts would seek out the characters as sources of information, offering goods, services, and opportunities in exchange.
-> If the characters require smuggling services, for themselves or for special goods, the Syndicate can make arrangements in most places on the continent and at sea. If they require a place to lay low, the Syndicate has plenty of hideouts in any major city.
-> Should characters join the Syndicate and progress within its ranks, exciting opportunities await—Travel the world! Meet interesting people! Leave them wondering what the hell happened!—is a common Syndicate spy refrain. Higher ranks mean not only more interesting missions but also access to the wider information network and political influence. High-level operatives may also be given an entire secret lair for themselves.
 
 ## Thaumaturge
 
@@ -563,31 +517,6 @@ Not all tales of Thaumaturge are dark. The Order is widely assumed to oppose the
 
 There are also plenty of tales describing a mysterious mage appearing at just the right time to help a village slay a monster or depose a tyrant. Conversely, other tales describe a dark-robed figure at the tyrant’s side. Such figures tend to appear from nowhere and disappear just as suddenly. If Thaumaturge exists, the one thing that can be certain is that they keep their motivations to themselves. If one came across a true recording of Thaumaturge history, they would likely find it full of tales too grand to be believed.
 
-> The Last Sunset
-> Two women, or two figures who looked very much like women, stood atop a forested hill watching the sunset. Below them, shadows were already creeping across the tiny Ostoyan village of Drebjik. One of the women was very tall and lanky, slender even for an elf. Silhouetted against the bleeding sky, her head looked like a drop of dew bending a blade of grass as she spoke to the other:
-> “It is notable because it is the last one. For now,” she said. She wore a flowing purple dress with an elaborate high collar that wrapped her long neck, something entirely out of place for the setting.
-> “He succeeds then?” responded the other. She wore a long velvet coat, dark burgundy and ornately embroidered. The laces of her knee-high leather boots matched perfectly. She regretted not bringing a hat, but did not turn her gaze away from the spectacular fading light.
-> “Yes. And fails. That is how these things go—every success holds sparks of failure.” A short silence was interrupted by a sudden and brief cacophony of distant shouts, like a tavern door swung suddenly open and immediately shut. The women did not turn around. A man, or a figure that looked very much like a man, joined them on the precipice.
-> “Do you think it wise passing through aether? It can bring attention,” said the woman in the coat. Her voice was heavy, annoyed rather than truly concerned.
-> “It doesn’t,” said the tall woman, matter-of-factly.
-> “I see you’ve decided on your elven self today,” the man said. He paused to recall her elven name: “Taer Sa’ail?” he continued, with a barely quizzical inflection. The man was large, though not as tall as her. He wore a once-white tunic of heavy wool and many buttons, the sort favored by soldiers. It was well-worn, though the dust and stains on it were recent. He held a short staff of polished obsidian, and the sun’s dying light reflected in its glossy surface like a vein of red marble.
-> “I appreciate my name being remembered,” responded Taer Sa’il, “almost as much as appreciate it being forgotten.” Her lips curled into a razor-thin smile.
-> “One day you’ll have to tell us your name,” interjected the other woman. The man grunted softly but said nothing. She returned to the previous topic: “You were saying. He succeeds? Should we have stopped it?”
-> “Could we have?” mused the elf.
-> “I sent agents,” said the woman.
-> The man said nothing.
-> “Common adventurers? Soldiers? Hardly a foil. They fail.”
-> “And succeed. Every failure holds the sparks of success.”
-> “Such is the power of witnesses. Else we wouldn’t be here.”
-> The man said nothing.
-> “Is that all we intend, to witness?”
-> “It’s different for us. It’s an event of power.”
-> “Would you draw on it?”
-> “I would be careful. What he’s doing is unprecedented. Also,” the tall woman paused, looking for the right words. “Kasimir’s necromancy—it is not just potent. It’s contagious. Corrupting.” She paused again. Her attention drifted to the last vestige of light, to the darkened village, to a thousand futures. The silence lingered.
-> The man said nothing.
-> When she came back to the present, the elf started anew: “They’ll call it the Darkfall.”
-> The man said nothing. He too had sent agents. Not mortal ones. He didn’t ask whether they would succeed. What he came for would happen, and he was here to draw on it. He doubted the corruption could affect him, given what he was. Regardless, the power would be worth it.
-> The three of them remained on the hilltop as night swallowed the land. Waiting in silence. Watching through the darkness.
 
 #### Thaumaturge Today
 
@@ -643,12 +572,6 @@ In addition to the aforementioned possible leaders, several other individuals ar
 - Odis. This elven mage from the Sarmar Academy now travels Valika, seeking out stories of Gormadraug and coldfire. While the elf seems entirely independent, his very specific area of inquiry—and his timing—suggest that he was pointed in this direction by a greater power.
 - Volarius of Aloran. The “knight-sorcerer” emerged out of obscurity in Charneault to both popularity and suspicion. Claiming to act in an oath to a powerful spirit, Volarious secured a place on the Royal Council, and is unafraid to wield his influence. Jealous rumors suggest that he is a powerful foreigner who has in fact enslaved the spirit.
 
-> The Orb Is in Your Court
-> The lack of concrete information on the Thaumaturge is both thematic and intentional. The Order is a mercurial organization, and their details can be molded to each individual campaign.
-> If needed, they can be a villainous organization pulling the strings at a cosmic level. This can be especially useful in freeform campaigns, and can use a final behind-the-scenes villain to tie it all together.
-> Conversely, they can be a force for good, with mystery mages showing up at opportune moments to inform or transport the characters.
-> The Thaumaturge can also be many things in between—providing an arcane distraction with a one-time quest or a minor foil in the form of a rogue member.
-> If the campaign is leaning heavily into the arcane, they could be a more typical faction with ranks, progression rites, and even the bestowing of robes, wands, or hats.
 
 ### Agents
 
@@ -668,8 +591,6 @@ Thaumaturge Initiated Medium or Small Humanoid, Neutral AC 15 Initiative +2 (12)
 
 Full-fledged Thaumaturge mages are arcane powerhouses. They can easily manipulate magic thrown at them, and teleport around the battlefield while throwing spells at their opponents. They can summon devastating rifts to unleash destructive energy or summon monstrous allies. Multiple mages can combine energies for even grander feats.
 
-> A weak mind sees only obstacles.
-> — Sortus Taethar, Archmage
 
 Thaumaturge Archmage Medium or Small Humanoid, Neutral AC 17 Initiative +14 (24) HP 187 (22d8 + 88) Speed 30 ft. Ability Score Mod Save Str 10 +0 +0 Dex 18 +4 +4 Con 18 +4 +4 Ability Score Mod Save Int 21 +5 +10 Wis 18 +4 +9 Cha 18 +4 +9 Skills Arcana +15, History +15, Insight +9, Perception +9 Gear Orb Senses Truesight 120 ft., Passive Perception 19 Languages One regional language plus five other languages CR 15 (XP 13,000; PB +5) Trait Collaborative Rift Control. When multiple Thaumaturge Archmages capable of creating and controlling Arcane Rifts are present, they can interact with each other’s rifts, and for every additional Thaumaturge Archmage, the maximum possible level of each rift increases by 2, up to a maximum of 15. Legendary Resistance (3/Day). If the archmage fails a saving throw, it can choose to succeed instead. Magic Resistance. The archmage has Advantage on saving throws against spells and other magical effects. Personalized Arcane Burst. Each archmage is specialized in one pair of damage types from the following list: Acid and Poison Bludgeoning and Necrotic Cold and Fire When the archmage uses the Arcane Burst action, it can choose to change the attack’s damage type from Force to one of the two selected damage types. Actions Multiattack. The archmage makes four Arcane Burst attacks or makes two Arcane Burst attacks and uses the Spellcasting action Arcane Burst. Melee or Ranged Attack: +10, reach 5 ft. or range 150 ft. Hit: 27 (4d10 + 5) Force damage and the creature is pushed back 10 feet. Spellcasting. The archmage casts one of the following spells, using Intelligence as the spellcasting ability (spell save DC 18): At Will: Detect Thoughts, Disguise Self, Mage Armor (included in AC) 2/Day Each: Dimension Door, Fireball, Fly, Freezing Sphere, Greater Invisibility, Hypnotic Pattern 1/Day Each: Chain Lightning (level 9 version) Disintegrate, Mind Blank (cast before combat), True Seeing (cast before combat), Scrying Bonus Actions Misty Step. The archmage casts Misty Step, using the same spellcasting ability as Spellcasting. Reactions Arcane Contingency. Trigger: The archmage is reduced to 40 Hit Points or less. Response: The archmage can cast Dimension Door. This does not consume a use of the spell. Arcane Countermeasure. Trigger: The archmage is targeted by a spell, or the archmage is in the area of effect of a spell being cast. Response: The archmage casts Shield or Counterspell, or casts Dispel Magic targeting a spell in response to seeing that spell take effect. The archmage uses the same spellcasting ability as Spellcasting. Legendary Actions Legendary Action Uses:3. Immediately after another creature’s turn, the archmage can expend a use to take one of the following actions. The archmage regains all expended uses at the start of each of its turns. Cast a Spell (Costs 2 Action Uses). The archmage uses the Spellcasting action. Create Arcane Rift (Costs 2 Action Uses). The archmage creates a level 5 Arcane Rift in an unoccupied space the archmage can see within 120 feet. The Arcane Rift is a Large magical object, which hovers, has 10 Hit Points per Arcane Rift level, and has an AC of 17. In addition to standard object properties, the Arcane Rift is Resistant to damage from spells and spell effects and is Immune to all conditions. Creatures within 30 feet of the Arcane Rift treat all movement away from the Arcane Rift as Difficult terrain. The Arcane Rift can be dispelled with a Dispel Magic spell, treating the Arcane Rift’s level as its spell level. It can also be destroyed if targeted by a Disintegrate spell. Infuse Arcane Rift. The archmage increases the level of one Arcane Rift it can see within 120 feet by 2, up to a maximum level of 9. Ignite Arcane Rift. The archmage causes one Arcane Rift it can see within 120 feet to expand to Huge or Gargantuan size before exploding, destroying the Arcane Rift. All creatures within 30 feet are subjected to the following effect. Dexterity Saving Throw: DC 18. Failure: 7 (2d6) Force damage per Arcane Rift level. Success: Half damage. Arcane Rift Summoning. The archmage targets one Arcane Rift it can see within 120 feet, funneling its magic to cast Summon Dragon using the Arcane Rift level as the Spell Slot level, destroying the Arcane Rift in the process. Upon summoning, the archmage can change the summoned creature’s creature type to any of the following: Aberration, Beast, Elemental, Fiend, or Monstrosity. This casting requires no somatic or material components.
 
@@ -701,8 +622,6 @@ Nestled into the high mountains of Valika, the mage-created prison keep is not a
 
 ### Quest Hooks
 
-Tactical Retreat
-
 Characters run-ins with the Thaumaturge are certain to be mysterious, arcane in nature, and most definitely lack any confirmation that the group involved actually is the Thaumaturge.
 
 After thwarting a mage of the order, the party is likely to run into a dead end or evidence of a vastly more powerful mage “cleaning things up.” After assisting a Thaumaturge member, these mysterious benefactors—even when they are named and known—tend to dramatically disappear, leaving a note, a reward, and few answers.
@@ -727,10 +646,6 @@ When the characters arrive, everything seems normal. The miners show no sign of 
 
 In reality, these miners are impostors working for the Cult of Tormach. They recently invaded, killing or imprisoning the real mining crew, who were indeed suffering madness and mutation from working with the virulent ore. The characters can uncover the ruse, deal with the ore thieves, and find the captive miners who are being changed by the ore.
 
-> Faction Rewards
-> The Thaumaturge predominantly reward the party with magic items, particularly of the exotic and strange variety. These items could have come from other planes or be particularly dangerous, like Shadowsteel. The Thaumaturge also provide spell scrolls, potions, or access to magic services such as creating a magic item, enchanting equipment, casting high-level spells or curses, providing access to libraries or arcane facilities, or teaching new spells.
-> Powerful mages can allow access to ally strongholds or to mysterious areas such the Ravencourt Sanctuary. They might also provide access to a network of teleportation circles between major cities or other means of magical transport. One of the greatest assets they can provide is information. When it comes to ancient rites, the planes, or mythical beasts, if information exists, it is likely accessible to the mages of the Thaumaturge.
-> Finally, the Thaumaturge might also offer education, allowing characters to progress in arcane studies of all sorts, gain introductions to mentors or patrons, and receive access to magical feats and boons. More nefarious mages seek out minions or subjects for experimentation or transformation.
 
 ## Watchers of the Faithful
 
@@ -786,8 +701,6 @@ From the whispers of the Arch Seraphs to the High Priest’s words shall blossom
 
 While not shared publicly, the Watchers’ leadership has a fourth goal: the subjugation of the world’s governments through organized faith. By spreading faith in the Arch Seraphs, the Watchers of the Faithful hope to unify the common folk, and when that unified people rise up, they can and will force political change with new governments taking direction from the Divine Speaker and the High Priests.
 
-> You are blessed to hear the words of Sagrado Valieda in this dark time of temptation and wickedness. Let not magic's corruption taint your spirit. Only through the Eternal Dogma can you live a righteous life, for all other paths lead to evil and damnation. Open your heart to this truth and you shall know contentment.
-> —Watchers of the Faithful Evangelist
 
 ### Leadership
 
@@ -823,8 +736,6 @@ Watchful Priest Medium Humanoid, Lawful Neutral AC 14 Initiative +2 (12) HP 60 (
 
 High Priest Medium Humanoid, Lawful Neutral AC 17 Initiative +5 (15) HP 180 (24d8 + 72) Speed 30 ft. Ability Score Mod Save Str 10 +0 +0 Dex 12 +1 +1 Con 16 +3 +3 Ability Score Mod Save Int 13 +1 +1 Wis 20 +5 +9 Cha 18 +4 +8 Skills Arcana +5, Deception +8, Insight +9, Intimidation +8, Perception +9, Persuasion +8, Religion +5 Resistances Radiant, Necrotic Senses Passive Perception 19 Languages One regional language plus two other languages CR 11 (XP 7,200; PB +4) Traits Enraging Sacrifice. When the priest dies, each ally within 40 feet who can see the priest gains 20 Temporary Hit Points and a +4 bonus to attack and damage rolls for 1 hour. Zealous Aura. The priest radiates an aura of zeal in a 40-foot Emanation originating from it. Each ally in the area has Advantage on Initiative checks, and their successful attacks deal an extra 3d6 Radiant damage. This aura becomes inactive if the priest has the Incapacitated condition. Actions Multiattack. The high priest makes three three Sharp Rebuke attacks. Sharp Rebuke. Melee or Ranged Spell Attack Roll: +10, reach 5 ft. or range 60 ft., Hit: 18 (3d8 + 5) Radiant damage, and one ally of the priest within 20 feet of the target can take a Reaction to regain 9 (1d8 + 5) Hit Points and make a melee attack. Call Soldiers of the Faith. The high priest calls forth celestials that take the form of 1d4 + 1 Warrior Veterans or 1d3 Lions that enter the Initiative at the end of the high priest’s turn. The celestials follow the priest’s commands and remain for 1 minute or until slain. Spellcasting. The priest casts one of the following spells, using Wisdom as the spellcasting ability (spell save DC 17): At Will: Guidance, Light, Prestidigitation 1/Day Each: Aura of Life, Bless, Calm Emotions, Divination, Flame Strike, Healing Word (cast at level 4), Heroism, Hold Person, Suggestion Bonus Action Inspiring Monologue (3/Day). The priest chooses any number of allies within 60 feet who can hear the priest. Until the end of the priest's next turn, each target has Immunity to the Charmed, Exhaustion, and Frightened conditions and does not provoke Opportunity Attacks. Reactions To Me! Trigger: The priest is attacked or targeted by a spell. Response: The high priest chooses a Small or Medium ally within 5 feet of itself. The priest and that ally swap places, and the ally gains 10 Temporary Hit Points and becomes the target of the attack or spell instead.
 
-Suzanne Helmigh
-
 ### Important Locations
 
 The Watchers of the Faithful maintain their seat of power in the Grand Temple of Toletum. This massive cathedral forms a starburst shape with the main nave and central chapel devoted to Empyreus and smaller chapels radiating off the center. The glories of the Arch Seraphs are depicted in statuary and murals, religious splendor rarely seen elsewhere in Castinella. Each chapel displays a sacred relic, though they are only replicas and the true relics are well-hidden below. Rumors say that behind the beautiful walls lies a secret passage. The rumors are wrong, there are several, and also many holes that Watchers use listen to the whispers of those within its walls.
@@ -859,11 +770,6 @@ Priestly Escort. A Watchful Priest named Elissan asks for a safe escort across a
 
 Relic’s Origin. A fire beneath the Grand Temple of Toletum was so inexplicably hot that it cracked the stones of the altar that houses the relic of Solyma. High Priest Srokkush did not truly believe that his sect’s relic held any power, but the relic was completely untouched by the fire. Is it blessed by the Lady of Vengeance? Not yet willing to trust the characters in the underhalls, he sends them on a mission to uncover the true origin of the relic: a red beaded scarf called the Torremuria, said to have been worn by a simple Morencian midwife who slew an abomination in defense of an infant. The trail leads to a path of lies planted by the fiend Zuurag, the Oathbreaker, as part of a plan to corrupt the Grand Temple from within. Once the plot is uncovered, the High Priest further requests the characters sneak into the Grand Temple and steal the shawl so it can be destroyed with any shame falling upon the sect for harboring a corrupted artifact.
 
-> Faction Rewards
-> The Watchers of the Faithful do not give gold, land, or title to their followers. Instead, the faction’s strength lies first in its divine magic. Worthy allies might be granted clerical spells of fifth-level or lower for good reason, such as lifting a curse by casting Greater Restoration. The Watchers can also provide advice and divine guidance by casting Augury or even Commune to help a party with difficult decisions. The Watchers will not, however, bring back the dead. For some reason, such power is beyond the capability of even the High Priests, though the Watchers will provide a very touching funeral service and a plot of land in a sanctified cemetery to prevent any deceased from rising as undead.
-> Valued agents might be gifted Healing Potions or prayer books containing uncommon Spell Scrolls. Characters who earn great favor might even gain reliquaries with the ability to cast divine spells like wands or staves.
-> In addition to magical aid, the faction’s temples offer safe havens to its members; particularly useful against creatures that can’t enter hallowed ground. The healers of the Watchers are talented beyond magical aid. For believers, prayers to the Arch Seraphs in their temples while resting give Advantage on saves against magical contagion or curses, and removing two levels of Exhaustion per Long Rest. While at an allied temple or church, characters might also have access to information about the area, especially as it pertains to potential heretics or monsters that the Watchers are aware of.
-> The greatest gift that the Watchers can bestow is the touch of their holy relics. Each sect holds a holy relic that they claim possesses a small piece of their Arch Seraph’s power. When lain upon the brow or shoulder of a favored believer, the sect’s High Priest claims that if the Arch Seraph wills it, the relic can grant a blessing that bestows knowledge of a feat or the ability to cast a specific spell. Only Zabriel’s relic truly possesses this power, and the feat or spell is always something most useful against whatever evil the character is currently hunting. This blessing lasts for one month, unless the bearer commits a sin against the Arch Seraph, and then the character instantly lose access to the blessing.
 
 ## Arcanist Inquisition
 
@@ -885,11 +791,6 @@ The ruling seat of the Inquisition is located at the cathedral, and currently be
 
 Over the years, and more than ever under Crevax’s reign, the treatment of the Inquisition’s prisoners has shifted from monastic-like confinement to cruel imprisonment. There are those within the Inquisition who believe it is losing its way, but they often find themselves afraid to speak their minds, for fear of having the tables turned on them. After all, it takes merely a word or suspicion to get thrown into the Cathedral’s maze.
 
-> Goal: Eradicate the Arcane Blight
-> The Inquisition views any magic other than divine as a curse to be exterminated. Those who carry the curse are to be pitied and separated to minimize their damage and reduce their opportunity to endanger others or pass it on.
-> Aside from locating and capturing those who practice or have access to non-divine magic, the Inquisition has long sought ways to strip such magic from those “cursed” with it. They have carried out many brutal experiments with this over the years, but have yet to discover a reliable method.
-> Goal: Will of the Arch-Seraph
-> The Inquisition sees its mission is to fulfill the will of the Arch Seraph Empyreus, and to live a life of moral purity and valor. While it is best known for their persecution of arcane magic, Inquisitors also fight monsters, provide healing, and cure curses. To those they find worthy and pure of faith, the Inquisition can be a protective shield against an increasingly dark world.
 
 ### Agents
 
@@ -913,9 +814,6 @@ Herbalist’s Arrest. While visiting the shop of a “magic herbalist,” the ch
 
 Child Healer. Seeking healing or a curse remedy, the characters arrive at a small village which has recently become famous for a child who is said to have performed healing miracles in the name of the Arch Seraph. Upon arrival, they learn that the miracle child is missing, and her parents are desperate to find her. The arrival of an Inquisitor further complicates the matter. Newly-promoted and a true believer in the Seraph’s word, Ghodelia Vasca, has been sent by her corrupt master Kodolus to judge the girl for blasphemy and ensure she is silenced.
 
-> Faction Rewards
-> Parties that agree to work alongside the Inquisition may be rewarded with divine spellcasting and divine-themed magic items. The Inquisition’s specialty is items and spells designed to counter magic, such as armor or shields that resist spells, scrolls that counter or dispel magic, or silence casters.
-> Being on good terms with the Inquisition can provide characters access to interrogate captured mages, and libraries filled with forbidden texts about curses, magic, and monsters. Access to secret teachings and powers of the Arch Seraph is rumored to be available to the highest-level Inquisitors.
 
 ## Crimson Court
 
@@ -927,11 +825,6 @@ Some Court members gather for lavish masquerades or fight together in blood-soak
 
 Each Court member resides in their own estate or keep within their province. The location of the residence is publicly known to the commonfolk, but only the foolish arrive uninvited, lest they become the target of traps or unwitting participants in a noble’s depraved interests. On rare instances, the Grand Duke summons all Court members to his fortress stronghold of Blackharbour in Nov Ostoya. Invitations to such meetings often herald a change of Court membership.
 
-> Goal: Slake the Endless Thirst
-> The citizenry of Ostoya justify their fear-soaked obedience to the Crimson Court by convincing themselves that the Court protects them from the undead that roam the nation and the Bürach Empire that covet their lands. While protection is a responsibility of the Court, the vampire nobles have far greater pursuits that operate on the scale of decades rather than years.
-> Ultimately, confrontations with the undead and Bürach serve the greater goal of growing a nation solely devoted to the existence of vampires. The Court’s thirst for blood and hedonistic tendencies must be fueled by a subservient living populace. Those of low ambition are satisfied with the fear and power they command over their provincial subjects. Those of higher aspirations envision expanding the Darkfall’s boundaries and being worshiped as gods, if not ascending to godhood themselves.
-> As such, vampire nobles are slow to bestow vampirism to even the most obedient mortal servants, as each new vampire represents a potential rival for power and blood.
-> The unspoken truth among the Court is that a careful balance of vampires to mortals must be maintained, otherwise the vampire nation of Ostoya can no longer support itself. A main priority of the Court is the destruction of the Raevo insurgency, as it represents the one point of light in Ostoya that risks their cattle rebelling against them.
 
 ### Agents
 
@@ -961,10 +854,6 @@ Desperate Measures. To retain her seat at the Court, the disgraced Viscountess Z
 
 Expanded Domain. The Grand Duke instructs your party to escort an arcane weapon discovered in the City Below to the front lines of the war against the Bürach Empire. The party learns that the weapon consumes the souls of vampires and mortals alike within range, fueling the machine and expanding the domain of the Darkfall. If news of this weapon reaches the other members of the Court, the Grand Duke’s position will be threatened.
 
-> Faction Rewards
-> As rulers of Ostoya, the Crimson Court can bestow many rewards to those who serve them. Beyond rewards of wealth, useful agents can gain lands and holdings of their own within the nation, complete with their own serfs, taxation benefits, and responsibilities protecting its peoples from enemies both undead and living.
-> The Crimson Court possesses many ancient artifacts from the City Below, including items steeped in necromancy and sangromancy.
-> Those who have proved their loyalty to the Court may be invited to receive the Vampire Transformation, becoming a vampire noble themselves. Ancient texts from the City Below may also contain the secrets of the Specter, Lich, or Shadowsteel Ghoul Transformations.
 
 ## Monster Hunter Guilds
 
@@ -978,10 +867,6 @@ It should be noted that because their members are often shunned by others, devou
 
 Larger guilds now rival the smaller mercenary companies. However, unlike mercenary companies, there are very few monster hunter guild halls. Some of the bigger guilds do have their hall or lodge in a city, but most use a castle or other distant and well-secured location. Many monster hunters and smaller guilds travel extensively and have no permanent home. All monster hunters are trained to work individually, accepting some individual commissions, even when part of a guild. They often join adventuring groups or mercenary outfits to complete specific hunts.
 
-> Goal: Kill Monsters, Get Paid
-> Of all the factions of Etharis, the Monster Hunter Guilds probably have the simplest goals. While not entirely unified in purpose—and certainly not in method—most want to ply their trade and to be paid for completed contracts. Some guilds are more mercenary and won’t slay anything without coin, while others prioritize the altruistic protection of innocents.
-> Goal: Knowledge Is Our Weapon
-> All monster hunters seek to use knowledge to defeat their quarry. Many Monster Hunter Guilds take an academic pride in locating, preserving, and sharing the knowledge needed to defeat monsters. This information not only helps hunters defeat their foes but also to fight superstition and misinformation among commoners, something that hunters are encouraged to do at every opportunity.
 
 ### Agents
 
@@ -1003,14 +888,7 @@ Noble Commission. Wealthy Bürachar Duchess Katrina Vishovska offers a massive b
 
 Guild Misdirection. The characters are hired to investigate a dramatic assassination. The investigation leads to the local monster hunter guild, who claim that they are also seeking the murderer and offer to assist. In truth, the guild has begun taking humanoid contracts and was behind the murder. The guild points them to investigate a remote location, where an ambush awaits.
 
-> Faction Rewards
-> A hunting guild might reward monster hunter characters with advanced equipment and resources such as Trapper Tools or Devourer Decoctions. They may also know how to construct magic items useful against specific monsters, such as a magic sword or an item that tracks the creature. Guilds often have salvage and item crafting recipes, and may trade for salvage.
-> Monster hunters value knowledge, with some guilds maintaining a library. A monster hunter character might be able to add a new monster type to their grimoire after completing tasks for the guild.
-> Most guilds tend to be private, but when there is a true threat, or someone has earned their respect, they may provide a safe haven to rest or craft. A party may also found their own guild, or a branch of an established guild.
-> Hunting guilds are sometimes too busy or too small to fulfill every contract, and may pass these on to adventurers. Most guilds aren’t wealthy enough to put up bounties themselves.
 
-> He's an odious, self-serving, mercenary, but he gets the job done.
-> —Monster Hunter Patron
 
 ## Morbus Doctore
 
@@ -1022,9 +900,6 @@ The five Trustees of the Morbus Doctore are shrouded in mystery. Unknown to the 
 
 In those rare moments when the Trustees must speak, it is the Attending who does so. From the emotionless, rasping voice that echoes within his mask, it is believed the Attending is male and probably elderly. The Attending delivers pronouncements with the cold logic expected of the rest of the faction. “This subject must die so others might live. No knowledge is evil. The experiments must continue.”
 
-> Goal: Mend the Broken
-> The Morbus Doctore are a sinister faction with questionable methods. Publicly, they claim they only seek to cure illness and injury, but they often appear more interested in experimentation and witnessing the effects of a disease. With so much death in their vicinity, accusations of evildoing are inevitable, and may be well founded. After all, discovery through experimentation is the basis of learning. In the search for knowledge, it is easy to lose sight of the humanoid cost of that knowledge. Uncovering a new cure cannot be accomplished without understanding the limits of a patient’s strength and the full dangers of diseases like the Weeping Pox.
-> The Morbus Doctore want to understand the basis of health and life. Some join the faction after witnessing the ravages of the Weeping Pox with a genuine desire to help, while others seek knowledge at any cost. The faction’s leadership leans towards the latter group. A future of perfect health where no one gets sick, where life can be made endless, where anything biological can be repaired, modified, and controlled…this is the true goal of the Morbus Doctore, even if not all of its members know it.
 
 ### Agents
 
@@ -1052,11 +927,6 @@ Medical Caravan. The Morbus Doctore seeks help transporting one of their caravan
 
 Village Outbreak. An entire village that was supposedly inoculated against disease has been infected by the Weeping Pox. Despite their best efforts, the Morbus Doctore seem unable to stop the outbreak. The physicians seek help quarantining the village while they work, but the horrifying truth soon becomes clear. A clandestine branch of the Morbus Doctore is spreading the disease to test the efficacy of their new inoculation versus a placebo.
 
-> Faction Rewards
-> The resources of the Morbus Doctore are centered around health, so it is no surprise that their members have access to care, such as it is. Members can usually be certain of aid for injuries, poisons, and diseases, though there is always a chance that any aid includes some “necessary experimental treatment” that often has significant side effects, for better or worse. This care is always in the form of tinctures, medicines, and potions rather than divine magic.
-> Rumors say the most accomplished of the Morbus Doctore can cure death itself using concoctions distilled from lycanthropes, oozes, plants, or undead. The revived however always come back with a Transformation, or have their Species changed to Arisen as part of the process.
-> Members of the Doctore are provided potions and experimental decoctions that increase the effectiveness of allied adventurers. In addition, the faction has significant stores of knowledge on diseases, herbs, poisons, and the creatures that use them. Hunters of such creatures might trade fresh samples of such creatures for knowledge about them.
-> Being extremely secretive and with no central base, the Morbus Doctore cannot provide safe havens beyond the occasional hospital ward.
 
 ## Order of Dawn
 
@@ -1070,9 +940,6 @@ Safe houses deep within Crimson Court controlled provinces provide refuge for th
 
 Despite their size, the Order of Dawn retains an air of superiority and self-righteousness when dealing with others. Even Raevan mages, who welcomed the first members of the Order into their lands, are considered faithless for turning to the arcane arts for protection rather than the traditional teachings of Solyma. However, once one joins the ranks of the Order, they can expect steadfast loyalty and comradery.
 
-> Goal: Cleanse the Undead
-> Undeath is an insult to the living. The Order of Dawn exists to eradicate undeath in all its expressions, foremost the Crimson Court. Members of the Order of Dawn know better than most that just a speck of the undead curse is all that is needed for its evil to spread tenfold. As such, the Order of Dawn spares no quarter for those afflicted with undeath; never resting until every ghoul, zombie, specter, or vampire is utterly destroyed.
-> Unlike monster hunter guilds who work for coin, the Order of Dawn is driven by higher ideals, believing themselves to be the searing eyes and burning sword of Solyma herself. The Order is no stranger to the dark. They are willing to take extreme measures if it means cleansing Ostoya of undead. However, those who embrace such measures are carefully observed for concern that those who relish destruction and lose sight of the light will one day succumb to the darkness. The Order understands and takes pride in the precarious position they hold. They demand unflinching loyalty and a fervent hatred for the undead. Every member remains ever vigilant and ready to battle the undead.
 
 ### Agents
 
@@ -1100,10 +967,6 @@ Dawn in Darkness. The party has been hired by the Order to assassinate one of th
 
 Push back the Darkness. The party are hired by one of the strongholds to cleanse a village and nearby woods of undeath. However, the village is protected by a benevolent ghost claiming to be one of General Dulka’s slaughtered family members and possesses crucial information regarding Crimson Court activity.
 
-> Faction Rewards
-> While the Order of Dawn will reward hired mercenaries with gold, they prefer to offer equipment and magic items best suited to fight the undead in the hopes of enticing outsiders to join their cause. The most powerful artifacts are reserved for the most loyal members of the Order.
-> Cleansers stationed at Order of Dawn strongholds may offer their services to lift curses or cast greater restoration. As death is a natural part of life, Order members refuse to cast resurrection spells and will likely throw a party out if such a request is made.
-> Thanks to their vast spy network, the Order can provide information on the whereabouts of prominent vampires or offer safehouses in Crimson Court territory for recovery. The Order is willing to share any weaknesses of undead should the party prove themselves as agents of the Order’s cause.
 
 ## Prismatic Circle
 
@@ -1121,8 +984,6 @@ Nonetheless, some groups do openly oppose the order. The Cult of the Great Wyrm,
 
 Guhjdäl the Revenant was a druid from the eastern tribes who was captured by Völgr raiders and marked for sacrifice. As a Lightbringer, she sought to preserve all life, and she believed that by doing so, they could save the world. Incensed by her beliefs, the Circle’s druids were exceptionally cruel when they killed her. Days later, Guhjdäl awoke, returned to life with renewed power strong enough to cast Resurrection spells. In the years since, she has raised many who were sacrificed by the Circle, clandestinely supported by small clans who supply the gems needed for her powerful magic. Many of those saved join the growing ranks of her Revenant followers, seeking to ultimately build an army strong enough to break the Prismatic Circle’s power in Thrull.
 
-> Goal: Keep the Wyrm Slumbering
-> The druids of the Prismatic Circle earnestly believe that only continued war and bloodshed can keep the world safe from the reawakening of Gormadraug, the Prismatic Wyrm that birthed the Primordials. Only through the cycles of raiding and ritual murder can the all-powerful primordial be appeased to keep slumbering beneath the earth. Failure to do so will rouse the Great Wyrm’s fury, which, if unleashed, would mean the end of the world.
 
 ### Agents
 
@@ -1148,9 +1009,5 @@ Village Defense. While visiting a Kandar village, the characters help defend aga
 
 Coldfire Threat. A remote village is threatened by coldfire. A nearby Prismatic Circle druid has a stash of ice-oil, a rare substance that is highly effective in combating coldfire. The druid is willing to part with his supply, but only if the characters provide him bring him a villager who spoke against the Circle.
 
-> Faction Rewards
-> The Prismatic Circle rewards those who aid them with druidic, primal, or even sangromancy-themed magic items. The party might receive enchanted tablets, bone, or wood that function as Spell Scrolls, inscribed with prayers to conjure primordial energy or to summon elementals.
-> The Circle may offer light healing services in the villages where they have agents. They might also offer to cast other spells, such as Augury, Divination, or other Druid spells.
-> Characters who receive education from the Prismatic Circle may receive the Magic Initiate feat. Spies for the Prismatic Circle may also be able to provide information about Valika and some northern regions of Etharis.
 
 [ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/factions-of-etharis

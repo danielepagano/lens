@@ -1,8 +1,4 @@
-**Chapter 5: The Castinellan Provinces**
-
 # Chapter 5: The Castinellan Provinces
-
-Matheus Graef
 
 Castinella is a peninsula of harsh climates and even harsher laws. The provinces of Toletum, Faro, and Therpena have been scuffling with each other for centuries. But the power of the great houses has given way to a new political entity that has reshaped and unified the peninsula under one banner: the Arcanist Inquisition, a zealous theocratic military organization.
 
@@ -110,8 +106,6 @@ Many tortures are still performed privately, and most of the more horrifying tor
 
 In Toletum, these devices are built within amphitheaters designed to cast sound all the way down the city streets. As workers go about their business, they can often hear the din of mages screaming. Many are cowed by fear of the disturbing ritual punishment, but not everyone. Rather, the fear of magic prevalent in Castinella, and the demonization of those who wield it, grant many workers the ability to bear the brutal sounds with a smile, knowing deep in their hearts that with every scream, their world is a little bit safer.
 
-> To question the Inquisition is to serve the Arch Daemons.
-> —A popular Inquisitor refrain
 
 #### House Conflicts
 
@@ -129,12 +123,7 @@ Some arcanists lead normal, if fearful and often secluded, lives. Being magicall
 
 Families successful in hiding their children’s magical talents often do so by raising them as a normal child, while teaching them the importance of concealing their magic. However, these families are burdened with the fear of being caught, and panic may tear them apart before the Inquisition can do so. There do exist, of course, well-adjusted families who handle their secrets with grace, though these are rare. In some places, families secretly share tutors or networks that assist in teaching the arts of magical control. These networks thrive for a while, but too often the secret leaks, and the Inquisition is quick to strike.
 
-> Magic? Of course not. Ill fortune just seems to follow my child, nothing more.
-> —Parent of a budding sorcerer
 
-> Running for Arcanist Characters
-> Encounters and adventures set in the Castinellan Province should be dangerous for arcanists—or for any characters with abilities that look like magic or who use magic items. The level of danger these characters face from the Arcanist Inquisition can be dialed up or down depending on your characters, the stories you want to tell, and the general tenor of your campaign.
-> Should you make it difficult for characters to use magic without getting caught? Does this involve characters using mechanical benefits like feats or other abilities to disguise their magic use? Do you want to severely punish characters that become lax in their obfuscation of magic use? Anything is fine, but be sure that your players understand the potential hazards and consequences in your particular campaign.
 
 #### Curses
 
@@ -167,8 +156,6 @@ More than once the Church has exerted pressure for the Inquisition to drop these
 As a compromise, the School of the Dread Templar, the only college where magical books are kept for study, is in close proximity to the Cathedral of Embers. Such heretical volumes are not allowed inside the cathedral, but the clergy want the school to be close at hand to make surveillance easier. Clergy members are appointed to positions within the school so that they can keep an eye on these Occultist Templars who risk each and every day to succumbing to the arcane corruption.
 
 Members of the clergy in these positions are often treated differently by the church, even if it was the church who sent them there. There is a belief among the clergy that being around such blasphemous study could contaminate a priest’s faith. It is difficult to continue climbing the ranks after working for the school, so many of the clergy working there resent their positions.
-
-Castinellan Street
 
 #### Vilified Communion with Nature
 
@@ -248,8 +235,6 @@ Olha Nykytiuk Penitent Mage Notable Individuals The Nameless Queen of Faro. Not 
 
 Although the leaders of the Inquisition in Faro tried to hide this oddity, rumors of the Nameless Queen of Faro began to spread. To this day, it is rumored she is out there, biding her time and gathering resources and allies in an upcoming war against the authorities in Faro.
 
-> I'd rather be in the jaws of a dragon than at the head of the most powerful noble house in Faro.
-> —A Gossipy Castinellan Barber
 
 ### Toletum
 
@@ -285,8 +270,6 @@ Arieda did as she was told, and during her travels became more devout and more p
 
 She now prepares to return to Castinella and purge the land of the scourge of the Arcanist Inquisition, including the High Inquisitor who had spared her. As powerful as she is, Arieda cannot succeed alone. She seeks allies, including those she’s saved from Castinella and elsewhere, to join her fight.
 
-> There is no way I could possibly procure and sell you a magic staff that shoots bolts of fire. Certainly not for 500 gold coin. Certainly not in the alleyway behind me at sundown.
-> —Black Market Weapons Dealer
 
 ### Therpena
 
@@ -352,8 +335,6 @@ During his journeys, Hedric fell in love with a dragonborn named Serace. Serace 
 
 Hedric traveled with Serace for years, though he held his own fear of his lover’s magical talents. If one asks Hedric what happened to his lover, the old dragonborn’s eyes go cold. Only those closest to him know what truly happened, but the result is clear. Serace no longer walks the face of Etharis, and Hedric despises all magic not derived from the Seraphs.
 
-> Roleplaying Inquisitors
-> How sinister, altruistic, or conflicted you make the members and representatives of the Arcanist Inquisition is a matter of taste and story. They can be made to seem totally villainous, brave and stalwart, or as varied in goal and disposition as any individual caught in a complex situation. If you want to avoid the portrayal of the Inquisitors to become too one-sided and morally delineated toward an extreme, be sure to portray different Inquisitors or their assistants as fully complex characters with propensities for both good and evil. Inquisitors may even squabble or even outright detest each other as they try to decide what is a real arcane threat and what is not.
 
 Headmistress Zafoa. The Headmistress of the School of the Dread Templar in Ember Cairn is an elven mage-slayer who has bought the trust of the church with the bodies of dozens of mages over the course of her long career. Even in her growing age, she is sharp as a razor and quicker than flint striking steel. It is said that she can tell if a person has cast a spell in the past 24 hours by scent alone.
 
@@ -371,8 +352,6 @@ Once a summer palace for the Calcien family, the Cathedral of Music is a famous 
 
 The Cathedral of Music also draws people from other regions, some of whom would fear to tread in other parts of Castinella for fear of crossing paths with members of the Inquisition. The Calcien family tells acquaintances from other areas that they are safe in the Cathedral of Music, as long as they don’t perform overt acts of arcane magic in full view. This makes the Cathedral a valuable meeting place for all types, including spies and diplomats and members of less savory organizations that need a neutral ground to conduct business.
 
-> I've come to the cathederal to play my songs. Care to hear one? Perhaps in that chamber over there.
-> —Morencian Spy
 
 ### The Empyrean Pit
 
@@ -414,8 +393,6 @@ The companies—and the clergy—have denounced these rumors as naught but a hal
 
 A coven of hags has recently moved into the area, and they delight at the veritable smorgasbord of innocent souls and fragile minds right at their doorstep. Worse yet, the madness they inflict upon the loggers is spread through contact, so it’s only a matter of time before the hometowns of the loggers become infected with the hag-madness.
 
-> Evil magic can't hide in the forest if we cut it all down.
-> —Farosi Logging Captain Before She Disappeared
 
 ### The Little Witches of the Mountain
 
@@ -444,8 +421,6 @@ It is thought that members of the Thaumaturge council were close counselors of s
 Characters may be called upon to find and infiltrate the Thaumaturge, find out who their leaders are, and bring the whole organization tumbling down. The real question is, though, do they even exist?
 
 ## Ember Cairn
-
-Bram Willemot
 
 The holy city of Ember Cairn is the religious center of the Castinellan Provinces. Home to the Cathedral of Embers, headquarters of the Arcanist Inquisition, there are few cities of such sacred or spiritual importance as Ember Cairn.
 
@@ -497,8 +472,6 @@ The sides of the mountains are stripped of granite, leaving sheer cliffs with bo
 
 Ember Cairn is famous for its white, freshly carved stones that the city is built from, making it easy to spot from a distance. Sculpture is a practice of intense cultural importance to the dragonborn—a rare craft that connects them to both their modern religiosity and their more ancient heritage. Old statues of forgotten deities are buried beneath the modern Ember Cairn. Young dragonborn demonstrate their devotion by turning this ancestral art into a form of modern worship, sculpting stunning granite reliefs and edifices of the Arch Seraphs in all their glory.
 
-> Ember Cairn is a holy city of the Seraphs built on holy city of the dragons. The Seraphs are more powerful, of course. They are still present.
-> —Ember Cairn Tour Guide
 
 ### History
 
@@ -626,8 +599,6 @@ Good-natured and maybe a little reckless, the goat herder often seems to appear 
 
 A rumor’s begun that the humble shepherd is the Arch Seraph Morael in disguise. That he’s come to bless those who’ve suffered and spurn those who haven’t. Indeed, Sebastián does not speak highly of a church that gilds itself in glory while commoners burn and starve. Mortal or seraph, the Arcanist Inquisition has taken a keen interest in meeting this kindly goat herder.
 
-> Suffering is temporary. Compassion is eternal.
-> —Sebastián
 
 ### Quest Hooks
 
@@ -653,8 +624,6 @@ Now Julianna is housed within the Cathedral catacombs. Her congregation has, in 
 
 Entering the Cathedral of Ember’s will be its own undertaking, before even thinking of escape. Sneaking in would be nigh impossible. Voluntary capture would be the most expedient and most painful method, assuming the Inquisition did not decide upon execution over incarceration. Sneaking in through the hidden labyrinth would be no safer, unless a guide could be found to help light the way through the darkness and monsters.
 
-> Up there in the Shattered Peaks is an angel who can use magic to heal. I hope the Inquisitors don't fine her.
-> —Castinellan heretic
 
 #### Whispers in the Black Market
 

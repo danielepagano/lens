@@ -1,5 +1,3 @@
-**Chapter 14: Magic Items**
-
 # Chapter 14: Magic Items
 
 Unleashing the Enchantment
@@ -72,8 +70,6 @@ The rifle has 4 charges. You can expend 1 charge as a Magic action to launch a t
 
 Regaining Charges. The rifle regains 1d4 expended charges daily at dawn. If you expend the last charge, roll 1d20. On a 1, the rifle becomes a useless hunk of metal and glass.
 
-> I asked the gnome if it was safe. He said, 'Define safe.' Then the lightning came, and the bandits didn’t.
-> —Stehlenwald Watchman
 
 #### Ardor
 
@@ -135,8 +131,6 @@ Wondrous Item, Common
 
 This cylindrical flask is etched with arcane runes. Humanoid blood stored in the blood capsule remains fresh for up to one year. The flask stores enough blood to sustain a vampire for one day.
 
-> Where is it? Where is it?! I know I set it down here somewhere. Will you help me find my flask?
-> —A Very Panicked Vampire
 
 #### Bow of Four
 
@@ -166,17 +160,12 @@ Armor (Scale Mail), Uncommon
 
 This red-tinged armor made from carvaloth scales automatically shifts its color to camouflage you. When you wear this armor, Wisdom (Perception) checks made to perceive you have Disadvantage, and you have Advantage on Dexterity (Stealth) checks.
 
-> Invisibility magic? How quaint.
-> Unfortunately, I can still hear you.
-> —Ebon Syndicate Captain
 
 #### Caustic Rapier
 
 Weapon (Rapier), Rare (Requires Attunement)
 
 This strange weapon is fashioned from the mandible of a hivewolf. You gain a +2 bonus to attack and damage rolls made with this weapon. When you roll a 19 or 20 on your attack roll with this weapon, that attack does an additional 7 (2d6) Acid damage. In addition, you have Immunity to Acid damage while wielding the weapon.
-
-Caustic Rapier
 
 #### Cinder Coat
 
@@ -298,8 +287,6 @@ This platinum crown is adorned with black gems and shells. While you wear the cr
 
 Curse. This crown is cursed, a fact revealed only when an Identify spell is cast on the crown or you attune to it. Attuning to the crown curses you until you are targeted by the Remove Curse spell or similar magic; it is impossible to remove the crown. While cursed, you turn into a keppmir after 2d10 days.
 
-> Hmm, normally that works better.
-> —A Whip-Wielding Mercenary Facing a Wight
 
 #### Dreams Leaves
 
@@ -320,8 +307,6 @@ The addiction lasts until you receive a Greater Restoration spell, or until you 
 Weapon (Whip), Rare (Requires Attunement)
 
 This weapon is made of silver spirit energy that phases in and out of reality, making it extremely difficult for living creatures to perceive. You gain a +1 bonus to attack rolls and damage rolls made with this magic weapon. Attack rolls made with the whip against non-Undead creatures have Advantage.
-
-Ectoplasmic Whip
 
 #### Elixir of Elemental Spittle
 
@@ -357,8 +342,6 @@ Aberrant Power. If you have achieved at least Stage 1 of the Aberrant Horror Tra
 
 Symbiote Link. You cannot voluntarily end your Attunement to this magic item. If it is physically removed from your body, it regrows in 1d4 hours unless you receive a Remove Curse spell before it grows back (which also ends your Attunement).
 
-> I missed? How is that even possible?
-> —A Rogue, Moments Before Exploding
 
 #### Faerie Crown
 
@@ -369,8 +352,6 @@ This crown is woven of aromatic flowers. When you first don the crown after attu
 When you are hit by a melee attack, you can take a Reaction to release one of the butterflies. The attack misses you and destroys the butterfly instead.
 
 Once all butterflies are destroyed, the crown withers and crumbles to dust.
-
-Faerie Crown
 
 #### Flammable Tincture
 
@@ -422,8 +403,6 @@ Wondrous Item, Rare
 
 This substance, harvested from the tears of a remorseful storm, proves toxic to creatures of unnatural origins. You can take a Magic action to hurl the grenade at a point up to 30 feet away. When it lands, the grenade explodes in a 20-foot-radius Sphere. Each Aberration, Fiend, and Undead creature within the area makes a DC 17 Constitution saving throw, taking 8d6 Psychic damage on a failed save or half that much on a successful one.
 
-> Alright, open up. We need to talk to you without any of your magic nonsense.
-> —Arcanist Inquisitor
 
 #### Gristaline
 
@@ -523,16 +502,12 @@ This plate armor is lined with magnetic lodestone harvested from a different pla
 
 Using this ability while it already active increases the AC bonus by 1 and reduces your Speed by an additional 5 feet (to a maximum bonus of +4 and a maximum reduction of 20 feet). Once you reach this maximum effect, you can't activate the armor again until the duration has ended.
 
-> You'd think that having rocks and dirt stuck to your armor would just slow you down, but have you ever tried shooting an arrow through a wall?
-> —Dwarven Soldier
 
 #### Lycanthropy Antidote
 
 Potion, Rare
 
 Made with fzeg blood, this silvery potion is dotted with swirling flecks of red. Drinking this liquid removes the curse of lycanthropy.
-
-Lycanthropy Antidote
 
 #### Lycan Weapon
 
@@ -562,8 +537,6 @@ Magical versions of Prosthetics can be crafted with properties that mimic existi
 
 A Magical Prosthetic has the same rarity as the magic item it mimics. It counts as "wearing" an item of that kind, so if you have a Magical Prosthetic leg that mimics Boots of Elvenkind, you can't wear another pair of magic boots.
 
-> They took my sword arm. So I had one made. It doesn’t get tired, doesn’t bleed, and punches through plate like parchment. I’d say I came out ahead.
-> —Norden Soldier
 
 #### Malleus Macabre
 
@@ -620,8 +593,6 @@ Sewn from the plant creature known as maiden’s hair, this sweet-smelling piece
 Staff, Uncommon (Requires Attunement)
 
 This twisted staff is created from the remains of a marra. It has 3 charges and regains its expended charges daily at dusk. When a creature you can see within 60 feet of you damages you while you hold this staff, you can take a Reaction to expend 1 of the staff’s charges to force the creature to make a DC 13 Intelligence saving throw. On a failure, the creature sees a phantasm that causes it to have the Frightened condition until the end of its next turn. If the creature is already Frightened, it also takes 2d6 Psychic damage.
-
-Nightmare Staff
 
 #### Paragon’s Plate
 
@@ -723,9 +694,6 @@ Wondrous Item, Rare
 
 This foul-smelling concoction is made from the remains of stinking sludge. As a Magic action, you can throw the vial up to 10 feet, where it breaks and releases a noxious vapor that fills a 30-foot-radius Sphere. Each creature in the area with the Incapacitated, Stunned, or Unconscious condition ends those conditions. Each dying creature in the area has Advantage on its next Death Saving Throw. Each creature that was not dying and did not have any of those conditions must instead succeed on a DC 15 Constitution saving throw or have the Poisoned condition for 1 minute.
 
-> You should've seen it! It was surely one of the most terrifying creatures we've hunted. I landed a few blows before its massive claws threw me down. I was as good as dead, but then there was just this...rancid smell.
-> It was so bad that I think I woke myself up.
-> —Veteran Monster Hunter
 
 #### Ring of Hidden Desires
 
@@ -755,8 +723,6 @@ This golden band is stamped with images of smiling humanoid faces. While attuned
 
 Additionally, you can take a Magic action to cast Zone of Truth (save DC 15) with the ring. The ring can't be used this way again until the next dawn.
 
-> He said “Stand Still,” and the next thing I knew, I was a bear!
-> —Clan Rune Warrior
 
 #### Rod of Ruin
 
@@ -792,8 +758,6 @@ This harness is woven from the hides of slain lycanthropes. When you attune to t
 
 While you wear the harness, you have Disadvantage on Charisma checks to interact with lycanthropes.
 
-Second Skin
-
 #### Shadowsteel Blades
 
 Weapon (any Slashing Melee weapon), Very Rare (Requires Attunement)
@@ -806,12 +770,6 @@ Wondrous Item, Rare
 
 Created from the ichor in a potbelly’s stomach-pot, this volatile concoction is effective at damaging inorganic substances. As a Magic action, you can hurl the serum at a Construct or an object that you can see within 30 feet of you. The target makes a DC 15 Constitution saving throw, taking 10d6 Fire damage on a failed save or half as much damage on a successful one.
 
-> Is it day? Night?
-> Why can't I see? Am I blind?
-> Why can’t I move?
-> Just voices…your voice.
-> Why do you keep asking me the same damn question?
-> —Unknown Soul
 
 #### Soulbond Stone
 
@@ -871,9 +829,6 @@ Wondrous Item, Rare
 
 This suit of comfortable woolen clothes, made from the wool of the rare and dangerous poffer, includes a shirt, trousers or a kilt, and thick socks. While wearing the suit, you have Resistance to Lightning damage, and you don’t suffer effects from extreme cold weather.
 
-> I like this coat, it keeps me warm.
-> And for some reason nothing happened when I was struck by lightning last week.
-> —Bürach Noble
 
 #### Sun Shades
 
@@ -1054,8 +1009,6 @@ You also gain the following curse:
 
 - Your body has atrophied and is slow to heal. After you hit with Dämglesvir, you can’t regain Hit Points until the start of your next turn. Instead, any effect that causes you to regain Hit Points during that time grants you an equal number of Temporary Hit Points instead.
 
-> This sword was once one of the most powerful items in all of existence. Now it’s a twisted shadow of itself.
-> —Priest of Maligant
 
 ### Goddess’s Protection
 
@@ -1149,8 +1102,6 @@ Wondrous Item, Artifact (Requires Attunement)
 
 Ulmyr’s Eye appears to be a crystal ball filled with ever-shifting smoke. Peering into the orb reveals hazy visions, many of which are disturbing.
 
-> Even those with eyes still cannot see.
-> —Sagrado Valieda
 
 Aspirant At this tier of Attunement, you have the following benefits: You know the Guidance cantrip and can cast it even if you don't have the Spellcasting class feature. The orb has 12 charges. You can expend 1 or more charges to cast one of the following spells (save DC 18) from it: Augury (2 charges), Clairvoyance (3 charges), Detect Thoughts (2 charges), Divination (4 charges), or Scrying (5 charges). The orb regains 2d4 + 4 expended charges at dawn. You also gain the following curse: Your fears of the future diminish your attention in the present. While attuned to Ulmyr’s Eye, you have Disadvantage on Wisdom (Perception) and Intelligence (Investigation) checks. Maria Trofimova Ulmyr's Eye
 
@@ -1175,9 +1126,5 @@ You also gain the following curse:
 
 - You are so filled with dread that you suffer frightful visions difficult to discern from reality. When you roll Initiative, the orb casts Phantasmal Killer on you (save DC 14). This effect can also be triggered by moments of extreme emotional or physical distress, at the GM's discretion.
 
-> Magic Items in Grim Hollow
-> The dark fantasy of a Grim Hollow campaign presents magic items as both powerful and dangerous -- just like the magic that creates and fuels them. Players accustomed to high fantasy campaigns and similar genres may expect to collect plenty of impressive magic items that work reliably and predictably, with no down sides. Such players may be surprised or bothered by the items in this chapter, some of which have sinister properties or are outright cursed.
-> Any magic item can also bear signs of its creator's sinister motives, from a twisted appearance to a lingering residue of evil. A wand created by servants of an Arch Daemon might have the innate capability to ensure that it serves dark purposes, refusing to function -- or even harming its user -- if used for other ends.
-> The GM should explore this concept with players beforehand, so that everyone is aware of this aspect of dark fantasy. When handled well, it can add to the mystery and dread of the world as the characters attune to items without knowing entirely what havoc that might bring.
 
 [ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/magic-items
