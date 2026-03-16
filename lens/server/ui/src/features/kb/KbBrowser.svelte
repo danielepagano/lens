@@ -7,11 +7,13 @@
   import { stats, applyStats } from '../../stores/stats'
   let allTags: string[] = []
   let items: KbItem[] = []
+  let visibleItems: KbItem[] = []
   let error = ''
   let hasSearched = false
 
   let selectedType = ''
   let tagInput = ''
+  let keyFilter = ''
   let tagSuggestions: string[] = []
   let activeTags: string[] = []
   let showSuggestions = false
@@ -34,6 +36,23 @@
       prev.tags.length === next.tags.length &&
       prev.tags.every((t, i) => t === next.tags[i])
     if (!same) kbFilters.set(next)
+  }
+
+  $: {
+    if (selectedType && tagInput.trim()) {
+      keyFilter = tagInput.trim()
+    } else {
+      keyFilter = ''
+    }
+  }
+
+  $: {
+    if (!selectedType || !keyFilter.trim()) {
+      visibleItems = items
+    } else {
+      const prefix = `${selectedType}.${keyFilter.trim()}`.toLowerCase()
+      visibleItems = items.filter((item) => item.id.toLowerCase().startsWith(prefix))
+    }
   }
 
   async function loadTags() {
@@ -211,7 +230,7 @@
   <div class="kb-browser-list">
     {#if error}
       <p class="error-state">{error}</p>
-    {:else if items.length === 0}
+    {:else if visibleItems.length === 0}
       {#if hasSearched}
         <p class="empty-state">No items found.</p>
       {:else}
@@ -219,14 +238,20 @@
       {/if}
     {:else}
       <ul class="kb-item-list">
-        {#each items as item (item.id)}
+        {#each visibleItems as item (item.id)}
           <li>
             <button
               class="kb-item-btn"
               class:active={$selectedKbId === item.id}
               on:click={() => onItemClick(item.id)}
             >
-              <span class="kb-item-id">{item.id}</span>
+              <span class="kb-item-id">
+                {#if selectedType && item.id.startsWith(`${selectedType}.`)}
+                  {item.id.slice(selectedType.length + 1)}
+                {:else}
+                  {item.id}
+                {/if}
+              </span>
               {#if item.tags.length > 0}
                 <span class="kb-item-tags">{item.tags.join(' · ')}</span>
               {/if}
