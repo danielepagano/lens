@@ -159,6 +159,53 @@ Examples: `output/phb-2024-spells.md`, `output/mm-2025-monsters.md`
 
 ---
 
+### `ddb lore`
+
+Extracts lore from a D&D Beyond sourcebook into lore KB objects (one index object plus one lore object per chapter).
+
+Sourcebooks live at URLs like:
+
+- `https://www.dndbeyond.com/sources/dnd/<slug>`
+
+For example, the Grim Hollow: Campaign Guide lives at:
+
+- `https://www.dndbeyond.com/sources/dnd/ghcg`
+
+Usage:
+
+```bash
+# Extract lore for a sourcebook
+ddb lore --slug ghcg --title grim-hollow --out ./output/ghcg-lore.md
+
+# Limit to the first N chapters while testing
+ddb lore --slug ghcg --title grim-hollow --out ./output/ghcg-lore.md --limit 3
+```
+
+**Options:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--slug <slug>` | required | Source slug from the D&D Beyond URL (e.g. `ghcg` for `/sources/dnd/ghcg`) |
+| `--title <title>` | required | Short title key used in KB ids (e.g. `grim-hollow`) |
+| `--out <file>` | required | Output Markdown file path |
+| `--limit <n>` | — | Stop after N chapters (useful for testing) |
+| `--cdp-url <url>` | `http://localhost:9222` | Chrome DevTools Protocol URL |
+| `--delay <ms>` | `800` | Politeness delay between chapter page loads |
+| `--dry-run` | false | Print KB output to stdout without writing a file |
+| `--verbose` | false | Log each URL as it is fetched |
+
+**Output structure:**
+
+- A single Markdown file containing:
+  - One `lore.<title>` index object (e.g. `lore.grim-hollow`) listing all chapters.
+  - One lore object per chapter, with ids like `lore.<title>-<chapter>-<slug>`, for example:
+    - `lore.grim-hollow-12-magic-in-etharis`
+    - `lore.grim-hollow-15-guide-to-dark-fantasy`
+
+Each lore chapter body preserves headings, paragraphs, lists, and key figures from the compendium page, converted into Markdown.
+
+---
+
 ## Resumability
 
 The output file **is** the run state — no separate state file exists.

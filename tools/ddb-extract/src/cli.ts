@@ -30,6 +30,9 @@ import { formatMonster } from "./formatters/monster.js";
 import { formatItem } from "./formatters/item.js";
 import { formatEquipment } from "./formatters/equipment.js";
 import type { SpellData, MonsterData, ItemData, EquipmentData } from "./types.js";
+import { parseLoreToc } from "./parsers/lore-source.js";
+import { parseLoreChapterPage } from "./parsers/lore-chapter.js";
+import { formatLoreChapter, formatLoreIndex } from "./formatters/lore.js";
 
 const program = new Command();
 
@@ -364,6 +367,105 @@ program
 
     await browser.close();
   });
+
+// ── lore ────────────────────────────────────────────────────────────────────────
+program
+  .command("lore")
+  .description(
+    "Extract lore from a D&D Beyond sourcebook into lore KB items (index + chapters)"
+  )
+  .requiredOption("--slug <slug>", "D&D Beyond source slug (e.g. ghcg)")
+  .requiredOption(
+    "--title <title>",
+    "Short title key used in lore ids (e.g. grim-hollow)"
+  )
+  .requiredOption("--out <file>", "Output Markdown file path")
+  .option("--limit <n>", "Limit to first N chapters (for testing)")
+  .action(
+    async (cmdOpts: { slug: string; title: string; out: string; limit?: string }) => {
+      const opts = program.opts();
+      const delayMs = parseInt(opts.delay as string) || 800;
+      const dryRun = opts.dryRun as boolean;
+      const verbose = opts.verbose as boolean;
+
+      const browser = await connectCDP(opts.cdpUrl as string);
+      const page = getPage(browser);
+
+      const baseUrl = `https://www.dndbeyond.com/sources/dnd/${cmdOpts.slug}`;
+      if (verbose) console.log(`Navigating to source index: ${baseUrl}`);
+      await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 30000 });
+
+      const tocEntries = await parseLoreToc(page);
+      if (!tocEntries.length) {
+        await browser.close();
+        console.error("No lore chapters found in source TOC.");
+        process.exit(1);
+      }
+
+      const limit = cmdOpts.limit ? parseInt(cmdOpts.limit, 10) : undefined;
+      const workEntries = limit ? tocEntries.slice(0, limit) : tocEntries;
+
+      const outputPath = resolve(cmdOpts.out);
+      console.log(`\n=== lore / ${cmdOpts.slug} ===`);
+      console.log(`Output: ${outputPath}`);
+      console.log(`  Chapters: ${workEntries.length} (of ${tocEntries.length} total)`);
+
+      if (!dryRun) {
+        // Start fresh: create a minimal header, then append KB blocks.
+        // We intentionally do not use the generic output.ts helpers because lore
+        // output is a single file with index + chapters, not resumable by id.
+        const fs = await import("fs");
+        const header =
+          `# DnD Beyond Lore Extract: ${cmdOpts.slug}\n` +
+          `<!-- source:${cmdOpts.slug} | type:lore | chapters:${tocEntries.length} -->\n\n`;
+        fs.writeFileSync(outputPath, header, "utf8");
+      }
+
+      const config = {
+        titleKey: cmdOpts.title,
+        sourceSlug: cmdOpts.slug,
+      } as const;
+
+      // Write index block first
+      const indexBlock = formatLoreIndex(tocEntries, config, baseUrl);
+      if (!dryRun) {
+        const fs = await import("fs");
+        fs.appendFileSync(outputPath, `${indexBlock}\n\n`, "utf8");
+      } else {
+        console.log("\n--- Lore index (preview) ---\n");
+        console.log(indexBlock);
+      }
+
+      let extracted = 0;
+      for (const entry of workEntries) {
+        const fullUrl =
+          entry.href.startsWith("http") || entry.href.startsWith("//")
+            ? entry.href
+            : new URL(entry.href, "https://www.dndbeyond.com").toString();
+
+        if (verbose) console.log(`  [chapter] ${fullUrl}`);
+        await page.goto(fullUrl, { waitUntil: "networkidle", timeout: 30000 });
+
+        const chapterData = await parseLoreChapterPage(page);
+        const block = formatLoreChapter(chapterData, entry, config, fullUrl);
+
+        if (!dryRun) {
+          const fs = await import("fs");
+          fs.appendFileSync(outputPath, `${block}\n\n`, "utf8");
+        } else {
+          console.log(block);
+          console.log("\n");
+        }
+
+        extracted++;
+        process.stdout.write(`\r  extracted chapters: ${extracted} / ${workEntries.length}   `);
+        await sleep(delayMs);
+      }
+
+      process.stdout.write("\n");
+      await browser.close();
+    }
+  );
 
 program.parseAsync(process.argv).catch((err: unknown) => {
   console.error(err instanceof Error ? err.message : String(err));
