@@ -1,4 +1,4 @@
-# Chapter 13: Divinity in Etharis
+# Divinity in Etharis
 
 The Gods’ End
 
@@ -366,5 +366,3 @@ In modern Charneault, the Faerie Courts are still revered. The culture is much m
 Such beliefs are not commonly held. Many folk of Charneault consider the fey more devilish than divine. Some paladins might swear oaths to an Arch Seraph but are happy to receive gifts from the Spirits of Nature, while others bind their faith exclusively to the Faerie Courts.
 
 Similar beliefs are found in eastern Nordenland and parts of Valika. Though these more human cultures feel less directly connected to the Faerie Courts, even regarding the Archfey like capricious devils, they still train mages and make pacts to wield primal magic.
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/divinity-in-etharis

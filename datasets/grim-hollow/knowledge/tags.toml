@@ -360,52 +360,40 @@ ritual = [
 "type:plant" = [
     "stat.weeping-willow",
 ]
-"lore.grim-hollow-1-realms-of-etharis" = [
+"lore.grim-hollow-realms-of-etharis" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-2-the-burach-empire" = [
+"lore.grim-hollow-the-burach-empire" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-3-the-ostoyan-empire" = [
+"lore.grim-hollow-the-ostoyan-empire" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-4-the-charneault-kingdom" = [
+"lore.grim-hollow-the-charneault-kingdom" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-5-the-castinellan-provinces" = [
+"lore.grim-hollow-the-castinellan-provinces" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-6-the-valikan-clans" = [
+"lore.grim-hollow-the-valikan-clans" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-7-the-city-of-liesech" = [
+"lore.grim-hollow-the-city-of-liesech" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-8-the-city-of-morencia" = [
+"lore.grim-hollow-the-city-of-morencia" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-9-etharis-timeline" = [
+"lore.grim-hollow-folk-of-etharis" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-10-folk-of-etharis" = [
+"lore.grim-hollow-factions-of-etharis" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-11-factions-of-etharis" = [
+"lore.grim-hollow-magic-in-etharis" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-12-magic-in-etharis" = [
-    "lore.grim-hollow",
-]
-"lore.grim-hollow-13-divinity-in-etharis" = [
-    "lore.grim-hollow",
-]
-"lore.grim-hollow-14-magic-items" = [
-    "lore.grim-hollow",
-]
-"lore.grim-hollow-15-guide-to-dark-fantasy" = [
-    "lore.grim-hollow",
-]
-"lore.grim-hollow-16-dark-fantasy-rules" = [
+"lore.grim-hollow-divinity-in-etharis" = [
     "lore.grim-hollow",
 ]
 
@@ -942,20 +930,16 @@ ritual = [
     "type:plant",
 ]
 "lore.grim-hollow" = [
-    "lore.grim-hollow-1-realms-of-etharis",
-    "lore.grim-hollow-10-folk-of-etharis",
-    "lore.grim-hollow-11-factions-of-etharis",
-    "lore.grim-hollow-12-magic-in-etharis",
-    "lore.grim-hollow-13-divinity-in-etharis",
-    "lore.grim-hollow-14-magic-items",
-    "lore.grim-hollow-15-guide-to-dark-fantasy",
-    "lore.grim-hollow-16-dark-fantasy-rules",
-    "lore.grim-hollow-2-the-burach-empire",
-    "lore.grim-hollow-3-the-ostoyan-empire",
-    "lore.grim-hollow-4-the-charneault-kingdom",
-    "lore.grim-hollow-5-the-castinellan-provinces",
-    "lore.grim-hollow-6-the-valikan-clans",
-    "lore.grim-hollow-7-the-city-of-liesech",
-    "lore.grim-hollow-8-the-city-of-morencia",
-    "lore.grim-hollow-9-etharis-timeline",
+    "lore.grim-hollow-divinity-in-etharis",
+    "lore.grim-hollow-factions-of-etharis",
+    "lore.grim-hollow-folk-of-etharis",
+    "lore.grim-hollow-magic-in-etharis",
+    "lore.grim-hollow-realms-of-etharis",
+    "lore.grim-hollow-the-burach-empire",
+    "lore.grim-hollow-the-castinellan-provinces",
+    "lore.grim-hollow-the-charneault-kingdom",
+    "lore.grim-hollow-the-city-of-liesech",
+    "lore.grim-hollow-the-city-of-morencia",
+    "lore.grim-hollow-the-ostoyan-empire",
+    "lore.grim-hollow-the-valikan-clans",
 ]

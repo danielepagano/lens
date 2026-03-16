@@ -1,4 +1,4 @@
-# Chapter 3: The Ostoyan Empire
+# The Ostoyan Empire
 
 The sun never rises on the Ostoyan Empire. Ruled by an aristocracy of vampires and their servants, the Crimson Court governs the nation with their greedy claws, sharp eyes, and sharper fangs.
 
@@ -870,5 +870,3 @@ Johann’s writings exalt his own brilliance. He believes the three clocktowers 
 The gnomish artificer has been captured by his own pride. In the highest levels of the clocktowers, the mechanisms have become twisted and daemonic. The cogs are powered by fiery arcane objects. Malikirian imps flock like bats inside the belfry.
 
 Ciprian himself is transforming into a fiend, having grafted his own body with hellish prosthetics. Unless he is stopped, he begins capturing commoners to subject them to the same horrific procedures.
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/the-ostoyan-empire

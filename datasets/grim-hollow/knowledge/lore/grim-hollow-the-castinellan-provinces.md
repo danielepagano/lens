@@ -1,4 +1,4 @@
-# Chapter 5: The Castinellan Provinces
+# The Castinellan Provinces
 
 Castinella is a peninsula of harsh climates and even harsher laws. The provinces of Toletum, Faro, and Therpena have been scuffling with each other for centuries. But the power of the great houses has given way to a new political entity that has reshaped and unified the peninsula under one banner: the Arcanist Inquisition, a zealous theocratic military organization.
 
@@ -644,5 +644,3 @@ A new tournament is set for this evening, and the characters are asked to have o
 A couple of nights after the tournament, a group of Tormach cultists, led by a Champion of Tormach (or some other level-appropriate servant of Tormach) appears out of thin air right in front of the character who won the tournament. They attack as a genuine test of slaughter skills on behalf of Tormach, who sees the fighting pit as a mockery of true battle.
 
 Map: The Castinellan Provinces View Player Version
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/the-castinellan-provinces

@@ -1,4 +1,4 @@
-# Chapter 2: The Bürach Empire
+# The Bürach Empire
 
 Languishing in the withered shadow of its former glory, the Bürach Empire is a land of relentless greed and infamous struggles for power and control. With its faith fractured and its people divided, the Hearthkeepers of Bürach manage the remains of this once-great nation. They siphon the flow of information to better control where it leads and upon which ears it lands, hoping to slow the dissolution of the empire’s power and its people’s hopes and dreams.
 
@@ -643,5 +643,3 @@ The arisen gives the impression he has the mind of an intelligent child. It’s 
 Detlef meanwhile is grateful and pays anyone who kills the arisen and brings the remains back to his laboratory. He may even facilitate an introduction to his boss, Professor Deiderich, as well as provide use of his laboratory.
 
 If the arisen is permitted to live, Detlef is furious and refuses to offer them any reward. He insists that the creature is dangerous and malformed, and he claims the parts the arisen is built from are far too valuable to waste on a failed experiment.
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/the-burach-empire

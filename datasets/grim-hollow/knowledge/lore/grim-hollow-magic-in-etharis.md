@@ -1,4 +1,4 @@
-# Chapter 12: Magic in Etharis
+# Magic in Etharis
 
 ## Arcane Magic in Etharis
 
@@ -235,5 +235,3 @@ If Numena is the realm of arcane magic, many fear it’s also the realm of the A
 That scholars and mages continue to explore Numena’s secrets is a cause of great discomfort for many commoners. Surely, with every spell cast, the veil between Numena and the Material Plane is further tattered as arcane energy is drawn through. The evidence of this are aberrant horrors, which increasingly crawl from beyond into the mortal realm. Such fears are behind the reasoning for the Arcanist Inquisition.
 
 Then there’s the theory that Numena has been visited many times by extraordinary individuals, who are treated as demigods among the mortals of Etharis. Whispers of such folk are associated with conspiracies concerning the Thaumaturge—that Etharis’s fate is entirely controlled by a shadowy cabal of archmages. These astral travelers have arrived from distant realities either to destroy Etharis, or to rescue it from such horrors as the Aether Kindred, depending upon who is believed. Most arcane scholars dismiss this idea out of hand. If such individuals did exist, then the greatest minds of the mortal realm would be but children in their understanding of the cosmos.
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/magic-in-etharis

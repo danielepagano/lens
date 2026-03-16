@@ -1,4 +1,4 @@
-# Chapter 6: The Valikan Clans
+# The Valikan Clans
 
 The lands of Valika cover the very northernmost region of Etharis, crowning the continent with an icy splendor that few outside of the clans can appreciate. The six largest clans—Rune, Sýr, Völgr, Mithra, Morgöng, and Limgri—claim dominance over much of the land, though minor tribes can be found scattered throughout the harsh wilds.
 
@@ -516,5 +516,3 @@ With no hope of climbing to safety, no food, and exhausted from crawling to avoi
 Having failed to impress the warden, the characters are shut out from Cold Iron Keep and its opportunities. But the fortified gate is only one way into the castle’s complex.
 
 Perhaps the characters will dive into the lair of Lake Jakkan’s mysterious creature and follow the narrow chute into the Fountain of Twilight. From there, passage to the ground level of the Keep is a matter of picking paths through the flooded portions of the Deepvaults up into the Creep and Chalkstick Hall. They might instead scale the formidable glacial cliffs that rise above the third battlement to enter the Offices of the Warden. Or, should their skillset lean more toward disguise and deception, their plan might be to impersonate prisoners and get locked into a cell with the hope of courting Commander Garðr’s favor.
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/the-valikan-clans

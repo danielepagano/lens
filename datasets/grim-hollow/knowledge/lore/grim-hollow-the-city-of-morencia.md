@@ -1,4 +1,4 @@
-# Chapter 8: The City of Morencia
+# The City of Morencia
 
 Ship captains know when they are near Morencia. The gulf’s water becomes choppy. The temperature noticeably drops. Skies abruptly become overcast. Passengers are ushered below decks. And the mist obscures everything from view.
 
@@ -232,5 +232,3 @@ Chasing the crow takes the characters into the business of an antiquities collec
 
 
 Map: The City of MorenciaView Player Version
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/the-city-of-morencia

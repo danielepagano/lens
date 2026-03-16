@@ -1,4 +1,4 @@
-# Chapter 7: The City of Liesech
+# The City of Liesech
 
 Liesech is a poisoned apple many powerful hands have tried to grip. The city-state festers inside the Bite Bay like a rotted tooth just north of the Charneault Kingdom. On a clear day, the peaks of the Rock-Teeth Mountains are seen in the distant east. But there are few clear days in Liesech.
 
@@ -239,5 +239,3 @@ Ivik’s bodyguards were found dead in the streets of Liesech, and the diplomat 
 The characters can follow the trail of kidnappers who captured Ivik on behalf of the Order of Dawn. That group is looking for a way to turn the Weeping Pox into an affliction that can also affect undead in the same way it does living creatures.
 
 Map: City of Liesech
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/the-city-of-liesech

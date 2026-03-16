@@ -1,4 +1,4 @@
-# Chapter 4: The Charneault Kingdom
+# The Charneault Kingdom
 
 A land of broken vows, mystical fey, and a tense but strained peace between once-warring cultures, the Charneault Kingdom is a seemingly idyllic realm atop a tinderbox of complex intrigues and inevitable conflict waiting to ignite.
 
@@ -869,5 +869,3 @@ The cause for this enduring winter isn’t certain, though the Bondmakers have d
 To create this mirror, the icy shards must be collected. Each are forged by enacting a dark ritual. This ritual can be taught by the Bondmakers to any magically gifted, but it requires the death of a person whose heart is saturated by cruelty, hatred, or despair. Turning to agents they trust for help, the Bondmakers have begun collecting shards of the mirror. How many are required remains to be seen, as do the horrors that await in the unseelie realm of the Winter Court once the mirror is complete.
 
 Map: Tol LeyemilView Player Version
-
-[ddb-source:ghcg]: https://www.dndbeyond.com/sources/dnd/ghcg/the-charneault-kingdom
