@@ -86,7 +86,6 @@ id: type.key
 tags:
   - link.tag (dot notation links this entry to an entry with that type.key) 
   - key:value (used for standardized classification) 
-  - simple
 ---
 Entry text here (should be based on type._template). 
 ```
@@ -94,9 +93,9 @@ Entry text here (should be based on type._template).
 Include as many blocks as needed, and you can write any text around blocks to \
 discuss or explain; only the blocks have side-effects in the knowledge base.
 
-4. Use Temaplates. Before creating a new entry or making major changes, \
+4. Use Templates. Before creating a new entry or making major changes, \
 get the template: <type>._template. It will contains instructions of its purpose, \
-what to include, and how to tag it. Follow this tag policy.
+what to include, and how to tag it. Follow this tag policy. Do not over tag.
 
 5. Be concise. Entries are read repeatedly by the LLM during play. Every \
 word costs tokens. Prefer terse, high-signal content over prose in KB.
@@ -108,7 +107,7 @@ What NOT to do:
 
 - Do not write narrative prose (you are currently planning/world-building).
 - Do not create or update entry types or subjects topics you were not asked to. 
-- Do not fabricate details about existing entries without checking them first.
+- Do not fabricate details about existing entries without checking them first. Anything you emit overwrites anything with that id!
 """
 
 INSTRUCTION_OPEN = (
