@@ -408,9 +408,9 @@ Starting a new game in Lens requires enough preparation that `play` has somethin
 
 To call `play` and get a meaningful response, you need:
 1. **Rules pinned**: `rules.dnd` and `rules.engagement` (provided by the dnd dataset)
-2. **A world frame**: `lore.world` — a compact object describing tone, setting, genre, and key constraints. This is pinned at the narrative root and never changes. The player writes this by hand or adapts it from a source book.
+2. **A world frame**: `lore.world` — a compact object describing tone, setting, genre, and key constraints. This is pinned at the narrative root and never changes. Created during session zero.
 3. **At least one PC**: `pc.<name>` — enough to describe and voice the character. The player fills this from their character sheet.
-4. **An opening situation**: at minimum, a `loc.*` where you are and some sense of what's happening. Ideally an `encounter.*` for the first scene.
+4. **An opening situation**: at a minimum, a `loc.*` where you are and some sense of what's happening. Maybe an `encounter.*` if we start in media res.
 
 That's it. Everything else — NPCs, factions, fronts, deeper location networks — can be built as you go through `design` sessions between play.
 
@@ -431,26 +431,19 @@ A compact object (aim for under 500 words) that establishes:
 - Setting name and genre (dark fantasy, space opera, etc.)
 - Tone and atmosphere (grim, whimsical, gritty, mythic)
 - Key constraints (technology level, magic prevalence, social structures)
-- What makes this world different from generic fantasy
+- What kind of story we're trying to tell (character arc, exploring a theme, or maybe just putting a build through its paces)
 
 This is NOT exhaustive world-building. It's the minimum the AI needs to establish voice and atmosphere. Think of it as the back-of-the-book blurb for the setting.
 
-For deeper world knowledge that `design` needs but `play` doesn't need all the time, create additional `lore.*` objects: `lore.history`, `lore.cosmology`, `lore.factions-overview`, etc. These are pinned during design sessions but NOT during play — they inform the objects that design creates, which are optimized for play use.
+For deeper world knowledge that `design` needs but `play` doesn't need all the time, create additional `lore.*` objects. Design (unlike play) can use thinking mode and open KB objects, so giving it one or two index objects and letting it work it out is enough.
 
 #### Phase 2: Player characters (`pc.*`)
 
-For each PC, create an object from the `pc._template`. The player has their character sheet — the object captures what the AI needs to describe and voice the character:
-- Appearance and mannerisms (how they present)
-- How they solve problems (key strengths, not power lists)
-- Context (enough background to flavor interactions)
-
-Tag with `level:N` for encounter balancing. Don't overload — the AI will latch onto every detail you provide. Keep it tight and let the character develop through play.
-
-The `design.pc` workflow helps structure this from a character sheet, asking the right questions and producing a properly tagged object.
+For each PC, create an object from the `pc._template`. The player has their character sheet — the object captures what the AI needs to describe and voice the character. The `design.pc` workflow helps structure this from a character sheet, asking the right questions and producing a properly tagged object.
 
 #### Phase 3: Starting geography and situation
 
-At minimum, one `loc.*` for where the adventure begins. The `design.session-zero` workflow helps here by asking: where are the PCs, what's the immediate situation, what's the first problem they'll face?
+In most cases, one `loc.*` for where the adventure begins, so we can have a sensory feeling for it. The `design.session-zero` workflow helps here by asking: where are the PCs, what's the immediate situation, what's the first problem they'll face?
 
 This phase should produce:
 - 1–3 `loc.*` objects (where you are, what's nearby)
@@ -470,14 +463,3 @@ Once you have the minimum, start playing. After each session (or when the fictio
 - Run `advance` when time passes
 
 The cycle is: **play → design → play → advance → play → design → ...**
-
-### Objects that help with cold-start
-
-The `design.*` objects in the dataset guide each build-out task. They're not rules — they're instructions for the `design` operator on how to approach a specific type of world-building. See the individual `design.*` objects for their content. The key ones for cold-start:
-
-- `design.session-zero`: Guides the full session-zero process — world frame questions, initial geography, opening situation, first front
-- `design.pc`: Helps structure a PC object from a character sheet
-- `design.encounter`: Builds prepared situations for play, including combat balancing
-- `design.adventure`: Creates fronts with linked NPCs, factions, and locations — the "what happens next" builder
-- `design.location`: Builds location networks with proper parent links
-- `design.npc`: Creates recurring characters with links, goals, and secrets
