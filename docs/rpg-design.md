@@ -49,7 +49,7 @@ To this extent, we divide our experience in two alternating phases:
 
 We need to design two kinds of objects:  
   1. **Reference Data**: rules and mechanisms that turn free-form writing into playing an RPG
-  2. **TYpes and Templates**: predictable shape of stored that can be leveraged by operators 
+  2. **Types and Templates**: predictable shape of stored that can be leveraged by operators 
 
 ### Reference Data
 
@@ -217,9 +217,9 @@ Gathered knowledge about any other object or topic
 
 ### Encounter (`encounter.*`)
 
-An encounter is any prepared situation for `play` — not just combat. It's the DM's script for a scene that has stakes, participants, and rules beyond "the world is there." A friendly conversation with a merchant who has information, an ambush at a bridge, a chase through a burning market, a puzzle door in a dungeon, a courtroom trial — these are all encounter objects. The encounter carries what `play` needs to run the scene well, and links to the detailed objects (stat blocks, NPC objects, location) that provide depth.
+An encounter is any prepared situation for `play`; not just combat, but also not every situation, it's something worth preparing: a set piece. It acts as DM's script for a scene that has stakes, participants, and rules beyond "the world is there." A friendly but complex conversation with an NPC who has information, but also personality, motives, and conflict; an ambush at a bridge that requires tactical planning; a chase through a burning market with specific mechanics; etc. The encounter carries what `play` needs to run the scene well, and links to the detailed objects (stat blocks, NPC objects, location) that provide depth.
 
-Most encounters are short. If the rules for a situation are simple ("you're talking to a nervous informant who knows X and Y but won't reveal Z"), the encounter object is a few lines. If the rules are complex (a multi-phase boss fight with environmental hazards), the encounter says so concisely and links to a `lore.*` object with the full breakdown. This keeps the encounter object itself always pinnable without blowing the context budget.
+Most encounters are short. If the rules for a situation are simple ("you're talking to a nervous informant who knows X and Y but won't reveal Z"), there is no need to involve the design operator or make an encounter object. If the rules are complex (a multi-phase boss fight with environmental hazards), the encounter says so and may link to a `lore.*` object with more details.
 
 ```kb
 ---
