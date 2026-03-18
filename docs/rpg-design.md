@@ -84,7 +84,18 @@ Tracking state in object feels attractive, but it's often a trap. By definition,
 So, in summary, what do we need?
   1. We track the things and people we care about, and some of them have secrets and plans to discover. These can be created and refreshed occasionally via design operators.
   2. We will still want a general object pinned to our narrative root that captures tone, genre, setting frame, etc. By definition this is _not_ state, because it does not change! It doesn't have mechanical bearing, something like `lore.setting` would work.
-  3. We use a `front` for everything else. The `advance` operator (the mechanism to update fronts), also keeps separate state to roughly track the passage of time.
+  3. We use a `front` for everything else. The `advance` operator (the mechanism to update fronts); to use it, we need to **roughly track the passage of time**.
+
+#### The passage of time
+
+We only care about the passage of time in two situations:  
+  1. It has a mechanical implication in the game rules, like for rests. Because we are not the game engine, the player is supposed to track time for things like spells, but the AI needs to know roughly the passage of the day for narrative purposes. This should happen organically as the story happens, at most we need to point out in the prompt that this matters.
+  2. It advances the story outside of what is happening in the narrative. This is optional: a simple story can have nothing of relevance happening in this way, and even if it does, the AI can just improvise what would have happened on the spot. In some cases where we actually want to tell a story with real pressure, we DO need to track time so the AI can setup and then satisfy expectations. A key fact is that narrative need not be linear storytelling, it can jump back and forth (flashbacks could be a game mechanic!) or the player may want to create multiple parallel narrative trees (split or yet unmet party, or a Westmarch-style campaign); in these cases, the information we accumulate over time in KB may not be accumulative in a simple way. This is a key reason why progress is isolated to `front` objects: they are the only ones that really care about time.
+
+So, how do we track time if we want to do in an advanced way? We follow these rules:  
+  1. Each narrative needs to belong to a "timeline", which we can pin to it, e.g. `timeline.alice-prologue`. This object just contains a line for each time the timeline advances; each line should be some kind of point in time that makes sense when compared to its neighbor... that's it. The user advances the timeline by looking at the previous line and entering a new line that states where we are now, so this could be simply dates, but also any granularity they want, from years to rounds.
+  2. Each `front` belongs to (that is, is tagged with) the timeline it belongs to, and is advanced when that timeline advances using the `advance` operator (described later).  
+    - A front cannot belong to multiple timelines because it needs to advance with it (it's a state, not a log), and also the point is that the narrative can affect. If a user wants to track a rising threat across multiple timelines played one after another, really only the first one could have affected the front, because time has already passed! In reality for these situtations a front would be created only once timelines converge or a timeline "runs into" the front and can deal with it. Casuality is a thing.
 
 ## RPG Object Templates
 
@@ -193,11 +204,14 @@ Name (any way we'd be referencing this problem)
 - Problem: one or two sentences
 - Stakes if ignored
 - Known to PCs: what the party believes
-- Phases or beats: how it might escalate, where it's at
-- Possible resolutions
+- Phases or beats: how it might escalate, where it's at  
+  - Timeline anchors: if applicable, specific times when something is meant to happen
+- Possible resolutions  
+  - Specific triggers, states of the worlds, or actions that affect the result
+  - Any dependencies on chance, in the form of "every x time there is a y% chance z could happen" (used by advance operator)
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `front` object minimally (they are either pinned or spawn changes and narrative during planning); you can include a loc key location or the driving faction or npc  -->
+<!-- TAG POLICY: tag a `front` object minimally (they are either pinned or spawn changes and narrative during planning); you can include a loc key location or the driving faction or npc. Tag it with its timeline if it belongs to one.  -->
 ```
 
 ### Lore (`lore.*`)
@@ -370,35 +384,35 @@ For particularly heavy encounters (a major boss fight with many stat blocks and 
 
 The world takes its turn the player skips time. This is a lot of like `design`, but specifically designed to update `front` objects in targeted ways; it will also pick up at least one level of objects linked to each front, for context.
 
-**Trigger**: The player explicitly invokes when time passes — rest, travel, downtime. "We rest overnight." "We spend three days at the inn." "We ride to the capital." This hands the initiative to the world. What happens during that time is the AI's call: a rest might be interrupted; a journey might have a consequence; downtime might find something changed while the party wasn't watching. 
+**Requirement**: A `timeline` object needs to be pinned to the narrative (like `play` neeing at least one `pc`).
+
+**Trigger**: The player explicitly invokes it when they want to mark that time has passed, i.e. they want to update the `timeline`. Passing time is just an entry appended to the timeline, which has to provide a differential time progression from the previous entry. This is generate from two inputs:  
+  1. Player stating time has passed. This tracks time that has passed in the narrative, for example at the end of the day of adventuring one can just add "it's night" if the previous entry was "it's dawn".
+  2. Player attempts to make time pass outside of the narrative, for example when resting, traveling, or having downtime. So this could be "for an hour", "until morning", or "for 3 days". This time may or may not fully pass; if it does not, the AI will replace this second entry with the time that HAS passed, like "until midnight" or "for 2 days".
+
+**What it does**: Updates `front` objects for that timeline by at least the time passed, and up to the time proposed.
 
 ### Guidelines
 
 - **Fronts as drama, not simulation**: A front KB object establishes an expectation — a threat in motion, a clock running, a plan unfolding. `advance` makes that expectation feel real. Two patterns:
 - *Story beats*: A front describes what a faction or NPC is working toward in prose. `advance` reads the current state and decides what they've done during the elapsed time, improvising plausibly from what's established. No rules system required — only the established expectation and the elapsed time.
-- *Clocks and Timers*: A front KB object may carry a note like `Days remaining: 8` or `Number of council members convinced by the enemy: 3 out of 7 (every day there's a 10% chance another one turns)`. `advance` instructs the AI to notice such elements and increment/decrement timers and clocks in a way that makes sense. Each of these carries a consequence.
+- *Clocks and Timers*: A front KB object may carry a note like `Days remaining: 8` or `Number of council members convinced by the enemy: 3 out of 7 (every day there's a 10% chance another one turns)`. `advance` instructs the AI to notice such elements and increment/decrement timers and clocks in a way that makes sense, and provides a bit of randomness to resolve possibilities. Each of these carries a consequence.
 - **Only plan what's been established**. Everything else the AI improvises as if it had been planned all along. Fronts are dramatic expectations, not state machines. The goal is that consequences feel earned, not that anything was actually simulated. This is why we only update fronts... they are the kind of objects that advance.
 
 ### Mechanics
 
-**How much do we advance?**: The operator needs to maintain its own object, `state.advance`, with a log of every time it was called. Each entry contains:  
- - The narrative address where it was called
- - How long it estimates has passed since the last "advance" call (or the beginning of the narrative). To do this it has to crawl backwards from the current narrative address to the previous one, collect text and summaries, and... just make its best guess. Players are supposed to advance as they rest daily, so this should not be too hard.
- - How long the operator itself is adding to the clock. This is at most what was asked for by the player (like sleeping overnight) but could be less (one the third day of a week-long trip, something happens and advance stops there; the player will have to advance again to complete the trip once that's resolved). This lets the operator "catch up" as much as necessary regardless how often it's called.
-
 **How does it run**:
-1. Loads fronts+ and its own state
-2. Performs a crawl to the previous `advance` and collects narrative
-3. Generates a "luck roll", a random number from 1 to 100 for every front and for the current "rest period"; these are passed as metadata to the AI, which can use them to determine how some clocks advance, or reference encounter tables!
-4. Calls the AI with all the above with a prompt to:
-  - Estimates time passed since the last advance by looking at the narrative crawl result
-  - Decides if the requested rest period will be completed in full or not; this is the MAX time that will pass
-  - Reviews all active fronts and decides what happens in each
-  - Decides whether some event in a front actually interrupts the advance (war broke out, stop hanging out at the inn!) and finalized time that passed
-  - Generates `kb extract` style blocks to edit fronts
-  - Generates a line to append to the state log (Lens will only look at the last line anyway) 
-  - Closes and returns to parent, generating a summary of anything the players would have heard about
-  - Emits a follow-up operator to determines how to continue the story: PC's wake up, a messenger arrives, wolfs attack the camp, etc.
+1. Does a standard crawl, plus loads fronts+ that link to pinned `timeline`. Creates a sub-section for output like `design`. Because timelines can get long, we just pass desired increments to timeline, not the whole object.
+2. Generates "luck rolls", consisting of two random numbers from 1 to 100 for each front; these are passed as metadata to the AI, which can use them to determine how some clocks advance, reference encounter tables, etc. The front itself describes if/how these are used.
+3. Calls the AI with all the above, with thinking mode, with a prompt to:
+  - Looking at all the fronts, evaluate if any will interrupt the _proposed_ time, i.e. if the front intersects with the narrative. This may be very rare (e.g. someone scheming far away) all the way to certain (e.g. a front about frequent raids, where it's most about what than if).
+  - Finalize the total time to pass: this will be the sum of what elapsed during narrative plus the total proposed or the cut-off-short time from previous step. This is the final canonical addition to the timeline object.
+  - Review all active fronts and decides what happens in each during the total time passed.
+  - Generate `kb extract` style blocks to edit fronts.
+  - Generate a line to append to the state log; this can be a `kb extract` but Lens will just append the last line.
+  - Generating a narrative summary of time passed, and optionally anything the players may have heard about (like rumors or a changing state)
+4. Section is closed and summary is emitted. Controls is handed off to the player to continue playing.
+  - This may be a great time to also create a checkpoint with the timeline entry added as the message! We do need to have the player approve of it first.
 
 ## Starting a New Game: The Cold-Start Problem
 

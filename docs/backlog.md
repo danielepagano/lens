@@ -2,12 +2,7 @@
 
 ## Operators  
 
-- Iterate on `play`: make it functional and fun
-- Add dedicated aspects as needed:
-  - **`encounter`** for combat
-  - **`converse`** for chatting if needed
-  - **`advance`** to maitnain front
-  - **`design`** is always expanding for more use cases
+- **`advance`** and timelines
 
 ## Platform
 
