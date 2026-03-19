@@ -860,6 +860,8 @@ class Operator(ABC):
                     on_token=on_token, cancel_event=cancel_event,
                 )
         else:
+            if has_pending:
+                session.new_storage().stage_all()
             await cls._do_fresh_inline(
                 session, narrative, cursor, rel_path,
                 prompt, pins, unpins, llm_id,
@@ -1341,6 +1343,8 @@ class Operator(ABC):
                 probe_storage, on_token=on_token, cancel_event=cancel_event,
             )
         else:
+            if has_pending and not is_owner:
+                session.new_storage().stage_all()
             await cls._do_fresh_mutation(
                 session, node, narrative_root, file_path,
                 rel_path, ann_id, owner, start_line, end_line,

@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import io
 import subprocess
 import tempfile
 import unittest
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, ClassVar
+from unittest.mock import patch
 
 from lens.core.annotations import parse_annotations
 from lens.core.knowledge import KnowledgeStore
+from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator
+from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 
@@ -68,6 +75,20 @@ class _NoIdOp(Operator):
     """Operator that does not require an annotation ID."""
 
     name: ClassVar[str] = "noid"
+    requires_id: ClassVar[bool] = False
+
+    @property
+    def system_prompt(self) -> str:
+        return ""
+
+    def build_instruction(self, params: dict[str, Any]) -> str:
+        return ""
+
+
+class _SecondOp(Operator):
+    """A second no-id operator for cross-operator tests."""
+
+    name: ClassVar[str] = "secondop"
     requires_id: ClassVar[bool] = False
 
     @property
@@ -636,3 +657,144 @@ class TestMentionPins(unittest.TestCase):
                 "About @person.amy,the merchant.", root
             )
             self.assertEqual(pins, [])
+
+
+class TestCrossOperatorAutoStage(unittest.TestCase):
+    """run_inline must stage a previous operator's pending changes
+    before starting a fresh generation, so both outputs are preserved."""
+
+    def test_second_operator_preserves_first(self) -> None:
+        """Calling a different operator after the first must not discard
+        the first operator's output."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            session = ProjectSession(root, root)
+            cursor = narrative.find_cursor()
+            md = cursor.md_path()
+
+            # --- Operator A writes its output (unstaged) ---
+            storage_a = Storage(root)
+            op_a = _NoIdOp(storage_a, narrative)
+            tag_a = op_a.build_open_tag(None, {"steps": 1, "prompt": "scene one"})
+            op_a.write_start(cursor, tag_a, "Content from operator A.")
+
+            # Sanity: pending changes exist, nothing staged yet
+            self.assertTrue(Storage(root).has_pending())
+            staged = subprocess.run(
+                ["git", "diff", "--cached", "--name-only"],
+                cwd=root, capture_output=True, text=True,
+            ).stdout.strip()
+            self.assertEqual(staged, "")
+
+            # --- Operator B runs via run_inline (different operator) ---
+            async def _fake_stream(
+                *_args: Any, **_kwargs: Any
+            ) -> AsyncIterator[StreamEvent]:
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Content from operator B.",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            with contextlib.redirect_stderr(io.StringIO()):
+                with patch(
+                    "lens.core.operator.generate_stream", new=_fake_stream
+                ):
+                    asyncio.run(
+                        _SecondOp.run_inline(
+                            session=session,
+                            narrative=narrative,
+                            prompt="scene two",
+                            pins=[],
+                            unpins=[],
+                            llm_id=None,
+                            retry=False,
+                        )
+                    )
+
+            # Operator A's output must be staged (preserved from rollback)
+            staged_diff = subprocess.run(
+                ["git", "diff", "--cached"],
+                cwd=root, capture_output=True, text=True,
+            ).stdout
+            self.assertIn("Content from operator A", staged_diff)
+
+            # Both outputs must be in the working tree
+            final_text = md.read_text()
+            self.assertIn("Content from operator A", final_text)
+            self.assertIn("Content from operator B", final_text)
+
+    def test_same_operator_new_prompt_preserves_first(self) -> None:
+        """Same operator called twice with different prompts must keep both."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            session = ProjectSession(root, root)
+            cursor = narrative.find_cursor()
+            md = cursor.md_path()
+
+            # --- First call leaves unstaged output ---
+            async def _fake_stream_a(
+                *_args: Any, **_kwargs: Any
+            ) -> AsyncIterator[StreamEvent]:
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="First output.",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            with contextlib.redirect_stderr(io.StringIO()):
+                with patch(
+                    "lens.core.operator.generate_stream", new=_fake_stream_a
+                ):
+                    asyncio.run(
+                        _NoIdOp.run_inline(
+                            session=session,
+                            narrative=narrative,
+                            prompt="say A",
+                            pins=[],
+                            unpins=[],
+                            llm_id=None,
+                            retry=False,
+                        )
+                    )
+
+            self.assertIn("First output", md.read_text())
+
+            # --- Second call with different prompt ---
+            async def _fake_stream_b(
+                *_args: Any, **_kwargs: Any
+            ) -> AsyncIterator[StreamEvent]:
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Second output.",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            with contextlib.redirect_stderr(io.StringIO()):
+                with patch(
+                    "lens.core.operator.generate_stream", new=_fake_stream_b
+                ):
+                    asyncio.run(
+                        _NoIdOp.run_inline(
+                            session=session,
+                            narrative=narrative,
+                            prompt="say B",
+                            pins=[],
+                            unpins=[],
+                            llm_id=None,
+                            retry=False,
+                        )
+                    )
+
+            final_text = md.read_text()
+            self.assertIn("First output", final_text)
+            self.assertIn("Second output", final_text)
