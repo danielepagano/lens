@@ -1,5 +1,4 @@
-<!-- Design workflow: Session Zero. Pin this to guide a new game setup from scratch. -->
-SESSION ZERO — NEW GAME SETUP
+# [DESIGN MODULE]: SESSION ZERO
 
 Guide the user through establishing a new game. This is the first design session for a campaign (a prologue may have been established). Work through these phases in order, but be conversational — ask questions, propose ideas, let the user react.
 

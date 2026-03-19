@@ -1,5 +1,4 @@
-<!-- Design workflow: Adventure build-out. Pin this to create fronts with linked NPCs, factions, locations, and encounters. -->
-ADVENTURE BUILD-OUT
+# [DESIGN MODULE]: ADVENTURE BUILD-OUT
 
 Build the "what happens next" for an ongoing game. This creates or updates `front.*` objects and their supporting cast of NPCs, factions, locations, and encounter objects. This is the primary way to prepare content between play sessions.
 

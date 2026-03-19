@@ -6,6 +6,7 @@ import asyncio
 import subprocess
 import tempfile
 import unittest
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -62,7 +63,7 @@ A test NPC.
 _FAKE_CONTENT = f"Here are my proposals:\n\n{KB_BLOCK}\n"
 
 
-async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
+async def _fake_generate_stream(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
     yield StreamEvent(preview="Here are")
     yield StreamEvent(preview=" my proposals...")
     yield StreamEvent(
@@ -75,7 +76,7 @@ async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
     )
 
 
-async def _fake_generate_empty(*args: Any, **kwargs: Any) -> Any:
+async def _fake_generate_empty(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
     yield StreamEvent(
         final=FinalPayload(
             text="",
@@ -92,6 +93,7 @@ def _run_design(
     *,
     id: str = "mydesign",
     prompt: str | None = None,
+    module_id: str | None = None,
     generate_mock: Any = None,
 ) -> Any:
     mock = generate_mock or _fake_generate_stream
@@ -103,6 +105,7 @@ def _run_design(
                     narrative=narrative,
                     id=id,
                     prompt=prompt,
+                    module_id=module_id,
                     pins=[],
                     unpins=[],
                 )
@@ -120,15 +123,42 @@ class TestDesignBuildInstruction(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             op = DesignOperator(Storage(root), narrative)
             result = op.build_instruction({})
-            self.assertIn("Start the design session", result)
+            self.assertIn("Design task: Follow the design module", result)
 
     def test_with_prompt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             op = DesignOperator(Storage(root), narrative)
             result = op.build_instruction({"prompt": "create a tavern"})
-            self.assertIn("create a tavern", result)
-            self.assertNotIn("Start the design session", result)
+            self.assertIn("Design task: create a tavern", result)
+            self.assertNotIn("Design task: Follow the design module", result)
+
+    def test_with_module_prints_before_design_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text(
+                "ENCOUNTER DESIGN MODULE\n\nDo X then Y.\n",
+                encoding="utf-8",
+            )
+
+            captured: list[list[dict[str, str]]] = []
+
+            async def _capture_stream(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
+                # args[0] is messages
+                captured.append(args[0])
+                async for ev in _fake_generate_stream(*args, **kwargs):
+                    yield ev
+
+            _run_design(root, narrative, id="mydesign", module_id="encounter", generate_mock=_capture_stream)
+
+            self.assertEqual(len(captured), 1)
+            user_content = captured[0][1]["content"]
+            module_pos = user_content.find("KB['design.encounter']")
+            task_pos = user_content.find("Design task:")
+            self.assertNotEqual(module_pos, -1)
+            self.assertNotEqual(task_pos, -1)
+            self.assertLess(module_pos, task_pos)
 
 
 # ---------------------------------------------------------------------------
@@ -404,6 +434,15 @@ class TestDesignErrors(unittest.TestCase):
                 _run_design(root, narrative, id="mydesign", generate_mock=_fake_generate_empty)
 
             self.assertIn("no content generated", str(ctx.exception))
+
+    def test_missing_module_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            with self.assertRaises(OperatorError) as ctx:
+                _run_design(root, narrative, module_id="missing")
+
+            self.assertIn("design module does not exist", str(ctx.exception))
 
 
 if __name__ == "__main__":

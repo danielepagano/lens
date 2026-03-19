@@ -44,6 +44,7 @@ const commands: CommandDefinition[] = [
       { name: 'prompt', valueType: 'prompt', hint: 'design prompt' },
     ],
     options: [
+      { name: 'module', valueType: 'kb-id', repeatable: false, hint: 'design module to use', default: 'design.' },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
@@ -179,8 +180,19 @@ const handler: CommandHandler = async (
         throw new Error('Design requires an ID')
       }
       const designPrompt = (ctx.args.positional['prompt'] as string | undefined) || undefined
+      const rawModule = (ctx.args.options['module'] as string | undefined) || undefined
+      let moduleId: string | undefined
+      if (rawModule) {
+        if (!rawModule.startsWith('design.')) {
+          throw new Error(`Design module must start with 'design.': ${rawModule}`)
+        }
+        moduleId = rawModule.slice('design.'.length)
+        if (!moduleId) {
+          throw new Error(`Design module must include a key after 'design.': ${rawModule}`)
+        }
+      }
       result = await runDesign(
-        { id: designId, prompt: designPrompt, pins, unpins, llm_id: llmId },
+        { id: designId, prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId },
         handleEvent
       )
     } else if (command === 'section') {

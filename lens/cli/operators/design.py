@@ -11,7 +11,7 @@ from lens.core.operator import OperatorError
 from lens.core.operators.design import DesignOperator
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(invoke_without_command=True, add_completion=False, no_args_is_help=True)
 
 
 async def _print_token(chunk: str) -> None:
@@ -27,6 +27,12 @@ def design(
     prompt: str | None = typer.Argument(
         None,
         help="Design task or question",
+    ),
+    module: str | None = typer.Option(
+        None,
+        "--module",
+        "-m",
+        help="Design module key to use (KB object under design.<key>, e.g. 'encounter')",
     ),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
@@ -51,6 +57,12 @@ def design(
         )
         raise typer.Exit(1)
 
+    if not id:
+        typer.echo(
+            "lens design: must specify a design section id", err=True
+        )
+        raise typer.Exit(1)        
+
     if id.strip().lower() == "end":
         try:
             result = asyncio.run(
@@ -69,7 +81,11 @@ def design(
         return
 
     try:
-        validate_ids_exist(session.project_root, list(pin) + list(unpin))
+        ids_to_validate = list(pin) + list(unpin)
+        module_key = module.strip() if module else None
+        if module_key:
+            ids_to_validate.append(f"design.{module_key}")
+        validate_ids_exist(session.project_root, ids_to_validate)
     except LensException as e:
         typer.echo(f"lens design: {e}", err=True)
         raise typer.Exit(1)
@@ -81,6 +97,7 @@ def design(
                 narrative=narrative,
                 id=id,
                 prompt=prompt,
+                module_id=module_key,
                 pins=list(pin),
                 unpins=list(unpin),
                 llm_id=llm,

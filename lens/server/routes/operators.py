@@ -44,6 +44,7 @@ class PlayBody(BaseModel):
 class DesignBody(BaseModel):
     id: str
     prompt: str | None = None
+    module_id: str | None = None
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
@@ -274,7 +275,15 @@ async def operator_design(
     from lens.core.operators.design import DesignOperator
 
     narrative = _require_narrative(session)
-    _validate_pins(session, body.pins, body.unpins)
+    pins = list(body.pins)
+    unpins = list(body.unpins)
+    if body.module_id is not None and body.module_id.strip():
+        module_key = body.module_id.strip()
+        pins_for_validation = pins + [f"design.{module_key}"]
+        _validate_pins(session, pins_for_validation, unpins)
+    else:
+        module_key = None
+        _validate_pins(session, pins, unpins)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
@@ -293,8 +302,9 @@ async def operator_design(
             narrative=narrative,
             id=body.id,
             prompt=body.prompt,
-            pins=body.pins,
-            unpins=body.unpins,
+            module_id=module_key,
+            pins=pins,
+            unpins=unpins,
             llm_id=body.llm_id,
             on_token=on_token,
             on_stream_target=on_stream_target,

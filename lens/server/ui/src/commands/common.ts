@@ -10,6 +10,7 @@ export interface CliPayload {
   slugSource?: string         // comma-separated static list OR data from stats (e.g. '[stats.available_llms])')
   repeatable?: boolean
   required?: boolean
+  default?: string            // if set, pre-fill the selection with a value
 }
 
 // ---- Parsed arguments ----

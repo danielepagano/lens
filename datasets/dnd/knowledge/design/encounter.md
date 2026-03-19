@@ -1,5 +1,4 @@
-<!-- Design workflow: Encounter design. Pin this to build prepared situations for play. -->
-ENCOUNTER DESIGN
+# [DESIGN MODULE]: ENCOUNTER DESIGN
 
 Build `encounter.*` objects — prepared situations for `play` to use as scripts. An encounter is ANY prepared situation with stakes, not just combat. A conversation with a nervous informant, a chase through a burning market, a courtroom trial, a puzzle door, a boss fight — these are all encounters.
 

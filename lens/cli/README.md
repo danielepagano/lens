@@ -443,6 +443,7 @@ Creates a KB design workspace sub-node. The LLM reasons with extended thinking, 
 ```bash
 lens design my-session                          # open-ended session
 lens design castle-dorn "design the dungeon"    # with a task prompt
+lens design fight-1 "build the encounter" --module encounter
 lens design npc-refresh -p faction.thieves-guild
 ```
 
@@ -450,6 +451,10 @@ Arguments: `ID [PROMPT]`
 
 - `ID` — session identifier (alphanumeric, underscores, hyphens). Required. The generated content is saved in a sub-node at this key and the parent receives a `[design:<id>/]: #` self-closing annotation.
 - `PROMPT` — design task. Omit to start an open-ended session.
+
+Options:
+
+- `--module` / `-m` — design module key (a KB object under `design.<key>`, e.g. `encounter`). The module is printed into the operator prompt before the design task instructions. Modules can come from the project knowledge store or from selected datasets.
 
 After the command completes, newly inserted or updated KB objects are printed. Use `lens rollback` to undo both the narrative annotation and the KB changes.
 

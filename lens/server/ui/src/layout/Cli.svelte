@@ -262,7 +262,18 @@
         replaceCurrentToken(sug.value + ' ')
         return
       case 'flag':
-        // Insert the flag and a space
+        // Insert the flag. If the option defines a default, also insert it so it behaves as typed.
+        // (e.g. --module design. keeps kb-id suggestions scoped to design.*)
+        if (activeCommandDef?.options && sug.value.startsWith('--')) {
+          const optName = sug.value.slice(2)
+          const opt = activeCommandDef.options.find((o) => o.name === optName)
+          if (opt?.default) {
+            const d = opt.default
+            const needsTrailingSpace = !d.endsWith('.')
+            replaceCurrentToken(`${sug.value} ${d}${needsTrailingSpace ? ' ' : ''}`)
+            return
+          }
+        }
         replaceCurrentToken(sug.value + ' ')
         return
       case 'node': {

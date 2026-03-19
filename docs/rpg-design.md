@@ -264,7 +264,7 @@ We cleanly separate "Planning VS Play". The key insight: **play needs exactly on
 
 | Operator | Mode | Purpose | Trigger |
 |---|---|---|---|
-| `design` | Plan | Create/update KB objects via design workflows | As needed |
+| `design` | Plan | Create/update KB objects via design modules | As needed |
 | `play` | Play | All narrative: prose, dialog, combat, chases, puzzles | Default during play |
 | `advance` | Plan | Updates `front` objects as time passes | Player explicitly passes time |
 
@@ -282,17 +282,15 @@ Other Considerations:
   - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `loc.springfield` by the rules of `loc` there will an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
   - It would be pretty easy to create a `map` operator that uses the `loc` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing non-advance way to remember things.
 
-#### Design objects
+#### Design Modules
 
 The bulk of the knowledge that drives the design flow lives not in the system prompt but in `design` KB objects that can be pinned into the design sub-tree. The root prompt has knowledge of what they are and what's in them, and then asks the user what they want to do: a session zero phase sequence, create or refine objects like locations and factions, create example adventure hooks, plan encounters, etc.
 
-The operator then creates sub-sections that have that type of design task pinned in their front matter, and can even chain a write operator from what the user asked to do to get the section content started without repetition. When the user is done, we simply call `kb extract` on that design sub-folder and import all the knowledge created! The user can of course skip the chat and create a design operator already pointed to a specific design object, and get going right away.
+The operator then creates sub-sections that have that type of design task pinned in their front matter, and can even chain a write operator from what the user asked to do to get the section content started without repetition. When the user is done, we simply call `kb extract` on that design sub-folder and import all the knowledge created! The user can of course skip the chat and create a design operator already pointed to a specific design module, and get going right away.
 
-##### Design workflows and their objects
+Each design module is guided by a `design.*` KB object that the `design` operator pins when the user selects that task. These objects contain instructions for the AI on how to approach that specific build-out task — what to ask, what to look up, what to produce. See the `design.*` objects in the dataset for their content.
 
-Each design workflow is guided by a `design.*` KB object that the `design` operator pins when the user selects that task. These objects contain instructions for the AI on how to approach that specific build-out task — what to ask, what to look up, what to produce. See the `design.*` objects in the dataset for their content.
-
-| Workflow | Design Object | What it produces | Notes |
+| Module | Defined in | What it produces | Notes |
 |---|---|---|---|
 | Session Zero | `design.session-zero` | `lore.world`, initial `loc.*`, `faction.*`, `front.*` | First thing to run for a new game |
 | Player Character | `design.pc` | `pc.*` objects from character sheets | Player fills most of this; design helps structure it |
@@ -322,7 +320,7 @@ An encounter object is compact and links to everything `play` needs:
 - **Triggers and transitions**: what causes the situation to shift (dialog escalates to combat, the timer runs out, reinforcements arrive)
 - **Resolution**: how it ends and what changes
 
-The `design.encounter` workflow uses the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
+The `design.encounter` module uses the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
 
 ##### How encounters are balanced (combat-specific)
 
@@ -430,7 +428,7 @@ That's it. Everything else — NPCs, factions, fronts, deeper location networks 
 
 ### The setup process
 
-The process has distinct phases, each producing objects that feed the next. The `design.session-zero` workflow guides phase 1–3 in a single design session.
+The process has distinct phases, each producing objects that feed the next. The `design.session-zero` module guides phase 1–3 in a single design session.
 
 #### Phase 0: Import your setting (optional, manual)
 
@@ -453,11 +451,11 @@ For deeper world knowledge that `design` needs but `play` doesn't need all the t
 
 #### Phase 2: Player characters (`pc.*`)
 
-For each PC, create an object from the `pc._template`. The player has their character sheet — the object captures what the AI needs to describe and voice the character. The `design.pc` workflow helps structure this from a character sheet, asking the right questions and producing a properly tagged object.
+For each PC, create an object from the `pc._template`. The player has their character sheet — the object captures what the AI needs to describe and voice the character. The `design.pc` module helps structure this from a character sheet, asking the right questions and producing a properly tagged object.
 
 #### Phase 3: Starting geography and situation
 
-In most cases, one `loc.*` for where the adventure begins, so we can have a sensory feeling for it. The `design.session-zero` workflow helps here by asking: where are the PCs, what's the immediate situation, what's the first problem they'll face?
+In most cases, one `loc.*` for where the adventure begins, so we can have a sensory feeling for it. The `design.session-zero` module helps here by asking: where are the PCs, what's the immediate situation, what's the first problem they'll face?
 
 This phase should produce:
 - 1–3 `loc.*` objects (where you are, what's nearby)

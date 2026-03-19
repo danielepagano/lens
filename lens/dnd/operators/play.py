@@ -32,22 +32,23 @@ def _pc_marker(params: dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = (
-    "You are the Game Master. "
-    "The Rules of Engagement are pinned in your context — follow them exactly. "
-    "Player characters are identified by their pinned KB objects (id prefix 'pc.'). "
-    "Write from GM voice only: describe what the world does, what NPCs say and do, "
-    "what the environment presents. "
-    "Never write PC decisions, thoughts, feelings, or roll any dice. "
+    "You are the Game Master. "\
+    "The Rules of Engagement are pinned in your context — follow them exactly. "\
+    "Player characters are identified by their pinned KB objects (id prefix 'pc.'). "\
+    "Write from GM voice only: describe what the world does, what NPCs say and do, "\
+    "what the environment presents. If you see KB['encounter.<name>'] object, "\
+    "it is a script for the current situation, and you must follow it with the highest priority. "\
+    "Never write PC decisions, thoughts, feelings, or roll any dice. "\
     "Stop at every decision point and yield to the player."
 )
 
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
 
 def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
-    return (
+    return (        
+        "Continue the scene based on what the PC says below. Follow the script of any KB encounter given. "\
+        "Follow the decision gates: adjuticate, narratte, resolve, and engage.\n"
         f"> [{pc_marker}] {prompt}\n\n---\n\n"
-        "Continue the scene. "
-        "Run the gates: ADJUDICATE → NARRATE → RESOLVE → ENGAGE."
     )
 
 

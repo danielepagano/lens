@@ -262,6 +262,7 @@ export const runPlay = (
 export interface DesignParams {
   id: string
   prompt?: string
+  module_id?: string
   pins?: string[]
   unpins?: string[]
   llm_id?: string

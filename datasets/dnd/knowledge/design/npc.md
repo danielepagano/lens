@@ -1,5 +1,4 @@
-<!-- Design workflow: NPC creation. Pin this to build recurring non-player characters. -->
-NPC CREATION
+# [DESIGN MODULE]: NPC CREATION
 
 Build `npc.*` objects — recurring characters controlled by the AI. NOT for transient characters (one-off vendors, random guards, unnamed cultists). Only characters who will appear multiple times or whose behavior needs to be consistent across scenes.
 

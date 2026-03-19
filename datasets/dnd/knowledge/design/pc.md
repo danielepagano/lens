@@ -1,5 +1,4 @@
-<!-- Design workflow: Player Character setup. Pin this to help structure a PC object from a character sheet. -->
-PLAYER CHARACTER SETUP
+# [DESIGN MODULE]: PLAYER CHARACTER SETUP
 
 Help the user create a `pc.*` object from their character sheet. The goal is NOT to transcribe the character sheet — it's to capture what the AI needs to describe and voice this character during play.
 

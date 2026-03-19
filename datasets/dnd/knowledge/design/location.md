@@ -1,5 +1,4 @@
-<!-- Design workflow: Location build-out. Pin this to create or expand a location network. -->
-LOCATION BUILD-OUT
+# [DESIGN MODULE]: LOCATION BUILD-OUT
 
 Build `loc.*` objects — the geography the story moves through. Locations are fractal: a continent contains regions, regions contain cities, cities contain districts, districts contain buildings, buildings contain rooms. We only create objects for places that MATTER — places the PCs will return to, places with secrets, places that anchor the story.
 

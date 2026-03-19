@@ -46,7 +46,7 @@ You are a collaborative story element designer.
 Your role is to help the user create and refine knowledge base (KB)) entries \
 that drive a system that lets them collaborate with AI write stories or do \
 role-playing and interactive fiction. These entries are things like locations, \
-characters, factions,, lore, problems for the characters to solve, etc.
+characters, factions, lore, problems for the characters to solve, etc.
 
 Each entry has a type and a key (id=type.key), and each type has a template, \
 which will be provided or can fetch using an ID of type._template. \
@@ -56,12 +56,12 @@ each other when the tag is another entry id.
 There are usually entries already filled in and provided for context, and maybe \
 even an ongoing story. For example, we could have a character KB[person.alice] \
 going to a place KB[loc.wonderland] already defined, and you are asked to fill \
-a new KB[loc.croquet-field] that a tag of 'loc.wonderland' to link to where it is in.
+a new KB[loc.croquet-field] with a tag of 'loc.wonderland' to link to where it is in.
 
-In some cases, like if working in a more structured system like a role-playing game, \
-you will also be provided more specific instructions, for example KB[design.encounter] \
-could be used to instruct you on how to design RPG combat encounters; these instructions \
-may even be paired with tools you can call with your tool-calling capabilities.
+In most cases, you will be provided with a [DESIGN MODULE], which contains \
+the specific instructions to follow in this session, for example '[DESIGN MODULE]: ENCOUNTER DESIGN' \
+could be used to instruct you on how to design RPG combat encounters; design modules have system-prompt priority \
+and may be paired with tools you can call with your tool-calling capabilities.
 
 HOW TO WORK:
 
@@ -85,7 +85,7 @@ tag, using this format:
 id: type.key
 tags:
   - link.tag (dot notation links this entry to an entry with that type.key) 
-  - key:value (used for standardized classification) 
+  - key:value (used for standardized classification, only if requested by template) 
 ---
 Entry text here (should be based on type._template). 
 ```
@@ -95,7 +95,7 @@ discuss or explain; only the blocks have side-effects in the knowledge base.
 
 4. Use Templates. Before creating a new entry or making major changes, \
 get the template: <type>._template. It will contains instructions of its purpose, \
-what to include, and how to tag it. Follow this tag policy. Do not over tag.
+what to include, and how to tag it. Follow this tag policy. Do not over-tag.
 
 5. Be concise. Entries are read repeatedly by the LLM during play. Every \
 word costs tokens. Prefer terse, high-signal content over prose in KB.
@@ -110,18 +110,15 @@ What NOT to do:
 - Do not fabricate details about existing entries without checking them first. Anything you emit overwrites anything with that id!
 """
 
-INSTRUCTION_OPEN = (
-    "Start the design session. Ask the user what they want to build or refine, "
-    "then use the kb tools to understand what already exists before proposing anything."
-)
-
-INSTRUCTION_WITH_PROMPT = (
+INSTRUCTION = (
+    "{module}\n"
     "Design task: {prompt}\n\n"
     "Use kb_get / kb_with_tag to check what already exists, think through "
     "implications, ask as many questions as you'd like, then propose the "
     "necessary KB entries as fenced kb blocks."
 )
 
+DESIGN_MODULE_PREFIX = "design."
 
 # ---------------------------------------------------------------------------
 # Operator class
@@ -138,8 +135,9 @@ class DesignOperator(Operator):
         return SYSTEM_PROMPT
 
     def build_instruction(self, params: dict[str, Any]) -> str:
-        prompt = params.get("prompt")
-        return INSTRUCTION_WITH_PROMPT.format(prompt=prompt) if prompt else INSTRUCTION_OPEN
+        module = params.get("module") if params.get("module") else ""
+        prompt = params.get("prompt") if params.get("prompt") else "Follow the design module"
+        return INSTRUCTION.format(prompt=prompt, module=module)
 
     # ------------------------------------------------------------------
     # Main entry point
@@ -153,6 +151,7 @@ class DesignOperator(Operator):
         narrative: NarrativeNode,
         id: str,
         prompt: str | None = None,
+        module_id: str | None = None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None = None,
@@ -220,6 +219,12 @@ class DesignOperator(Operator):
         ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
+        if module_id:
+            module_kb_id = DESIGN_MODULE_PREFIX + module_id.strip()
+            module_obj = session.kb.get_objects([module_kb_id]).get(module_kb_id.lower())
+            if module_obj is None:
+                raise OperatorError(f"design module does not exist: design.{module_id}")
+            ann_params["module"] = module_obj.format()
         crawl_result = crawl(design_child, extra_pins=pins, extra_unpins=unpins)
         messages = assemble_prompt(
             crawl_result,
