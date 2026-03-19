@@ -360,9 +360,6 @@ ritual = [
 "type:plant" = [
     "stat.weeping-willow",
 ]
-"lore.grim-hollow-realms-of-etharis" = [
-    "lore.grim-hollow",
-]
 "lore.grim-hollow-the-burach-empire" = [
     "lore.grim-hollow",
 ]
@@ -387,7 +384,37 @@ ritual = [
 "lore.grim-hollow-folk-of-etharis" = [
     "lore.grim-hollow",
 ]
-"lore.grim-hollow-factions-of-etharis" = [
+"lore.grim-hollow-augustine-trading-company" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-company-of-free-swords" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-ebon-syndicate" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-thaumaturge" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-watchers-of-the-faithful" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-arcanist-inquisition" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-crimson-court" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-monster-hunter-guilds" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-morbus-doctore" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-order-of-dawn" = [
+    "lore.grim-hollow",
+]
+"lore.grim-hollow-prismatic-circle" = [
     "lore.grim-hollow",
 ]
 "lore.grim-hollow-magic-in-etharis" = [
@@ -931,10 +958,19 @@ ritual = [
 ]
 "lore.grim-hollow" = [
     "lore.grim-hollow-divinity-in-etharis",
-    "lore.grim-hollow-factions-of-etharis",
     "lore.grim-hollow-folk-of-etharis",
     "lore.grim-hollow-magic-in-etharis",
-    "lore.grim-hollow-realms-of-etharis",
+    "lore.grim-hollow-augustine-trading-company",
+    "lore.grim-hollow-company-of-free-swords",
+    "lore.grim-hollow-ebon-syndicate",
+    "lore.grim-hollow-thaumaturge",
+    "lore.grim-hollow-watchers-of-the-faithful",
+    "lore.grim-hollow-arcanist-inquisition",
+    "lore.grim-hollow-crimson-court",
+    "lore.grim-hollow-monster-hunter-guilds",
+    "lore.grim-hollow-morbus-doctore",
+    "lore.grim-hollow-order-of-dawn",
+    "lore.grim-hollow-prismatic-circle",
     "lore.grim-hollow-the-burach-empire",
     "lore.grim-hollow-the-castinellan-provinces",
     "lore.grim-hollow-the-charneault-kingdom",

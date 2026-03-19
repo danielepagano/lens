@@ -29,69 +29,161 @@ Humans dominate after the Era of Expansion's bloody conquests displaced the elde
 
 See `lore.grim-hollow-magic-in-etharis` for arcane magic, colleges, regional attitudes, and planar details. See `lore.grim-hollow-divinity-in-etharis` for the divine pantheon, all Arch Seraphs/Daemons, Aether Kindred, Primordials, and the Primordic Cycle.
 
-## The Realms — Knowledge Map
+## The Realms
 
-Each realm represents a distinct horror genre. See `lore.grim-hollow-realms-of-etharis` for realm summaries and the four-era historical timeline (Antiquity → Expansion → Descent → Beast).
+Etharis is a continent of empires and ancient kingdoms, each shaped by distinct cultures, cataclysms, and relationships with magic. Every realm represents a different genre of dark fantasy and horror.
 
-### The Bürach Empire — Cosmic Horror & Imperial Decay (`lore.grim-hollow-the-burach-empire`)
+### The Bürach Empire
+
+*Once the continent's dominant power, now crumbling. A colossal shadow creature, the Great Beast, stalks the land, twisting and corrupting everything in its wake. Provinces position themselves to profit from (or hasten) the empire's collapse.*
+
+- Themes: cosmic horror, gothic horror, existential dread, imperialism's consequences.
 - Atmosphere: crumbling imperial grandeur, paranoid courts, aberrant corruption spreading across the land
 - Rulers & factions: Hearthkeeper church (weakening), Saullan Council (rising), Celestial Gate doomsday cult
 - Enemies: aberrations spawned by the Great Beast, cultists, political conspirators, mutated wildlife
 - Challenges: political intrigue between four provinces, tracking the lost Sacred Artifacts, surviving reality-warping corruption, navigating a power vacuum
 - Key city: Stehlenwald (dwarven undercity, imperial politics)
+- More details in: `lore.grim-hollow-the-burach-empire`
 
-### The Ostoyan Empire — Gothic Horror & Undead Tyranny (`lore.grim-hollow-the-ostoyan-empire`)
+### The Ostoyan Empire
+
+*A sunless realm of shadows and blood. Ruled by the **Crimson Court**, seven vampires who enjoy gaudy displays of power while plotting against each other and vampire hunters. Peasants toil beneath a black sky and callous nobility that drains everything from them — including blood.*
+
+- Themes: gothic horror (vampires, werewolves, undead), autocracy, rebellion, the cost of safety under monstrous rulers.
 - Atmosphere: eternal darkness, blood-soaked aristocracy, peasant desperation, civil war
 - Rulers & factions: Crimson Court (seven vampires, five bloodlines), Raevo rebel magocracy, Order of Dawn
 - Enemies: vampires and their spawn, undead, werewolves, Crimson Court agents, things from the City Below
 - Challenges: surviving under vampire rule, aiding or infiltrating the rebellion, exploring the pre-Ostoyan necropolis, navigating vampire court politics
 - Key cities: Fallowheart (border bastion), Malkovia (free trade city on the Roiling River)
+- More details in: `lore.grim-hollow-the-ostoyan-empire`
 
-### The Charneault Kingdom — Fairy Tale Horror & Fey Corruption (`lore.grim-hollow-the-charneault-kingdom`)
+### The Charneault Kingdom
+
+*A realm of deceptive beauty — rolling emerald hills, mist-veiled glens, countless rivers, patrolled by virtuous knights. Deep elven connection to nature. But the beauty is illusion: capricious fey, worshipped and feared, take what they want without retribution. A corrupting mist veils their activities and decimates everything it touches.*
+
+- Themes: dark fairytale, supernatural horror, amoral fey cruelty.
 - Atmosphere: deceptive pastoral beauty, corrupting mist, dark fairytale logic, elf-human tension
 - Rulers & factions: King Thibault (withdrawn), five knight chapters (especially the authoritarian Severe Templars), elven court at Tol Leyemil, fey Bondmakers
 - Enemies: capricious archfey, mist-corrupted creatures, the Dark Elf Diyanthar, undead fey
 - Challenges: navigating fey bargains and tricks, surviving the Grove Maze, unraveling the Dark Mist's origin, mediating elf-human conflicts
 - Key locations: Castle Lamesdhonneur, Tol Leyemil (elven capital, closed to outsiders), Sarmar Academy
+- More details in: `lore.grim-hollow-the-charneault-kingdom`
 
-### The Castinellan Provinces — Theocratic Horror & Inquisition (`lore.grim-hollow-the-castinellan-provinces`)
+### The Castinellan Provinces
+
+*Unified by fanatical devotion to the Arch Seraphs. The **Arcanist Inquisition** hunts arcane magic users — collateral damage is acceptable in the name of safety. One accusation can destroy an innocent life. Yet actual monsters require magic to fight, forcing impossible choices.*
+
+- Themes: religious persecution, psychological horror, inquisition.
 - Atmosphere: orderly surface hiding persecution, witch-hunt paranoia, religious fervor, secret resistance
 - Rulers & factions: Arcanist Inquisition (theocratic military), noble Houses at war, Castibona crime syndicate, underground mage networks
 - Enemies: inquisitors, zealots, the Bleeding Man cult, corrupted clergy, noble assassins
 - Challenges: hiding magic use, surviving accusations, infiltrating the Inquisition, exploring the Hidden Labyrinth under Ember Cairn, choosing between magic and survival
 - Key city: Ember Cairn (dragonborn ancestral home, Inquisition stronghold)
+- More details in: `lore.grim-hollow-the-castinellan-provinces`
 
-### The Valikan Clans — Survival Horror & Norse Mythology (`lore.grim-hollow-the-valikan-clans`)
+### The Valikan Clans
+
+*Frozen northern homeland. Hardy folk endure brutal climate, rampaging elementals, and blood-fueled inter-clan conflicts. Great heroes live on through sagas, but survival demands terrible acts — raiding, captive-taking, sacrifice. Magical coldfire merges natural and supernatural threats.*
+
+- Themes: survival horror, Norse-like mythology, arctic supernatural horror.
 - Atmosphere: frozen wilderness, saga-worthy heroism, blood sacrifice, elemental fury
 - Rulers & factions: six Great Clans, Prismatic Circle (blood-sacrifice druids), Order of Kentigern (coldfire fighters), Queen Andrea Helsing of Kandar
 - Enemies: coldfire elementals, raiders from Thrull, rampaging primordial creatures, werebears, the environment itself
 - Challenges: surviving the arctic, inter-clan politics, stopping the coldfire crisis (Gormadraug's possible awakening), exploring Cold Iron Keep's Deepvaults
 - Key location: Cold Iron Keep (prison fortress over ancient mage vaults)
+- More details in: `lore.grim-hollow-the-valikan-clans`
 
-### The City of Liesech — Body Horror & Plague (`lore.grim-hollow-the-city-of-liesech`)
+### The City of Liesech
+
+*An independent city-state, origin of the Weeping Pox, a supernaturally caused plague.*
+
+- Themes: body horror, plague
 - Atmosphere: green-hazed port city, pleasant smiles hiding terror, bells tolling for the dead
 - Rulers & factions: Countess von Raiza (ancient vampire), Cult of the Black Lady, Golden Barge Company, Morbus Doctore (plague doctors with secrets)
 - Enemies: the Filth Grazer (eldritch sea entity), plague carriers, vampire spawn, Morbus Doctore experiments
 - Challenges: investigating the Weeping Pox's true origin, navigating von Raiza's blood contract, uncovering Zielenhaus's secrets, finding the missing Bouwengracht heir
+- More details in: `lore.grim-hollow-the-city-of-liesech`
 
-### The City of Morencia — Social Horror & Mercantile Intrigue (`lore.grim-hollow-the-city-of-morencia`)
+### The City of Morencia
+
+*A banking and trade Independent city-state where smiling facades hide poisoned daggers, dark secrets, and power-hungry cults.*
+
+- Themes: social horror, mercantile intrigue, cults
 - Atmosphere: mist-shrouded islands, canal-laced beauty, smiling facades over poisoned daggers
 - Rulers & factions: Doge Flabenici (embattled), Kolyhs Papinian (shadow ruler via Banker's Guild + Augustine Trading Co.), Supreme Council (corrupted), Maegilate (arcane academy), Navigator's Guild
 - Enemies: political conspirators, ritual murderers (Moonless Night Murders), Arsenal enforcers, spirits in the Misty Reefs
 - Challenges: surviving mercantile intrigue, solving the murders, navigating the White Carnival's exile tradition, uncovering what the Maegilate is hiding
+- More details in: `lore.grim-hollow-the-city-of-morencia`
 
-## Cross-Cutting Factions (`lore.grim-hollow-factions-of-etharis`)
+## Cross-Cutting Factions
 
 These factions operate across national boundaries and can appear as patrons or adversaries anywhere:
 
-- **Augustine Trading Company** — ruthless global trading corporation based in Morencia; profit above all
-- **Company of Free Swords** — honorable elite mercenaries; branches everywhere; code of loyalty and vengeance
-- **Ebon Syndicate** — continent-wide criminal network; assassination, smuggling, black markets
-- **Thaumaturge** — secretive cabal of archmages; may be a myth, may be pulling all the strings
-- **Watchers of the Faithful** — militant clergy preserving the old faiths; "destroy all that is unholy — by any means"
-- **Arcanist Inquisition** — theocratic anti-magic order based in Castinella; spreading to other regions
-- **Crimson Court** — seven vampire nobles ruling Ostoya; see Ostoyan Empire for details
-- **Monster Hunter Guilds** — corporatized monster-slaying trade; knowledge is their weapon
-- **Morbus Doctore** — plague doctors fighting the Weeping Pox; dark secrets behind their masks
-- **Order of Dawn** — anti-undead militia in Raevo; dedicated to liberating Ostoya from vampires
-- **Prismatic Circle** — blood-sacrifice druids preventing Gormadraug's awakening in Valika
+- **Augustine Trading Company** — ruthless global trading corporation based in Morencia; profit above all. More details in: `lore.grim-hollow-augustine-trading-company`
+- **Company of Free Swords** — honorable elite mercenaries; branches everywhere; code of loyalty and vengeance. More details in: `lore.grim-hollow-company-of-free-swords`
+- **Ebon Syndicate** — continent-wide criminal network; assassination, smuggling, black markets. More details in: `lore.grim-hollow-ebon-syndicate`
+- **Thaumaturge** — secretive cabal of archmages; may be a myth, may be pulling all the strings. More details in: `lore.grim-hollow-thaumaturge`
+- **Watchers of the Faithful** — militant clergy preserving the old faiths; "destroy all that is unholy — by any means". More details in: `lore.grim-hollow-watchers-of-the-faithful`
+- **Arcanist Inquisition** — theocratic anti-magic order based in Castinella; spreading to other regions. More details in: `lore.grim-hollow-arcanist-inquisition`
+- **Crimson Court** — seven vampire nobles ruling Ostoya; see Ostoyan Empire for details. More details in: `lore.grim-hollow-crimson-court`
+- **Monster Hunter Guilds** — corporatized monster-slaying trade; knowledge is their weapon. More details in: `lore.grim-hollow-monster-hunter-guilds`
+- **Morbus Doctore** — plague doctors fighting the Weeping Pox; dark secrets behind their masks. More details in: `lore.grim-hollow-morbus-doctore`
+- **Order of Dawn** — anti-undead militia in Raevo; dedicated to liberating Ostoya from vampires. More details in: `lore.grim-hollow-order-of-dawn`
+- **Prismatic Circle** — blood-sacrifice druids preventing Gormadraug's awakening in Valika. More details in: `lore.grim-hollow-prismatic-circle`
+
+## History of Etharis
+
+### Era of Antiquity
+Mythic prehistory with conflicting creation accounts. Key events:
+- **The Gods Awaken**: Buracher scriptures — gods sculpt the mortal world
+- **The Primordic Cycle**: Valikans tell of Gormadraug, the Great Prismatic Wyrm, as the first being
+- **Hymn of Viduami**: Ostoyan myth of a death god entombed in the City Below by its kindred
+- **Kentigern's Saga**: Gormadraug slain by hero Kentigern; its corpse crafts the mortal realm
+- **The Aetheric War**: Aether Kindred destroy the gods; only Aurelia, Galt, Ulmyr, and Maligant survive
+- **The Netherworld**: Heavens ruptured; Arch Seraphs of dead gods fall from grace
+- **Birth of Caer Neiada**: Archfey cultivate their realm; some believe them fallen seraphs
+- **Twilight of the Dreamers**: Dreamers fall into epochal slumber, escaping unknown cataclysm
+- **City Below**: A civilization rises and falls beneath what becomes Ostoya
+- **The Ulufey**: Elf ancestors settle Caer Neiada, believing themselves children of archfey
+- **Fall of Ember Cairn**: Ancient dragonborn homeland destroyed; people scatter across Etharis
+- **Kingdoms of Stone**: Dwarves build fortress cities in Etharis's heartland
+- **Exodus of the Orcs**: Orcs sail from northern Etharis westward to distant lands
+
+### Era of Expansion
+Humans spread from west-central Etharis. Centuries of bloodshed forge modern civilizations.
+- **Four Kingdoms of the Divines**: Norden, Raulfolk, Unters, Abendlanders dominate central Etharis
+- **Cold Iron Keep**: Wicked mage Mordu raises his fortress; slain by Valikans
+- **Thorgard's Saga**: Valikan hero unites clans, conquers south, then sails west seeking orcish kin
+- **Writings of Numena**: Raakan el-Adakar's research forms the basis of magical theory
+- **Prismatic Circle**: Archdruid Kybard's vision that Gormadraug merely slumbers
+- **First Men in Caer Neiada**: Earliest humans reach elven lands through the Grove Maze
+- **Grabenstein Falls**: Dwarven city falls to the Unters; Stehlenwald endures
+- **The Lord Edda**: Valikan myths compiled
+- **The Burach Empire Founded**: Emperor Indorius I ordained by the Hearthkeepers
+- **Crossing the Grey Spine**: Burach migrants discover Kaer Vena and eastern lands
+- **Coldfire First Sighted**: First coldfire on Volgen; ice bridge begins forming
+- **Castinellan Peninsula Reached**: Empire extends to dragonborn's shattered kingdom
+- **Morencia Founded**: Haven for refugees fleeing the Burach Empire
+- **Charneault Kingdom Founded**: Thuridan Sarador crowns Aymeric Noblecoeur via the Pact of the Sacred Land
+
+### Era of Descent
+At its height, the Burach Empire endured two centuries of cascading tragedies.
+- **First Ostoyan War**: Ostoya secedes, wins independence at Fallowheart
+- **Castinellan Unification**: Sagrado Valieda unites Faro, Toletum, Therpena; founds Arcanist Inquisition
+- **Company of Free Swords**: Darion Harkin founds mercenary company after Falaris resistance
+- **Augustine Trading Company**: Manoch Augustus leaves clergy, founds company in Morencia
+- **Ebon Syndicate**: Hiram Greyman founds the syndicate after narrowly escaping death
+- **Ulmyr's Gate Disaster**: Mages attempt permanent rift to Ethereal Plane, destroying their city
+- **The Red Mourning**: Burach Empire's attempted annexation of Liesech via von Raiza unleashes the Weeping Pox
+- **Emperor Leopold I**: Coronation triggers civil war; assassination leads to the Gods' End
+
+### Era of Beast
+The current dark age. Humanity clings to survival in a godless era marked by the Great Beast.
+- **The Gods' End**: Last four gods — Aurelia, Galt, Ulmyr, Maligant — destroy each other
+- **Watchers of the Faithful**: Castinellan theocracy self-appoints as religious authority
+- **Second Ostoyan War**: Burach Empire invades Ostoya to reclaim territory
+- **Shadow of the Great Beast**: First stories of the Great Beast circulate in the Empire
+- **Order of Kentigern**: Last shield against the coldfire crisis erupting from Volgen
+- **The Darkfall**: Sun vanishes from Ostoya; Crimson Court seizes power
+- **The Raevo Rebellion**: Raevo secedes from Ostoya; Order of Dawn founded
+- **The Dark Mist**: Princess Tiphaine de Sauveterre disappears; Pact of the Sacred Land broken
