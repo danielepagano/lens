@@ -213,7 +213,8 @@ ul.tree-list li {
 .cursor-indicator {
   color: #33ff77;
   font-weight: bolder;
-  margin-left: 0.25em;
+  margin-left: -4px;
+  margin-right: 4px;
 }
 
 .cursor-indicator-preview {
@@ -688,10 +689,11 @@ ul.tree-list li {
 
 .node-title {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   flex: 1;
   white-space: nowrap;
+  padding-left: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;

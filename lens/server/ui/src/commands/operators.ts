@@ -40,7 +40,6 @@ const commands: CommandDefinition[] = [
     trigger: 'design',
     group: 'narrative',
     positional: [
-      { name: 'id', valueType: 'slug', required: true, hint: 'design section ID' },
       { name: 'prompt', valueType: 'prompt', hint: 'design prompt' },
     ],
     options: [
@@ -48,6 +47,8 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
+      { name: 'retry' },
+      { name: 'end' },
     ],
   },
   {
@@ -175,14 +176,11 @@ const handler: CommandHandler = async (
         handleEvent
       )
     } else if (command === 'design') {
-      const designId = ctx.args.positional['id'] as string | undefined
-      if (!designId) {
-        throw new Error('Design requires an ID')
-      }
+      const endDesign = ctx.args.options['end'] === true
       const designPrompt = (ctx.args.positional['prompt'] as string | undefined) || undefined
       const rawModule = (ctx.args.options['module'] as string | undefined) || undefined
       let moduleId: string | undefined
-      if (rawModule) {
+      if (!endDesign && rawModule) {
         if (!rawModule.startsWith('design.')) {
           throw new Error(`Design module must start with 'design.': ${rawModule}`)
         }
@@ -192,7 +190,7 @@ const handler: CommandHandler = async (
         }
       }
       result = await runDesign(
-        { id: designId, prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId },
+        { prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId, retry, end: endDesign },
         handleEvent
       )
     } else if (command === 'section') {
@@ -263,7 +261,18 @@ const handler: CommandHandler = async (
       return { clearInput: false }
     }
 
-    cliOutput.set(null)
+    if ('type' in result && result.type === 'done') {
+      const done = result as { inserted?: string[]; updated?: string[]; errors?: string[] }
+      if (done.inserted?.length) {
+        cliOutput.set({ output: `KB: inserted ${done.inserted.join(', ')}`, exitCode: 0, streaming: false })
+      } else if (done.updated?.length) {
+        cliOutput.set({ output: `KB: updated ${done.updated.join(', ')}`, exitCode: 0, streaming: false })
+      } else {
+        cliOutput.set(null)
+      }
+    } else {
+      cliOutput.set(null)
+    }
     const interrupted = 'interrupted' in result && result.interrupted
     return { clearInput: !interrupted }
   } catch (err) {

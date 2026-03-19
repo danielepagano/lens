@@ -438,25 +438,29 @@ Arguments: `ADDRESS START_LINE END_LINE [PROMPT]`
 
 ### `lens design`
 
-Creates a KB design workspace sub-node. The LLM reasons with extended thinking, uses `kb_get` and `kb_with_tag` to inspect existing objects, and outputs proposals as fenced `kb` blocks that are immediately applied to the knowledge store.
+Opens a KB design workspace. Each call streams an inline response block into a design sub-node. When you are done, `--end` extracts all `kb` blocks from the sub-node into the knowledge store.
 
 ```bash
-lens design my-session                          # open-ended session
-lens design castle-dorn "design the dungeon"    # with a task prompt
-lens design fight-1 "build the encounter" --module encounter
-lens design npc-refresh -p faction.thieves-guild
+lens design "design a tavern"               # first call: auto-creates a sub-node
+lens design "add a secret basement"         # inside design node: appends another block
+lens design --module encounter "the ambush" # pin a design module for this session
+lens design --retry                         # regenerate the last block
+lens design --end                           # extract KB objects and close the session
 ```
 
-Arguments: `ID [PROMPT]`
+Arguments: `[PROMPT]`
 
-- `ID` — session identifier (alphanumeric, underscores, hyphens). Required. The generated content is saved in a sub-node at this key and the parent receives a `[design:<id>/]: #` self-closing annotation.
-- `PROMPT` — design task. Omit to start an open-ended session.
+- `PROMPT` — design task. Omit to let the module guide the session.
 
 Options:
 
-- `--module` / `-m` — design module key (a KB object under `design.<key>`, e.g. `encounter`). The module is printed into the operator prompt before the design task instructions. Modules can come from the project knowledge store or from selected datasets.
+- `--module` / `-m` — design module key (a KB object under `design.<key>`, e.g. `encounter`). The module is pinned into the sub-node's front matter so it appears in every subsequent call's context. Only one module is active at a time; switching removes the previous one.
+- `--retry` — discard the last inline block and regenerate it.
+- `--end` — close the design session: runs `kb extract` on the full sub-node content, writes inserted/updated KB objects, and appends the closing tag to the parent node.
 
-After the command completes, newly inserted or updated KB objects are printed. Use `lens rollback` to undo both the narrative annotation and the KB changes.
+**Flow:** The first call outside a design sub-node auto-generates an ID (e.g. `design-encounter-the-ambush`) and creates the sub-node with its front matter. Subsequent calls detect that the cursor is already inside a design sub-node and append a new inline block instead of creating another sub-node. Module and pin changes on subsequent calls update the front matter in place.
+
+After `--end` completes, newly inserted and updated KB objects are printed. Use `lens rollback` to undo both the narrative annotation and any KB changes.
 
 ### `lens rollback`
 

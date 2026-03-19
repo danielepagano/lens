@@ -99,6 +99,21 @@ function pushRemovedContent(
   }
 }
 
+function fenceInfo(line: string): { marker: '`' | '~'; length: number } | null {
+  const match = line.match(/^\s*(`{3,}|~{3,})/)
+  if (!match) return null
+  const fence = match[1]
+  if (fence.startsWith('`')) return { marker: '`', length: fence.length }
+  return { marker: '~', length: fence.length }
+}
+
+function isFenceCloser(line: string, marker: '`' | '~', length: number): boolean {
+  if (marker === '`') {
+    return /^\s*`{3,}\s*$/.test(line) && line.trim().length >= length
+  }
+  return /^\s*~{3,}\s*$/.test(line) && line.trim().length >= length
+}
+
 /**
  * Shared look-ahead logic: given an opening annotation at `bodyStart`, find
  * the body and optional matching close, then render the annotation.
@@ -144,14 +159,35 @@ function renderAnnotationWithBody(
     for (let lineNo = openingLineNo; lineNo <= closingLineNo; lineNo++) {
       pushRemovedContent(output, removedByLine, lineNo)
     }
-    for (let k = 0; k < bodyLines.length; k++) {
-      const fileLine = bodyStartLine + k
-
+    for (let k = 0; k < bodyLines.length; ) {
       const outLine = bodyLines[k]
-      const isAdded =
-        overlay &&
-        overlay.addedLines.has(fileLine) &&
-        outLine.trim() !== ''
+      const info = fenceInfo(outLine)
+      if (info) {
+        let end = k
+        while (end + 1 < bodyLines.length) {
+          end += 1
+          if (isFenceCloser(bodyLines[end], info.marker, info.length)) break
+        }
+        const hasAddedInFence = overlay
+          ? Array.from({ length: end - k + 1 }).some((_, idx) => overlay.addedLines.has(bodyStartLine + k + idx))
+          : false
+        if (hasAddedInFence) {
+          output.push('')
+          output.push('<div class="transaction-added">')
+          output.push('')
+          for (let p = k; p <= end; p++) output.push(bodyLines[p])
+          output.push('')
+          output.push('</div>')
+          output.push('')
+        } else {
+          for (let p = k; p <= end; p++) output.push(bodyLines[p])
+        }
+        k = end + 1
+        continue
+      }
+
+      const fileLine = bodyStartLine + k
+      const isAdded = overlay && overlay.addedLines.has(fileLine) && outLine.trim() !== ''
       if (isAdded) {
         output.push('')
         output.push('<div class="transaction-added">')
@@ -163,6 +199,7 @@ function renderAnnotationWithBody(
       } else {
         output.push(outLine)
       }
+      k += 1
     }
     if (hasClose) {
       const afterClose = nextNonEmpty(lines, j + 1)
@@ -294,12 +331,36 @@ export function preprocessAnnotations(
     }
 
     // --- Regular content line: apply diff overlay if present
-    pushRemovedContent(result, removedByLine, lineNo)
+    const info = fenceInfo(line)
+    if (info) {
+      let end = i
+      while (end + 1 < lines.length) {
+        end += 1
+        if (isFenceCloser(lines[end], info.marker, info.length)) break
+      }
+      for (let p = i; p <= end; p++) {
+        pushRemovedContent(result, removedByLine, p + 1)
+      }
+      const hasAddedInFence = overlay
+        ? Array.from({ length: end - i + 1 }).some((_, idx) => overlay.addedLines.has(lineNo + idx))
+        : false
+      if (hasAddedInFence) {
+        result.push('')
+        result.push('<div class="transaction-added">')
+        result.push('')
+        for (let p = i; p <= end; p++) result.push(lines[p])
+        result.push('')
+        result.push('</div>')
+        result.push('')
+      } else {
+        for (let p = i; p <= end; p++) result.push(lines[p])
+      }
+      i = end + 1
+      continue
+    }
 
-    const isAdded =
-      overlay &&
-      overlay.addedLines.has(lineNo) &&
-      line.trim() !== ''
+    pushRemovedContent(result, removedByLine, lineNo)
+    const isAdded = overlay && overlay.addedLines.has(lineNo) && line.trim() !== ''
     if (isAdded) {
       result.push('')
       result.push('<div class="transaction-added">')

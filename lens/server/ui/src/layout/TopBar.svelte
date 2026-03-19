@@ -24,7 +24,7 @@
       <a href="#{parentAddr}" class="parent-link" aria-label="Go up to {parentAddr}">↑ {parts[parts.length - 2]}</a>
     {/if}
     {#if currentTitle}
-      <span class="node-title">{currentTitle}{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}</span>
+      <span class="node-title">{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}{currentTitle}</span>
     {/if}
   {/if}
   <div class="mode-switch">

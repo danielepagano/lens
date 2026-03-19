@@ -218,10 +218,9 @@ class TestMode2Subnode(unittest.TestCase):
             op = _TestOp(storage, narrative)
 
             op.create_subnode(narrative, "ch1")
-            op.close_subnode(narrative, "ch1", "Summary of ch1.")
+            op.close_subnode(narrative, "ch1", "Summary of ch1.\nSecond line.")
             parent_text = narrative.md_path().read_text()  # type: ignore[union-attr]
-            self.assertIn("Summary of ch1.", parent_text)
-            self.assertIn("[/testop:ch1]: #", parent_text)
+            self.assertIn("> Summary of ch1.\n> Second line.\n\n[/testop:ch1]: #\n", parent_text)
 
     def test_create_subnode_with_leaf_parent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

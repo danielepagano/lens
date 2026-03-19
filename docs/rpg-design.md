@@ -270,9 +270,9 @@ We cleanly separate "Planning VS Play". The key insight: **play needs exactly on
 
 ### Create and Refine Knowledge For Your Game with `design`
 
-A dedicated narrative sub-tree where the conversation is not story, it's collaborative design workspace, with KB objects changes are the product. We can start from a dedicate narrative tree, or create a self-closing tag anywhere in the narrative so we have the story so far. Sub-sections may open for dedicated sub-tasks with specialized prompts.
+A design session is a narrative sub-node where the work product is KB objects, not story. Each `lens design` call appends an inline block to the sub-node; the LLM uses `kb_get` and `kb_with_tag` to inspect existing objects and emits fenced `kb` blocks alongside discursive text. When the session is complete, `lens design --end` extracts all `kb` blocks and writes them to the knowledge store in one transaction.
 
-The model emits certainly emits discursive text and collects answers from the user, but the replies also include fenced blocks compliant with the `kb extract` command format. This lets the model focus on content rather than prose style, and makes extraction deterministic. Secrets work because they are encoded as they come out of the LLM.
+The sub-node is created automatically on the first call, with an ID derived from the prompt and module (e.g. `design-encounter-the-bridge-ambush`). Subsequent calls detect the active session and add blocks rather than creating a new sub-node. This lets the user refine across multiple exchanges before committing.
 
 The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing by pinning an expanded object like `loc.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
 
@@ -284,11 +284,9 @@ Other Considerations:
 
 #### Design Modules
 
-The bulk of the knowledge that drives the design flow lives not in the system prompt but in `design` KB objects that can be pinned into the design sub-tree. The root prompt has knowledge of what they are and what's in them, and then asks the user what they want to do: a session zero phase sequence, create or refine objects like locations and factions, create example adventure hooks, plan encounters, etc.
+Each design module is a `design.*` KB object that contains instructions for the AI on how to approach a specific build-out task — what to ask, what to look up, what to produce. Selecting a module with `--module <key>` pins `design.<key>` into the sub-node's front matter so it appears in every subsequent call's context. Only one module is active at a time; passing `--module` again removes the previous one and pins the new one.
 
-The operator then creates sub-sections that have that type of design task pinned in their front matter, and can even chain a write operator from what the user asked to do to get the section content started without repetition. When the user is done, we simply call `kb extract` on that design sub-folder and import all the knowledge created! The user can of course skip the chat and create a design operator already pointed to a specific design module, and get going right away.
-
-Each design module is guided by a `design.*` KB object that the `design` operator pins when the user selects that task. These objects contain instructions for the AI on how to approach that specific build-out task — what to ask, what to look up, what to produce. See the `design.*` objects in the dataset for their content.
+When the user is done with a design session, `lens design --end` runs `kb extract` on the full sub-node and imports all the generated KB objects. Each call to `lens design` adds a new inline block to the sub-node; the user can refine progressively across multiple calls. You can start with no module for an open-ended session, or go straight to a specific task — `lens design "build the ambush" --module encounter` creates a sub-node with `design.encounter` already pinned.
 
 | Module | Defined in | What it produces | Notes |
 |---|---|---|---|

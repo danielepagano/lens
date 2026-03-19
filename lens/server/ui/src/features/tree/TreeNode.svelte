@@ -19,7 +19,7 @@
     on:click={() => onNavigate(node.address)}
     data-address={node.address}
   >
-    {node.key}{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}
+    {#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}{node.key}
   </button>
   {#if node.children?.length}
     <ul class="tree-list">

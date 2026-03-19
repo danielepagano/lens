@@ -11,10 +11,15 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+from lens.core.annotations import parse_front_matter
 from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
-from lens.core.operators.design import DesignOperator
+from lens.core.operators.design import (
+    DesignOperator,
+    generate_design_id,
+    prompt_to_slug,
+)
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
@@ -91,9 +96,10 @@ def _run_design(
     root: Path,
     narrative: NarrativeNode,
     *,
-    id: str = "mydesign",
     prompt: str | None = None,
     module_id: str | None = None,
+    retry: bool = False,
+    end: bool = False,
     generate_mock: Any = None,
 ) -> Any:
     mock = generate_mock or _fake_generate_stream
@@ -103,62 +109,68 @@ def _run_design(
                 DesignOperator.run_design(
                     session=ProjectSession(root, root),
                     narrative=narrative,
-                    id=id,
                     prompt=prompt,
                     module_id=module_id,
                     pins=[],
                     unpins=[],
+                    retry=retry,
+                    end=end,
                 )
             )
 
 
 # ---------------------------------------------------------------------------
-# build_instruction
+# Slug and ID generation
 # ---------------------------------------------------------------------------
 
 
-class TestDesignBuildInstruction(unittest.TestCase):
-    def test_no_prompt(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = DesignOperator(Storage(root), narrative)
-            result = op.build_instruction({})
-            self.assertIn("Design task: Follow the design module", result)
+class TestDesignIdGeneration(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self._root, self._narrative = _make_project(_init_repo(Path(self._tmp)))
 
-    def test_with_prompt(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-            op = DesignOperator(Storage(root), narrative)
-            result = op.build_instruction({"prompt": "create a tavern"})
-            self.assertIn("Design task: create a tavern", result)
-            self.assertNotIn("Design task: Follow the design module", result)
+    def _parent(self) -> NarrativeNode:
+        return self._narrative.find_cursor()
 
-    def test_with_module_prints_before_design_task(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
-            (root / "knowledge" / "design" / "encounter.md").write_text(
-                "ENCOUNTER DESIGN MODULE\n\nDo X then Y.\n",
-                encoding="utf-8",
-            )
+    def test_no_prompt_no_module(self) -> None:
+        self.assertEqual(generate_design_id(None, None, self._parent()), "design")
 
-            captured: list[list[dict[str, str]]] = []
+    def test_prompt_only(self) -> None:
+        result = generate_design_id("create a tavern now", None, self._parent())
+        self.assertEqual(result, "design-create-a-tavern-now")
 
-            async def _capture_stream(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
-                # args[0] is messages
-                captured.append(args[0])
-                async for ev in _fake_generate_stream(*args, **kwargs):
-                    yield ev
+    def test_prompt_truncated_to_5_words(self) -> None:
+        result = generate_design_id("one two three four five six seven", None, self._parent())
+        self.assertEqual(result, "design-one-two-three-four-five")
 
-            _run_design(root, narrative, id="mydesign", module_id="encounter", generate_mock=_capture_stream)
+    def test_module_only(self) -> None:
+        result = generate_design_id(None, "encounter", self._parent())
+        self.assertEqual(result, "design-encounter")
 
-            self.assertEqual(len(captured), 1)
-            user_content = captured[0][1]["content"]
-            module_pos = user_content.find("KB['design.encounter']")
-            task_pos = user_content.find("Design task:")
-            self.assertNotEqual(module_pos, -1)
-            self.assertNotEqual(task_pos, -1)
-            self.assertLess(module_pos, task_pos)
+    def test_module_and_prompt(self) -> None:
+        result = generate_design_id("tavern scene", "location", self._parent())
+        self.assertEqual(result, "design-location-tavern-scene")
+
+    def test_collision_adds_numeric_suffix(self) -> None:
+        # Create the base name as an existing child.
+        parent = self._parent()
+        (parent.md_path().parent / "design.md").write_text("")
+        result = generate_design_id(None, None, parent)
+        self.assertEqual(result, "design-1")
+
+    def test_multiple_collisions(self) -> None:
+        parent = self._parent()
+        folder = parent.md_path().parent
+        (folder / "design.md").write_text("")
+        (folder / "design-1.md").write_text("")
+        result = generate_design_id(None, None, parent)
+        self.assertEqual(result, "design-2")
+
+    def test_prompt_slug_strips_special_chars(self) -> None:
+        self.assertEqual(prompt_to_slug("tavern, with — dwarves!"), "tavern-with-dwarves")
+
+    def test_prompt_slug_lowercased(self) -> None:
+        self.assertEqual(prompt_to_slug("Tavern With Dwarves"), "tavern-with-dwarves")
 
 
 # ---------------------------------------------------------------------------
@@ -171,145 +183,188 @@ class TestDesignFreshRun(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            _run_design(root, narrative, id="mydesign")
+            _run_design(root, narrative)
 
             cursor = narrative.find_cursor()
-            child_md = cursor.md_path().parent / "mydesign.md"
+            # cursor should now be inside the design sub-node
+            self.assertTrue(cursor.key_path)
+            child_md = cursor.md_path()
             self.assertTrue(child_md.exists())
+
+    def test_auto_id_starts_with_design(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            _run_design(root, narrative)
+
+            cursor = narrative.find_cursor()
+            self.assertTrue(cursor.key_path[-1].startswith("design"))
 
     def test_open_tag_in_parent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            _run_design(root, narrative, id="mydesign")
+            _run_design(root, narrative)
 
             cursor = narrative.find_cursor()
-            parent = (
-                NarrativeNode(
-                    narrative_root=narrative.narrative_root,
-                    key_path=cursor.key_path[:-1],
-                )
-                if cursor.key_path
-                else cursor
+            parent = NarrativeNode(
+                narrative_root=narrative.narrative_root,
+                key_path=cursor.key_path[:-1],
             )
             parent_text = parent.md_path().read_text()
-            self.assertIn("[design:mydesign]: #", parent_text)
+            self.assertIn("[design:", parent_text)
 
     def test_no_close_tag_after_one_round(self) -> None:
-        """Design stays open after one generation; close tag only on design end."""
+        """Design session stays open after one generation; close tag only on --end."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            _run_design(root, narrative, id="mydesign")
+            _run_design(root, narrative, prompt="mydesign")
 
             cursor = narrative.find_cursor()
-            parent = (
-                NarrativeNode(
-                    narrative_root=narrative.narrative_root,
-                    key_path=cursor.key_path[:-1],
-                )
-                if cursor.key_path
-                else cursor
+            parent = NarrativeNode(
+                narrative_root=narrative.narrative_root,
+                key_path=cursor.key_path[:-1],
             )
             parent_text = parent.md_path().read_text()
-            self.assertIn("[design:mydesign]: #", parent_text)
-            self.assertNotIn("[/design:mydesign]: #", parent_text)
+            design_id = cursor.key_path[-1]
+            self.assertIn(f"[design:{design_id}]: #", parent_text)
+            self.assertNotIn(f"[/design:{design_id}]: #", parent_text)
 
     def test_generated_content_in_subnode(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            _run_design(root, narrative, id="mydesign")
+            _run_design(root, narrative)
 
             cursor = narrative.find_cursor()
-            child_md = cursor.md_path().parent / "mydesign.md"
-            child_text = child_md.read_text()
+            child_text = cursor.md_path().read_text()
             self.assertIn("my proposals", child_text)
 
-    def test_kb_objects_inserted_on_end(self) -> None:
-        """KB blocks are applied only when the design session is closed (design end)."""
+    def test_inline_block_open_and_close_tags(self) -> None:
+        """Child node must contain an inline [design…]: # … [/design]: # block."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            run_result = _run_design(root, narrative, id="mydesign")
-            self.assertEqual(run_result.inserted, [])
+            _run_design(root, narrative)
 
-            result = asyncio.run(
-                DesignOperator.run_design_end(
-                    session=ProjectSession(root, root), narrative=narrative
-                )
-            )
-            self.assertIn("npc.testperson", result.inserted)
-            self.assertEqual(result.errors, [])
+            cursor = narrative.find_cursor()
+            child_text = cursor.md_path().read_text()
+            self.assertIn("[design", child_text)
+            self.assertIn("[/design]: #", child_text)
 
     def test_transaction_pending(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            _run_design(root, narrative, id="mydesign")
+            _run_design(root, narrative)
 
             self.assertTrue(Storage(root).has_pending())
 
+    def test_id_uses_prompt_slug(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            _run_design(root, narrative, prompt="create a tavern scene")
+
+            cursor = narrative.find_cursor()
+            self.assertIn("create-a-tavern-scene", cursor.key_path[-1])
+
+    def test_kb_objects_not_inserted_until_end(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            run_result = _run_design(root, narrative)
+            self.assertEqual(run_result.inserted, [])
+
 
 # ---------------------------------------------------------------------------
-# Continue run (pending transaction for same id)
+# Module pinning
+# ---------------------------------------------------------------------------
+
+
+class TestDesignModulePin(unittest.TestCase):
+    def test_module_pinned_in_front_matter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text(
+                "ENCOUNTER DESIGN MODULE\n", encoding="utf-8"
+            )
+
+            _run_design(root, narrative, module_id="encounter")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text())
+            self.assertIn("design.encounter", fm.get("kb_pin", []))
+
+    def test_missing_module_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            with self.assertRaises(OperatorError) as ctx:
+                _run_design(root, narrative, module_id="missing")
+
+            self.assertIn("design module does not exist", str(ctx.exception))
+
+    def test_module_in_instruction_context(self) -> None:
+        """The module KB object is loaded in RELEVANT KNOWLEDGE (via front matter pin)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text(
+                "ENCOUNTER DESIGN MODULE\n\nDo X then Y.\n", encoding="utf-8"
+            )
+
+            captured: list[list[dict[str, str]]] = []
+
+            async def _capture_stream(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
+                captured.append(args[0])
+                async for ev in _fake_generate_stream(*args, **kwargs):
+                    yield ev
+
+            _run_design(root, narrative, module_id="encounter", generate_mock=_capture_stream)
+
+            self.assertEqual(len(captured), 1)
+            # The module text should appear somewhere in the messages
+            full_content = " ".join(str(m) for m in captured[0])
+            self.assertIn("encounter", full_content.lower())
+
+
+# ---------------------------------------------------------------------------
+# Continue run (second call inside the same design session)
 # ---------------------------------------------------------------------------
 
 
 class TestDesignContinueRun(unittest.TestCase):
-    def test_continue_appends_to_subnode(self) -> None:
+    def test_second_call_adds_inline_block(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            # First run (interrupted — no close tag written yet).
-            # Simulate by manually writing the open tag + child file.
+            _run_design(root, narrative, prompt="first round")
+            # Commit so second call sees a clean state.
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "first"], cwd=root, capture_output=True, check=True,
+            )
+
+            _run_design(root, narrative, prompt="second round")
+
             cursor = narrative.find_cursor()
-            # Promote to folder manually.
-            folder = cursor.md_path().parent
-            child_md = folder / "mydesign.md"
-            child_md.write_text("First round content.\n")
-            parent_text = cursor.md_path().read_text()
-            cursor.md_path().write_text(parent_text + "\n[design:mydesign]: #\n")
+            child_text = cursor.md_path().read_text()
+            # Both rounds' content should appear
+            self.assertEqual(child_text.count("[/design]: #"), 2)
 
-            # Second generation mock returns different content.
-            async def _second_gen(*args: Any, **kwargs: Any) -> Any:
-                yield StreamEvent(
-                    final=FinalPayload(
-                        text="Second round content.",
-                        tool_call=None,
-                        usage=None,
-                        interrupted=False,
-                    )
-                )
-
-            with patch("lens.core.operators.design.generate_stream", new=_second_gen):
-                with patch(
-                    "lens.core.operators.design.get_command_registry", return_value={}
-                ):
-                    asyncio.run(
-                        DesignOperator.run_design(
-                            session=ProjectSession(root, root),
-                            narrative=narrative,
-                            id="mydesign",
-                            pins=[],
-                            unpins=[],
-                        )
-                    )
-
-            child_text = child_md.read_text()
-            self.assertIn("First round content.", child_text)
-            self.assertIn("Second round content.", child_text)
-
-    def test_continue_uses_design_child_for_current_passage(self) -> None:
-        """Crawl must receive the design sub-node so CURRENT PASSAGE is the conversation, not the parent."""
+    def test_second_call_crawls_design_child(self) -> None:
+        """Crawl must receive the design sub-node so CURRENT PASSAGE is the conversation."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            cursor = narrative.find_cursor()
-            folder = cursor.md_path().parent
-            child_md = folder / "mydesign.md"
-            child_md.write_text("Existing design conversation.\n")
-            parent_text = cursor.md_path().read_text()
-            cursor.md_path().write_text(parent_text + "\n[design:mydesign]: #\n")
+
+            _run_design(root, narrative, prompt="first round")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "first"], cwd=root, capture_output=True, check=True,
+            )
 
             crawl_called_with_node: list[NarrativeNode] = []
 
@@ -318,34 +373,103 @@ class TestDesignContinueRun(unittest.TestCase):
                 from lens.core.context import crawl as real_crawl
                 return real_crawl(node, **kwargs)
 
-            async def _gen(*args: Any, **kwargs: Any) -> Any:
-                yield StreamEvent(
-                    final=FinalPayload(
-                        text="More content.",
-                        tool_call=None,
-                        usage=None,
-                        interrupted=False,
-                    )
-                )
-
-            with patch("lens.core.operators.design.generate_stream", new=_gen):
+            with patch("lens.core.operators.design.generate_stream", new=_fake_generate_stream):
                 with patch("lens.core.operators.design.get_command_registry", return_value={}):
                     with patch("lens.core.operators.design.crawl", side_effect=capture_crawl):
                         asyncio.run(
                             DesignOperator.run_design(
                                 session=ProjectSession(root, root),
                                 narrative=narrative,
-                                id="mydesign",
+                                prompt="second round",
                                 pins=[],
                                 unpins=[],
                             )
                         )
 
-            self.assertEqual(len(crawl_called_with_node), 1)
+            self.assertGreater(len(crawl_called_with_node), 0)
             node_used = crawl_called_with_node[0]
-            self.assertEqual(node_used.key_path, ("mydesign",))
-            child_content = node_used.md_path().read_text()
-            self.assertIn("Existing design conversation.", child_content)
+            # The crawled node should be the design sub-node
+            self.assertGreater(len(node_used.key_path), 0)
+            self.assertTrue(node_used.key_path[-1].startswith("design"))
+
+
+# ---------------------------------------------------------------------------
+# Module switching
+# ---------------------------------------------------------------------------
+
+
+class TestDesignModuleSwitch(unittest.TestCase):
+    def test_switch_module_replaces_pin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text("E\n")
+            (root / "knowledge" / "design" / "npc.md").write_text("N\n")
+
+            _run_design(root, narrative, module_id="encounter")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "first"], cwd=root, capture_output=True, check=True,
+            )
+
+            _run_design(root, narrative, module_id="npc")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text())
+            kb_pins = fm.get("kb_pin", [])
+            self.assertIn("design.npc", kb_pins)
+            self.assertNotIn("design.encounter", kb_pins)
+
+
+# ---------------------------------------------------------------------------
+# Retry
+# ---------------------------------------------------------------------------
+
+
+class TestDesignRetry(unittest.TestCase):
+    def test_retry_requires_pending(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            _run_design(root, narrative)
+            # Commit everything first → no pending
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "done"], cwd=root, capture_output=True, check=True,
+            )
+
+            with self.assertRaises(OperatorError) as ctx:
+                _run_design(root, narrative, retry=True)
+
+            self.assertIn("no pending design transaction", str(ctx.exception))
+
+    def test_retry_rewrites_last_block(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            _run_design(root, narrative, prompt="first")
+
+            cursor = narrative.find_cursor()
+            original_text = cursor.md_path().read_text()
+            self.assertIn("my proposals", original_text)
+
+            async def _different_content(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Completely different content.",
+                        tool_call=None,
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            _run_design(root, narrative, retry=True, generate_mock=_different_content)
+
+            cursor2 = narrative.find_cursor()
+            retried_text = cursor2.md_path().read_text()
+            self.assertIn("Completely different content.", retried_text)
+            # Original content should be gone
+            self.assertNotIn("my proposals", retried_text)
 
 
 # ---------------------------------------------------------------------------
@@ -357,25 +481,30 @@ class TestDesignEnd(unittest.TestCase):
     def test_end_appends_close_tag_and_runs_kb_extract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            _run_design(root, narrative, id="mydesign")
+            _run_design(root, narrative)
+
+            cursor = narrative.find_cursor()
+            design_id = cursor.key_path[-1]
             parent = NarrativeNode(
-                narrative_root=narrative.narrative_root, key_path=()
+                narrative_root=narrative.narrative_root, key_path=cursor.key_path[:-1]
             )
             before = parent.md_path().read_text()
-            self.assertIn("[design:mydesign]: #", before)
-            self.assertNotIn("[/design:mydesign]: #", before)
+            self.assertIn(f"[design:{design_id}]: #", before)
+            self.assertNotIn(f"[/design:{design_id}]: #", before)
 
-            asyncio.run(
+            result = asyncio.run(
                 DesignOperator.run_design_end(
                     session=ProjectSession(root, root), narrative=narrative
                 )
             )
 
             after = parent.md_path().read_text()
-            self.assertIn("[/design:mydesign]: #", after)
-            open_pos = after.index("[design:mydesign]: #")
-            close_pos = after.index("[/design:mydesign]: #")
+            self.assertIn(f"[/design:{design_id}]: #", after)
+            open_pos = after.index(f"[design:{design_id}]: #")
+            close_pos = after.index(f"[/design:{design_id}]: #")
             self.assertLess(open_pos, close_pos)
+            # KB block from fake content must be extracted
+            self.assertIn("npc.testperson", result.inserted)
 
     def test_end_raises_when_cursor_not_in_design(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -389,6 +518,14 @@ class TestDesignEnd(unittest.TestCase):
                 )
             self.assertIn("no open design to close", str(ctx.exception))
 
+    def test_end_via_run_design_end_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _run_design(root, narrative)
+
+            result = _run_design(root, narrative, end=True)
+            self.assertIn("npc.testperson", result.inserted)
+
 
 # ---------------------------------------------------------------------------
 # Error cases
@@ -396,53 +533,14 @@ class TestDesignEnd(unittest.TestCase):
 
 
 class TestDesignErrors(unittest.TestCase):
-    def test_duplicate_committed_id_raises(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-
-            _run_design(root, narrative, id="mydesign")
-            asyncio.run(
-                DesignOperator.run_design_end(
-                    session=ProjectSession(root, root), narrative=narrative
-                )
-            )
-            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
-            subprocess.run(
-                ["git", "commit", "-m", "design"],
-                cwd=root, capture_output=True, check=True,
-            )
-
-            with self.assertRaises(OperatorError) as ctx:
-                _run_design(root, narrative, id="mydesign")
-
-            self.assertIn("already exists", str(ctx.exception))
-
-    def test_invalid_id_raises(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-
-            with self.assertRaises(OperatorError) as ctx:
-                _run_design(root, narrative, id="bad id!")
-
-            self.assertIn("invalid design id", str(ctx.exception))
-
     def test_empty_generation_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
             with self.assertRaises(OperatorError) as ctx:
-                _run_design(root, narrative, id="mydesign", generate_mock=_fake_generate_empty)
+                _run_design(root, narrative, generate_mock=_fake_generate_empty)
 
             self.assertIn("no content generated", str(ctx.exception))
-
-    def test_missing_module_raises(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-
-            with self.assertRaises(OperatorError) as ctx:
-                _run_design(root, narrative, module_id="missing")
-
-            self.assertIn("design module does not exist", str(ctx.exception))
 
 
 if __name__ == "__main__":

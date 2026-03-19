@@ -260,12 +260,13 @@ export const runPlay = (
   runStreamingOp('/operator/play', params, onEvent)
 
 export interface DesignParams {
-  id: string
   prompt?: string
   module_id?: string
   pins?: string[]
   unpins?: string[]
   llm_id?: string
+  retry?: boolean
+  end?: boolean
 }
 
 export const runDesign = (
@@ -273,15 +274,6 @@ export const runDesign = (
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/design', params, onEvent)
-
-export interface DesignEndResult {
-  inserted: string[]
-  updated: string[]
-  errors: string[]
-}
-
-export const runDesignEnd = (): Promise<DesignEndResult> =>
-  post('/operator/design/end', {}) as Promise<DesignEndResult>
 
 export interface EditParams {
   address: string

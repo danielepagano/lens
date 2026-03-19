@@ -42,12 +42,13 @@ class PlayBody(BaseModel):
 
 
 class DesignBody(BaseModel):
-    id: str
     prompt: str | None = None
     module_id: str | None = None
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
+    retry: bool = False
+    end: bool = False
 
 
 class EditBody(BaseModel):
@@ -300,12 +301,13 @@ async def operator_design(
         return DesignOperator.run_design(
             session=session,
             narrative=narrative,
-            id=body.id,
             prompt=body.prompt,
             module_id=module_key,
             pins=pins,
             unpins=unpins,
             llm_id=body.llm_id,
+            retry=body.retry,
+            end=body.end,
             on_token=on_token,
             on_stream_target=on_stream_target,
             cancel_event=lock.cancel_event,
@@ -315,24 +317,6 @@ async def operator_design(
         lock, event_queue, session, "design", lambda: target_ref[0], coro_fn
     )
 
-
-@router.post("/operator/design/end")
-async def operator_design_end(
-    session: ProjectSession = Depends(get_session),
-) -> dict[str, Any]:
-    from lens.core.operators.design import DesignOperator
-
-    narrative = _require_narrative(session)
-    try:
-        result = await DesignOperator.run_design_end(session=session, narrative=narrative)
-    except OperatorError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    session.kb.evict_tag_cache()
-    return {
-        "inserted": result.inserted,
-        "updated": result.updated,
-        "errors": result.errors,
-    }
 
 
 @router.post("/operator/edit")

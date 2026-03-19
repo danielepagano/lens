@@ -324,6 +324,42 @@ More content line 5
     expect(result).toContain('Added line 4')
   })
 
+  it('wraps added fenced code blocks once inside annotation bodies', () => {
+    const markdown = `[design:d1]: #
+
+\`\`\`kb
+---
+id: encounter.kurmat-meeting
+---
+\`\`\`
+
+[/design:d1]: #`
+    const diff = makeDiff('test/node', [{
+      oldStart: 1, newStart: 1,
+      lines: [
+        ' [design:d1]: #',
+        ' ',
+        '+```kb',
+        '+---',
+        '+id: encounter.kurmat-meeting',
+        '+---',
+        '+```',
+        ' ',
+        ' [/design:d1]: #',
+      ],
+    }])
+
+    const overlay = buildNodeTransactionOverlay(diff, 'test/node')
+    expect(overlay).not.toBeNull()
+
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    const addedWrappers = result.match(/<div class="transaction-added">/g) ?? []
+    expect(addedWrappers).toHaveLength(1)
+    expect(result).toContain('```kb')
+    expect(result).toContain('id: encounter.kurmat-meeting')
+    expect(result).not.toContain('```kb\n<div class="transaction-added">')
+  })
+
   it('shows all removed groups for a section when replacement spans opening to closing line', () => {
     // Section replaces multiple blocks (e.g. two play blocks). Removed content is keyed
     // to opening line and to a line before the closing; both must appear.

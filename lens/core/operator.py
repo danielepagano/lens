@@ -342,7 +342,11 @@ class Operator(ABC):
     ) -> None:
         """Close a sub-node by appending *summary* and a close tag to *parent*."""
         close = self.build_close_tag(id)
-        suffix = summary + "\n\n" + close + "\n" if summary else close + "\n"
+        if summary:
+            quoted_summary = "\n".join(f"> {line}" for line in summary.splitlines())
+            suffix = quoted_summary + "\n\n" + close + "\n"
+        else:
+            suffix = close + "\n"
         self.append_to_node(parent, suffix)
 
     # ------------------------------------------------------------------
