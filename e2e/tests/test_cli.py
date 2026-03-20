@@ -1,9 +1,9 @@
 """CLI integration tests run against a live test project.
 
 These tests invoke the ``lens`` CLI as a subprocess, exactly as a user (or
-LLM) would, against a temp project with the ``dnd`` dataset enabled and a
-fake LLM.  They exercise stats output, dataset KB lookups, and the write
-operator end-to-end.
+LLM) would, against a temp project with ``rpg`` and ``dnd`` datasets enabled
+and a fake LLM.  They exercise stats output, dataset KB lookups, and the
+write operator end-to-end.
 
 Running::
 
@@ -39,7 +39,7 @@ def _lens(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 
 
 # ---------------------------------------------------------------------------
-# Module-scoped fixture: project with dnd dataset
+# Module-scoped fixture: project with rpg + dnd datasets
 # ---------------------------------------------------------------------------
 
 
@@ -53,10 +53,12 @@ def dnd_llm() -> Generator[FakeLLMServer, None, None]:
 
 @pytest.fixture(scope="module")
 def dnd_project(dnd_llm: FakeLLMServer) -> Generator[Path, None, None]:
-    """A Lens project with the ``dnd`` dataset enabled and a fake LLM."""
+    """A Lens project with ``rpg`` and ``dnd`` datasets and a fake LLM."""
     tmp = tempfile.mkdtemp(prefix="lens_cli_test_")
     project_dir = Path(tmp)
-    setup_test_project(project_dir, dnd_llm.base_url, dataset="dnd")
+    setup_test_project(
+        project_dir, dnd_llm.base_url, datasets=["rpg", "dnd"]
+    )
     yield project_dir
     shutil.rmtree(tmp, ignore_errors=True)
 
@@ -89,21 +91,20 @@ class TestCliStats:
 
 
 # ---------------------------------------------------------------------------
-# KB lookups against the dnd dataset
+# KB lookups against bundled rpg + dnd datasets
 # ---------------------------------------------------------------------------
 
 
 class TestCliKbDnd:
-    def test_kb_get_rules_dnd(self, dnd_project: Path) -> None:
-        """Lookup rules.dnd — only exists in the dnd dataset."""
-        r = _lens("kb", "get", "rules.dnd", cwd=dnd_project)
+    def test_kb_get_rules_system(self, dnd_project: Path) -> None:
+        """Lookup rules.system — D&D body comes from the dnd dataset (shadows rpg)."""
+        r = _lens("kb", "get", "rules.system", cwd=dnd_project)
         assert r.returncode == 0, r.stderr
-        # The rules file contains D&D 2024 reference content.
-        assert r.stdout.strip(), "expected non-empty output for rules.dnd"
+        assert r.stdout.strip(), "expected non-empty output for rules.system"
         assert "D&D" in r.stdout or "d20" in r.stdout.lower()
 
     def test_kb_get_rules_engagement(self, dnd_project: Path) -> None:
-        """Lookup rules.engagement — only exists in the dnd dataset."""
+        """Lookup rules.engagement from the rpg dataset."""
         r = _lens("kb", "get", "rules.engagement", cwd=dnd_project)
         assert r.returncode == 0, r.stderr
         assert r.stdout.strip(), "expected non-empty output for rules.engagement"

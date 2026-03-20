@@ -37,7 +37,7 @@ pyright = "pyright"
 lint-py = "ruff check . --fix"
 lint-ts = { shell = "cd lens/server/ui && npm run lint" }
 lint = { sequence = ["lint-py", "lint-ts", "pyright"] }
-test = "pytest lens/core/test lens/cli/test lens/server/test lens/dnd/test -n auto --ignore=lens/core/test/integration -q"
+test = "pytest lens/core/test lens/cli/test lens/server/test lens/dnd/test lens/rpg/test -n auto --ignore=lens/core/test/integration -q"
 test-integration = "pytest lens/core/test/integration -n 0 -q"
 test-e2e = "pytest e2e/ -n 0 -q"
 test-ui = { shell = "cd lens/server/ui && npm install --silent && npm test" }
@@ -47,7 +47,7 @@ check = { sequence = ["lint", "test", "test-integration", "test-ui", "build-ui",
 
 [tool.pytest.ini_options]
 addopts = "-W ignore::SyntaxWarning:pysbd"
-testpaths = ["lens/core/test", "lens/cli/test", "lens/dnd/test"]
+testpaths = ["lens/core/test", "lens/cli/test", "lens/dnd/test", "lens/rpg/test"]
 filterwarnings = [
     # Python 3.14 deprecations in third-party libs — not our code
     "ignore:'asyncio\\.iscoroutinefunction' is deprecated",

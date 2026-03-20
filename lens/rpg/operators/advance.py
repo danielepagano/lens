@@ -5,7 +5,7 @@ sub-node, pins all fronts tagged to the pinned timeline (with ``+`` for
 expansion), runs the LLM with the ``design.front`` module to evaluate and
 update fronts, then closes the sub-node with a narrative summary.
 
-Dataset-gated: requires ``dnd`` (or another RPG dataset).
+Dataset-gated: requires the ``rpg`` dataset.
 
 Requirements: ``design.front`` and at least one ``timeline.*`` must be pinned.
 """
@@ -255,7 +255,7 @@ def update_timeline_day(
 class AdvanceOperator(Operator):
     name: ClassVar[str] = "advance"
     requires_id: ClassVar[bool] = True
-    limited_to_datasets: ClassVar[list[str]] = ["dnd"]
+    limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     use_command_tools: ClassVar[bool] = True
     excluded_operator_tools: ClassVar[frozenset[str]] = frozenset({"write"})
 

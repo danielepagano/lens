@@ -47,13 +47,13 @@ pytest e2e/ -n 0 -v   # same, verbose
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | `FakeLLMServer` | `lens/testing/fake_llm.py` | In-process HTTP server that streams Lorem Ipsum as OpenAI-compatible SSE. Start with `.start()`, use `.base_url` in `lens.toml`. |
-| `setup_test_project()` | `lens/testing/project.py` | Creates a full throwaway Lens project (git repo + `lens.toml` + KB objects + opening passage). Accepts `dataset=` to swap in any dataset (e.g. `"dnd"`). Returns a live `ProjectSession`. |
+| `setup_test_project()` | `lens/testing/project.py` | Creates a full throwaway Lens project (git repo + `lens.toml` + KB objects + opening passage). Accepts `dataset=` or `datasets=` for `[project] datasets`. Returns a live `ProjectSession`. |
 | `e2e/conftest.py` | session fixtures | Wires `fake_llm_server` → `lens_project_dir` → `live_server_url` (uvicorn on a free port). Also sets `base_url` for Playwright. Supports `LENS_DEV_SERVER_URL` env override to test against a running dev server. |
 
 ### Test files
 
 - **`e2e/tests/test_api_smoke.py`** — API tests using plain `urllib.request`. Covers `/health`, `/stats`, `/narrative/tree`, `/narrative/node/<name>`.
-- **`e2e/tests/test_cli.py`** — CLI tests with the `dnd` dataset. Runs `lens stats`, `lens kb get/with-tag`, and `lens write` as subprocesses. Has its own module-scoped `dnd_project` fixture (uses `setup_test_project(dataset="dnd")`).
+- **`e2e/tests/test_cli.py`** — CLI tests with `rpg` + `dnd` datasets. Runs `lens stats`, `lens kb get/with-tag`, and `lens write` as subprocesses. Module-scoped `dnd_project` fixture uses `setup_test_project(..., datasets=["rpg", "dnd"])`.
 - **`e2e/tests/test_browser.py`** — Playwright placeholder. Auto-skipped when Chromium is not installed. Run `playwright install chromium` to enable.
 
 ### Using `setup_test_project` in new tests
@@ -64,7 +64,7 @@ from lens.testing.project import setup_test_project
 
 with FakeLLMServer() as llm:
     project_dir = Path(tempfile.mkdtemp())
-    session = setup_test_project(project_dir, llm.base_url, dataset="dnd")
+    session = setup_test_project(project_dir, llm.base_url, datasets=["rpg", "dnd"])
     # project_dir is a real git repo with lens.toml, narrative, KB, written passage
 ```
 
@@ -116,14 +116,16 @@ lens/
     operators/   # Core implementations for AI operators (write, edit, section, collate, design)
     test/        # Core unit tests
       integration/  # Integration tests
-  dnd/           # Dataset-specific package (commands, operators when dnd in scope)
-    commands/    # D&D commands (balance_encounter)
-    operators/   # D&D operators (play)
-    test/        # D&D unit tests
+  rpg/           # Core RPG dataset package (play, advance operators)
+    operators/
+    test/
+  dnd/           # D&D dataset package (balance_encounter command + tool)
+    commands/
+    test/
 datasets/
   testing/       # Minimal dataset for integration tests
-  dnd/           # D&D 2024 reference dataset (rules, spells, monsters, etc.)
-    knowledge/   # KB objects: faction/, front/, loc/, lore/, npc/, pc/, rules/
+  rpg/           # Core RPG bundle (engagement, system stub, templates, design modules)
+  dnd/           # D&D 2024 reference (rules/system override, spell, stat, equipment)
 tools/
   ddb-extract/   # TypeScript CLI: extracts D&D Beyond content into KB Markdown files
 ```
@@ -152,7 +154,7 @@ Closing tags: `[/section:ch1]: #`. Self-closing: `[section:ch1/]: #`.
 
 Operators can register themselves as **LLM tools** via `tools.py` (`register_operator_tool`, `OperatorToolDef`). When the active session includes a dataset that unlocks an operator-tool, the LLM can invoke other operators as tool calls mid-response. Tool calls are dispatched by the `operator.py` loop and share the same storage transaction. Operators can also **chain** to another operator on completion via `chain.py` (`ChainSpec`) — chained operators inherit the same storage transaction.
 
-**`play` operator** (`dnd/operators/play.py`): GM-voice narrative operator. Requires at least one KB object tagged `pc` to be pinned — the LLM knows who the player characters are and writes from the GM's perspective without narrating PC decisions. Dataset-gated: only available when the `dnd` dataset (or another RPG dataset) is selected in `lens.toml`.
+**`play` operator** (`rpg/operators/play.py`): GM-voice narrative operator. Requires at least one `pc.*` KB object pinned; GM voice without narrating PC decisions. Dataset-gated: `rpg` in `lens.toml`. Pins `rules.system` + `rules.engagement`.
 
 **Context assembly** (`context.py`): `crawl()` collects `kb_pin`/`kb_unpin` from ancestor front matters (walking from root to cursor), resolves linked KB objects, then passes everything to `assemble_prompt()` which formats `[RELEVANT KNOWLEDGE]`, `[PREVIOUS EVENTS SUMMARY]`, `[CURRENT PASSAGE]`, and `[TASK]` blocks into `[system, user]` messages.
 
@@ -167,7 +169,8 @@ Configured in the content repo's `lens.toml`, not in this repo. Uses OpenAI-comp
 Read-only knowledge stores bundled with the Lens tool, declared in `lens.toml` under `[project] datasets = [...]`. Later entries shadow earlier ones; project-local items always win. Mutating a dataset object creates a project-local copy (copy-on-write).
 
 - `datasets/testing/` — minimal test fixtures used by the test suite
-- `datasets/dnd/` — D&D 2024 reference data: rules (`rules/dnd.md`, `rules/engagement.md`), NPC/PC/faction/front/loc/lore object templates. Populated via `tools/ddb-extract/` + `lens kb extract`.
+- `datasets/rpg/` — Core RPG bundle: `rules.engagement`, `rules.system` stub, templates, `design/*`. 
+- `datasets/dnd/` — D&D 2024 reference: `rules/system.md` (overrides), `spell/`, `stat/`, `equipment/`, `tags.toml`. Populated via `tools/ddb-extract/` + `lens kb extract`.
 
 ### Tools
 

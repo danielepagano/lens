@@ -15,7 +15,7 @@ from lens.core.context import CrawlResult
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession
-from lens.dnd.operators.advance import (
+from lens.rpg.operators.advance import (
     AdvanceOperator,
     discover_front_pins,
     generate_advance_id,
@@ -45,7 +45,7 @@ def _init_repo(tmp: Path) -> Path:
 
 def _make_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNode]:
     (tmp / "lens.toml").write_text(
-        f'[project]\nnarrative = "{slug}"\ndatasets = ["dnd"]\n'
+        f'[project]\nnarrative = "{slug}"\ndatasets = ["rpg"]\n'
     )
     narrative_dir = tmp / "narrative" / slug
     narrative_dir.mkdir(parents=True)
@@ -357,7 +357,7 @@ def _run_async(coro: Any) -> Any:
 class TestRunAdvanceSummary(unittest.TestCase):
     """Verify run_advance writes the summary to the parent (cursor) node."""
 
-    def _make_dnd_project(self, d: Path) -> tuple[Path, NarrativeNode]:
+    def _make_rpg_project(self, d: Path) -> tuple[Path, NarrativeNode]:
         root, narrative = _make_project(d, slug="campaign")
         # Timeline KB object with a Day counter
         timeline_dir = d / "knowledge" / "timeline"
@@ -388,11 +388,11 @@ class TestRunAdvanceSummary(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)
             _init_repo(d)
-            root, narrative = self._make_dnd_project(d)
+            root, narrative = self._make_rpg_project(d)
             session = ProjectSession(root, root)
 
             with patch(
-                "lens.dnd.operators.advance.generate_stream",
+                "lens.rpg.operators.advance.generate_stream",
                 self._fake_generate(LLM_RESPONSE),
             ):
                 _run_async(
@@ -424,11 +424,11 @@ class TestRunAdvanceSummary(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)
             _init_repo(d)
-            root, narrative = self._make_dnd_project(d)
+            root, narrative = self._make_rpg_project(d)
             session = ProjectSession(root, root)
 
             with patch(
-                "lens.dnd.operators.advance.generate_stream",
+                "lens.rpg.operators.advance.generate_stream",
                 self._fake_generate(LLM_RESPONSE),
             ):
                 _run_async(

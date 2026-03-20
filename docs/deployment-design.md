@@ -32,7 +32,7 @@ The deployment design must satisfy these constraints:
 
 1. Deploy from a local machine.
 2. Build the current Lens code and UI before release.
-3. Package the full Lens repo into the deployed runtime, including bundled datasets such as `datasets/dnd/`.
+3. Package the full Lens repo into the deployed runtime, including bundled datasets such as `datasets/rpg/` and `datasets/dnd/`.
 4. Keep the mutable project repo separate from the Lens application code.
 5. Clone and push the project repo over SSH using a separate GitLab identity from the Lens code repo.
 6. Inject LLM secrets only through environment variables referenced by `lens.toml`.
@@ -91,7 +91,7 @@ Any non-local deployment must ship the full Lens repo, not just the server packa
 
 Reason:
 
-- bundled datasets such as `datasets/dnd/` live in the Lens codebase
+- bundled datasets such as `datasets/rpg/` and `datasets/dnd/` live in the Lens codebase
 - the web app must be able to read those datasets at runtime
 - the project repo is separate and mutable; datasets are part of the immutable app payload
 

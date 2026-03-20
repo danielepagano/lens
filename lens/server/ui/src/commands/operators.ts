@@ -53,8 +53,8 @@ const commands: CommandDefinition[] = [
   },
   {
     trigger: 'play',
-    group: 'dnd',
-    requiresDataset: 'dnd',
+    group: 'rpg',
+    requiresDataset: 'rpg',
     positional: [{ name: 'prompt', valueType: 'prompt', required: true, hint: 'what do you do?' }],
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
@@ -65,8 +65,8 @@ const commands: CommandDefinition[] = [
   },
   {
     trigger: 'advance',
-    group: 'dnd',
-    requiresDataset: 'dnd',
+    group: 'rpg',
+    requiresDataset: 'rpg',
     positional: [],
     options: [
       { name: 'days', valueType: 'line', hint: 'days to advance (default: 1)' },
@@ -313,7 +313,7 @@ const handler: CommandHandler = async (
   }
 }
 
-const PLAY_REQUIRED_PINS = ['rules.dnd', 'rules.engagement'] as const
+const PLAY_REQUIRED_PINS = ['rules.system', 'rules.engagement'] as const
 
 export const operatorModule: CommandModule = { 
   commands: (stats) => {

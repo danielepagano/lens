@@ -25,7 +25,7 @@ from lens.core.tools import (
     get_tool_registry,
     register_operator_tool,
 )
-from lens.dnd.operators.play import PlayOperator
+from lens.rpg.operators.play import PlayOperator
 from lens.core.operators.write import WriteOperator
 from lens.core.project import ProjectSession
 
@@ -581,34 +581,34 @@ class TestPlayOperatorRequirements(unittest.TestCase):
     def test_no_pins_raises(self) -> None:
         with self.assertRaises(OperatorError) as ctx:
             PlayOperator.check_requirements(_play_result([]))
-        self.assertIn("rules.dnd", str(ctx.exception))
+        self.assertIn("rules.system", str(ctx.exception))
         self.assertIn("rules.engagement", str(ctx.exception))
 
     def test_missing_rules_pins_raises(self) -> None:
         # Has pc.hero but missing rules pins
         with self.assertRaises(OperatorError) as ctx:
             PlayOperator.check_requirements(_play_result(["pc.hero"]))
-        self.assertIn("rules.dnd", str(ctx.exception))
+        self.assertIn("rules.system", str(ctx.exception))
 
     def test_missing_pc_pin_raises(self) -> None:
         # Has rules pins but no pc.* pin
         with self.assertRaises(OperatorError) as ctx:
-            PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement"]))
+            PlayOperator.check_requirements(_play_result(["rules.system", "rules.engagement"]))
         self.assertIn("pc.", str(ctx.exception))
 
     def test_all_required_pins_passes(self) -> None:
         # Should not raise with rules + pc.* pins
-        PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement", "pc.hero"]))
+        PlayOperator.check_requirements(_play_result(["rules.system", "rules.engagement", "pc.hero"]))
 
     def test_ancestor_pins_are_visible(self) -> None:
         # Verifies the fix: pc.* resolved anywhere in the ancestor hierarchy is visible
-        PlayOperator.check_requirements(_play_result(["rules.dnd", "rules.engagement", "pc.theron"]))
+        PlayOperator.check_requirements(_play_result(["rules.system", "rules.engagement", "pc.theron"]))
 
 
 class TestPlayOperatorEnrichParams(unittest.TestCase):
     def test_enrich_params_sets_pc_key_from_first_pinned_pc(self) -> None:
         result = _play_result(
-            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+            ["rules.system", "rules.engagement", "pc.alice", "pc.bob"]
         )
         params: dict[str, Any] = {"prompt": "hello"}
         PlayOperator.enrich_params(result, params)
@@ -616,7 +616,7 @@ class TestPlayOperatorEnrichParams(unittest.TestCase):
 
     def test_enrich_params_as_pc_sets_pc_key_and_removes_as_pc(self) -> None:
         result = _play_result(
-            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+            ["rules.system", "rules.engagement", "pc.alice", "pc.bob"]
         )
         params: dict[str, Any] = {"prompt": "hello", "as_pc": "bob"}
         PlayOperator.enrich_params(result, params)
@@ -625,7 +625,7 @@ class TestPlayOperatorEnrichParams(unittest.TestCase):
 
     def test_enrich_params_as_pc_invalid_raises(self) -> None:
         result = _play_result(
-            ["rules.dnd", "rules.engagement", "pc.alice", "pc.bob"]
+            ["rules.system", "rules.engagement", "pc.alice", "pc.bob"]
         )
         params: dict[str, Any] = {"prompt": "hello", "as_pc": "charlie"}
         with self.assertRaises(OperatorError) as ctx:

@@ -5,8 +5,8 @@ describing what player characters observe, hear, and encounter — without
 writing what they think, feel, decide, or do.  The operator stops at decision
 or action points, giving the player space to respond.
 
-Requires ``rules.dnd`` and ``rules.engagement`` to be pinned (they carry the
-full ruleset and the player-AI contract), plus at least one ``pc.*`` KB object
+Requires ``rules.system`` and ``rules.engagement`` to be pinned (mechanics layer
+and player-AI contract), plus at least one ``pc.*`` KB object
 so the LLM knows who the player characters are.
 """
 
@@ -42,7 +42,7 @@ SYSTEM_PROMPT = (
     "Stop at every decision point and yield to the player."
 )
 
-REQUIRED_PINS: frozenset[str] = frozenset({"rules.dnd", "rules.engagement"})
+REQUIRED_PINS: frozenset[str] = frozenset({"rules.system", "rules.engagement"})
 
 def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
     return (        
@@ -60,7 +60,7 @@ def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
 class PlayOperator(Operator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = False
-    limited_to_datasets: ClassVar[list[str]] = ['dnd']
+    limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     excluded_operator_tools: ClassVar[frozenset[str]] = frozenset({"write"})
 
     @property
@@ -98,7 +98,7 @@ class PlayOperator(Operator):
 
     @classmethod
     def check_requirements(cls, crawl_result: CrawlResult) -> None:
-        """Require ``rules.dnd``, ``rules.engagement``, and at least one ``pc.*`` pin.
+        """Require ``rules.system``, ``rules.engagement``, and at least one ``pc.*`` pin.
 
         Uses ``crawl_result.pinned_ids`` — the canonical effective pin list
         after the full ancestor walk — so pins at any level in the hierarchy

@@ -1,7 +1,7 @@
 # Lens Project Memory
 
 ## Key Architecture
-- CLI layer: `lens/cli/` (Typer), Business logic: `lens/core/` (pure Python), D&D-specific: `lens/dnd/`
+- CLI layer: `lens/cli/` (Typer), Business logic: `lens/core/` (pure Python), RPG operators: `lens/rpg/`, D&D-specific commands/tools: `lens/dnd/`
 - Every command has parallel `cli/` adapter + `core/` implementation
 - `poe check` = lint (ruff) + typecheck (pyright) + unit tests + integration tests — all four must pass
 
@@ -9,18 +9,19 @@
 - `lens/cli/commands/` — non-AI commands: init, use, kb, pin, stats, rollback, commit, checkpoint, dnd
 - `lens/cli/operators/` — AI operator CLI adapters: write, edit, section, play, design
 - `lens/core/operators/` — core AI operators: write, edit, section, design
-- `lens/dnd/operators/` — D&D operators: play (dataset-gated)
-- `lens/dnd/commands/` — D&D commands: balance_encounter
-- Tests: `lens/core/test/`, `lens/cli/test/`, `lens/dnd/test/`; integration: `lens/core/test/integration/`
+- `lens/rpg/operators/` — `play`, `advance` (dataset `rpg`)
+- `lens/dnd/commands/` — `balance_encounter` / `lens dnd balance` (dataset `dnd`)
+- Tests: `lens/core/test/`, `lens/cli/test/`, `lens/dnd/test/`, `lens/rpg/test/`; integration: `lens/core/test/integration/`
 
 ## Implemented Operators
 - `write` — inline narrative generation (cursor node)
 - `edit` — LLM rewrite of a line range (mutation mode, staged diff)
 - `section` — start/end section at cursor (`section <id>`, `section --end`); `collate` for after-the-fact range
 - `design` — **implemented** — Session Zero planning operator; uses command_tools (inline KB lookup mid-generation); lives in `lens/core/operators/design.py`
-- `play` — **implemented** — GM-voice narrative; requires `pc`-tagged KB object pinned; dataset-gated (dnd); lives in `lens/dnd/operators/play.py`
+- `play` — **implemented** — GM-voice narrative; pins `rules.system` + `rules.engagement` + `pc.*`; dataset `rpg`; `lens/rpg/operators/play.py`
+- `advance` — **implemented** — time pass / fronts; dataset `rpg`; `lens/rpg/operators/advance.py`
 
-Backlog operators (designed, not yet coded): `lore`, `converse`, `encounter`, `advance`.
+Backlog operators (designed, not yet coded): `lore`, `converse`, `encounter`.
 
 ## Core Architecture — Key Modules
 - `operator.py` — Operator base class; includes tool use loop and operator chaining

@@ -33,7 +33,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
    lens checkpoint # stage, commit, and push; optional message and --no-push
    ```
 
-Dataset-gated command groups (e.g. `lens dnd`) appear only when the corresponding dataset is listed in `[project] datasets` in `lens.toml`. See [D&D](../dnd/README.md) for the `dnd` dataset and its commands.
+Dataset-gated commands (e.g. `lens dnd`) and operators (`play`, `advance`) appear only when their dataset is listed in `[project] datasets`. See [RPG](../rpg/README.md) and [D&D](../dnd/README.md).
 
 ## Project commands
 

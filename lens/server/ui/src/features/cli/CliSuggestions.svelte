@@ -14,7 +14,7 @@
         class="cli-suggestion"
         class:cli-suggestion--cli={sug.group === 'cli'}
         class:cli-suggestion--narrative={sug.group === 'narrative'}
-        class:cli-suggestion--dnd={sug.group === 'dnd'}
+        class:cli-suggestion--rpg={sug.group === 'rpg'}
         class:cli-suggestion--opt-flag={sug.kind === 'flag'}
         class:cli-suggestion--node-suggest={sug.kind === 'node'}
         on:pointerdown|preventDefault

@@ -245,7 +245,7 @@ async def operator_play(
     request: Request,
     session: ProjectSession = Depends(get_session),
 ) -> StreamingResponse:
-    from lens.dnd.operators.play import PlayOperator
+    from lens.rpg.operators.play import PlayOperator
 
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
@@ -281,7 +281,7 @@ async def operator_advance(
     request: Request,
     session: ProjectSession = Depends(get_session),
 ) -> StreamingResponse:
-    from lens.dnd.operators.advance import AdvanceOperator
+    from lens.rpg.operators.advance import AdvanceOperator
 
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)

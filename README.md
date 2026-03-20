@@ -72,7 +72,7 @@ The `[project]` section in `lens.toml` controls project-level options:
 ```toml
 [project]
 narrative    = "my-campaign"   # active narrative (set by `lens use`)
-datasets     = ["dnd"]         # optional dataset bundles to include
+datasets     = ["rpg", "dnd"]  # optional dataset bundles (later shadows earlier)
 mount_point  = "media"         # optional: local directory for attached media files
 verbose_llm  = true            # optional: log full LLM prompts/responses at INFO level
 ```
@@ -86,7 +86,8 @@ verbose_llm  = true            # optional: log full LLM prompts/responses at INF
 - **[Design](docs/design.md)** - Lens Design doc
 - **[CLI reference](lens/cli/README.md)** — Commands (`kb`, `pin`, `section`), AI operators (`write`, `edit`, `design`), datasets, and LLM configuration.
 - **[Web UI & API server](lens/server/README.md)** — `lens serve`, `lens dev`, project/dataset context, and HTTP routes.
-- **[D&D](lens/dnd/README.md)** — D&D dataset, `lens dnd balance`, `lens play`, and the D&D Beyond extractor.
+- **[RPG](lens/rpg/README.md)** — Core RPG dataset (`play`, `advance`, templates, `rules.engagement`).
+- **[D&D](lens/dnd/README.md)** — D&D reference dataset, `lens dnd balance`, and the D&D Beyond extractor.
 
 ## Development
 
@@ -121,15 +122,15 @@ with FakeLLMServer() as llm:
 **`setup_test_project()`** (`lens/testing/project.py`)
 Creates a fully-populated throwaway project: git repo, `lens.toml` (pointing
 at the fake LLM), KB objects (`person.amy`, `place.forest`), and an opening
-passage already written by the fake LLM.  Pass `dataset="dnd"` to enable the
-D&D dataset instead of the minimal testing fixtures.
+passage already written by the fake LLM.  Pass `datasets=["rpg", "dnd"]` (keyword)
+to enable bundled RPG + D&D knowledge instead of the minimal testing fixtures.
 
 ```python
 from lens.testing.fake_llm import FakeLLMServer
 from lens.testing.project import setup_test_project
 
 with FakeLLMServer() as llm:
-    session = setup_test_project(project_dir, llm.base_url, dataset="dnd")
+    session = setup_test_project(project_dir, llm.base_url, datasets=["rpg", "dnd"])
     # project_dir is a real git repo, ready for CLI or API calls
 ```
 

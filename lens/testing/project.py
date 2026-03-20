@@ -68,6 +68,8 @@ def setup_test_project(
     project_dir: Path,
     llm_base_url: str,
     dataset: str = "testing",
+    *,
+    datasets: list[str] | None = None,
     narrative_name: str = "story",
 ) -> "ProjectSession":
     """Create and populate a Lens project at *project_dir*.
@@ -75,7 +77,7 @@ def setup_test_project(
     Sets up:
 
     * A git repository (commit signing disabled for cloud compatibility)
-    * ``lens.toml`` pointing at the fake LLM and the chosen *dataset*
+    * ``lens.toml`` pointing at the fake LLM and the chosen dataset(s)
     * A narrative named *narrative_name* as the active narrative
     * KB objects: ``person.amy`` (protagonist), ``place.forest``
     * ``person.amy`` pinned to the root narrative node
@@ -116,7 +118,7 @@ def setup_test_project(
             cfg = tomllib.load(fh)
         cfg["llm"] = [{"id": "mock", "base_url": llm_base_url, "model": "mock-model"}]
         if isinstance(cfg.get("project"), dict):
-            cfg["project"]["datasets"] = [dataset]
+            cfg["project"]["datasets"] = list(datasets) if datasets is not None else [dataset]
         with io.BytesIO() as buf:
             tomli_w.dump(cfg, buf)
             lens_toml.write_bytes(buf.getvalue())

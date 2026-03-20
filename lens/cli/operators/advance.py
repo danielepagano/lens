@@ -41,7 +41,7 @@ def advance(
     ),
 ) -> None:
     """Advance time, update fronts, resolve consequences."""
-    from lens.dnd.operators.advance import AdvanceOperator
+    from lens.rpg.operators.advance import AdvanceOperator
 
     try:
         session = ProjectSession.from_cwd()
