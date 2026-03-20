@@ -2,7 +2,7 @@
 
 ## Operators  
 
-- **`advance`** and timelines
+- 
 
 ## Platform
 

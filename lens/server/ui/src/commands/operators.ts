@@ -69,7 +69,7 @@ const commands: CommandDefinition[] = [
     requiresDataset: 'rpg',
     positional: [],
     options: [
-      { name: 'days', valueType: 'line', hint: 'days to advance (default: 1)' },
+      { name: 'days', valueType: 'int', hint: 'days to advance (default: 1)' },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
@@ -189,7 +189,11 @@ const handler: CommandHandler = async (
         handleEvent
       )
     } else if (command === 'advance') {
-      const days = ctx.args.options['days'] ? parseInt(ctx.args.options['days'] as string, 10) : undefined
+      const rawDays = ctx.args.options['days'] as string | undefined
+      const days = rawDays ? parseInt(rawDays, 10) : undefined
+      if (days !== undefined && (!Number.isInteger(days) || days < 1)) {
+        throw new Error('days must be a positive integer')
+      }
       result = await runAdvance(
         { days, pins, unpins, llm_id: llmId, retry },
         handleEvent
