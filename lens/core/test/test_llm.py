@@ -399,8 +399,8 @@ class TestGenerateStream(unittest.TestCase):
         self.assertIn("RESPONSE", combined)
         self.assertIn("narrate this", combined)
 
-    def test_reasoning_content_logged_as_thinking_not_narrative(self) -> None:
-        """reasoning_content deltas must appear in verbose THINKING log, not in final.text."""
+    def test_reasoning_content_verbose_only_not_in_final_text(self) -> None:
+        """reasoning_content is verbose-logged per delta; main content is final.text only."""
         (self.root / "lens.toml").write_text(
             "[project]\nverbose_llm = true\n\n"
             "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
@@ -410,12 +410,11 @@ class TestGenerateStream(unittest.TestCase):
         with self.assertLogs("lens.core.llm", level="INFO") as log:
             _, final, _ = self._run(resp)
         combined = "\n".join(log.output)
-        self.assertIn("THINKING", combined)
+        self.assertIn("LLM REASONING", combined)
         self.assertIn("think think", combined)
-        self.assertNotIn("THINKING", combined.replace("THINKING", "", 1))  # only one THINKING section is fine
         assert final is not None
         self.assertEqual(final.text, "answer")
-        self.assertNotIn("think", final.text)
+        self.assertNotIn("think think", final.text)
 
     def test_command_tool_text_accumulated_into_final(self) -> None:
         """Text emitted before a command tool call must appear in final.text."""
@@ -492,7 +491,11 @@ class TestGenerateStream(unittest.TestCase):
         self.assertIn("Before.", previews)
         self.assertIn("Before.", final.text)
         self.assertIn("After.", final.text)
-        self.assertEqual(final.text, "Before.After.")
+        self.assertIn("```tool-call", final.text)
+        self.assertIn("kb_get", final.text)
+        self.assertIn("Response size:", final.text)
+        self.assertIn("10 characters", final.text)  # len("kb content")
+        self.assertTrue(any("```tool-call" in p for p in previews))
 
     def test_multiple_tool_calls_folded_into_chain(self) -> None:
         """When LLM returns two tool calls, they are folded: last becomes chain of first."""

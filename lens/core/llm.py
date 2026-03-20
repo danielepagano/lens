@@ -135,49 +135,21 @@ def _format_messages(messages: list[dict[str, Any]]) -> str:
     return f"{sep}\n" + f"\n{sep}\n".join(parts) + f"\n{sep}"
 
 
-# (open_tag, close_tag) for thinking blocks; order matters for "earliest" match.
-_THINK_TAG_PAIRS: list[tuple[str, str]] = [
-    ("<think>", "</think>"),
-    ("<thinking>", "</thinking>"),
-]
-
-
-def _strip_think_tags(chunk: str, inside_close: str | None) -> tuple[str, str | None]:
-    """Strip thinking blocks from chunk (streaming-safe). Supports multiple tag styles.
-
-    Returns (visible_text, new_inside_close). When inside_close is set we suppress
-    content until we see that closing tag.
-    """
-    if not chunk:
-        return ("", inside_close)
-    if inside_close is not None:
-        end_idx = chunk.find(inside_close)
-        if end_idx == -1:
-            return ("", inside_close)
-        rest = chunk[end_idx + len(inside_close) :]
-        return _strip_think_tags(rest, None)
-    result: list[str] = []
-    i = 0
-    while i < len(chunk):
-        best_open: int | None = None
-        best_open_len = 0
-        best_close = ""
-        for open_tag, close_tag in _THINK_TAG_PAIRS:
-            idx = chunk.find(open_tag, i)
-            if idx != -1 and (best_open is None or idx < best_open):
-                best_open = idx
-                best_open_len = len(open_tag)
-                best_close = close_tag
-        if best_open is None or not best_close:
-            result.append(chunk[i:])
-            return ("".join(result), None)
-        result.append(chunk[i:best_open])
-        end_idx = chunk.find(best_close, best_open + best_open_len)
-        if end_idx == -1:
-            result.append(chunk[best_open + best_open_len :])
-            return ("".join(result), best_close)
-        i = end_idx + len(best_close)
-    return ("".join(result), None)
+def _format_tool_call_markdown(
+    name: str,
+    arguments: dict[str, Any],
+    *,
+    response_char_len: int | None,
+) -> str:
+    """Fenced block for streaming and logs: tool request JSON plus optional response size."""
+    req = json.dumps(
+        {"name": name, "arguments": arguments}, indent=2, ensure_ascii=False, default=str
+    )
+    lines = ["```tool-call", "Toool Call Request:", req]
+    if response_char_len is not None:
+        lines.append(f"Response size: {response_char_len} characters")
+    lines.append("```")
+    return "\n".join(lines) + "\n"
 
 
 def _strip_preview(chunk: str, mid_comment: bool) -> tuple[str, bool]:
@@ -263,11 +235,9 @@ async def _stream_once(
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
 
-    thinking_parts: list[str] = []  # reasoning_content deltas — verbose only, never narrative
     chunks: list[str] = []
     usage: dict[str, int] | None = None
     mid_comment = False
-    think_close: str | None = None
     interrupted = False
 
     tool_calls_by_index: dict[int, dict[str, Any]] = {}
@@ -324,17 +294,13 @@ async def _stream_once(
 
                     content: str | None = delta.get("content")
                     reasoning_content: str | None = delta.get("reasoning_content")
-                    if reasoning_content:
-                        # Thinking tokens: log in verbose mode, never enter narrative.
-                        if verbose:
-                            thinking_parts.append(reasoning_content)
+                    if reasoning_content and verbose:
+                        logger.info("LLM REASONING — %s", reasoning_content)
                     if content:
-                        content, think_close = _strip_think_tags(content, think_close)
-                        if content:
-                            chunks.append(content)
-                            preview, mid_comment = _strip_preview(content, mid_comment)
-                            if preview:
-                                yield StreamEvent(preview=preview)
+                        chunks.append(content)
+                        preview, mid_comment = _strip_preview(content, mid_comment)
+                        if preview:
+                            yield StreamEvent(preview=preview)
 
                     tc_list: list[Any] = delta.get("tool_calls") or []
                     for tc in tc_list:
@@ -419,15 +385,15 @@ async def _stream_once(
 
     if verbose:
         sep = "─" * 60
-        if thinking_parts:
-            logger.info(
-                "LLM THINKING\n%s\n%s\n%s",
-                sep,
-                "".join(thinking_parts),
-                sep,
+        log_body = "".join(chunks)
+        if tool_call:
+            log_body += encode_ai_secrets(
+                _format_tool_call_markdown(
+                    tool_call.name, tool_call.arguments, response_char_len=None
+                )
             )
-        if chunks:
-            logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, "".join(chunks), sep)
+        if log_body.strip():
+            logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, log_body, sep)
 
     yield StreamEvent(
         final=FinalPayload(
@@ -453,7 +419,9 @@ async def generate_stream(
     """Stream LLM output as structured events.
 
     Yields ``StreamEvent(preview=...)`` during generation (HTML comments
-    stripped) and a single ``StreamEvent(final=...)`` at the end.
+    stripped). Tool calls append a fenced ``tool-call`` block to preview and,
+    for command tools, to the accumulated ``final.text``. A single
+    ``StreamEvent(final=...)`` ends each outer iteration.
 
     When *command_tool_handlers* is provided and the LLM calls a tool whose
     name appears in that mapping, the handler is executed immediately, the
@@ -529,13 +497,6 @@ async def generate_stream(
                 _interrupted = True
                 break
 
-            if verbose and final.tool_call is not None:
-                logger.info(
-                    "LLM TOOL CALL REQUEST — %s(%s)",
-                    final.tool_call.name,
-                    json.dumps(final.tool_call.arguments),
-                )
-
             # ── Command tool path ─────────────────────────────────────────
             if (
                 final.tool_call is not None
@@ -560,14 +521,15 @@ async def generate_stream(
                     )
                     result = result + warning
                     yield StreamEvent(preview=warning)
-                if verbose:
-                    logger.info(
-                        "LLM TOOL CALL RESPONSE — %s\n%s",
+                tool_markdown = encode_ai_secrets(
+                    _format_tool_call_markdown(
                         final.tool_call.name,
-                        result,
+                        final.tool_call.arguments,
+                        response_char_len=len(result),
                     )
-
-                accumulated_text += final.text
+                )
+                yield StreamEvent(preview=tool_markdown)
+                accumulated_text += final.text + tool_markdown
                 working_messages.append(
                     {
                         "role": "assistant",
@@ -596,6 +558,16 @@ async def generate_stream(
                 continue
 
             # ── Operator tool or normal end ───────────────────────────────
+            if final.tool_call is not None:
+                yield StreamEvent(
+                    preview=encode_ai_secrets(
+                        _format_tool_call_markdown(
+                            final.tool_call.name,
+                            final.tool_call.arguments,
+                            response_char_len=None,
+                        )
+                    )
+                )
             yield StreamEvent(
                 final=FinalPayload(
                     text=accumulated_text + final.text,
