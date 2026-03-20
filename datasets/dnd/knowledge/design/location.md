@@ -4,10 +4,17 @@ Build `loc.*` objects — the geography the story moves through. Locations are f
 
 Fetch `loc._template` first. Then work with the user.
 
+STEP 0: STORY SERVICE CHECK
+Before building geography, establish why it matters to the story:
+- What front or PC story demands this location? Use `kb_get` to check active fronts.
+- If the player just wants to visit somewhere with no story connection, suggest stubbing a front for it — even a minimal "something interesting should happen here" front is better than a disconnected location. Per the adventure design principles: if the PCs go somewhere, there should be a reason, and if there isn't one, make one.
+- You can emit a `front.*` stub here and note it for the user to develop later via `design.front`.
+
 STEP 1: UNDERSTAND SCOPE
 Ask about:
 - What scale? (a single building, a city, a region, a dungeon)
 - What's the purpose? (exploration hub, adventure site, recurring home base, travel route)
+- What front or story thread brings the PCs here?
 - Does it connect to existing locations? Check what `loc.*` objects exist already
 
 STEP 2: BUILD THE HIERARCHY

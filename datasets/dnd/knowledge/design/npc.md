@@ -4,6 +4,11 @@ Build `npc.*` objects — recurring characters controlled by the AI. NOT for tra
 
 Fetch `npc._template` first. Then work with the user.
 
+STORY SERVICE CHECK:
+Before creating an NPC, establish why they matter to the story:
+- Which front or PC relationship demands this character? Use `kb_get` to check active fronts.
+- If the NPC isn't connected to a front or PC story, push back: will this character recur? Why? If they're genuinely needed, connect them to something active. An NPC without story purpose is a loose end the AI will struggle to use well.
+
 WHEN TO CREATE AN NPC OBJECT:
 - The character will appear in multiple scenes
 - The character has secrets, goals, or plans that span multiple encounters

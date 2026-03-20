@@ -290,12 +290,12 @@ When the user is done with a design session, `lens design --end` runs `kb extrac
 
 | Module | Defined in | What it produces | Notes |
 |---|---|---|---|
-| Session Zero | `design.session-zero` | `lore.world`, initial `loc.*`, `faction.*`, `front.*` | First thing to run for a new game |
-| Player Character | `design.pc` | `pc.*` objects from character sheets | Player fills most of this; design helps structure it |
-| Location | `design.location` | `loc.*` network with parent links | Geography at any scale |
-| Adventure | `design.adventure` | `front.*` with linked `npc.*`, `faction.*`, `loc.*` | The "what happens next" builder |
+| World | `design.world` | `lore.world` + optional deep `lore.*` | Setting and tone — first thing for a new game |
+| Player Character | `design.pc` | `pc.<name>` + `lore.<name>` (two objects) | Play surface + planning depth with core questions |
+| Front | `design.front` | `front.*` with supporting stubs | Create, groom, develop, retire fronts — arc seeding baked in |
 | Encounter | `design.encounter` | `encounter.*` objects | Prepared situations for play (see below) |
-| NPC | `design.npc` | `npc.*` with links and secrets | Recurring characters worth tracking |
+| Location | `design.location` | `loc.*` network with parent links | Geography at any scale; story-service gated |
+| NPC | `design.npc` | `npc.*` with links and secrets | Recurring characters; story-service gated |
 
 #### Encounter objects: the script for `play`
 

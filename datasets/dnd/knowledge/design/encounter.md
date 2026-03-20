@@ -4,6 +4,12 @@ Build `encounter.*` objects — prepared situations for `play` to use as scripts
 
 Fetch `encounter._template` first. Then work with the user.
 
+STEP 0: STORY SERVICE CHECK
+Before building anything, establish the connection to the story:
+- What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes.
+- Which PCs does it challenge? Check their `lore.<name>` objects for core questions this scene could pressure.
+- If the encounter doesn't connect to an active front or PC story, push back: why does this scene matter? If the user wants it anyway, suggest creating a front stub for whatever tension drives the scene.
+
 STEP 1: UNDERSTAND THE SITUATION
 Ask about:
 - What's the scene? (where, when, who's involved)
@@ -51,3 +57,6 @@ These are guidelines for scene rules, not separate templates:
 **Puzzle/Exploration**: Note the puzzle mechanics, what information is available, what checks reveal. What happens if they get stuck? What happens if they brute-force it?
 
 **Mixed**: Most interesting encounters are mixed. Note the triggers that shift between types. A negotiation that could become a fight. A combat that the quarry flees from. A puzzle room with a guardian. Write the triggers explicitly.
+
+ARC AWARENESS:
+If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.
