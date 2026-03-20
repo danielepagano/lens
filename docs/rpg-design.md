@@ -410,66 +410,87 @@ The world takes its turn the player skips time. This is a lot of like `design`, 
 4. Section is closed and summary is emitted. Controls is handed off to the player to continue playing.
   - This may be a great time to also create a checkpoint with the timeline entry added as the message! We do need to have the player approve of it first.
 
-## Starting a New Game: The Cold-Start Problem
+## Adventure Design Principles
 
-Starting a new game in Lens requires enough preparation that `play` has something to work with. Without at least a world frame, a PC, and an opening situation, the AI has nothing to ground — it will produce generic, aimless narrative. This section outlines the minimum viable setup and the process to get there.
+### Who the story is about. 
 
-### The minimum to start playing
+An adventure is a story ABOUT THE PC's, so what happens HAS to be centered and deeply related to them; if we wanted a pre-publisjed story that fits any character, we would be using one, or playing a videogame. The user is using AI SPECIFICALLY to create a narrative that is custom-tailored to their players, like a human DM would create. Therefore we have:  
+  a. The setting and tone: this is independent of the PC's, could be a published setting like `lore.grim-hollow`. Of course the player chooses it because it fits in with the PC's they want to make, but "it is what it is".
+  c. The PC's: who they are mechanically (starting level, classes, etc), biographically (origin, backstory), and thematically (what are their ideals, bonds, flaws, fears, desires, etc.)
+  b. Our story: this is where we bend the setting to our will, firmly inserting the PC's not only in the setting, but also crafting fronts that are ultimately ABOUT the PC. Not necessarily in a "the PC is important" kind of way, although that's an option, but it has to be a story that uniquely resonates with what the character is about. As characters engage with the story and level up, their power and the stakes have to escalate naturally, because they are more and more entwined in it.
 
-To call `play` and get a meaningful response, you need:
-1. **Rules pinned**: `rules.dnd` and `rules.engagement` (provided by the dnd dataset)
-2. **A world frame**: `lore.world` — a compact object describing tone, setting, genre, and key constraints. This is pinned at the narrative root and never changes. Created during session zero.
-3. **At least one PC**: `pc.<name>` — enough to describe and voice the character. The player fills this from their character sheet.
-4. **An opening situation**: at a minimum, a `loc.*` where you are and some sense of what's happening. Maybe an `encounter.*` if we start in media res.
+So, the order of operations is:  
+  1. Grab the setting plus any player preferences and make an appropriate but essentially character-agnostic `lore.world`. This can be its own design module.
+  2. Grab the PC's and flesh out their place in the world. This has two objects: `pc.name` (what we use during play, the "surface" of the PC), and `lore.name` (the DEPTH of the PC's, all the backstory and details that the play operator should not waste time thinking about, but it DOES inform how the story evolves and how the player themselves plays the character). We need the PC module to be good at this, working one PC at a time. The user may start filling in `pc` objects in advance or not, but at the end of designing a PC we need to have to complete, role-separated objects. The PC-lore objects have their own content requirements (not a template... the module can tell us what the template is really), and need to be filled in appropriately.
+  3. Develop fronts. As we'll see below, fronts are both surface and engagement and a plan.
+  3. Add content. Whenever we create/update content, it needs to be about what the PC's are doing, which usually has to do with fronts:  
+    - Locations may be derived from the setting's geography, but they are faceted for our story
+    - Factions are what is relevant to what the PC's are doing (their backstory, fronts they are facing) not just "all the factions in the world" (those are lore, not faction objects)
+    - Obviously, encounters are already specific. We'll only create encounters for interesting parts of the story.
 
-That's it. Everything else — NPCs, factions, fronts, deeper location networks — can be built as you go through `design` sessions between play.
+### Turning Fronts Into Arcs
 
-### The setup process
+#### First, Introduce Character Core Questions
 
-The process has distinct phases, each producing objects that feed the next. The `design.session-zero` module guides phase 1–3 in a single design session.
+Consider the PCs emotional wounds, flaws, secret wants, a line they would not cross, or if they are misguided/misinformed about something. At least some of these MUST be collected in their lore file as a result of the PC design phase. From these derive at least one **character core question** you want to challenge during the story (you could have multiple). Example character core questions (but they dependend heavily on the specific PC):
 
-#### Phase 0: Import your setting (optional, manual)
+- “Are you allowed to stop carrying everyone?”
+- “Can you be loved if you’re not useful?”
+- “Is staying gentle still good when gentleness stops working?”
 
-If you have source books (e.g. Grim Hollow), extract or adapt the relevant reference material:
-- Extract rules, spells, stat blocks, items via `ddb-extract` or manual creation
-- These go into the dataset or project knowledge as reference data
-- This is a one-time investment per setting; once done, it's available for any campaign in that setting
+These can be stored as secrets in the character's `lore` object (NOT the `pc` object). It's important that these questions are NOT meant to be answered, nor even have clear-cut answers; the point is only that they challenge the character.
 
-#### Phase 1: World frame (`lore.world`)
+#### Seed Arcs Into All Fronts
 
-A compact object (aim for under 500 words) that establishes:
-- Setting name and genre (dark fantasy, space opera, etc.)
-- Tone and atmosphere (grim, whimsical, gritty, mythic)
-- Key constraints (technology level, magic prevalence, social structures)
-- What kind of story we're trying to tell (character arc, exploring a theme, or maybe just putting a build through its paces)
+Based on the PC's set of questions, we can then seed arcs into fronts; we do this in 3 steps:
+  1. We start the `front`, which is the surface **hook or premise**, somethng visible and actionable to the player. It can be really anything, but it should be well-embedded in the setting. You can have as many of these as it's interesting, and add more over time.
+  2. Come up with an **adventure core question** inside each front; it secretly lurks within and guides the flow of the story; it's the DM's "editorial intent". This component is crucial to make the adventure MATTER to the characters (and the player) and not just be a sequence of superficial beats like a budget action movie.
+  3. Finally add a **twist or revelation** that, if the front is developed into a mature arc (over subsequent fronts) subverts the expectation set in the original front, and resonates with the adventure core question.
 
-This is NOT exhaustive world-building. It's the minimum the AI needs to establish voice and atmosphere. Think of it as the back-of-the-book blurb for the setting.
+So, each front is something actionable now and _also_ contains a secret question and twist, which are just one-sentence ideas, not elaborate narratives, so they are easy to tuck in there and keep in mind whenever the front is loaded.
 
-For deeper world knowledge that `design` needs but `play` doesn't need all the time, create additional `lore.*` objects. Design (unlike play) can use thinking mode and open KB objects, so giving it one or two index objects and letting it work it out is enough.
+To turn into an arc, the original front must develop into other fronts over time, which advance the story. All these derived front also carry the original seed of question+twist within them. These new fronts can be normal escalations or complications, but then at some point the twist will be revealed. It's important to be patient about this! A character could start at level 1 and travel the whole world and be quite powerful when they discover "oh crap, THAT first quest was the thread I pulled to get to this shocking, world-altering revelation!", and with this system we can accomplish this without having ANY IDEA of what specific stories players will follow or what choices they'll make over time.
 
-#### Phase 2: Player characters (`pc.*`)
+So, the idea is to always have multiple possible arcs (and with questions and twists) hiding within any number of fronts, all going on at once. The same question/twist can be in multiple fronts at once, which is fine: things will be resolved one way or another. This allows us to create interesting content for multiple PC's (each can have a personal arc that really pokes at their core question), and then there could be shared ones... the player doesn't really know which is which. The key idea is that ALL fronts lead us to interesting paths _no matter what the player chooses_: if a player does not "deal with the bandits" (maybe secretly a cult and exploring generational trauma etc. etc.) then CANONICALLY those where _always just boring bandits_! ONLY the thread the PC's decide to follow actually develop into grand arcs, because BY DEFINITION, this is their story. RPG is, after all, elaborate improv.
 
-For each PC, create an object from the `pc._template`. The player has their character sheet — the object captures what the AI needs to describe and voice the character. The `design.pc` module helps structure this from a character sheet, asking the right questions and producing a properly tagged object.
+#### Guidance on questions and twists:
 
-#### Phase 3: Starting geography and situation
+These are the requirements for the core question:
 
-In most cases, one `loc.*` for where the adventure begins, so we can have a sensory feeling for it. The `design.session-zero` module helps here by asking: where are the PCs, what's the immediate situation, what's the first problem they'll face?
+- It’s about the human condition, not a trope or story pattern.
+- It is **dissonant** with the setting and story premise; it’s a lateral combination the player won’t expect.
+- It leverages your knowledge of classical literature, philosophy, and creative writing. This can be much more complex than anything you would normally discuss with a user.
+- It’s arguable: no obviously-correct “morality checkbox.”
+- Players never hear it as a slogan; they only feel it via consequences.
 
-This phase should produce:
-- 1–3 `loc.*` objects (where you are, what's nearby)
-- 0–1 `faction.*` objects (any group relevant to the opening)
-- 0–1 `npc.*` objects (anyone the PCs will interact with immediately)
-- 1 `front.*` (the first dramatic pressure)
-- 1 `encounter.*` (the opening scene)
+Some examples of **strong dissonance between story and core question** (these are exaggerated to demonstrate the idea):
 
-This is enough to start playing. More objects are built through design sessions as the game progresses.
+1. A candy-colored goblin bake-off where the worst consequence seems to be a ruined pie, but the buried question is:  
+   **“If ending one life would stop generations of abuse, could you ever be right to do it?”**
 
-#### Phase 4: Play and iterate
+2. A whimsical dungeon crawl inside a giant sleeping dragon to rescue its stolen dreams, but the buried question is:  
+   **“If a whole culture only survives by rewriting its own past, is that survival or slow extinction?”**
 
-Once you have the minimum, start playing. After each session (or when the fiction reaches a natural pause), run `design` to:
-- Build encounters for the next scenes you anticipate
-- Create NPCs and locations as the story demands them
-- Update fronts to reflect what happened
-- Run `advance` when time passes
+3. A silly escort mission for a pampered royal cat with nine lives, but the buried question is:  
+   **“If suffering always comes back in a new form, does individual heroism matter or is it just self-comfort?”**
 
-The cycle is: **play → design → play → advance → play → design → ...**
+4. A glamorous planar fashion show where outfits literally rewrite reality, but the buried question is:  
+   **“If becoming your ‘best self’ erases who you were, is that growth or annihilation?”**
+
+The characters and adventure core questions should **resonate** (like intertwined melodies) without being identical, while still feeling discordant with the overt story premise.
+
+Once you have the premise and core question, leverage the dissonance to plan a **dramatic mid-story twist or subversion of expectations** that “changes everything.” This deliberately “breaks the promise of the premise” and makes the story more literary and memorable, and less “just another adventure.”
+
+For the examples above, possible mid-story turns could be:
+
+1. Halfway through the goblin bake-off, the PCs learn that the “winner’s privilege” is to name one elder who will be quietly culled for “the good of the clan,” and everyone expects them to pick the charming patriarch whose cruelty props up generations of harm.
+
+2. In the dragon-dream dungeon, the midpoint chamber stores all the “bad dreams” that were cut away—actually the true history of a people—and finishing the job as hired means burning that history so the culture can keep living inside its pleasant lie.
+
+3. During the royal cat escort, the party discovers that every disaster they heroically prevent simply reappears somewhere else in the world, tied to the cat’s remaining lives; the only way to stop the cycle is to let this beloved mascot truly die and walk away from the next crisis.
+
+4. In the planar fashion show, an underdog contestant’s winning outfit rewrites them into a dazzling stranger their friends no longer recognize, and the patron then offers to “fix” the PCs and key NPCs the same way—permanently deleting old selves in the name of becoming “their best version.”
+
+#### What about the other stuff?
+
+All other design modules need to generate content in service of where the story is going. There is no "build a location" in a vacuum, it's always because the PC's are there, and they are there for a reason... and if there's no reason we should make one on the spot. For example if the player wants to visit a specific place in the world, we then must create a front (with all the potential of all other fronts) so they have something to do there. Or maybe they'll find their own fun, ignore the front, and leave. That's fine too.

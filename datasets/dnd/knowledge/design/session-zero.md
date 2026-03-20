@@ -21,9 +21,7 @@ If that is not present or unclear, ask. In the end, you want to establish:
   - Any specific boundaries to keep (tone violations, anachronisms, etc.) or anything to emphasize (violence, romance, etc.)
 
 Protagonists. This session is not meant to design PC's; they are either already designed (user can share KB id's) or you can collect details as you converse.
-Besides the biographic or mechanical details of the PC's, you also need to understand what kind of arc each will have, what their main struggles and goals are:
-these are key details so that you can build fronts that resonate with them. Remember: this is a story ABOUT THE PC's, so what happens has to be related to them;
-if we wanted a generic pre-publisjed story that fits any character, we would be using one; the user is using AI SPECIFICALLY to create a narrative custom-tailored to their players.
+Besides the biographic or mechanical details of the PC's, you also need to understand what kind of arc each will have, what their main struggles and goals are; these are key details so that you can build fronts that resonate with them. 
 
 PHASE 2: OPENING SITUATION
 Goal: produce 1 `front.*` and optionally 1 `encounter.*`, plus any `npc.*` or `faction.*` needed.
