@@ -275,6 +275,20 @@ export const runDesign = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/design', params, onEvent)
 
+export interface AdvanceParams {
+  days?: number
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+  retry?: boolean
+}
+
+export const runAdvance = (
+  params: AdvanceParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/advance', params, onEvent)
+
 export interface EditParams {
   address: string
   start_line: number
@@ -420,8 +434,11 @@ export interface KbWithTagResponse {
   id_to_tags?: Record<string, string[]>
 }
 
-export const getKbWithTag = (tags: string[]): Promise<KbWithTagResponse> =>
-  post('/kb/with-tag', { tags }) as Promise<KbWithTagResponse>
+export const getKbWithTag = (
+  tags: string[],
+  options?: { expand?: boolean; recurse?: number | null; same_type_only?: boolean; type_filter?: string | null }
+): Promise<KbWithTagResponse> =>
+  post('/kb/with-tag', { tags, ...options }) as Promise<KbWithTagResponse>
 
 // ---- Transaction API ----
 

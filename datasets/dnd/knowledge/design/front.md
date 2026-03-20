@@ -6,17 +6,17 @@ Fetch `front._template` first. Then assess the current state before creating or 
 
 STEP 1: ASSESS
 Before proposing anything, understand where things stand:
-- Fetch active fronts: use `kb_with_tag` to find fronts for the pinned timeline (if any), or check what's pinned
-- Fetch PC lore: use `kb_get` for each PC's `lore.<name>` object — you need their depth (wounds, flaws, desires, core questions) to make fronts that matter
-- Read the narrative context: what has happened recently? What loose threads exist?
-- Ask the user: what do they need? New content? Updates? Something specific?
+- Unless fronts where already pinned for you, fetch them. If a timeline is pinned, always use `kb_with_tag` with the tag as that timeline id and object type front.
+- Fetch PC lore: use `kb_get` for each PC's `lore.<name>` object: you need their depth (wounds, flaws, desires, core questions) to make fronts that matter
+- Read the narrative context: what has happened recently? What loose threads exist? Ensure fronts are updated based on what already happened.
+- If this is an interactive session (not an `advance`), ask the user: what do they need? New content? Updates? Something specific?
 
 STEP 2: GROOM EXISTING FRONTS
 For each active front, evaluate:
 - Has the situation changed? Update phases, reflect PC actions, note what's resolved
 - Should it spawn a DERIVED front? A derived front inherits the original's secret seed (see CREATING FRONTS below) and represents escalation or complication — the same underlying tension manifesting in a new form
-- Is it resolved or stale? Retire it — note the outcome and archive
-- Does it need supporting objects? Create minimal stubs (NPC, faction, location) that the user can flesh out by switching to the appropriate module
+- Is it resolved or stale? Retire it: note the outcome and archive. You can't delete KB items: use `remove-tags` in a KB item (works like `tags` but in reverse) and detach it from the timeline.
+- Does it need supporting objects? Create minimal stubs (NPC, faction, location) that the user can flesh out by switching to the appropriate module. Do not do this in `advance` mode since that's a one-shot operation.
 
 Aim for 2-4 active fronts at any time. Fewer means the story lacks tension; more fragments attention.
 
@@ -62,11 +62,10 @@ Before closing:
 - Are 2-4 fronts active?
 - Do active fronts collectively challenge multiple PCs? (Check against their core questions)
 - Are timeline tags correct?
-- What should be pinned for the next play session?
 - Note any stubs that need fleshing out
 
 TIMELINE AWARENESS:
-Fronts belong to timelines. If a timeline is pinned, only groom fronts tagged to that timeline. If no timeline is pinned, work with all active fronts. When creating new fronts, tag them to the appropriate timeline.
+Fronts belong to timelines. If a timeline is pinned, only groom fronts tagged to that timeline. If no timeline is pinned, work with all active fronts. When creating new fronts, tag them to the appropriate timeline. Un-tag them from the timeline to retire them.
 
 GUIDELINES:
 - The player does not see or know about the three-layer structure. They experience it as "the AI makes interesting fronts." Do not explain the mechanics — just apply them.
@@ -74,3 +73,4 @@ GUIDELINES:
 - When the user asks for "something to do" or "new hooks," that's your cue to create fronts. Always seed them properly.
 - Fronts are compact. The surface should be 2-4 sentences. The secret layers are one sentence each. If a front needs detailed plans, link to a `lore.*` object.
 - Check existing objects before creating new ones. Use `kb_get` and `kb_with_tag` liberally.
+- Remember, if you are in `advance` mode you should work quickly, focus on incremetnal changes only, and be done in one shot, you CANNOT ask follow-up questions.

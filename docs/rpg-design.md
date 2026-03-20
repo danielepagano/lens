@@ -6,7 +6,7 @@ Lens is about making Narrative Simulations; it's overkill for writing short stor
 
 With that said, aiming for "just as good as the table" or "just as polished as a videogame" would be unwise: token prediction models have intrinsic limitations, so we need to keep our goal more narrow and more specific. What Lens aims to provide is **the experience of playing an arbitrary RPG character in an open-ended textual videogame**. What does that mean?  
 
-- The player can bring their own character or party from any system and setting. However, the player has to understand the system and setting, and be willing to put in the work to play through the system and the rules. If the player wants automation and spectacles there are videogames, but if they are itching to sit down with a character sheet and see what this character would do and how they'll fare, without a D&D table, they should find it here. 
+- The player can bring their own character or party from any system and setting. However, the player has to understand the system and setting, and be willing to put in the work to play through the system and the rules. If the player wants automation and spectacles there are videogames, but if they are itching to sit down with a character sheet and see what this character would do and how they'll fare, without a game table, they should find it here. 
 -  The player is neither "trying to win" nor "being the player and letting the DM to everything else". This is a collaborative endeavor, and the AI is there to give you interesting challenges, but not to do all the work. The AI will do better when you put more work into helping it, but Lens tries to minimize, organize, and force-multiply the player's effort vs using a chat with a prompt and maybe a RAG.
 - The AI is not trying to be the "full DM", it's a narrative DM that does the writing, but the player is still doing rolls and a lot of mechanical work. On the other hand, the AI "does all the talking" so it writes what the player characters say and do, but while giving the player agency to decide what that is.
 
@@ -39,7 +39,7 @@ This boundary is structurally identical to prompt injection resistance — the p
 
 ### Planning VS Play
 
-The key design impetus of Lens is to curate and constrain the knowledge set and instructions given to the AI, so it can behave predictably without bloating the context window. Hierarchical summarization makes this already possible with just a bit of user discipline with sections, but when running D&D we have both a large ruleset (baseline knowledge corpus) and demand more from the AI in terms of prompt compliance. We therefore need all the tricks we can to keep context and prompts small and focused.
+The key design impetus of Lens is to curate and constrain the knowledge set and instructions given to the AI, so it can behave predictably without bloating the context window. Hierarchical summarization makes this already possible with just a bit of user discipline with sections, but when running a game we may have both a large ruleset (baseline knowledge corpus) and demand more from the AI in terms of prompt compliance. We therefore need all the tricks we can to keep context and prompts small and focused.
 
 To this extent, we divide our experience in two alternating phases:  
   - **Planning**: during planning we don't directly generate narrative, we instead reflect on the current state using various methods and with various goals (possibly over multiple LLM calls) with the effect of creating and changing KB objects instead. This can be done directly by the user, with LLM assistance, or by the AI autonomously (depending on the task). Planning can occur in a separate narrative tree for pre-adventure setup, or within a narrative tree (and thus aware of the place in the story) to remember changes, add plans, etc. In-narrative planning may also some details or generate an operator call ("in the morning, you were awakened by...").
@@ -49,24 +49,31 @@ To this extent, we divide our experience in two alternating phases:
 
 We need to design two kinds of objects:  
   1. **Reference Data**: rules and mechanisms that turn free-form writing into playing an RPG
-  2. **Types and Templates**: predictable shape of stored that can be leveraged by operators 
+  2. **Types and Templates**: predictable shape of stored that can be leveraged by operators
+
+We also have three **layers** of objects:  
+  1. The **core** rpg layer: the minimum required that powers our RPG system and operators
+  2. The **game system** layer: rules and data specific to a game system, e.g. D&D, Cipher System, etc.
+  3. The **setting** layer: lore and other reference data for a specific setting in the system, e.g. Grim Hollow, Numenera, etc.
+
+Each layer is (at least) one Lens `dataset`.
 
 ### Reference Data
 
 #### Rules
 
-We want the core set for playing D&D or doing planning tasks, then try to split them by situation type. Operators pin the base plus any additional rules they need. We do NOT need all the rules of D&D in our rules corpus, because the AI _does not play the entire game_ (it's not an game engine). In particular all the rules for creating player characters don't belong here. So to create a ruleset we will proceed in progressive steps, keeping the artifact for each version in case we need to change our approach later. 
+Operators pin the core rules plus any system-specific rules they need. We do NOT need all the rules of a game in our rules corpus, because the AI _does not always play the entire game_ (it's not a game engine). In particular all the rules for creating player characters don't usually belong here (they are _at most_ design modules). 
 
 We create two core rule objects:  
-  - `rules.engagement`: our AI-player contract (ruleset-agnostic)
-  - `rules.dnd`: D&D 2024 rules; like a compressed SRD without stuff we don't need (character creation, reference tables, etc) in the form of a prompt.
+  - `rules.engagement`: our AI-player contract; core layer, ruleset-agnostic
+  - `rules.system`: system-specific rules. Lens ships with "Lens in the Dark", a simple "Forged in the Dark" ruleset (https://bladesinthedark.com/licensing) tuned for AI use, but it can be overridden a game system rulset by simply replacing that object id in a higher-priority dataset.
 
 #### Reference Objects
 
 Reference materials are different than rules proper because they are **lists of items only relevant if in play**, and even if in play, they may not be that relevant in narrative. In other words, the AI doesn't need to know about a monster until it's in play, or about a spell until a monster can decide to cast it, or the player casts it.  
   - We may be tempted to, for example, include the spells or abilities known to a character their object, but this will just tempt the AI to make the character _do those things_, because we gave it the option. For NPC we DO want the AI to know and select from the stat block's abilities, so it's best to just tell the AI to use what it sees, and keep those details out when we want the player to activate them. So if a player wants to cast a spell they can just do so, resolve things like attacks or saves, report narratively what happened, and move on; however if we want the AI to _really_ talk about the spell, or there are interesting consequences, or the spell is for gathering information the AI knows (like Detect Magic), we need to tell the AI about it. In these cases the player will `@` the spell ("Alice casts @spell.detect-magic, what does she see?") and the AI will get the full details, can show the character casting it, and can describe the results. 
 
-To develop these objects, we just need to extract the text from the rulebooks and format them consistently. Editing may be light or not be needed; some linking may needed. We'll track the following object types:  
+To develop these objects, we just need to extract the text from the rulebooks and format them consistently. These are not really used by operators, but they are useful prompt context. For example in D&D we can track object types like:  
 
   - `spell` one object per spell, full details. We don't really need "indexing" by level, school, etc. as the AI doesn't need to find them.
   - `stat` blocks (monsters, but won't want to bias the AI); mostly full details but we need to format the stat block consistently, and some details and tables may not be necessary. As an extra complication, planning needs to find monsters for encounters, so some indexing by tag will be necessary. This is quite easy to do with pattern matching. We'll want to extract `cr:` and `habitat:` to start with.
@@ -83,7 +90,7 @@ Tracking state in object feels attractive, but it's often a trap. By definition,
 
 So, in summary, what do we need?
   1. We track the things and people we care about, and some of them have secrets and plans to discover. These can be created and refreshed occasionally via design operators.
-  2. We will still want a general object pinned to our narrative root that captures tone, genre, setting frame, etc. By definition this is _not_ state, because it does not change! It doesn't have mechanical bearing, something like `lore.setting` would work.
+  2. We will still want a general object pinned to our narrative root that captures tone, genre, setting frame, etc. By definition this is _not_ state, because it does not change! It doesn't have mechanical bearing, so something like `lore.world` would work.
   3. We use a `front` for everything else. The `advance` operator (the mechanism to update fronts); to use it, we need to **roughly track the passage of time**.
 
 #### The passage of time
@@ -101,7 +108,7 @@ So, how do we track time if we want to do in an advanced way? We follow these ru
 
 ## RPG Object Templates
 
-This section contains the RPG Object templates, and their rationale. You can import these directly by running `lens kb extract` on this document from the dataset or folder you want to update. 
+This section contains the RPG Object templates, and their rationale.
 
 ### Player Characters (`pc.*`)
 
@@ -135,7 +142,7 @@ If want to store places so we can return to them, we will need to find them agai
 ---
 id: loc._template
 ---
-<!-- Any type of Location. Usage: Ensures continuity when revisiting places; we ALWAYS link a location to the one of which it's part (or lore.work for roots), which lets us create a map graph of our setting. -->
+<!-- Any type of Location. Usage: Ensures continuity when revisiting places; we ALWAYS link a location to the one of which it's part (or lore.world for roots), which lets us create a map graph of our setting. -->
 Name
 
 - Type of location (everything else below is optional, just add if relevant to story)
@@ -320,9 +327,9 @@ An encounter object is compact and links to everything `play` needs:
 - **Triggers and transitions**: what causes the situation to shift (dialog escalates to combat, the timer runs out, reinforcements arrive)
 - **Resolution**: how it ends and what changes
 
-The `design.encounter` module uses the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
+If we're playing D&D, the `design.encounter` module can use the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
 
-##### How encounters are balanced (combat-specific)
+##### How D&D encounters are balanced (combat-specific)
 
 The party has an XP budget from PC levels and chosen difficulty (low/moderate/high); allies reduce that budget. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by narrative-fit rank) or, if required alone exceed the budget, suggests reduced counts. Encounters can be re-balanced on the fly — situations change, allies join, character levels shift — so the encounter object stores the parameters used, and `design` can refresh the balance without rebuilding the whole encounter.
 
@@ -380,7 +387,7 @@ For particularly heavy encounters (a major boss fight with many stat blocks and 
 
 ## Pass The Time with `advance`
 
-The world takes its turn. Like `play` being an RPG `write`, this is an RPG-specific `design`, made to update `front` objects in targeted ways (and therefore requires the `dnd` dataset); it will also pick up at least one level of objects linked to each front (e.g. `front.key+`), for context.
+The world takes its turn. Like `play` being an RPG `write`, this is an RPG-specific `design`, made to update `front` objects in targeted ways; it will also pick up at least one level of objects linked to each front (e.g. `front.key+`), for context.
 
 **Requirements**: The `design.front` module, plus a `timeline` object needs to be pinned to the narrative (mirros `play` neeing at least one `pc`).
 

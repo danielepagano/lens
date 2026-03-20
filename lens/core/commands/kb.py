@@ -150,6 +150,7 @@ def kb_with_tag(
     expand: bool = False,
     recurse: int | None = None,
     same_type_only: bool = False,
+    type_filter: str | None = None,
 ) -> WithTagResult:
     if not tags:
         raise LensException("at least one tag is required")
@@ -159,8 +160,14 @@ def kb_with_tag(
     kb = get_store()
     first_tag = groups[0][0] if groups and groups[0] else ""
 
+    def _apply_type_filter(id_list: list[str]) -> list[str]:
+        if not type_filter:
+            return id_list
+        prefix = f"{type_filter}."
+        return [i for i in id_list if i.startswith(prefix)]
+
     if recurse is None:
-        ids = kb.get_ids_with_tag_groups(groups)
+        ids = _apply_type_filter(kb.get_ids_with_tag_groups(groups))
         if same_type_only and first_tag:
             ids = _filter_ids_by_tag_type(ids, first_tag)
         id_to_tags = {oid: kb.get_tags(oid) for oid in ids}
@@ -175,7 +182,7 @@ def kb_with_tag(
 
     has_or_group = any(len(g) > 1 for g in groups)
     if has_or_group:
-        root_ids = kb.get_ids_with_tag_groups(groups)
+        root_ids = _apply_type_filter(kb.get_ids_with_tag_groups(groups))
         if same_type_only and first_tag:
             root_ids = _filter_ids_by_tag_type(root_ids, first_tag)
         root_ids, layers = kb.traverse_from_ids(
@@ -191,6 +198,7 @@ def kb_with_tag(
             same_type_only=same_type_only,
             max_depth=max_depth,
         )
+        root_ids = _apply_type_filter(root_ids)
 
     seen: set[str] = set()
     all_ids: list[str] = list(root_ids)
@@ -315,6 +323,7 @@ _FENCE_CLOSE_RE = re.compile(r"^```\s*$")
 class KbExtractEntry:
     id: str
     tags: list[str] = field(default_factory=lambda: cast(list[str], []))
+    remove_tags: list[str] = field(default_factory=lambda: cast(list[str], []))
     content: str = ""
     source_line: int = 0  # 1-based line of the opening fence
 
@@ -389,9 +398,17 @@ def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
             else []
         )
 
+        raw_remove_tags = fm.get("remove-tags", [])
+        remove_tags: list[str] = (
+            [str(t) for t in cast(list[Any], raw_remove_tags)]
+            if isinstance(raw_remove_tags, list)
+            else []
+        )
+
         entry = KbExtractEntry(
             id=raw_id.strip(),
             tags=tags,
+            remove_tags=remove_tags,
             content="\n".join(content_lines),
             source_line=open_line,
         )
@@ -435,6 +452,9 @@ def kb_extract_from_text(
             err = kb.add_tags(entry.id, entry.tags)
             if err:
                 result.errors.append(f"line {entry.source_line}: {err}")
+
+        if entry.remove_tags:
+            kb.remove_tags(entry.id, entry.remove_tags)
 
         (result.inserted if is_new else result.updated).append(entry.id)
 

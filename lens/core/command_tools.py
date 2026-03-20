@@ -102,8 +102,9 @@ async def _kb_with_tag(args: dict[str, Any], project_root: Path) -> str:
     recurse_raw = args.get("recurse")
     recurse: int | None = int(recurse_raw) if recurse_raw is not None else None
     expand: bool = bool(args.get("expand", False))
+    type_filter: str | None = args.get("type_filter") or None
 
-    result = _cmd_kb_with_tag(tags, expand=expand, recurse=recurse)
+    result = _cmd_kb_with_tag(tags, expand=expand, recurse=recurse, type_filter=type_filter)
     if not result.ids:
         return f"(no KB objects found with tags: {', '.join(tags)})"
 
@@ -202,6 +203,13 @@ register_command_tool(
                     "description": (
                         "Tag groups. Single tags ANDed; '(a b c)' = OR within. "
                         "Examples: [\"faction\"], [\"type:undead\", \"(cr:1 cr:2 cr:3)\"]"
+                    ),
+                },
+                "type_filter": {
+                    "type": "string",
+                    "description": (
+                        "Only return objects of this type (e.g. 'front', 'npc', 'loc'). "
+                        "Useful to narrow results when a tag is shared across many types."
                     ),
                 },
             },

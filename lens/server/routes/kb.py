@@ -273,6 +273,7 @@ class KbWithTagRequest(BaseModel):
     expand: bool = False
     recurse: int | None = None
     same_type_only: bool = False
+    type_filter: str | None = None
 
 
 @router.post("/kb/with-tag")
@@ -286,6 +287,7 @@ def kb_with_tag_query(
             expand=body.expand,
             recurse=body.recurse,
             same_type_only=body.same_type_only,
+            type_filter=body.type_filter,
         )
         layers_out = None
         if result.layers is not None:

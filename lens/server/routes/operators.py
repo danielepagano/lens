@@ -73,6 +73,14 @@ class SectionEndBody(BaseModel):
     llm_id: str | None = None
 
 
+class AdvanceBody(BaseModel):
+    days: int = 1
+    pins: list[str] = []
+    unpins: list[str] = []
+    llm_id: str | None = None
+    retry: bool = False
+
+
 class CollateBody(BaseModel):
     id: str
     address: str
@@ -265,6 +273,47 @@ async def operator_play(
         )
 
     return _start_operator_stream(lock, event_queue, session, "play", node_addr, coro_fn)
+
+
+@router.post("/operator/advance")
+async def operator_advance(
+    body: AdvanceBody,
+    request: Request,
+    session: ProjectSession = Depends(get_session),
+) -> StreamingResponse:
+    from lens.dnd.operators.advance import AdvanceOperator
+
+    narrative = _require_narrative(session)
+    _validate_pins(session, body.pins, body.unpins)
+    cursor = narrative.find_cursor()
+    target_ref: list[str] = [str(cursor.to_address())]
+
+    lock: StreamLock = request.app.state.stream_lock
+    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+
+    async def on_stream_target(addr: str) -> None:
+        target_ref[0] = addr
+        await event_queue.put({"type": "target", "node": addr})
+
+    on_token = _make_on_token(event_queue)
+
+    def coro_fn() -> Any:
+        return AdvanceOperator.run_advance(
+            session=session,
+            narrative=narrative,
+            increment=body.days,
+            pins=body.pins,
+            unpins=body.unpins,
+            llm_id=body.llm_id,
+            retry=body.retry,
+            on_token=on_token,
+            on_stream_target=on_stream_target,
+            cancel_event=lock.cancel_event,
+        )
+
+    return _start_operator_stream(
+        lock, event_queue, session, "advance", lambda: target_ref[0], coro_fn
+    )
 
 
 @router.post("/operator/design")

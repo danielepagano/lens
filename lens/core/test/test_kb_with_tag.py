@@ -439,6 +439,7 @@ class TestWithTagCli(unittest.TestCase):
         expand: bool = False,
         recurse: int | None = None,
         same_type_only: bool = False,
+        type_filter: str | None = None,
     ) -> str:
         with patch("lens.core.commands.kb.get_store", return_value=self.store):
             with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
@@ -453,6 +454,7 @@ class TestWithTagCli(unittest.TestCase):
                         expand=expand,
                         recurse=recurse,
                         same_type_only=same_type_only,
+                        type_filter=type_filter,
                     )
                     return buf.getvalue()
                 finally:
@@ -609,6 +611,7 @@ class TestKbWithTagDatasets(unittest.TestCase):
         expand: bool = False,
         recurse: int | None = None,
         same_type_only: bool = False,
+        type_filter: str | None = None,
     ) -> str:
         with patch("lens.core.commands.kb.get_store", return_value=self.store):
             with patch("lens.core.commands.kb.find_project_root", return_value=self.root):
@@ -623,6 +626,7 @@ class TestKbWithTagDatasets(unittest.TestCase):
                         expand=expand,
                         recurse=recurse,
                         same_type_only=same_type_only,
+                        type_filter=type_filter,
                     )
                     return buf.getvalue()
                 finally:

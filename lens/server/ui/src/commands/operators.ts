@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { runWrite, runEdit, runPlay, runDesign, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent } from '../services/api'
+import { runWrite, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent } from '../services/api'
 import { cliOutput, treeRefreshTrigger } from '../stores/ui'
 import { streamingPreview, currentAddress } from '../stores/document'
 import type {
@@ -60,6 +60,19 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
+      { name: 'retry' },
+    ],
+  },
+  {
+    trigger: 'advance',
+    group: 'dnd',
+    requiresDataset: 'dnd',
+    positional: [],
+    options: [
+      { name: 'days', valueType: 'line', hint: 'days to advance (default: 1)' },
+      { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'retry' },
     ],
   },
@@ -173,6 +186,12 @@ const handler: CommandHandler = async (
       }
       result = await runPlay(
         { prompt, pins, unpins, llm_id: llmId, retry, as_pc },
+        handleEvent
+      )
+    } else if (command === 'advance') {
+      const days = ctx.args.options['days'] ? parseInt(ctx.args.options['days'] as string, 10) : undefined
+      result = await runAdvance(
+        { days, pins, unpins, llm_id: llmId, retry },
         handleEvent
       )
     } else if (command === 'design') {
