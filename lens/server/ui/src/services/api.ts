@@ -275,6 +275,20 @@ export const runDesign = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/design', params, onEvent)
 
+export interface AdvanceParams {
+  days?: number
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+  retry?: boolean
+}
+
+export const runAdvance = (
+  params: AdvanceParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/advance', params, onEvent)
+
 export interface EditParams {
   address: string
   start_line: number
