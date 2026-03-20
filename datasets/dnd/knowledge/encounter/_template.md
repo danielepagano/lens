@@ -3,7 +3,7 @@ Encounter name (short, evocative)
 
 - Situation: (what's happening, in one or two sentences)
 - Stakes: (what can go wrong, what's at risk)
-- Participants: (who's involved; link npc/faction/stat objects)
+- Participants: (who's involved; link npc/faction or stat block objects)
 - Scene rules: (special mechanics for this situation — tactical features, environmental effects, conversation goals, chase rules, puzzle mechanics, time pressure. Keep short; link lore object if complex.)
 - Triggers: (what causes the situation to shift — dialog escalates, timer expires, reinforcements arrive, secret is revealed)
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)

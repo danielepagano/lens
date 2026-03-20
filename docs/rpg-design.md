@@ -7,12 +7,12 @@ Lens is about making Narrative Simulations; it's overkill for writing short stor
 With that said, aiming for "just as good as the table" or "just as polished as a videogame" would be unwise: token prediction models have intrinsic limitations, so we need to keep our goal more narrow and more specific. What Lens aims to provide is **the experience of playing an arbitrary RPG character in an open-ended textual videogame**. What does that mean?  
 
 - The player can bring their own character or party from any system and setting. However, the player has to understand the system and setting, and be willing to put in the work to play through the system and the rules. If the player wants automation and spectacles there are videogames, but if they are itching to sit down with a character sheet and see what this character would do and how they'll fare, without a game table, they should find it here. 
--  The player is neither "trying to win" nor "being the player and letting the DM to everything else". This is a collaborative endeavor, and the AI is there to give you interesting challenges, but not to do all the work. The AI will do better when you put more work into helping it, but Lens tries to minimize, organize, and force-multiply the player's effort vs using a chat with a prompt and maybe a RAG.
+-  The player is neither "trying to win" nor "being the player and letting the GM do everything else". This is a collaborative endeavor, and the AI is there to give you interesting challenges, but not to do all the work. The AI will do better when you put more work into helping it, but Lens tries to minimize, organize, and force-multiply the player's effort vs using a chat with a prompt and maybe a RAG.
 - The AI is not trying to be the "full DM", it's a narrative DM that does the writing, but the player is still doing rolls and a lot of mechanical work. On the other hand, the AI "does all the talking" so it writes what the player characters say and do, but while giving the player agency to decide what that is.
 
-Let's look at some GM tasks, and what a Lens with AI does the job:  
+Let's look at some GM tasks, and how Lens with AI handles them:  
 - **Understand what the players are trying to do, and which rules apply, then make mechanical decisions about what the players are trying to do**: we always need this, but we can compartmentalize some of this knowledge as we don't need combat rules out of combat, etc.
-- **Control non-player characters and have them follow (mostly) the same rules**: we need to specifically classify player characters as such and pin them to the session at all time; NPC's would be different objects and the AI is free to control the, as they are differently annotated. Very specific operators could simulate an NPC generating dialog, reinforcing their voice, and even limiting or distorting the information available to that NPC, running then in "their own AI sandbox" so to speak.
+- **Control non-player characters and have them follow (mostly) the same rules**: we need to specifically classify player characters as such and pin them to the session at all times; NPCs would be different objects and the AI is free to control them, as they are differently annotated. Very specific operators could simulate an NPC generating dialog, reinforcing their voice, and even limiting or distorting the information available to that NPC, running them in "their own AI sandbox" so to speak.
 - **Bring the world to life in an actionable way to players through words, and have it react appropriately**: the pinning system surfaces the right details for the current scene. An encounter object carries the specific interaction hooks — the same bridge can be a peaceful crossing or an ambush depending on what's prepared. `play` reads the encounter and adapts.
 - **Enforce the world's continuity**: When something interesting happens, we have mechanisms to remember it in the KB; maybe a location changed, or an NPC has something new to remember. This is on top of fractal summarization, which keeps more relevant details closer and keeps the context size small for the far past.
 - **Let players have agency while also letting the story move forward**: the player drives all action through `play`; preparation through encounter objects and fronts ensures the world has momentum and surprises. The `advance` operator moves fronts forward when time passes, creating pressure and consequences without the player having to manage it.
@@ -42,18 +42,18 @@ This boundary is structurally identical to prompt injection resistance — the p
 The key design impetus of Lens is to curate and constrain the knowledge set and instructions given to the AI, so it can behave predictably without bloating the context window. Hierarchical summarization makes this already possible with just a bit of user discipline with sections, but when running a game we may have both a large ruleset (baseline knowledge corpus) and demand more from the AI in terms of prompt compliance. We therefore need all the tricks we can to keep context and prompts small and focused.
 
 To this extent, we divide our experience in two alternating phases:  
-  - **Planning**: during planning we don't directly generate narrative, we instead reflect on the current state using various methods and with various goals (possibly over multiple LLM calls) with the effect of creating and changing KB objects instead. This can be done directly by the user, with LLM assistance, or by the AI autonomously (depending on the task). Planning can occur in a separate narrative tree for pre-adventure setup, or within a narrative tree (and thus aware of the place in the story) to remember changes, add plans, etc. In-narrative planning may also some details or generate an operator call ("in the morning, you were awakened by...").
-  - **Play**: The AI does not update KB objects during normal play, it's too specific of a task. The user can always change objects directly, but it's not something the LLM tries to do, it just focuses on executing. We do what to have triggers and mechanics to switch to planning, however. When we do play, the player may be controlling multiple characters; they need to specify who is acting as if there were multiple people talking at the table. They can 100% just say "Elara wants to..." but it may be more fun for them to pick a character and talk first person: it's where the "Role" part of roleplay comes out. This is orthogonal to operators, so it needs to be supported by Lens, but it's also quite simple because all it does is adds a character marker to the request. 
+  - **Planning**: during planning we don't directly generate narrative, we instead reflect on the current state using various methods and with various goals (possibly over multiple LLM calls) with the effect of creating and changing KB objects instead. This can be done directly by the user, with LLM assistance, or by the AI autonomously (depending on the task). Planning can occur in a separate narrative tree for pre-adventure setup, or within a narrative tree (and thus aware of the place in the story) to remember changes, add plans, etc. In-narrative planning may also add details or generate an operator call ("in the morning, you were awakened by...").
+  - **Play**: The AI does not update KB objects during normal play, it's too specific of a task. The user can always change objects directly, but it's not something the LLM tries to do, it just focuses on executing. We want triggers and mechanics to switch to planning, however. When we do play, the player may be controlling multiple characters; they need to specify who is acting as if there were multiple people talking at the table. They can 100% just say "Elara wants to..." but it may be more fun for them to pick a character and talk first person: it's where the "Role" part of roleplay comes out. This is orthogonal to operators, so it needs to be supported by Lens, but it's also quite simple because all it does is add a character marker to the request. 
 
 ## RPG Objects Design
 
 We need to design two kinds of objects:  
   1. **Reference Data**: rules and mechanisms that turn free-form writing into playing an RPG
-  2. **Types and Templates**: predictable shape of stored that can be leveraged by operators
+  2. **Types and Templates**: predictable shape of stored data that can be leveraged by operators
 
 We also have three **layers** of objects:  
   1. The **core** rpg layer: the minimum required that powers our RPG system and operators
-  2. The **game system** layer: rules and data specific to a game system, e.g. D&D, Cipher System, etc.
+  2. The **game system** layer: rules and data specific to a game system, e.g. D&D, Cypher System, etc.
   3. The **setting** layer: lore and other reference data for a specific setting in the system, e.g. Grim Hollow, Numenera, etc.
 
 Each layer is (at least) one Lens `dataset`.
@@ -66,17 +66,17 @@ Operators pin the core rules plus any system-specific rules they need. We do NOT
 
 We create two core rule objects:  
   - `rules.engagement`: our AI-player contract; core layer, ruleset-agnostic
-  - `rules.system`: system-specific rules. Lens ships with "Lens in the Dark", a simple "Forged in the Dark" ruleset (https://bladesinthedark.com/licensing) tuned for AI use, but it can be overridden a game system rulset by simply replacing that object id in a higher-priority dataset.
+  - `rules.system`: system-specific rules. Lens ships with "Lens in the Dark", a simple "Forged in the Dark" ruleset (https://bladesinthedark.com/licensing) tuned for AI use, but it can be overridden by a game system ruleset by simply replacing that object id in a higher-priority dataset.
 
 #### Reference Objects
 
-Reference materials are different than rules proper because they are **lists of items only relevant if in play**, and even if in play, they may not be that relevant in narrative. In other words, the AI doesn't need to know about a monster until it's in play, or about a spell until a monster can decide to cast it, or the player casts it.  
-  - We may be tempted to, for example, include the spells or abilities known to a character their object, but this will just tempt the AI to make the character _do those things_, because we gave it the option. For NPC we DO want the AI to know and select from the stat block's abilities, so it's best to just tell the AI to use what it sees, and keep those details out when we want the player to activate them. So if a player wants to cast a spell they can just do so, resolve things like attacks or saves, report narratively what happened, and move on; however if we want the AI to _really_ talk about the spell, or there are interesting consequences, or the spell is for gathering information the AI knows (like Detect Magic), we need to tell the AI about it. In these cases the player will `@` the spell ("Alice casts @spell.detect-magic, what does she see?") and the AI will get the full details, can show the character casting it, and can describe the results. 
+Reference materials are different than rules proper because they are **lists of items only relevant if in play**, and even if in play, they may not be that relevant in narrative. In other words, the AI doesn't need to know about a creature stat block until it's in play, or about a special ability until something in scene can use it or the player invokes it.  
+  - We may be tempted to, for example, include every ability known to a character on their object, but this will just tempt the AI to make the character _do those things_, because we gave it the option. For NPCs we DO want the AI to know and select from the stat block's abilities, so it's best to just tell the AI to use what it sees, and keep those details out when we want the player to activate them. So if a player uses an ability they can resolve attacks, saves, or other checks at the table, report narratively what happened, and move on; however if we want the AI to _really_ engage with that ability, or there are interesting consequences, or it reveals information only the AI should adjudicate, we need to put the reference in context. In those cases the player can `@` the relevant KB object (e.g. in a fantasy rules corpus: "Alice casts @spell.detect-magic, what does she see?") and the AI gets the full details, can show the character using it, and can describe the results. 
 
 To develop these objects, we just need to extract the text from the rulebooks and format them consistently. These are not really used by operators, but they are useful prompt context. For example in D&D we can track object types like:  
 
   - `spell` one object per spell, full details. We don't really need "indexing" by level, school, etc. as the AI doesn't need to find them.
-  - `stat` blocks (monsters, but won't want to bias the AI); mostly full details but we need to format the stat block consistently, and some details and tables may not be necessary. As an extra complication, planning needs to find monsters for encounters, so some indexing by tag will be necessary. This is quite easy to do with pattern matching. We'll want to extract `cr:` and `habitat:` to start with.
+  - `stat` blocks (monsters and similar, but we won't want to bias the AI); mostly full details but we need to format the stat block consistently, and some details and tables may not be necessary. As an extra complication, planning needs to find creatures for encounters, so some indexing by tag will be necessary. This is quite easy to do with pattern matching. For games that use them, fields like challenge rating and habitat are good candidates for tags.
   - `item` will cover magic items, and `equipment` more normal items you can find often or in stores. These are not necessary unless the AI can find them and put them in the world as loot or store inventory for the players, and this is not very easy to do! We can use type/tags, rarity/GP cost and create a custom prompt to search for them, much like we do for stat blocks. 
 
 #### Using tags
@@ -86,7 +86,7 @@ So, you cast `@spell.fly` and you fly, but later the AI forgets you are flying o
 
 ### About Campaign State
 
-Tracking state in object feels attractive, but it's often a trap. By definition, what is happening in the story is what the narrative tree is supposed to track, so that "state" in object mostly how it affects named instances of things we track, which are essentially locations, people, and groups of people (`faction`s). The main object we need for grouping narrative cohesion (quests can be unruly things) and track what hasn't happened yet or in-motion is a `front`. 
+Tracking state in objects feels attractive, but it's often a trap. By definition, what is happening in the story is what the narrative tree is supposed to track, so "state" in objects is mostly how it affects named instances of things we track, which are essentially locations, people, and groups of people (`faction`s). The main object we need for grouping narrative cohesion (quests can be unruly things) and track what hasn't happened yet or in-motion is a `front`. 
 
 So, in summary, what do we need?
   1. We track the things and people we care about, and some of them have secrets and plans to discover. These can be created and refreshed occasionally via design operators.
@@ -96,14 +96,14 @@ So, in summary, what do we need?
 #### The passage of time
 
 We only care about the passage of time in two situations:  
-  1. It has a mechanical implication in the game rules, like for rests. Because we are not the game engine, the player is supposed to track time for things like spells, but the AI needs to know roughly the passage of the day for narrative purposes. This should happen organically as the story happens, at most we need to point out in the prompt that this matters.
+  1. It has a mechanical implication in the game rules, like for rests. Because we are not the game engine, the player is supposed to track time for things like expiring abilities or resources, but the AI needs to know roughly the passage of the day for narrative purposes. This should happen organically as the story happens, at most we need to point out in the prompt that this matters.
   2. It advances the story outside of what is happening in the narrative. This is optional: a simple story can have nothing of relevance happening in this way, and even if it does, the AI can just improvise what would have happened on the spot. In some cases where we actually want to tell a story with real pressure, we DO need to track time so the AI can setup and then satisfy expectations. A key fact is that narrative need not be linear storytelling, it can jump back and forth (flashbacks could be a game mechanic!) or the player may want to create multiple parallel narrative trees (split or yet unmet party, or a Westmarch-style campaign); in these cases, the information we accumulate over time in KB may not be accumulative in a simple way. This is a key reason why progress is isolated to `front` objects: they are the only ones that really care about time.
 
 So, how do we track time if we want to do in an advanced way? We follow these rules:  
-  1. Each narrative needs to belong to a "timeline", which we can pin to it, e.g. `timeline.alice-prologue`. This object just contains two lines: a starting reference (could be a date or just an arbitray description; it's for the player only), and the current day number after that day: the **day counter**. The user advances the timeline by using the `advance` operator to increment the day counter by 1 or more, and evaluating what happens.  
+  1. Each narrative needs to belong to a "timeline", which we can pin to it, e.g. `timeline.alice-prologue`. This object just contains two lines: a starting reference (could be a date or just an arbitrary description; it's for the player only), and the current day number after that day: the **day counter**. The user advances the timeline by using the `advance` operator to increment the day counter by 1 or more, and evaluating what happens.  
     - The day counter moves forward every day at the same time; in a modern setting it could be midnight, in a fantasy one it could be a dawn. It doesn't have to be perfect as long as it's self-adjusting. 
   2. Each `front` belongs to (that is, is tagged with) one timeline, and is advanced when that timeline advances using the `advance` operator (described later). 
-    - A front cannot belong to multiple timelines because it needs to advance with it (it's a state, not a log), and also the point is that the narrative and the front are tied. If a user wants to track a rising threat across multiple timelines played one after another, really only the first one could have affected the front, because time has already passed! In reality for these situtations a front would be created only once timelines converge or a timeline "runs into" the front and can deal with it. Casuality is a thing.
+    - A front cannot belong to multiple timelines because it needs to advance with it (it's a state, not a log), and also the point is that the narrative and the front are tied. If a user wants to track a rising threat across multiple timelines played one after another, really only the first one could have affected the front, because time has already passed! In reality for these situations a front would be created only once timelines converge or a timeline "runs into" the front and can deal with it. Causality is a thing.
     - To run time-overlapping narratives, the user can simply create multiple timelines with the same start reference time, and start them at different day numbers, advancing them whenever they play that narrative.
 
 ## RPG Object Templates
@@ -114,29 +114,29 @@ This section contains the RPG Object templates, and their rationale.
 
 One object per PC. We should have a template and guidance, but it's the job of the user to fill this in, since it's their avatar and they have their character sheet.
 
-Content per object is just enough to get the AI to talk about the character and talk _as_ the character (represent them). It is tempting to add their powers, ideals, fears, etc. but we need to optimize these objects for play, NOT planning. Adding details is a double-edge sword because the AI may take too much initiative with powers, or use this information at inopportune times, like "you said this character has green eyes, so let me mention their green eyes EVERY TIME they are mentioned". So we need to strike a balance of enough details that they not just "she squinted her green eyes as she notched her arrow," but also not get "Alice thought about her trouble childhood at the orphanage as she notched her arrow." Going for something like "Alice deftly jumped the narrow wall to get a good angle as she notched her arrow" (she's dextrous and needs to trigger sneak attack, you see?)
+Content per object is just enough to get the AI to talk about the character and talk _as_ the character (represent them). It is tempting to add their powers, ideals, fears, etc. but we need to optimize these objects for play, NOT planning. Adding details is a double-edged sword because the AI may take too much initiative with powers, or use this information at inopportune times, like "you said this character has green eyes, so let me mention their green eyes EVERY TIME they are mentioned". So we need to strike a balance of enough details that they're not just "she squinted her green eyes as she notched her arrow," but also not get "Alice thought about her troubled childhood at the orphanage as she notched her arrow." Going for something like "Alice deftly jumped the narrow wall to get a good angle as she notched her arrow" (she's agile and needs to trigger sneak attack, you see?)
 
 ```kb
 ---
 id: pc._template
 ---
-<!-- Player Character. Usage: most details owned by player; use these objects to correctly describe and speak as these character when the player makes them act. -->
+<!-- Player Character. Usage: most details owned by player; use these objects to correctly describe and speak as these characters when the player makes them act. -->
 Name (plus any nicknames or code-names we'd see them called)
 
 - Appearance: (species, presented gender, physique, distinguishing details, visible kit, mannerisms, how they talk, etc.)
 - Context: (relevant background, goals, motivations, personal struggles - nothing too detailed; enough to flavor their interactions, but the player is expected to control when these are surfaced)
 - Affiliations and Relationships: (only non-obvious and story-relevant) 
-- How they solve problems: (key strengths and weaknesses, passive features that make a difference in how the character interfaces with the world that matter to the DM, like high passive perception, darkvision, movement speeds, etc. Do not include specific active skills or powers: it is the player's responsibility to surface when these are revealed and used.)
+- How they solve problems: (key strengths and weaknesses, passive features that make a difference in how the character interfaces with the world that matter to the GM, like sense, movement speeds, etc. Do not include specific active skills or powers: it is the player's responsibility to surface when these are revealed and used.)
 
-<!-- TAG POLICY: ALWAYS tag a `pc` object with its total character level, e.g. `level:3` to balance encounters; optionally add user can add mechanical rule tags, like conditions. Also link them to any faction of which they are members. -->
+<!-- TAG POLICY: Link PCs to any faction of which they are members. -->
 ```
 
 ### Location (`loc.*`)
 
 Geography is important and fractal, we'll need to know the region we're in and sometimes the city, or even the tavern or someone's room, if for some reason that matters.
-Critically, We only want to create objects for places that _matter_, so somewhere we're at for a while, or somewhere we're returning to. In a social game, maybe every room in a mansion has a record, in other adventures just the overland we travel, and then a bunch of places we visit and remember only in narrative summaries, if at all.
+Critically, we only want to create objects for places that _matter_, so somewhere we're at for a while, or somewhere we're returning to. In a social game, maybe every room in a mansion has a record, in other adventures just the overland we travel, and then a bunch of places we visit and remember only in narrative summaries, if at all.
 
-If want to store places so we can return to them, we will need to find them again later! Therefore, we need a map. A map is just a tree, so all we need to do is link locations, expand the graph, and we have a "map". If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule). So each location should link to its parent location, and we can use a recursive tag traversal of the root location to make a map (e.g. `lens kb with-tag loc.kingdom --recurse --expand --same-type` to get all the locations in the kingdom).  
+If we want to store places so we can return to them, we will need to find them again later! Therefore, we need a map. A map is just a tree, so all we need to do is link locations, expand the graph, and we have a "map". If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule). So each location should link to its parent location, and we can use a recursive tag traversal of the root location to make a map (e.g. `lens kb with-tag loc.kingdom --recurse --expand --same-type` to get all the locations in the kingdom).  
 
 ```kb
 ---
@@ -157,9 +157,9 @@ Name
 <!-- TAG POLICY: tag a `loc` object with the loc.id that contains it, if any. -->
 ```
 
-### NPC's (`npc.*`)
+### NPCs (`npc.*`)
 
-NPCs may have less flavor than a PC, but the AI can have a full view on their motivations, goals,  abilities, and secrets, as they are fully controlled by the DM. They may be connected to a stat block, and we can even seed a secret (would be decoded when the AI sees it).
+NPCs may have less flavor than a PC, but the AI can have a full view on their motivations, goals, abilities, and secrets, as they are fully controlled by the GM. They may be connected to a stat block, and we can even seed a secret (would be decoded when the AI sees it).
 
 ```kb
 ---
@@ -169,18 +169,18 @@ id: npc._template
 Name (plus any nicknames or code-names we'd see them called)
 
 - Appearance: (species, presented gender, physique, distinguishing details, visible kit, mannerisms, how they talk, etc.)
-- Affiliations and Relationships: (particularly towards PC's;) 
+- Affiliations and Relationships: (particularly towards PCs)
 - How they solve problems: (key strengths and weaknesses, go-to abilities they would use, when, and how they present)
 - Goals and Motivations: (what they want, as far as people know)
-- Statues and Moves: (what they are up to, as far as people know)
+- Status and Moves: (what they are up to, as far as people know)
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag an `npc` object with mechanical rule tags, like movement speeds and resistances;  link them to their `stat` block, factions, or a front they own, if any. -->
+<!-- TAG POLICY: you may link a base NPC object to mechanical details like a `stat` block, a lore object, their faction, or a front they own, if any. -->
 ```
 
 ### Faction (`faction.*`)
 
-Factions mostly provide a mechanism to give NPC's or monsters we don't track individually a place in the world, some flavor and some motivation. So in an encounter you could say you are in a location (specific to the encounter, or sometimes in KB), fighting one or more `factions`, and then the `stat` blocks for the encounter could be attached to each faction (or we can just say it's rogues or zombies), so the AI can model behavior in a good narrative way for one or multiple groups.
+Factions mostly provide a mechanism to give NPCs or monsters we don't track individually a place in the world, some flavor and some motivation. So in an encounter you could say you are in a location (specific to the encounter, or sometimes in KB), fighting one or more `factions`, and then the `stat` blocks for the encounter could be attached to each faction (or we can just say it's rogues or zombies), so the AI can model behavior in a good narrative way for one or multiple groups.
 
 ```kb
 ---
@@ -191,17 +191,17 @@ Name (plus any nicknames or code-names we'd see them called)
 
 - Who they are and what they believe or want
 - How they operate (methods, subtlety or brutality)
-- Where they are strongest, who their recruit (particularly the hard rules)
+- Where they are strongest, whom they recruit (particularly the hard rules)
 - How they feel about the party and other factions
 - Ongoing plans or operations
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `faction` object minimally (they are linked to); you can include the loc headquarter or the pc/npc leader  -->
+<!-- TAG POLICY: tag a `faction` object minimally (they are linked to); you can include the loc headquarters or the pc/npc leader  -->
 ```
 
 ### Front (`front.*`)
 
-Fronts let use steer the story forward and provides the hooks and challenges for the players. They are the quests to solve, the rituals to stop, and the horrible "coincidences" that are about to unfold. They are usually pinned to narrative when relevant, so they should be compact.
+Fronts let us steer the story forward and provide the hooks and challenges for the players. They are the quests to solve, the rituals to stop, and the horrible "coincidences" that are about to unfold. They are usually pinned to narrative when relevant, so they should be compact.
 
 ```kb
 ---
@@ -216,7 +216,7 @@ Name (any way we'd be referencing this problem)
 - Phases or beats: how it might escalate, where it's at  
   - Timeline anchors: if applicable, specific values of the day counter when something is meant to happen
 - Possible resolutions
-  - Specific triggers, states of the worlds, or actions that affect the result
+  - Specific triggers, state of the world, or actions that affect the result
   - Any dependencies on chance, in the form of "every (counter mod x) days there is a y% chance that z could happen"
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
@@ -253,7 +253,7 @@ Encounter name (short, evocative)
 
 - Situation: (what's happening, in one or two sentences)
 - Stakes: (what can go wrong, what's at risk)
-- Participants: (who's involved; link npc/faction/stat objects)
+- Participants: (who's involved; link npc/faction or stat block objects)
 - Scene rules: (special mechanics for this situation — tactical features, environmental effects, conversation goals, chase rules, puzzle mechanics, time pressure. Keep short; link lore object if complex.)
 - Triggers: (what causes the situation to shift — dialog escalates, timer expires, reinforcements arrive, secret is revealed)
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
@@ -285,11 +285,11 @@ The sub-node is created automatically on the first call, with an ID derived from
 
 The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing by pinning an expanded object like `loc.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
 
-The operator _does not_ author static high-level objects like `lore.world` that setup the general setting and tone. Those are added by the player, or they can use a normal edit operator for assistance.
+The operator _does not_ author static high-level objects like `lore.world` that set up the general setting and tone. Those are added by the player, or they can use a normal edit operator for assistance.
 
 Other Considerations:
-  - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `loc.springfield` by the rules of `loc` there will an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
-  - It would be pretty easy to create a `map` operator that uses the `loc` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing non-advance way to remember things.
+  - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `loc.springfield` by the rules of `loc` there will be an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
+  - It would be pretty easy to create a `map` operator that uses the `loc` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing a non-advance way to remember things.
 
 #### Design Modules
 
@@ -311,7 +311,7 @@ When the user is done with a design session, `lens design --end` runs `kb extrac
 The central design insight: **an encounter object is not "combat." It's any prepared situation.** A conversation that could go wrong, a negotiation with hidden stakes, a chase through a burning building, a combat with tactical complexity, a puzzle with mechanical rules — or any combination of these in sequence or simultaneously. The encounter object is the _script_ that `play` follows.
 
 This is powerful because:
-1. **The encounter carries its own rules.** If combat is complex, the object says so and links the relevant stat blocks. If it's a simple bar chat, the object just describes the NPC's goals and what they know. No operator switch needed.
+1. **The encounter carries its own rules.** If combat is complex, the object says so and links the relevant stat blocks. If it's a simple bar chat, the object just describes the principal NPC's goals and what they know. No operator switch needed.
 2. **Situations mix naturally.** An encounter that starts as dialog can have a secret trigger for combat. A chase can pause when the quarry turns to negotiate. The object describes the full possibility space; `play` navigates it.
 3. **Secrets stay secret.** The player can tell `design` "I'm going to the bridge to meet the informant" and the encounter object can encode that the informant is actually an ambush. The player doesn't see the encounter object contents during design — they see the design conversation. During play, the AI sees the encounter and acts accordingly.
 4. **Reuse and adaptation.** An encounter object can be re-used (the patrol at the checkpoint is the same every time) or adapted (the party's reputation has changed, so the guards react differently — update the encounter or let `play` figure it out from the pinned front).
@@ -327,9 +327,9 @@ An encounter object is compact and links to everything `play` needs:
 - **Triggers and transitions**: what causes the situation to shift (dialog escalates to combat, the timer runs out, reinforcements arrive)
 - **Resolution**: how it ends and what changes
 
-If we're playing D&D, the `design.encounter` module can use the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
-
 ##### How D&D encounters are balanced (combat-specific)
+
+If we're playing D&D, the `design.encounter` module can use the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
 
 The party has an XP budget from PC levels and chosen difficulty (low/moderate/high); allies reduce that budget. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by narrative-fit rank) or, if required alone exceed the budget, suggests reduced counts. Encounters can be re-balanced on the fly — situations change, allies join, character levels shift — so the encounter object stores the parameters used, and `design` can refresh the balance without rebuilding the whole encounter.
 
@@ -345,7 +345,7 @@ When an `encounter.*` object is pinned, `play` reads it as a script: it knows th
 
 *Flow*: Default. The AI narrates freely. Scenes develop without requiring stakes at every beat. Not every paragraph needs pressure, and trying to inject it produces a mechanical, exhausting rhythm. The AI should hold flow for extended stretches — walking through a market, sharing a meal, arriving at a new place.
 
-*Stakes*: When risk is live — something can go wrong, a decision is being forced, a check is warranted. The AI establishes what's at risk, names the check type and DC if needed, and narrates the consequence after the player reports results. The AI never describes outcomes before the roll.
+*Stakes*: When risk is live — something can go wrong, a decision is being forced, a check is warranted. The AI establishes what's at risk, names the check type and target difficulty if the system uses one, and narrates the consequence after the player reports results. The AI never describes outcomes before the roll.
 
 Transitions between postures are fluid, driven by the fiction. An encounter object may push toward stakes immediately (an ambush) or start in flow (a conversation that could go wrong). The AI reads the room.
 
@@ -359,9 +359,9 @@ Transitions between postures are fluid, driven by the fiction. An encounter obje
 **What encounter objects change about play behavior**:
 
 When `play` sees a pinned `encounter.*` object, it uses the encounter's scene rules to calibrate:
-- In combat-heavy encounters: state enemy intent before they act, track tactical features, respect the action economy, direct groups by faction behavior
+- In combat-heavy encounters: state enemy intent before they act, track tactical features, respect how many actions each side gets per beat per the pinned rules, direct groups by faction behavior
 - In social encounters: voice NPCs with their concealed goals, let conversations breathe, call for checks only when the PC pushes past what the NPC would naturally give
-- In chase/escape encounters: track distance narratively, introduce complications, respect the exhaustion mechanics
+- In chase/escape encounters: track distance narratively, introduce complications, respect fatigue or chase rules from the system
 - In mixed encounters: follow the triggers and transitions defined in the object — a negotiation breaks down into combat, a chase ends in a standoff
 - In encounters with secrets: the AI knows the secret and plays toward revealing it naturally through the fiction
 
@@ -389,10 +389,10 @@ For particularly heavy encounters (a major boss fight with many stat blocks and 
 
 The world takes its turn. Like `play` being an RPG `write`, this is an RPG-specific `design`, made to update `front` objects in targeted ways; it will also pick up at least one level of objects linked to each front (e.g. `front.key+`), for context.
 
-**Requirements**: The `design.front` module, plus a `timeline` object needs to be pinned to the narrative (mirros `play` neeing at least one `pc`).
+**Requirements**: The `design.front` module, plus a `timeline` object needs to be pinned to the narrative (mirrors `play` needing at least one `pc`).
 
 **Trigger**: The player explicitly invokes it when they want to mark that a day has passed, i.e. they want to increase their `timeline` day counter. Time of course passes in the normal course of play, and play does have pinned active fronts to it, so stuff can always happen, it doesn't need this operator to do so. The `advance` operator is specifically called when user wants to **end the day** meaning they are done with narrative until the time normally advances. In most cases they are resting at this time, but maybe they are pulling an all-nighter. The operator can read the narrative so it understands the context. The user can also try and end additional days all at once. So, the advance amount can be:  
-  - '1' (default). Player ebds the day, day counter is incremented by one.
+  - '1' (default). Player ends the day, day counter is incremented by one.
   - '2' or more. Player _attempts_ to make time pass for more days outside of the narrative, for example when traveling, or having downtime. This time may or may not fully pass; if it does not, the AI will just increment by the amount of time that HAS passed.
 
 **What it does**: Updates the day counter and proposes updates to the `front` objects for that timeline accounting for at least the time passed, and up to the time proposed.  
@@ -401,16 +401,16 @@ The world takes its turn. Like `play` being an RPG `write`, this is an RPG-speci
 ### Mechanics
 
 **How does it run**:
-1. Does a standard crawl, and then pins ALL fronts that link to the pinned `timeline` to its sub-node (e.g. equivalent of `lens kb with-tag timeline.epic --type front --expand --recurse 1`). Pins `design.front` automatically as well (by the invocation rules, the timeline is alrady pinned).
-2. Generates "luck rolls", consisting of two random numbers from 1 to 100 for each front; these are invisibly passed to the AI in the promot. The AI can use them to determine how some chance-based clocks advance, using the second number in case a front has a reference tables, etc. The front itself describes if/how these are used, for example a travel front roll to determine weather, or one about random encountrs could roll to see if an encounter DOES happen, then roll again on an encounter table if it does. Since the AI does not roll, we just always roll and only the number if needed.
+1. Does a standard crawl, and then pins ALL fronts that link to the pinned `timeline` to its sub-node (e.g. equivalent of `lens kb with-tag timeline.epic --type front --expand --recurse 1`). Pins `design.front` automatically as well (by the invocation rules, the timeline is already pinned).
+2. Generates "luck rolls", consisting of two random numbers from 1 to 100 for each front; these are invisibly passed to the AI in the prompt. The AI can use them to determine how some chance-based clocks advance, using the second number in case a front has reference tables, etc. The front itself describes if/how these are used, for example a travel front roll to determine weather, or one about random encounters could roll to see if an encounter DOES happen, then roll again on an encounter table if it does. Since the AI does not roll, we just always roll and use the number only if needed.
   - We could do something like tagging fronts with the type and amount of randomness they want... but that seems overkill and this should cover all sane cases.
 3. Calls the AI with all the above, with thinking mode, and determines  
-  - One day has passed, so what? Update any fronts that care. Regardless of the time increment, it needs to alwaus account for what has transpired in the narrative. So for example if we defeated a baddie, a front can now resolve, etc. If something should have visibly transpired that day but did not yet (was missed during play), we need to trigger the consequnce.
-  - Additional time wants to pass: if there is no consequence yet, we can looking at all the fronts and evaluate if any will interrupt the proposed time jump; so whether something happens AND if intersects with the narrative to the point that we need to cut to that scene. This ONLY happens if the front is designed to work that way, like for random encounters, someone looking for the party, major news that reach the PCs and warrant their reaction, and the like. If an interruption does occur (only ONE front can interrupt, queue the rest for the following day), determine how long does actually pass and update all the fronts by that amount, then trigger the consequence.
+  - One day has passed, so what? Update any fronts that care. Regardless of the time increment, it needs to always account for what has transpired in the narrative. So for example if we defeated a baddie, a front can now resolve, etc. If something should have visibly transpired that day but did not yet (was missed during play), we need to trigger the consequence.
+  - Additional time wants to pass: if there is no consequence yet, we can look at all the fronts and evaluate if any will interrupt the proposed time jump; so whether something happens AND if it intersects with the narrative to the point that we need to cut to that scene. This ONLY happens if the front is designed to work that way, like for random encounters, someone looking for the party, major news that reaches the PCs and warrants their reaction, and the like. If an interruption does occur (only ONE front can interrupt, queue the rest for the following day), determine how much time actually passes and update all the fronts by that amount, then trigger the consequence.
   - Perform any other front grooming that is appropriate, since we ARE running the front design module! For example a new front may be created, particularly if one closes, to continue an arc. This may not be immediately visible to the PCs.
 4. On operator close:
   - Apply the changes to objects using the usual `kb extract` style blocks. We may need to add a delete operation or at least an un-tag. This includes the timeline; this can be a normal `kb extract` block; if one is not generated, the system will increment the day counter by the full amount requested.
-  - Generate a narrative summary of time passed; normally we just say that time has passed, but sometimes front have visible outomes (like weather changes etc.)
+  - Generate a narrative summary of time passed; normally we just say that time has passed, but sometimes fronts have visible outcomes (like weather changes etc.)
   - If there is a consequence, this just chains a play operator immediately after design, triggering the required scene.
 
 While the above looks somewhat involved, it need not be slow: it's a simple crawl, prompting, and thinking about whether anything needs updating with very specific rules; in most cases, nothing interesting will happen and it should only take a few seconds.
@@ -419,25 +419,25 @@ While the above looks somewhat involved, it need not be slow: it's a simple craw
 
 ### Who the story is about. 
 
-An adventure is a story ABOUT THE PC's, so what happens HAS to be centered and deeply related to them; if we wanted a pre-publisjed story that fits any character, we would be using one, or playing a videogame. The user is using AI SPECIFICALLY to create a narrative that is custom-tailored to their players, like a human DM would create. Therefore we have:  
-  a. The setting and tone: this is independent of the PC's, could be a published setting like `lore.grim-hollow`. Of course the player chooses it because it fits in with the PC's they want to make, but "it is what it is".
-  c. The PC's: who they are mechanically (starting level, classes, etc), biographically (origin, backstory), and thematically (what are their ideals, bonds, flaws, fears, desires, etc.)
-  b. Our story: this is where we bend the setting to our will, firmly inserting the PC's not only in the setting, but also crafting fronts that are ultimately ABOUT the PC. Not necessarily in a "the PC is important" kind of way, although that's an option, but it has to be a story that uniquely resonates with what the character is about. As characters engage with the story and level up, their power and the stakes have to escalate naturally, because they are more and more entwined in it.
+An adventure is a story ABOUT THE PCs, so what happens HAS to be centered and deeply related to them; if we wanted a pre-published story that fits any character, we would be using one, or playing a videogame. The user is using AI SPECIFICALLY to create a narrative that is custom-tailored to their players, like a human GM would create. Therefore we have:  
+  a. The setting and tone: this is independent of the PCs, could be a published setting like `lore.grim-hollow`. Of course the player chooses it because it fits in with the PCs they want to make, but "it is what it is".
+  b. The PCs: who they are mechanically (starting level, character options, etc.), biographically (origin, backstory), and thematically (what are their ideals, bonds, flaws, fears, desires, etc.)
+  c. Our story: this is where we bend the setting to our will, firmly inserting the PCs not only in the setting, but also crafting fronts that are ultimately ABOUT the PCs. Not necessarily in a "the PC is important" kind of way, although that's an option, but it has to be a story that uniquely resonates with what the character is about. As characters engage with the story and advance in capability, their power and the stakes have to escalate naturally, because they are more and more entwined in it.
 
 So, the order of operations is:  
   1. Grab the setting plus any player preferences and make an appropriate but essentially character-agnostic `lore.world`. This can be its own design module.
-  2. Grab the PC's and flesh out their place in the world. This has two objects: `pc.name` (what we use during play, the "surface" of the PC), and `lore.name` (the DEPTH of the PC's, all the backstory and details that the play operator should not waste time thinking about, but it DOES inform how the story evolves and how the player themselves plays the character). We need the PC module to be good at this, working one PC at a time. The user may start filling in `pc` objects in advance or not, but at the end of designing a PC we need to have to complete, role-separated objects. The PC-lore objects have their own content requirements (not a template... the module can tell us what the template is really), and need to be filled in appropriately.
+  2. Grab the PCs and flesh out their place in the world. This has two objects: `pc.name` (what we use during play, the "surface" of the PC), and `lore.name` (the DEPTH of the PCs, all the backstory and details that the play operator should not waste time thinking about, but it DOES inform how the story evolves and how the player themselves plays the character). We need the PC module to be good at this, working one PC at a time. The user may start filling in `pc` objects in advance or not, but at the end of designing a PC we need two complete, role-separated objects. The PC-lore objects have their own content requirements (not a template... the module can tell us what the template is really), and need to be filled in appropriately.
   3. Develop fronts. As we'll see below, fronts are both surface and engagement and a plan.
-  3. Add content. Whenever we create/update content, it needs to be about what the PC's are doing, which usually has to do with fronts:  
+  4. Add content. Whenever we create/update content, it needs to be about what the PCs are doing, which usually has to do with fronts:  
     - Locations may be derived from the setting's geography, but they are faceted for our story
-    - Factions are what is relevant to what the PC's are doing (their backstory, fronts they are facing) not just "all the factions in the world" (those are lore, not faction objects)
+    - Factions are what is relevant to what the PCs are doing (their backstory, fronts they are facing) not just "all the factions in the world" (those are lore, not faction objects)
     - Obviously, encounters are already specific. We'll only create encounters for interesting parts of the story.
 
 ### Turning Fronts Into Arcs
 
 #### First, Introduce Character Core Questions
 
-Consider the PCs emotional wounds, flaws, secret wants, a line they would not cross, or if they are misguided/misinformed about something. At least some of these MUST be collected in their lore file as a result of the PC design phase. From these derive at least one **character core question** you want to challenge during the story (you could have multiple). Example character core questions (but they dependend heavily on the specific PC):
+Consider the PCs' emotional wounds, flaws, secret wants, a line they would not cross, or if they are misguided/misinformed about something. At least some of these MUST be collected in their lore file as a result of the PC design phase. From these derive at least one **character core question** you want to challenge during the story (you could have multiple). Example character core questions (but they depend heavily on the specific PC):
 
 - “Are you allowed to stop carrying everyone?”
 - “Can you be loved if you’re not useful?”
@@ -447,16 +447,16 @@ These can be stored as secrets in the character's `lore` object (NOT the `pc` ob
 
 #### Seed Arcs Into All Fronts
 
-Based on the PC's set of questions, we can then seed arcs into fronts; we do this in 3 steps:
-  1. We start the `front`, which is the surface **hook or premise**, somethng visible and actionable to the player. It can be really anything, but it should be well-embedded in the setting. You can have as many of these as it's interesting, and add more over time.
+Based on the PCs' set of questions, we can then seed arcs into fronts; we do this in 3 steps:
+  1. We start the `front`, which is the surface **hook or premise**, something visible and actionable to the player. It can be really anything, but it should be well-embedded in the setting. You can have as many of these as it's interesting, and add more over time.
   2. Come up with an **adventure core question** inside each front; it secretly lurks within and guides the flow of the story; it's the DM's "editorial intent". This component is crucial to make the adventure MATTER to the characters (and the player) and not just be a sequence of superficial beats like a budget action movie.
   3. Finally add a **twist or revelation** that, if the front is developed into a mature arc (over subsequent fronts) subverts the expectation set in the original front, and resonates with the adventure core question.
 
 So, each front is something actionable now and _also_ contains a secret question and twist, which are just one-sentence ideas, not elaborate narratives, so they are easy to tuck in there and keep in mind whenever the front is loaded.
 
-To turn into an arc, the original front must develop into other fronts over time, which advance the story. All these derived front also carry the original seed of question+twist within them. These new fronts can be normal escalations or complications, but then at some point the twist will be revealed. It's important to be patient about this! A character could start at level 1 and travel the whole world and be quite powerful when they discover "oh crap, THAT first quest was the thread I pulled to get to this shocking, world-altering revelation!", and with this system we can accomplish this without having ANY IDEA of what specific stories players will follow or what choices they'll make over time.
+To turn into an arc, the original front must develop into other fronts over time, which advance the story. All these derived fronts also carry the original seed of question+twist within them. These new fronts can be normal escalations or complications, but then at some point the twist will be revealed. It's important to be patient about this! A character could start at level 1 and travel the whole world and be quite powerful when they discover "oh crap, THAT first quest was the thread I pulled to get to this shocking, world-altering revelation!", and with this system we can accomplish this without having ANY IDEA of what specific stories players will follow or what choices they'll make over time.
 
-So, the idea is to always have multiple possible arcs (and with questions and twists) hiding within any number of fronts, all going on at once. The same question/twist can be in multiple fronts at once, which is fine: things will be resolved one way or another. This allows us to create interesting content for multiple PC's (each can have a personal arc that really pokes at their core question), and then there could be shared ones... the player doesn't really know which is which. The key idea is that ALL fronts lead us to interesting paths _no matter what the player chooses_: if a player does not "deal with the bandits" (maybe secretly a cult and exploring generational trauma etc. etc.) then CANONICALLY those where _always just boring bandits_! ONLY the thread the PC's decide to follow actually develop into grand arcs, because BY DEFINITION, this is their story. RPG is, after all, elaborate improv.
+So, the idea is to always have multiple possible arcs (and with questions and twists) hiding within any number of fronts, all going on at once. The same question/twist can be in multiple fronts at once, which is fine: things will be resolved one way or another. This allows us to create interesting content for multiple PCs (each can have a personal arc that really pokes at their core question), and then there could be shared ones... the player doesn't really know which is which. The key idea is that ALL fronts lead us to interesting paths _no matter what the player chooses_: if a player does not "deal with the bandits" (maybe secretly a cult and exploring generational trauma etc. etc.) then CANONICALLY those were _always just boring bandits_! ONLY the thread the PCs decide to follow actually develops into grand arcs, because BY DEFINITION, this is their story. RPG is, after all, elaborate improv.
 
 #### Guidance on questions and twists:
 
@@ -498,4 +498,4 @@ For the examples above, possible mid-story turns could be:
 
 #### What about the other stuff?
 
-All other design modules need to generate content in service of where the story is going. There is no "build a location" in a vacuum, it's always because the PC's are there, and they are there for a reason... and if there's no reason we should make one on the spot. For example if the player wants to visit a specific place in the world, we then must create a front (with all the potential of all other fronts) so they have something to do there. Or maybe they'll find their own fun, ignore the front, and leave. That's fine too.
+All other design modules need to generate content in service of where the story is going. There is no "build a location" in a vacuum, it's always because the PCs are there, and they are there for a reason... and if there's no reason we should make one on the spot. For example if the player wants to visit a specific place in the world, we then must create a front (with all the potential of all other fronts) so they have something to do there. Or maybe they'll find their own fun, ignore the front, and leave. That's fine too.
