@@ -17,7 +17,7 @@ import logging
 import random
 import re
 from collections.abc import Awaitable, Callable
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 import yaml
 
@@ -41,43 +41,69 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """\
 You are the campaign timeline manager. Your job is to evaluate what happens \
-in the world when time passes — updating fronts, resolving clocks and timers, \
-and determining if anything interrupts the proposed time jump.
+in the world when time passes by reading and updating fronts, which may include \
+resolving clocks and timers, and determining if anything interrupts a proposed time jump.
 
 The DESIGN MODULE for fronts (design.front) is in your context — follow its \
 front grooming rules when updating or creating fronts. You are running the \
-front design module in the context of time passing.
+front design module in the context of time passing, i.e. in "advance mode".
 
 HOW TO WORK:
 
 1. Think through each front. Use the provided luck rolls to resolve any \
 chance mechanics described in the front (e.g. "every N days there is a Y% \
 chance that Z happens"). The first roll is the primary roll; the second is \
-for tables or secondary checks.
+for tables or secondary checks. Do not use rolls unless a front asks.
 
-2. Update fronts via ```kb blocks. Preserve all existing content and only \
+2. Update fronts via "KB blocks". Preserve all existing content and only \
 change what the passage of time affects — clocks, timers, phases, statuses. \
 Use kb_get to inspect any front before modifying it.
 
-3. Determine the actual days elapsed. If a front INTERRUPTS the time jump \
-(a random encounter triggers, urgent news reaches the PCs, etc.), only ONE \
-front may interrupt. Report the actual days that passed before interruption.
+Using this format, known as a "KB block" (fenced block with front-matter id field) to update a front:
 
-4. Report your result in a fenced advance block:
-
-```advance
-days_elapsed: <N>
+```kb
+---
+id: front.key
+---
+Markdown content here; fully replaces any existing content!
 ```
 
-Where N is the actual number of days that passed (may be less than requested \
-if interrupted). If no interruption, N equals the requested increment.
+Include as many blocks as needed, one per item, You can write any text around blocks to \
+think, discuss, or explain; only the blocks have side-effects in the knowledge base, and \
+only the last block for that id has effect, so you can change your mind and try again as you go.
 
-5. Write a brief narrative summary (1-3 sentences, GM voice) of time passing. \
-This is what the player sees — describe weather, travel progress, rumours \
-heard, or simply "an uneventful night."
+3. At least ONE day has to pass, as this reprsent the day ALREADY ELAPSES in the fiction, \
+therefore the first day increment CANNOT have ANY retroactive time effects or interrupt the narrative. \
+It's likely that the narrative already covered a front effect (for example, the players battled and enemy in \
+a front and now it's at the end of the day. It's therefore important that you account for all that has transpired \
+in the front object. If something was missed that should have happened visible, let's just say it happens \
+the next day. Trigger an interruption and stop advancing time (but still update all fronts for one day).
 
-6. If a front interrupted: after the summary, describe the triggering event \
-so the scene can be played out.
+4. If the first day generates no interruption, and more than one day increment was requested, \
+determine the actual days elapsed by evaluating the fronts and checking any INTERRUPTS the narrative \
+(a random encounter triggers, urgent news reaches the PCs, etc.), only ONE \
+front may interrupt. If this happens, then the timeline and all fronts can only advance by that much.
+Report the actual days that passed before interruption (at least 1 and less than requested). \
+Note that this is NOT common! Only interrupt if the front tells you to, or if it obiously makes sense, \
+for example a visible event occurrs in the same location the narrative is currently at.
+
+5. You can emit an ``advance`` fenced block if either there was an interruption, \
+or if you want to describe anything interesting that happened that the player should \
+know. If time was cut short by an interruption, you myst always include \
+``days_elapsed`` with the actual days elapsed and a summary of what happened to \
+interrupt the original amount!
+
+```advance
+days_elapsed: <N>   # only when interrupted — omit if full time passed
+summary: |
+  Three days pass as you hike through the countryside. The road grows quieter as autumn sets in.
+```
+
+If there is an interruption, the summary must describe the triggering current \
+situation in more detail so the scene can be played out immediately after.
+If a advance block is not emitted, the time will be incremented by the amount \
+requested and the summary will be that that may days have passed. This is \
+normal and usually the default outcome.
 
 What NOT to do:
 - Do not write extended narrative prose — keep the summary brief.
@@ -103,13 +129,12 @@ that passed before interruption.
 
 Output:
 1. Your reasoning about each front (use thinking)
-2. ```kb blocks for any front updates (including timeline day counter update)
-3. ```advance block with days_elapsed: N
-4. A brief narrative summary of time passing (1-3 sentences, GM voice)
-5. If interrupted: describe what triggers the scene\
+2. ```kb blocks for any front updates
+3. ```advance block with summary field (and days_elapsed only if interrupted)\
 """
 
 DESIGN_MODULE_PIN = "design.front"
+DEFAULT_MESSAGE = " day(s) have passed."
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -136,8 +161,7 @@ def discover_front_pins(
     timeline_ids = [p for p in pinned_ids if p.startswith("timeline.")]
     front_ids: set[str] = set()
     for tid in timeline_ids:
-        ids = kb.get_ids_with_tag(tid)
-        front_ids.update(fid for fid in ids if fid.startswith("front."))
+        front_ids.update(kb.get_ids_with_tag(tid, type_filter="front"))
     return [f"{fid}+" for fid in sorted(front_ids)]
 
 
@@ -146,31 +170,45 @@ def generate_luck_rolls(front_ids: list[str]) -> dict[str, tuple[int, int]]:
     return {fid: (random.randint(1, 100), random.randint(1, 100)) for fid in front_ids}
 
 
-def parse_advance_result(content: str, requested_increment: int) -> int:
-    """Parse the ``advance`` fenced block for ``days_elapsed``.
+def parse_advance_result(
+    content: str, requested_increment: int
+) -> tuple[int, str]:
+    """Parse the ``advance`` fenced block.
 
-    Returns the validated day count, clamped to [1, requested_increment].
-    If no block is found, returns the full requested increment.
+    Returns ``(days_elapsed, summary)`` where:
+    - ``days_elapsed`` is clamped to [1, requested_increment]; defaults to
+      the full increment if the block or field is absent.
+    - ``summary`` is the narrative text from the ``summary`` field; falls
+      back to ``"{days}{DEFAULT_MESSAGE}"`` if not present.
     """
+
+    def _default(days: int) -> tuple[int, str]:
+        return days, f"{days}{DEFAULT_MESSAGE}"
+
     match = _ADVANCE_BLOCK_RE.search(content)
     if not match:
-        return requested_increment
+        return _default(requested_increment)
     try:
-        data = yaml.safe_load(match.group(1))
-        days = int(data.get("days_elapsed", requested_increment))
+        data: Any = yaml.safe_load(match.group(1))
+        if not isinstance(data, dict):
+            return _default(requested_increment)
+        d = cast(dict[str, Any], data)
+        days = int(d.get("days_elapsed", requested_increment))
+        raw_summary = d.get("summary")
+        summary = str(raw_summary).strip() if raw_summary is not None else None
     except (ValueError, TypeError, AttributeError, yaml.YAMLError):
-        return requested_increment
+        return _default(requested_increment)
     if days < 1:
         logger.warning("advance: days_elapsed %d < 1, clamping to 1", days)
-        return 1
+        days = 1
     if days > requested_increment:
         logger.warning(
             "advance: days_elapsed %d > %d, clamping",
             days,
             requested_increment,
         )
-        return requested_increment
-    return days
+        days = requested_increment
+    return days, summary if summary else f"{days}{DEFAULT_MESSAGE}"
 
 
 def read_current_day(kb: KnowledgeStore, timeline_id: str) -> int:
@@ -204,7 +242,7 @@ def update_timeline_day(
         f"{match.group(1)}{current + days_elapsed}", obj.text, count=1
     )
     local_kb = KnowledgeStore.for_project(
-        storage._git_root, storage=storage  # type: ignore[arg-type]
+        storage.root, storage=storage  # type: ignore[arg-type]
     )
     local_kb.store_object(timeline_id, updated)
 
@@ -417,8 +455,8 @@ class AdvanceOperator(Operator):
         if not content.strip():
             raise OperatorError("no content generated")
 
-        # 12. Parse advance result
-        days_elapsed = parse_advance_result(content, increment)
+        # 12. Parse advance result (days elapsed + narrative summary)
+        days_elapsed, summary = parse_advance_result(content, increment)
 
         # 13. Extract KB updates from output
         result = kb_extract_from_text(content, session.project_root, inline_storage)
@@ -428,7 +466,8 @@ class AdvanceOperator(Operator):
         # 14. Update timeline day counter
         update_timeline_day(session.kb, timeline_ids[0], days_elapsed, inline_storage)
 
-        # 15. Close the advance sub-node on the parent
+        # 15. Write narrative summary to parent node, then close the advance sub-node
+        inline_op.append_to_node(cursor, summary + "\n\n")
         inline_op.append_to_node(cursor, inline_op.build_close_tag(advance_id) + "\n")
 
         return result

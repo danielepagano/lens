@@ -93,6 +93,8 @@ id: type.key
 tags:
   - link.tag (dot notation links this entry to an entry with that type.key)
   - key:value (used for standardized classification, only if requested by template)
+remove-tags:
+  - tag.to.remove (optional; removes these tags from the entry)
 ---
 Entry text here (should be based on type._template).
 ```

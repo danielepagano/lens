@@ -1,4 +1,4 @@
-<!-- Any type of Location. Usage: Ensures continuity when revisiting places; we ALWAYS link a location to the one of which it's part (or lore.work for roots), which lets us create a map graph of our setting. -->
+<!-- Any type of Location. Usage: Ensures continuity when revisiting places; we ALWAYS link a location to the one of which it's part (or lore.world for roots), which lets us create a map graph of our setting. -->
 Name
 
 - Type of location (everything else below is optional, just add if relevant to story)

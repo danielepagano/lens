@@ -262,12 +262,17 @@ class KnowledgeStore:
                 return sorted(tags)
         return []
 
-    def get_ids_with_tag(self, tag: str) -> list[str]:
+    def get_ids_with_tag(
+        self, tag: str, type_filter: str | None = None
+    ) -> list[str]:
         """Return object IDs that have the given tag across project and datasets.
 
         The project store's ``tags.toml`` is authoritative for project-local
         objects; selected datasets contribute their own tag indexes via their
         ``tags.toml`` files. The result is the union of all matching IDs.
+
+        If *type_filter* is given, only IDs whose type prefix matches are returned
+        (e.g. ``type_filter="front"`` keeps only ``front.*`` IDs).
         """
         tag_l = tag.lower()
         objs: set[str] = set()
@@ -281,7 +286,11 @@ class KnowledgeStore:
             ds_tag_to_objs, _ = ds._load_tags()
             objs.update(ds_tag_to_objs.get(tag_l, set()))
 
-        return sorted(objs)
+        result = sorted(objs)
+        if type_filter:
+            prefix = f"{type_filter}."
+            result = [oid for oid in result if oid.startswith(prefix)]
+        return result
 
     def get_ids_with_all_tags(self, tags: list[str]) -> list[str]:
         """Return object IDs that have every given tag across project and datasets.

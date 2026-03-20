@@ -434,8 +434,11 @@ export interface KbWithTagResponse {
   id_to_tags?: Record<string, string[]>
 }
 
-export const getKbWithTag = (tags: string[]): Promise<KbWithTagResponse> =>
-  post('/kb/with-tag', { tags }) as Promise<KbWithTagResponse>
+export const getKbWithTag = (
+  tags: string[],
+  options?: { expand?: boolean; recurse?: number | null; same_type_only?: boolean; type_filter?: string | null }
+): Promise<KbWithTagResponse> =>
+  post('/kb/with-tag', { tags, ...options }) as Promise<KbWithTagResponse>
 
 // ---- Transaction API ----
 

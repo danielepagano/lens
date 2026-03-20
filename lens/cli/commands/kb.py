@@ -223,6 +223,12 @@ def with_tag(
         "--same-type",
         help="Filter by object type when starting tag is a dot-tag",
     ),
+    type_filter: str | None = typer.Option(
+        None,
+        "--type",
+        "-t",
+        help="Only return objects of this type (e.g. --type front)",
+    ),
 ) -> None:
     """List object IDs matching tag groups (AND across, OR within parens); optionally expand or recurse by dot-tags."""
     if not tags:
@@ -234,6 +240,7 @@ def with_tag(
             expand=expand,
             recurse=recurse,
             same_type_only=same_type_only,
+            type_filter=type_filter,
         )
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
