@@ -7,10 +7,10 @@ PROJECT_ROOT="$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel 2>/dev/nul
 
 echo "[session-start] Installing Python dependencies..."
 cd "$PROJECT_ROOT"
-"$POETRY" install --quiet
+"$POETRY" install --quiet --no-update
 
 echo "[session-start] Installing Node dependencies..."
 cd "$PROJECT_ROOT/lens/server/ui"
-npm install --silent --prefer-offline 2>/dev/null || npm install --silent
+npm ci --silent 2>/dev/null || npm ci --silent
 
 echo "[session-start] Done."
