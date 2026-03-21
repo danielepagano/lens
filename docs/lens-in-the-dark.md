@@ -18,9 +18,11 @@ The AI (via `play`) is your GM. It sets scenes, voices NPCs, sets position and e
 | Design the world with `design` modules | Generate content within design sessions |
 
 The workflow maps to Lens operators:
-- **`design`** — Session zero: build setting (`--module world`), characters (`--module pc`), and story hooks (`--module front`). Also locations, NPCs, encounters as needed.
+- **`design`** — Session zero: build setting (`--module world`), characters (`--module pc`), and story hooks (`--module front`). Also locations, NPCs, encounters as needed with the respective modules.
 - **`play`** — All narrative during play. The AI reads pinned encounter objects, fronts, and location objects to run scenes. You direct your characters; it authors what happens.
-- **`advance`** — End the day. The world takes its turn: fronts tick, events unfold, and your characters get downtime.
+- **`advance`** — End the current phase. The world takes its turn: fronts tick, events unfold, and your characters get downtime. 
+
+TODO: specifically state the game is played in alternating downtime/mission phases; advance triggers downtime after a mission, not just because x days have passed! Otherwise downtime is no longer balanced. Advancing multiple days is just narrative progress, not mechanical. Also downtime is NOT interactive, so it's useless for running downtime! The player cannot choose activites. Advance can RECORD what happens in a phase like downtime, but downtime itself is played!
 
 ## The Dice
 
@@ -52,7 +54,9 @@ There are **9 actions** grouped into **3 attributes**:
 | **Study** — scrutinize, research, analyze | **Prowl** — sneak, hide, move quietly | **Consort** — socialize, connect, blend in |
 | **Survey** — observe, anticipate, read situations | **Skirmish** — fight in close quarters, brawl | **Sway** — persuade, deceive, charm |
 
-Each action has a **rating** from 0 to 4 (the number of dots filled). At character creation, you have **7 action dots** to distribute, with a **maximum of 2** in any single action.
+Each action has a **rating** from 0 to 4 (the number of "dots filled"). At character creation, you have **7 action dots** to distribute, with a **maximum of 2** in any single action.
+
+TODO: we don't have paper forms... why dots?
 
 Your **attribute rating** (Insight, Prowess, or Resolve) equals the number of actions in that group that have **at least 1 dot**. So if you have dots in Hunt and Study but not Survey, your Insight rating is 2.
 
@@ -94,12 +98,14 @@ Start with:
 - **0 trauma conditions** (4 trauma = retire the character)
 - **Empty harm track** (3 levels: lesser, moderate, severe; level 4 is fatal)
 
-### 6. Write Your `pc.*` Object
+### 6. Write It down
 
-Follow the `pc._template` in your dataset. At the bottom, add a `## Mechanics` section:
+Follow the `pc._template` to describe your character(s) to the AI. Pin it to narrative.
+
+You don't have to write mechanicals details in that object or track point there, but if you want to, you can add somthing like a `Mechanics` section:
 
 ```
-## Mechanics
+## Mechanics (user only)
 - Actions: Hunt 1, Study 2, Finesse 1, Prowl 2, Skirmish 1
 - Abilities: [list your special abilities]
 - Vice: [type] — [brief description] (purveyor: [name])
@@ -110,16 +116,20 @@ Follow the `pc._template` in your dataset. At the bottom, add a `## Mechanics` s
 
 ## Crew Creation
 
-The crew is the group your characters belong to. It's intentionally light — just enough to give the AI a sense of your group's scale and standing.
+The crew is the group your characters belong to. It's intentionally light — just enough to give the AI a sense of your group's scale and standing. You should create a whole crew an all characters in it.
 
 1. **Concept** — What is this group? A mercenary company, a band of explorers, a noble house's agents, a coven of witches? One or two sentences.
 2. **Tier** — Start at **0**. This is your crew's power level, resources, and reach. It informs fortune rolls, the scale of opposition you face, and the quality of assets you can acquire.
 3. **Rep** — A 12-segment clock. Fill it by completing operations (2 rep per operation, ±1 per tier difference with opposition). When full, pay coin equal to (new Tier × 8) to advance your Tier, then reset rep.
 4. **Coin** — Start with **2**. Abstract wealth. Spend it on downtime, assets, and crew advancement. Earned through operations.
 
-Record your crew in a `faction.*` or `lore.*` KB object.
+Record your crew in a `faction.*` or `lore.*` KB object. Pin it to narrative.
+
+TODO: tier "informs fortune rolls" what does that mean? It's not mentioned anywhere else.
 
 ## Playing the Game
+
+> TODO: outline the preparation VS mission VS downtime?
 
 ### The Action Roll
 
@@ -205,6 +215,8 @@ Sometimes the AI needs to decide something uncertain without a PC action — how
 - **4–5**: Mixed result
 - **1–3**: Bad result
 
+TODO: The AI may not tell you what the roll was for! They could encode the outcome in a secret. The AI needs to have a protocol for all this.
+
 ### Gathering Information
 
 When you want to know something about the world, ask the AI. If it's common knowledge, you just get an answer. If there's uncertainty, the AI will call for an action or fortune roll, and the **effect level** determines how much detail you learn:
@@ -236,7 +248,7 @@ One of the most powerful tools in LitD. When you're in a tight spot during play,
 
 The AI may call for a roll within the flashback — it's handled like any other action. Flashbacks cannot undo what's already been established in the fiction. They reveal things that were always true but hadn't been mentioned yet.
 
-**In Lens terms**: A flashback can be implemented as a narrative section that un-pins the current timeline, plays out a self-contained past moment, and applies its results when the section closes. This is one of the driving use cases for Lens's timeline system.
+**In Lens terms**: A flashback can be implemented as a single step, or you could create a whole narrative section that un-pins the current timeline (so current fronts don't matter), plays out a self-contained past scene, and applies its results when the section closes. TODO: this is not useful: how should it actually work? Why is a section even needed? It looks like it's at most one action? When is a roll required?
 
 ## Progress Clocks
 
@@ -250,6 +262,8 @@ Clocks track progress, not method. Name them after the obstacle ("Alert Level", 
 
 **In Lens**: Progress clocks live in `front.*` KB objects. Fronts already track phased situations with timeline anchors and can be advanced by the `advance` operator. When the AI mentions a clock during play, the player should record it on the relevant front. The AI can reference clocks when setting position and effect.
 
+TODO: updating clocks in kb objects by hand during play sounds miserable. Surely we can do better. These clocks can move pretty fast inside a scene, so we need the AI to control them even during play mode? Upserting the whole front is dumb, but we could have small narrative state object(s) with just this kind of thing?  
+
 Types of clocks:
 - **Danger clocks**: GM ticks them on complications; when full, the danger manifests
 - **Racing clocks**: Two opposed clocks; whoever fills theirs first wins
@@ -257,7 +271,7 @@ Types of clocks:
 
 ## Downtime
 
-Downtime happens when you call `lens advance` to end the day. While the `advance` operator handles the world (ticking fronts, checking for events, generating consequences), each PC may perform **one downtime activity**:
+Downtime happens when you call `lens advance` to end the play phase (TODO: make more formal rules). While the `advance` operator handles the world (ticking fronts, checking for events, generating consequences), each PC may perform **one downtime activity**:
 
 ### Recover
 Seek treatment for harm. Roll your **Prowess** attribute (for physical harm) or **Resolve** (for mental harm). Tick segments on your **healing clock** (a 4-segment clock):
@@ -306,6 +320,8 @@ At the end of a session, review these triggers and mark 1 XP (or 2 if it happene
 
 End-of-session XP can go on any track.
 
+TODO: session is only mentioned here; not a Lens construct! We need specific play phases.
+
 ### Advances
 
 - **Attribute track** (6 segments): Add **+1 action dot** to any action in that attribute group (max 3, or 4 if the crew unlocks mastery)
@@ -320,11 +336,15 @@ The crew earns **2 rep** per completed operation (±1 per tier difference with o
 
 Higher Tier means better assets, stronger cohorts, and more formidable opposition taking you seriously.
 
+TODO: operations are only mentioned in Crew stuff... is an operation a play phase? Plan -> operation -> downtime?
+
 ---
 
 ## The Rules (AI Reference)
 
 Below is the `rules.system` KB object — the concise mechanical reference pinned to the AI during play. It works alongside `rules.engagement` (which covers the authority model, decision gates, and scene guidance).
+
+TODO: these rules are very bad; they are hard to decipher and too terse even for an AI. They don't really explain how the game is played or what all these snippets of mechanics for a game, or how to make good decisions. For example fortune rolls tell the AI to roll, and it cannot roll. After the actual rules above are reworked it needs to be completely rewritten.
 
 ```kb
 ---
