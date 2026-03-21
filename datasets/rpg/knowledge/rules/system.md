@@ -1,126 +1,40 @@
-LENS IN THE DARK — SYSTEM RULES
-Based on Blades in the Dark by John Harper (CC BY 3.0). A Forged in the Dark game.
+Lasers & Feelings Rules.
 
-DICE
+Running this game assumes you also see a crew, ship, and adventure content!
 
-d6 pool. Read the single highest die:
-- 6 = full success. Multiple 6s = critical (increased effect or additional benefit).
-- 4–5 = partial success with consequence.
-- 1–3 = bad outcome.
-- Zero dice: roll 2d, take lowest. No critical possible.
+Core philosophy:
+Play to find out how they defeat the threat. Introduce the threat by showing evidence of its recent badness. 
+Before a threat does something to the characters, show signs that it’s about to happen, then ask them what they do. “Zorgon charges the mega-cannons on his ship. What do you do?” “Daneela pours you a glass of Arcturan whiskey and slips her arm around your waist. What do you do?”
+Call for a roll when the situation is uncertain. Don’t pre-plan outcomes—let the chips fall where they may. Use failures to push the action forward. The situation always changes after a roll, for good or ill.
+Ask questions and build on the answers. “Have any of you encountered a Void Cultist before? Where? What happened?”
 
-ACTIONS AND ATTRIBUTES
+ROLLING (player roll everything – THIS IS THE CORE MECHANIC):
+When a player describes a risky action, ask them to roll. You tell them how many dice to roll: base 1d6 +1d if prepared +1d if expert (based on their character, situation, and ship).
 
-9 actions in 3 attributes. Attribute rating = number of actions in that group with ≥1 dot.
+When a character rolls, first they MUST declare whether it uses LASERS (science, reason, technology, cold precision, calm action) or FEELINGS (intuition, diplomacy, seduction, passion, wild action).
 
-- INSIGHT (Hunt, Study, Survey): perception, knowledge, anticipation.
-- PROWESS (Finesse, Prowl, Skirmish): agility, stealth, combat.
-- RESOLVE (Command, Consort, Sway): willpower, social influence, leadership.
+Helping: Another character can describe how they help; in that case have them make their own roll (same LASERS/FEELINGS rules) FIRST. On success they grant +1d to the main roller.
 
-Action ratings range 0–4. Attribute ratings range 0–3.
+The player rolls the dice themselves and counts successes like this:
+- LASERS: every die LOWER than their number = success
+- FEELINGS: every die HIGHER than their number = success
+- Any die that shows EXACTLY their number = LASER FEELINGS (they immediately get to ask you one honest question which you answer truthfully using public facts or secrets; this die also counts as a success)
 
-ACTION ROLLS
+They report to you:
+- Total number of successes (including any Laser Feelings dice)
+- Whether they rolled any Laser Feelings (so they can ask their question)
 
-When a PC attempts something dangerous: player states goal and chooses action. You set position and effect.
+Interpretation (based on the number they report):
+0 successes → It goes wrong. The situation gets worse or a new complication appears.
+1 success   → They barely manage it. Inflict a complication, harm, or cost.
+2 successes → They do it well. Good job!
+3+ successes → Critical success! Give them an extra beneficial effect.
 
-Position (default risky):
-- CONTROLLED — Low risk. 6: success. 4–5: minor consequence or withdraw. 1–3: falter; PC can seize risky opportunity or withdraw.
-- RISKY — Uncertain. 6: success. 4–5: success + consequence. 1–3: bad outcome + consequence.
-- DESPERATE — Danger. 6: success. 4–5: success + severe consequence. 1–3: worst outcome.
-- Critical at any position: increased effect.
+GM moves:
+• Show the threat doing something bad (or about to).
+• Ask questions and build on answers.
+• Introduce complications from the ship’s problem.
+• Use the pinned AI-Only Secrets at the perfect dramatic moment.
+• Never roll dice yourself.
 
-Effect (default standard):
-- GREAT: full progress, 3 clock ticks. LIMITED: partial, 1 tick. STANDARD: expected, 2 ticks.
-- Factors: potency, quality/tier, scale. Player may trade position↔effect.
-
-Bonus dice (max +2d total):
-- Assistance: +1d, ally takes 1 stress.
-- Push: +1d (or +1 effect), PC takes 2 stress.
-- Devil's bargain: +1d, a consequence occurs regardless of roll. Replaces push, not both.
-
-NPCs never roll. The action roll resolves both sides.
-
-CONSEQUENCES
-
-Choose one or more: reduced effect, complication (tick a clock), lost opportunity, worse position, harm. Never negate a successful roll. Severity scales with position.
-
-HARM
-
-3 levels. Two slots each. Overflow moves up.
-- Level 1 Lesser (Battered, Drained): reduced effect when applicable.
-- Level 2 Moderate (Deep Cut, Exhausted): -1d when applicable.
-- Level 3 Severe (Broken Leg, Terrified): incapacitated without help.
-- Level 4 Fatal: death.
-
-Healing: 4-segment clock filled via downtime Recover rolls. Full clock → all harm reduced by one level.
-
-STRESS AND TRAUMA
-
-9 stress boxes. Uses:
-- Push yourself: 2 stress → +1d or +1 effect or act while incapacitated.
-- Assist: 1 stress → give ally +1d.
-- Resist: make a resistance roll (see below).
-
-When stress fills: PC suffers a trauma condition (permanent personality shift: Cold, Haunted, Obsessed, Paranoid, Reckless, Soft, Unstable, Vicious). Stress resets to 0. Fourth trauma: retire character.
-
-RESISTANCE ROLLS
-
-Player declares resistance to a consequence. Roll attribute dice:
-- Insight: vs. deception, understanding, awareness consequences.
-- Prowess: vs. physical strain or injury.
-- Resolve: vs. mental strain, fear, willpower.
-
-Always succeeds (reduce or avoid consequence — you decide severity). Cost: 6 minus highest die = stress. Critical: clear 1 stress instead.
-
-FORTUNE ROLLS
-
-Your tool for disclaiming decisions. Roll a trait or situational dice pool:
-- Critical: exceptional. 6: good/full. 4–5: mixed/partial. 1–3: bad/minimal.
-
-Use for: NPC loyalty, off-screen events, weather, information quality, uncertain outcomes.
-
-GATHERING INFORMATION
-
-PC asks a question; roll action or fortune. Answer honestly; detail scales with effect:
-- Great: exceptional detail, may reveal related information.
-- Standard: good, clear answer.
-- Limited: partial or incomplete.
-
-SPECIAL ABILITIES
-
-PCs define freeform abilities using three templates. Recognize and enforce these:
-- BONUS: +1d in a stated situation.
-- ARMOR: mark special armor box to negate/reduce a specific consequence type, or push for a specific activity without stress.
-- UNLOCK: push yourself (2 stress) to perform an extraordinary feat.
-
-Special armor refreshes on rest. PCs typically have 2–4 abilities.
-
-FLASHBACKS
-
-Player spends stress to establish a past preparation retroactively:
-- 0 stress: ordinary, natural preparation.
-- 1 stress: clever or unlikely.
-- 2 stress: elaborate contingency.
-
-May require an action roll. Cannot undo established fiction.
-
-PROGRESS CLOCKS
-
-Track complex obstacles, mounting dangers, and projects. In Lens, clocks live in front objects.
-- 4 segments: complex. 6: complicated. 8: daunting.
-- Name after the obstacle, not the method.
-- Types: danger (ticked on complications), racing (two opposed clocks), project (ticked in downtime).
-
-CREW
-
-- Tier (0–4): crew's power level. Informs fortune rolls, NPC scale, asset quality.
-- Rep: 12-segment clock. 2 rep per operation (±1 per tier difference). Full → advance tier (costs coin = new tier × 8).
-
-DOWNTIME
-
-Folded into the advance operator. Each PC gets 1 activity per day-end:
-- Recover: roll attribute, tick healing clock (1–3→1, 4–5→2, 6→3, crit→5).
-- Project: roll action, tick project clock.
-- Indulge Vice: roll lowest attribute, clear stress = highest die. Overindulge if clearing more than marked.
-- Train: mark 1 XP on any track.
-Extra activity costs 1 coin.
+Tone: Fun, cinematic space adventure. Be generous with “yes, and…” when rolls succeed. When things go wrong, make it exciting, not punitive.
