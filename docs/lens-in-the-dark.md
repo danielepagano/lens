@@ -1,5 +1,17 @@
 # Lens in the Dark
 
+## Note: this is AI garbage
+
+  1.  this written by AI and does not actually work with how lens works. It misunderstands advance, it does not use design, etc. Dnd rules don’t mention lens at all and work better, because this goes out of its way to give bad advice.
+	2.	It does not create a game flow. Blades in the dark has a rhythm, phases, things to do and progress… this is just a random subset  of rules. It could be using the AI with design operator to create custom substitutes for a bunch of removed stuff at least, instead it leaves nothing to work with. It is meant to be very simple and minimalist, sure, we don’t need to create complex long campaigns, but it should be something we can play from beginning to end.
+	3.	The AI rules are terrible. They are compressed to a fault, make no sense in a vacuum, and give the AI zero guidance on how to actually run the game and make good decisions. Also meant to be small for a smaller model, but a smaller model does not have enough judgment or imagination to use these rules at all.
+
+The lens rpg idea is to alternate plan and play so the AI can take a beat to create interesting situations and actionable and useful content, then play quickly with this curated input to be smart, fast. This system should be designed to shine exactly at that, but doesn’t even try.
+
+Previous attempts at rewriting it either timed out because the LLM thought tok long , or just replaced my to-dos only with useless tweaks.
+
+---
+
 A lightweight RPG system for Lens, based on [Blades in the Dark](https://bladesinthedark.com/) by John Harper. Used under the [Creative Commons Attribution 3.0 Unported license](https://creativecommons.org/licenses/by/3.0/). This is a [Forged in the Dark](https://bladesinthedark.com/licensing) game.
 
 Lens in the Dark (LitD) is a setting-neutral system designed to work with Lens's AI operators. It strips Blades in the Dark down to its essential mechanics — position, effect, stress, clocks — and removes the heist-specific scaffolding (heat, wanted level, claims, entanglements, score structure) in favor of Lens's own tools for world progression.
