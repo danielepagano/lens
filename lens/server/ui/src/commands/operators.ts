@@ -55,12 +55,14 @@ const commands: CommandDefinition[] = [
     trigger: 'play',
     group: 'rpg',
     requiresDataset: 'rpg',
-    positional: [{ name: 'prompt', valueType: 'prompt', required: true, hint: 'what do you do?' }],
+    positional: [{ name: 'prompt', valueType: 'prompt', hint: 'what do you do?' }],
     options: [
+      { name: 'module', valueType: 'kb-id', repeatable: false, hint: 'rules module to use', default: 'rules.', exclude: ['rules.system', 'rules.rpg'] },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
       { name: 'retry' },
+      { name: 'end' },
     ],
   },
   {
@@ -181,11 +183,23 @@ const handler: CommandHandler = async (
         handleEvent
       )
     } else if (command === 'play') {
-      if (prompt === undefined) {
-        throw new Error(`Play requires a prompt`)
+      const endPlay = ctx.args.options['end'] === true
+      if (!endPlay && !retry && prompt === undefined) {
+        throw new Error(`Play requires a prompt (unless using --end or --retry)`)
+      }
+      const rawPlayModule = (ctx.args.options['module'] as string | undefined) || undefined
+      let playModuleId: string | undefined
+      if (!endPlay && rawPlayModule) {
+        if (!rawPlayModule.startsWith('rules.')) {
+          throw new Error(`Play module must start with 'rules.': ${rawPlayModule}`)
+        }
+        playModuleId = rawPlayModule.slice('rules.'.length)
+        if (!playModuleId) {
+          throw new Error(`Play module must include a key after 'rules.': ${rawPlayModule}`)
+        }
       }
       result = await runPlay(
-        { prompt, pins, unpins, llm_id: llmId, retry, as_pc },
+        { prompt, module_id: playModuleId, pins, unpins, llm_id: llmId, retry, end: endPlay, as_pc },
         handleEvent
       )
     } else if (command === 'advance') {
@@ -317,25 +331,23 @@ const handler: CommandHandler = async (
   }
 }
 
-const PLAY_REQUIRED_PINS = ['rules.system', 'rules.rpg'] as const
-
-export const operatorModule: CommandModule = { 
+export const operatorModule: CommandModule = {
   commands: (stats) => {
     const result: CommandDefinition[] = []
-    
+
     for (const cmd of commands) {
       // Dataset check
       if (cmd.requiresDataset != null && !stats.current_datasets?.includes(cmd.requiresDataset)) {
         continue
       }
-      
-      // Special handling for play: requires rules + at least one PC pinned
+
+      // Special handling for play: requires at least one PC pinned
+      // (rules.system and rules.rpg are auto-pinned by the play session)
       if (cmd.trigger === 'play') {
         const pins = stats.effective_pins_at_cursor ?? []
-        const hasRequiredRules = PLAY_REQUIRED_PINS.every(r => pins.includes(r))
         const pcPins = pins.filter(p => p.startsWith('pc.'))
-        
-        if (!hasRequiredRules || pcPins.length === 0) {
+
+        if (pcPins.length === 0) {
           continue
         }
         

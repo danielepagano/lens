@@ -245,11 +245,13 @@ export const runWrite = (
   runStreamingOp('/operator/write', params, onEvent)
 
 export interface PlayParams {
-  prompt: string
+  prompt?: string
+  module_id?: string
   pins?: string[]
   unpins?: string[]
   llm_id?: string
   retry?: boolean
+  end?: boolean
   as_pc?: string
 }
 

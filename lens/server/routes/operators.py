@@ -33,11 +33,13 @@ class WriteBody(BaseModel):
 
 
 class PlayBody(BaseModel):
-    prompt: str
+    prompt: str | None = None
+    module_id: str | None = None
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
     retry: bool = False
+    end: bool = False
     as_pc: str | None = None
 
 
@@ -248,31 +250,49 @@ async def operator_play(
     from lens.rpg.operators.play import PlayOperator
 
     narrative = _require_narrative(session)
-    _validate_pins(session, body.pins, body.unpins)
+    pins = list(body.pins)
+    unpins = list(body.unpins)
+    if body.module_id is not None and body.module_id.strip():
+        module_key = body.module_id.strip()
+        pins_for_validation = pins + [f"rules.{module_key}"]
+        _validate_pins(session, pins_for_validation, unpins)
+    else:
+        module_key = None
+        _validate_pins(session, pins, unpins)
     cursor = narrative.find_cursor()
-    node_addr = str(cursor.to_address())
+    target_ref: list[str] = [str(cursor.to_address())]
 
     lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+
+    async def on_stream_target(addr: str) -> None:
+        target_ref[0] = addr
+        await event_queue.put({"type": "target", "node": addr})
+
     on_token = _make_on_token(event_queue)
 
     extra_params = {"as_pc": body.as_pc} if body.as_pc is not None else None
 
     def coro_fn() -> Any:
-        return PlayOperator.run_inline(
+        return PlayOperator.run_session(
             session=session,
             narrative=narrative,
             prompt=body.prompt,
-            pins=body.pins,
-            unpins=body.unpins,
+            module_id=module_key,
+            pins=pins,
+            unpins=unpins,
             llm_id=body.llm_id,
             retry=body.retry,
+            end=body.end,
             on_token=on_token,
+            on_stream_target=on_stream_target,
             cancel_event=lock.cancel_event,
             extra_params=extra_params,
         )
 
-    return _start_operator_stream(lock, event_queue, session, "play", node_addr, coro_fn)
+    return _start_operator_stream(
+        lock, event_queue, session, "play", lambda: target_ref[0], coro_fn
+    )
 
 
 @router.post("/operator/advance")

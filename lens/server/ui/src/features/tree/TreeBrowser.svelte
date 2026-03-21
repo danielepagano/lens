@@ -12,6 +12,53 @@
   let tree: TreeNode[] = []
   let error = ''
 
+  let createDialog: HTMLDialogElement | undefined
+  let newNarrativeSlug = ''
+  let createNarrativeError = ''
+  let createNarrativeBusy = false
+
+  const SLUG_RE = /^[a-zA-Z0-9_-]+$/
+
+  function openCreateNarrativeDialog() {
+    newNarrativeSlug = ''
+    createNarrativeError = ''
+    createDialog?.showModal()
+  }
+
+  function closeCreateNarrativeDialog() {
+    createNarrativeBusy = false
+    createDialog?.close()
+  }
+
+  async function submitNewNarrative() {
+    const slug = newNarrativeSlug.trim()
+    if (!slug) {
+      createNarrativeError = 'Name cannot be empty.'
+      return
+    }
+    if (!SLUG_RE.test(slug)) {
+      createNarrativeError = 'Use only letters, numbers, underscores, and hyphens.'
+      return
+    }
+    createNarrativeError = ''
+    createNarrativeBusy = true
+    try {
+      await setActiveNarrative(slug)
+      treeRefreshTrigger.update((n) => n + 1)
+      const newStats = await getStats()
+      applyStats(newStats)
+      if (newStats.cursor) {
+        await navigate(newStats.cursor)
+      }
+      closeCreateNarrativeDialog()
+      treeOpen.set(false)
+    } catch (err) {
+      createNarrativeError = String(err)
+    } finally {
+      createNarrativeBusy = false
+    }
+  }
+
   async function loadTree() {
     tree = await getTree()
   }
@@ -60,15 +107,66 @@
       <CloseIcon size={18} />
     </button>
   </div>
-  {#if $stats && $stats.narratives.length > 0}
+  {#if $stats}
     <div class="narrative-switcher">
-      <select value={$stats.active_narrative} on:change={onNarrativeChange} aria-label="Active narrative">
-        {#each $stats.narratives as slug (slug)}
-          <option value={slug}>{slug}</option>
-        {/each}
-      </select>
+      <div class="narrative-switcher-row">
+        {#if $stats.narratives.length > 0}
+          <select value={$stats.active_narrative} on:change={onNarrativeChange} aria-label="Active narrative">
+            {#each $stats.narratives as slug (slug)}
+              <option value={slug}>{slug}</option>
+            {/each}
+          </select>
+        {:else}
+          <span class="narrative-switcher-placeholder" aria-hidden="true">No narratives yet</span>
+        {/if}
+        <button
+          type="button"
+          class="narrative-switcher-add"
+          on:click={openCreateNarrativeDialog}
+          aria-label="Create new narrative"
+          title="New narrative"
+        >
+          +
+        </button>
+      </div>
     </div>
   {/if}
+
+  <dialog bind:this={createDialog} class="narrative-create-dialog">
+    <article>
+      <header>
+        <p><strong>New narrative</strong></p>
+      </header>
+      <form
+        on:submit|preventDefault={submitNewNarrative}
+      >
+        <label>
+          Name
+          <input
+            type="text"
+            name="narrative-slug"
+            bind:value={newNarrativeSlug}
+            placeholder="e.g. campaign_two"
+            autocomplete="off"
+            disabled={createNarrativeBusy}
+            aria-invalid={createNarrativeError ? 'true' : undefined}
+            aria-describedby={createNarrativeError ? 'narrative-create-err' : undefined}
+          />
+        </label>
+        {#if createNarrativeError}
+          <p id="narrative-create-err" class="narrative-create-error" role="alert">{createNarrativeError}</p>
+        {/if}
+        <footer>
+          <button type="button" class="secondary" on:click={closeCreateNarrativeDialog} disabled={createNarrativeBusy}>
+            Cancel
+          </button>
+          <button type="submit" disabled={createNarrativeBusy}>
+            {createNarrativeBusy ? 'Creating…' : 'Create'}
+          </button>
+        </footer>
+      </form>
+    </article>
+  </dialog>
   <div class="sidebar-body">
     {#if error}
       <p class="error-state">{error}</p>

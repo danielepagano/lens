@@ -40,6 +40,46 @@ export function getCommandSuggestions(
   }))
 }
 
+/**
+ * Returns true if we can determine that an option would have zero valid suggestions.
+ * For kb-id options with a default type prefix: checks the cached key list (minus excludes).
+ * For slug options: resolves the source and checks for entries.
+ * Returns false (= show the option) when we can't tell yet (e.g. keys not cached).
+ */
+function optionKnownEmpty(
+  o: import('../../commands/common').CliPayload,
+  sources: DataSources,
+): boolean {
+  if (!o.valueType || o.valueType === 'flag') return false
+
+  if (o.valueType === 'kb-id' && o.default) {
+    // default is a type prefix like "rules." — check if the type has any non-excluded keys
+    const typeName = o.default.replace(/\.$/, '')
+    if (!sources.kbKeyCache.has(typeName)) {
+      sources.fetchKbKeys(typeName) // trigger load; will re-evaluate once cached
+      return false
+    }
+    const allKeys = (sources.kbKeyCache.get(typeName) ?? []).filter((k) => !k.startsWith('_template'))
+    if (o.exclude) {
+      const excludeSet = new Set(o.exclude)
+      return allKeys.every((k) => excludeSet.has(typeName + '.' + k))
+    }
+    return allKeys.length === 0
+  }
+
+  if (o.valueType === 'slug' && o.slugSource) {
+    const statsMatch = o.slugSource.match(/^\[stats\.(\w+)\]$/)
+    if (statsMatch) {
+      const field = statsMatch[1] as keyof Stats
+      const statsValue = sources.stats?.[field]
+      return !Array.isArray(statsValue) || statsValue.length === 0
+    }
+    // Static list — never empty if defined
+  }
+
+  return false
+}
+
 /** Build suggestions based on parse state and the active payload being typed. */
 export function getSuggestions(
   state: ParseState,
@@ -54,6 +94,7 @@ export function getSuggestions(
     return def.options
       .filter((o) => {
         if (!o.repeatable && state.completedOptions[o.name] !== undefined) return false
+        if (optionKnownEmpty(o, sources)) return false
         return o.name.startsWith(partial)
       })
       .map((o) => ({
@@ -84,7 +125,10 @@ export function getSuggestions(
     const enteringOptionValue = state.phase === 'option-value'
     const optionChips: Suggestion[] = !enteringOptionValue && state.canOfferOptions && def?.options
       ? def.options
-          .filter((o) => !o.repeatable ? state.completedOptions[o.name] === undefined : true)
+          .filter((o) => {
+            if (!o.repeatable && state.completedOptions[o.name] !== undefined) return false
+            return !optionKnownEmpty(o, sources)
+          })
           .map((o) => ({
             label: '--' + o.name,
             value: '--' + o.name,
@@ -118,14 +162,14 @@ function getPositionalSuggestions(
     case 'slug':
       return getSlugSuggestions(payload.slugSource ?? '', currentToken, group, sources.stats)
     case 'kb-id':
-      return getKbIdSuggestions(currentToken, group, sources)
+      return getKbIdSuggestions(currentToken, group, sources, payload.exclude)
     case 'address':
       return getAddressSuggestions(currentToken, group, sources)
     case 'prompt': {
       // Only suggest when typing an @mention; strip the '@' for the KB lookup
       if (!currentToken.startsWith('@')) return []
       const kbPart = currentToken.slice(1)
-      const rawSuggestions = getKbIdSuggestions(kbPart, group, sources)
+      const rawSuggestions = getKbIdSuggestions(kbPart, group, sources, payload.exclude)
       return rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
     }
     case 'file-path':
@@ -167,6 +211,7 @@ function getKbIdSuggestions(
   currentToken: string,
   group: string,
   sources: DataSources,
+  exclude?: string[],
 ): Suggestion[] {
   const dotIdx = currentToken.indexOf('.')
   if (dotIdx < 0) {
@@ -194,17 +239,20 @@ function getKbIdSuggestions(
     }
   }
 
+  const excludeSet = exclude ? new Set(exclude) : null
   const allKeys = sources.kbKeyCache.get(typeName) ?? []
   if (keyPrefix.length === 0 && allKeys.length >= sources.kbKeyThreshold) {
     return [] // too many to show without a prefix
   }
   const matches = keyPrefix ? allKeys.filter((k) => k.startsWith(keyPrefix)) : allKeys
-  return matches.map((k) => ({
-    label: k,
-    value: typeName + '.' + k,
-    kind: 'kb-key' as const,
-    group,
-  }))
+  return matches
+    .filter((k) => !k.startsWith('_template') && (!excludeSet || !excludeSet.has(typeName + '.' + k)))
+    .map((k) => ({
+      label: k,
+      value: typeName + '.' + k,
+      kind: 'kb-key' as const,
+      group,
+    }))
 }
 
 function getAddressSuggestions(

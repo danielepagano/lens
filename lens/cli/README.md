@@ -436,6 +436,33 @@ Arguments: `ADDRESS START_LINE END_LINE [PROMPT]`
 
 `edit` wraps the selected lines in a claim annotation (`[edit:eSTART_END]: #`) that is staged, then either streams the proposed replacement as an unstaged diff (LLM mode) or applies the provided replacement text directly (`--replace` mode). Use `lens rollback` to cancel, or `lens commit` to accept.
 
+### `lens play`
+
+Opens a play session sub-node for GM-voice narrative. Each call streams narrative into the session. Use `--end` to close the session.
+
+```bash
+lens play "I search the room"               # first call: auto-creates a play sub-node
+lens play "I talk to the innkeeper"         # inside session: appends another block
+lens play "engage the goblins" --module combat  # activate a rules module
+lens play --retry                            # regenerate the last block
+lens play --end                              # close the play session
+```
+
+Arguments: `[PROMPT]`
+
+- `PROMPT` — what the player says or does. Required unless using `--end`.
+
+Options:
+
+- `--module` / `-m` — rules module key (a KB object under `rules.<key>`, e.g. `combat`, `downtime`). The module is pinned into the sub-node's front matter. Only one extra module is active at a time; switching removes the previous one. `rules.system` and `rules.rpg` are always auto-pinned.
+- `--as` / `-as` — PC key to attribute the prompt to (e.g. `-as alice` → `[ALICE]`); must be a pinned `pc.*`.
+- `--retry` — discard the last block and regenerate it.
+- `--end` — close the play session and return to the parent node.
+
+**Flow:** The first call outside a play sub-node auto-generates an ID (e.g. `play-combat-engage-the-goblins`) and creates the sub-node, auto-pinning `rules.system` and `rules.rpg`. Subsequent calls detect that the cursor is already inside a play sub-node and append new inline blocks. Module and pin changes update the front matter in place.
+
+Requires the `rpg` dataset, at least one pinned `pc.*` object (at any ancestor level), and is dataset-gated. Use `lens section` within a play session to nest scope (e.g. a focused combat), then start another `play` call after.
+
 ### `lens design`
 
 Opens a KB design workspace. Each call streams an inline response block into a design sub-node. When you are done, `--end` extracts all `kb` blocks from the sub-node into the knowledge store.
@@ -458,7 +485,7 @@ Options:
 - `--retry` — discard the last inline block and regenerate it.
 - `--end` — close the design session: runs `kb extract` on the full sub-node content, writes inserted/updated KB objects, and appends the closing tag to the parent node.
 
-**Flow:** The first call outside a design sub-node auto-generates an ID (e.g. `design-encounter-the-ambush`) and creates the sub-node with its front matter. Subsequent calls detect that the cursor is already inside a design sub-node and append a new inline block instead of creating another sub-node. Module and pin changes on subsequent calls update the front matter in place.
+**Flow:** Both `design` and `play` share the same session pattern (see `SessionOperator`). The first call outside a design sub-node auto-generates an ID (e.g. `design-encounter-the-ambush`) and creates the sub-node with its front matter. Subsequent calls detect that the cursor is already inside a design sub-node and append a new inline block instead of creating another sub-node. Module and pin changes on subsequent calls update the front matter in place.
 
 After `--end` completes, newly inserted and updated KB objects are printed. Use `lens rollback` to undo both the narrative annotation and any KB changes.
 

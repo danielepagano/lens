@@ -4,27 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-`poe` is not on PATH — use the full invocation below. The session-start hook
-(`.claude/session-start.sh`) installs Python and Node dependencies automatically
-at the start of each session, so manual `poetry install` / `npm install` should
-not be needed.
+Locally, `poetry` and `poe` are on PATH — use directly. In the cloud
+environment (`/home/claude/.ssh/commit_signing_key.pub` exists), `poe` may
+not be on PATH; fall back to the full invocation below.
 
 ```bash
-# Full poe invocation (poe is not on PATH)
+# Preferred (local dev)
+poe check     # lint + typecheck + unit tests + integration tests + e2e
+poe lint      # ruff (auto-fix) + pyright + eslint
+poe test      # pytest unit tests
+poe lens <command>  # run the CLI locally
+
+# Cloud fallback (poe not on PATH)
 POETRY=/root/.local/share/uv/tools/poetry/bin/poetry
-$POETRY run poe check     # lint + typecheck + unit tests + integration tests + e2e
-$POETRY run poe lint      # ruff (auto-fix) + pyright + eslint
-$POETRY run poe test      # pytest unit tests
-$POETRY run poe lens <command>  # run the CLI locally
+$POETRY run poe check
 
 # Run a single test module
-$POETRY run python -m pytest lens/core/test/test_annotations.py -v
+python -m pytest lens/core/test/test_annotations.py -v
 
 # Run a single test method
-$POETRY run python -m pytest lens/core/test/test_annotations.py -v -k test_method_name
+python -m pytest lens/core/test/test_annotations.py -v -k test_method_name
 
 # Manual dependency install (done automatically by session-start hook)
-$POETRY install
+poetry install
 cd lens/server/ui && npm install
 ```
 

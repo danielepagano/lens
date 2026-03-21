@@ -5,17 +5,38 @@ describing what player characters observe, hear, and encounter — without
 writing what they think, feel, decide, or do.  The operator stops at decision
 or action points, giving the player space to respond.
 
-Requires ``rules.system`` and ``rules.rpg`` to be pinned (mechanics layer
-and player-AI contract), plus at least one ``pc.*`` KB object
-so the LLM knows who the player characters are.
+Session lifecycle
+-----------------
+*  First call → creates a sub-node (``play[-module][-prompt-slug]``), auto-pins
+   ``rules.system`` and ``rules.rpg``, and runs the first inline generation
+   inside it.
+*  Subsequent calls inside the same session → append new inline blocks.
+   Front matter is updated when ``--module`` changes or new pins/unpins are
+   supplied.
+*  ``--end`` → appends close tag ``[/play:<id>]: #`` to the parent.
+
+Module handling
+---------------
+``--module <key>`` pins ``rules.<key>`` in the sub-node front matter (e.g.
+``rules.combat``, ``rules.downtime``).  Only one *extra* module is active at a
+time; switching ``--module`` removes all ``rules.*`` pins except the auto-pinned
+``rules.system`` and ``rules.rpg``.
+
+Requires at least one ``pc.*`` KB object pinned (at any ancestor level) so the
+LLM knows who the player characters are.
 """
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar
 
 from lens.core.context import CrawlResult
-from lens.core.operator import Operator, OperatorError
+from lens.core.operator import OperatorError
+from lens.core.operators.session import SessionOperator
+from lens.core.project import ProjectSession
+from lens.core.narrative import NarrativeNode
+from lens.core.storage import Storage
 from lens.core.tools import OperatorToolDef
 
 
@@ -32,23 +53,23 @@ def _pc_marker(params: dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = (
-    "You are the Game Master. "\
-    "The Rules of Engagement are pinned in your context — follow them exactly. "\
-    "Player characters are identified by their pinned KB objects (id prefix 'pc.'). "\
-    "Write from GM voice only: describe what the world does, what NPCs say and do, "\
-    "what the environment presents. If you see KB['encounter.<name>'] object, "\
-    "it is a script for the current situation, and you must follow it with the highest priority. "\
-    "Never write PC decisions, thoughts, feelings, or roll any dice. "\
+    "You are the Game Master. "
+    "The Rules of Engagement are pinned in your context — follow them exactly. "
+    "Player characters are identified by their pinned KB objects (id prefix 'pc.'). "
+    "Write from GM voice only: describe what the world does, what NPCs say and do, "
+    "what the environment presents. If you see KB['encounter.<name>'] object, "
+    "it is a script for the current situation, and you must follow it with the highest priority. "
+    "Never write PC decisions, thoughts, feelings, or roll any dice. "
     "Stop at every decision point and yield to the player."
 )
 
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.system", "rules.rpg"})
 
 def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
-    return (        
-        "Continue the scene based on what the PC says below. Follow the script of any KB encounter given. "\
+    return (
+        "Continue the scene based on what the PC says below. Follow the script of any KB encounter given. "
         "Follow the decision gates: adjuticate, narratte, resolve, and engage.\n"
-        f"> [{pc_marker}] {prompt}\n\n---\n\n"
+        f"> [{pc_marker}] {prompt}\n\n"
     )
 
 
@@ -57,11 +78,15 @@ def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-class PlayOperator(Operator):
+class PlayOperator(SessionOperator):
     name: ClassVar[str] = "play"
-    requires_id: ClassVar[bool] = False
+    requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     excluded_operator_tools: ClassVar[frozenset[str]] = frozenset({"write"})
+
+    module_prefix: ClassVar[str] = "rules."
+    auto_pins: ClassVar[list[str]] = ["rules.system", "rules.rpg"]
+    summarize_on_end: ClassVar[bool] = True
 
     @property
     def system_prompt(self) -> str:
@@ -118,6 +143,108 @@ class PlayOperator(Operator):
                 "play requires at least one player character (pc.*) to be pinned — "
                 "add a pc.* KB object with --pin or kb_pin front matter"
             )
+
+    # ------------------------------------------------------------------
+    # SessionOperator hooks — delegate to run_inline with cursor override
+    # ------------------------------------------------------------------
+
+    @classmethod
+    async def _run_fresh(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        node: NarrativeNode,
+        setup_storage: Storage,
+        prompt: str | None,
+        llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None,
+        cancel_event: Any | None,
+        **kwargs: Any,
+    ) -> None:
+        extra_params = kwargs.get("extra_params")
+        on_confirm = kwargs.get("on_confirm")
+        await cls.run_inline(
+            session=session,
+            narrative=narrative,
+            prompt=prompt,
+            pins=[],
+            unpins=[],
+            llm_id=llm_id,
+            retry=False,
+            on_token=on_token,
+            _cursor_override=node,
+            extra_params=extra_params,
+            cancel_event=cancel_event,
+            on_confirm=on_confirm,
+        )
+
+    @classmethod
+    async def _run_inside(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        node: NarrativeNode,
+        prompt: str | None,
+        module_id: str | None,
+        pins: list[str],
+        unpins: list[str],
+        llm_id: str | None,
+        retry: bool,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        cancel_event: Any | None,
+        **kwargs: Any,
+    ) -> None:
+        extra_params = kwargs.get("extra_params")
+        on_confirm = kwargs.get("on_confirm")
+
+        if retry:
+            # For retry: update front-matter with the same owner as the
+            # pending annotation so pending owner stays consistent.
+            if module_id or pins or unpins:
+                probe_storage = session.new_storage()
+                probe_op = cls(probe_storage, narrative)
+                existing_ann = probe_op.find_open_annotation(node)
+                if existing_ann is not None:
+                    rel_path = str(node.md_path().relative_to(session.git_root))
+                    ann_owner = cls._owner_for_ann(existing_ann, rel_path)
+                    fm_storage = session.new_storage(owner=ann_owner)
+                else:
+                    fm_storage = session.new_storage()
+                cls._update_front_matter_for_call(
+                    node, module_id, pins, unpins, fm_storage, session
+                )
+        else:
+            # Non-retry: stage pending, update front-matter, stage again.
+            probe_storage = session.new_storage()
+            if probe_storage.has_pending():
+                probe_storage.stage_all()
+
+            if module_id or pins or unpins:
+                fm_storage = session.new_storage()
+                cls._update_front_matter_for_call(
+                    node, module_id, pins, unpins, fm_storage, session
+                )
+                fm_storage.stage_all()
+
+        # Delegate to run_inline with cursor override — it handles
+        # fresh/continue/retry logic for the inline annotation.
+        await cls.run_inline(
+            session=session,
+            narrative=narrative,
+            prompt=prompt,
+            pins=[],
+            unpins=[],
+            llm_id=llm_id,
+            retry=retry,
+            on_token=on_token,
+            _cursor_override=node,
+            extra_params=extra_params,
+            cancel_event=cancel_event,
+            on_confirm=on_confirm,
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -11,6 +11,7 @@ export interface CliPayload {
   repeatable?: boolean
   required?: boolean
   default?: string            // if set, pre-fill the selection with a value
+  exclude?: string[]          // kb-id values to exclude from suggestions (e.g. auto-pinned modules)
 }
 
 // ---- Parsed arguments ----

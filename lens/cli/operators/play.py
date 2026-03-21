@@ -22,7 +22,7 @@ async def _print_token(chunk: str) -> None:
 @app.callback()
 def play(
     prompt: str = typer.Argument(
-        ...,
+        None,
         help="Scene direction or situation for the player-facing moment (e.g. what the player says or does)",
     ),
     pin: list[str] = pin_option(
@@ -47,12 +47,31 @@ def play(
         "-as",
         help="PC key to attribute the prompt to (e.g. alice → [ALICE]); must be a pinned pc.*",
     ),
+    module: str | None = typer.Option(
+        None,
+        "--module",
+        "-m",
+        help="Rules module to activate (e.g. 'combat' → rules.combat); swaps previous module",
+    ),
+    end: bool = typer.Option(
+        False,
+        "--end",
+        help="Close the current play session",
+    ),
 ) -> None:
     """Narrate a player-agency moment in GM voice, then pause for player response.
+
+    Opens a play session sub-node the first time, or continues the current
+    session.  Use --module to activate a rules module (e.g. combat, downtime).
+    Use --end to close the session.
 
     Requires at least one player character (KB object tagged 'pc') to be pinned.
     Use -as <key> to attribute the prompt to a specific pinned PC (e.g. -as alice → [ALICE]).
     """
+    if not end and not retry and not prompt:
+        typer.echo("lens play: prompt is required (unless using --end or --retry)", err=True)
+        raise typer.Exit(1)
+
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:
@@ -66,6 +85,17 @@ def play(
         )
         raise typer.Exit(1)
 
+    # Validate module id if provided.
+    module_id: str | None = None
+    if module:
+        if module.startswith("rules."):
+            module_id = module[len("rules."):]
+        else:
+            module_id = module
+        if not module_id:
+            typer.echo("lens play: --module requires a key after 'rules.'", err=True)
+            raise typer.Exit(1)
+
     try:
         validate_ids_exist(session.project_root, list(pin) + list(unpin))
     except LensException as e:
@@ -74,17 +104,21 @@ def play(
 
     try:
         asyncio.run(
-            PlayOperator.run_inline(
+            PlayOperator.run_session(
                 session=session,
                 narrative=narrative,
                 prompt=prompt,
+                module_id=module_id,
                 pins=list(pin),
                 unpins=list(unpin),
                 llm_id=llm,
                 retry=retry,
+                end=end,
                 on_token=_print_token,
-                on_confirm=confirm_tool_call,
+                on_stream_target=None,
+                cancel_event=None,
                 extra_params={"as_pc": as_pc} if as_pc is not None else None,
+                on_confirm=confirm_tool_call,
             )
         )
         print()  # ensure final newline

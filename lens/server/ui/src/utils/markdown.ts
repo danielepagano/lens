@@ -27,11 +27,21 @@ export interface NodeTransactionOverlay {
   removedGroups: RemovedGroup[]
 }
 
+const SECTION_TYPE_TOKENS = ["play", "design"]
+
 function toLabel(id: string): string {
-  return id
-    .split(/[-_]/)
+  const parts = id.split(/[-_]/)
+  const first = parts[0]
+  const hasTypePrefix =
+    first !== undefined && first !== '' && SECTION_TYPE_TOKENS.includes(first)
+  const words = hasTypePrefix ? parts.slice(1) : parts
+  const title = words
     .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
     .join(' ')
+  if (hasTypePrefix && first !== undefined) {
+    return title ? `${title} <span class="pin-pill pin-pill-inline">${first}</span>` : `[${first}]`
+  }
+  return title
 }
 
 function renderDivider(label: string, href: string): string {
@@ -77,6 +87,28 @@ function filterAnnotationLines(lines: string[]): string[] {
     result.push(line)
   }
   return result
+}
+
+/**
+ * Flush a contiguous run of added lines into `into` as a single transaction-added
+ * wrapper so markdown-it sees one document fragment (blockquotes, HTML comments,
+ * lists, etc. stay structurally intact).
+ */
+function flushAddedTransactionRun(into: string[], run: string[]): void {
+  if (run.length === 0) return
+  const hasVisible = run.some((l) => l.trim() !== '')
+  if (!hasVisible) {
+    for (const l of run) into.push(l)
+  } else {
+    into.push('')
+    into.push('<div class="transaction-added">')
+    into.push('')
+    for (const l of run) into.push(l)
+    into.push('')
+    into.push('</div>')
+    into.push('')
+  }
+  run.length = 0
 }
 
 function pushRemovedContent(
@@ -159,10 +191,12 @@ function renderAnnotationWithBody(
     for (let lineNo = openingLineNo; lineNo <= closingLineNo; lineNo++) {
       pushRemovedContent(output, removedByLine, lineNo)
     }
+    const addedRun: string[] = []
     for (let k = 0; k < bodyLines.length; ) {
       const outLine = bodyLines[k]
       const info = fenceInfo(outLine)
       if (info) {
+        flushAddedTransactionRun(output, addedRun)
         let end = k
         while (end + 1 < bodyLines.length) {
           end += 1
@@ -187,20 +221,15 @@ function renderAnnotationWithBody(
       }
 
       const fileLine = bodyStartLine + k
-      const isAdded = overlay && overlay.addedLines.has(fileLine) && outLine.trim() !== ''
-      if (isAdded) {
-        output.push('')
-        output.push('<div class="transaction-added">')
-        output.push('')
-        output.push(outLine)
-        output.push('')
-        output.push('</div>')
-        output.push('')
+      if (overlay?.addedLines.has(fileLine)) {
+        addedRun.push(outLine)
       } else {
+        flushAddedTransactionRun(output, addedRun)
         output.push(outLine)
       }
       k += 1
     }
+    flushAddedTransactionRun(output, addedRun)
     if (hasClose) {
       const afterClose = nextNonEmpty(lines, j + 1)
       if (afterClose >= 0 && !isAnnotationLine(lines[afterClose])) {
@@ -250,6 +279,7 @@ export function preprocessAnnotations(
   }
 
   let i = 0
+  const addedRun: string[] = []
 
   while (i < lines.length) {
     const lineNo = i + 1
@@ -258,6 +288,7 @@ export function preprocessAnnotations(
     // --- Front-matter block: bare `[` ... `]: #` (no operator name)
     // Contains YAML-like content (kb_pin, kb_unpin). Consumed silently.
     if (FRONT_MATTER_OPEN_RE.test(line)) {
+      flushAddedTransactionRun(result, addedRun)
       i++
       while (i < lines.length && !ANNOTATION_END_RE.test(lines[i])) {
         i++
@@ -268,6 +299,7 @@ export function preprocessAnnotations(
 
     // --- Multi-line annotation block: [op(:id)? ← whole line, no `]: #`
     if (ANNOTATION_OPEN_RE.test(line) && !ANNOTATION_RE.test(line)) {
+      flushAddedTransactionRun(result, addedRun)
       const openMatch = line.match(ANNOTATION_OPEN_RE)
       const og = openMatch?.groups
       const multiLineOpeningLineNo = lineNo
@@ -281,7 +313,7 @@ export function preprocessAnnotations(
       if (og?.id && !og.close && !og.self_close && og.operator) {
         const childAddr = baseAddress ? `${baseAddress}/${og.id}` : og.id
         const label =
-          toLabel(og.id) + (og.operator !== 'section' ? ` (${toLabel(og.operator)})` : '')
+          toLabel(og.id)
         const { output, nextI } = renderAnnotationWithBody(
           lines, i, multiLineOpeningLineNo, og.operator, og.id, childAddr, label, overlay, removedByLine,
         )
@@ -295,6 +327,7 @@ export function preprocessAnnotations(
     // --- Single-line annotations: [op(:id)?(/)?]: #
     const m = line.match(ANNOTATION_RE)
     if (m && m.groups) {
+      flushAddedTransactionRun(result, addedRun)
       const { close, operator, id, self_close } = m.groups
 
       if (!id) {
@@ -314,7 +347,7 @@ export function preprocessAnnotations(
       }
 
       const childAddr = baseAddress ? `${baseAddress}/${id}` : id
-      const label = toLabel(id) + (operator !== 'section' ? ` (${toLabel(operator)})` : '')
+      const label = toLabel(id)
 
       if (self_close) {
         result.push(renderDivider(label, childAddr))
@@ -333,6 +366,7 @@ export function preprocessAnnotations(
     // --- Regular content line: apply diff overlay if present
     const info = fenceInfo(line)
     if (info) {
+      flushAddedTransactionRun(result, addedRun)
       let end = i
       while (end + 1 < lines.length) {
         end += 1
@@ -360,20 +394,16 @@ export function preprocessAnnotations(
     }
 
     pushRemovedContent(result, removedByLine, lineNo)
-    const isAdded = overlay && overlay.addedLines.has(lineNo) && line.trim() !== ''
-    if (isAdded) {
-      result.push('')
-      result.push('<div class="transaction-added">')
-      result.push('')
-      result.push(line)
-      result.push('')
-      result.push('</div>')
-      result.push('')
+    if (overlay?.addedLines.has(lineNo)) {
+      addedRun.push(line)
     } else {
+      flushAddedTransactionRun(result, addedRun)
       result.push(line)
     }
     i++
   }
+
+  flushAddedTransactionRun(result, addedRun)
 
   if (trailingRemoved.length > 0) {
     for (const g of trailingRemoved) {

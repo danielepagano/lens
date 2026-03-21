@@ -20,9 +20,14 @@ datasets = ["rpg", "dnd"]
 
 (Later entries in `datasets` shadow earlier ones.)
 
-## Pins for `lens play`
+## How `lens play` works
 
-- `rules.system` and `rules.rpg`
-- At least one `pc.*` object pinned
+`play` is a **session operator**: the first call creates a sub-node (e.g. `play-combat-engage-the-goblins`) and auto-pins `rules.system` and `rules.rpg` into its front matter. Subsequent calls inside the session append new inline blocks. Use `--end` to close the session and return to the parent.
+
+**Requirements** (checked at generation time, not session creation):
+- At least one `pc.*` object pinned (at any ancestor level)
+- `rules.system` and `rules.rpg` (auto-pinned by the session)
+
+**Modules**: `--module <key>` pins `rules.<key>` (e.g. `rules.combat`, `rules.downtime`) into the session. Only one extra module is active at a time; switching swaps it out. Use `lens section` + a new `play` call to nest sessions with different modules.
 
 With `["rpg", "dnd"]`, `rules.system` resolves to the D&D rules body from the `dnd` dataset.

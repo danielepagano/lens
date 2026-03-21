@@ -274,6 +274,12 @@ ul.tree-list li {
   border-color: rgba(248, 113, 113, 0.5);
 }
 
+.pin-pill-inline {
+  color: var(--pico-secondary);
+  font-weight: normal;
+  padding-bottom: 4px;
+}
+
 .pin-pill-unpin:hover {
   background-color: rgba(248, 113, 113, 0.2);
   border-color: rgba(248, 113, 113, 0.8);
@@ -702,20 +708,91 @@ ul.tree-list li {
 /* ---- Narrative switcher in sidebar ---- */
 
 .narrative-switcher {
-  padding: 0.4rem 1rem;
+  padding: 0.25rem;
   border-bottom: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
 }
 
-.narrative-switcher select {
-  width: 100%;
+.narrative-switcher-row {
+  display: flex;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.narrative-switcher-row select {
+  flex: 1;
+  min-width: 0;
   font-size: 0.85rem;
   padding: 0.2rem 0.4rem;
+  margin-bottom: 0.1rem;
   border-radius: 4px;
   border: 1px solid var(--pico-muted-border-color);
   background: var(--pico-background-color);
   color: var(--pico-color);
   cursor: pointer;
+}
+
+.narrative-switcher-placeholder {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.narrative-switcher-add {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 4px;
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-card-background-color);
+  color: var(--pico-color);
+  cursor: pointer;
+}
+
+.narrative-switcher-add:hover {
+  border-color: var(--pico-primary-hover);
+  color: var(--pico-primary-hover);
+}
+
+.narrative-create-dialog {
+  padding: 0;
+  border: none;
+  max-width: min(22rem, calc(100vw - 2rem));
+}
+
+.narrative-create-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.narrative-create-dialog article {
+  margin: 0;
+}
+
+.narrative-create-dialog form {
+  margin-bottom: 0;
+}
+
+.narrative-create-dialog footer {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.narrative-create-error {
+  color: var(--pico-del-color, #c0392b);
+  font-size: 0.85rem;
+  margin: 0.35rem 0 0;
 }
 
 /* ---- Line picker (source view for line-number selection) ---- */

@@ -18,7 +18,7 @@ from typing import Any, ClassVar, cast
 
 from lens.core.annotations import strip_markdown_comments
 from lens.core.knowledge import validate_ids_exist
-from lens.core.context import CrawlResult, crawl
+from lens.core.context import crawl
 from lens.core.llm import generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator
@@ -27,19 +27,9 @@ from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, validate_slug
 from lens.core.tools import OperatorToolDef, register_operator_tool
 
-SYSTEM_PROMPT = (
-    "You are a skilled editor. Write a concise summary of the provided section,"
-    " preserving the author's voice and style."
-)
-
-SUMMARY_INSTRUCTION_TEMPLATE = (
-    "The section below has just been written and is now being closed.\n"
-    "Write a brief summary that:\n"
-    "- reads fluently as a continuation of the current passage above\n"
-    "- represents the key consequences and outcomes described in the section\n"
-    "- matches the voice and style of the surrounding narrative\n\n"
-    "Output only the summary text — no preamble, no meta-commentary.\n\n"
-    "SECTION TO SUMMARIZE:\n{content}"
+from lens.core.operators.session import (
+    SUMMARY_SYSTEM_PROMPT as SYSTEM_PROMPT,
+    SUMMARY_INSTRUCTION_TEMPLATE,
 )
 
 
@@ -51,14 +41,6 @@ def section_open_tag(id: str) -> str:
 def section_close_tag(id: str) -> str:
     """Return section close annotation string, e.g. ``[/section:ch1]: #``."""
     return f"[/section:{id}]: #"
-
-
-def build_section_summary_messages(crawl_result: CrawlResult, content: str) -> list[dict[str, str]]:
-    """Build LLM messages for summarizing section content (used by section end and collate)."""
-    from lens.core.context import assemble_prompt
-
-    instruction = SUMMARY_INSTRUCTION_TEMPLATE.format(content=content)
-    return assemble_prompt(crawl_result, system_prompt=SYSTEM_PROMPT, instruction=instruction)
 
 
 class SectionOperator(Operator):

@@ -15,11 +15,8 @@ from lens.core.narrative import NarrativeNode, parse_segments
 from lens.core.operator import Operator
 from lens.core.project import ProjectSession, resolve_address, validate_slug
 
-from lens.core.operators.section import (
-    build_section_summary_messages,
-    section_close_tag,
-    section_open_tag,
-)
+from lens.core.operators.section import section_close_tag, section_open_tag
+from lens.core.operators.session import build_summary_messages as build_section_summary_messages
 
 
 class CollateOperator(Operator):

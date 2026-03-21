@@ -15,11 +15,8 @@ from lens.core.annotations import parse_front_matter
 from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
-from lens.core.operators.design import (
-    DesignOperator,
-    generate_design_id,
-    prompt_to_slug,
-)
+from lens.core.operators.design import DesignOperator
+from lens.core.operators.session import prompt_to_slug
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
@@ -133,29 +130,29 @@ class TestDesignIdGeneration(unittest.TestCase):
         return self._narrative.find_cursor()
 
     def test_no_prompt_no_module(self) -> None:
-        self.assertEqual(generate_design_id(None, None, self._parent()), "design")
+        self.assertEqual(DesignOperator.generate_session_id(None, None, self._parent()), "design")
 
     def test_prompt_only(self) -> None:
-        result = generate_design_id("create a tavern now", None, self._parent())
+        result = DesignOperator.generate_session_id("create a tavern now", None, self._parent())
         self.assertEqual(result, "design-create-a-tavern-now")
 
     def test_prompt_truncated_to_5_words(self) -> None:
-        result = generate_design_id("one two three four five six seven", None, self._parent())
+        result = DesignOperator.generate_session_id("one two three four five six seven", None, self._parent())
         self.assertEqual(result, "design-one-two-three-four-five")
 
     def test_module_only(self) -> None:
-        result = generate_design_id(None, "encounter", self._parent())
+        result = DesignOperator.generate_session_id(None, "encounter", self._parent())
         self.assertEqual(result, "design-encounter")
 
     def test_module_and_prompt(self) -> None:
-        result = generate_design_id("tavern scene", "location", self._parent())
+        result = DesignOperator.generate_session_id("tavern scene", "location", self._parent())
         self.assertEqual(result, "design-location-tavern-scene")
 
     def test_collision_adds_numeric_suffix(self) -> None:
         # Create the base name as an existing child.
         parent = self._parent()
         (parent.md_path().parent / "design.md").write_text("")
-        result = generate_design_id(None, None, parent)
+        result = DesignOperator.generate_session_id(None, None, parent)
         self.assertEqual(result, "design-1")
 
     def test_multiple_collisions(self) -> None:
@@ -163,7 +160,7 @@ class TestDesignIdGeneration(unittest.TestCase):
         folder = parent.md_path().parent
         (folder / "design.md").write_text("")
         (folder / "design-1.md").write_text("")
-        result = generate_design_id(None, None, parent)
+        result = DesignOperator.generate_session_id(None, None, parent)
         self.assertEqual(result, "design-2")
 
     def test_prompt_slug_strips_special_chars(self) -> None:
@@ -305,7 +302,7 @@ class TestDesignModulePin(unittest.TestCase):
             with self.assertRaises(OperatorError) as ctx:
                 _run_design(root, narrative, module_id="missing")
 
-            self.assertIn("design module does not exist", str(ctx.exception))
+            self.assertIn("module does not exist", str(ctx.exception))
 
     def test_module_in_instruction_context(self) -> None:
         """The module KB object is loaded in RELEVANT KNOWLEDGE (via front matter pin)."""
@@ -493,7 +490,7 @@ class TestDesignEnd(unittest.TestCase):
             self.assertNotIn(f"[/design:{design_id}]: #", before)
 
             result = asyncio.run(
-                DesignOperator.run_design_end(
+                DesignOperator.run_session_end(
                     session=ProjectSession(root, root), narrative=narrative
                 )
             )
@@ -512,13 +509,13 @@ class TestDesignEnd(unittest.TestCase):
 
             with self.assertRaises(OperatorError) as ctx:
                 asyncio.run(
-                    DesignOperator.run_design_end(
+                    DesignOperator.run_session_end(
                         session=ProjectSession(root, root), narrative=narrative
                     )
                 )
             self.assertIn("no open design to close", str(ctx.exception))
 
-    def test_end_via_run_design_end_flag(self) -> None:
+    def test_end_via_run_session_end_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _run_design(root, narrative)
