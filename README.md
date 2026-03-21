@@ -86,7 +86,7 @@ verbose_llm  = true            # optional: log full LLM prompts/responses at INF
 - **[Design](docs/design.md)** - Lens Design doc
 - **[CLI reference](lens/cli/README.md)** — Commands (`kb`, `pin`, `section`), AI operators (`write`, `edit`, `design`), datasets, and LLM configuration.
 - **[Web UI & API server](lens/server/README.md)** — `lens serve`, `lens dev`, project/dataset context, and HTTP routes.
-- **[RPG](lens/rpg/README.md)** — Core RPG dataset (`play`, `advance`, templates, `rules.engagement`).
+- **[RPG](lens/rpg/README.md)** — Core RPG dataset (`play`, `advance`, templates, `rules.rpg`).
 - **[D&D](lens/dnd/README.md)** — D&D reference dataset, `lens dnd balance`, and the D&D Beyond extractor.
 
 ## Development

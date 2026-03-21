@@ -317,7 +317,7 @@ const handler: CommandHandler = async (
   }
 }
 
-const PLAY_REQUIRED_PINS = ['rules.system', 'rules.engagement'] as const
+const PLAY_REQUIRED_PINS = ['rules.system', 'rules.rpg'] as const
 
 export const operatorModule: CommandModule = { 
   commands: (stats) => {

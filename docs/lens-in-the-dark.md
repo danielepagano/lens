@@ -1,14 +1,15 @@
 # Lens in the Dark
 
-## Note: this is AI garbage
+## Note: this was a failure
 
-  1.  this written by AI and does not actually work with how lens works. It misunderstands advance, it does not use design, etc. Dnd rules don’t mention lens at all and work better, because this goes out of its way to give bad advice.
-	2.	It does not create a game flow. Blades in the dark has a rhythm, phases, things to do and progress… this is just a random subset  of rules. It could be using the AI with design operator to create custom substitutes for a bunch of removed stuff at least, instead it leaves nothing to work with. It is meant to be very simple and minimalist, sure, we don’t need to create complex long campaigns, but it should be something we can play from beginning to end.
-	3.	The AI rules are terrible. They are compressed to a fault, make no sense in a vacuum, and give the AI zero guidance on how to actually run the game and make good decisions. Also meant to be small for a smaller model, but a smaller model does not have enough judgment or imagination to use these rules at all.
+  1.  this written by AI and does not actually work with how lens works. It misunderstands `advance`, it does not use `design`, etc. The d&d rules don’t mention lens at all and work better, because this goes out of its way to give bad advice.
+	2.	It does not create a game flow. Blades in the dark has a rhythm, phases, things to do and progress… this is just a random subset of rules. It could be using the AI with design operator to create custom substitutes for a bunch of removed stuff at least, instead it leaves nothing to work with. It is meant to be very simple and minimalist, sure, we don’t need to create complex long campaigns, but it should be something we can play from beginning to end.
+	3.	The AI rules are just terrible. They are compressed to a fault, make no sense in a vacuum, and give the AI zero guidance on how to actually run the game and make good decisions. Also meant to be compact for a smaller model, but a smaller model does not have enough judgment nor imagination to use these rules at all.
 
-The lens rpg idea is to alternate plan and play so the AI can take a beat to create interesting situations and actionable and useful content, then play quickly with this curated input to be smart, fast. This system should be designed to shine exactly at that, but doesn’t even try.
+The lens rpg idea is to alternate plan and play so the AI can take a beat to create interesting situations and actionable and useful content, then play quickly with this curated input to be smart, fast. This system should be designed to shine exactly at that, but doesn’t even try. I added some TODO entries below to illustrate some problems, but they are NOT the full picture of what is wrong.
 
-Previous attempts at rewriting it either timed out because the LLM thought tok long , or just replaced my to-dos only with useless tweaks.
+What we actually need:
+  - Actually split the flow into design and play phases: we can 10
 
 ---
 
@@ -354,7 +355,7 @@ TODO: operations are only mentioned in Crew stuff... is an operation a play phas
 
 ## The Rules (AI Reference)
 
-Below is the `rules.system` KB object — the concise mechanical reference pinned to the AI during play. It works alongside `rules.engagement` (which covers the authority model, decision gates, and scene guidance).
+Below is the `rules.system` KB object — the concise mechanical reference pinned to the AI during play. It works alongside `rules.rpg` (which covers the authority model, decision gates, and scene guidance).
 
 TODO: these rules are very bad; they are hard to decipher and too terse even for an AI. They don't really explain how the game is played or what all these snippets of mechanics for a game, or how to make good decisions. For example fortune rolls tell the AI to roll, and it cannot roll. After the actual rules above are reworked it needs to be completely rewritten.
 

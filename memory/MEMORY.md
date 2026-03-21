@@ -18,7 +18,7 @@
 - `edit` — LLM rewrite of a line range (mutation mode, staged diff)
 - `section` — start/end section at cursor (`section <id>`, `section --end`); `collate` for after-the-fact range
 - `design` — **implemented** — Session Zero planning operator; uses command_tools (inline KB lookup mid-generation); lives in `lens/core/operators/design.py`
-- `play` — **implemented** — GM-voice narrative; pins `rules.system` + `rules.engagement` + `pc.*`; dataset `rpg`; `lens/rpg/operators/play.py`
+- `play` — **implemented** — GM-voice narrative; pins `rules.system` + `rules.rpg` + `pc.*`; dataset `rpg`; `lens/rpg/operators/play.py`
 - `advance` — **implemented** — time pass / fronts; dataset `rpg`; `lens/rpg/operators/advance.py`
 
 Backlog operators (designed, not yet coded): `lore`, `converse`, `encounter`.

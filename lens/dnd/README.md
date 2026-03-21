@@ -40,11 +40,11 @@ JSON fields:
 
 ## `lens play`
 
-Implemented in **`lens.rpg`**; requires the **`rpg`** dataset. With D&D content, pin **`rules.system`** (D&D body when `dnd` follows `rpg`), **`rules.engagement`**, and at least one **`pc.*`**.
+Implemented in **`lens.rpg`**; requires the **`rpg`** dataset. With D&D content, pin **`rules.system`** (D&D body when `dnd` follows `rpg`), **`rules.rpg`**, and at least one **`pc.*`**.
 
 ```bash
 lens play "the party enters a dimly lit tavern"
-lens play -p rules.system -p rules.engagement -p pc.hero
+lens play -p rules.system -p rules.rpg -p pc.hero
 ```
 
 See [CLI reference](../cli/README.md#ai-operators) for `--pin`, `--unpin`, `--llm`, `--retry`, `-as`.

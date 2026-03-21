@@ -124,7 +124,7 @@ lens/
     test/
 datasets/
   testing/       # Minimal dataset for integration tests
-  rpg/           # Core RPG bundle (engagement, system stub, templates, design modules)
+  rpg/           # Core RPG bundle (rpg, system stub, templates, design modules)
   dnd/           # D&D 2024 reference (rules/system override, spell, stat, equipment)
 tools/
   ddb-extract/   # TypeScript CLI: extracts D&D Beyond content into KB Markdown files
@@ -154,7 +154,7 @@ Closing tags: `[/section:ch1]: #`. Self-closing: `[section:ch1/]: #`.
 
 Operators can register themselves as **LLM tools** via `tools.py` (`register_operator_tool`, `OperatorToolDef`). When the active session includes a dataset that unlocks an operator-tool, the LLM can invoke other operators as tool calls mid-response. Tool calls are dispatched by the `operator.py` loop and share the same storage transaction. Operators can also **chain** to another operator on completion via `chain.py` (`ChainSpec`) — chained operators inherit the same storage transaction.
 
-**`play` operator** (`rpg/operators/play.py`): GM-voice narrative operator. Requires at least one `pc.*` KB object pinned; GM voice without narrating PC decisions. Dataset-gated: `rpg` in `lens.toml`. Pins `rules.system` + `rules.engagement`.
+**`play` operator** (`rpg/operators/play.py`): GM-voice narrative operator. Requires at least one `pc.*` KB object pinned; GM voice without narrating PC decisions. Dataset-gated: `rpg` in `lens.toml`. Pins `rules.system` + `rules.rpg`.
 
 **Context assembly** (`context.py`): `crawl()` collects `kb_pin`/`kb_unpin` from ancestor front matters (walking from root to cursor), resolves linked KB objects, then passes everything to `assemble_prompt()` which formats `[RELEVANT KNOWLEDGE]`, `[PREVIOUS EVENTS SUMMARY]`, `[CURRENT PASSAGE]`, and `[TASK]` blocks into `[system, user]` messages.
 
@@ -169,7 +169,7 @@ Configured in the content repo's `lens.toml`, not in this repo. Uses OpenAI-comp
 Read-only knowledge stores bundled with the Lens tool, declared in `lens.toml` under `[project] datasets = [...]`. Later entries shadow earlier ones; project-local items always win. Mutating a dataset object creates a project-local copy (copy-on-write).
 
 - `datasets/testing/` — minimal test fixtures used by the test suite
-- `datasets/rpg/` — Core RPG bundle: `rules.engagement`, `rules.system` stub, templates, `design/*`. 
+- `datasets/rpg/` — Core RPG bundle: `rules.rpg`, `rules.system` stub, templates, `design/*`. 
 - `datasets/dnd/` — D&D 2024 reference: `rules/system.md` (overrides), `spell/`, `stat/`, `equipment/`, `tags.toml`. Populated via `tools/ddb-extract/` + `lens kb extract`.
 
 ### Tools

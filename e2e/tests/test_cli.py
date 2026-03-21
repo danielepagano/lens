@@ -103,11 +103,11 @@ class TestCliKbDnd:
         assert r.stdout.strip(), "expected non-empty output for rules.system"
         assert "D&D" in r.stdout or "d20" in r.stdout.lower()
 
-    def test_kb_get_rules_engagement(self, dnd_project: Path) -> None:
-        """Lookup rules.engagement from the rpg dataset."""
-        r = _lens("kb", "get", "rules.engagement", cwd=dnd_project)
+    def test_kb_get_rules_rpg(self, dnd_project: Path) -> None:
+        """Lookup rules.rpg from the rpg dataset."""
+        r = _lens("kb", "get", "rules.rpg", cwd=dnd_project)
         assert r.returncode == 0, r.stderr
-        assert r.stdout.strip(), "expected non-empty output for rules.engagement"
+        assert r.stdout.strip(), "expected non-empty output for rules.rpg"
 
     def test_kb_with_tag_finds_dnd_objects(self, dnd_project: Path) -> None:
         """kb with-tag against a dnd tag should return results from the dataset."""

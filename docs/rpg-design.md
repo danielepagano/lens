@@ -65,8 +65,9 @@ Each layer is (at least) one Lens `dataset`.
 Operators pin the core rules plus any system-specific rules they need. We do NOT need all the rules of a game in our rules corpus, because the AI _does not always play the entire game_ (it's not a game engine). In particular all the rules for creating player characters don't usually belong here (they are _at most_ design modules). 
 
 We create two core rule objects:  
-  - `rules.engagement`: our AI-player contract; core layer, ruleset-agnostic
+  - `rules.rpg`: our AI-player contract; core layer, ruleset-agnostic
   - `rules.system`: system-specific rules. Lens ships with "Lens in the Dark", a simple "Forged in the Dark" ruleset (https://bladesinthedark.com/licensing) tuned for AI use, but it can be overridden by a game system ruleset by simply replacing that object id in a higher-priority dataset.
+    - `rules.*`: some systems benefit from having multiple rulesets for different phases of play (e.g. Blades in the Dark's downtime, D&D's Bastions, etc., very specific combat rules like in some Powered by the Apocalypse games). In these cases the system rules can just be the foundation, and then the player can alternate phases by splitign the rules and pinning as needed. This is the parallel to `design` having different modules for different things you can work on.
 
 #### Reference Objects
 
@@ -339,7 +340,7 @@ The party has an XP budget from PC levels and chosen difficulty (low/moderate/hi
 
 `play` is the only narrative operator during play. It receives directorial intent from the player, authors the scene, and maintains the authority model. Whether the current beat is exploration, conversation, combat, a chase, or a quiet campfire — it's all `play`. What changes is not the operator, but the **preparation**: the knowledge objects pinned to the current scene.
 
-When an `encounter.*` object is pinned, `play` reads it as a script: it knows the situation, the stakes, the participants, and the rules for this specific scene. When no encounter is pinned, `play` operates in general mode — the world breathes, NPCs react, and the AI follows the baseline rules in `rules.engagement`. The transition is seamless and invisible to the operator machinery.
+When an `encounter.*` object is pinned, `play` reads it as a script: it knows the situation, the stakes, the participants, and the rules for this specific scene. When no encounter is pinned, `play` operates in general mode — the world breathes, NPCs react, and the AI follows the baseline rules in `rules.rpg`. The transition is seamless and invisible to the operator machinery.
 
 **Two postures — not a mode switch, a continuum**:
 
@@ -367,7 +368,7 @@ When `play` sees a pinned `encounter.*` object, it uses the encounter's scene ru
 
 Without a pinned encounter, `play` defaults to open-world general narration guided by whatever loc, npc, and front objects are pinned.
 
-**System prompt**: The `play` system prompt establishes the GM voice, the authority model, and the gates (ADJUDICATE → NARRATE → RESOLVE → ENGAGE from `rules.engagement`). It does NOT hard-code situation types — it tells the AI to read the pinned encounter object (if any) and follow its scene rules. This keeps the system prompt stable across all situation types.
+**System prompt**: The `play` system prompt establishes the GM voice, the authority model, and the gates (ADJUDICATE → NARRATE → RESOLVE → ENGAGE from `rules.rpg`). It does NOT hard-code situation types — it tells the AI to read the pinned encounter object (if any) and follow its scene rules. This keeps the system prompt stable across all situation types.
 
 ### Why not separate operators for dialog and combat?
 
