@@ -144,7 +144,7 @@ register_command_tool(
                     "type": "array",
                     "items": {"type": "string"},
                     "description": (
-                        "One or more canonical KB IDs, e.g. ['npc.gandalf', 'loc.rivendell']. "
+                        "One or more canonical KB IDs, e.g. ['npc.gandalf', 'location.rivendell']. "
                         "Append '+' to fetch linked objects too, e.g. ['npc.gandalf+']."
                     ),
                 },
@@ -208,7 +208,7 @@ register_command_tool(
                 "type_filter": {
                     "type": "string",
                     "description": (
-                        "Only return objects of this type (e.g. 'front', 'npc', 'loc'). "
+                        "Only return objects of this type (e.g. 'front', 'npc', 'location'). "
                         "Useful to narrow results when a tag is shared across many types."
                     ),
                 },

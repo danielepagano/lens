@@ -17,10 +17,14 @@ Session lifecycle
 
 Module handling
 ---------------
-``--module <key>`` pins ``design.<key>`` in the sub-node front matter.  The
-LLM sees the module as RELEVANT KNOWLEDGE and is instructed (via the system
-prompt) to treat it as a directive.  Only one module is active at a time:
-switching ``--module`` removes all ``design.*`` pins before adding the new one.
+``--module <key>`` pins ``design.<key>`` in the sub-node front matter.  If the
+KB contains ``<key>._template``, that id is pinned as well and is replaced when
+``--module`` changes (e.g. ``location`` + ``location._template``; ``world`` adds
+no extra pin when no template exists).  The LLM sees the module as RELEVANT
+KNOWLEDGE and is instructed (via the system prompt) to treat it as a directive.
+Only one module is active at a time: switching ``--module`` removes all
+``design.*`` pins before adding the new one, and drops the previous type's
+``._template`` companion if it was pinned.
 """
 
 from __future__ import annotations
@@ -61,8 +65,8 @@ each other when the tag is another entry id.
 
 There are usually entries already filled in and provided for context, and maybe \
 even an ongoing story. For example, we could have a character KB[person.alice] \
-going to a place KB[loc.wonderland] already defined, and you are asked to fill \
-a new KB[loc.croquet-field] with a tag of 'loc.wonderland' to link to where it is in.
+going to a place KB[location.wonderland] already defined, and you are asked to fill \
+a new KB[location.croquet-field] with a tag of 'location.wonderland' to link to where it is in.
 
 If a [DESIGN MODULE] entry appears in RELEVANT KNOWLEDGE, treat its instructions \
 as system-prompt priority: follow them precisely and use any tools they describe.
@@ -133,6 +137,13 @@ class DesignOperator(SessionOperator):
     requires_id: ClassVar[bool] = True
     use_command_tools: ClassVar[bool] = True
     module_prefix: ClassVar[str] = "design."
+
+    @classmethod
+    def _companion_pin_for_module(
+        cls, session: ProjectSession, module_key: str
+    ) -> str | None:
+        tid = f"{module_key}._template"
+        return tid if session.kb.exists(tid) else None
 
     @property
     def system_prompt(self) -> str:

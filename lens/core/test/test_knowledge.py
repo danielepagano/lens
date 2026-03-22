@@ -132,14 +132,14 @@ class TestKnowledgeStore(unittest.TestCase):
 
     def test_copy_object_when_source_used_as_tag(self) -> None:
         """When source ID is used as a tag by others, copy adds target as that tag for them."""
-        self.store.store_object("loc.kingdom", "The kingdom.")
+        self.store.store_object("location.kingdom", "The kingdom.")
         self.store.store_object("place.city_a", "City A.")
         self.store.store_object("place.city_b", "City B.")
-        self.store.add_tags("place.city_a", ["loc.kingdom", "place.city_b"])
-        self.store.add_tags("place.city_b", ["loc.kingdom", "place.city_a"])
-        self.store.copy_object("loc.kingdom", "loc.realm")
-        self.assertEqual(set(self.store.get_tags("place.city_a")), {"loc.kingdom", "loc.realm", "place.city_b"})
-        self.assertEqual(set(self.store.get_tags("place.city_b")), {"loc.kingdom", "loc.realm", "place.city_a"})
+        self.store.add_tags("place.city_a", ["location.kingdom", "place.city_b"])
+        self.store.add_tags("place.city_b", ["location.kingdom", "place.city_a"])
+        self.store.copy_object("location.kingdom", "location.realm")
+        self.assertEqual(set(self.store.get_tags("place.city_a")), {"location.kingdom", "location.realm", "place.city_b"})
+        self.assertEqual(set(self.store.get_tags("place.city_b")), {"location.kingdom", "location.realm", "place.city_a"})
 
     def test_copy_object_different_type(self) -> None:
         self.store.store_object("place.nyc", "NYC content")
@@ -239,16 +239,16 @@ class TestKnowledgeStore(unittest.TestCase):
 
     def test_rename_object_dot_tag_updated(self) -> None:
         """When object ID is used as a dot-tag by others, rename updates all references."""
-        self.store.store_object("loc.kingdom", "The kingdom.")
-        self.store.store_object("loc.city_a", "City A.")
-        self.store.store_object("loc.city_b", "City B.")
-        self.store.add_tags("loc.city_a", ["loc.kingdom"])
-        self.store.add_tags("loc.city_b", ["loc.kingdom"])
-        self.store.rename_object("loc.kingdom", "loc.realm")
-        self.assertEqual(set(self.store.get_tags("loc.city_a")), {"loc.realm"})
-        self.assertEqual(set(self.store.get_tags("loc.city_b")), {"loc.realm"})
-        self.assertEqual(self.store.get_ids_with_tag("loc.realm"), ["loc.city_a", "loc.city_b"])
-        self.assertEqual(self.store.get_ids_with_tag("loc.kingdom"), [])
+        self.store.store_object("location.kingdom", "The kingdom.")
+        self.store.store_object("location.city_a", "City A.")
+        self.store.store_object("location.city_b", "City B.")
+        self.store.add_tags("location.city_a", ["location.kingdom"])
+        self.store.add_tags("location.city_b", ["location.kingdom"])
+        self.store.rename_object("location.kingdom", "location.realm")
+        self.assertEqual(set(self.store.get_tags("location.city_a")), {"location.realm"})
+        self.assertEqual(set(self.store.get_tags("location.city_b")), {"location.realm"})
+        self.assertEqual(self.store.get_ids_with_tag("location.realm"), ["location.city_a", "location.city_b"])
+        self.assertEqual(self.store.get_ids_with_tag("location.kingdom"), [])
 
     def test_copy_object_leaves_changes_unstaged(self) -> None:
         """Copy must not stage its changes (single Storage for whole op)."""

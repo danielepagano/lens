@@ -1,8 +1,8 @@
 # [DESIGN MODULE]: LOCATION BUILD-OUT
 
-Build `loc.*` objects — the geography the story moves through. Locations are fractal: a continent contains regions, regions contain cities, cities contain districts, districts contain buildings, buildings contain rooms. We only create objects for places that MATTER — places the PCs will return to, places with secrets, places that anchor the story.
+Build `location.*` objects — the geography the story moves through. Locations are fractal: a continent contains regions, regions contain cities, cities contain districts, districts contain buildings, buildings contain rooms. We only create objects for places that MATTER — places the PCs will return to, places with secrets, places that anchor the story.
 
-Fetch `loc._template` first. Then work with the user.
+The `location._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
 STEP 0: STORY SERVICE CHECK
 Before building geography, establish why it matters to the story:
@@ -15,10 +15,10 @@ Ask about:
 - What scale? (a single building, a city, a region, a dungeon)
 - What's the purpose? (exploration hub, adventure site, recurring home base, travel route)
 - What front or story thread brings the PCs here?
-- Does it connect to existing locations? Check what `loc.*` objects exist already
+- Does it connect to existing locations? Check what `location.*` objects exist already
 
 STEP 2: BUILD THE HIERARCHY
-Every location links to its parent via tag (`loc.<parent-key>`). This creates the map graph. Work top-down:
+Every location links to its parent via tag (`location.<parent-key>`). This creates the map graph. Work top-down:
 1. If the containing location doesn't exist yet, create it first (even a stub)
 2. Create the target location(s) with parent links
 3. Note edges to sibling locations if relevant (roads, passages, visibility)

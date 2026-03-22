@@ -2,7 +2,7 @@
 
 The primary module for creating, developing, and retiring fronts. Use this whenever the story needs new hooks, existing fronts need updating, or between-session prep is needed.
 
-Fetch `front._template` first. Then assess the current state before creating or changing anything.
+The `front._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Assess the current state before creating or changing anything.
 
 STEP 1: ASSESS
 Before proposing anything, understand where things stand:

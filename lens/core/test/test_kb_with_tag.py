@@ -68,18 +68,18 @@ def _make_project_with_datasets(tmp: Path, datasets: list[str]) -> None:
 
 def _build_map_fixture(store: KnowledgeStore) -> None:
     """Build kingdom -> cities -> taverns (Up map: children tag parent; BFS follows object IDs as tags)."""
-    store.store_object("loc.kingdom", "The kingdom.")
-    store.store_object("loc.city_a", "City A.")
-    store.store_object("loc.city_b", "City B.")
-    store.store_object("loc.tavern_1", "Tavern 1.")
-    store.store_object("loc.tavern_2", "Tavern 2.")
-    store.store_object("loc.tavern_3", "Tavern 3.")
-    store.add_tags("loc.kingdom", ["loc.kingdom"])
-    store.add_tags("loc.city_a", ["loc.kingdom"])
-    store.add_tags("loc.city_b", ["loc.kingdom"])
-    store.add_tags("loc.tavern_1", ["loc.city_a"])
-    store.add_tags("loc.tavern_2", ["loc.city_a"])
-    store.add_tags("loc.tavern_3", ["loc.city_b"])
+    store.store_object("location.kingdom", "The kingdom.")
+    store.store_object("location.city_a", "City A.")
+    store.store_object("location.city_b", "City B.")
+    store.store_object("location.tavern_1", "Tavern 1.")
+    store.store_object("location.tavern_2", "Tavern 2.")
+    store.store_object("location.tavern_3", "Tavern 3.")
+    store.add_tags("location.kingdom", ["location.kingdom"])
+    store.add_tags("location.city_a", ["location.kingdom"])
+    store.add_tags("location.city_b", ["location.kingdom"])
+    store.add_tags("location.tavern_1", ["location.city_a"])
+    store.add_tags("location.tavern_2", ["location.city_a"])
+    store.add_tags("location.tavern_3", ["location.city_b"])
 
 
 def _build_part_fixture(store: KnowledgeStore) -> None:
@@ -93,34 +93,34 @@ def _build_part_fixture(store: KnowledgeStore) -> None:
 
 
 def _build_cross_type_fixture(store: KnowledgeStore) -> None:
-    """Build loc.* and front.* with cross-type dot-tags (dungeon in region, curse links to dungeon)."""
-    store.store_object("loc.region", "The region.")
-    store.store_object("loc.dungeon", "A dungeon.")
+    """Build location.* and front.* with cross-type dot-tags (dungeon in region, curse links to dungeon)."""
+    store.store_object("location.region", "The region.")
+    store.store_object("location.dungeon", "A dungeon.")
     store.store_object("front.curse", "A curse front.")
-    store.add_tags("loc.dungeon", ["loc.region"])
-    store.add_tags("front.curse", ["loc.dungeon"])
+    store.add_tags("location.dungeon", ["location.region"])
+    store.add_tags("front.curse", ["location.dungeon"])
 
 
 def _build_cycle_fixture(store: KnowledgeStore) -> None:
     """Build A <-> B cycle via dot-tags."""
-    store.store_object("loc.a", "A")
-    store.store_object("loc.b", "B")
-    store.add_tags("loc.a", ["loc.b"])
-    store.add_tags("loc.b", ["loc.a"])
-    store.add_tags("loc.a", ["start"])
+    store.store_object("location.a", "A")
+    store.store_object("location.b", "B")
+    store.add_tags("location.a", ["location.b"])
+    store.add_tags("location.b", ["location.a"])
+    store.add_tags("location.a", ["start"])
     store.store_object("other.x", "X")
     store.add_tags("other.x", ["start"])
 
 
 def _build_multi_layer_fixture(store: KnowledgeStore) -> None:
     """Build tavern -> city -> kingdom -> continent as a linear dot-tag chain."""
-    store.store_object("loc.continent", "Continent")
-    store.store_object("loc.kingdom", "Kingdom")
-    store.store_object("loc.city", "City")
-    store.store_object("loc.tavern", "Tavern")
-    store.add_tags("loc.kingdom", ["loc.continent"])
-    store.add_tags("loc.city", ["loc.kingdom"])
-    store.add_tags("loc.tavern", ["loc.city"])
+    store.store_object("location.continent", "Continent")
+    store.store_object("location.kingdom", "Kingdom")
+    store.store_object("location.city", "City")
+    store.store_object("location.tavern", "Tavern")
+    store.add_tags("location.kingdom", ["location.continent"])
+    store.add_tags("location.city", ["location.kingdom"])
+    store.add_tags("location.tavern", ["location.city"])
 
 
 class TestGetIdsWithTag(unittest.TestCase):
@@ -201,42 +201,42 @@ class TestTraverseByDotTags(unittest.TestCase):
 
     def test_map_traversal_kingdom_cities_taverns(self) -> None:
         _build_map_fixture(self.store)
-        root_ids, layers = self.store.traverse_by_dot_tags(["loc.kingdom"], same_type_only=False)
-        self.assertEqual(set(root_ids), {"loc.kingdom", "loc.city_a", "loc.city_b"})
+        root_ids, layers = self.store.traverse_by_dot_tags(["location.kingdom"], same_type_only=False)
+        self.assertEqual(set(root_ids), {"location.kingdom", "location.city_a", "location.city_b"})
         by_tag = dict(layers)
-        self.assertIn("loc.city_a", by_tag)
-        self.assertIn("loc.city_b", by_tag)
-        self.assertEqual(set(by_tag["loc.city_a"]), {"loc.tavern_1", "loc.tavern_2"})
-        self.assertEqual(set(by_tag["loc.city_b"]), {"loc.tavern_3"})
+        self.assertIn("location.city_a", by_tag)
+        self.assertIn("location.city_b", by_tag)
+        self.assertEqual(set(by_tag["location.city_a"]), {"location.tavern_1", "location.tavern_2"})
+        self.assertEqual(set(by_tag["location.city_b"]), {"location.tavern_3"})
 
     def test_same_type_only_filters_traversal(self) -> None:
         _build_cross_type_fixture(self.store)
-        _, layers_same = self.store.traverse_by_dot_tags(["loc.region"], same_type_only=True)
+        _, layers_same = self.store.traverse_by_dot_tags(["location.region"], same_type_only=True)
         by_tag = dict(layers_same)
-        self.assertIn("loc.dungeon", by_tag)
-        self.assertEqual(set(by_tag["loc.dungeon"]), set())
+        self.assertIn("location.dungeon", by_tag)
+        self.assertEqual(set(by_tag["location.dungeon"]), set())
 
     def test_same_type_ignored_when_starting_tag_not_dot(self) -> None:
-        self.store.store_object("loc.dungeon", "Dungeon")
+        self.store.store_object("location.dungeon", "Dungeon")
         self.store.store_object("front.curse", "Curse")
-        self.store.add_tags("loc.dungeon", ["simple_tag", "front.curse"])
-        self.store.add_tags("front.curse", ["loc.dungeon"])
+        self.store.add_tags("location.dungeon", ["simple_tag", "front.curse"])
+        self.store.add_tags("front.curse", ["location.dungeon"])
         root_ids, layers = self.store.traverse_by_dot_tags(["simple_tag"], same_type_only=True)
-        self.assertIn("loc.dungeon", root_ids)
+        self.assertIn("location.dungeon", root_ids)
         tag_set = {t for t, _ in layers}
-        self.assertIn("loc.dungeon", tag_set)
+        self.assertIn("location.dungeon", tag_set)
         self.assertIn("front.curse", tag_set)
 
     def test_cycle_does_not_loop(self) -> None:
         _build_cycle_fixture(self.store)
         root_ids, layers = self.store.traverse_by_dot_tags(["start"], same_type_only=False)
-        self.assertIn("loc.a", root_ids)
+        self.assertIn("location.a", root_ids)
         self.assertIn("other.x", root_ids)
         by_tag = dict(layers)
-        self.assertIn("loc.a", by_tag)
-        self.assertIn("loc.b", by_tag)
-        self.assertEqual(set(by_tag["loc.a"]), {"loc.b"})
-        self.assertEqual(set(by_tag["loc.b"]), {"loc.a"})
+        self.assertIn("location.a", by_tag)
+        self.assertIn("location.b", by_tag)
+        self.assertEqual(set(by_tag["location.a"]), {"location.b"})
+        self.assertEqual(set(by_tag["location.b"]), {"location.a"})
         self.assertLessEqual(len(layers), 4)
 
     def test_empty_root_returns_empty_layers(self) -> None:
@@ -321,19 +321,19 @@ class TestKbWithTagCore(unittest.TestCase):
 
     def test_recurse_returns_layers(self) -> None:
         _build_map_fixture(self.store)
-        ids, layers, objects = self._run_with_tag(["loc.kingdom"], recurse=0)
-        self.assertEqual(set(ids), {"loc.kingdom", "loc.city_a", "loc.city_b"})
+        ids, layers, objects = self._run_with_tag(["location.kingdom"], recurse=0)
+        self.assertEqual(set(ids), {"location.kingdom", "location.city_a", "location.city_b"})
         self.assertIsNotNone(layers)
         by_tag = dict(layers or [])
-        self.assertIn("loc.city_a", by_tag)
-        self.assertIn("loc.city_b", by_tag)
-        self.assertEqual(set(by_tag["loc.city_a"]), {"loc.tavern_1", "loc.tavern_2"})
+        self.assertIn("location.city_a", by_tag)
+        self.assertIn("location.city_b", by_tag)
+        self.assertEqual(set(by_tag["location.city_a"]), {"location.tavern_1", "location.tavern_2"})
         self.assertIsNone(objects)
 
     def test_recurse_expand_returns_objects_for_all_layers(self) -> None:
         _build_map_fixture(self.store)
         ids, layers, objects = self._run_with_tag(
-            ["loc.kingdom"], recurse=0, expand=True
+            ["location.kingdom"], recurse=0, expand=True
         )
         self.assertIsNotNone(objects)
         all_ids = set(ids)
@@ -386,38 +386,38 @@ class TestKbWithTagCore(unittest.TestCase):
 
     def test_recurse_depth_1_limits_layers(self) -> None:
         _build_map_fixture(self.store)
-        ids, layers, objects = self._run_with_tag(["loc.kingdom"], recurse=1)
-        self.assertEqual(set(ids), {"loc.kingdom", "loc.city_a", "loc.city_b"})
+        ids, layers, objects = self._run_with_tag(["location.kingdom"], recurse=1)
+        self.assertEqual(set(ids), {"location.kingdom", "location.city_a", "location.city_b"})
         self.assertIsNotNone(layers)
         tag_names = [t for t, _ in layers or []]
-        self.assertEqual(set(tag_names), {"loc.city_a", "loc.city_b"})
+        self.assertEqual(set(tag_names), {"location.city_a", "location.city_b"})
         self.assertIsNone(objects)
 
     def test_multi_layer_recurse_depths(self) -> None:
         _build_multi_layer_fixture(self.store)
         # No recurse: only direct matches for the starting tag.
-        ids, layers, objects = self._run_with_tag(["loc.continent"], recurse=None)
-        self.assertEqual(ids, ["loc.kingdom"])
+        ids, layers, objects = self._run_with_tag(["location.continent"], recurse=None)
+        self.assertEqual(ids, ["location.kingdom"])
         self.assertIsNone(layers)
         self.assertIsNone(objects)
 
         # Depth 1: roots plus one hop (kingdom -> city).
-        ids, layers, objects = self._run_with_tag(["loc.continent"], recurse=1)
-        self.assertEqual(ids, ["loc.kingdom"])
+        ids, layers, objects = self._run_with_tag(["location.continent"], recurse=1)
+        self.assertEqual(ids, ["location.kingdom"])
         by_tag = dict(layers or [])
-        self.assertIn("loc.kingdom", by_tag)
-        self.assertEqual(by_tag["loc.kingdom"], ["loc.city"])
-        self.assertNotIn("loc.city", by_tag)
+        self.assertIn("location.kingdom", by_tag)
+        self.assertEqual(by_tag["location.kingdom"], ["location.city"])
+        self.assertNotIn("location.city", by_tag)
         self.assertIsNone(objects)
 
         # Depth 2: include tavern as well.
-        ids, layers, objects = self._run_with_tag(["loc.continent"], recurse=2)
-        self.assertEqual(ids, ["loc.kingdom"])
+        ids, layers, objects = self._run_with_tag(["location.continent"], recurse=2)
+        self.assertEqual(ids, ["location.kingdom"])
         by_tag = dict(layers or [])
-        self.assertIn("loc.kingdom", by_tag)
-        self.assertIn("loc.city", by_tag)
-        self.assertEqual(by_tag["loc.kingdom"], ["loc.city"])
-        self.assertEqual(by_tag["loc.city"], ["loc.tavern"])
+        self.assertIn("location.kingdom", by_tag)
+        self.assertIn("location.city", by_tag)
+        self.assertEqual(by_tag["location.kingdom"], ["location.city"])
+        self.assertEqual(by_tag["location.city"], ["location.tavern"])
 
 
 class TestWithTagCli(unittest.TestCase):
@@ -475,15 +475,15 @@ class TestWithTagCli(unittest.TestCase):
 
     def test_cli_recurse_prints_headers_and_ids(self) -> None:
         _build_map_fixture(self.store)
-        out = self._run_with_tag_cli(["loc.kingdom"], recurse=0)
-        self.assertIn("# Objects with tag 'loc.kingdom'", out)
-        self.assertIn("loc.kingdom", out)
-        self.assertIn("loc.city_a", out)
-        self.assertIn("> with-tag 'loc.city_a'", out)
-        self.assertIn("loc.tavern_1", out)
-        self.assertIn("loc.tavern_2", out)
-        self.assertIn("> with-tag 'loc.city_b'", out)
-        self.assertIn("loc.tavern_3", out)
+        out = self._run_with_tag_cli(["location.kingdom"], recurse=0)
+        self.assertIn("# Objects with tag 'location.kingdom'", out)
+        self.assertIn("location.kingdom", out)
+        self.assertIn("location.city_a", out)
+        self.assertIn("> with-tag 'location.city_a'", out)
+        self.assertIn("location.tavern_1", out)
+        self.assertIn("location.tavern_2", out)
+        self.assertIn("> with-tag 'location.city_b'", out)
+        self.assertIn("location.tavern_3", out)
 
     def test_cli_same_type_prints_nothing(self) -> None:
         _build_part_fixture(self.store)
@@ -507,11 +507,11 @@ class TestWithTagCli(unittest.TestCase):
 
     def test_cli_recurse_expand_prints_all_objects_by_layer(self) -> None:
         _build_map_fixture(self.store)
-        out = self._run_with_tag_cli(["loc.kingdom"], recurse=0, expand=True)
-        self.assertIn("# From tag 'loc.city_a'", out)
-        self.assertIn("KB['loc.tavern_1']", out)
-        self.assertIn("KB['loc.tavern_2']", out)
-        self.assertIn("KB['loc.tavern_3']", out)
+        out = self._run_with_tag_cli(["location.kingdom"], recurse=0, expand=True)
+        self.assertIn("# From tag 'location.city_a'", out)
+        self.assertIn("KB['location.tavern_1']", out)
+        self.assertIn("KB['location.tavern_2']", out)
+        self.assertIn("KB['location.tavern_3']", out)
         self.assertIn("Tavern 1.", out)
         self.assertIn("Tavern 2.", out)
         self.assertIn("Tavern 3.", out)
@@ -528,43 +528,43 @@ class TestWithTagCli(unittest.TestCase):
 
     def test_cli_recurse_depth_1_omits_deeper_children(self) -> None:
         _build_map_fixture(self.store)
-        out = self._run_with_tag_cli(["loc.kingdom"], recurse=1)
-        self.assertIn("# Objects with tag 'loc.kingdom'", out)
-        self.assertIn("loc.kingdom", out)
-        self.assertIn("loc.city_a", out)
-        self.assertIn("loc.city_b", out)
-        self.assertIn("> with-tag 'loc.city_a'", out)
-        self.assertIn("> with-tag 'loc.city_b'", out)
-        self.assertIn("loc.tavern_1", out)
-        self.assertIn("loc.tavern_2", out)
-        self.assertIn("loc.tavern_3", out)
+        out = self._run_with_tag_cli(["location.kingdom"], recurse=1)
+        self.assertIn("# Objects with tag 'location.kingdom'", out)
+        self.assertIn("location.kingdom", out)
+        self.assertIn("location.city_a", out)
+        self.assertIn("location.city_b", out)
+        self.assertIn("> with-tag 'location.city_a'", out)
+        self.assertIn("> with-tag 'location.city_b'", out)
+        self.assertIn("location.tavern_1", out)
+        self.assertIn("location.tavern_2", out)
+        self.assertIn("location.tavern_3", out)
 
     def test_cli_multi_layer_recurse_depths(self) -> None:
         _build_multi_layer_fixture(self.store)
 
-        # No recurse: only kingdom (direct matches for 'loc.continent').
-        out = self._run_with_tag_cli(["loc.continent"])
+        # No recurse: only kingdom (direct matches for 'location.continent').
+        out = self._run_with_tag_cli(["location.continent"])
         self.assertNotIn("> with-tag", out)
-        self.assertIn("loc.kingdom", out)
-        self.assertNotIn("loc.city", out)
-        self.assertNotIn("loc.tavern", out)
+        self.assertIn("location.kingdom", out)
+        self.assertNotIn("location.city", out)
+        self.assertNotIn("location.tavern", out)
 
         # Depth 1: add city as children of kingdom.
-        out = self._run_with_tag_cli(["loc.continent"], recurse=1)
-        self.assertIn("# Objects with tag 'loc.continent'", out)
-        self.assertIn("loc.kingdom", out)
-        self.assertIn("> with-tag 'loc.kingdom'", out)
-        self.assertIn("loc.city", out)
-        self.assertNotIn("loc.tavern", out)
+        out = self._run_with_tag_cli(["location.continent"], recurse=1)
+        self.assertIn("# Objects with tag 'location.continent'", out)
+        self.assertIn("location.kingdom", out)
+        self.assertIn("> with-tag 'location.kingdom'", out)
+        self.assertIn("location.city", out)
+        self.assertNotIn("location.tavern", out)
 
         # Depth 2: include tavern as well (children of city).
-        out = self._run_with_tag_cli(["loc.continent"], recurse=2)
-        self.assertIn("# Objects with tag 'loc.continent'", out)
-        self.assertIn("loc.kingdom", out)
-        self.assertIn("loc.city", out)
-        self.assertIn("loc.tavern", out)
-        self.assertIn("> with-tag 'loc.kingdom'", out)
-        self.assertIn("> with-tag 'loc.city'", out)
+        out = self._run_with_tag_cli(["location.continent"], recurse=2)
+        self.assertIn("# Objects with tag 'location.continent'", out)
+        self.assertIn("location.kingdom", out)
+        self.assertIn("location.city", out)
+        self.assertIn("location.tavern", out)
+        self.assertIn("> with-tag 'location.kingdom'", out)
+        self.assertIn("> with-tag 'location.city'", out)
 
 
 class TestKbWithTagDatasets(unittest.TestCase):

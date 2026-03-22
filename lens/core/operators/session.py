@@ -105,6 +105,17 @@ class SessionOperator(Operator):
     auto_pins: ClassVar[list[str]] = []
     """KB ids pinned automatically when a fresh session is created."""
 
+    @classmethod
+    def _companion_pin_for_module(
+        cls, session: ProjectSession, module_key: str
+    ) -> str | None:
+        """Optional extra KB id to pin alongside ``module_prefix + module_key``.
+
+        Subclasses may pin a related object (e.g. ``type._template``) when it
+        exists.  Default: no companion.
+        """
+        return None
+
     # ------------------------------------------------------------------
     # Session detection
     # ------------------------------------------------------------------
@@ -197,6 +208,15 @@ class SessionOperator(Operator):
                 p for p in kb_pins if p.startswith(cls.module_prefix)
                 and p not in cls.auto_pins
             ]
+            drop_companions: list[str] = []
+            for p in old_module_pins:
+                old_key = p.removeprefix(cls.module_prefix)
+                if old_key and old_key != module_id:
+                    cid = cls._companion_pin_for_module(session, old_key)
+                    if cid and cid in kb_pins:
+                        drop_companions.append(cid)
+            if drop_companions:
+                remove_pin(node, drop_companions, storage)
             if old_module_pins:
                 remove_pin(node, old_module_pins, storage)
             new_module_kb_id = cls.module_prefix + module_id
@@ -205,6 +225,9 @@ class SessionOperator(Operator):
                     f"module does not exist: {new_module_kb_id}"
                 )
             pin_node(node, [new_module_kb_id], storage)
+            new_companion = cls._companion_pin_for_module(session, module_id)
+            if new_companion:
+                pin_node(node, [new_companion], storage)
         if pins:
             pin_node(node, pins, storage)
         if unpins:
@@ -250,6 +273,9 @@ class SessionOperator(Operator):
                     f"module does not exist: {module_kb_id}"
                 )
             all_pins.append(module_kb_id)
+            companion = cls._companion_pin_for_module(session, module_id)
+            if companion:
+                all_pins.append(companion)
         if all_pins:
             pin_node(child_node, all_pins, storage)
         if unpins:

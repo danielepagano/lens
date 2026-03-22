@@ -267,11 +267,11 @@ Options: `-t` / `--type` (object type), `-s` / `--start-with` (tag prefix).
 Back-traverse the tag index to see which objects have a given tag, and optionally walk "up" a location/map hierarchy.
 
 ```bash
-lens kb with-tag loc.kingdom                # IDs of objects tagged with loc.kingdom
-lens kb with-tag loc.kingdom -e             # Print full objects instead of IDs
-lens kb with-tag loc.kingdom -r             # Breadth-first over dot-tags (e.g. kingdom → cities → taverns)
-lens kb with-tag loc.kingdom -r -e          # Same as above, but print objects layer by layer
-lens kb with-tag loc.kingdom -r -e -s       # Only follow/print IDs whose type matches the starting tag (loc.*)
+lens kb with-tag location.kingdom                # IDs of objects tagged with location.kingdom
+lens kb with-tag location.kingdom -e             # Print full objects instead of IDs
+lens kb with-tag location.kingdom -r             # Breadth-first over dot-tags (e.g. kingdom → cities → taverns)
+lens kb with-tag location.kingdom -r -e          # Same as above, but print objects layer by layer
+lens kb with-tag location.kingdom -r -e -s       # Only follow/print IDs whose type matches the starting tag (location.*)
 
 # OR groups: use (a b c) for tags that match any of a, b, or c. Quote for shell:
 lens kb with-tag "(cr:1-2 cr:1-4)" "(type:undead type:humanoid)" size:large
@@ -358,7 +358,7 @@ Sections structure the narrative tree by creating child nodes under the cursor.
 
 ```bash
 lens section intro          # create child node "intro" and open section tag at cursor
-lens section intro -p loc.tavern
+lens section intro -p location.tavern
 lens section --end         # close the current section (appends summary to parent)
 lens section --end -l fast
 ```

@@ -472,7 +472,7 @@ class TestFindCursor(unittest.TestCase):
             p = Path(tmp)
             narrative = _make_narrative(p)
             (narrative / "_node.md").write_text(
-                "# root\n\n[section:ch1\n  kb_pin: [loc.inn]\n]: #\n"
+                "# root\n\n[section:ch1\n  kb_pin: [location.inn]\n]: #\n"
             )
             (narrative / "ch1.md").write_text("# ch1\n")
             node = NarrativeNode(narrative_root=narrative, key_path=())

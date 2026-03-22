@@ -10,4 +10,4 @@ Name
 - Tensions or secrets
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `loc` object with the loc.id that contains it, if any. -->
+<!-- TAG POLICY: tag a `location` object with the location.id that contains it, if any. -->

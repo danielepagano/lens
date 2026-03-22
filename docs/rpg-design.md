@@ -132,16 +132,16 @@ Name (plus any nicknames or code-names we'd see them called)
 <!-- TAG POLICY: Link PCs to any faction of which they are members. -->
 ```
 
-### Location (`loc.*`)
+### Location (`location.*`)
 
 Geography is important and fractal, we'll need to know the region we're in and sometimes the city, or even the tavern or someone's room, if for some reason that matters.
 Critically, we only want to create objects for places that _matter_, so somewhere we're at for a while, or somewhere we're returning to. In a social game, maybe every room in a mansion has a record, in other adventures just the overland we travel, and then a bunch of places we visit and remember only in narrative summaries, if at all.
 
-If we want to store places so we can return to them, we will need to find them again later! Therefore, we need a map. A map is just a tree, so all we need to do is link locations, expand the graph, and we have a "map". If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule). So each location should link to its parent location, and we can use a recursive tag traversal of the root location to make a map (e.g. `lens kb with-tag loc.kingdom --recurse --expand --same-type` to get all the locations in the kingdom).  
+If we want to store places so we can return to them, we will need to find them again later! Therefore, we need a map. A map is just a tree, so all we need to do is link locations, expand the graph, and we have a "map". If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule). So each location should link to its parent location, and we can use a recursive tag traversal of the root location to make a map (e.g. `lens kb with-tag location.kingdom --recurse --expand --same-type` to get all the locations in the kingdom).  
 
 ```kb
 ---
-id: loc._template
+id: location._template
 ---
 <!-- Any type of Location. Usage: Ensures continuity when revisiting places; we ALWAYS link a location to the one of which it's part (or lore.world for roots), which lets us create a map graph of our setting. -->
 Name
@@ -155,7 +155,7 @@ Name
 - Tensions or secrets
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `loc` object with the loc.id that contains it, if any. -->
+<!-- TAG POLICY: tag a `location` object with the location.id that contains it, if any. -->
 ```
 
 ### NPCs (`npc.*`)
@@ -197,7 +197,7 @@ Name (plus any nicknames or code-names we'd see them called)
 - Ongoing plans or operations
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `faction` object minimally (they are linked to); you can include the loc headquarters or the pc/npc leader  -->
+<!-- TAG POLICY: tag a `faction` object minimally (they are linked to); you can include the location headquarters or the pc/npc leader  -->
 ```
 
 ### Front (`front.*`)
@@ -221,7 +221,7 @@ Name (any way we'd be referencing this problem)
   - Any dependencies on chance, in the form of "every (counter mod x) days there is a y% chance that z could happen"
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `front` object minimally (they are either pinned or spawn changes and narrative during planning); you can include a loc key location or the driving faction or npc. Tag it with its timeline if it belongs to one.  -->
+<!-- TAG POLICY: tag a `front` object minimally (they are either pinned or spawn changes and narrative during planning); you can include a location key location or the driving faction or npc. Tag it with its timeline if it belongs to one.  -->
 ```
 
 ### Lore (`lore.*`)
@@ -260,7 +260,7 @@ Encounter name (short, evocative)
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag an encounter with the loc where it takes place and any driving front or npc. For combat encounters, tag with difficulty:low/moderate/high. -->
+<!-- TAG POLICY: tag an encounter with the location where it takes place and any driving front or npc. For combat encounters, tag with difficulty:low/moderate/high. -->
 ```
 
 ## RPG Operators
@@ -284,13 +284,13 @@ A design session is a narrative sub-node where the work product is KB objects, n
 
 The sub-node is created automatically on the first call, with an ID derived from the prompt and module (e.g. `design-encounter-the-bridge-ambush`). Subsequent calls detect the active session and add blocks rather than creating a new sub-node. This lets the user refine across multiple exchanges before committing.
 
-The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing by pinning an expanded object like `loc.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
+The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing by pinning an expanded object like `location.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
 
 The operator _does not_ author static high-level objects like `lore.world` that set up the general setting and tone. Those are added by the player, or they can use a normal edit operator for assistance.
 
 Other Considerations:
-  - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `loc.springfield` by the rules of `loc` there will be an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
-  - It would be pretty easy to create a `map` operator that uses the `loc` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing a non-advance way to remember things.
+  - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `location.springfield` by the rules of `location` there will be an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
+  - It would be pretty easy to create a `map` operator that uses the `location` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing a non-advance way to remember things.
 
 #### Design Modules
 
@@ -304,7 +304,7 @@ When the user is done with a design session, `lens design --end` runs `kb extrac
 | Player Character | `design.pc` | `pc.<name>` + `lore.<name>` (two objects) | Play surface + planning depth with core questions |
 | Front | `design.front` | `front.*` with supporting stubs | Create, groom, develop, retire fronts — arc seeding baked in |
 | Encounter | `design.encounter` | `encounter.*` objects | Prepared situations for play (see below) |
-| Location | `design.location` | `loc.*` network with parent links | Geography at any scale; story-service gated |
+| Location | `design.location` | `location.*` network with parent links | Geography at any scale; story-service gated |
 | NPC | `design.npc` | `npc.*` with links and secrets | Recurring characters; story-service gated |
 
 #### Encounter objects: the script for `play`
@@ -366,7 +366,7 @@ When `play` sees a pinned `encounter.*` object, it uses the encounter's scene ru
 - In mixed encounters: follow the triggers and transitions defined in the object — a negotiation breaks down into combat, a chase ends in a standoff
 - In encounters with secrets: the AI knows the secret and plays toward revealing it naturally through the fiction
 
-Without a pinned encounter, `play` defaults to open-world general narration guided by whatever loc, npc, and front objects are pinned.
+Without a pinned encounter, `play` defaults to open-world general narration guided by whatever location, npc, and front objects are pinned.
 
 **System prompt**: The `play` system prompt establishes the GM voice, the authority model, and the gates (ADJUDICATE → NARRATE → RESOLVE → ENGAGE from `rules.rpg`). It does NOT hard-code situation types — it tells the AI to read the pinned encounter object (if any) and follow its scene rules. This keeps the system prompt stable across all situation types.
 

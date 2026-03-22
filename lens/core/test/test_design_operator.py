@@ -328,6 +328,70 @@ class TestDesignModulePin(unittest.TestCase):
             self.assertIn("encounter", full_content.lower())
 
 
+class TestDesignCompanionTemplatePin(unittest.TestCase):
+    def test_pins_type_template_when_kb_has_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "location.md").write_text(
+                "[DESIGN MODULE]: LOCATION\n", encoding="utf-8"
+            )
+            (root / "knowledge" / "location").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "location" / "_template.md").write_text(
+                "TEMPLATE\n", encoding="utf-8"
+            )
+
+            _run_design(root, narrative, module_id="location")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text())
+            pins = fm.get("kb_pin", [])
+            self.assertIn("design.location", pins)
+            self.assertIn("location._template", pins)
+
+    def test_no_template_pin_when_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "world.md").write_text(
+                "[DESIGN MODULE]: WORLD\n", encoding="utf-8"
+            )
+
+            _run_design(root, narrative, module_id="world")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text())
+            pins = fm.get("kb_pin", [])
+            self.assertIn("design.world", pins)
+            self.assertNotIn("world._template", pins)
+
+    def test_module_switch_replaces_template_pin(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text("E\n")
+            (root / "knowledge" / "design" / "npc.md").write_text("N\n")
+            for t in ("encounter", "npc"):
+                (root / "knowledge" / t).mkdir(parents=True, exist_ok=True)
+                (root / "knowledge" / t / "_template.md").write_text(f"{t}\n")
+
+            _run_design(root, narrative, module_id="encounter")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "first"], cwd=root, capture_output=True, check=True,
+            )
+
+            _run_design(root, narrative, module_id="npc")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text())
+            pins = fm.get("kb_pin", [])
+            self.assertIn("design.npc", pins)
+            self.assertIn("npc._template", pins)
+            self.assertNotIn("design.encounter", pins)
+            self.assertNotIn("encounter._template", pins)
+
+
 # ---------------------------------------------------------------------------
 # Continue run (second call inside the same design session)
 # ---------------------------------------------------------------------------

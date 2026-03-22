@@ -2,7 +2,7 @@
 
 Build `npc.*` objects — recurring characters controlled by the AI. NOT for transient characters (one-off vendors, random guards, unnamed cultists). Only characters who will appear multiple times or whose behavior needs to be consistent across scenes.
 
-Fetch `npc._template` first. Then work with the user.
+The `npc._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
 STORY SERVICE CHECK:
 Before creating an NPC, establish why they matter to the story:

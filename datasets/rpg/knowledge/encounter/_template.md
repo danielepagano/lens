@@ -9,4 +9,4 @@ Encounter name (short, evocative)
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag an encounter with the loc where it takes place and any driving front or npc. For combat encounters, tag with difficulty:low/moderate/high. -->
+<!-- TAG POLICY: tag an encounter with the location where it takes place and any driving front or npc. For combat encounters, tag with difficulty:low/moderate/high. -->

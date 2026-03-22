@@ -1,6 +1,6 @@
 # RPG (core dataset)
 
-The **`rpg`** bundled dataset is the ruleset-agnostic layer for tabletop-style play in Lens: `rules.rpg`, a default `rules.system` stub, templates (`pc`, `loc`, `npc`, …), and `design.*` modules. Operators **`play`** and **`advance`** are gated on this dataset.
+The **`rpg`** bundled dataset is the ruleset-agnostic layer for tabletop-style play in Lens: `rules.rpg`, a default `rules.system` stub, templates (`pc`, `location`, `npc`, …), and `design.*` modules. Operators **`play`** and **`advance`** are gated on this dataset.
 
 See [RPG Design Doc](../../docs/rpg-design.md) and the main [CLI reference](../cli/README.md).
 

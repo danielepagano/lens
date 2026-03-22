@@ -27,7 +27,7 @@ The object must be under 500 words. It will be in the prompt of every play inter
 Do NOT include:
 - Character-specific information (that's `pc.*` and `lore.<name>`)
 - Plot or adventure hooks (that's `front.*`)
-- Geography details (that's `loc.*`)
+- Geography details (that's `location.*`)
 - Deep history or cosmology (that's separate `lore.*` objects)
 
 STEP 4: OPTIONAL DEEP LORE

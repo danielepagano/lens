@@ -2,7 +2,7 @@
 
 Help the user create TWO objects from their character: `pc.<name>` for play and `lore.<name>` for planning depth. These serve completely different purposes and must be kept separate.
 
-Fetch `pc._template` and `lore._template` first. Possibly fetch what the user has so far (`kb_get` for the character name). Then ask the user about their character.
+The `pc._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Lore objects don't have any specific template. Check any existing character objects with `kb_get`. Then work with the user.
 
 PHASE 1: THE PLAY SURFACE (`pc.<name>`)
 This object is what the AI needs to describe and voice the character during play. It is pinned in EVERY play interaction, so every word costs tokens.

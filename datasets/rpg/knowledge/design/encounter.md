@@ -2,7 +2,7 @@
 
 Build `encounter.*` objects — prepared situations for `play` to use as scripts. An encounter is ANY prepared situation with stakes, not just combat. A conversation with a nervous informant, a chase through a burning market, a courtroom trial, a puzzle door, a boss fight — these are all encounters.
 
-Fetch `encounter._template` first. Then work with the user.
+The `encounter._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
 STEP 0: STORY SERVICE CHECK
 Before building anything, establish the connection to the story:
