@@ -10,7 +10,7 @@ Lens is a system that allows users and AIs to collaboratively create "narrative 
   3. Human user and AI collaborate on writing using an extensible set of operators that allow various simulations and behaviors. An operator is a function that generates or manipulates text or structure.
   4. The story is hierarchical and fractal. The top level reads like a very high-level overview of what happened so far, but each item within may just be a summary: you can zoom in on these summaries to see the more detailed story of how that text came to be, which in turn may be a series of summaries, and so on to whatever level of detail you want. This has two goals:  
      1. AI prompts use ancestor summaries at increasingly high level, maintaining high-level continuity with lower resolution for farther away facts; this is like rendering fewer triangles for geometry far away.
-     2. You can use the finer details to simulate systems that generate these outcomes, which can be any operator you design, from randomness to an RPG (played within Lens, or outside of it). In other words, this can help Lens be a workspace or even a virtual DM of sorts.
+     2. You can use the finer details to simulate systems that generate these outcomes, which can be any operator you design, from randomness to an RPG (played within Lens, or outside of it). In other words, this can help Lens be a workspace or even a virtual GM of sorts.
 
 ## Storage Model
 

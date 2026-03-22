@@ -11,7 +11,7 @@
     copyKbItem,
   } from '../../services/api'
   import type { KbItemDetail } from '../../services/api'
-  import { createMarkdownRenderer } from '../../utils/markdown'
+  import { createMarkdownRenderer, preprocessBlockquotePills } from '../../utils/markdown'
 
   const md = createMarkdownRenderer()
 
@@ -180,7 +180,7 @@
     }
   }
 
-  $: rendered = item ? md.render(item.content) : ''
+  $: rendered = item ? md.render(preprocessBlockquotePills(item.content)) : ''
 
   function isDotTag(tag: string): boolean {
     return tag.includes('.')

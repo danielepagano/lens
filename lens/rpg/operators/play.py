@@ -46,7 +46,8 @@ def _pc_marker(params: dict[str, Any]) -> str:
         raise OperatorError(
             "play could not resolve PC key (no pinned pc.* in context)"
         )
-    return key.upper()
+    segments = key.replace("_", "-").split("-")
+    return " ".join(s.capitalize() for s in segments if s)
 
 # ---------------------------------------------------------------------------
 # Prompt constants
@@ -119,7 +120,7 @@ class PlayOperator(SessionOperator):
 
     def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt") or ""
-        return f"> [{_pc_marker(params)}] {prompt}\n\n---\n\n"
+        return f"> [{_pc_marker(params)}] {prompt}\n\n"
 
     @classmethod
     def check_requirements(cls, crawl_result: CrawlResult) -> None:

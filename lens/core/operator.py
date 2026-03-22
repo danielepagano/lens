@@ -80,7 +80,7 @@ Fresh inline: _do_fresh_inline step-by-step
 
 7. **Normal path**  
    No tool call (or unknown tool): :meth:`content_prefix_for_fresh`(ann_params)
-   can prepend text (e.g. play’s ``> [ALICE] prompt\\n\\n---\\n\\n``), then
+   can prepend text (e.g. play’s ``> [Alice] prompt\\n\\n``), then
    :meth:`write_start`(cursor, tag, content) appends open tag + content +
    close tag.
 

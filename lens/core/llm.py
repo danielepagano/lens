@@ -145,7 +145,7 @@ def _format_tool_call_markdown(
     req = json.dumps(
         {"name": name, "arguments": arguments}, indent=2, ensure_ascii=False, default=str
     )
-    lines = ["```tool-call", "Toool Call Request:", req]
+    lines = ["```tool-call", "Tool Call", req]
     if response_char_len is not None:
         lines.append(f"Response size: {response_char_len} characters")
     lines.append("```")

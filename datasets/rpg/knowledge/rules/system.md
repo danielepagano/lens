@@ -91,7 +91,7 @@ THREAT…                   WANTS TO…              THE…                     
 
 Add more interesting details as you go, but keep it open-ended, as most will be improvised! It should have a fun, pulp-space-opera tone. 
 IMPORTANT: because the above is an HTML comment, the user cannot see it in an app, but they can in raw markdown. 
-Use ai:secret nested comments either inside it or after to add encoded secrets. They must be dramatic and usable by the GAME PLAY script.
+Add another comment, structured exactly as <!-- ai:secret: (whatever secret) --> after the adventure to add user-encoded secrets. They must be dramatic and usable by the GAME PLAY script.
 
 3. Once you have created the comment above, start writing outside the comment again so the the user can see the output.  
 Begin the opening scene with something like "The Raptor has picked up a distress signal / strange readings / evidence of... (depending on the story). What do you do?”. 

@@ -373,8 +373,8 @@ New body line
     const overlay: NodeTransactionOverlay = {
       addedLines: new Set([5]),
       removedGroups: [
-        { beforeLine: 3, lines: ['First removed block.', '> [FRIDA] prompt', 'Narrative from first play.'] },
-        { beforeLine: 5, lines: ['Second removed block.', '> [DM] response', 'Narrative from second play.'] },
+        { beforeLine: 3, lines: ['First removed block.', '> [Frida] prompt', 'Narrative from first play.'] },
+        { beforeLine: 5, lines: ['Second removed block.', '> [GM] response', 'Narrative from second play.'] },
       ],
     }
     const result = preprocessAnnotations(markdown, 'test', overlay)

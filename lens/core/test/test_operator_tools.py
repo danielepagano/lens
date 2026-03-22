@@ -635,17 +635,19 @@ class TestPlayOperatorEnrichParams(unittest.TestCase):
 
 
 class TestPlayOperatorPcMarker(unittest.TestCase):
-    def test_build_instruction_uses_pc_key_uppercase(self) -> None:
+    def test_build_instruction_uses_pc_key_title_case(self) -> None:
         op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
         out = op.build_instruction({"prompt": "I roll 18", "pc_key": "alice"})
-        self.assertIn("> [ALICE] I roll 18", out)
+        self.assertIn("> [Alice] I roll 18", out)
+        out_slug = op.build_instruction({"prompt": "I go left", "pc_key": "first-last"})
+        self.assertIn("> [First Last] I go left", out_slug)
 
-    def test_content_prefix_uses_pc_key_uppercase(self) -> None:
+    def test_content_prefix_uses_pc_key_title_case(self) -> None:
         op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))
         out = op.content_prefix_for_fresh(
             {"prompt": "I roll 18", "pc_key": "alice"}
         )
-        self.assertEqual(out, "> [ALICE] I roll 18\n\n---\n\n")
+        self.assertEqual(out, "> [Alice] I roll 18\n\n")
 
     def test_no_pc_key_raises(self) -> None:
         op = PlayOperator(MagicMock(), MagicMock(spec=NarrativeNode))

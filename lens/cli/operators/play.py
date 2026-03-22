@@ -45,7 +45,7 @@ def play(
         None,
         "--as",
         "-as",
-        help="PC key to attribute the prompt to (e.g. alice → [ALICE]); must be a pinned pc.*",
+        help="PC key to attribute the prompt to (e.g. alice → [Alice]); must be a pinned pc.*",
     ),
     module: str | None = typer.Option(
         None,
@@ -66,7 +66,7 @@ def play(
     Use --end to close the session.
 
     Requires at least one player character (KB object tagged 'pc') to be pinned.
-    Use -as <key> to attribute the prompt to a specific pinned PC (e.g. -as alice → [ALICE]).
+    Use -as <key> to attribute the prompt to a specific pinned PC (e.g. -as alice → [Alice]).
     """
     if not end and not retry and not prompt:
         typer.echo("lens play: prompt is required (unless using --end or --retry)", err=True)

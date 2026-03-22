@@ -235,6 +235,128 @@ ul.tree-list li {
   padding-bottom: 3rem;
 }
 
+.content blockquote {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.2rem 0.1rem;
+  background-color: rgba(90, 90, 128, 0.1);
+  border-radius: 4px;
+}
+
+.content blockquote.has-quote-accent {
+  background: linear-gradient(
+    105deg,
+    hsl(var(--quote-bq-accent) / 0.23) 0%,
+    hsl(var(--quote-bq-accent) / 0.1) 66%,
+    transparent 100%
+  );
+  border-left: 3px solid hsl(var(--quote-bq-accent) / 0.72);
+  padding-left: 0.45rem;
+}
+
+.content blockquote p {
+  margin-bottom: 0.2rem;
+}
+
+.content blockquote .quote-pill {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+  margin-bottom: 0.1rem;
+  border-radius: 9999px;
+  padding: 0.08rem 0.5rem;
+  font-size: 1rem;
+  font-variant: small-caps;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.94);
+  background: hsl(var(--quote-pill-accent, 210 48% 34%));
+  border: 1px solid hsl(var(--quote-pill-border, 210 48% 42%));
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Wrapper for {@html}; display:contents keeps layout identical to unwrapped markdown */
+.markdown-html-root {
+  display: contents;
+}
+
+.content code {  
+  padding: 0.1rem 0.5rem;
+  font-family: monospace;  
+  text-wrap: auto;
+}
+
+/* Collapsible ```tool-call fences: first line in summary, full body when open */
+.content .md-fence-tool-call {
+  margin: 0.75rem 0;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 6px;
+  background: var(--pico-card-background-color, var(--pico-background-color));
+  overflow: hidden;  
+}
+
+.content .md-fence-tool-call-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  list-style: none;
+  font-family: monospace;
+  font-size: smaller;
+  line-height: 1.35;
+  color: var(--pico-color);
+  background: color-mix(in srgb, var(--pico-muted-border-color) 35%, transparent);
+}
+
+.content .md-fence-tool-call-summary::-webkit-details-marker {
+  display: none;
+}
+
+.content .md-fence-tool-call-preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.content .md-fence-tool-call-expand {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--pico-muted-color);
+  margin-top: 2px;
+  transition: transform 0.15s ease;
+}
+
+.content .md-fence-tool-call[open] .md-fence-tool-call-expand {
+  transform: rotate(180deg);
+}
+
+.content .md-fence-tool-call pre {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  max-height: min(70vh, 28rem);
+  overflow: auto;
+}
+
+.content .md-fence-tool-call pre code.language-tool-call {
+  display: block;
+  white-space: pre;
+  text-wrap: nowrap;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  background: transparent;
+}
+
 /* ---- Pin pills (front matter + effective pins) ---- */
 
 .pin-pills {
@@ -887,8 +1009,8 @@ ul.tree-list li {
 /* ---- Transaction diff rendering ---- */
 
 .transaction-added {
-  background-color: rgba(0, 128, 0, 0.1);
-  border-left: 3px solid #0a7f3f;
+  
+  border-left: 3px solid #0a7f3f;  
   padding-left: 0.5rem;
   margin: 0.25rem 0;
 }

@@ -3,10 +3,12 @@
   import { stats } from '../../stores/stats'
   import {
     preprocessAnnotations,
+    preprocessBlockquotePills,
     createMarkdownRenderer,
     buildNodeTransactionOverlay,
     buildAnnotationLineSet,
   } from '../../utils/markdown'
+  import { syncQuoteBlockAccents } from '../../utils/quoteBlockAccent'
   import { linePickMode, linePickSelection, scrollContentToBottom } from '../../stores/ui'
   import { tick } from 'svelte'
 
@@ -23,7 +25,9 @@
   $: isCursorNode = Boolean($currentAddress && $stats?.cursor && $currentAddress === $stats.cursor)
 
   $: rendered = $nodeContent
-    ? md.render(preprocessAnnotations($nodeContent, $currentAddress, overlay))
+    ? md.render(
+        preprocessAnnotations(preprocessBlockquotePills($nodeContent), $currentAddress, overlay),
+      )
     : ''
 
   type FrontMatterPins = {
@@ -154,8 +158,10 @@
       </div>
     {:else}
       {#if rendered}
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
-        {@html rendered}
+        <div class="markdown-html-root" use:syncQuoteBlockAccents={rendered}>
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
+          {@html rendered}
+        </div>
       {/if}
       {#if isCursorNode}
         <div class="cursor-indicator-preview">

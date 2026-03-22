@@ -17,6 +17,60 @@ const ANNOTATION_END_RE = /^\s*\]:\s*#\s*$/
 // These blocks contain YAML-like content (kb_pin, kb_unpin) and close with `]: #`.
 const FRONT_MATTER_OPEN_RE = /^\s*\[\s*$/
 
+// Blockquote line: `> [label] rest` (nested `> >` allowed). Label becomes a pill in HTML output.
+const BLOCKQUOTE_PILL_LINE_RE = /^(\s*(?:>\s*)+)\[([^\]]+)\]\s+(.*)$/
+
+function escapeHtmlText(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** FNV-1a 32-bit — stable, distinct hues per speaker label. */
+function fnv1aLabelSeed(label: string): number {
+  const t = label.trim().toLowerCase()
+  let h = 2125136265
+  for (let i = 0; i < t.length; i++) {
+    h ^= t.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+/** Space-separated H S% L% for `hsl(var(--x))` / `hsl(var(--x) / α)`. */
+function quotePillHslVars(label: string): { accent: string; border: string } {
+  const u = fnv1aLabelSeed(label)
+  const hue = u % 360
+  const sat = 38 + ((u >>> 8) % 24)
+  const light = 26 + ((u >>> 16) % 12)
+  const borderLight = Math.min(light + 9, 42)
+  return {
+    accent: `${hue} ${sat}% ${light}%`,
+    border: `${hue} ${sat}% ${borderLight}%`,
+  }
+}
+
+/**
+ * Turn `> [speaker] …` blockquote lines into inline HTML so the bracketed tag
+ * renders as a pill. Requires markdown-it `html: true` (see createMarkdownRenderer).
+ * Run before preprocessAnnotations.
+ */
+export function preprocessBlockquotePills(markdown: string): string {
+  return markdown
+    .split('\n')
+    .map((line) => {
+      const m = line.match(BLOCKQUOTE_PILL_LINE_RE)
+      if (!m) return line
+      const [, prefix, label, rest] = m
+      const { accent, border } = quotePillHslVars(label)
+      const style = `--quote-pill-accent:${accent};--quote-pill-border:${border}`
+      return `${prefix}<span class="quote-pill" style="${style}">${escapeHtmlText(label)}</span> ${rest}`
+    })
+    .join('\n')
+}
+
 export interface RemovedGroup {
   beforeLine: number
   lines: string[]
@@ -447,6 +501,31 @@ export function buildAnnotationLineSet(content: string): Set<number> {
   return result
 }
 
+function fenceLang(info: string): string {
+  return info.trim().split(/\s+/)[0] ?? ''
+}
+
+function renderToolCallFence(md: MarkdownIt, content: string): string {
+  const body = content.replace(/\n$/, '')
+  const lines = body.split('\n')
+  const esc = md.utils.escapeHtml
+  const code = `<pre><code class="language-tool-call">${esc(body)}</code></pre>\n`
+  if (lines.length <= 1) {
+    return code
+  }
+  const first = lines[0] ?? ''
+  const preview = first.trim() === '' ? esc('(empty line)') : esc(first)
+  return (
+    `<details class="md-fence-tool-call">` +
+    `<summary class="md-fence-tool-call-summary">` +
+    `<span class="md-fence-tool-call-preview">${preview}</span>` +
+    `<span class="md-fence-tool-call-expand" aria-hidden="true"></span>` +
+    `</summary>` +
+    code +
+    `</details>\n`
+  )
+}
+
 /** Shared markdown-it instance with settings matching the app's rendering needs. */
 export function createMarkdownRenderer(): MarkdownIt {
   const md = new MarkdownIt({ html: true, linkify: true, typographer: true })
@@ -461,6 +540,19 @@ export function createMarkdownRenderer(): MarkdownIt {
     }
     return defaultLinkOpen(tokens, idx, options, env, self)
   }
+
+  const defaultFence = md.renderer.rules.fence
+  if (!defaultFence) {
+    throw new Error('markdown-it: default fence rule missing')
+  }
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+    const token = tokens[idx]
+    if (token && fenceLang(token.info) === 'tool-call') {
+      return renderToolCallFence(md, token.content)
+    }
+    return defaultFence(tokens, idx, options, env, self)
+  }
+
   return md
 }
 
