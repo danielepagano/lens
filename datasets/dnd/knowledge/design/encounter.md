@@ -25,11 +25,11 @@ For each participant, check if a KB object already exists (`kb_get`). If not:
 
 STEP 3: COMBAT BALANCING (if applicable)
 If the encounter includes combat:
-- Identify participant power levels from pinned `pc.*` objects (check tags like `level:N`)
-- Use `kb_with_tag` to find stat block candidates by type, habitat, or other relevant tags
-- Rank candidates by narrative fit (a goblin ambush wants goblins, not random level-appropriate monsters)
-- If the game system provides a balancing tool, use it to generate proposals; otherwise use GM judgment to match challenge to party capability
-- Include the selected stat block links in the encounter object
+- Identify PC levels from pinned `pc.*` objects (check `level:N` tags)
+- Use `kb_with_tag` to find stat block candidates by CR, habitat, and type
+- Rank candidates by narrative fit (a goblin ambush wants goblins, not random CR-appropriate monsters)
+- Call `balance_encounter` with required monsters, ranked optionals, difficulty, PC levels, and any ally CRs
+- Pick from the proposals and include the selected stat block links in the encounter object
 
 STEP 4: WRITE THE ENCOUNTER OBJECT
 The encounter object should be compact — aim for under 300 words in the body. It's a script, not a novel:

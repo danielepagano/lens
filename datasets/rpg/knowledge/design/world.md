@@ -22,7 +22,7 @@ The object must be under 500 words. It will be in the prompt of every play inter
 - What the AI should sound like when narrating in this world
 - What the world feels like to inhabit (sensory, social, emotional)
 - Hard rules the AI must follow (magic costs, technology limits, social structures)
-- What makes this world distinct from "generic D&D"
+- What makes this world distinct 
 
 Do NOT include:
 - Character-specific information (that's `pc.*` and `lore.<name>`)

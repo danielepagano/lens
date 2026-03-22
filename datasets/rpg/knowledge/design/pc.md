@@ -11,7 +11,7 @@ Ask the user to describe their character conversationally. Then build:
 - Name, nicknames, how others address them
 - Appearance: species, gender presentation, physique, distinguishing features, visible equipment, how they move and talk
 - Context: relevant background, goals, motivations — but BRIEF. Enough to flavor interactions, not a biography
-- How they solve problems: key strengths and weaknesses, passive features the DM needs to know (darkvision, high passive perception, movement speeds, etc.)
+- How they solve problems: key strengths and weaknesses, passive features the GM needs to know (unusual senses, special movement, notable passive abilities, etc.)
 - Affiliations: factions, important relationships
 
 What to LEAVE OUT of `pc.<name>`:
@@ -23,7 +23,7 @@ What to LEAVE OUT of `pc.<name>`:
 
 The tension: enough detail that the AI writes distinctively ("Alice deftly jumped the narrow wall to get a good angle as she notched her arrow") but not so much that it over-references details ("Alice thought about her troubled childhood at the orphanage as she notched her arrow").
 
-TAGGING: ALWAYS tag `pc.<name>` with `level:N` (total character level) for encounter balancing. Link to any faction the PC belongs to. The user can add mechanical condition tags during play (e.g. `speed:flying`, `concentrating`).
+TAGGING: Tag `pc.<name>` with a level or tier indicator if such a concept is present in the system, e.g. `level:N` for total character level in D&D. Link to any faction/crew the PC belongs to. The user can add mechanical condition tags during play (e.g. `speed:flying`, `concentrating`).
 
 PHASE 2: THE PLANNING DEPTH (`lore.<name>`)
 This object contains everything about the character that informs how the STORY evolves — the material that design modules (especially `design.front`) use to create content that resonates with this character. It is NEVER pinned during play.
