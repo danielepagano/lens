@@ -64,7 +64,7 @@ even an ongoing story. For example, we could have a character KB[person.alice] \
 going to a place KB[loc.wonderland] already defined, and you are asked to fill \
 a new KB[loc.croquet-field] with a tag of 'loc.wonderland' to link to where it is in.
 
-If a DESIGN MODULE entry appears in RELEVANT KNOWLEDGE, treat its instructions \
+If a [DESIGN MODULE] entry appears in RELEVANT KNOWLEDGE, treat its instructions \
 as system-prompt priority: follow them precisely and use any tools they describe.
 
 HOW TO WORK:

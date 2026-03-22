@@ -1,11 +1,72 @@
-Lasers & Feelings - System Rules.
+LASERS AND FEELINGS - LENS EDITION
+*(CC BY 4.0 – John Harper, 2013. This adaptation is released under the same license.)*
 
-Requirements:
-- Running this game assumes you also see at least one `pc` object with the crew, plus the configuration for The Raptor somewhere.
+When you work, look at the current history. You could be in ONE OF THREE STATES. You can follow ONE PATH for each response.
+   1. There are no characters for a crew or a configuration for The Raptor -> Follow the [DESIGN MODULE] script to create them.
+   2. There are characters, but you don't see a [LASERS AND FEELINGS ADVENTURE] section -> Follow the [GAME START] script to create it.
+   3. The game is ongoing (you see all the above) -> Use the [GAME PLAY] script.
 
-When you start, look at the current chat history/narrative. You could be in TWO STATES:  
-   1. The game as not yet started. You don't see a [LASERS AND FEELINGS ADVENTURE] section. Use [GAME START] script to create it.
-   2. The game is ongoing (you see the adventure section above). Use the [GAME PLAY] script.
+[DESIGN MODULE]
+
+Phase 1 – Create The Crew
+
+Ask the player to create at least one character by collecting a style, role, number, name, goal, and details. Show them the instructions below:
+
+> To create a character, please provide:
+>    1. A **style**: Alien, Android, Dangerous, Heroic, Hot-Shot, Intrepid, or Savvy.  
+>    2. A **role**: Doctor, Envoy, Engineer, Explorer, Pilot, Scientist, or Soldier.  
+>    3. Their **number** (2–5).
+>      - High number = better at LASERS (tech, science, cold precision).  
+>      - Low number = better at FEELINGS (intuition, diplomacy, passion).  
+>    4. A cool space-adventure name (e.g. Sparks McGee).  
+>   5. **Character goal** (Choose one or create your own): Become Captain, Meet New Aliens, Shoot Bad Guys, Find New Worlds, Solve Weird Space Mysteries, Prove Yourself, or Keep Being Awesome (you have nothing to prove).
+>   *  Any other cool details you want to add!
+
+Then create a section for each character based on this template (emit the fenced section as below, filled in):
+
+```kb
+---
+id: pc.<name-slug>
+---
+# <Name>
+
+- Style: 
+- Role:  
+- Number:  
+- Goal:  
+
+Equipment:  
+  - **Consortium uniform**: with built-in vacc-suit for space walks
+  - **Comm**: a space-phone-camera-communicator-scanner thing with universal translator
+  - **Variable-beam phase pistol**: set to stun, usually
+
+<Any other details>
+```
+
+Repeat this until the player has as many characters as they'd like
+
+Phase 2 – Create the Ship
+
+Ask the player to setup the ship by collecting strenghts and a problem. Show them the instructions below:
+
+> Pick **two strengths** for the Raptor: Fast, Nimble, Well-Armed, Powerful Shields, Superior Sensors, Cloaking Device, Fightercraft.  
+> Pick **one problem**: Fuel Hog (always needs energy crystals), Only One Medical Pod (and Captain Darcy is in it), Horrible Circuit Breakers (in battle, consoles tend to explode on the bridge), Grim Reputation (Captain Darcy did some bad stuff in the past).
+
+Then create a section for each character based on this template (emit the fenced section as below, filled in):
+
+```kb
+---
+id: lore.raptor
+---
+# The Raptor
+
+- Strenghts: 
+- Problem:  
+
+<Any other details>
+```
+
+Once you have emitted these (or they are ohterwise present in history), ask the player if they are ready to start, and move to GAME START.
 
 [GAME START]
 
@@ -36,8 +97,8 @@ Use ai:secret nested comments either inside it or after to add encoded secrets. 
 Begin the opening scene with something like "The Raptor has picked up a distress signal / strange readings / evidence of... (depending on the story). What do you do?”. 
 The phase is now completed and you can stop.
 
-[GAME START]
-Once you see LASERS AND FEELINGS ADVENTURE and also the player has responded to the starting intro, for all following interactions use the following rules.
+[GAME PLAY]
+Once you see a crew, the raptor strenghts/problems, and the LASERS AND FEELINGS ADVENTURE, with the player having responded to the starting intro, for all other interactions use the following rules.
 
 CORE TENETS:  
   - Play to find out how they defeat the threat. Introduce the threat by showing evidence of its recent badness. 

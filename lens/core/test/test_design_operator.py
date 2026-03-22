@@ -286,7 +286,7 @@ class TestDesignModulePin(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
             (root / "knowledge" / "design" / "encounter.md").write_text(
-                "ENCOUNTER DESIGN MODULE\n", encoding="utf-8"
+                "[DESIGN MODULE]: ENCOUNTER\n", encoding="utf-8"
             )
 
             _run_design(root, narrative, module_id="encounter")
@@ -310,7 +310,7 @@ class TestDesignModulePin(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
             (root / "knowledge" / "design" / "encounter.md").write_text(
-                "ENCOUNTER DESIGN MODULE\n\nDo X then Y.\n", encoding="utf-8"
+                "[DESIGN MODULE]: ENCOUNTER\n\nDo X then Y.\n", encoding="utf-8"
             )
 
             captured: list[list[dict[str, str]]] = []
