@@ -36,7 +36,8 @@ lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
 pyright = "pyright"
 lint-py = "ruff check . --fix"
 lint-ts = { shell = "cd lens/server/ui && npm run lint" }
-lint = { sequence = ["lint-py", "lint-ts", "pyright"] }
+check-svelte = { shell = "cd lens/server/ui && npm run check" }
+lint = { sequence = ["lint-py", "lint-ts", "check-svelte", "pyright"] }
 test = "pytest lens/core/test lens/cli/test lens/server/test lens/dnd/test lens/rpg/test -n auto --ignore=lens/core/test/integration -q"
 test-integration = "pytest lens/core/test/integration -n 0 -q"
 test-e2e = "pytest e2e/ -n 0 -q"
