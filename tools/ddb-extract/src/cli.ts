@@ -16,6 +16,7 @@ import { MonsterExtractor } from "./extractors/monsters.js";
 import { ItemExtractor } from "./extractors/items.js";
 import { EquipmentExtractor } from "./extractors/equipment.js";
 import type { ListExtractor } from "./extractors/base.js";
+import { extractFeatures } from "./extractors/features.js";
 import {
   extractListItems,
   parseListPage,
@@ -33,6 +34,8 @@ import type { SpellData, MonsterData, ItemData, EquipmentData } from "./types.js
 import { parseLoreToc } from "./parsers/lore-source.js";
 import { parseLoreChapterPage } from "./parsers/lore-chapter.js";
 import { formatLoreChapter, formatLoreIndex } from "./formatters/lore.js";
+import { featureIndexUrl } from "./parsers/feature-index.js";
+import type { FeatureParentKind } from "./types.js";
 
 const program = new Command();
 
@@ -269,22 +272,47 @@ program
 program
   .command("extract")
   .description("Extract content from D&D Beyond into KB Markdown files")
-  .requiredOption("--type <type>", "Content type: spells|monsters|items|equipment|all")
-  .requiredOption("--source <slug>", "Source slug from sources.json")
+  .requiredOption(
+    "--type <type>",
+    "Content type: spells|monsters|items|equipment|class-features|species-features|all"
+  )
+  .option("--source <slug>", "Source slug from sources.json")
   .requiredOption("--out <dir>", "Output directory")
+  .option("--url <url>", "Specific class/species detail URL (feature extraction only)")
+  .option(
+    "--group <label>",
+    "Class/species index group label (exact case-insensitive, feature extraction only)"
+  )
   .option("--limit <n>", "Limit to N items (for testing)")
-  .action(async (cmdOpts: { type: string; source: string; out: string; limit?: string }) => {
+  .action(
+    async (cmdOpts: {
+      type: string;
+      source?: string;
+      out: string;
+      url?: string;
+      group?: string;
+      limit?: string;
+    }) => {
     const opts = program.opts();
     const delayMs = parseInt(opts.delay as string) || 800;
     const dryRun = opts.dryRun as boolean;
     const verbose = opts.verbose as boolean;
     const strict = opts.strict as boolean;
     const limit = cmdOpts.limit ? parseInt(cmdOpts.limit) : undefined;
+    const requestedType = cmdOpts.type.toLowerCase();
+    const sourceLabel = cmdOpts.source ?? "ddb";
 
-    const sourceEntry = resolveSource(cmdOpts.source);
+    const featureKindByType: Record<string, FeatureParentKind> = {
+      "class-features": "class",
+      "species-features": "species",
+    };
 
     const extractors: ListExtractor<unknown>[] = [];
-    const requestedType = cmdOpts.type.toLowerCase();
+    const needsSource = !featureKindByType[requestedType];
+    if (needsSource && !cmdOpts.source) {
+      console.error(`--source is required for type "${requestedType}"`);
+      process.exit(1);
+    }
 
     const typeMap: Record<string, ListExtractor<unknown>> = {
       spells: new SpellExtractor(),
@@ -293,7 +321,13 @@ program
       equipment: new EquipmentExtractor(),
     };
 
+    const sourceEntry = cmdOpts.source ? resolveSource(cmdOpts.source) : null;
+
     if (requestedType === "all") {
+      if (!sourceEntry) {
+        console.error("--source is required when using --type all");
+        process.exit(1);
+      }
       for (const t of sourceEntry.types) {
         const ext = typeMap[t];
         if (ext) extractors.push(ext);
@@ -301,13 +335,13 @@ program
       }
     } else {
       const ext = typeMap[requestedType];
-      if (!ext) {
+      if (!ext && !featureKindByType[requestedType]) {
         console.error(
-          `Unknown type "${requestedType}". Valid types: spells, monsters, items, equipment, all`
+          `Unknown type "${requestedType}". Valid types: spells, monsters, items, equipment, class-features, species-features, all`
         );
         process.exit(1);
       }
-      extractors.push(ext);
+      if (ext) extractors.push(ext);
     }
 
     const browser = await connectCDP(opts.cdpUrl as string);
@@ -317,16 +351,75 @@ program
     let totalSkipped = 0;
     let totalFailed = 0;
 
+    if (featureKindByType[requestedType]) {
+      const kind = featureKindByType[requestedType];
+      const typeLabel = requestedType;
+      const outputPath = resolve(cmdOpts.out, `${sourceLabel}-${typeLabel}.md`);
+
+      if (!cmdOpts.url && !cmdOpts.group) {
+        console.error(`For ${typeLabel}, provide either --url or --group`);
+        process.exit(1);
+      }
+      if (cmdOpts.url && cmdOpts.group) {
+        console.error(`For ${typeLabel}, provide only one of --url or --group`);
+        process.exit(1);
+      }
+
+      if (cmdOpts.group && verbose) {
+        console.log(`Using ${kind} index ${featureIndexUrl(kind)} with group "${cmdOpts.group}"`);
+      }
+
+      let doneSet: Set<string>;
+      if (existsSync(outputPath)) {
+        doneSet = scanDoneSet(outputPath);
+        console.log(`  Resuming: ${doneSet.size} items already done`);
+      } else {
+        doneSet = new Set();
+        if (!dryRun) {
+          createOutputFile(outputPath, sourceLabel, typeLabel, 0);
+        }
+      }
+
+      const result = await extractFeatures(page, {
+        kind,
+        url: cmdOpts.url,
+        group: cmdOpts.group,
+        delayMs,
+        dryRun,
+        verbose,
+        strict,
+        outputPath,
+        source: sourceLabel,
+        doneSet,
+        limit,
+      });
+
+      totalExtracted += result.extracted;
+      totalSkipped += result.skipped;
+      totalFailed += result.failed;
+
+      console.log(`\n=== ${sourceLabel} / ${typeLabel} ===`);
+      console.log(`Output: ${outputPath}`);
+      console.log(
+        `  Done: ${result.extracted} extracted, ${result.skipped} skipped, ${result.failed} failed`
+      );
+    }
+
+    if (extractors.length > 0 && !sourceEntry) {
+      console.error(`--source is required for list-based extraction types`);
+      process.exit(1);
+    }
+
     for (const extractor of extractors) {
       const typeLabel = extractor.type;
-      const outputPath = resolve(cmdOpts.out, `${cmdOpts.source}-${typeLabel}.md`);
+      const outputPath = resolve(cmdOpts.out, `${sourceLabel}-${typeLabel}.md`);
 
-      console.log(`\n=== ${cmdOpts.source} / ${typeLabel} ===`);
+      console.log(`\n=== ${sourceLabel} / ${typeLabel} ===`);
       console.log(`Output: ${outputPath}`);
 
       // Enumerate once — reused for both the file header count and the extraction run
       console.log("  Enumerating list...");
-      const allItems = await extractListItems(page, extractor.type, sourceEntry.filterId!, verbose);
+      const allItems = await extractListItems(page, extractor.type, sourceEntry!.filterId!, verbose);
 
       // Set up output file or scan existing
       let doneSet: Set<string>;
@@ -336,17 +429,17 @@ program
       } else {
         doneSet = new Set();
         if (!dryRun) {
-          createOutputFile(outputPath, cmdOpts.source, typeLabel, allItems.length);
+          createOutputFile(outputPath, sourceLabel, typeLabel, allItems.length);
         }
       }
 
-      const result = await extractor.run(page, sourceEntry.filterId!, {
+      const result = await extractor.run(page, sourceEntry!.filterId!, {
         delayMs,
         dryRun,
         verbose,
         strict,
         outputPath,
-        source: cmdOpts.source,
+        source: sourceLabel,
         doneSet,
         limit,
         items: allItems,
@@ -366,7 +459,8 @@ program
     );
 
     await browser.close();
-  });
+  }
+  );
 
 // ── lore ────────────────────────────────────────────────────────────────────────
 program

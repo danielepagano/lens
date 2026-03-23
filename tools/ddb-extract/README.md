@@ -1,6 +1,6 @@
 # ddb-extract
 
-Extracts D&D Beyond content into Lens KB-formatted Markdown files. Covers spells, monsters, magic items, and equipment. Output files are consumed directly by `lens kb extract`.
+Extracts D&D Beyond content into Lens KB-formatted Markdown files. Covers spells, monsters, magic items, equipment, plus class/species features. Output files are consumed directly by `lens kb extract`.
 
 No LLM involved — this is deterministic DOM scraping: list page → detail page → structured data → `\`\`\`kb\`\`\`` block.
 
@@ -135,17 +135,25 @@ ddb extract --type spells --source phb-2024 --out ./output
 # Extract monsters from Monster Manual 2025
 ddb extract --type monsters --source mm-2025 --out ./output
 
-# Extract all types for a source (one file per type)
+# Extract all list-based types for a source (one file per type)
 ddb extract --type all --source phb-2024 --out ./output
+
+# Extract class features from one class URL
+ddb extract --type class-features --out ./output --url "https://www.dndbeyond.com/classes/2190885-druid"
+
+# Extract species features for one index group label
+ddb extract --type species-features --out ./output --group "Player’s Handbook"
 ```
 
 **Options:**
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--type <type\|all>` | required | `spells`, `monsters`, `items`, `equipment`, or `all` |
-| `--source <slug>` | required | Source slug from `config/sources.json` |
+| `--type <type\|all>` | required | `spells`, `monsters`, `items`, `equipment`, `class-features`, `species-features`, or `all` |
+| `--source <slug>` | — | Required for `spells`, `monsters`, `items`, `equipment`, and `all` |
 | `--out <dir>` | required | Output directory |
+| `--url <url>` | — | Detail URL for `class-features` / `species-features` |
+| `--group <label>` | — | Group label from `/classes` or `/species` collapsible heading (exact, case-insensitive) |
 | `--limit <n>` | — | Stop after N items (useful for testing) |
 | `--cdp-url <url>` | `http://localhost:9222` | Chrome DevTools Protocol URL |
 | `--delay <ms>` | `800` | Politeness delay between page loads |
@@ -153,9 +161,16 @@ ddb extract --type all --source phb-2024 --out ./output
 | `--verbose` | false | Log each URL as it is fetched |
 | `--strict` | false | Abort on first parse failure instead of continuing |
 
-**Output file naming:** `{out}/{source}-{type}.md`
+Feature extraction target selection:
 
-Examples: `output/phb-2024-spells.md`, `output/mm-2025-monsters.md`
+- For `class-features` and `species-features`, provide exactly one of `--url` or `--group`.
+- `--group` scans:
+  - [`https://www.dndbeyond.com/classes`](https://www.dndbeyond.com/classes) for `class-features`
+  - [`https://www.dndbeyond.com/species`](https://www.dndbeyond.com/species) for `species-features`
+
+**Output file naming:** `{out}/{source-or-ddb}-{type}.md`
+
+Examples: `output/phb-2024-spells.md`, `output/mm-2025-monsters.md`, `output/ddb-class-features.md`
 
 ---
 
@@ -287,6 +302,8 @@ Tags follow Lens tag validation (`[a-zA-Z0-9_-]+` values only):
 | Field | Tag format | Notes |
 |-------|-----------|-------|
 | Source | `source:phb-2024` | |
+| Class feature parent | `class:druid` | Present on `feature.*` objects extracted from classes |
+| Species feature parent | `species:aasimar` | Present on `feature.*` objects extracted from species |
 | Spell level | `level:3` | `level:0` for cantrips |
 | Spell school | `school:transmutation` | |
 | Ritual | `ritual` | Flag tag — present only if ritual |
@@ -300,6 +317,12 @@ Tags follow Lens tag validation (`[a-zA-Z0-9_-]+` values only):
 | Attunement | `requires-attunement` | Flag tag — present only if required |
 | Equipment category | `category:martial-melee` | |
 
+Feature object IDs use:
+
+- `feature.<class-or-species-slug>-<feature-slug>`
+
+For class features, a leading heading prefix `Level (<n>):` is removed before generating the feature slug.
+
 ---
 
 ## Parser selectors
@@ -311,6 +334,8 @@ Confirmed selectors (verified 2026-03-04):
 | Parser | Key selectors |
 |--------|--------------|
 | list-page | `.listing-body [data-slug]` (items), `li.b-pagination-item-next a[href]` (next page) |
+| feature-index | `.j-collapsible .ddb-collapsible__label` (group), `a.listing-card__link[href]` (detail URL) |
+| feature-page | `section.primary-content h4` (feature headings), `h1` (parent name), pathname `/(classes|species)/<id>-<slug>` (parent slug) |
 | spell-page | `.page-title` (name), `.ddb-statblock-item` (stats), `.more-info-content p` (description) |
 | monster-page | `.page-title` (name), `.mon-stat-block__meta` (meta), `.mon-stat-block__attribute` (AC/HP/speed), `.ability-block__stat--{str\|dex...}` (ability scores), `.mon-stat-block__tidbit` (skills/CR), `.mon-stat-block__description-block` (traits/actions) |
 | item-page | `.page-title` (name), `.item-info .details` (subtitle/rarity), `.more-info-content` (desc) |

@@ -10,6 +10,20 @@ export function slugifyKey(ddbSlug: string): string {
   return withoutPrefix.length > 0 ? withoutPrefix : ddbSlug;
 }
 
+export function normalizeFeatureName(name: string, kind: "class" | "species"): string {
+  const trimmed = name.replace(/\s+/g, " ").trim();
+  if (kind !== "class") return trimmed;
+  return trimmed.replace(/^Level\s*\(\d+\)\s*:\s*/i, "").trim();
+}
+
+export function toFeatureSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /**
  * Convert a display string to a valid tag slug.
  * Lowercase, replace spaces with hyphens, strip characters not in [a-zA-Z0-9_-].

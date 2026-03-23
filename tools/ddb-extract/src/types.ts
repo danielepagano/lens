@@ -66,6 +66,21 @@ export interface EquipmentData {
   description: string;
 }
 
+export type FeatureParentKind = "class" | "species";
+
+export interface FeatureData {
+  parentKind: FeatureParentKind;
+  parentSlug: string;
+  parentName: string;
+  subclassName?: string;
+  subclassSlug?: string;
+  subclassContentSlug?: string;
+  featureName: string;
+  featureSlug: string;
+  body: string;
+  sourceUrl: string;
+}
+
 export interface SourceEntry {
   name: string;
   filterId: number | null;
