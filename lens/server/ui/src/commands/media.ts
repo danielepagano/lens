@@ -1,5 +1,5 @@
 import { attachFile } from '../services/api'
-import { treeRefreshTrigger, transactionResult, mediaUploadRequest, mediaRemoveRequest } from '../stores/ui'
+import { treeRefreshTrigger, transactionResult, mediaUploadRequest, mediaRemoveRequest, mediaPreviewRequest } from '../stores/ui'
 import type { CommandContext, CommandModule } from './common'
 
 const mediaHandler = async (
@@ -23,6 +23,12 @@ const mediaHandler = async (
       }
     }
     mediaUploadRequest.set({ dir })
+    return { clearInput: false }
+  }
+
+  if (action === 'preview') {
+    if (!path) return { clearInput: false }
+    mediaPreviewRequest.set({ path })
     return { clearInput: false }
   }
 
@@ -82,7 +88,7 @@ export const mediaModule: CommandModule = {
                 name: 'action',
                 valueType: 'slug',
                 required: true,
-                slugSource: 'attach, upload,download,remove'
+                slugSource: 'attach,upload,download,preview,remove'
               },
               {
                 name: 'path',

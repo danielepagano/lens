@@ -11,6 +11,7 @@
   import StreamingPreviewPanel from './features/streaming/StreamingPreviewPanel.svelte'
   import MediaUploadPanel from './features/cli/MediaUploadPanel.svelte'
   import MediaRemovePanel from './features/cli/MediaRemovePanel.svelte'
+  import MediaPreviewPanel from './features/cli/MediaPreviewPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
   import { getStats, getNode } from './services/api'
@@ -153,6 +154,7 @@
   <StreamingPreviewPanel />
   <MediaUploadPanel />
   <MediaRemovePanel />
+  <MediaPreviewPanel />
 
   <svelte:fragment slot="bottombar">
     <Cli onCliDone={handleCliDone} navigate={navigate} />

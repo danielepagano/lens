@@ -53,5 +53,10 @@ export interface MediaRemoveRequest {
 }
 export const mediaRemoveRequest = writable<MediaRemoveRequest | null>(null)
 
+export interface MediaPreviewRequest {
+  path: string
+}
+export const mediaPreviewRequest = writable<MediaPreviewRequest | null>(null)
+
 /** Increment to force the mount directory autocomplete cache to reload. */
 export const mountCacheRefreshTrigger = writable(0)
