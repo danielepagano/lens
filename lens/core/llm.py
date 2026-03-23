@@ -142,12 +142,8 @@ def _format_tool_call_markdown(
     response_char_len: int | None,
 ) -> str:
     """Fenced block for streaming and logs: tool request JSON plus optional response size."""
-    req = json.dumps(
-        {"name": name, "arguments": arguments}, indent=2, ensure_ascii=False, default=str
-    )
-    lines = ["```tool-call", "Tool Call", req]
-    if response_char_len is not None:
-        lines.append(f"Response size: {response_char_len} characters")
+    req = json.dumps(arguments, indent=2, ensure_ascii=False, default=str)
+    lines = ["```tool-call", f"Called Tool '{name}' ({response_char_len if response_char_len else 'zero'} bytes)", req]
     lines.append("```")
     return "\n".join(lines) + "\n"
 

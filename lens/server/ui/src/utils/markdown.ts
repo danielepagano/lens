@@ -509,11 +509,12 @@ function renderToolCallFence(md: MarkdownIt, content: string): string {
   const body = content.replace(/\n$/, '')
   const lines = body.split('\n')
   const esc = md.utils.escapeHtml
-  const code = `<pre><code class="language-tool-call">${esc(body)}</code></pre>\n`
   if (lines.length <= 1) {
-    return code
+    return `<pre><code class="language-tool-call">${esc(body)}</code></pre>\n`
   }
   const first = lines[0] ?? ''
+  const rest = lines.slice(1).join('\n')
+  const code = `<pre><code class="language-tool-call">${esc(rest)}</code></pre>\n`
   const preview = first.trim() === '' ? esc('(empty line)') : esc(first)
   return (
     `<details class="md-fence-tool-call">` +

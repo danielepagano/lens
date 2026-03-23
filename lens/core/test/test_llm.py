@@ -493,8 +493,7 @@ class TestGenerateStream(unittest.TestCase):
         self.assertIn("After.", final.text)
         self.assertIn("```tool-call", final.text)
         self.assertIn("kb_get", final.text)
-        self.assertIn("Response size:", final.text)
-        self.assertIn("10 characters", final.text)  # len("kb content")
+        self.assertIn("10 bytes", final.text)  # len("kb content")
         self.assertTrue(any("```tool-call" in p for p in previews))
 
     def test_multiple_tool_calls_folded_into_chain(self) -> None:
