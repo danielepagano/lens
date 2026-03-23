@@ -1,0 +1,7 @@
+# Shape-Shifter
+
+As an action, you can shape-shift to change your appearance and your voice. You determine the specifics of the changes, including your coloration, hair length, and sex. You can also adjust your height and weight and can change your size between Medium and Small. You can make yourself appear as a member of another playable species, though none of your game statistics change. You can’t duplicate the appearance of an individual you’ve never seen, and you must adopt a form that has the same basic arrangement of limbs that you have. This trait doesn’t change your clothing and equipment.
+
+While shape-shifted with this trait, you have Advantage on Charisma checks.
+
+You stay in the new form until you take an action to revert to your true form.

@@ -1,0 +1,5 @@
+# Unnatural Healer
+
+Your innate healing abilities let you recover from some of the grimmest wounds. During a Long Rest, you can automatically reverse Grievous Wounds. Additionally, you can reattach any severed body parts (fingers, legs, tails, and so on), which are automatically restored at the end of the Long Rest. If your severed body parts aren’t available, you can replace them with the same body parts of another creature of the same general anatomy as you. If you wish to intentionally swap out body parts with replacements, you can sever your own body parts with no pain or discomfort.
+
+The ability to make use of unusual body parts (for example, giving yourself the taloned paw of a lion if you lose a hand) are left to the GM’s discretion. In any event, swapping a severed body part for an unusual body part grants you no mechanical Advantages not covered by other traits (see “Features and Traits”).

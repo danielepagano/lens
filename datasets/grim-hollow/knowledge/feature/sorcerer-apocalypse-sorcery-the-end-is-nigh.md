@@ -1,0 +1,5 @@
+# The End is Nigh (Apocalypse Sorcery)
+
+You loudly proclaim what will come to pass when the world ends. As a Magic action, you describe the end of days. When you do so, each creature of your choice in a 30-foot Emanation originating from you must make a Wisdom saving throw against your spell save DC. On a failed save, a creature takes 6d6 Psychic damage and 6d6 Force damage, and has the Frightened condition for 1 minute. On a successful save, the creature takes half as much damage only. A Frightened creature can repeat the saving throw at the end of each of its turns, ending the Frightened condition on a successful save. If this damage reduces a creature to 0 Hit Points, the creature can be revived only by a True Resurrection or a Wish spell.
+
+Once you use this feature, you can’t do so again until you finish a Long Rest unless you spend 6 Sorcery Points (no action required) to restore your use of it.

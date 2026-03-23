@@ -1,0 +1,5 @@
+# Bad Medicine (Plague Doctor)
+
+When you craft a potion, you can choose to expend a spell slot without choosing a spell to craft a dose of Bad Medicine. When you create a dose, choose one effect per level of the spell slot expended. • The creature has the Poisoned condition. • The creature’s Speed is halved. • The creature takes an extra 1d4 Necrotic damage the first time it takes damage each turn. • The creature takes 1d6 Poison damage each time it takes an action, Bonus Action, or Reaction. • The creature takes Acid damage equal to the level of the spell slot expended at the start of each of its turns.
+
+As a Magic action, you can hurl a dose of Bad Medicine at a point you can see within 30 feet. Creatures within 10 feet of that point must make a Constitution saving throw. On a failed save, the target suffers one of the chosen effects for 1 minute. On each of its turns, the target can take an action and repeat the save, ending the effect on itself on a success.

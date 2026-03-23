@@ -1,0 +1,3 @@
+# Psychic Crush (Warrior of the Leaden Crown)
+
+Each time you hit a creature with an Unarmed Strike, it gains a Pressure Point. A creature loses all Pressure Points if a different creature gains a Pressure Point or after 1 minute, whichever comes first. As a Bonus Action, you can expend 1 Focus Point to telekinetically crush a creature with 1 or more of your Pressure Points. The creature loses all Pressure Points and must make a Strength saving throw. On a failed save, the creature takes 1d8 Force damage per Pressure Point, and it has the Restrained condition until the end of your next turn. On a successful save, the creature takes half as much damage only.

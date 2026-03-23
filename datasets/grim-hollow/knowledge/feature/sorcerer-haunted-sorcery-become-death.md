@@ -1,0 +1,5 @@
+# Become Death (Haunted Sorcery)
+
+You can transmute your physical form into a spectral one when near death. When you are reduced to 0 Hit Points and not killed outright, you can drop to 1 Hit Point instead and gain Temporary Hit Points equal to half your Hit Point maximum. At the start of each of your turns, you lose 10 Temporary Hit Points and creatures of your choice within 30 feet of you take 10 Necrotic damage. While you have Temporary Hit Points granted by this feature, you have Resistance to all damage, a Fly Speed of 30 feet, can Hover, and you can move through occupied spaces as if they were Difficult Terrain. If you end your turn in such a space, you are shunted to the last unoccupied space you were in.
+
+Once you use this feature, you can’t do so again until you finish a Long Rest.

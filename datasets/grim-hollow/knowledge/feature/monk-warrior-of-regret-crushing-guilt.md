@@ -1,0 +1,3 @@
+# Crushing Guilt (Warrior of Regret)
+
+You can expend 3 Focus Points to release your pent-up guilt in a crushing wave that drops your foes to their knees. Creatures of your choice in a 20-foot Emanation originating from your or your shade must make a Wisdom saving throw. On a failed save, a creature takes Psychic damage equal to three rolls of your Martial Arts die and has the Prone condition. On a successful save, a creature takes half as much damage only.

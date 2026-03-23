@@ -423,6 +423,288 @@ ritual = [
 "lore.grim-hollow-divinity-in-etharis" = [
     "lore.grim-hollow",
 ]
+"class:monster-hunter" = [
+    "feature.monster-hunter-devourer-guild-mutations",
+    "feature.monster-hunter-devourer-guild-transmuting-metabolism",
+    "feature.monster-hunter-monster-grimoire",
+    "feature.monster-hunter-studied-response",
+    "feature.monster-hunter-trapper-guild-monster-hide-armor",
+]
+"class:barbarian" = [
+    "feature.barbarian-path-of-the-fractured-face-of-rage",
+    "feature.barbarian-path-of-the-primal-spirit-kin-to-beasts",
+    "feature.barbarian-path-of-the-primal-spirit-primal-companion",
+    "feature.barbarian-path-of-the-primal-spirit-shape-of-the-wild",
+    "feature.barbarian-path-of-the-primal-spirit-skinriders-trance",
+    "feature.barbarian-path-of-the-wrathful-dead-dark-doom-revisited",
+    "feature.barbarian-path-of-the-wrathful-dead-death-is-but-a-door",
+    "feature.barbarian-path-of-the-wrathful-dead-rage-of-the-dead",
+]
+"sublass:path-of-the-fractured" = [
+    "feature.barbarian-path-of-the-fractured-face-of-rage",
+]
+"sublass:path-of-the-primal-spirit" = [
+    "feature.barbarian-path-of-the-primal-spirit-kin-to-beasts",
+    "feature.barbarian-path-of-the-primal-spirit-primal-companion",
+    "feature.barbarian-path-of-the-primal-spirit-shape-of-the-wild",
+    "feature.barbarian-path-of-the-primal-spirit-skinriders-trance",
+]
+"sublass:path-of-the-wrathful-dead" = [
+    "feature.barbarian-path-of-the-wrathful-dead-dark-doom-revisited",
+    "feature.barbarian-path-of-the-wrathful-dead-death-is-but-a-door",
+    "feature.barbarian-path-of-the-wrathful-dead-rage-of-the-dead",
+]
+"class:bard" = [
+    "feature.bard-college-of-adventurers-adventurers-talents",
+    "feature.bard-college-of-fools-last-laugh",
+    "feature.bard-college-of-requiems-stir-the-bones",
+]
+"sublass:college-of-adventurers" = [
+    "feature.bard-college-of-adventurers-adventurers-talents",
+]
+"sublass:college-of-fools" = [
+    "feature.bard-college-of-fools-last-laugh",
+]
+"sublass:college-of-requiems" = [
+    "feature.bard-college-of-requiems-stir-the-bones",
+]
+"class:cleric" = [
+    "feature.cleric-eldritch-domain-eldritch-contagion",
+    "feature.cleric-eldritch-domain-prophecy-of-doom",
+    "feature.cleric-purification-domain-unclean-brand",
+]
+"sublass:eldritch-domain" = [
+    "feature.cleric-eldritch-domain-eldritch-contagion",
+    "feature.cleric-eldritch-domain-prophecy-of-doom",
+]
+"sublass:purification-domain" = [
+    "feature.cleric-purification-domain-unclean-brand",
+]
+"class:druid" = [
+    "feature.druid-circle-of-blood-rite-of-the-blood-moon",
+    "feature.druid-circle-of-entropy-ruin-incarnate",
+    "feature.druid-circle-of-entropy-shake-the-earth",
+    "feature.druid-circle-of-mutation-mutate-shape",
+    "feature.druid-circle-of-mutation-mutation-options",
+]
+"sublass:circle-of-blood" = [
+    "feature.druid-circle-of-blood-rite-of-the-blood-moon",
+]
+"sublass:circle-of-entropy" = [
+    "feature.druid-circle-of-entropy-ruin-incarnate",
+    "feature.druid-circle-of-entropy-shake-the-earth",
+]
+"sublass:circle-of-mutation" = [
+    "feature.druid-circle-of-mutation-mutate-shape",
+    "feature.druid-circle-of-mutation-mutation-options",
+]
+"class:fighter" = [
+    "feature.fighter-bulwark-warrior-threatening-presence",
+    "feature.fighter-living-crucible-compound-creator",
+]
+"sublass:bulwark-warrior" = [
+    "feature.fighter-bulwark-warrior-threatening-presence",
+]
+"sublass:living-crucible" = [
+    "feature.fighter-living-crucible-compound-creator",
+]
+"class:monk" = [
+    "feature.monk-warrior-of-pride-ever-prideful",
+    "feature.monk-warrior-of-regret-aid-not-given",
+    "feature.monk-warrior-of-regret-crushing-guilt",
+    "feature.monk-warrior-of-regret-relive-the-past",
+    "feature.monk-warrior-of-regret-shade-of-regret",
+    "feature.monk-warrior-of-regret-the-road-not-traveled",
+    "feature.monk-warrior-of-the-leaden-crown-psionic-mystery",
+    "feature.monk-warrior-of-the-leaden-crown-psionic-prowess",
+    "feature.monk-warrior-of-the-leaden-crown-psychic-crush",
+]
+"sublass:warrior-of-pride" = [
+    "feature.monk-warrior-of-pride-ever-prideful",
+]
+"sublass:warrior-of-regret" = [
+    "feature.monk-warrior-of-regret-aid-not-given",
+    "feature.monk-warrior-of-regret-crushing-guilt",
+    "feature.monk-warrior-of-regret-relive-the-past",
+    "feature.monk-warrior-of-regret-shade-of-regret",
+    "feature.monk-warrior-of-regret-the-road-not-traveled",
+]
+"sublass:warrior-of-the-leaden-crown" = [
+    "feature.monk-warrior-of-the-leaden-crown-psionic-mystery",
+    "feature.monk-warrior-of-the-leaden-crown-psionic-prowess",
+    "feature.monk-warrior-of-the-leaden-crown-psychic-crush",
+]
+"class:paladin" = [
+    "feature.paladin-oath-of-pestilence-debilitating-fever",
+    "feature.paladin-oath-of-pestilence-disgusting-resilience",
+    "feature.paladin-oath-of-pestilence-entropic-infection",
+    "feature.paladin-oath-of-pestilence-plaguebringer",
+    "feature.paladin-oath-of-slaughter-blood-knight",
+    "feature.paladin-oath-of-slaughter-frenzied-slaughter",
+    "feature.paladin-oath-of-zeal-apocalyptic-revelation",
+    "feature.paladin-oath-of-zeal-compel-confession",
+]
+"sublass:oath-of-pestilence" = [
+    "feature.paladin-oath-of-pestilence-debilitating-fever",
+    "feature.paladin-oath-of-pestilence-disgusting-resilience",
+    "feature.paladin-oath-of-pestilence-entropic-infection",
+    "feature.paladin-oath-of-pestilence-plaguebringer",
+]
+"sublass:oath-of-slaughter" = [
+    "feature.paladin-oath-of-slaughter-blood-knight",
+    "feature.paladin-oath-of-slaughter-frenzied-slaughter",
+]
+"sublass:oath-of-zeal" = [
+    "feature.paladin-oath-of-zeal-apocalyptic-revelation",
+    "feature.paladin-oath-of-zeal-compel-confession",
+]
+"class:ranger" = [
+    "feature.ranger-primordial-archer-witching-arrows",
+    "feature.ranger-vermin-lord-verminkin",
+]
+"sublass:primordial-archer" = [
+    "feature.ranger-primordial-archer-witching-arrows",
+]
+"sublass:vermin-lord" = [
+    "feature.ranger-vermin-lord-verminkin",
+]
+"class:rogue" = [
+    "feature.rogue-highway-rider-trusty-mount",
+    "feature.rogue-misfortune-bringer-evil-eye",
+    "feature.rogue-misfortune-bringer-misfortunes",
+    "feature.rogue-sanguine-thief-bloodstitch",
+    "feature.rogue-sanguine-thief-bloody-exit",
+]
+"sublass:misfortune-bringer" = [
+    "feature.rogue-misfortune-bringer-evil-eye",
+    "feature.rogue-misfortune-bringer-misfortunes",
+]
+"sublass:highway-rider" = [
+    "feature.rogue-highway-rider-trusty-mount",
+]
+"sublass:sanguine-thief" = [
+    "feature.rogue-sanguine-thief-bloodstitch",
+    "feature.rogue-sanguine-thief-bloody-exit",
+]
+"class:sorcerer" = [
+    "feature.sorcerer-apocalypse-sorcery-forbidden-magic",
+    "feature.sorcerer-apocalypse-sorcery-the-end-is-nigh",
+    "feature.sorcerer-haunted-sorcery-become-death",
+    "feature.sorcerer-haunted-sorcery-phantom-companion",
+    "feature.sorcerer-haunted-sorcery-phantom-possession",
+    "feature.sorcerer-wretched-bloodline-bad-luck-charm",
+    "feature.sorcerer-wretched-bloodline-share-the-burden",
+    "feature.sorcerer-wretched-bloodline-terrifying-visage",
+    "feature.sorcerer-wretched-bloodline-vengeful-summons",
+]
+"sublass:apocalypse-sorcery" = [
+    "feature.sorcerer-apocalypse-sorcery-forbidden-magic",
+    "feature.sorcerer-apocalypse-sorcery-the-end-is-nigh",
+]
+"sublass:haunted-sorcery" = [
+    "feature.sorcerer-haunted-sorcery-become-death",
+    "feature.sorcerer-haunted-sorcery-phantom-companion",
+    "feature.sorcerer-haunted-sorcery-phantom-possession",
+]
+"sublass:wretched-bloodline" = [
+    "feature.sorcerer-wretched-bloodline-bad-luck-charm",
+    "feature.sorcerer-wretched-bloodline-share-the-burden",
+    "feature.sorcerer-wretched-bloodline-terrifying-visage",
+    "feature.sorcerer-wretched-bloodline-vengeful-summons",
+]
+"class:warlock" = [
+    "feature.warlock-parasite-patron-larval-regeneration",
+    "feature.warlock-parasite-patron-spawn-pawn",
+    "feature.warlock-parasite-patron-spell-siphon",
+    "feature.warlock-the-coven-hags-craft",
+    "feature.warlock-the-coven-hags-guile",
+    "feature.warlock-the-coven-hags-visage",
+    "feature.warlock-the-first-vampire-patron-creature-of-the-night",
+    "feature.warlock-the-first-vampire-patron-drain-life",
+]
+"sublass:parasite-patron" = [
+    "feature.warlock-parasite-patron-larval-regeneration",
+    "feature.warlock-parasite-patron-spawn-pawn",
+    "feature.warlock-parasite-patron-spell-siphon",
+]
+"sublass:the-coven" = [
+    "feature.warlock-the-coven-hags-craft",
+    "feature.warlock-the-coven-hags-guile",
+    "feature.warlock-the-coven-hags-visage",
+]
+"sublass:the-first-vampire-patron" = [
+    "feature.warlock-the-first-vampire-patron-creature-of-the-night",
+    "feature.warlock-the-first-vampire-patron-drain-life",
+]
+"class:wizard" = [
+    "feature.wizard-daemonologist-eternal-war-eruption",
+    "feature.wizard-daemonologist-unearthly-countenance",
+    "feature.wizard-plague-doctor-bad-medicine",
+    "feature.wizard-plague-doctor-breathe-it-in",
+    "feature.wizard-plague-doctor-good-medicine",
+    "feature.wizard-plague-doctor-medicinal-master",
+    "feature.wizard-plague-doctor-potion-craft",
+]
+"sublass:daemonologist" = [
+    "feature.wizard-daemonologist-eternal-war-eruption",
+    "feature.wizard-daemonologist-unearthly-countenance",
+]
+"sublass:plague-doctor" = [
+    "feature.wizard-plague-doctor-bad-medicine",
+    "feature.wizard-plague-doctor-breathe-it-in",
+    "feature.wizard-plague-doctor-good-medicine",
+    "feature.wizard-plague-doctor-medicinal-master",
+    "feature.wizard-plague-doctor-potion-craft",
+]
+"sublass:devourer-guild" = [
+    "feature.monster-hunter-devourer-guild-mutations",
+    "feature.monster-hunter-devourer-guild-transmuting-metabolism",
+]
+"sublass:trapper-guild" = [
+    "feature.monster-hunter-trapper-guild-monster-hide-armor",
+]
+"species:arisen" = [
+    "feature.gh-unnatural-healer",
+]
+"species:saloon-doll" = [
+    "feature.gh-artificial-form",
+    "feature.gh-unnatural-healer",
+]
+"species:disembodied" = [
+    "feature.gh-ethereal-fade",
+    "feature.gh-master-of-distraction",
+    "feature.gh-out-of-phase",
+]
+"species:gh-dragonborn" = [
+    "feature.gh-breath-weapon",
+    "feature.gh-menacing-roar",
+    "feature.gh-natural-movement",
+]
+"species:ogresh" = [
+    "feature.gh-calculating-listener",
+    "feature.gh-natural-movement",
+]
+"species:dreamer" = [
+    "feature.gh-dreamwalking",
+    "feature.gh-helping-hand",
+    "feature.gh-improviser",
+    "feature.gh-power-nap",
+]
+"species:wechselkind" = [
+    "feature.gh-artificial-form",
+    "feature.gh-helping-hand",
+]
+"species:gh-gnome" = [
+    "feature.gh-fade-away",
+    "feature.gh-natures-voice",
+    "feature.gh-quick-slip",
+]
+"species:laneshi" = [
+    "feature.gh-natures-voice",
+]
+"species:wulven" = [
+    "feature.gh-natures-voice",
+]
 
 [objects]
 "spell.arboreal-curse" = [
@@ -957,20 +1239,19 @@ ritual = [
     "type:plant",
 ]
 "lore.grim-hollow" = [
-    "lore.grim-hollow-divinity-in-etharis",
-    "lore.grim-hollow-folk-of-etharis",
-    "lore.grim-hollow-magic-in-etharis",
+    "lore.grim-hollow-arcanist-inquisition",
     "lore.grim-hollow-augustine-trading-company",
     "lore.grim-hollow-company-of-free-swords",
-    "lore.grim-hollow-ebon-syndicate",
-    "lore.grim-hollow-thaumaturge",
-    "lore.grim-hollow-watchers-of-the-faithful",
-    "lore.grim-hollow-arcanist-inquisition",
     "lore.grim-hollow-crimson-court",
+    "lore.grim-hollow-divinity-in-etharis",
+    "lore.grim-hollow-ebon-syndicate",
+    "lore.grim-hollow-folk-of-etharis",
+    "lore.grim-hollow-magic-in-etharis",
     "lore.grim-hollow-monster-hunter-guilds",
     "lore.grim-hollow-morbus-doctore",
     "lore.grim-hollow-order-of-dawn",
     "lore.grim-hollow-prismatic-circle",
+    "lore.grim-hollow-thaumaturge",
     "lore.grim-hollow-the-burach-empire",
     "lore.grim-hollow-the-castinellan-provinces",
     "lore.grim-hollow-the-charneault-kingdom",
@@ -978,4 +1259,353 @@ ritual = [
     "lore.grim-hollow-the-city-of-morencia",
     "lore.grim-hollow-the-ostoyan-empire",
     "lore.grim-hollow-the-valikan-clans",
+    "lore.grim-hollow-watchers-of-the-faithful",
+]
+"feature.monster-hunter-monster-grimoire" = [
+    "class:monster-hunter",
+]
+"feature.monster-hunter-studied-response" = [
+    "class:monster-hunter",
+]
+"feature.barbarian-path-of-the-fractured-face-of-rage" = [
+    "class:barbarian",
+    "sublass:path-of-the-fractured",
+]
+"feature.barbarian-path-of-the-primal-spirit-primal-companion" = [
+    "class:barbarian",
+    "sublass:path-of-the-primal-spirit",
+]
+"feature.barbarian-path-of-the-primal-spirit-kin-to-beasts" = [
+    "class:barbarian",
+    "sublass:path-of-the-primal-spirit",
+]
+"feature.barbarian-path-of-the-primal-spirit-skinriders-trance" = [
+    "class:barbarian",
+    "sublass:path-of-the-primal-spirit",
+]
+"feature.barbarian-path-of-the-primal-spirit-shape-of-the-wild" = [
+    "class:barbarian",
+    "sublass:path-of-the-primal-spirit",
+]
+"feature.barbarian-path-of-the-wrathful-dead-rage-of-the-dead" = [
+    "class:barbarian",
+    "sublass:path-of-the-wrathful-dead",
+]
+"feature.barbarian-path-of-the-wrathful-dead-dark-doom-revisited" = [
+    "class:barbarian",
+    "sublass:path-of-the-wrathful-dead",
+]
+"feature.barbarian-path-of-the-wrathful-dead-death-is-but-a-door" = [
+    "class:barbarian",
+    "sublass:path-of-the-wrathful-dead",
+]
+"feature.bard-college-of-adventurers-adventurers-talents" = [
+    "class:bard",
+    "sublass:college-of-adventurers",
+]
+"feature.bard-college-of-fools-last-laugh" = [
+    "class:bard",
+    "sublass:college-of-fools",
+]
+"feature.bard-college-of-requiems-stir-the-bones" = [
+    "class:bard",
+    "sublass:college-of-requiems",
+]
+"feature.cleric-eldritch-domain-eldritch-contagion" = [
+    "class:cleric",
+    "sublass:eldritch-domain",
+]
+"feature.cleric-eldritch-domain-prophecy-of-doom" = [
+    "class:cleric",
+    "sublass:eldritch-domain",
+]
+"feature.cleric-purification-domain-unclean-brand" = [
+    "class:cleric",
+    "sublass:purification-domain",
+]
+"feature.druid-circle-of-blood-rite-of-the-blood-moon" = [
+    "class:druid",
+    "sublass:circle-of-blood",
+]
+"feature.druid-circle-of-entropy-ruin-incarnate" = [
+    "class:druid",
+    "sublass:circle-of-entropy",
+]
+"feature.druid-circle-of-entropy-shake-the-earth" = [
+    "class:druid",
+    "sublass:circle-of-entropy",
+]
+"feature.druid-circle-of-mutation-mutate-shape" = [
+    "class:druid",
+    "sublass:circle-of-mutation",
+]
+"feature.druid-circle-of-mutation-mutation-options" = [
+    "class:druid",
+    "sublass:circle-of-mutation",
+]
+"feature.fighter-bulwark-warrior-threatening-presence" = [
+    "class:fighter",
+    "sublass:bulwark-warrior",
+]
+"feature.fighter-living-crucible-compound-creator" = [
+    "class:fighter",
+    "sublass:living-crucible",
+]
+"feature.monk-warrior-of-pride-ever-prideful" = [
+    "class:monk",
+    "sublass:warrior-of-pride",
+]
+"feature.monk-warrior-of-regret-shade-of-regret" = [
+    "class:monk",
+    "sublass:warrior-of-regret",
+]
+"feature.monk-warrior-of-regret-the-road-not-traveled" = [
+    "class:monk",
+    "sublass:warrior-of-regret",
+]
+"feature.monk-warrior-of-regret-aid-not-given" = [
+    "class:monk",
+    "sublass:warrior-of-regret",
+]
+"feature.monk-warrior-of-regret-crushing-guilt" = [
+    "class:monk",
+    "sublass:warrior-of-regret",
+]
+"feature.monk-warrior-of-regret-relive-the-past" = [
+    "class:monk",
+    "sublass:warrior-of-regret",
+]
+"feature.monk-warrior-of-the-leaden-crown-psionic-prowess" = [
+    "class:monk",
+    "sublass:warrior-of-the-leaden-crown",
+]
+"feature.monk-warrior-of-the-leaden-crown-psychic-crush" = [
+    "class:monk",
+    "sublass:warrior-of-the-leaden-crown",
+]
+"feature.monk-warrior-of-the-leaden-crown-psionic-mystery" = [
+    "class:monk",
+    "sublass:warrior-of-the-leaden-crown",
+]
+"feature.paladin-oath-of-pestilence-debilitating-fever" = [
+    "class:paladin",
+    "sublass:oath-of-pestilence",
+]
+"feature.paladin-oath-of-pestilence-entropic-infection" = [
+    "class:paladin",
+    "sublass:oath-of-pestilence",
+]
+"feature.paladin-oath-of-pestilence-disgusting-resilience" = [
+    "class:paladin",
+    "sublass:oath-of-pestilence",
+]
+"feature.paladin-oath-of-pestilence-plaguebringer" = [
+    "class:paladin",
+    "sublass:oath-of-pestilence",
+]
+"feature.paladin-oath-of-slaughter-frenzied-slaughter" = [
+    "class:paladin",
+    "sublass:oath-of-slaughter",
+]
+"feature.paladin-oath-of-slaughter-blood-knight" = [
+    "class:paladin",
+    "sublass:oath-of-slaughter",
+]
+"feature.paladin-oath-of-zeal-compel-confession" = [
+    "class:paladin",
+    "sublass:oath-of-zeal",
+]
+"feature.paladin-oath-of-zeal-apocalyptic-revelation" = [
+    "class:paladin",
+    "sublass:oath-of-zeal",
+]
+"feature.ranger-primordial-archer-witching-arrows" = [
+    "class:ranger",
+    "sublass:primordial-archer",
+]
+"feature.ranger-vermin-lord-verminkin" = [
+    "class:ranger",
+    "sublass:vermin-lord",
+]
+"feature.rogue-misfortune-bringer-misfortunes" = [
+    "class:rogue",
+    "sublass:misfortune-bringer",
+]
+"feature.rogue-highway-rider-trusty-mount" = [
+    "class:rogue",
+    "sublass:highway-rider",
+]
+"feature.rogue-misfortune-bringer-evil-eye" = [
+    "class:rogue",
+    "sublass:misfortune-bringer",
+]
+"feature.rogue-sanguine-thief-bloodstitch" = [
+    "class:rogue",
+    "sublass:sanguine-thief",
+]
+"feature.rogue-sanguine-thief-bloody-exit" = [
+    "class:rogue",
+    "sublass:sanguine-thief",
+]
+"feature.sorcerer-apocalypse-sorcery-forbidden-magic" = [
+    "class:sorcerer",
+    "sublass:apocalypse-sorcery",
+]
+"feature.sorcerer-apocalypse-sorcery-the-end-is-nigh" = [
+    "class:sorcerer",
+    "sublass:apocalypse-sorcery",
+]
+"feature.sorcerer-haunted-sorcery-phantom-companion" = [
+    "class:sorcerer",
+    "sublass:haunted-sorcery",
+]
+"feature.sorcerer-haunted-sorcery-phantom-possession" = [
+    "class:sorcerer",
+    "sublass:haunted-sorcery",
+]
+"feature.sorcerer-haunted-sorcery-become-death" = [
+    "class:sorcerer",
+    "sublass:haunted-sorcery",
+]
+"feature.sorcerer-wretched-bloodline-bad-luck-charm" = [
+    "class:sorcerer",
+    "sublass:wretched-bloodline",
+]
+"feature.sorcerer-wretched-bloodline-share-the-burden" = [
+    "class:sorcerer",
+    "sublass:wretched-bloodline",
+]
+"feature.sorcerer-wretched-bloodline-terrifying-visage" = [
+    "class:sorcerer",
+    "sublass:wretched-bloodline",
+]
+"feature.sorcerer-wretched-bloodline-vengeful-summons" = [
+    "class:sorcerer",
+    "sublass:wretched-bloodline",
+]
+"feature.warlock-parasite-patron-spell-siphon" = [
+    "class:warlock",
+    "sublass:parasite-patron",
+]
+"feature.warlock-parasite-patron-spawn-pawn" = [
+    "class:warlock",
+    "sublass:parasite-patron",
+]
+"feature.warlock-parasite-patron-larval-regeneration" = [
+    "class:warlock",
+    "sublass:parasite-patron",
+]
+"feature.warlock-the-coven-hags-guile" = [
+    "class:warlock",
+    "sublass:the-coven",
+]
+"feature.warlock-the-coven-hags-visage" = [
+    "class:warlock",
+    "sublass:the-coven",
+]
+"feature.warlock-the-coven-hags-craft" = [
+    "class:warlock",
+    "sublass:the-coven",
+]
+"feature.warlock-the-first-vampire-patron-drain-life" = [
+    "class:warlock",
+    "sublass:the-first-vampire-patron",
+]
+"feature.warlock-the-first-vampire-patron-creature-of-the-night" = [
+    "class:warlock",
+    "sublass:the-first-vampire-patron",
+]
+"feature.wizard-daemonologist-unearthly-countenance" = [
+    "class:wizard",
+    "sublass:daemonologist",
+]
+"feature.wizard-daemonologist-eternal-war-eruption" = [
+    "class:wizard",
+    "sublass:daemonologist",
+]
+"feature.wizard-plague-doctor-potion-craft" = [
+    "class:wizard",
+    "sublass:plague-doctor",
+]
+"feature.wizard-plague-doctor-good-medicine" = [
+    "class:wizard",
+    "sublass:plague-doctor",
+]
+"feature.wizard-plague-doctor-bad-medicine" = [
+    "class:wizard",
+    "sublass:plague-doctor",
+]
+"feature.wizard-plague-doctor-breathe-it-in" = [
+    "class:wizard",
+    "sublass:plague-doctor",
+]
+"feature.wizard-plague-doctor-medicinal-master" = [
+    "class:wizard",
+    "sublass:plague-doctor",
+]
+"feature.monster-hunter-devourer-guild-transmuting-metabolism" = [
+    "class:monster-hunter",
+    "sublass:devourer-guild",
+]
+"feature.monster-hunter-devourer-guild-mutations" = [
+    "class:monster-hunter",
+    "sublass:devourer-guild",
+]
+"feature.monster-hunter-trapper-guild-monster-hide-armor" = [
+    "class:monster-hunter",
+    "sublass:trapper-guild",
+]
+"feature.gh-unnatural-healer" = [
+    "species:arisen",
+    "species:saloon-doll",
+]
+"feature.gh-master-of-distraction" = [
+    "species:disembodied",
+]
+"feature.gh-out-of-phase" = [
+    "species:disembodied",
+]
+"feature.gh-ethereal-fade" = [
+    "species:disembodied",
+]
+"feature.gh-breath-weapon" = [
+    "species:gh-dragonborn",
+]
+"feature.gh-menacing-roar" = [
+    "species:gh-dragonborn",
+]
+"feature.gh-natural-movement" = [
+    "species:gh-dragonborn",
+    "species:ogresh",
+]
+"feature.gh-helping-hand" = [
+    "species:dreamer",
+    "species:wechselkind",
+]
+"feature.gh-power-nap" = [
+    "species:dreamer",
+]
+"feature.gh-dreamwalking" = [
+    "species:dreamer",
+]
+"feature.gh-improviser" = [
+    "species:dreamer",
+]
+"feature.gh-quick-slip" = [
+    "species:gh-gnome",
+]
+"feature.gh-fade-away" = [
+    "species:gh-gnome",
+]
+"feature.gh-natures-voice" = [
+    "species:gh-gnome",
+    "species:laneshi",
+    "species:wulven",
+]
+"feature.gh-calculating-listener" = [
+    "species:ogresh",
+]
+"feature.gh-artificial-form" = [
+    "species:saloon-doll",
+    "species:wechselkind",
 ]

@@ -1779,12 +1779,12 @@ ritual = [
     "stat.axe-beak",
     "stat.basilisk",
     "stat.behir",
-    "stat.bulette-pup",
     "stat.bulette",
+    "stat.bulette-pup",
     "stat.carrion-crawler",
     "stat.chimera",
-    "stat.cockatrice-regent",
     "stat.cockatrice",
+    "stat.cockatrice-regent",
     "stat.death-dog",
     "stat.displacer-beast",
     "stat.doppelganger",
@@ -1810,8 +1810,8 @@ ritual = [
     "stat.phase-spider",
     "stat.primeval-owlbear",
     "stat.purple-worm",
-    "stat.quaggoth-thonot",
     "stat.quaggoth",
+    "stat.quaggoth-thonot",
     "stat.remorhaz",
     "stat.roc",
     "stat.rust-monster",
@@ -3369,16 +3369,16 @@ ritual = [
     "stat.beholder-zombie",
     "stat.bone-naga",
     "stat.crawling-claw",
-    "stat.death-knight-aspirant",
     "stat.death-knight",
+    "stat.death-knight-aspirant",
     "stat.death-tyrant",
     "stat.demilich",
-    "stat.dracolich-gargantuan",
     "stat.dracolich",
+    "stat.dracolich-gargantuan",
     "stat.flameskull",
     "stat.flaming-skeleton",
-    "stat.ghast-gravecaller",
     "stat.ghast",
+    "stat.ghast-gravecaller",
     "stat.ghost",
     "stat.ghoul",
     "stat.graveyard-revenant",
@@ -3386,18 +3386,18 @@ ritual = [
     "stat.lacedon-ghoul",
     "stat.lich",
     "stat.minotaur-skeleton",
-    "stat.mummy-lord",
     "stat.mummy",
+    "stat.mummy-lord",
     "stat.ogre-zombie",
     "stat.poltergeist",
     "stat.revenant",
     "stat.shadow",
     "stat.skeleton",
     "stat.specter",
+    "stat.vampire",
     "stat.vampire-nightbringer",
     "stat.vampire-spawn",
     "stat.vampire-umbral-lord",
-    "stat.vampire",
     "stat.warhorse-skeleton",
     "stat.wight",
     "stat.will-o-wisp",
@@ -3658,6 +3658,308 @@ ritual = [
 ]
 "category:shield" = [
     "equipment.shield",
+]
+"class:artificer" = [
+    "feature.artificer-alchemist-experimental-elixir",
+    "feature.artificer-armorer-arcane-armor",
+    "feature.artificer-armorer-armor-model",
+    "feature.artificer-artillerist-eldritch-cannon",
+    "feature.artificer-battle-smith-steel-defender",
+    "feature.artificer-cartographer-adventurers-atlas",
+    "feature.artificer-cartographer-mapping-magic",
+    "feature.artificer-cartographer-superior-atlas",
+    "feature.artificer-flash-of-genius",
+    "feature.artificer-soul-of-artifice",
+    "feature.artificer-spell-storing-item",
+]
+"sublass:alchemist" = [
+    "feature.artificer-alchemist-experimental-elixir",
+]
+"sublass:armorer" = [
+    "feature.artificer-armorer-arcane-armor",
+    "feature.artificer-armorer-armor-model",
+]
+"sublass:artillerist" = [
+    "feature.artificer-artillerist-eldritch-cannon",
+]
+"sublass:battle-smith" = [
+    "feature.artificer-battle-smith-steel-defender",
+]
+"sublass:cartographer" = [
+    "feature.artificer-cartographer-adventurers-atlas",
+    "feature.artificer-cartographer-mapping-magic",
+    "feature.artificer-cartographer-superior-atlas",
+]
+"class:bard" = [
+    "feature.bard-bardic-inspiration",
+    "feature.bard-college-of-the-moon-blessings-of-moonlight",
+    "feature.bard-college-of-the-moon-eventides-splendor",
+    "feature.bard-college-of-the-moon-moons-inspiration",
+]
+"sublass:college-of-the-moon" = [
+    "feature.bard-college-of-the-moon-blessings-of-moonlight",
+    "feature.bard-college-of-the-moon-eventides-splendor",
+    "feature.bard-college-of-the-moon-moons-inspiration",
+]
+"class:cleric" = [
+    "feature.cleric-channel-divinity",
+    "feature.cleric-divine-intervention",
+    "feature.cleric-knowledge-domain-divine-foreknowledge",
+    "feature.cleric-knowledge-domain-mind-magic",
+    "feature.cleric-knowledge-domain-unfettered-mind",
+    "feature.cleric-light-domain-corona-of-light",
+    "feature.cleric-trickery-domain-blessing-of-the-trickster",
+    "feature.cleric-trickery-domain-invoke-duplicity",
+]
+"sublass:knowledge-domain" = [
+    "feature.cleric-knowledge-domain-divine-foreknowledge",
+    "feature.cleric-knowledge-domain-mind-magic",
+    "feature.cleric-knowledge-domain-unfettered-mind",
+]
+"class:fighter" = [
+    "feature.fighter-banneret-knightly-envoy",
+    "feature.fighter-eldritch-knight-arcane-charge",
+    "feature.fighter-eldritch-knight-war-bond",
+]
+"sublass:banneret" = [
+    "feature.fighter-banneret-knightly-envoy",
+]
+"class:paladin" = [
+    "feature.paladin-abjure-foes",
+    "feature.paladin-channel-divinity",
+    "feature.paladin-faithful-steed",
+    "feature.paladin-lay-on-hands",
+    "feature.paladin-oath-of-devotion-holy-nimbus",
+    "feature.paladin-oath-of-devotion-sacred-weapon",
+    "feature.paladin-oath-of-glory-living-legend",
+    "feature.paladin-oath-of-the-ancients-elder-champion",
+    "feature.paladin-oath-of-the-ancients-undying-sentinel",
+    "feature.paladin-oath-of-the-noble-genies-elemental-strike",
+    "feature.paladin-oath-of-the-noble-genies-noble-scion",
+    "feature.paladin-oath-of-vengeance-avenging-angel",
+]
+"sublass:oath-of-the-noble-genies" = [
+    "feature.paladin-oath-of-the-noble-genies-elemental-strike",
+    "feature.paladin-oath-of-the-noble-genies-noble-scion",
+]
+"class:ranger" = [
+    "feature.ranger-beast-master-primal-companion",
+    "feature.ranger-favored-enemy",
+    "feature.ranger-fey-wanderer-fey-reinforcements",
+    "feature.ranger-fey-wanderer-misty-wanderer",
+    "feature.ranger-natures-veil",
+    "feature.ranger-winter-walker-frozen-haunt",
+]
+"sublass:winter-walker" = [
+    "feature.ranger-winter-walker-frozen-haunt",
+]
+"class:rogue" = [
+    "feature.rogue-scion-of-the-three-bloodthirst",
+]
+"sublass:scion-of-the-three" = [
+    "feature.rogue-scion-of-the-three-bloodthirst",
+]
+"class:sorcerer" = [
+    "feature.sorcerer-aberrant-sorcery-revelation-in-flesh",
+    "feature.sorcerer-aberrant-sorcery-warping-implosion",
+    "feature.sorcerer-draconic-sorcery-dragon-companion",
+    "feature.sorcerer-draconic-sorcery-dragon-wings",
+    "feature.sorcerer-spellfire-sorcery-crown-of-spellfire",
+    "feature.sorcerer-wild-magic-sorcery-tamed-surge",
+]
+"sublass:spellfire-sorcery" = [
+    "feature.sorcerer-spellfire-sorcery-crown-of-spellfire",
+]
+"class:wizard" = [
+    "feature.wizard-bladesinger-bladesong",
+    "feature.wizard-illusionist-illusory-reality",
+]
+"sublass:bladesinger" = [
+    "feature.wizard-bladesinger-bladesong",
+]
+"class:barbarian" = [
+    "feature.barbarian-path-of-the-world-tree-travel-along-the-tree",
+    "feature.barbarian-path-of-the-zealot-rage-of-the-gods",
+    "feature.barbarian-rage",
+]
+"class:druid" = [
+    "feature.druid-archdruid",
+    "feature.druid-beast-spells",
+    "feature.druid-circle-of-the-moon-moonlight-step",
+    "feature.druid-circle-of-the-sea-stormborn",
+    "feature.druid-circle-of-the-sea-wrath-of-the-sea",
+    "feature.druid-circle-of-the-stars-star-map",
+    "feature.druid-circle-of-the-stars-starry-form",
+    "feature.druid-circle-of-the-stars-twinkling-constellations",
+    "feature.druid-wild-companion",
+    "feature.druid-wild-resurgence",
+    "feature.druid-wild-shape",
+]
+"class:monk" = [
+    "feature.monk-monks-focus",
+    "feature.monk-warrior-of-mercy-hand-of-ultimate-mercy",
+    "feature.monk-warrior-of-shadow-shadow-arts",
+    "feature.monk-warrior-of-shadow-shadow-step",
+    "feature.monk-warrior-of-the-open-hand-quivering-palm",
+]
+"class:warlock" = [
+    "feature.warlock-contact-patron",
+    "feature.warlock-fiend-patron-hurl-through-hell",
+    "feature.warlock-great-old-one-patron-awakened-mind",
+    "feature.warlock-great-old-one-patron-create-thrall",
+]
+"sublass:path-of-the-world-tree" = [
+    "feature.barbarian-path-of-the-world-tree-travel-along-the-tree",
+]
+"sublass:path-of-the-zealot" = [
+    "feature.barbarian-path-of-the-zealot-rage-of-the-gods",
+]
+"sublass:light-domain" = [
+    "feature.cleric-light-domain-corona-of-light",
+]
+"sublass:trickery-domain" = [
+    "feature.cleric-trickery-domain-blessing-of-the-trickster",
+    "feature.cleric-trickery-domain-invoke-duplicity",
+]
+"sublass:circle-of-the-moon" = [
+    "feature.druid-circle-of-the-moon-moonlight-step",
+]
+"sublass:circle-of-the-sea" = [
+    "feature.druid-circle-of-the-sea-stormborn",
+    "feature.druid-circle-of-the-sea-wrath-of-the-sea",
+]
+"sublass:circle-of-the-stars" = [
+    "feature.druid-circle-of-the-stars-star-map",
+    "feature.druid-circle-of-the-stars-starry-form",
+    "feature.druid-circle-of-the-stars-twinkling-constellations",
+]
+"sublass:eldritch-knight" = [
+    "feature.fighter-eldritch-knight-arcane-charge",
+    "feature.fighter-eldritch-knight-war-bond",
+]
+"sublass:warrior-of-mercy" = [
+    "feature.monk-warrior-of-mercy-hand-of-ultimate-mercy",
+]
+"sublass:warrior-of-shadow" = [
+    "feature.monk-warrior-of-shadow-shadow-arts",
+    "feature.monk-warrior-of-shadow-shadow-step",
+]
+"sublass:warrior-of-the-open-hand" = [
+    "feature.monk-warrior-of-the-open-hand-quivering-palm",
+]
+"sublass:oath-of-devotion" = [
+    "feature.paladin-oath-of-devotion-holy-nimbus",
+    "feature.paladin-oath-of-devotion-sacred-weapon",
+]
+"sublass:oath-of-glory" = [
+    "feature.paladin-oath-of-glory-living-legend",
+]
+"sublass:oath-of-the-ancients" = [
+    "feature.paladin-oath-of-the-ancients-elder-champion",
+    "feature.paladin-oath-of-the-ancients-undying-sentinel",
+]
+"sublass:oath-of-vengeance" = [
+    "feature.paladin-oath-of-vengeance-avenging-angel",
+]
+"sublass:beast-master" = [
+    "feature.ranger-beast-master-primal-companion",
+]
+"sublass:fey-wanderer" = [
+    "feature.ranger-fey-wanderer-fey-reinforcements",
+    "feature.ranger-fey-wanderer-misty-wanderer",
+]
+"sublass:aberrant-sorcery" = [
+    "feature.sorcerer-aberrant-sorcery-revelation-in-flesh",
+    "feature.sorcerer-aberrant-sorcery-warping-implosion",
+]
+"sublass:draconic-sorcery" = [
+    "feature.sorcerer-draconic-sorcery-dragon-companion",
+    "feature.sorcerer-draconic-sorcery-dragon-wings",
+]
+"sublass:wild-magic-sorcery" = [
+    "feature.sorcerer-wild-magic-sorcery-tamed-surge",
+]
+"sublass:fiend-patron" = [
+    "feature.warlock-fiend-patron-hurl-through-hell",
+]
+"sublass:great-old-one-patron" = [
+    "feature.warlock-great-old-one-patron-awakened-mind",
+    "feature.warlock-great-old-one-patron-create-thrall",
+]
+"sublass:illusionist" = [
+    "feature.wizard-illusionist-illusory-reality",
+]
+"species:dhampir" = [
+    "feature.dhampir-spider-climb",
+    "feature.dhampir-vampiric-bite",
+]
+"species:changeling" = [
+    "feature.changeling-shape-shifter",
+]
+"species:kalashtar" = [
+    "feature.kalashtar-mind-link",
+]
+"species:khoravar" = [
+    "feature.khoravar-lethargy-resilience",
+]
+"species:shifter" = [
+    "feature.shifter-shifting",
+]
+"species:eladrin" = [
+    "feature.eladrin-eladrin-seasons",
+    "feature.eladrin-fey-step",
+]
+"species:firbolg" = [
+    "feature.firbolg-hidden-step",
+    "feature.firbolg-speech-of-beast-and-leaf",
+]
+"species:harengon" = [
+    "feature.harengon-rabbit-hop",
+]
+"species:kenku" = [
+    "feature.kenku-expert-duplication",
+    "feature.kenku-mimicry",
+]
+"species:minotaur" = [
+    "feature.minotaur-labyrinthine-recall",
+]
+"species:shadar-kai" = [
+    "feature.shadar-kai-blessing-of-the-raven-queen",
+]
+"species:aasimar" = [
+    "feature.aasimar-celestial-revelation",
+    "feature.aasimar-healing-hands",
+]
+"species:dragonborn" = [
+    "feature.dragonborn-breath-weapon",
+    "feature.dragonborn-draconic-flight",
+]
+"species:dwarf" = [
+    "feature.dwarf-stonecunning",
+]
+"species:goliath" = [
+    "feature.goliath-giant-ancestry",
+    "feature.goliath-large-form",
+]
+"species:loxodon" = [
+    "feature.loxodon-trunk",
+]
+"species:simic-hybrid" = [
+    "feature.simic-hybrid-animal-enhancement",
+]
+"species:astral-elf" = [
+    "feature.astral-elf-starlight-step",
+]
+"species:hadozee" = [
+    "feature.hadozee-dexterous-feet",
+]
+"species:plasmoid" = [
+    "feature.plasmoid-amorphous",
+    "feature.plasmoid-shape-self",
+]
+"species:thri-kreen" = [
+    "feature.thri-kreen-chameleon-carapace",
+    "feature.thri-kreen-secondary-arms",
 ]
 
 [objects]
@@ -9016,4 +9318,378 @@ ritual = [
 ]
 "equipment.whip" = [
     "category:martial-melee-weapon",
+]
+"feature.artificer-flash-of-genius" = [
+    "class:artificer",
+]
+"feature.artificer-spell-storing-item" = [
+    "class:artificer",
+]
+"feature.artificer-soul-of-artifice" = [
+    "class:artificer",
+]
+"feature.artificer-alchemist-experimental-elixir" = [
+    "class:artificer",
+    "sublass:alchemist",
+]
+"feature.artificer-armorer-arcane-armor" = [
+    "class:artificer",
+    "sublass:armorer",
+]
+"feature.artificer-armorer-armor-model" = [
+    "class:artificer",
+    "sublass:armorer",
+]
+"feature.artificer-artillerist-eldritch-cannon" = [
+    "class:artificer",
+    "sublass:artillerist",
+]
+"feature.artificer-battle-smith-steel-defender" = [
+    "class:artificer",
+    "sublass:battle-smith",
+]
+"feature.artificer-cartographer-adventurers-atlas" = [
+    "class:artificer",
+    "sublass:cartographer",
+]
+"feature.artificer-cartographer-mapping-magic" = [
+    "class:artificer",
+    "sublass:cartographer",
+]
+"feature.artificer-cartographer-superior-atlas" = [
+    "class:artificer",
+    "sublass:cartographer",
+]
+"feature.bard-college-of-the-moon-moons-inspiration" = [
+    "class:bard",
+    "sublass:college-of-the-moon",
+]
+"feature.bard-college-of-the-moon-blessings-of-moonlight" = [
+    "class:bard",
+    "sublass:college-of-the-moon",
+]
+"feature.bard-college-of-the-moon-eventides-splendor" = [
+    "class:bard",
+    "sublass:college-of-the-moon",
+]
+"feature.cleric-knowledge-domain-mind-magic" = [
+    "class:cleric",
+    "sublass:knowledge-domain",
+]
+"feature.cleric-knowledge-domain-unfettered-mind" = [
+    "class:cleric",
+    "sublass:knowledge-domain",
+]
+"feature.cleric-knowledge-domain-divine-foreknowledge" = [
+    "class:cleric",
+    "sublass:knowledge-domain",
+]
+"feature.fighter-banneret-knightly-envoy" = [
+    "class:fighter",
+    "sublass:banneret",
+]
+"feature.paladin-oath-of-the-noble-genies-elemental-strike" = [
+    "class:paladin",
+    "sublass:oath-of-the-noble-genies",
+]
+"feature.paladin-oath-of-the-noble-genies-noble-scion" = [
+    "class:paladin",
+    "sublass:oath-of-the-noble-genies",
+]
+"feature.ranger-winter-walker-frozen-haunt" = [
+    "class:ranger",
+    "sublass:winter-walker",
+]
+"feature.rogue-scion-of-the-three-bloodthirst" = [
+    "class:rogue",
+    "sublass:scion-of-the-three",
+]
+"feature.sorcerer-spellfire-sorcery-crown-of-spellfire" = [
+    "class:sorcerer",
+    "sublass:spellfire-sorcery",
+]
+"feature.wizard-bladesinger-bladesong" = [
+    "class:wizard",
+    "sublass:bladesinger",
+]
+"feature.barbarian-rage" = [
+    "class:barbarian",
+]
+"feature.bard-bardic-inspiration" = [
+    "class:bard",
+]
+"feature.cleric-channel-divinity" = [
+    "class:cleric",
+]
+"feature.cleric-divine-intervention" = [
+    "class:cleric",
+]
+"feature.druid-wild-shape" = [
+    "class:druid",
+]
+"feature.druid-wild-companion" = [
+    "class:druid",
+]
+"feature.druid-wild-resurgence" = [
+    "class:druid",
+]
+"feature.druid-beast-spells" = [
+    "class:druid",
+]
+"feature.druid-archdruid" = [
+    "class:druid",
+]
+"feature.monk-monks-focus" = [
+    "class:monk",
+]
+"feature.paladin-lay-on-hands" = [
+    "class:paladin",
+]
+"feature.paladin-channel-divinity" = [
+    "class:paladin",
+]
+"feature.paladin-faithful-steed" = [
+    "class:paladin",
+]
+"feature.paladin-abjure-foes" = [
+    "class:paladin",
+]
+"feature.ranger-favored-enemy" = [
+    "class:ranger",
+]
+"feature.ranger-natures-veil" = [
+    "class:ranger",
+]
+"feature.warlock-contact-patron" = [
+    "class:warlock",
+]
+"feature.barbarian-path-of-the-world-tree-travel-along-the-tree" = [
+    "class:barbarian",
+    "sublass:path-of-the-world-tree",
+]
+"feature.barbarian-path-of-the-zealot-rage-of-the-gods" = [
+    "class:barbarian",
+    "sublass:path-of-the-zealot",
+]
+"feature.cleric-light-domain-corona-of-light" = [
+    "class:cleric",
+    "sublass:light-domain",
+]
+"feature.cleric-trickery-domain-blessing-of-the-trickster" = [
+    "class:cleric",
+    "sublass:trickery-domain",
+]
+"feature.cleric-trickery-domain-invoke-duplicity" = [
+    "class:cleric",
+    "sublass:trickery-domain",
+]
+"feature.druid-circle-of-the-moon-moonlight-step" = [
+    "class:druid",
+    "sublass:circle-of-the-moon",
+]
+"feature.druid-circle-of-the-sea-wrath-of-the-sea" = [
+    "class:druid",
+    "sublass:circle-of-the-sea",
+]
+"feature.druid-circle-of-the-sea-stormborn" = [
+    "class:druid",
+    "sublass:circle-of-the-sea",
+]
+"feature.druid-circle-of-the-stars-star-map" = [
+    "class:druid",
+    "sublass:circle-of-the-stars",
+]
+"feature.druid-circle-of-the-stars-starry-form" = [
+    "class:druid",
+    "sublass:circle-of-the-stars",
+]
+"feature.druid-circle-of-the-stars-twinkling-constellations" = [
+    "class:druid",
+    "sublass:circle-of-the-stars",
+]
+"feature.fighter-eldritch-knight-war-bond" = [
+    "class:fighter",
+    "sublass:eldritch-knight",
+]
+"feature.fighter-eldritch-knight-arcane-charge" = [
+    "class:fighter",
+    "sublass:eldritch-knight",
+]
+"feature.monk-warrior-of-mercy-hand-of-ultimate-mercy" = [
+    "class:monk",
+    "sublass:warrior-of-mercy",
+]
+"feature.monk-warrior-of-shadow-shadow-arts" = [
+    "class:monk",
+    "sublass:warrior-of-shadow",
+]
+"feature.monk-warrior-of-shadow-shadow-step" = [
+    "class:monk",
+    "sublass:warrior-of-shadow",
+]
+"feature.monk-warrior-of-the-open-hand-quivering-palm" = [
+    "class:monk",
+    "sublass:warrior-of-the-open-hand",
+]
+"feature.paladin-oath-of-devotion-sacred-weapon" = [
+    "class:paladin",
+    "sublass:oath-of-devotion",
+]
+"feature.paladin-oath-of-devotion-holy-nimbus" = [
+    "class:paladin",
+    "sublass:oath-of-devotion",
+]
+"feature.paladin-oath-of-glory-living-legend" = [
+    "class:paladin",
+    "sublass:oath-of-glory",
+]
+"feature.paladin-oath-of-the-ancients-undying-sentinel" = [
+    "class:paladin",
+    "sublass:oath-of-the-ancients",
+]
+"feature.paladin-oath-of-the-ancients-elder-champion" = [
+    "class:paladin",
+    "sublass:oath-of-the-ancients",
+]
+"feature.paladin-oath-of-vengeance-avenging-angel" = [
+    "class:paladin",
+    "sublass:oath-of-vengeance",
+]
+"feature.ranger-beast-master-primal-companion" = [
+    "class:ranger",
+    "sublass:beast-master",
+]
+"feature.ranger-fey-wanderer-fey-reinforcements" = [
+    "class:ranger",
+    "sublass:fey-wanderer",
+]
+"feature.ranger-fey-wanderer-misty-wanderer" = [
+    "class:ranger",
+    "sublass:fey-wanderer",
+]
+"feature.sorcerer-aberrant-sorcery-revelation-in-flesh" = [
+    "class:sorcerer",
+    "sublass:aberrant-sorcery",
+]
+"feature.sorcerer-aberrant-sorcery-warping-implosion" = [
+    "class:sorcerer",
+    "sublass:aberrant-sorcery",
+]
+"feature.sorcerer-draconic-sorcery-dragon-wings" = [
+    "class:sorcerer",
+    "sublass:draconic-sorcery",
+]
+"feature.sorcerer-draconic-sorcery-dragon-companion" = [
+    "class:sorcerer",
+    "sublass:draconic-sorcery",
+]
+"feature.sorcerer-wild-magic-sorcery-tamed-surge" = [
+    "class:sorcerer",
+    "sublass:wild-magic-sorcery",
+]
+"feature.warlock-fiend-patron-hurl-through-hell" = [
+    "class:warlock",
+    "sublass:fiend-patron",
+]
+"feature.warlock-great-old-one-patron-awakened-mind" = [
+    "class:warlock",
+    "sublass:great-old-one-patron",
+]
+"feature.warlock-great-old-one-patron-create-thrall" = [
+    "class:warlock",
+    "sublass:great-old-one-patron",
+]
+"feature.wizard-illusionist-illusory-reality" = [
+    "class:wizard",
+    "sublass:illusionist",
+]
+"feature.dhampir-spider-climb" = [
+    "species:dhampir",
+]
+"feature.dhampir-vampiric-bite" = [
+    "species:dhampir",
+]
+"feature.changeling-shape-shifter" = [
+    "species:changeling",
+]
+"feature.kalashtar-mind-link" = [
+    "species:kalashtar",
+]
+"feature.khoravar-lethargy-resilience" = [
+    "species:khoravar",
+]
+"feature.shifter-shifting" = [
+    "species:shifter",
+]
+"feature.eladrin-eladrin-seasons" = [
+    "species:eladrin",
+]
+"feature.eladrin-fey-step" = [
+    "species:eladrin",
+]
+"feature.firbolg-hidden-step" = [
+    "species:firbolg",
+]
+"feature.firbolg-speech-of-beast-and-leaf" = [
+    "species:firbolg",
+]
+"feature.harengon-rabbit-hop" = [
+    "species:harengon",
+]
+"feature.kenku-expert-duplication" = [
+    "species:kenku",
+]
+"feature.kenku-mimicry" = [
+    "species:kenku",
+]
+"feature.minotaur-labyrinthine-recall" = [
+    "species:minotaur",
+]
+"feature.shadar-kai-blessing-of-the-raven-queen" = [
+    "species:shadar-kai",
+]
+"feature.aasimar-healing-hands" = [
+    "species:aasimar",
+]
+"feature.aasimar-celestial-revelation" = [
+    "species:aasimar",
+]
+"feature.dragonborn-breath-weapon" = [
+    "species:dragonborn",
+]
+"feature.dragonborn-draconic-flight" = [
+    "species:dragonborn",
+]
+"feature.dwarf-stonecunning" = [
+    "species:dwarf",
+]
+"feature.goliath-giant-ancestry" = [
+    "species:goliath",
+]
+"feature.goliath-large-form" = [
+    "species:goliath",
+]
+"feature.loxodon-trunk" = [
+    "species:loxodon",
+]
+"feature.simic-hybrid-animal-enhancement" = [
+    "species:simic-hybrid",
+]
+"feature.astral-elf-starlight-step" = [
+    "species:astral-elf",
+]
+"feature.hadozee-dexterous-feet" = [
+    "species:hadozee",
+]
+"feature.plasmoid-amorphous" = [
+    "species:plasmoid",
+]
+"feature.plasmoid-shape-self" = [
+    "species:plasmoid",
+]
+"feature.thri-kreen-chameleon-carapace" = [
+    "species:thri-kreen",
+]
+"feature.thri-kreen-secondary-arms" = [
+    "species:thri-kreen",
 ]

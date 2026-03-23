@@ -1,0 +1,3 @@
+# Unclean Brand (Purification Domain)
+
+When you hit a creature with a Melee weapon attack or Unarmed Strike, instead of dealing the strike’s normal damage, you can expend one use of your Channel Divinity to sear a symbol into the creature’s flesh, marking it with a glowing brand for 1 minute. During that time, the creature has Disadvantage on saving throws against your spells. Additionally, the creature gains Vulnerability to Fire damage you deal, even if it normally has Resistance or Immunity to Fire damage.

@@ -1,0 +1,3 @@
+# Out of Phase
+
+Your corporeal presence shifts and fades, softening your enemies’ ability to harm you. As a Bonus Action, for 1 minute, all creatures have Disadvantage on attack rolls against you, and you can move through other creature’s spaces without treating them as Difficult Terrain. You can use this feature a number of times equal to your Proficiency Bonus, regaining all expended uses when you finish a Long Rest.

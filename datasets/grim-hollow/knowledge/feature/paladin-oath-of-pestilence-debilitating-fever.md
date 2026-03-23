@@ -1,0 +1,3 @@
+# Debilitating Fever (Oath of Pestilence)
+
+You can inflict disease upon a creature with a single touch. When you hit a creature with an attack roll using a weapon, you can expend one use of your Channel Divinity to give that creature the Poisoned condition for 1 minute. While Poisoned in this way, the target also has the Incapacitated condition. At the end of each of its turns, the Poisoned target makes a Constitution save, ending the effect on itself on a success.

@@ -1,0 +1,3 @@
+# Prophecy of Doom (Eldritch Domain)
+
+As a Magic action, you expend a use of your Channel Divinity to choose a point within 120 feet of you that you can see and roll on the Eldritch Effects table. Each creature in a 15-foot-radius Sphere centered on that point must succeed on a Wisdom saving throw or suffer the rolled effect for 1 minute. At the end of each of its turns, the target repeats the save, ending the effect on itself on a success.
