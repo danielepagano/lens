@@ -24,6 +24,12 @@
 
   $: isCursorNode = Boolean($currentAddress && $stats?.cursor && $currentAddress === $stats.cursor)
 
+  $: pcKeys = new Set(
+    ($stats?.effective_pins_at_cursor ?? [])
+      .filter((id) => id.startsWith('pc.'))
+      .map((id) => id.slice(3).toLowerCase()),
+  )
+
   $: rendered = $nodeContent
     ? md.render(
         preprocessAnnotations(preprocessBlockquotePills($nodeContent), $currentAddress, overlay),
@@ -158,7 +164,7 @@
       </div>
     {:else}
       {#if rendered}
-        <div class="markdown-html-root" use:syncQuoteBlockAccents={rendered}>
+        <div class="markdown-html-root" use:syncQuoteBlockAccents={{ key: rendered, pcKeys }}>
           <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
           {@html rendered}
         </div>

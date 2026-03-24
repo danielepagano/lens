@@ -256,6 +256,20 @@ ul.tree-list li {
   padding-left: 0.45rem;
 }
 
+.content blockquote.has-quote-accent.is-pc-quote {
+  background: linear-gradient(
+    359deg,
+    hsl(var(--quote-bq-accent) / 0.8) 0%,
+    hsl(var(--quote-bq-accent) / 0.1) 50%,
+    transparent 100%
+  );
+  border: 3px solid hsl(var(--quote-bq-accent));
+  
+  border-style:groove;
+  border-left-width: 3px;
+  padding-left: 0.45rem;
+}
+
 .content p {
   margin-bottom: 0.66rem;
   text-indent: 1rem;
