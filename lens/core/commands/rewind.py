@@ -51,6 +51,14 @@ if TYPE_CHECKING:
     pass
 
 
+def _is_subnode_opener(ann: ParsedAnnotation) -> bool:
+    """True if *ann* is a non-closing, non-self-closing annotation with an id.
+
+    Such annotations may correspond to child nodes (section, play, design, …).
+    """
+    return not ann.closing and not ann.self_closing and ann.id is not None
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -99,17 +107,14 @@ def rewind_to_node(target: NarrativeNode, storage: Storage) -> None:
             (
                 a
                 for a in parent_anns
-                if a.operator == "section"
-                and a.id == current_key
-                and not a.closing
-                and not a.self_closing
+                if _is_subnode_opener(a) and a.id == current_key
             ),
             None,
         )
 
         if current_open_ann is None:
             raise LensException(
-                f"No [section:{current_key}] annotation found in "
+                f"No opening annotation for '{current_key}' found in "
                 f"'{parent.path_str()}'"
             )
 
@@ -129,15 +134,10 @@ def rewind_to_node(target: NarrativeNode, storage: Storage) -> None:
             new_lines.pop()
         storage.write_file(parent.md_path(), "\n".join(new_lines) + "\n")
 
-        # Delete all child nodes whose section opening annotations are now gone.
+        # Delete all child nodes whose opening annotations are now gone.
         for ann in parent_anns:
-            if (
-                ann.line_start > current_open_ann.line_end
-                and ann.operator == "section"
-                and not ann.closing
-                and not ann.self_closing
-                and ann.id is not None
-            ):
+            if ann.line_start > current_open_ann.line_end and _is_subnode_opener(ann):
+                assert ann.id is not None  # guaranteed by _is_subnode_opener
                 _delete_node(parent.child_node(ann.id), storage)
 
     # Remove any unclosed section annotation at the tail of the target's file
@@ -201,9 +201,10 @@ def rewind_to_line(target: NarrativeNode, line: int, storage: Storage) -> None:
         body_end = seg.close.line_start - 1 if seg.close is not None else total_lines
 
         if body_start <= line <= body_end:
-            if open_ann.operator == "section":
-                # Cannot retain a partial section summary or leave a section
-                # open without a child node → delete the entire section block.
+            if open_ann.id is not None and target.child_node(open_ann.id).exists():
+                # Sub-node block (section, play, design, …): cannot retain a
+                # partial summary or leave a sub-node open without a child →
+                # delete the entire block.
                 _apply_cut(
                     target, node_lines, open_ann.line_start - 1, all_anns, storage
                 )
@@ -251,15 +252,10 @@ def _apply_cut(
 
     storage.write_file(node.md_path(), new_text)
 
-    # Delete child nodes for any section opening annotations that are now gone.
+    # Delete child nodes for any sub-node opening annotations that are now gone.
     for ann in all_anns:
-        if (
-            ann.line_start > cut_line
-            and ann.operator == "section"
-            and not ann.closing
-            and not ann.self_closing
-            and ann.id is not None
-        ):
+        if ann.line_start > cut_line and _is_subnode_opener(ann):
+            assert ann.id is not None  # guaranteed by _is_subnode_opener
             _delete_node(node.child_node(ann.id), storage)
 
 
@@ -286,7 +282,11 @@ def _clean_node_tail(node: NarrativeNode, storage: Storage) -> None:
     node_text = node.md_path().read_text(encoding="utf-8")
     unclosed = find_unclosed_cursor_annotation(node_text)
 
-    if unclosed is None or unclosed.operator != "section" or unclosed.id is None:
+    if unclosed is None or unclosed.id is None:
+        return
+    # Only clean sub-node annotations (those with a matching child on disk).
+    # Non-sub-node annotations (e.g. an in-progress [write]) are left in place.
+    if not node.child_node(unclosed.id).exists():
         return
 
     node_lines = node_text.split("\n")

@@ -3,7 +3,13 @@
   import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
   import { parseCliInput, buildArgs } from '../commands/parser'
   import type { ParseState } from '../commands/parser'
-  import { getCommandSuggestions, getSuggestions, type Suggestion, type DataSources } from '../features/cli/CliAutocomplete'
+  import {
+    getCommandSuggestions,
+    getSuggestions,
+    limitCliSuggestions,
+    type Suggestion,
+    type DataSources,
+  } from '../features/cli/CliAutocomplete'
   import CliSuggestions from '../features/cli/CliSuggestions.svelte'
   import { cliOutput, transactionResult, treeRefreshTrigger, linePickMode, linePickSelection, mountCacheRefreshTrigger } from '../stores/ui'
   import { currentAddress } from '../stores/document'
@@ -210,7 +216,7 @@
 
     // Command-level suggestions
     if (state.phase === 'command') {
-      suggestions = getCommandSuggestions(COMMAND_DEFINITIONS, state.currentToken)
+      suggestions = limitCliSuggestions(getCommandSuggestions(COMMAND_DEFINITIONS, state.currentToken))
       // Hide command suggestions once a known command with a hint is fully typed
       if (activeCommandDef && !input.trim().includes(' ') && activeCommandDef.hint) {
         // Still showing command list while typing partial
@@ -231,7 +237,7 @@
     }
 
     // Get payload-level suggestions from the autocomplete engine
-    suggestions = getSuggestions(state, activeCommandDef, makeDataSources())
+    suggestions = limitCliSuggestions(getSuggestions(state, activeCommandDef, makeDataSources()))
   }
 
   // --- Completion helpers ---

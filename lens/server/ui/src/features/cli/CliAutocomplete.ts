@@ -14,6 +14,13 @@ export interface Suggestion {
   completionSuffix?: string
 }
 
+/** Hard cap on CLI suggestion chips (display + Tab cycle use the same list). */
+export const MAX_CLI_SUGGESTIONS = 32
+
+export function limitCliSuggestions(suggestions: readonly Suggestion[]): Suggestion[] {
+  return suggestions.slice(0, MAX_CLI_SUGGESTIONS)
+}
+
 /**
  * After picking a grouped dashed row: use `'-'` when longer keys exist (`artificer-*`), else `' '`.
  */
