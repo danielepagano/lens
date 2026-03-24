@@ -73,11 +73,38 @@ The `[project]` section in `lens.toml` controls project-level options:
 [project]
 narrative    = "my-campaign"   # active narrative (set by `lens use`)
 datasets     = ["rpg", "dnd"]  # optional dataset bundles (later shadows earlier)
-mount_point  = "media"         # optional: local directory for attached media files
+mount_point  = "media"         # optional: local dir, absolute path, or s3:// URI
 verbose_llm  = true            # optional: log full LLM prompts/responses at INFO level
 ```
 
-**`mount_point`** — enables the `lens attach` command and the web UI's media browser. Set it to a path relative to the project root (or an absolute path) where you keep images, videos, and documents you want to embed in narrative nodes. The directory is not managed by Lens; organise it however you like. Only files inside this directory can be attached.
+**`mount_point`** — enables the `lens attach` command and the web UI's media browser. Accepts three forms:
+
+| Form | Example | Backend |
+|------|---------|---------|
+| Relative path | `"media"` | Local directory under project root |
+| Absolute path | `"/mnt/assets"` | Local directory at the given path |
+| S3 URI | `"s3://my-bucket"` or `"s3://my-bucket/prefix"` | S3-compatible object storage |
+
+For **local** mounts, the directory is not managed by Lens; organise it however you like. Only files inside the mount directory can be attached.
+
+For **S3** mounts, credentials and endpoint are read from standard AWS environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION`). Works with any S3-compatible service (Cloudflare R2, MinIO, etc.).
+
+> **Note:** The S3 URI uses the **bucket name**, not the endpoint hostname. The endpoint comes from `AWS_ENDPOINT_URL`.
+>
+> ```toml
+> # Correct — "lens" is the bucket, "assets" is a key prefix:
+> mount_point = "s3://lens/assets"
+>
+> # Wrong — don't put the endpoint hostname in the URI:
+> # mount_point = "s3://acct-id.r2.cloudflarestorage.com/lens/assets"
+> ```
+
+All paths passed to `lens attach` are **mount-relative** — i.e. relative to the mount root, not filesystem paths:
+
+```bash
+lens attach photo.jpg --preview    # looks for "photo.jpg" inside the mount
+lens attach maps/dungeon.png       # looks for "maps/dungeon.png" inside the mount
+```
 
 **`verbose_llm`** — when `true`, each LLM call emits a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` block to the logger at `INFO` level — showing the exact prompt and full response with no raw protocol noise.
 

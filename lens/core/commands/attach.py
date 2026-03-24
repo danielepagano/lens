@@ -66,7 +66,10 @@ def attach(
     except ValueError as e:
         raise LensException(str(e))
     if not exists:
-        raise LensException(f"file not found: {relative_path}")
+        hint = ""
+        if relative_path.startswith("/") or relative_path.startswith("knowledge/") or relative_path.startswith("narrative/"):
+            hint = " (path must be relative to the mount point, not the filesystem or project)"
+        raise LensException(f"file not found in mount: {relative_path}{hint}")
 
     mtype = media_type(ext)
     if preview:

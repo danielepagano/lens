@@ -38,13 +38,18 @@ def browse_mount(
     Returns [{name, is_dir}] sorted: dirs first, then files.
     Returns [] if mount is not configured or path points to a file.
     """
-    backend = get_mount_backend(session.project_root)
+    try:
+        backend = get_mount_backend(session.project_root)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
     if backend is None:
         return []
     try:
         entries = backend.list_dir(path)
     except ValueError:
         raise HTTPException(status_code=400, detail="path escapes the mount directory")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"mount storage error: {e}")
     if entries is None:
         return []
     return entries
@@ -56,13 +61,18 @@ def proxy_mount_file(
     session: ProjectSession = Depends(get_session),
 ) -> StreamingResponse:
     """Proxy a mount-relative file, serving it with the appropriate MIME type."""
-    backend = get_mount_backend(session.project_root)
+    try:
+        backend = get_mount_backend(session.project_root)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
     if backend is None:
         raise HTTPException(status_code=404, detail="no mount configured")
     try:
         result = backend.stream_file(path)
     except ValueError:
         raise HTTPException(status_code=400, detail="path escapes the mount directory")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"mount storage error: {e}")
     if result is None:
         raise HTTPException(status_code=404, detail=f"file not found: {path}")
     stream, content_type = result
@@ -76,7 +86,10 @@ async def upload_mount_file(
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
     """Upload a file to a mount-relative directory, creating it if needed."""
-    backend = get_mount_backend(session.project_root)
+    try:
+        backend = get_mount_backend(session.project_root)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
     if backend is None:
         raise HTTPException(status_code=400, detail="no mount configured")
     filename = Path(file.filename or "upload").name
@@ -86,6 +99,8 @@ async def upload_mount_file(
         raise HTTPException(status_code=409, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"mount storage error: {e}")
     return {"status": "ok", "path": rel_path}
 
 
@@ -95,7 +110,10 @@ def delete_mount_file(
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
     """Delete a mount-relative file or empty directory."""
-    backend = get_mount_backend(session.project_root)
+    try:
+        backend = get_mount_backend(session.project_root)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
     if backend is None:
         raise HTTPException(status_code=404, detail="no mount configured")
     try:
@@ -104,6 +122,8 @@ def delete_mount_file(
         raise HTTPException(status_code=404, detail=f"not found: {path}")
     except OSError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"mount storage error: {e}")
     return {"status": "ok", "path": path}
 
 

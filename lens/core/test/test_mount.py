@@ -1,5 +1,7 @@
 """Unit tests for lens.core.mount backends and get_mount_backend factory."""
 
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUntypedClassDecorator=false, reportUntypedFunctionDecorator=false
+
 from __future__ import annotations
 
 import io
@@ -432,3 +434,24 @@ class TestGetMountBackend(unittest.TestCase):
             p = Path(tmp)
             (p / "lens.toml").write_text('[project]\nmount_point = "s3://bucket"\n')
             self.assertIsNone(get_mount_point(p))
+
+    def test_has_mount_config_false_when_missing(self) -> None:
+        from lens.core.project import has_mount_config
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            (p / "lens.toml").write_text('[project]\nnarrative = "story"\n')
+            self.assertFalse(has_mount_config(p))
+
+    def test_has_mount_config_true_for_local(self) -> None:
+        from lens.core.project import has_mount_config
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            (p / "lens.toml").write_text('[project]\nmount_point = "media"\n')
+            self.assertTrue(has_mount_config(p))
+
+    def test_has_mount_config_true_for_s3(self) -> None:
+        from lens.core.project import has_mount_config
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            (p / "lens.toml").write_text('[project]\nmount_point = "s3://bucket"\n')
+            self.assertTrue(has_mount_config(p))

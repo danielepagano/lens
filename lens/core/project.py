@@ -156,6 +156,21 @@ def require_lens_context(start: Path) -> tuple[Path, Path]:
     )
 
 
+def has_mount_config(project_root: Path) -> bool:
+    """Return ``True`` if ``mount_point`` is set in ``lens.toml`` (any backend)."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return False
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return False
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    return isinstance(raw, str) and bool(raw.strip())
+
+
 def get_mount_point(project_root: Path) -> Path | None:
     """Return the resolved mount_point path from [project] in lens.toml, or None.
 

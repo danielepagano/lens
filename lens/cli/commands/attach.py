@@ -13,9 +13,10 @@ app = typer.Typer(invoke_without_command=True, no_args_is_help=True, add_complet
 
 @app.callback()
 def attach_cmd(
-    path: str = typer.Argument(..., help="Mount-relative file path"),
+    path: str = typer.Argument(..., help="Mount-relative file path (e.g. 'photo.jpg', not a filesystem path)"),
     preview: bool = typer.Option(False, "--preview", help="Validate only, don't attach"),
 ) -> None:
+    """Attach a media object to the cursor"""
     try:
         if not path:
             raise LensException("Usage: lens attach PATH [--preview]")

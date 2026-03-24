@@ -10,6 +10,8 @@ Supports two backends selected by the ``mount_point`` value in ``lens.toml``:
   service.
 """
 
+# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false
+
 from __future__ import annotations
 
 import mimetypes
@@ -73,7 +75,7 @@ class LocalMountBackend(MountBackend):
     """Mount backend backed by a local filesystem directory."""
 
     def __init__(self, root: Path) -> None:
-        self._root = root
+        self._root = root.resolve()
 
     def _resolve(self, subpath: str) -> Path:
         full = (self._root / subpath.lstrip("/")).resolve()
@@ -167,7 +169,7 @@ def normalize_subpath(subpath: str) -> str:
 class S3MountBackend(MountBackend):
     """Mount backend backed by an S3-compatible object store (e.g. Cloudflare R2)."""
 
-    def __init__(self, bucket: str, prefix: str, s3_client: "S3Client") -> None:
+    def __init__(self, bucket: str, prefix: str, s3_client: S3Client) -> None:
         """
         Args:
             bucket: S3 bucket name.
@@ -199,8 +201,11 @@ class S3MountBackend(MountBackend):
                 Delimiter="/",
                 Prefix=dir_prefix,
             )
-        except ClientError:
-            return None
+        except ClientError as e:
+            code: str = (e.response.get("Error") or {}).get("Code", "")  # type: ignore[union-attr]
+            if code in ("NoSuchBucket", "404"):
+                return None
+            raise
 
         dirs: list[dict[str, Any]] = []
         files: list[dict[str, Any]] = []

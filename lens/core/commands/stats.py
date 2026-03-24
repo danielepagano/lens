@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from lens.core.address import NarrativeAddress
 from lens.core.context import crawl_pins
-from lens.core.project import ProjectSession, get_mount_point, get_selected_datasets, is_dataset_root, list_available_llms
+from lens.core.project import ProjectSession, has_mount_config, get_selected_datasets, is_dataset_root, list_available_llms
 from lens.core.knowledge import KnowledgeStore
 
 
@@ -75,7 +75,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             effective_pins_at_cursor = crawl_pins(node)
 
     available_llms = list_available_llms(root)
-    has_mount = get_mount_point(root) is not None
+    has_mount = has_mount_config(root)
 
     return StatsResult(
         kb_types=kb_types,
