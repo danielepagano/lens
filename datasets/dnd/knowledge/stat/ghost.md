@@ -37,5 +37,3 @@ Success: The target is immune to this ghost’s Possession for 24 hours.
 Ghosts arise when living creatures die in a state of extreme emotion or having left an important task undone. These incorporeal spirits haunt locations that are meaningful to them, lingering until their business is complete or they’re put to rest.
 
 Ghosts typically appear as semitransparent versions of the creatures they were in life, though some bear evidence of the wounds that killed them or have nightmarish distortions to their forms. Many have extreme reactions to actions, objects, or individuals that remind them of emotionally charged aspects of their lives. Particularly desperate or vengeful ghosts might possess the living to fulfill their ends.
-
-[source: https://www.dndbeyond.com/monsters/5195008-ghost]: #

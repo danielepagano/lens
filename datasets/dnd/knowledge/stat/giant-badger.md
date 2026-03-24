@@ -15,5 +15,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +3, reach 5 ft. Hit: 6 (2d4 + 1) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775817-giant-badger]: #

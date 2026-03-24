@@ -15,5 +15,3 @@
 **Actions**
 
 Talons. Melee Attack Roll: +4, reach 5 feet. Hit: 4 (1d4 + 2) Slashing damage.
-
-[source: https://www.dndbeyond.com/monsters/5194979-eagle]: #

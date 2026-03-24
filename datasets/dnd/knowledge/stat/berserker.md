@@ -27,5 +27,3 @@ Berserkers might fight for personal glory or form motivated forces or howling ho
 ### Berserkers
 
 Gripped by the adrenaline of battle, berserkers are reckless invaders, pit fighters, and other ferocious warriors.
-
-[source: https://www.dndbeyond.com/monsters/4904621-berserker]: #

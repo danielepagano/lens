@@ -30,5 +30,3 @@ Fire Breath (Recharge 5–6). Dexterity Saving Throw: DC 15, each creature in a 
 Violent and unpredictable, chimeras combine the deadliest traits of lions, rams, and red dragons. With their fearsome claws, crushing horns, and fiery breath, chimeras are tempests of ferocity, driven by their three heads’ conflicting instincts. Their heads agree on little but their desires to feed and to drive competitors from the rugged territories where these monsters make their lairs. When they spot prey, chimeras typically strafe foes with their fire breath before landing to attack with their fangs, horns, and claws.
 
 Owing to their draconic instincts, chimeras are greedy creatures that hoard treasures within cavernous lairs. They’re undiscerning about what they collect, gathering shiny objects alongside trophies and bones from their recent kills. Brave souls seeking to distract or temporarily appease a chimera can do so by offering it treasure and food.
-
-[source: https://www.dndbeyond.com/monsters/5194943-chimera]: #

@@ -28,5 +28,3 @@ Longbow. Ranged Attack Roll: +9, range 150/600 ft. Hit: 14 (2d8 + 5) Piercing da
 **Reactions**
 
 Tactical Advance. Each Free Swords ally within 30 feet of the captain can take a Reaction to move up to half its Speed without provoking Opportunity Attacks.
-
-[source: https://www.dndbeyond.com/monsters/5816991-free-swords-captain]: #

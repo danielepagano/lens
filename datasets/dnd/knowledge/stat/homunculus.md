@@ -36,5 +36,3 @@ Homunculus Features
 | 6 | Suggestive of its creator’s appearance. |
 | 7 | Underdeveloped and fleshy with beady eyes. |
 | 8 | Woven and patchwork, like a well-loved toy. |
-
-[source: https://www.dndbeyond.com/monsters/5195080-homunculus]: #

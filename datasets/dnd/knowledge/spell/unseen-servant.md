@@ -10,5 +10,3 @@ This spell creates an Invisible, mindless, shapeless, Medium force that performs
 Once on each of your turns as a Bonus Action, you can mentally command the servant to move up to 15 feet and interact with an object. The servant can perform simple tasks that a human could do, such as fetching things, cleaning, mending, folding clothes, lighting fires, serving food, and pouring drinks. Once you give the command, the servant performs the task to the best of its ability until it completes the task, then waits for your next command.
 
 If you command the servant to perform a task that would move it more than 60 feet away from you, the spell ends.
-
-[source: https://www.dndbeyond.com/spells/2619209-unseen-servant]: #

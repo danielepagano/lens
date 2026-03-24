@@ -20,5 +20,3 @@ Stage 2. The cursed creature forgets all but its closest companions, and it has 
 Stage 3. The cursed creature forgets its closest companions, its own identity, and its goals. The curse fabricates delusions of a great conspiracy only the cursed creature can prevent. The cursed creature is compelled to take any action it believes necessary to uncover this conspiracy. The creature can’t take Bonus Actions.
 
 Culmination. The cursed creature twists into a deformed figure and becomes a Dream Whisperer.
-
-[source: https://www.dndbeyond.com/spells/3014263-curse-of-lost-sentiment]: #

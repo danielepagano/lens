@@ -40,5 +40,3 @@ Masterminds of the Nine Hells and generals of infernal legions, pit fiends seek 
 Pit fiends are the nobility of the Nine Hells, and many rule Lower Planar fiefdoms, doomed mortal worlds, and other infernal redoubts. Most serve archdevils of the Nine Hells as they pursue their own ambitions. Ranks of lesser devils obey pit fiends, but these cunning tyrants remain on guard against betrayal from their servants.
 
 Smoldering with the evil of the Nine Hells, pit fiends strike fear in creatures with their mere presence. Despite their size and incredible physical and magical might, pit fiends are as likely to try to corrupt foes as they are to destroy them outright. Pit fiends’ arrogance can lead them to underestimate mortal foes—a failing that can lead to their downfall.
-
-[source: https://www.dndbeyond.com/monsters/5195162-pit-fiend]: #

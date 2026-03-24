@@ -56,5 +56,3 @@ Mind Flayer Machinations
 | 4 | Replace world leaders with intellect devourers. |
 | 5 | Restore a vessel to travel through Wildspace. |
 | 6 | Sacrifice the mental energy of a planet’s populace to take control of a githyanki bastion. |
-
-[source: https://www.dndbeyond.com/monsters/5195125-mind-flayer]: #

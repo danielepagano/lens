@@ -16,5 +16,3 @@ Earth. The target has Advantage on saving throws against being moved or knocked 
 Fire. The target has Resistance to Fire damage. In addition, when the target takes damage from a creature that is within 5 feet of it, it can take a Reaction to make one melee attack against that creature, using a weapon or an Unarmed Strike.
 
 Water. The target has Resistance to Acid damage. In addition, it can breathe underwater and has a Swim speed of 60 feet.
-
-[source: https://www.dndbeyond.com/spells/3014278-primordial-power]: #

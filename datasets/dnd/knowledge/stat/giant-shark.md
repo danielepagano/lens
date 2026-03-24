@@ -19,5 +19,3 @@ Water Breathing. The shark can breathe only underwater.
 Multiattack. The shark makes two Bite attacks.
 
 Bite. Melee Attack Roll: +9 (with Advantage if the target doesn’t have all its Hit Points), reach 5 ft. Hit: 22 (3d10 + 6) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195027-giant-shark]: #

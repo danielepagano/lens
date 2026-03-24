@@ -33,5 +33,3 @@ Smoke Bomb (2/Day). Trigger: The assassin takes damage from another creature. Re
 **Description**
 
 The Syndicate's most skilled assassins concoct specialized compounds for each mission. They can make their target spasm in pain, suffocate in silence, or simply fall unconscious, allowing the agent to wisk them away or stage the murder as desired. Their smoke bombs help them escape or turn an unexpected fight in their favour.
-
-[source: https://www.dndbeyond.com/monsters/5816987-ebon-syndicate-elite-assassin]: #

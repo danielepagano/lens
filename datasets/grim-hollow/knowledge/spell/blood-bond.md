@@ -12,5 +12,3 @@ For the duration, you know the direction and distance to the target, and you and
 At any point, the targeted creature can choose to end the spell early. If it does, the creature loses all remaining Temporary Hit Points granted by this spell and takes Necrotic damage equal to the Temporary Hit Points lost.
 
 **Using a Higher-Level Spell Slot.** The duration increases with a spell slot level 5 or 6 (8 hours), 7 or 8 (24 hours), and 9 (7 days).
-
-[source: https://www.dndbeyond.com/spells/3014209-blood-bond]: #

@@ -32,5 +32,3 @@ Chuuls originated in forgotten ages when aboleths and stranger beings ruled alie
 Many chuuls serve aboleth overlords, carrying out their whims amid lightless seas and primeval swamps. Other chuuls obey new aberrant masters, such as beholders, grells, or mind flayers. Some chuuls follow their own drives, endlessly collecting ancient magic treasures or interpreting age-old orders to bizarre ends. Regardless of their agendas, chuuls snare creatures in their massive pincers before rendering foes helpless with their paralytic tentacles.
 
 Chuuls don’t age and can lie dormant in hidden places for millennia before threats, ancient orders, or strange compulsions awaken them.
-
-[source: https://www.dndbeyond.com/monsters/5194944-chuul]: #

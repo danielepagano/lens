@@ -45,5 +45,3 @@ Mezzoloth Payments
 | 4 | Magic weapons or armor. |
 | 5 | The right to loot holy sites in places it conquers. |
 | 6 | Souls, whether as larvae or captured spirits. |
-
-[source: https://www.dndbeyond.com/monsters/5195122-mezzoloth]: #

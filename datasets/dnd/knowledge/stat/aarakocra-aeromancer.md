@@ -38,5 +38,3 @@ Aarakocra aeromancers control magical winds from the endless storms of the Eleme
 ### Aarakocra
 
 Aarakocra are birdlike folk who soar the skies of countless worlds and the endless expanses of the Elemental Plane of Air. They often resemble avians common to the lands where they dwell; some resemble hawks or condors, while others appear similar to hummingbirds or archaeopteryxes. In many lands, aarakocra tell of their ancient heroics resisting the wicked Queen of Chaos alongside the mysterious Wind Dukes of Aaqa.
-
-[source: https://www.dndbeyond.com/monsters/5194864-aarakocra-aeromancer]: #

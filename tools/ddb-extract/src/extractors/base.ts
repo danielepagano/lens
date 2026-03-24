@@ -83,14 +83,7 @@ export abstract class ListExtractor<T> {
         if (verbose) console.log(`  [fetch] ${item.url}`);
         await page.goto(item.url, { waitUntil: "networkidle", timeout: 30000 });
         const data = await this.fetchDetail(page, item);
-        // Inject source URL annotation inside the kb block (before closing fence)
-        // so it is stored with the object. Format: [ddb-source]: URL
-        // This is a markdown reference definition — renders as nothing.
-        const raw = this.format(data, source);
-        const block = raw.endsWith("\n```")
-          ? raw.slice(0, -3) + `\n[source: ${item.url}]: #\n\`\`\``
-          : raw;
-        appendBlock(outputPath, block);
+        appendBlock(outputPath, this.format(data, source));
         extracted++;
         process.stdout.write(
           `\r  extracted: ${extracted} / ${total}  failed: ${failed}    `

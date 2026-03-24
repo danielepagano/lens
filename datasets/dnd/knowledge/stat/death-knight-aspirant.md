@@ -43,5 +43,3 @@ When the leader of a villainous order rises as a death knight, their wicked devo
 ### Death Knights
 
 Champions of evil, death knights are armor-clad, skeletal warlords. Combining devastating martial prowess and blasphemous magic, these undying tyrants lead unholy legions against the living or brood in cursed citadels. Every death knight is haunted by a legacy of tragedy and dishonor that drives it to commit greater evils.
-
-[source: https://www.dndbeyond.com/monsters/5194962-death-knight-aspirant]: #

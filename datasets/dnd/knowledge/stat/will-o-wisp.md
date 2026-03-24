@@ -39,5 +39,3 @@ Will-o’-Wisp Ambushes
 | 6 | Quicksand* or pools covered in thin ice.* |
 
 *See the Dungeon Master’s Guide.
-
-[source: https://www.dndbeyond.com/monsters/5195270-will-o-wisp]: #

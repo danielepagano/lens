@@ -16,5 +16,3 @@
 Multiattack. The elephant makes two Gore attacks.
 
 Gore. Melee Attack Roll: +8, reach 5 ft. Hit: 15 (2d8 + 6) Piercing damage. If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit, the target has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/4775814-elephant]: #

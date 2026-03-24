@@ -16,5 +16,3 @@ Illumination. The beetle sheds Bright Light in a 10-foot radius and Dim Light fo
 **Actions**
 
 Bite. Melee Attack Roll: +1, reach 5 ft. Hit: 1 Fire damage.
-
-[source: https://www.dndbeyond.com/monsters/5195019-giant-fire-beetle]: #

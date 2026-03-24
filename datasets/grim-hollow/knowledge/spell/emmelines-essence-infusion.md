@@ -18,5 +18,3 @@ Fey. Your attacks with weapons deal an extra 1d4 Force damage on a hit. In addit
 Fiend. Your attacks with weapons deal an extra 1d6 Necrotic damage on a hit. You can use a Bonus Action to change this extra damage to Cold or Fire.
 
 When you cast this spell, you attune to the magic weapon. The spell’s duration lasts as long as you have Attunement to the weapon. During the spell’s duration, the magic item is susceptible to the Dispel Magic spell. If you maintain Attunement to the magic weapon for 1 year, the enchantment becomes permanent and this spell ends.
-
-[source: https://www.dndbeyond.com/spells/3014227-emmelines-essence-infusion]: #

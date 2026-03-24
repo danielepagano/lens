@@ -41,5 +41,3 @@ During times of great conflict, Sekolah blesses particularly ruthless sahuagin w
 Sahuagin are fiendish terrors that prey on creatures above and below the water. Called “sea devils” by residents of coastal communities, sahuagin are ruthless raiders. They ransack ships, fishing villages, and undersea communities to slake their bloodthirst, claim treasure, and make sacrifices to their vicious deity—the sharklike god Sekolah.
 
 Sahuagin constantly war on any peoples living near their territory. Merfolk and other aquatic folk bear the brunt of these attacks, but sahuagin also hunt air-breathers who sail over or swim through the waters the sea devils claim. Sahuagin often attack alongside sharks, which they can telepathically command.
-
-[source: https://www.dndbeyond.com/monsters/5195188-sahuagin-baron]: #

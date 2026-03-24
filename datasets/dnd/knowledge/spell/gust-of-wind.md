@@ -12,5 +12,3 @@ Any creature in the Line must spend 2 feet of movement for every 1 foot it moves
 The gust disperses gas or vapor, and it extinguishes candles and similar unprotected flames in the area. It causes protected flames, such as those of lanterns, to dance wildly and has a 50 percent chance to extinguish them.
 
 As a Bonus Action on your later turns, you can change the direction in which the Line blasts from you.
-
-[source: https://www.dndbeyond.com/spells/2619137-gust-of-wind]: #

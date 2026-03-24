@@ -33,5 +33,3 @@ Invoking mysterious rites involving four beholder eyestalks, a spellcaster can m
 A spectator serves its conjurer for 101 years by guarding something of the spellcaster’s choice—typically a treasure or location. The spectator is a reliable guardian and allows only its summoner access to what it protects. A spectator might converse with other creatures, openly discussing its orders and the magic-user who conjured it, but it has no ambitions of its own and won’t abandon its post. Should an intruder ignore its warnings, a spectator attempts to drive away the intruder with its magical eye rays.
 
 At the end of its service, a spectator might discorporate back into nothingness or wander away, seeking to learn more of the multiverse.
-
-[source: https://www.dndbeyond.com/monsters/5195209-spectator]: #

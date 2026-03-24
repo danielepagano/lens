@@ -41,5 +41,3 @@ When seen, Heralds of Calamity appear as incorporeal skeletal figures, though th
 Many monster hunters, however, have fallen believing that a Herald of Calamity would be an easy challenge. Expert archers have misfired, fatally wounding companions. Seasoned adventurers have slipped on trivial obstacles and received debilitating injuries.
 
 Regardless of the circumstance, all who have engaged a Herald of Calamity have the same advice: Rely on the maxim that if something can possibly go wrong, it will.
-
-[source: https://www.dndbeyond.com/monsters/5816995-herald-of-calamity]: #

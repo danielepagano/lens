@@ -41,5 +41,3 @@ Hydra Lairs
 | 2 | Defend the home of a wise but sinister oracle. |
 | 3 | Guard a magical herb that blooms once a year. |
 | 4 | Protect a font of poison that pollutes a river. |
-
-[source: https://www.dndbeyond.com/monsters/5195084-hydra]: #

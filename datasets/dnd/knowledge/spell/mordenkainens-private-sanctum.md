@@ -19,5 +19,3 @@ When you cast the spell, you decide what sort of security the spell provides, ch
 Casting this spell on the same spot every day for 365 days makes the spell last until dispelled.
 
 **Using a Higher-Level Spell Slot.** You can increase the size of the Cube by 100 feet for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/2619114-mordenkainens-private-sanctum]: #

@@ -18,5 +18,3 @@ Water Breathing. The swarm can breathe only underwater.
 **Actions**
 
 Bites. Melee Attack Roll: +5 (with Advantage if the target doesn’t have all its Hit Points), reach 5 ft. Hit: 8 (2d4 + 3) Piercing damage, or 5 (1d4 + 3) Piercing damage if the swarm is Bloodied.
-
-[source: https://www.dndbeyond.com/monsters/5195227-swarm-of-piranhas]: #

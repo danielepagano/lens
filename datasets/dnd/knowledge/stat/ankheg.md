@@ -40,5 +40,3 @@ Ankheg Tunnel Discoveries
 | 6 | A pouch with 2d6 GP near a puddle of acid. |
 | 7 | A stray farm or woodland animal. |
 | 8 | A viciously mauled scarecrow. |
-
-[source: https://www.dndbeyond.com/monsters/5194897-ankheg]: #

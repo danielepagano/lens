@@ -16,5 +16,3 @@ Water Breathing. The piranha can breathe only underwater.
 **Actions**
 
 Bite. Melee Attack Roll: +5 (with Advantage if the target doesn’t have all its Hit Points), reach 5 ft. Hit: 1 Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195160-piranha]: #

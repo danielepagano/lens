@@ -46,5 +46,3 @@ Guardian Naga Lore
 | 6 | Recipes using regional ingredients. |
 | 7 | Stories of forgotten gods and local spirits. |
 | 8 | The vulnerabilities of a legendary monster. |
-
-[source: https://www.dndbeyond.com/monsters/5195066-guardian-naga]: #

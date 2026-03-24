@@ -44,5 +44,3 @@ Warrior Roles
 | 8 | A retired general who is weary of battle. |
 | 9 | A volunteer with a homemade weapon. |
 | 10 | A young mercenary trying to prove their skill. |
-
-[source: https://www.dndbeyond.com/monsters/5195259-warrior-infantry]: #

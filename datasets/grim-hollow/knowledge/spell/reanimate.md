@@ -10,5 +10,3 @@ As part of casting this spell, you must expend three Hit Point Dice or the spell
 At the start of each of the target’s turns, it loses 1 Temporary Hit Point granted by this spell. While the creature has Temporary Hit Points granted by this spell, it moves with unnatural vigor, gaining a +2 bonus to ability checks, attack rolls, and saving throws. Once it loses the Temporary Hit Points granted by this spell, the creature gains 1 Exhaustion level.
 
 This spell can’t revive a creature that has died of old age, nor does it restore any missing body parts.
-
-[source: https://www.dndbeyond.com/spells/3014279-reanimate]: #

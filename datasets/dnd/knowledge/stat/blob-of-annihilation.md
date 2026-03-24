@@ -67,5 +67,3 @@ Blob of Annihilation Contents
 | 8 | The remains of half a kraken. |
 | 9 | The skull of a death god. |
 | 10 | A tarrasque that just died. |
-
-[source: https://www.dndbeyond.com/monsters/5194926-blob-of-annihilation]: #

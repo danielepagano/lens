@@ -25,5 +25,3 @@ Multiattack. The veteran makes two Longsword or Longbow attacks.
 Longsword. Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Slashing damage.
 
 Longbow. Ranged Attack Roll: +4, range 150/600 ft. Hit: 6 (1d8 + 2) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5816994-free-swords-veteran]: #

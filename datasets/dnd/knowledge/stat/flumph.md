@@ -66,5 +66,3 @@ Flumph Colors and Emotions
 | Yellow | Excitement |
 
 *Rarely seen; potentially no human equivalent
-
-[source: https://www.dndbeyond.com/monsters/5194998-flumph]: #

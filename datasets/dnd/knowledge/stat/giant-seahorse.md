@@ -16,5 +16,3 @@ Water Breathing. The seahorse can breathe only underwater.
 **Actions**
 
 Ram. Melee Attack Roll: +4, reach 5 ft. Hit: 9 (2d6 + 2) Bludgeoning damage, or 11 (2d8 + 2) Bludgeoning damage if the seahorse moved 20+ feet straight toward the target immediately before the hit.
-
-[source: https://www.dndbeyond.com/monsters/4775820-giant-seahorse]: #

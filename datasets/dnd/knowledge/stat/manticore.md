@@ -40,5 +40,3 @@ Manticore Negotiations
 | 6 | Scare or threaten someone. |
 | 7 | Serve a creature as a steed until the sun sets. |
 | 8 | Try to locate something from its vantage point in the sky. |
-
-[source: https://www.dndbeyond.com/monsters/5195115-manticore]: #

@@ -20,5 +20,3 @@ Stage 2. The cursed creature becomes compelled to eat inappropriate items such a
 Stage 3. The cursed creature becomes ravenous and is compelled to consume the flesh of Humanoids. No other food satiates it. The creature can’t have Advantage on D20 Tests.
 
 Culmination. The cursed creature twists into a deformed figure and becomes a Bloated Gastromorph.
-
-[source: https://www.dndbeyond.com/spells/3014264-curse-of-ravenous-hunger]: #

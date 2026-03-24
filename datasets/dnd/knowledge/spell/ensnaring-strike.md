@@ -10,5 +10,3 @@ As you hit the target, grasping vines appear on it, and it makes a Strength savi
 While Restrained, the target takes 1d6 Piercing damage at the start of each of its turns. The target or a creature within reach of it can take an action to make a Strength (Athletics) check against your spell save DC. On a success, the spell ends.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d6 for each spell slot level above 1.
-
-[source: https://www.dndbeyond.com/spells/2619172-ensnaring-strike]: #

@@ -10,5 +10,3 @@ You conjure spirits from the Elemental Planes that flit around you in a 15-foot 
 In addition, the ground in the Emanation is Difficult Terrain for your enemies.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d8 for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/2619049-conjure-minor-elementals]: #

@@ -61,5 +61,3 @@ Frigid Cold. The area within 1 mile of the lair is an area of extreme cold. Any 
 Glacial Gloom. The area within 1 mile of the lair is Lightly Obscured by chilly fog. Whenever a creature other than the dragon or one of its allies finishes a Long Rest in that area, that creature must succeed on a DC 15 Constitution saving throw or have its Speed reduced by 10 feet for 1 hour.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194889-ancient-white-dragon]: #

@@ -30,5 +30,3 @@ Bugbear warriors serve those who offer them treasure, food, or the chance to hun
 ### Bugbears
 
 Bugbears embody fear of the wilds and the menace of natural places. They’re notoriously stealthy, and foes that venture into their territories often vanish without a trace.
-
-[source: https://www.dndbeyond.com/monsters/4831002-bugbear-warrior]: #

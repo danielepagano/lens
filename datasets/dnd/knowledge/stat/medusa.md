@@ -39,5 +39,3 @@ Medusa Fates
 | 4 | An explorer transformed and compelled to defend a cursed ruin. |
 | 5 | A vain noble whose magical attempt to gain eternal beauty backfired. |
 | 6 | The victim of a bite from a magical serpent or reptilian god in disguise. |
-
-[source: https://www.dndbeyond.com/monsters/5195118-medusa]: #

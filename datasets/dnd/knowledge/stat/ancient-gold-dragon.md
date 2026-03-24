@@ -68,5 +68,3 @@ Dream Messenger. While in its lair, the dragon can cast Dream, requiring no Mate
 Foretelling Fog. The area within 1 mile of the lair is Lightly Obscured by opalescent fog. While in that area, creatures can’t be surprised, as the fog swirls into shapes that warn of danger.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194885-ancient-gold-dragon]: #

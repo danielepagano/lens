@@ -22,5 +22,3 @@ Object into Creature. You can turn an object into any kind of creature, as long 
 If the spell lasts more than an hour, you no longer control the creature. It might remain Friendly to you, depending on how you have treated it.
 
 Creature into Object. If you turn a creature into an object, it transforms along with whatever it is wearing and carrying into that form, as long as the object’s size is no larger than the creature’s size. The creature’s statistics become those of the object, and the creature has no memory of time spent in this form after the spell ends and it returns to normal.
-
-[source: https://www.dndbeyond.com/spells/2619198-true-polymorph]: #

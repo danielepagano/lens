@@ -16,5 +16,3 @@
 Multiattack. The triceratops makes two Gore attacks.
 
 Gore. Melee Attack Roll: +9, reach 5 ft. Hit: 19 (2d12 + 6) Piercing damage. If the target is Huge or smaller and the triceratops moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/5195238-triceratops]: #

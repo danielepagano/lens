@@ -33,5 +33,3 @@ Common performers include traveling storytellers, tavern musicians, local entert
 From royal courts to village squares, skilled entertainers hone their talents and delight audiences. Some travel far, sharing tales and demonstrating mysterious arts. Others serve in the courts and theaters of great nations, cultivating celebrity and navigating the whims of patrons. Many hone professional secrets and magical flourishes, striving to make their performances truly unforgettable.
 
 Use the following list of entertainers and roles to inspire the performers in your adventures:
-
-[source: https://www.dndbeyond.com/monsters/5195156-performer]: #

@@ -41,5 +41,3 @@ Druid Traditions
 | 4 | A mender who travels the world healing natural, magical, or manufactured disasters. |
 | 5 | Part of a loose organization that adheres to timeless rituals and guards natural secrets. |
 | 6 | A warden who minds the underpinnings of reality and protects against extraplanar threats. |
-
-[source: https://www.dndbeyond.com/monsters/5194976-druid]: #

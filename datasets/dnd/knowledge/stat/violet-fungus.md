@@ -27,5 +27,3 @@ Slow but mobile, violet fungi rot any flesh they touch with their lashing tendri
 ### Fungi
 
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
-
-[source: https://www.dndbeyond.com/monsters/5195254-violet-fungus]: #

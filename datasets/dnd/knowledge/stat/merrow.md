@@ -29,5 +29,3 @@ Harpoon. Melee or Ranged Attack Roll: +6, reach 5 ft. or range 20/60 ft. Hit: 11
 Vicious aquatic hunters, merrow combine the features of ogres with those of primeval, predatory fish. They lurk in coastal waters, hoping to snare unsuspecting prey by bursting from the water and grabbing their quarry or by skewering victims with deadly harpoons. These hunters then drag land dwellers back to dismal undersea lairs. Merrow often keep prisoners in their larders as future meals.
 
 Merrow raid coastal settlements and merfolk communities to steal weapons and treasure. This leads to conflicts between merfolk and merrow, but it also provokes misunderstandings with surface dwellers who blame merfolk for merrow attacks.
-
-[source: https://www.dndbeyond.com/monsters/5195121-merrow]: #

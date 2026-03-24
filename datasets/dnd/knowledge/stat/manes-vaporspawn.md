@@ -29,5 +29,3 @@ Vaporspawn arise from evil souls shattered by unspeakable torments or the depred
 ### Manes
 
 The lowest form of demons, manes appear when truly loathsome souls are condemned to the Abyss. These misshapen demons have distorted features and bodies that crawl with Abyssal parasites. Overwhelmed by demonic urges and constant terror, manes know only shock and frenzied outbursts.
-
-[source: https://www.dndbeyond.com/monsters/5195113-manes-vaporspawn]: #

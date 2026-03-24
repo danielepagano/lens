@@ -12,5 +12,3 @@ A target that is held shut by a mundane lock or that is stuck or barred becomes 
 If the target is held shut by Arcane Lock, that spell is suppressed for 10 minutes, during which time the target can be opened and closed.
 
 When you cast the spell, a loud knock, audible up to 300 feet away, emanates from the target.
-
-[source: https://www.dndbeyond.com/spells/2618992-knock]: #

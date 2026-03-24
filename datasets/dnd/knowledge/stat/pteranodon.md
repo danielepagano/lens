@@ -17,5 +17,3 @@ Flyby. The pteranodon doesn’t provoke an Opportunity Attack when it flies out 
 **Actions**
 
 Bite. Melee Attack Roll: +4, reach 5 ft. Hit: 6 (1d8 + 2) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195173-pteranodon]: #

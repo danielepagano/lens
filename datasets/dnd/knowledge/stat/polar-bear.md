@@ -17,5 +17,3 @@
 Multiattack. The bear makes two Rend attacks.
 
 Rend. Melee Attack Roll: +7, reach 5 ft. Hit: 9 (1d8 + 5) Slashing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195167-polar-bear]: #

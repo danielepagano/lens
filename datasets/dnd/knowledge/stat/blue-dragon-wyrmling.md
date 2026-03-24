@@ -34,5 +34,3 @@ Arrogant and imperious, blue dragons are chromatic dragons that crave control an
 Blue dragons have sharp features with piercing horns and scales that range from sapphire to the shades of stormy skies. They dwell in deserts and badlands, particularly regions with dramatic spires from whose tops they might see for miles. They seek lairs near sites of symbolic power, such as the abandoned fortresses of giants, the colossi of fallen empires, or monuments raised by their followers.
 
 Regalia of rulership and artistic masterpieces fill blue dragons’ hoards. These dragons have no interest in treasures that are common or flawed, preferring one-of-a-kind gemstones, the crowns of fallen royals, and magic items capable of spreading the dragons’ influence.
-
-[source: https://www.dndbeyond.com/monsters/5194928-blue-dragon-wyrmling]: #

@@ -31,5 +31,3 @@ When devils drive hosts of lemures into close proximity or when lemures compress
 ### Lemures
 
 The least of all devils, lemures arise from wicked souls, their mortal memories scoured away. Only vague limbs and anguished features jut from these slurries of infernal proto-matter.
-
-[source: https://www.dndbeyond.com/monsters/5195226-swarm-of-lemures]: #

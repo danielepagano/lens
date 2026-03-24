@@ -10,5 +10,3 @@ One creature or loose object of your choice that you can see within range rises 
 The target can move only by pushing or pulling against a fixed object or surface within reach (such as a wall or a ceiling), which allows it to move as if it were climbing. You can change the target’s altitude by up to 20 feet in either direction on your turn. If you are the target, you can move up or down as part of your move. Otherwise, you can take a Magic action to move the target, which must remain within the spell’s range.
 
 When the spell ends, the target floats gently to the ground if it is still aloft.
-
-[source: https://www.dndbeyond.com/spells/2618994-levitate]: #

@@ -12,5 +12,3 @@ In addition, the spell damages types of creatures that you choose when you cast 
 You can designate a password when you cast the spell. A creature that speaks the password as it enters the area takes no damage from the spell.
 
 The spell’s area can’t overlap with the area of another Forbiddance spell. If you cast Forbiddance every day for 30 days in the same location, the spell lasts until it is dispelled, and the Material components are consumed on the last casting.
-
-[source: https://www.dndbeyond.com/spells/2618913-forbiddance]: #

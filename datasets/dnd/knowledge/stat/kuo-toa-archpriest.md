@@ -83,5 +83,3 @@ Kuo-toa Ritual Sites
 | 6 | A pool filled with jellyfish, eels, or fish roe that glow in organized patterns. |
 | 7 | A punishment chamber exposed to the light of the surface. |
 | 8 | A towering statue of a kuo-toa deity. |
-
-[source: https://www.dndbeyond.com/monsters/5195098-kuo-toa-archpriest]: #

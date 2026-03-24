@@ -18,5 +18,3 @@ While possessing a body, you can take a Magic action to return from the host bod
 If the container is destroyed or the spell ends, your soul returns to your body. If your body is more than 100 feet away from you or if your body is dead, you die. If another creature’s soul is in the container when it is destroyed, the creature’s soul returns to its body if the body is alive and within 100 feet. Otherwise, that creature dies.
 
 When the spell ends, the container is destroyed.
-
-[source: https://www.dndbeyond.com/spells/2619021-magic-jar]: #

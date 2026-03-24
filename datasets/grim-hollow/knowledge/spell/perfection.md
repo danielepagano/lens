@@ -18,5 +18,3 @@ Morael: The target gains 30 Temporary Hit Points. When an ally within 60-feet of
 Solyma: The target becomes immune to Thunder damage. When the target takes damage from a creature it can see, it can take a Reaction to deal Fire damage to that creature equal to the amount of damage dealt to it.
 
 Zabriel: The target gains Truesight with a range of 60 feet. At the end of its turn, the target can award Heroic Inspiration to an ally that doesn’t have it.
-
-[source: https://www.dndbeyond.com/spells/3014274-perfection]: #

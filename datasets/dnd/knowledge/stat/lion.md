@@ -23,5 +23,3 @@ Multiattack. The lion makes two Rend attacks. It can replace one attack with a u
 Rend. Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Slashing damage.
 
 Roar. Wisdom Saving Throw: DC 11, one creature within 15 feet. Failure: The target has the Frightened condition until the start of the lion’s next turn.
-
-[source: https://www.dndbeyond.com/monsters/4775826-lion]: #

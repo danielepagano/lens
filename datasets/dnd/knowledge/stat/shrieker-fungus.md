@@ -25,5 +25,3 @@ If exposed to light or otherwise disturbed, mushroomlike shriekers emit a high-p
 ### Fungi
 
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
-
-[source: https://www.dndbeyond.com/monsters/5195205-shrieker-fungus]: #

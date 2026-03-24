@@ -21,5 +21,3 @@ Club. Melee Attack Roll: +2, reach 5 ft. Hit: 2 (1d4) Bludgeoning damage.
 **Description**
 
 Commoners constitute the majority of people who don’t pursue magical talents, extraordinary training, or a life of adventure. Some are generous, helpful sorts, while others are more cautious in sharing what they have. Use the following list of jobs and roles to introduce commoners in your adventures:
-
-[source: https://www.dndbeyond.com/monsters/5194951-commoner]: #

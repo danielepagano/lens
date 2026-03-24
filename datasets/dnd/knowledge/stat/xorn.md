@@ -47,5 +47,3 @@ Xorn Delicacies
 | 6 | Parts of a galeb duhr or stone golem. |
 | 7 | A piece of a meteor or moon. |
 | 8 | The stone crowning a mountain peak. |
-
-[source: https://www.dndbeyond.com/monsters/5195274-xorn]: #

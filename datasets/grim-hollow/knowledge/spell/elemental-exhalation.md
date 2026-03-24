@@ -20,5 +20,3 @@ Water. The damage type is Acid. Each creature that fails the saving throw has th
 Each creature within a 30-foot Cone of destructive elemental energy must make a Dexterity saving throw. On a failed save, a target takes 5d6 damage of the chosen type. On a successful save, the target takes half as much damage only.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d6 for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/3014226-elemental-exhalation]: #

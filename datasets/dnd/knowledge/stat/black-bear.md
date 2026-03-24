@@ -17,5 +17,3 @@
 Multiattack. The bear makes two Rend attacks.
 
 Rend. Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Slashing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775804-black-bear]: #

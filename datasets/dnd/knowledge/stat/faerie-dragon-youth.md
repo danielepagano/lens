@@ -34,5 +34,3 @@ Faerie dragon youths are quick to use their euphoria-inducing breath on rude or 
 ### Faerie Dragons
 
 Faerie dragons are cat-size pranksters with draconic features, butterfly-like wings, and scales of warm hues as youths and cool hues as adults.
-
-[source: https://www.dndbeyond.com/monsters/5194992-faerie-dragon-youth]: #

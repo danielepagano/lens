@@ -39,5 +39,3 @@ Treant Secrets
 | 4 | The last lore keeper of lost druidic knowledge. |
 | 5 | Rooted on a hero’s burial mound and animates trees that look like questing knights. |
 | 6 | Scarred by a fire and holds the bones of the arsonist who started it in a hollow. |
-
-[source: https://www.dndbeyond.com/monsters/5195236-treant]: #

@@ -46,5 +46,3 @@ Flesh Golem Characteristics
 | 4 | Parts serving unintended roles, like a body composed of dozens of hands. |
 | 5 | Perfect features accented by beautiful stitching. |
 | 6 | Visible mechanisms, bellows, and engines. |
-
-[source: https://www.dndbeyond.com/monsters/5194997-flesh-golem]: #

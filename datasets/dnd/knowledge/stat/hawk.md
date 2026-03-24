@@ -15,5 +15,3 @@
 **Actions**
 
 Talons. Melee Attack Roll: +5, reach 5 ft. Hit: 1 Slashing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775824-hawk]: #

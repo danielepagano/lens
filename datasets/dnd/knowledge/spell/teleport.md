@@ -34,5 +34,3 @@ Similar Area. You and your group (or the target object) appear in a different ar
 Off Target. You and your group (or the target object) appear 2d12 miles away from the destination in a random direction. Roll 1d8 for the direction: 1, east; 2, southeast; 3, south; 4, southwest; 5, west; 6, northwest; 7, north; or 8, northeast.
 
 On Target. You and your group (or the target object) appear where you intended.
-
-[source: https://www.dndbeyond.com/spells/2619163-teleport]: #

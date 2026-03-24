@@ -10,5 +10,3 @@ You magically mark one creature you can see within range as your quarry. Until t
 If the target drops to 0 Hit Points before this spell ends, you can take a Bonus Action to move the mark to a new creature you can see within range.
 
 **Using a Higher-Level Spell Slot.** Your Concentration can last longer with a spell slot of level 3–4 (up to 8 hours) or 5+ (up to 24 hours).
-
-[source: https://www.dndbeyond.com/spells/2619166-hunters-mark]: #

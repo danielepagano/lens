@@ -47,5 +47,3 @@ Roper Hazards
 | 8 | Razorvine* or similar dangerous plants. |
 
 *See the Dungeon Master’s Guide.
-
-[source: https://www.dndbeyond.com/monsters/5195185-roper]: #

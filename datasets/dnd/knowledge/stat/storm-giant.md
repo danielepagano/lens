@@ -33,5 +33,3 @@ At Will: Detect Magic, Light
 **Description**
 
 Among the tallest giants, storm giants live amid extreme forces of nature. In palaces at the bottom of the sea and castles floating amid the clouds, they revel in the power of mighty storms. When angered, they can shape the weather and call down devastating lightning. More often, though, these giants watch the rise and fall of nations and interpret supernatural omens, interfering in the world only when they’re needed most.
-
-[source: https://www.dndbeyond.com/monsters/5195221-storm-giant]: #

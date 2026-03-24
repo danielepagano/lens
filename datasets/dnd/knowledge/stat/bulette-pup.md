@@ -26,5 +26,3 @@ Juvenile bulettes are known as pups. They travel in small groups, using their nu
 ### Bulettes
 
 Also called “land sharks,” bulettes are single-minded predators that burrow under, leap over, and burst through obstacles in pursuit of their quarry. They burrow rapidly just belowground. On sensing movement, they erupt from below, attempting to catch prey in their oversize maws.
-
-[source: https://www.dndbeyond.com/monsters/5194935-bulette-pup]: #

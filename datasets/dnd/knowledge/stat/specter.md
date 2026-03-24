@@ -38,5 +38,3 @@ Specter Haunts
 | 6 | The sanctuary of a necromancer or death cult. |
 | 7 | A secluded monument binding wicked souls. |
 | 8 | The site of a disaster or mass death. |
-
-[source: https://www.dndbeyond.com/monsters/5195210-specter]: #

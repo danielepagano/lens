@@ -10,5 +10,3 @@ You touch a willing creature. For the duration, the target’s movement is unaff
 In addition, the target can spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature imposing the Grappled condition on it.
 
 **Using a Higher-Level Spell Slot.** You can target one additional creature for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/2618921-freedom-of-movement]: #

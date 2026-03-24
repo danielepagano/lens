@@ -10,5 +10,3 @@ A thin sheet of flames shoots forth from you. Each creature in a 15-foot Cone ma
 Flammable objects in the Cone that aren’t being worn or carried start burning.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d6 for each spell slot level above 1.
-
-[source: https://www.dndbeyond.com/spells/2618946-burning-hands]: #

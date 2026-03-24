@@ -12,5 +12,3 @@ If you chose a spell, each creature prepares the spell, the spell is considered 
 The creature loses the knowledge of the spell, proficiency, or language when this spell ends. If a creature is targeted by this spell while under the effect of a previous casting of the spell, the previous casting immediately ends.
 
 **Using a Higher-Level Spell Slot.** The duration of the spell increases with a spell slot level of 3 or 4 (3 days), 5 or 6 (10 days), 7 or 8 (30 days), or 9 (1 year).
-
-[source: https://www.dndbeyond.com/spells/3014267-maelfas-quickened-class]: #

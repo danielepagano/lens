@@ -14,5 +14,3 @@
 **Actions**
 
 Sting. Melee Attack Roll: +2, reach 5 ft. Hit: 1 Piercing damage plus 3 (1d6) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/4775840-scorpion]: #

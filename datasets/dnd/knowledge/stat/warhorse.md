@@ -14,5 +14,3 @@
 **Actions**
 
 Hooves. Melee Attack Roll: +6, reach 5 ft. Hit: 9 (2d4 + 4) Bludgeoning damage. If the target is a Large or smaller creature and the horse moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/4775848-warhorse]: #

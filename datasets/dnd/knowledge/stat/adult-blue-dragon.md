@@ -66,5 +66,3 @@ Sinkholes. Sinkholes form more frequently in the area within 1 mile of the lair.
 Spiteful Storms. Dust devils and thunderstorms rage within 1 mile of the lair. The area is Lightly Obscured.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194870-adult-blue-dragon]: #

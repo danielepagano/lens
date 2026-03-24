@@ -14,5 +14,3 @@ As part of casting this spell, you must expend one Hit Point Die or the spell au
 - Each time a creature takes damage from this weapon, its Hit Point maximum decreases by an amount equal to the damage taken.
 
 **Using a Higher-Level Spell Slot.** If you cast this spell using a level 3-4 spell slot, you can make two weapon attacks with this weapon when you take the Attack action. If you use a level 5+ spell slot, you can make three weapon attacks with this weapon when you take the Attack action.
-
-[source: https://www.dndbeyond.com/spells/3014222-crimson-lash]: #

@@ -33,5 +33,3 @@ Pixies spend their days frolicking and exploring and avoid direct conflict when 
 ### Pixies
 
 Barely a foot tall, pixies resemble diminutive elves with gossamer wings. They invisibly observe those who enter their wooded homes, revealing themselves to those with friendly intentions. Those who are unfriendly become the targets of pixies’ pranks.
-
-[source: https://www.dndbeyond.com/monsters/5195164-pixie]: #

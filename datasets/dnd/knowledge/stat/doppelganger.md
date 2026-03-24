@@ -39,5 +39,3 @@ Doppelganger Deceptions
 | 4 | Replace a noble to enjoy a decadent lifestyle. |
 | 5 | Spy on wizards to learn how to complete its own botched magical creation. |
 | 6 | Take an influential position, acting as a sleeper agent for a doppelganger invasion. |
-
-[source: https://www.dndbeyond.com/monsters/5174955-doppelganger]: #

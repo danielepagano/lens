@@ -19,5 +19,3 @@ Running Leap. With a 10-foot running start, the tiger can Long Jump up to 25 fee
 Multiattack. The tiger makes two Rend attacks.
 
 Rend. Melee Attack Roll: +6, reach 5 ft. Hit: 11 (2d6 + 4) Slashing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195187-saber-toothed-tiger]: #

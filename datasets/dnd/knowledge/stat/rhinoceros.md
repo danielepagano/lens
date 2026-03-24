@@ -14,5 +14,3 @@
 **Actions**
 
 Gore. Melee Attack Roll: +7, reach 5 ft. Hit: 14 (2d8 + 5) Piercing damage. If target is a Large or smaller creature and the rhinoceros moved 20+ feet straight toward it immediately before the hit, the target takes an extra 9 (2d8) Piercing damage and has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/5195183-rhinoceros]: #

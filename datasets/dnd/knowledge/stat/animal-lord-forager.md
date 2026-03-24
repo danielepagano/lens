@@ -71,5 +71,3 @@ Forager Animal Lord Appearances
 | 8 | Sloth |
 | 9 | Stag |
 | 10 | Vulture |
-
-[source: https://www.dndbeyond.com/monsters/5194890-animal-lord-forager]: #

@@ -47,5 +47,3 @@ Pseudodragon Treats
 | 8 | Time-consuming beauty treatments. |
 | 9 | To hear a bedtime story or favorite song. |
 | 10 | Trophies and important-sounding titles. |
-
-[source: https://www.dndbeyond.com/monsters/4775834-pseudodragon]: #

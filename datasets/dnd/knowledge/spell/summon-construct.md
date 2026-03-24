@@ -10,5 +10,3 @@ You call forth the spirit of a Construct. It manifests in an unoccupied space th
 The creature is an ally to you and your allies. In combat, the creature shares your Initiative count, but it takes its turn immediately after yours. It obeys your verbal commands (no action required by you). If you don’t issue any, it takes the Dodge action and uses its movement to avoid danger.
 
 **Using a Higher-Level Spell Slot.** Use the spell slot’s level for the spell’s level in the stat block.
-
-[source: https://www.dndbeyond.com/spells/2619111-summon-construct]: #

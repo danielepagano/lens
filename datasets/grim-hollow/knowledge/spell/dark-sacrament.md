@@ -16,5 +16,3 @@ Unerring. Your Proficiency Bonus increases by 2.
 Your dark blessing ends after 10 minutes or when you are reduced to 0 Hit Points, whichever happens first.
 
 **Using a Higher-Level Spell Slot.** The initial damage increases by 1d8 for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/3014224-dark-sacrament]: #

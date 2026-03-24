@@ -42,5 +42,3 @@ Sea Hag Disguises
 | 4 | Panic-spreading prophesier of doom. |
 | 5 | Ship captain and delivers passengers to the hag’s pet sea monster. |
 | 6 | Wounded sailor and claims their ship was destroyed by merfolk or other peaceful people. |
-
-[source: https://www.dndbeyond.com/monsters/5195198-sea-hag]: #

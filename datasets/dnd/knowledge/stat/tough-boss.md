@@ -31,5 +31,3 @@ Tough bosses leverage their street smarts, brawling prowess, and reputation to c
 ### Toughs
 
 Bodyguards, belligerents, and laborers, toughs rely on their physical strength to intimidate foes. They might be brawny criminals, rowdy tavern goers, seasoned workers, or anyone who uses their muscle to get what they want.
-
-[source: https://www.dndbeyond.com/monsters/4904883-tough-boss]: #

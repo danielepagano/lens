@@ -71,5 +71,3 @@ Hunter Animal Lord Appearances
 | 8 | Shark |
 | 9 | Snake |
 | 10 | Wolf |
-
-[source: https://www.dndbeyond.com/monsters/5194891-animal-lord-hunter]: #

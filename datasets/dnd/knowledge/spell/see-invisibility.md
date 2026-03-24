@@ -6,5 +6,3 @@
 **Duration**: 1 Hour
 
 For the duration, you see creatures and objects that have the Invisible condition as if they were visible, and you can see into the Ethereal Plane. Creatures and objects there appear ghostly.
-
-[source: https://www.dndbeyond.com/spells/2619011-see-invisibility]: #

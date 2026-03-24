@@ -19,5 +19,3 @@ Multiattack. The ape makes two Fist attacks.
 Fist. Melee Attack Roll: +9, reach 10 ft. Hit: 22 (3d10 + 6) Bludgeoning damage.
 
 Boulder Toss (Recharge 6). The ape hurls a boulder at a point it can see within 90 feet. Dexterity Saving Throw: DC 17, each creature in a 5-foot-radius Sphere centered on that point. Failure: 24 (7d6) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition. Success: Half damage only.
-
-[source: https://www.dndbeyond.com/monsters/5195010-giant-ape]: #

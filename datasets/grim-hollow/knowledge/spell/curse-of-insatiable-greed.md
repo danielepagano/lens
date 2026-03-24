@@ -20,5 +20,3 @@ Stage 2. The cursed creature finds a secret place to start stashing its stolen t
 Stage 3. The cursed creature is driven to transform its hoard of trinkets into a labyrinth of possessions and treasure. The cursed creature desires to remain in this lair. The creature can’t take Reactions.
 
 Culmination. The cursed creature twists into a deformed figure and becomes a Verminous Abomination.
-
-[source: https://www.dndbeyond.com/spells/3014262-curse-of-insatiable-greed]: #

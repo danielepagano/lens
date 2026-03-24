@@ -12,5 +12,3 @@ The creature returns to life with all its Hit Points. This spell also neutralize
 Coming back from the dead is an ordeal. The target takes a −4 penalty to D20 Tests. Every time the target finishes a Long Rest, the penalty is reduced by 1 until it becomes 0.
 
 Casting this spell to revive a creature that has been dead for 365 days or longer taxes you. Until you finish a Long Rest, you can’t cast spells again, and you have Disadvantage on D20 Tests.
-
-[source: https://www.dndbeyond.com/spells/2618953-resurrection]: #

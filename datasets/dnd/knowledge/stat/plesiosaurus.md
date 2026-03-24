@@ -17,5 +17,3 @@ Hold Breath. The plesiosaurus can hold its breath for 1 hour.
 **Actions**
 
 Bite. Melee Attack Roll: +6, reach 10 ft. Hit: 11 (2d6 + 4) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195166-plesiosaurus]: #

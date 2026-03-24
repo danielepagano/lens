@@ -36,5 +36,3 @@ Gregarious and outgoing, brass dragons relish sharing knowledge and stories. Alt
 Brass dragons favor warm climes, particularly steppes and rocky or sandy deserts, and they usually dwell near prominent crossroads or oases that regularly draw visitors. They enjoy adopting Humanoid forms, disguising themselves as traveling merchants, scholars, storytellers, or anyone else invested in others’ stories.
 
 Brass dragons collect eclectic objects. While such items might seem like knickknacks, each is part of a story—perhaps a nostalgic memento or evidence of a tale passed into myth. An old friend’s hat and the crown of the last ruler of a forgotten dynasty could occupy the same shelf in a brass dragon’s hoard.
-
-[source: https://www.dndbeyond.com/monsters/5195279-young-brass-dragon]: #

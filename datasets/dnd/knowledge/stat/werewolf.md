@@ -28,5 +28,3 @@ Longbow (Humanoid or Hybrid Form Only). Ranged Attack Roll: +4, range 150/600 ft
 **Description**
 
 Werewolves change from their humanoid forms into fierce wolves or wolf-humanoid hybrids. Werewolves can shape-shift voluntarily, but many can’t resist transforming during the nights of a full moon.
-
-[source: https://www.dndbeyond.com/monsters/5195267-werewolf]: #

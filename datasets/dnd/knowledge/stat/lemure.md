@@ -27,5 +27,3 @@ Lemures torment weaker creatures, but in the Nine Hells, few such beings exist. 
 ### Lemures
 
 The least of all devils, lemures arise from wicked souls, their mortal memories scoured away. Only vague limbs and anguished features jut from these slurries of infernal proto-matter.
-
-[source: https://www.dndbeyond.com/monsters/5195105-lemure]: #

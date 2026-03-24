@@ -48,5 +48,3 @@ Mysterious rites and mighty faith can tie spirits to their corpses, binding them
 Mummies pursue those who offend them, typically mortals who desecrate their resting places, steal their burial treasures, or defile sites tied to their faith. With undying rage, these ancient corpses go to extreme lengths to avenge themselves and restore what they need to find peace.
 
 A mummy might look frail, but its body possesses supernatural strength, and its gaze can strike fear in the bravest hearts. Those who escape a mummy’s grasp might find themselves subject to a terrible curse. Victims of a mummy’s curse gradually wither, their bodies rotting away until they’re reduced to dust. This curse can be healed only by the Remove Curse spell or similar magic.
-
-[source: https://www.dndbeyond.com/monsters/5195135-mummy]: #

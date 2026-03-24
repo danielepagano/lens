@@ -54,5 +54,3 @@ Modron Operations
 | 6 | Remove a forest, mountain, or city before the arrival of a modron procession. |
 | 7 | Seal off a planar rift or wild magic zone. |
 | 8 | Wage war with demons, slaadi, or chaotic Fey. |
-
-[source: https://www.dndbeyond.com/monsters/5195132-modron-tridrone]: #

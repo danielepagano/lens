@@ -16,5 +16,3 @@ Flyby. The wasp doesn’t provoke an Opportunity Attack when it flies out of an 
 **Actions**
 
 Sting. Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Piercing damage plus 5 (2d4) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/5195032-giant-wasp]: #

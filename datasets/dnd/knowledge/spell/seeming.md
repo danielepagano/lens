@@ -12,5 +12,3 @@ You can give the same appearance or different ones to the targets. The spell can
 The changes wrought by this spell fail to hold up to physical inspection. For example, if you use this spell to add a hat to a creature’s outfit, objects pass through the hat.
 
 A creature that takes the Study action to examine a target can make an Intelligence (Investigation) check against your spell save DC. If it succeeds, it becomes aware that the target is disguised.
-
-[source: https://www.dndbeyond.com/spells/2619014-seeming]: #

@@ -39,5 +39,3 @@ Shadow Shapes
 | 4 | A grim storybook character that follows those who speak its name. |
 | 5 | Its target, acting in eerie pantomime. |
 | 6 | An ominous priest that haunts a defiled site. |
-
-[source: https://www.dndbeyond.com/monsters/5174958-shadow]: #

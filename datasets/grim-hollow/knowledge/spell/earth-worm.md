@@ -10,5 +10,3 @@ You transform the earth into a wormlike maw at an unoccupied point on the ground
 A creature trapped within the worm can take an action to make a Strength (Athletics) check against your spell save DC. If it succeeds, it is regurgitated and has the Prone condition in an unoccupied space within 10 feet of the worm.
 
 As a Bonus Action, you can move the worm up to 30 feet.
-
-[source: https://www.dndbeyond.com/spells/3014225-earth-worm]: #

@@ -68,5 +68,3 @@ Buoying Currents. Creatures within 1 mile of the lair that lack a Swim Speed ign
 Sun and Storms. While in its lair, the dragon can cast Control Weather, requiring no Material components and using the same spellcasting ability as its Spellcasting action. When casting the spell this way, the dragon can control the weather within 1 mile of its lair, regardless if the dragon is inside or outside.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5198155-adult-bronze-dragon]: #

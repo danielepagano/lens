@@ -44,5 +44,3 @@ Dryad Sanctuaries
 | 4 | A lonely tree that stands atop a windswept mountain or amid a petrified forest. |
 | 5 | A plant with magic fruit or remarkable seeds. |
 | 6 | A shambling mound or treant that the dryad lives in or around as a Fey symbiote. |
-
-[source: https://www.dndbeyond.com/monsters/5194977-dryad]: #

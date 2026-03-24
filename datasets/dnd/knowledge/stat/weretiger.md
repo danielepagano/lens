@@ -35,5 +35,3 @@ Weretiger Wards
 | 2 | Proving ground for prophesied heroes. |
 | 3 | Rare species of magical plant or animal. |
 | 4 | Sacred fountain with magical waters. |
-
-[source: https://www.dndbeyond.com/monsters/5195266-weretiger]: #

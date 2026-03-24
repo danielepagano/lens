@@ -58,5 +58,3 @@ Arcane Rift Summoning. The archmage targets one Arcane Rift it can see within 12
 **Description**
 
 Full-fledged Thaumaturge mages are arcane powerhouses. They can easily manipulate magic thrown at them, and teleport around the battlefield while throwing spells at their opponents. They can summon devastating rifts to unleash destructive energy or summon monstrous allies. Multiple mages can combine energies for even grander feats.
-
-[source: https://www.dndbeyond.com/monsters/5817001-thaumaturge-archmage]: #

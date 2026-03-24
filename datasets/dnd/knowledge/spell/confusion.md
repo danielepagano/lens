@@ -17,5 +17,3 @@ Each creature in a 10-foot-radius Sphere centered on a point you choose within r
 At the end of each of its turns, an affected target repeats the save, ending the spell on itself on a success.
 
 **Using a Higher-Level Spell Slot.** The Sphere’s radius increases by 5 feet for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/2619043-confusion]: #

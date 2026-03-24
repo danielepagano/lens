@@ -6,5 +6,3 @@
 **Duration**: 1 Minute
 
 Until the spell ends, your attacks with weapons deal an extra 1d4 Radiant damage on a hit.
-
-[source: https://www.dndbeyond.com/spells/2619142-divine-favor]: #

@@ -33,5 +33,3 @@ Grimlock Tasks
 | 2 | Hiding the threat of mind flayers beneath fake, purposefully crude dwellings. |
 | 3 | Pretending to be helpful and luring travelers into false senses of security. |
 | 4 | Raiding surface communities and tempting other creatures to pursue it into illithid traps. |
-
-[source: https://www.dndbeyond.com/monsters/5195063-grimlock]: #

@@ -10,5 +10,3 @@ You crystalize your foes blood into razor darts that burst forth to strike your 
 You can direct each dart to hit a creature within 60 feet of the original target. The darts all strike simultaneously, and you can direct them to hit one creature or several, including the original target. For each dart, make a ranged spell attack against the chosen creature. On a hit, roll one Hit Point Dice expended to cast the spell, and the creature takes Piercing damage equal to the number rolled.
 
 **Using a Higher-Level Spell Slot.** You can expend an additional Hit Point Die and create another dart for each spell slot level above 7.
-
-[source: https://www.dndbeyond.com/spells/3014282-sanguine-fusillade]: #

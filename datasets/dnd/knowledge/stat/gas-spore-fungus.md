@@ -27,5 +27,3 @@ Gas spores are floating, orbicular fungi with rhizome growths and protuberances 
 ### Fungi
 
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
-
-[source: https://www.dndbeyond.com/monsters/5195004-gas-spore-fungus]: #

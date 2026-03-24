@@ -34,5 +34,3 @@ Centaur wardens often lead groups of centaur troopers and act as intermediaries 
 ### Centaurs
 
 Centaurs are defenders of forests, plains, and sites of primeval power. With upper bodies like humans’ and the lower bodies of horses, centaurs charge into battle against those who would harm their allies.
-
-[source: https://www.dndbeyond.com/monsters/5194940-centaur-warden]: #

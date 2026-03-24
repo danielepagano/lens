@@ -12,5 +12,3 @@ Many major temples, guildhalls, and other important places have permanent telepo
 When you first gain the ability to cast this spell, you learn the sigil sequences for two destinations on the Material Plane, determined by the DM. You might learn additional sigil sequences during your adventures. You can commit a new sigil sequence to memory after studying it for 1 minute.
 
 You can create a permanent teleportation circle by casting this spell in the same location every day for 365 days.
-
-[source: https://www.dndbeyond.com/spells/2619167-teleportation-circle]: #

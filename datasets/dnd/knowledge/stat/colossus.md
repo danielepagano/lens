@@ -46,5 +46,3 @@ Colossi are massive Constructs created by the devout to reflect the nature of a 
 Droves of faithful artisans craft a colossus in a shape to honor their deity, then call on that god to infuse the statue with life. This arduous process might take decades and involve hundreds of workers. If the god favors the creation, the mighty crystal at the construct’s heart pulses with divine power, and the colossus rises to protect the faithful or enact the god’s will.
 
 Most colossi were created in ages past and now lie dormant in secluded wilderness, awakening only when disturbed or called on to serve once more.
-
-[source: https://www.dndbeyond.com/monsters/5194950-colossus]: #

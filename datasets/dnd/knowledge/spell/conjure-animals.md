@@ -12,5 +12,3 @@ You have Advantage on Strength saving throws while you’re within 5 feet of the
 Whenever the pack moves within 10 feet of a creature you can see and whenever a creature you can see enters a space within 10 feet of the pack or ends its turn there, you can force that creature to make a Dexterity saving throw. On a failed save, the creature takes 3d10 Slashing damage. A creature makes this save only once per turn.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d10 for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/2619044-conjure-animals]: #

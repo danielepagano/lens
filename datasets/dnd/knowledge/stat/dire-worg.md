@@ -32,5 +32,3 @@ Dire worgs are larger than common worgs and possess a supernaturally terrifying 
 ### Worgs
 
 Sometimes mistaken at first for giant wolves, worgs are vicious hunters. These sapient predators can speak and often taunt their prey, enjoying the taste of fear in their meals.
-
-[source: https://www.dndbeyond.com/monsters/5194969-dire-worg]: #

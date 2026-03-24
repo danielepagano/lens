@@ -26,5 +26,3 @@ Packs of worgs roam harsh frontiers and cursed lands. They sometimes conspire wi
 ### Worgs
 
 Sometimes mistaken at first for giant wolves, worgs are vicious hunters. These sapient predators can speak and often taunt their prey, enjoying the taste of fear in their meals.
-
-[source: https://www.dndbeyond.com/monsters/4831031-worg]: #

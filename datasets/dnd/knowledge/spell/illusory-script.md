@@ -10,5 +10,3 @@ You write on parchment, paper, or another suitable material and imbue it with an
 If the spell is dispelled, the original script and the illusion both disappear.
 
 A creature that has Truesight can read the hidden message.
-
-[source: https://www.dndbeyond.com/spells/2619173-illusory-script]: #

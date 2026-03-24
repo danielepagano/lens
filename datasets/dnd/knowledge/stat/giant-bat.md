@@ -14,5 +14,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +5, reach 5 ft. Hit: 6 (1d6 + 3) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195012-giant-bat]: #

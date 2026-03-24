@@ -30,5 +30,3 @@ Silence. No sound can emanate from within the area, and no sound can reach into 
 Tongues. Creatures of any types you choose can communicate with any other creature in the area even if they don’t share a common language.
 
 Vulnerability. Creatures of any types you choose have Vulnerability to one damage type of your choice while in the area.
-
-[source: https://www.dndbeyond.com/spells/2619138-hallow]: #

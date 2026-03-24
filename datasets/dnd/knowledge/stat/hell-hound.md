@@ -28,5 +28,3 @@ Fire Breath (Recharge 5–6). Dexterity Saving Throw: DC 12, each creature in a 
 Spawned from the pits of Acheron, Gehenna, and the Nine Hells, hell hounds enforce the merciless order of those realms and the whims of tyrannical masters. On their home planes of existence, these grim canines ensure that souls don’t escape their bleak afterlives. On the Material Plane, hell hounds typically serve cruel masters—such as fire giants and cultists—who appreciate their viciousness, obedience, and fiery characteristics. Hell hounds serve other creatures so long as they’re given opportunities to hunt and kill, but they’re quick to turn on those who treat them as mere animals.
 
 Hell hounds have greater cunning than normal canines. They’re skilled trackers and work together well in packs, often employing tricks and ambushes. Hell hounds enjoy hearing prey scream in their scorching jaws and fiery breath. They often go out of their way to draw out the terror of their victims’ final moments.
-
-[source: https://www.dndbeyond.com/monsters/5195071-hell-hound]: #

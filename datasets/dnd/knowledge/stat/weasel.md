@@ -15,5 +15,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +5, reach 5 ft. Hit: 1 Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775849-weasel]: #

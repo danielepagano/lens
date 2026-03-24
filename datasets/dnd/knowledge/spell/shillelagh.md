@@ -10,5 +10,3 @@ A Club or Quarterstaff you are holding is imbued with nature’s power. For the 
 The spell ends early if you cast it again or if you let go of the weapon.
 
 Cantrip Upgrade. The damage die changes when you reach levels 5 (d10), 11 (d12), and 17 (2d6).
-
-[source: https://www.dndbeyond.com/spells/2618984-shillelagh]: #

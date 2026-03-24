@@ -27,5 +27,3 @@ Young remorhazes scorch and consume any creatures they can chase down and overwh
 ### Remorhazes
 
 Remorhazes are centipede-like terrors that burrow through snow and ice to ambush smaller creatures that trespass in their frozen territories.
-
-[source: https://www.dndbeyond.com/monsters/5195285-young-remorhaz]: #

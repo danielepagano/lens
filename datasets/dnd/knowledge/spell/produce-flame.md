@@ -10,5 +10,3 @@ A flickering flame appears in your hand and remains there for the duration. Whil
 Until the spell ends, you can take a Magic action to hurl fire at a creature or an object within 60 feet of you. Make a ranged spell attack. On a hit, the target takes 1d8 Fire damage.
 
 Cantrip Upgrade. The damage increases by 1d8 when you reach levels 5 (2d8), 11 (3d8), and 17 (4d8).
-
-[source: https://www.dndbeyond.com/spells/2618901-produce-flame]: #

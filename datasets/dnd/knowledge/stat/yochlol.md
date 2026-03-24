@@ -44,5 +44,3 @@ Yochlols embody the pernicious will and infectious philosophies of the Abyss. In
 Most yochlols serve Lolth. The Demon Queen of Spiders claims all yochlols as minions and orders any yochlols that disagree destroyed. In rare cases, yochlols might serve other demon lords, particularly manipulative or changeable ones like Graz’zt, Juiblex, and Zuggtmoy.
 
 Despite their service to demon lords, yochlols harbor their own vicious whims and ambitions. They might claim to speak for their overlords to further their own ambitions or seek to reveal rivals’ selfish goals to gain standing with their demonic masters.
-
-[source: https://www.dndbeyond.com/monsters/5195276-yochlol]: #

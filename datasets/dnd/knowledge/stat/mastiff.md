@@ -15,5 +15,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +3, reach 5 ft. Hit: 4 (1d6 + 1) Piercing damage. If the target is a Medium or smaller creature, it has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/4775828-mastiff]: #

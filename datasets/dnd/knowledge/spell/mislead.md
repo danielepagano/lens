@@ -10,5 +10,3 @@ You gain the Invisible condition at the same time that an illusory double of you
 As a Magic action, you can move the illusory double up to twice your Speed and make it gesture, speak, and behave in whatever way you choose. It is intangible and invulnerable.
 
 You can see through its eyes and hear through its ears as if you were located where it is.
-
-[source: https://www.dndbeyond.com/spells/2619131-mislead]: #

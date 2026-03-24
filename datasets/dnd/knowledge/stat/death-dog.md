@@ -35,5 +35,3 @@ Death Dog Malady Symptoms
 | 4 | The victim’s flesh to rot like a corpse. |
 | 5 | The victim to itch, as if they had fleas or sand beneath their skin. |
 | 6 | Wicked symbols to gradually appear on and spread across the victim’s body. |
-
-[source: https://www.dndbeyond.com/monsters/5194961-death-dog]: #

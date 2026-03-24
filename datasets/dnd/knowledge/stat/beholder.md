@@ -68,5 +68,3 @@ Beholders possess utterly alien minds. Most exhibit paranoid, narcissistic, and 
 Few creatures loathe beholders more than other beholders. Every beholder views itself as the physical and intellectual pinnacle of its species. To them, all other beholders are aberrant rivals to be dominated or destroyed. Conflicts between beholders can last for decades and lay waste to vast subterranean realms.
 
 Beholders are a particular threat to adventurers because both gravitate toward mysterious ruins and sites of great magic. Many beholders collect the magic items and petrified bodies of heroes they’ve defeated, displaying them as trophies.
-
-[source: https://www.dndbeyond.com/monsters/5194923-beholder]: #

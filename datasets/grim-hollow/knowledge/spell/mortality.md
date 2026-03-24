@@ -10,5 +10,3 @@ As part of casting this spell, you must expend five Hit Point Dice or the spell 
 For the duration of the spell, a creature that fails the saving throw loses all damage Immunities and Resistances, its creature type changes to Humanoid, and it takes an additional 1d4 Necrotic damage each time it takes damage.
 
 If a creature affected by this spell is reduced to 0 Hit Points, these changes become permanent and the creature dies. This final effect of the spell can only be reversed if the creature is restored to life and targeted by a Remove Curse spell or similar magic.
-
-[source: https://www.dndbeyond.com/spells/3014271-mortality]: #

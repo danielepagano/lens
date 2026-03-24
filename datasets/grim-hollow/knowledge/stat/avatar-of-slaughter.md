@@ -42,5 +42,3 @@ Brave knights and bloodthirsty tyrants alike are reduced to a state of primal ra
 An Avatar of Slaughter appears as a daemonic minotaur with smoke fuming from its nostrils, existing only to kill any one unfortunate enough to cross its path. They often seek out friends and family first, as they unconsciously attempt to demolish their former lives.
 
 Engaging an Avatar of Slaughter in combat is a task best left to the extremely brave or equally reckless. Born in the fires of conflict, they cannot be completely killed by it, though their affinity for violence means a defeated Avatar of Slaughter’s essence seeks refuge within a weapon.
-
-[source: https://www.dndbeyond.com/monsters/5816983-avatar-of-slaughter]: #

@@ -14,5 +14,3 @@
 **Actions**
 
 Hooves. Melee Attack Roll: +4, reach 5 ft. Hit: 4 (1d4 + 2) Bludgeoning damage.
-
-[source: https://www.dndbeyond.com/monsters/4775833-pony]: #

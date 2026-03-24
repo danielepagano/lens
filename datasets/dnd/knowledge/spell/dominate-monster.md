@@ -12,5 +12,3 @@ You have a telepathic link with the Charmed target while the two of you are on t
 You can command the target to take a Reaction but must take your own Reaction to do so.
 
 **Using a Higher-Level Spell Slot.** Your Concentration can last longer with a level 9 spell slot (up to 8 hours).
-
-[source: https://www.dndbeyond.com/spells/2619147-dominate-monster]: #

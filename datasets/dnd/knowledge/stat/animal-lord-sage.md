@@ -72,5 +72,3 @@ Sage Animal Lord Appearances
 | 8 | Spider |
 | 9 | Turtle |
 | 10 | Whale |
-
-[source: https://www.dndbeyond.com/monsters/5197987-animal-lord-sage]: #

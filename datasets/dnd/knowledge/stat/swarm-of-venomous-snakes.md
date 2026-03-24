@@ -16,5 +16,3 @@ Swarm. The swarm can occupy another creature’s space and vice versa, and the s
 **Actions**
 
 Bites. Melee Attack Roll: +6, reach 5 ft. Hit: 8 (1d8 + 4) Piercing damage—or 6 (1d4 + 4) Piercing damage if the swarm is Bloodied—plus 10 (3d6) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/5195231-swarm-of-venomous-snakes]: #

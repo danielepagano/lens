@@ -17,5 +17,3 @@ Jumper. The cat's jump distance is determined using its Dexterity rather than it
 **Actions**
 
 Scratch. Melee Attack Roll: +4, reach 5 ft. Hit: 1 Slashing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775808-cat]: #

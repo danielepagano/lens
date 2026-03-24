@@ -38,5 +38,3 @@ Aboleth Schemes
 | 4 | Shifting cloud clusters that resemble animals and simple shapes. |
 | 5 | Sinister features obscured in a misty mass. |
 | 6 | Swirling storm clouds. |
-
-[source: https://www.dndbeyond.com/monsters/5194878-air-elemental]: #

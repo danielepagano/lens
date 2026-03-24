@@ -10,5 +10,3 @@ As part of casting this spell, you must expend one Hit Die or the spell automati
 The target repeats the save at the end of each of its turns, ending the spell on a success.
 
 **Using a Higher-Level Spell Slot.** You increase the damage by expending an additional Hit Die for each spell slot level above 1.
-
-[source: https://www.dndbeyond.com/spells/3014256-vibrating-humors]: #

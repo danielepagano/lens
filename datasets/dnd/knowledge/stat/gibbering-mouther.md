@@ -42,5 +42,3 @@ Gibbering Mouther Nascencies
 | 4 | Part of the life cycle of some other Aberration. |
 | 5 | A shape-shifter that lost control of its powers. |
 | 6 | Someone cursed by a cult or vengeful deity. |
-
-[source: https://www.dndbeyond.com/monsters/5195034-gibbering-mouther]: #

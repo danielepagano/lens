@@ -19,5 +19,3 @@ Hold Breath. The hippopotamus can hold its breath for 10 minutes.
 Multiattack. The hippopotamus makes two Bite attacks.
 
 Bite. Melee Attack Roll: +7, reach 5 ft. Hit: 16 (2d10 + 5) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195076-hippopotamus]: #

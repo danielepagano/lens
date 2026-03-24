@@ -32,5 +32,3 @@ Carrion crawlers have segmented bodies like gigantic cutworms. From beneath thei
 Carrion crawlers scour sewers, battlefields, necropolises, and fetid wildernesses for corpses, clinging to ceilings to ambush smaller prey and to avoid competing hunters. They’re drawn to light and the scent of blood, recognizing them as signs of food.
 
 These scavengers avoid ingesting inorganic material. Crypts with funeral armors sucked clean of their corpses and eerily pristine catacombs are signs of infestation by carrion crawlers.
-
-[source: https://www.dndbeyond.com/monsters/5194938-carrion-crawler]: #

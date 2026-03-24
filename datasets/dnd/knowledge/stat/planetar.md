@@ -48,5 +48,3 @@ Planetar Quests
 | 4 | Inspire the defenders of a besieged holy site. |
 | 5 | Recover and destroy an evil Artifact. |
 | 6 | Reveal the true name of a devil to banish it. |
-
-[source: https://www.dndbeyond.com/monsters/5195165-planetar]: #

@@ -29,5 +29,3 @@ Azer Sentinels defend their communities’ smiths and channel their flames throu
 ### Azers
 
 Azers are living bronze folk who work the primal elements of creation to craft weapons and magical wonders among the multiverse’s mightiest infernos.
-
-[source: https://www.dndbeyond.com/monsters/5194909-azer-sentinel]: #

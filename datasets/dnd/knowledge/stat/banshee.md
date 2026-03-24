@@ -42,5 +42,3 @@ Banshee Sorrows
 | 4 | Presage a disaster or tragedy. |
 | 5 | Seek the return of a stolen treasure. |
 | 6 | Slay those more beautiful than it was in life. |
-
-[source: https://www.dndbeyond.com/monsters/5194916-banshee]: #

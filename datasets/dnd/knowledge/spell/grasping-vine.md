@@ -12,5 +12,3 @@ Make a melee spell attack against a creature within 30 feet of the vine. On a hi
 As a Bonus Action on your later turns, you can repeat the attack against a creature within 30 feet of the vine.
 
 **Using a Higher-Level Spell Slot.** The number of creatures the vine can grapple increases by one for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/2618955-grasping-vine]: #

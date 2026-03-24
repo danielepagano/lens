@@ -71,5 +71,3 @@ Cult Symbols
 | 8 | A letter or number | A series of scratches |
 | 9 | Part of a monster | A simple pictogram |
 | 10 | A skull | A weapon or tool |
-
-[source: https://www.dndbeyond.com/monsters/5194983-elemental-cultist]: #

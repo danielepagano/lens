@@ -42,5 +42,3 @@ Lamia Pacts
 | 4 | Place a strange idol in a specific site or home. |
 | 5 | Remove a magic item’s curse, then return it. |
 | 6 | Slay a monster and retrieve a specific organ. |
-
-[source: https://www.dndbeyond.com/monsters/5195103-lamia]: #

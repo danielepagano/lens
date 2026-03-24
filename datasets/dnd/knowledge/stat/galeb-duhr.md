@@ -25,5 +25,3 @@ Beings of living rock, galeb duhr seek harmony with the earth and give voice to 
 Galeb duhr are effectively immortal, with lifespans similar in length to mountains. They don’t experience time or perceive danger as shorter-lived species do. Galeb duhr avoid danger by hiding from other creatures. When they do reveal themselves, they speak and act ponderously, but they often know much of the surrounding land and secrets within the earth. When motivated to action, galeb duhr slam into foes and animate nearby boulders to do the same.
 
 Some mountain dwellers view galeb duhr as aloof allies and might entrust these long-lived beings with secrets or treasures for future generations. Others speak of galeb duhr songs, barely audible harmonizations by groups of galeb duhr that are said to influence earthquakes and volcanic eruptions.
-
-[source: https://www.dndbeyond.com/monsters/5195002-galeb-duhr]: #

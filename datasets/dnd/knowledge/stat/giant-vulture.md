@@ -17,5 +17,3 @@ Pack Tactics. The vulture has Advantage on an attack roll against a creature if 
 **Actions**
 
 Gouge. Melee Attack Roll: +4, reach 5 ft. Hit: 9 (2d6 + 2) Piercing damage, and the target has the Poisoned condition until the end of its next turn.
-
-[source: https://www.dndbeyond.com/monsters/5195031-giant-vulture]: #

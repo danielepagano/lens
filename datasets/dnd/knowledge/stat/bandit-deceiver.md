@@ -48,5 +48,3 @@ Bandit Motivations
 | 4 | Hesitantly serves a villainous leader. |
 | 5 | Secretly works for a government or a regional ruler to sow chaos. |
 | 6 | Takes what they need to survive. |
-
-[source: https://www.dndbeyond.com/monsters/5194914-bandit-deceiver]: #

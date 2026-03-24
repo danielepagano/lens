@@ -24,5 +24,3 @@ Tentacles. Melee Attack Roll: +4, reach 5 ft. Hit: 1 Bludgeoning damage.
 **Reactions**
 
 Ink Cloud (1/Day). Trigger: A creature ends its turn within 5 feet of the octopus while underwater. Response: The octopus releases ink that fills a 5-foot Cube centered on itself, and the octopus moves up to its Swim Speed. The Cube is Heavily Obscured for 1 minute or until a strong current or similar effect disperses the ink.
-
-[source: https://www.dndbeyond.com/monsters/4775830-octopus]: #

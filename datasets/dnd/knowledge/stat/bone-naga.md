@@ -32,5 +32,3 @@ Nagas are immortal but not invincible, and powerful magic can end their lives. B
 Bone nagas typically obey those who resurrected them, serving their creators as tireless guards and sharing the lore they collected in life. Undeath disrupts the perfect memory bone nagas enjoyed while alive, leaving them with gaps in their memories or details scrambled into puzzle-like jumbles.
 
 In rare cases, bone nagas continue to pursue the goals they had while alive instead of serving other creatures. Most free-willed bone nagas are evil beings raised from spirit naga remains, but in unusual instances, bone nagas created from guardian nagas continue good, albeit confused, existences.
-
-[source: https://www.dndbeyond.com/monsters/5198080-bone-naga]: #

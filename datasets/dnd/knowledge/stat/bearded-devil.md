@@ -29,5 +29,3 @@ Bearded devils, also known as barbazus, fill the legions of the Nine Hells. Thes
 Left to their own devices, bearded devils encourage mortals to act callously and abuse their power, inflating their egos and inspiring petty tyrannies. Villains aligned with the Nine Hells call on bearded devils to serve as guardians, enforce their will, or fight in wicked armies.
 
 Bearded devils’ eponymous beards consist of grotesque, tentacle-like growths. These squirming, barb-riddled beards carry poison capable of preventing magical healing. Bearded devils are also known for their distinctive glaives, through which they channel hellish energy. Those struck by these unnatural weapons suffer infernal wounds that grow worse until stanched or magically healed.
-
-[source: https://www.dndbeyond.com/monsters/5194920-bearded-devil]: #

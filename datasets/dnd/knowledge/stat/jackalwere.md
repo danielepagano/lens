@@ -39,5 +39,3 @@ Jackalwere Tricks
 | 2 | Mapping a shortcut through a monster’s lair. |
 | 3 | Putting them to sleep, then stealing mounts or supplies. |
 | 4 | Sharing the location of hidden treasure, which turns out to be sunlight on sand or water. |
-
-[source: https://www.dndbeyond.com/monsters/5195092-jackalwere]: #

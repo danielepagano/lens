@@ -36,5 +36,3 @@ Otyugh Lures
 | 2 | Sings an enticing song in Otyugh. |
 | 3 | Telepathically transmits a message like “Happy good stuff here!” or “Help now! I’m too delicious?” |
 | 4 | Telepathically transmits an image of a large gemstone, crooked weapon, or soggy pastry. |
-
-[source: https://www.dndbeyond.com/monsters/5195151-otyugh]: #

@@ -14,5 +14,3 @@ Until the spell ends, you can take a Magic action to call down lightning in that
 If you’re outdoors in a storm when you cast this spell, the spell gives you control over that storm instead of creating a new one. Under such conditions, the spell’s damage increases by 1d10.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d10 for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/2618949-call-lightning]: #

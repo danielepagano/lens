@@ -16,5 +16,3 @@ Spider Climb. The lizard can climb difficult surfaces, including along ceilings,
 **Actions**
 
 Bite. Melee Attack Roll: +2, reach 5 ft. Hit: 1 Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775827-lizard]: #

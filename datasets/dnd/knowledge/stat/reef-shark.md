@@ -19,5 +19,3 @@ Water Breathing. The shark can breathe only underwater.
 **Actions**
 
 Bite. Melee Attack Roll: +4, reach 5 ft. Hit: 7 (2d4 + 2) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775838-reef-shark]: #

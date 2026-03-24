@@ -28,5 +28,3 @@ Opportunistic predators, wyverns are draconic ambushers that strike from above. 
 Wyverns are aggressive and claim sizable territories around the mountains, crags, and ruins where they dwell. Despite their considerable strength, they’re opportunistic hunters that target unwitting livestock and groups of encamped travelers. Wyverns usually land only to finish off creatures they’ve weakened with their poison and strafing attacks. Creatures that fight back or take flight might deter wyverns, convincing them to search for easier prey.
 
 Once wyverns overpower a quarry, they carry it to their cavernous lairs to either consume it in safety or trap it to eat later. Most wyverns don’t hoard treasure, but their lairs are littered with the possessions of past victims. It isn’t uncommon for wyverns to carry off chests, carts, or small boats along with their prey.
-
-[source: https://www.dndbeyond.com/monsters/5195273-wyvern]: #

@@ -36,5 +36,3 @@ Bolder than their smaller cousins, cockatrice regents brim with unstable magical
 ### Cockatrices
 
 Cockatrices combine the features of irate roosters and starving reptiles. They petrify those they bite, their slightest peck turning their prey to stone.
-
-[source: https://www.dndbeyond.com/monsters/5194948-cockatrice-regent]: #

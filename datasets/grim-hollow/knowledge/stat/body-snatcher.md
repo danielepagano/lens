@@ -36,5 +36,3 @@ Body Snatchers possess an amorphous form, which they use to inhabit the bodies o
 The Body Snatcher takes complete control of its host body, enhancing it with supernatural capabilities. The only sign that an individual has been invaded by a Body Snatcher is their erratic behavior and rapid aging—a host body can appear to age a lifetime in a matter of a few weeks.
 
 While far from helpless, Body Snatchers prefer to avoid detection, engaging enemies only in dire circumstances or when changing hosts. They typically make every effort to complete the latter in seclusion to maintain their gruesome charade.
-
-[source: https://www.dndbeyond.com/monsters/5816985-body-snatcher]: #

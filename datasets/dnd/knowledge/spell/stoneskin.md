@@ -6,5 +6,3 @@
 **Duration**: Concentration 1 Hour
 
 Until the spell ends, one willing creature you touch has Resistance to Bludgeoning, Piercing, and Slashing damage.
-
-[source: https://www.dndbeyond.com/spells/2619095-stoneskin]: #

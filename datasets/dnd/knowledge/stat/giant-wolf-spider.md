@@ -17,5 +17,3 @@ Spider Climb. The spider can climb difficult surfaces, including along ceilings,
 **Actions**
 
 Bite. Melee Attack Roll: +5, reach 5 ft. Hit: 5 (1d4 + 3) Piercing damage plus 5 (2d4) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/5195033-giant-wolf-spider]: #

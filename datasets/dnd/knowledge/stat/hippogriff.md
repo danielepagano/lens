@@ -37,5 +37,3 @@ Hippogriff Destination
 | 4 | Mountaintop with a view of a giant geoglyph. |
 | 5 | Nest full of hippogriff eggs atop a spire. |
 | 6 | Portal to the Feywild or an Upper Plane. |
-
-[source: https://www.dndbeyond.com/monsters/5195075-hippogriff]: #

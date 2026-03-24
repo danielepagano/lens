@@ -14,5 +14,3 @@ If a creature touches the glowing bead before the spell ends, that creature make
 When the bead explodes, flammable objects in the explosion that aren’t being worn or carried start burning.
 
 **Using a Higher-Level Spell Slot.** The base damage increases by 1d6 for each spell slot level above 7.
-
-[source: https://www.dndbeyond.com/spells/2619086-delayed-blast-fireball]: #

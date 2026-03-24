@@ -7,5 +7,3 @@ It’s up to you to decide whether a character has proficiency with a firearm. C
 
 This weapon has the following mastery property. To use this property, you must have a feature that lets you use it.
 Sap. If you hit a creature with this weapon, that creature has Disadvantage on its next attack roll before the start of your next turn.
-
-[source: https://www.dndbeyond.com/equipment/45-revolver]: #

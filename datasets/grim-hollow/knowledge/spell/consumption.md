@@ -10,5 +10,3 @@ As part of casting this spell, you must expend one Hit Point Die or the spell au
 The creature makes a Constitution saving throw at the end of each of its turns. On a failed save, the creature takes Necrotic damage equal to the roll of the expended Hit Point Die. On a successful save, the spell ends.
 
 **Using a Higher-Level Spell Slot.** You can target one additional creature for each spell slot level above 1.
-
-[source: https://www.dndbeyond.com/spells/3014213-consumption]: #

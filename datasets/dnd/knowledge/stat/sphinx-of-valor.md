@@ -66,5 +66,3 @@ Distant Sight. While in its lair, the sphinx can cast Clairvoyance, requiring no
 Infusion of Knowledge. Whenever the sphinx or one of its allies takes a Study action while within 1 mile of the lair, it adds 1d6 to any ability check it makes for that action.
 
 If the sphinx dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5195213-sphinx-of-valor]: #

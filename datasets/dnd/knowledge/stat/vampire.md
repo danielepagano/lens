@@ -83,5 +83,3 @@ Looming Shadows. Shadows within 1 mile of the lair seem to move as if alive. Any
 Mists. The area within 1 mile of the lair is Lightly Obscured by a persistent, creeping fog. The vampire and any creatures of its choice are unaffected by the fog.
 
 If the vampire dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5195251-vampire]: #

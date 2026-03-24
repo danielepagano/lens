@@ -86,5 +86,3 @@ Arch-hag Anathemas
 | 8 | A viciously mauled scarecrow. |
 | 9 | A star pulled from the sky. |
 | 10 | A thread from the Lady of Pain’s robes. |
-
-[source: https://www.dndbeyond.com/monsters/5194900-arch-hag]: #

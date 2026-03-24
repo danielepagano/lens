@@ -14,5 +14,3 @@ Object. You can try to move a Huge or smaller object. If the object isn’t bein
 If the object is worn or carried by a creature, that creature must succeed on a Strength saving throw, or you pull the object away and move it up to 30 feet in any direction within the spell’s range.
 
 You can exert fine control on objects with your telekinetic grip, such as manipulating a simple tool, opening a door or a container, stowing or retrieving an item from an open container, or pouring the contents from a vial.
-
-[source: https://www.dndbeyond.com/spells/2619157-telekinesis]: #

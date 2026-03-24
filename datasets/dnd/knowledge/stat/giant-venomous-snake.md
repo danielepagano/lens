@@ -15,5 +15,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +6, reach 10 ft. Hit: 6 (1d4 + 4) Piercing damage plus 4 (1d8) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/5195030-giant-venomous-snake]: #

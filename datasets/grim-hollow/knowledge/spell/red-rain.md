@@ -12,5 +12,3 @@ Each Beast and Plant creature in the area must succeed on a Wisdom saving throw 
 For every 10 minutes that a creature of any type is directly exposed to the rain, that creature gains 1 Exhaustion level and takes 2d10 Necrotic damage. The creature’s Hit Point maximum decreases by an amount equal to the Necrotic damage dealt. This reduction lasts until the creature removes all levels of Exhaustion gained from this spell. While a creature has any Exhaustion levels from this spell, it automatically fails saving throws against removing the Poisoned condition.
 
 When the spell ends, roll the Hit Point Dice expended to cast the spell. Beast and Plant creatures won’t return and plants won’t regrow in the area for a number of days equal to the roll’s total.
-
-[source: https://www.dndbeyond.com/spells/3014280-red-rain]: #

@@ -12,5 +12,3 @@ When you cast the spell, you gain a number of Temporary Hit Points equal to the 
 Your game statistics are replaced by the stat block of the chosen form, but you retain your creature type; alignment; personality; Intelligence, Wisdom, and Charisma scores; Hit Points; Hit Point Dice; proficiencies; and ability to communicate. If you have the Spellcasting feature, you retain it too.
 
 Upon shape-shifting, you determine whether your equipment drops to the ground or changes in size and shape to fit the new form while you’re in it.
-
-[source: https://www.dndbeyond.com/spells/2618982-shapechange]: #

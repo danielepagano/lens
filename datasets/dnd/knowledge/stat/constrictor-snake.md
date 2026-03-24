@@ -17,5 +17,3 @@
 Bite. Melee Attack Roll: +4, reach 5 ft. Hit: 6 (1d8 + 2) Piercing damage.
 
 Constrict. Strength Saving Throw: DC 12, one Medium or smaller creature the snake can see within 5 feet. Failure: 7 (3d4) Bludgeoning damage, and the target has the Grappled condition (escape DC 12).
-
-[source: https://www.dndbeyond.com/monsters/4775809-constrictor-snake]: #

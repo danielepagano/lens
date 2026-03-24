@@ -6,5 +6,3 @@
 **Duration**: Instantaneous
 
 Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space you can see.
-
-[source: https://www.dndbeyond.com/spells/2619133-misty-step]: #

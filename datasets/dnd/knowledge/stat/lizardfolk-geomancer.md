@@ -35,5 +35,3 @@ Lizardfolk geomancers draw magic from the natural world, using it to protect the
 ### Lizardfolk
 
 Lizardfolk dwell in wildernesses suffused with primal magic. While many lizardfolk are Humanoids with varied skills, some forge powerful bonds with the Elemental Plane of Earth, granting them magical connections to the cycle of growth and rebirth.
-
-[source: https://www.dndbeyond.com/monsters/5195107-lizardfolk-geomancer]: #

@@ -17,5 +17,3 @@ Agile. The deer doesn’t provoke an Opportunity Attack when it moves out of an 
 **Actions**
 
 Ram. Melee Attack Roll: +2, reach 5 ft. Hit: 2 (1d4) Bludgeoning damage.
-
-[source: https://www.dndbeyond.com/monsters/5194966-deer]: #

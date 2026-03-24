@@ -45,5 +45,3 @@ Gorgon Command Keys
 | 4 | Recite a specific rhyme or sing a certain song. |
 | 5 | Say its creator’s name backward. |
 | 6 | Wear a mask, perhaps in the shape of a bull or an animal meaningful to the gorgon’s creator. |
-
-[source: https://www.dndbeyond.com/monsters/5195052-gorgon]: #

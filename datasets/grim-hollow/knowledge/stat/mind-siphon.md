@@ -36,5 +36,3 @@ When an individual places too much value on their own opinions and ability, and 
 Eventually the afflicted individual cannot rest, believing that tireless work and toil is the only way for them to live up to their own self-perceived greatness. The transformation into a hideous, malformed, multi-limbed abomination is coupled with an insatiable need to feed on the intelligence of others. As their victims multiply, the Mind Siphon uses their dismembered corpses to construct a macabre hive-like dwelling.
 
 The Mind Siphon has a twisted insectoid appearance, possessing the torso of the original individual where the thorax would reside. In place of their original head is a gaping maw of fangs and tentacular tongues. From the base of the torso, the remainder of this creature resembles a chitinous abdomen with many appendages ending in hands upon which it walks. Lastly, a mouthlike protrusion at its front is topped by a dozen or more blinking eyes.
-
-[source: https://www.dndbeyond.com/monsters/5816997-mind-siphon]: #

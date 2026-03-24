@@ -40,5 +40,3 @@ Gelatinous Cube Debris
 | 4 | Remarkable weapon in need of repair. |
 | 5 | Skeleton belonging to a famous adventurer. |
 | 6 | Tablet bearing a mysterious message. |
-
-[source: https://www.dndbeyond.com/monsters/5195005-gelatinous-cube]: #

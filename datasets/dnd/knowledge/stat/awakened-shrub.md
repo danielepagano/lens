@@ -25,5 +25,3 @@ Awakened shrubs can be any sort of small plant, from forest bushes to clustered 
 ### Awakened Plants
 
 Magic can invest plants with mobility, sapience, and even a voice. Spells such as Awaken or the influence of other planes of existence might bring mundane vegetation to life, while other remarkable plants might naturally have these features.
-
-[source: https://www.dndbeyond.com/monsters/5194905-awakened-shrub]: #

@@ -10,5 +10,3 @@ As part of casting this spell, you must expend one Hit Point Die or the spell au
 Creatures that don’t sleep, such as elves, or that have Immunity to the Exhaustion condition automatically succeed on saves against this spell.
 
 **Using a Higher-Level Spell Slot.** You roll an additional 1d12 and can expend an additional two Hit Point Dice for every spell slot level above 1.
-
-[source: https://www.dndbeyond.com/spells/3014290-somnolence]: #

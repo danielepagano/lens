@@ -20,5 +20,3 @@ Grasping Hand. The hand attempts to grapple a Huge or smaller creature within 5 
 Interposing Hand. The hand grants you Half Cover against attacks and other effects that originate from its space or that pass through it. In addition, its space counts as Difficult Terrain for your enemies.
 
 **Using a Higher-Level Spell Slot.** The damage of the Clenched Fist increases by 2d8 and the damage of the Grasping Hand increases by 2d6 for each spell slot level above 5.
-
-[source: https://www.dndbeyond.com/spells/2618928-bigbys-hand]: #

@@ -45,5 +45,3 @@ Vampire Resting Places
 | 4 | A large pot full of blood or vinegar. |
 | 5 | A space accessible only by shape-shifting. |
 | 6 | Within a statue or suit of armor. |
-
-[source: https://www.dndbeyond.com/monsters/5195248-vampire-nightbringer]: #

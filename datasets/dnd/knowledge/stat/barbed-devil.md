@@ -36,5 +36,3 @@ Infernal collectors, barbed devils fanatically protect troves of treasure and sc
 Barbed devils often serve as guards and accountants for ice devil generals, pit fiend warlords, archdevils, and similarly powerful villains. In return, barbed devils gain protection for their own collections. Many barbed devils also maintain networks of imps that search the planes for treasures of interest or usefully greedy mortals.
 
 Barbed devils rarely collect anything as prosaic as coins and gems. Rather, they pride themselves on having the multiverse’s greatest collection of one kind of thing—typically items of rare pedigree or emblems of power. Barbed devils refuse to steal what they covet; instead they strike bargains to claim both treasure and mortal souls.
-
-[source: https://www.dndbeyond.com/monsters/5194917-barbed-devil]: #

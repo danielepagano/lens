@@ -33,5 +33,3 @@ Minotaur Mazes
 | 2 | Multiple mazes connected by magic portals. |
 | 3 | A poisonous swamp with labyrinthine paths. |
 | 4 | The ruins of a buried palace or temple. |
-
-[source: https://www.dndbeyond.com/monsters/5195126-minotaur-of-baphomet]: #

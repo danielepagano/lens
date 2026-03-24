@@ -10,5 +10,3 @@ Brilliant sunlight flashes in a 60-foot-radius Sphere centered on a point you ch
 A creature Blinded by this spell makes another Constitution saving throw at the end of each of its turns, ending the effect on itself on a success.
 
 This spell dispels Darkness in its area that was created by any spell.
-
-[source: https://www.dndbeyond.com/spells/2619123-sunburst]: #

@@ -17,5 +17,3 @@ Water Breathing. The seahorse can breathe only underwater.
 **Actions**
 
 Bubble Dash. While underwater, the seahorse moves up to its Swim Speed without provoking Opportunity Attacks.
-
-[source: https://www.dndbeyond.com/monsters/5195199-seahorse]: #

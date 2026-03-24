@@ -12,5 +12,3 @@ Each target animates, sprouts legs, and becomes a Construct that uses the Animat
 Until the spell ends, you can take a Bonus Action to mentally command any creature you made with this spell if the creature is within 500 feet of you (if you control multiple creatures, you can command any of them at the same time, issuing the same command to each one). If you issue no commands, the creature takes the Dodge action and moves only to avoid harm. When the creature drops to 0 Hit Points, it reverts to its object form, and any remaining damage carries over to that form.
 
 **Using a Higher-Level Spell Slot.** The creature’s Slam damage increases by 1d4 (Medium or smaller), 1d6 (Large), or 1d12 (Huge) for each spell slot level above 5.
-
-[source: https://www.dndbeyond.com/spells/2618855-animate-objects]: #

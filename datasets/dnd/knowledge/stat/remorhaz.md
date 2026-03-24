@@ -27,5 +27,3 @@ Full-grown remorhazes are single-minded ambush predators. They attempt to bite p
 ### Remorhazes
 
 Remorhazes are centipede-like terrors that burrow through snow and ice to ambush smaller creatures that trespass in their frozen territories.
-
-[source: https://www.dndbeyond.com/monsters/5195181-remorhaz]: #

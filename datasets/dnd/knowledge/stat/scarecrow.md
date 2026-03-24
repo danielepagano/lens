@@ -36,5 +36,3 @@ Scarecrow Frames
 | 6 | Rusty armor and torture devices. |
 | 7 | A sackcloth head atop straw-stuffed clothes. |
 | 8 | Wedding clothes that were never worn. |
-
-[source: https://www.dndbeyond.com/monsters/5195196-scarecrow]: #

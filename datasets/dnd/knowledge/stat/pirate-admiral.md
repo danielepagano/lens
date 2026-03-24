@@ -59,5 +59,3 @@ Pirate Flags
 | 6 | Merfolk | 6 | A mug of ale |
 | 7 | Skull | 7 | A tattoo |
 | 8 | Whale | 8 | A treasure chest |
-
-[source: https://www.dndbeyond.com/monsters/5195161-pirate-admiral]: #

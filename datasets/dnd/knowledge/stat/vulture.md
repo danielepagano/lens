@@ -17,5 +17,3 @@ Pack Tactics. The vulture has Advantage on an attack roll against a creature if 
 **Actions**
 
 Beak. Melee Attack Roll: +2, reach 5 ft. Hit: 2 (1d4) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195256-vulture]: #

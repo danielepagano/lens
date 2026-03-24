@@ -41,5 +41,3 @@ Uncontrolled Invisible Stalkers
 | 4 | A manifestation of uncontrolled magic. |
 | 5 | A servant of an evil elemental ruler such as Yan-C-Bin (the Elemental Prince of Evil Air). |
 | 6 | Unable to complete its duty and tries to create circumstances allowing it to fulfill its task. |
-
-[source: https://www.dndbeyond.com/monsters/5195089-invisible-stalker]: #

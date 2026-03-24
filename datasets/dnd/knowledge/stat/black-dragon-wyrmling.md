@@ -36,5 +36,3 @@ Black dragons delight in suffering and ruin. While other chromatic dragons schem
 Black dragons are terrifying creatures with curved horns and withered visages suggestive of fiendish skulls. They typically inhabit stagnant swamps, crumbling ruins, or places of magical or environmental corruption. Their acid breath scars their domains, eroding the features from ancient statues and leaving nature with festering wounds.
 
 Black dragons hoard tarnished symbols of hope and relics of fallen empires. The more sought-after the treasure, the more black dragons prize it—particularly if they were responsible for it being lost.
-
-[source: https://www.dndbeyond.com/monsters/5198095-black-dragon-wyrmling]: #

@@ -42,5 +42,3 @@ Despite being the least aggressive of all the curse monsters, individual Plague 
 A Curse of Foul Blight is most frequently used by hags and dark sorcerers to spite beautiful rivals out of jealousy. Those who fall victim suffer a miserable fate. If not cured quickly, the victim becomes a Plague Carrion, a deformed creature covered in gaping cysts that expel clouds of profane corruption. Venomous insects belch forth from these calloused apertures.
 
 A Plague Carrion is compelled by its curse to constantly wander, tormented by its own corporeal decay if it lingers in the same place for too long. This cruel punishment ensures its foul blight spreads far and wide throughout the land.
-
-[source: https://www.dndbeyond.com/monsters/5816998-plague-carrion]: #

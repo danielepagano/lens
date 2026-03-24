@@ -15,5 +15,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +5, reach 5 ft. Hit: 10 (2d6 + 3) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195021-giant-hyena]: #

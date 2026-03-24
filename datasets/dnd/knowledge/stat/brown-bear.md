@@ -19,5 +19,3 @@ Multiattack. The bear makes one Bite attack and one Claw attack.
 Bite. Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Piercing damage.
 
 Claw. Melee Attack Roll: +5, reach 5 ft. Hit: 5 (1d4 + 3) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/4775806-brown-bear]: #

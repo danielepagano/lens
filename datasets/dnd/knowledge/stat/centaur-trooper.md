@@ -30,5 +30,3 @@ Centaur troopers are knight-like guardians. Many are suspicious of non-Fey creat
 ### Centaurs
 
 Centaurs are defenders of forests, plains, and sites of primeval power. With upper bodies like humans’ and the lower bodies of horses, centaurs charge into battle against those who would harm their allies.
-
-[source: https://www.dndbeyond.com/monsters/5194939-centaur-trooper]: #

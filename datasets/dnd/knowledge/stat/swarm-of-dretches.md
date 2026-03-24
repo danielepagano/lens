@@ -31,5 +31,3 @@ Swarms of dretches sometimes escape the Abyss onto other planes of existence, or
 ### Dretches
 
 The servants and victims of greater demons, dretches embody petty instincts, chaotic impulses, and violent urges. Dretches exist in unfathomable numbers in the depths of the Abyss, where their reeking throngs fill vast demonic hordes.
-
-[source: https://www.dndbeyond.com/monsters/5195223-swarm-of-dretches]: #

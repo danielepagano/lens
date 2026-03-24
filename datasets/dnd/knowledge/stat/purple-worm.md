@@ -25,5 +25,3 @@ Tail Stinger. Melee Attack Roll: +14, reach 10 ft. Hit: 16 (2d6 + 9) Piercing da
 **Description**
 
 Titanic purple worms burrow through the earth and sand. Ever ravenous, they devour smaller creatures and ravage entire communities in their aimless burrowing.
-
-[source: https://www.dndbeyond.com/monsters/5195174-purple-worm]: #

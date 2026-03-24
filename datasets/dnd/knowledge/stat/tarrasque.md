@@ -61,5 +61,3 @@ Tarrasque Evidence
 | 2 | Massive footprints or claw marks. |
 | 3 | A russet scale the size of a knight’s shield. |
 | 4 | A shattered mountain or diverted river. |
-
-[source: https://www.dndbeyond.com/monsters/5195232-tarrasque]: #

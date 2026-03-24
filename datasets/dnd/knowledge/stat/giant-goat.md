@@ -15,5 +15,3 @@
 **Actions**
 
 Ram. Melee Attack Roll: +5, reach 5 ft. Hit: 6 (1d6 + 3) Bludgeoning damage. If the target is a Large or smaller creature and the goat moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/4775819-giant-goat]: #

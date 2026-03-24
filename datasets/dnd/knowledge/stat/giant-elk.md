@@ -15,5 +15,3 @@
 **Actions**
 
 Ram. Melee Attack Roll: +6, reach 10 ft. Hit: 11 (2d6 + 4) Bludgeoning damage plus 5 (2d4) Radiant damage. If the target is a Huge or smaller creature and the elk moved 20+ feet straight toward it immediately before the hit, the target takes an extra 5 (2d4) Bludgeoning damage and has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/5195018-giant-elk]: #

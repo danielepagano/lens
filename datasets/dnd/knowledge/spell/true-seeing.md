@@ -6,5 +6,3 @@
 **Duration**: 1 Hour
 
 For the duration, the willing creature you touch has Truesight with a range of 120 feet.
-
-[source: https://www.dndbeyond.com/spells/2619201-true-seeing]: #

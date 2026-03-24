@@ -10,5 +10,3 @@ You launch a lightning bolt toward a target you can see within range. Three bolt
 Each target makes a Dexterity saving throw, taking 10d8 Lightning damage on a failed save or half as much damage on a successful one.
 
 **Using a Higher-Level Spell Slot.** One additional bolt leaps from the first target to another target for each spell slot level above 6.
-
-[source: https://www.dndbeyond.com/spells/2618960-chain-lightning]: #

@@ -31,5 +31,3 @@ Rising above other gnolls with their viciousness and physical prowess, gnoll pac
 ### Gnolls
 
 The first gnolls arose from hyenas that fed on flesh tainted by the Abyss. Their corruption and violence delighted the demon lord Yeenoghu, who encouraged their numbers and spread them across the multiverse. Ever since, gnolls have been the cackling servants of Yeenoghu, existing to cause ruin and to feast on what remains.
-
-[source: https://www.dndbeyond.com/monsters/5195045-gnoll-pack-lord]: #

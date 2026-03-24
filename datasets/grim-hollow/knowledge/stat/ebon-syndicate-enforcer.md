@@ -24,5 +24,3 @@ Fighting Chain. Melee Attack Roll: +5, reach 5 ft. Hit: 6 (1d6 + 3) Bludgeoning 
 **Description**
 
 Street-level agents deliver overt official messages. Thugs and brutes with some manners and basic business sense can beat both into a target when the need arises. In addition to common weapons, Syndicate enforcers favor fighting chains or “chain-knuckles” that give them the choice to strangle or bind their opponents. These have the benefit of being less conspicuous than a blade.
-
-[source: https://www.dndbeyond.com/monsters/5816988-ebon-syndicate-enforcer]: #

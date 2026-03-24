@@ -28,5 +28,3 @@ Darkness Aura (1/Day). Magical Darkness fills a 15-foot Emanation originating fr
 Unnatural subterranean hunters, darkmantles veil themselves in magical shadows and use their bizarre anatomies to disguise themselves as stalactites. When prey passes below, lurking darkmantles drop and unfurl their webbed tentacles, attempting to blind, suffocate, or crush their victims.
 
 Darkmantles share similarities with piercers and ropers and often hunt near those monsters. Scholars have attempted to establish a shared origin or life cycle between those creatures, but their efforts are thwarted by those monsters’ supernatural physiologies and deadly natures.
-
-[source: https://www.dndbeyond.com/monsters/5194959-darkmantle]: #

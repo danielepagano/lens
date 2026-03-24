@@ -40,5 +40,3 @@ Gladiator Theatrics
 | 4 | Leads the crowd in a rousing theme song. |
 | 5 | Seeks to claim a trophy from a foe. |
 | 6 | Takes advice from the crowd, omens, or a pet. |
-
-[source: https://www.dndbeyond.com/monsters/5195042-gladiator]: #

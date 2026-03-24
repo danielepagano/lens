@@ -10,5 +10,3 @@ As part of casting this spell, you must expend four Hit Point Dice or the spell 
 On a failed save, the creature takes Necrotic damage equal to a roll of the Hit Point Dice expended on the spell plus your spellcasting ability modifier. On a successful save, the creature takes half as much damage.
 
 For each creature that fails the saving throw against this spell, you gain 10 Temporary Hit Points.
-
-[source: https://www.dndbeyond.com/spells/3014233-circle-of-scarlet]: #

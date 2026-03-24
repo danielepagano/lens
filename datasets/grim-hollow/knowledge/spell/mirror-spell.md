@@ -12,5 +12,3 @@ If the triggering spell is level 2 or lower, you automatically copy and cast the
 When casting a copied spell, you don’t expend a spell slot and you don’t need any components. Treat the spell as if you were its original caster, using your own spellcasting ability modifier and save DC, and casting it at the lowest level it can be cast.
 
 **Using a Higher-Level Spell Slot.** Treat the level of the spell slot used as the maximum level of spell you can copy and cast.
-
-[source: https://www.dndbeyond.com/spells/3014270-mirror-spell]: #

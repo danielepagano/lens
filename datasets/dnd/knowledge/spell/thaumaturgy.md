@@ -18,5 +18,3 @@ Invisible Hand. You instantaneously cause an unlocked door or window to fly open
 Phantom Sound. You create an instantaneous sound that originates from a point of your choice within range, such as a rumble of thunder, the cry of a raven, or ominous whispers.
 
 Tremors. You cause harmless tremors in the ground for 1 minute.
-
-[source: https://www.dndbeyond.com/spells/2619174-thaumaturgy]: #

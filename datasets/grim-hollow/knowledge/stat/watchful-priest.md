@@ -31,5 +31,3 @@ At Will: Light, Prestidigitation
 **Description**
 
 The Watchers of the Faithful are not soldiers. While they may have some have martial training, their members are priests, spies, and evangelists. Watchers fight with words and not blades. They spur faithful populations to turn against those they deem heretical. They are not single heroes, but rather the voice behind the zealous mob. The most common missionaries are Watchful Priests who combine divine spells with an almost magical command of oratory to enflame crowds.
-
-[source: https://www.dndbeyond.com/monsters/5817005-watchful-priest]: #

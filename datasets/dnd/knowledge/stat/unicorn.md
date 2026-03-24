@@ -55,5 +55,3 @@ Obscuring Foliage. The unicorn and its allies have Advantage on Dexterity (Steal
 Positive Energy. Whenever a creature within 1 mile of the lair regains Hit Points from a spell, it regains the maximum number of Hit Points possible. Additionally, the effects of curses are suppressed within 1 mile of the lair.
 
 If the unicorn dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5195246-unicorn]: #

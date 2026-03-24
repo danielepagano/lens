@@ -78,5 +78,3 @@ Foul Water. Water sources within 1 mile of the lair are supernaturally fouled. C
 Psionic Projection. While in its lair, the aboleth can cast Project Image, requiring no spell components and using Intelligence as the spellcasting ability (spell save DC 16). When casting the spell this way, the spell’s range is 1 mile, and the aboleth can use its telepathy as if it were in the illusion’s space.
 
 If the aboleth dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194867-aboleth]: #

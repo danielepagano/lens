@@ -13,5 +13,3 @@ As a Bonus Action, you can command your instrument to create one of the followin
 - Automatically play a basic beat at the tempo of your choice.
 - Record anything played on it, and play it back on a loop.
 - Record and playback any noise that it could pick up within 15 feet, such as conversation, a royal decree, or a snoring party member who swears that they don’t snore.
-
-[source: https://www.dndbeyond.com/spells/3014246-illusory-instrument]: #

@@ -14,5 +14,3 @@ Asleep. The target has the Unconscious condition. It wakes up if it takes any da
 Panicked. The target has the Frightened condition. On each of its turns, the Frightened target must take the Dash action and move away from you by the safest and shortest route available. If the target moves to a space at least 60 feet away from you where it can’t see you, this effect ends.
 
 Sickened. The target has the Poisoned condition.
-
-[source: https://www.dndbeyond.com/spells/2619191-eyebite]: #

@@ -29,5 +29,3 @@ Infernal Tail. Dexterity Saving Throw: DC 17, one creature the devil can see wit
 **Description**
 
 Horned devils, also known as cornugons or malebranche, are infernal warriors that exact the will of diabolical generals and lead other devils in battle. Their bodies and weapons are forged in the Nine Hells, and they torment their foes with diabolical flames and pernicious wounds.
-
-[source: https://www.dndbeyond.com/monsters/5195082-horned-devil]: #

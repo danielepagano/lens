@@ -10,5 +10,3 @@ You create an Invisible sensor within range in a location familiar to you (a pla
 When you cast the spell, choose seeing or hearing. You can use the chosen sense through the sensor as if you were in its space. As a Bonus Action, you can switch between seeing and hearing.
 
 A creature that sees the sensor (such as a creature benefiting from See Invisibility or Truesight) sees a luminous orb about the size of your fist.
-
-[source: https://www.dndbeyond.com/spells/2618972-clairvoyance]: #

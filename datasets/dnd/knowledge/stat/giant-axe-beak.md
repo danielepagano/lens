@@ -32,5 +32,3 @@ Giant axe beaks typically dwell in secluded, primeval realms, such as isolated i
 Axe beaks are flightless, birdlike creatures with distinctive axe-shaped beaks. Swift predators, they chase down prey and use their beaks to hack through foliage protecting their quarry. Axe beaks live in varied environments. Colorfully plumed axe beaks race across tropical plains, while axe beaks with snowy feathers hunt the tundra.
 
 Axe beaks are difficult to train, but those hatched and raised in captivity can become reliable mounts.
-
-[source: https://www.dndbeyond.com/monsters/5195011-giant-axe-beak]: #

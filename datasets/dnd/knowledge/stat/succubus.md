@@ -41,5 +41,3 @@ Succubus Temptations
 | 4 | Manipulating events to bring surprise fortune. |
 | 5 | Posing as a flattering underling. |
 | 6 | Taking the form of one in need of protection. |
-
-[source: https://www.dndbeyond.com/monsters/4904865-succubus]: #

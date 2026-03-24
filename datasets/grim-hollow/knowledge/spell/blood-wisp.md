@@ -10,5 +10,3 @@ As part of casting this spell, you must expend two Hit Point Dice or the spell a
 Each time you roll damage for a spell while the wisp circles you, you can reroll one of the damage dice. You must use the new roll, and the wisp takes damage equal to the new roll. If the wisp is reduced to 0 Hit Points, the spell ends.
 
 **Using a Higher-Level Spell Slot.** You can expend one additional Hit Point Die for each spell slot level above 2.
-
-[source: https://www.dndbeyond.com/spells/3014217-blood-wisp]: #

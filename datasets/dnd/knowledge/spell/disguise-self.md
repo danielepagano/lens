@@ -10,5 +10,3 @@ You make yourself—including your clothing, armor, weapons, and other belonging
 The changes wrought by this spell fail to hold up to physical inspection. For example, if you use this spell to add a hat to your outfit, objects pass through the hat, and anyone who touches it would feel nothing.
 
 To discern that you are disguised, a creature must take the Study action to inspect your appearance and succeed on an Intelligence (Investigation) check against your spell save DC.
-
-[source: https://www.dndbeyond.com/spells/2619102-disguise-self]: #

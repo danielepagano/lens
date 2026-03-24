@@ -26,5 +26,3 @@ Drop. The piercer falls. Dexterity Saving Throw: DC 11, one creature directly un
 Piercers resemble stalactites, but each has a toothy maw and a single eye. They hang from cavern ceilings along routes frequented by denizens of the Underdark. Piercers might lurk for months at a time, waiting for any creature of their approximate size to pass underneath. When potential meals move below, piercers release their grip and plummet, intent on impaling prey in a single strike. If they’re successful, piercers consume their meals and then slowly climb to a new ambush position. If they miss or fail to slay their targets, piercers attempt to squirm away, but they’re easily dispatched by creatures aware of their presence.
 
 Piercers are the larval form of ropers. Young piercers seek to move as far from ropers as they can to avoid ropers’ undiscerning hunger. Many piercers migrate vast distances through the Underdark, often to caverns or buried ruins near the surface.
-
-[source: https://www.dndbeyond.com/monsters/5195159-piercer]: #

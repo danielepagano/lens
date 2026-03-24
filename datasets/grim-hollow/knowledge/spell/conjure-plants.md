@@ -14,5 +14,3 @@ Whenever the plants move within 5 feet of a creature you can see, and whenever a
 A creature makes this save only once per turn.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d6 for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/3014235-conjure-plants]: #

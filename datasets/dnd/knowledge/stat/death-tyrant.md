@@ -53,5 +53,3 @@ A death tyrant is a beholder that pursues aberrant goals beyond its death. Ten m
 Beholders typically transform into death tyrants over years when their dreams fixate on death, morbid apotheoses, or journeys to realms inhospitable to life. Some death tyrants rise from the corpses of slain beholders or result from exposure to strange magic or Underdark radiation. Sometimes beholders purposefully pursue this undead state, just as depraved magic-users pursue lichdom, although it is rare, as most beholders already believe themselves to be perfect beings.
 
 No matter how death tyrants come into being, bizarre impulses drive their deathless existences. Their motivations tend to be extreme or beyond the reason of living creatures.
-
-[source: https://www.dndbeyond.com/monsters/5194965-death-tyrant]: #

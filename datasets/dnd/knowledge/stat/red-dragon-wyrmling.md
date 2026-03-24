@@ -34,5 +34,3 @@ Red dragons take whatever they desire and burn to ash anything that stands in th
 Red dragons make their lairs amid perilous cliffs and volcanoes. Within, they amass and fiercely protect hoards of treasure, and many have perfect recall of the hoards' contents and the locations of all they’ve collected. Should anything go missing, red dragons fly into rages. They don’t rest until their treasures are returned and the thieves have burned.
 
 Red dragons believe themselves to be the greatest of all dragons and, by extension, the greatest of all creatures. To them, pillaging and conquering are their right—treasures can find no more honored place than in their hoards, and other creatures are privileged to serve them.
-
-[source: https://www.dndbeyond.com/monsters/5195179-red-dragon-wyrmling]: #

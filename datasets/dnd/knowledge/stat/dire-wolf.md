@@ -17,5 +17,3 @@ Pack Tactics. The wolf has Advantage on an attack roll against a creature if at 
 **Actions**
 
 Bite. Melee Attack Roll: +5, reach 5 ft. Hit: 8 (1d10 + 3) Piercing damage. If the target is a Large or smaller creature, it has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/4775812-dire-wolf]: #

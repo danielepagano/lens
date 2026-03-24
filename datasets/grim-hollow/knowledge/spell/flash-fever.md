@@ -10,5 +10,3 @@ Choose a creature that you can see within range. The creature breaks into a cold
 For the duration, you can take a Reaction at the start of the target’s turn to deal 1d6 Fire damage to the creature. The target must repeat the saving throw at the end of each of its turns until it gets three successes or failures. If the target succeeds on three of these saves, the spell ends on the target. If the target fails three of the saves, it takes 4d6 Fire damage and the spell ends.
 
 **Using a Higher-Level Spell Slot.** The initial damage increases by 1d6 for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/3014237-flash-fever]: #

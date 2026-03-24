@@ -14,5 +14,3 @@ A target’s astral form can travel through the Astral Plane. The moment an astr
 Any damage or other effects that apply to an astral form have no effect on the target’s body and vice versa. If a target’s body or astral form drops to 0 Hit Points, the spell ends for that target. The spell ends for all the targets if you take a Magic action to dismiss it.
 
 When the spell ends for a target who isn’t dead, the target reappears in its body and exits the state of suspended animation.
-
-[source: https://www.dndbeyond.com/spells/2618878-astral-projection]: #

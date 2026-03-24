@@ -38,5 +38,3 @@ Nightmare Riders
 | 4 | A lore-hunting mage, cultist, or lich. |
 | 5 | A night hag herding larvae between planes. |
 | 6 | A wicked cavalier, such as a death knight, an erinyes, an incubus, or a vampire. |
-
-[source: https://www.dndbeyond.com/monsters/5195143-nightmare]: #

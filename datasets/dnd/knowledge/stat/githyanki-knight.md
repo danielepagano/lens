@@ -62,5 +62,3 @@ Gith Conflicts
 | 6 | Pressed to uncover a gith spy in a planar community or on a spelljamming ship. |
 | 7 | Sent on a quest to discover the last known location of the hero Gith or Zerthimon. |
 | 8 | Tasked with returning the blade of a fallen githyanki knight to the knight’s people. |
-
-[source: https://www.dndbeyond.com/monsters/5195036-githyanki-knight]: #

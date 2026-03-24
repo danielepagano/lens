@@ -44,5 +44,3 @@ Wraith Manifestations
 | 8 | The viciousness of a profane Artifact. |
 | 9 | The vile dreams of a slumbering god. |
 | 10 | The voracity of a life-hungry realm, such as the Shadowfell or Negative Plane. |
-
-[source: https://www.dndbeyond.com/monsters/5174960-wraith]: #

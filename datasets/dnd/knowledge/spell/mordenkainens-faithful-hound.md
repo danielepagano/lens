@@ -12,5 +12,3 @@ No one but you can see the hound, and it is intangible and invulnerable. When a 
 At the start of each of your turns, the hound attempts to bite one enemy within 5 feet of it. That enemy must succeed on a Dexterity saving throw or take 4d8 Force damage.
 
 On your later turns, you can take a Magic action to move the hound up to 30 feet.
-
-[source: https://www.dndbeyond.com/spells/2619110-mordenkainens-faithful-hound]: #

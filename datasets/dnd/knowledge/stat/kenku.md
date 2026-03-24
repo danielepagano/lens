@@ -24,5 +24,3 @@ Shadow Blade. Melee or Ranged Attack Roll: +5, reach 5 ft. or range 60 ft. Hit: 
 Kenku are birdlike folk who once soared the skies and sang enchanted songs, but a curse stole their wings and transformed their voices. Now kenku slip through the shadows of cities and the Shadowfell, trying to recover what they’ve lost. To some, this means seeking an end to their curse; others search for magic or contraptions to enable them to fly and sing again.
 
 The curse affecting kenku allows them to vocally communicate only by mimicking sounds they’ve heard. Kenku can supernaturally re-create vast varieties of noises, from crying babies to running water and short phrases in others’ voices. Cunning kenku use their mimicry to deceive foes, lure creatures into ambushes, and signal to allies.
-
-[source: https://www.dndbeyond.com/monsters/5195094-kenku]: #

@@ -15,5 +15,3 @@
 **Actions**
 
 Rend. Melee Attack Roll: +5, reach 5 ft. Hit: 6 (1d6 + 3) Slashing damage
-
-[source: https://www.dndbeyond.com/monsters/4775832-panther]: #

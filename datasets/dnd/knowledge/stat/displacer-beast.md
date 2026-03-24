@@ -31,5 +31,3 @@ A displacer beast resembles a gaunt, six-legged panther with a barbed tentacle s
 Displacer beasts hunt not just to feed but because they enjoy killing. Once displacer beasts begin stalking prey, they can’t be deterred until either they or their quarry is slain. While displacer beasts commonly inhabit dense forests, they might pursue travelers across great distances and even into cities or dungeons. More cunning than mere animals, these predators might set ambushes or lie hidden for days to bring down their prey.
 
 Displacer beasts sometimes pursue prey through portals to other planes of existence. As a result, these predators can be found across the multiverse, particularly on the worlds of the Material Plane, in the Shadowfell, and in the Feywild. These restless hunters can destroy a land’s natural balance and drive other creatures to extinction. As a result, many druid circles and Fey view displacer beasts as deadly threats.
-
-[source: https://www.dndbeyond.com/monsters/5194970-displacer-beast]: #

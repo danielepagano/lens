@@ -19,5 +19,3 @@ Swarm. The swarm can occupy another creature’s space and vice versa, and the s
 Beaks. Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Piercing damage, or 2 (1d4) Piercing damage if the swarm is Bloodied.
 
 Cacophony (Recharge 6). Wisdom Saving Throw: DC 10, one creature in the swarm’s space. Failure: The target has the Deafened condition until the start of the swarm’s next turn. While Deafened, the target also has Disadvantage on ability checks and attack rolls.
-
-[source: https://www.dndbeyond.com/monsters/5195229-swarm-of-ravens]: #

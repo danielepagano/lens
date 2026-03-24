@@ -33,5 +33,3 @@ A sphinx of wonder is brightly feathered and the size of a lion cub. One comes i
 ### Sphinxes
 
 Sphinxes protect the secrets of the multiverse. Formed from the spirits of sages and explorers, sphinxes know the power of truth and the importance of preserving it. They share their wisdom only with those who prove themselves wise or overcome tests of worthiness, such as riddles or battles with dangerous beasts. Through their existences, sphinxes might change form as they gain more nuanced understanding of cosmic enigmas.
-
-[source: https://www.dndbeyond.com/monsters/4775843-sphinx-of-wonder]: #

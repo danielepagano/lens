@@ -35,5 +35,3 @@ The pranks of faerie dragon adults tend to lead others to people in need or wron
 ### Faerie Dragons
 
 Faerie dragons are cat-size pranksters with draconic features, butterfly-like wings, and scales of warm hues as youths and cool hues as adults.
-
-[source: https://www.dndbeyond.com/monsters/5194991-faerie-dragon-adult]: #

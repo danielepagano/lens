@@ -40,5 +40,3 @@ Poltergeist Activities
 | 6 | Removes bedding while someone sleeps. |
 | 7 | Sticks knives or weapons in the ceiling. |
 | 8 | Uncannily stacks books, furniture, or utensils. |
-
-[source: https://www.dndbeyond.com/monsters/5195168-poltergeist]: #

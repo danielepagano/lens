@@ -6,5 +6,3 @@
 **Duration**: 1 Hour
 
 You touch a creature and end the Poisoned condition on it. For the duration, the target has Advantage on saving throws to avoid or end the Poisoned condition, and it has Resistance to Poison damage.
-
-[source: https://www.dndbeyond.com/spells/2618915-protection-from-poison]: #

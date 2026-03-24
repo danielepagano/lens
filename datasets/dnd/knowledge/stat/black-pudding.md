@@ -45,5 +45,3 @@ Black Pudding Sources
 | 4 | A curse that transformed a forgotten tyrant. |
 | 5 | Forbidden or industrialized magic. |
 | 6 | Necrotic material animated by aimless spirits. |
-
-[source: https://www.dndbeyond.com/monsters/5194925-black-pudding]: #

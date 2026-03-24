@@ -39,5 +39,3 @@ Shambling Mound Cultivation
 | 4 | Made up of knotty vines entangling skeletons. |
 | 5 | Mutated and leaking glowing pollution. |
 | 6 | The remains of an ancient tree or a treant. |
-
-[source: https://www.dndbeyond.com/monsters/5195203-shambling-mound]: #

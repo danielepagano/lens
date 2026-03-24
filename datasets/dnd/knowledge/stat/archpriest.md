@@ -52,5 +52,3 @@ Priest Roles
 | 8 | A ritualist who uses tinctures and performances to access the divine. |
 | 9 | A shaman whose medicines ease many ills. |
 | 10 | A zealot who wages war for a divine cause. |
-
-[source: https://www.dndbeyond.com/monsters/5194903-archpriest]: #

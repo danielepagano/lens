@@ -10,5 +10,3 @@ A creature that you can see within range makes a Constitution saving throw, taki
 Alternatively, target a nonmagical plant that isn’t a creature, such as a tree or shrub. It doesn’t make a save; it simply withers and dies.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d8 for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/2618934-blight]: #

@@ -515,13 +515,10 @@ program
         fs.writeFileSync(outputPath, header, "utf8");
       }
 
-      const config = {
-        titleKey: cmdOpts.title,
-        sourceSlug: cmdOpts.slug,
-      } as const;
+      const config = { titleKey: cmdOpts.title } as const;
 
       // Write index block first
-      const indexBlock = formatLoreIndex(tocEntries, config, baseUrl);
+      const indexBlock = formatLoreIndex(tocEntries, config);
       if (!dryRun) {
         const fs = await import("fs");
         fs.appendFileSync(outputPath, `${indexBlock}\n\n`, "utf8");
@@ -541,7 +538,7 @@ program
         await page.goto(fullUrl, { waitUntil: "networkidle", timeout: 30000 });
 
         const chapterData = await parseLoreChapterPage(page);
-        const block = formatLoreChapter(chapterData, entry, config, fullUrl);
+        const block = formatLoreChapter(chapterData, entry, config);
 
         if (!dryRun) {
           const fs = await import("fs");

@@ -17,5 +17,3 @@ Pack Tactics. The hawk has Advantage on an attack roll against a creature if at 
 **Actions**
 
 Beak. Melee Attack Roll: +4, reach 5 ft. Hit: 4 (1d4 + 2) Piercing damage, or 6 (1d8 + 2) Piercing damage if the target is Bloodied.
-
-[source: https://www.dndbeyond.com/monsters/5194927-blood-hawk]: #

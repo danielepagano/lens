@@ -66,5 +66,3 @@ Burning Heat. The area within 1 mile of the lair is an area of extreme heat. A b
 Smoldering Haze. The area within 1 mile of the lair is Lightly Obscured with clouds of ash. Whenever a creature other than the dragon or one of its allies finishes a Long Rest in that area, that creature must succeed on a DC 15 Constitution saving throw or have the Poisoned condition for 1 hour.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194887-ancient-red-dragon]: #

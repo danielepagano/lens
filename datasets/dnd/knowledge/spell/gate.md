@@ -12,5 +12,3 @@ The portal has a front and a back on each plane where it appears. Travel through
 Deities and other planar rulers can prevent portals created by this spell from opening in their presence or anywhere within their domains.
 
 When you cast this spell, you can speak the name of a specific creature (a pseudonym, title, or nickname doesn’t work). If that creature is on a plane other than the one you are on, the portal opens next to the named creature and transports it to the nearest unoccupied space on your side of the portal. You gain no special power over the creature, and it is free to act as the DM deems appropriate. It might leave, attack you, or help you.
-
-[source: https://www.dndbeyond.com/spells/2618932-gate]: #

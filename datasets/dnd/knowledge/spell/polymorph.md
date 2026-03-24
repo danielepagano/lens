@@ -12,5 +12,3 @@ The target gains a number of Temporary Hit Points equal to the Hit Points of the
 The target is limited in the actions it can perform by the anatomy of its new form, and it can’t speak or cast spells.
 
 The target’s gear melds into the new form. The creature can’t use or otherwise benefit from any of that equipment.
-
-[source: https://www.dndbeyond.com/spells/2618876-polymorph]: #

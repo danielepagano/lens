@@ -35,5 +35,3 @@ Myconid sovereigns resemble towering myconid adults with elaborate fungal growth
 ### Myconids
 
 Myconids dwell in remote Underdark reaches overgrown with molds and mushrooms. These ambulatory fungal creatures tend to their sanctuaries and avoid becoming embroiled in the conflicts of other creatures. They use specialized spores to communicate, to alert one another to danger, and to defend themselves. When myconids encounter others beings, they use mind-linking spores to allow nearby creatures to telepathically share thoughts. Nevertheless, myconids’ goals remain mysterious to most non-fungal creatures.
-
-[source: https://www.dndbeyond.com/monsters/5195137-myconid-sovereign]: #

@@ -56,5 +56,3 @@ Gargoyle Camouflage
 | 6 | Rubble in a ruin or junkyard. |
 | 7 | Stalactites or icicles on a cavern ceiling. |
 | 8 | Statuary on a castle, mansion, or temple. |
-
-[source: https://www.dndbeyond.com/monsters/5195003-gargoyle]: #

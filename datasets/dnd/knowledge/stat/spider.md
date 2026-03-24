@@ -19,5 +19,3 @@ Web Walker. The spider ignores movement restrictions caused by webs, and the spi
 **Actions**
 
 Bite. Melee Attack Roll: +4, reach 5 ft. Hit: 1 Piercing damage plus 2 (1d4) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/4775844-spider]: #

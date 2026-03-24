@@ -39,5 +39,3 @@ Assassin Modus Operandi
 | 4 | Posing as celebrities, holy people, or servants. |
 | 5 | Taking trophies from their victims. |
 | 6 | Using poison with a distinctive color or smell. |
-
-[source: https://www.dndbeyond.com/monsters/5194904-assassin]: #

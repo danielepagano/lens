@@ -18,5 +18,3 @@ Grovel. The target has the Prone condition and then ends its turn.
 Halt. On its turn, the target doesn’t move and takes no action or Bonus Action.
 
 **Using a Higher-Level Spell Slot.** You can affect one additional creature for each spell slot level above 1.
-
-[source: https://www.dndbeyond.com/spells/2618985-command]: #

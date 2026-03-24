@@ -19,5 +19,3 @@ Multiattack. The ape makes two Fist attacks.
 Fist. Melee Attack Roll: +5, reach 5 ft. Hit: 5 (1d4 + 3) Bludgeoning damage.
 
 Rock (Recharge 6). Ranged Attack Roll: +5, range 25/50 ft. Hit: 10 (2d6 + 3) Bludgeoning damage.
-
-[source: https://www.dndbeyond.com/monsters/4775801-ape]: #

@@ -43,5 +43,3 @@ Chain Devil Masks
 | 2 | A disapproving deity. |
 | 3 | A harsh instructor or superior. |
 | 4 | The viewer at their lowest point in life. |
-
-[source: https://www.dndbeyond.com/monsters/5194941-chain-devil]: #

@@ -12,5 +12,3 @@ You can also turn Difficult Terrain caused by plant growth (such as thickets and
 The spell doesn’t enable plants to uproot themselves and move about, but they can move their branches, tendrils, and stalks for you.
 
 If a Plant creature is in the area, you can communicate with it as if you shared a common language.
-
-[source: https://www.dndbeyond.com/spells/2619069-speak-with-plants]: #

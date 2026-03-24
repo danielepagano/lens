@@ -10,5 +10,3 @@ You conjure spinning daggers in a 5-foot Cube centered on a point within range. 
 On your later turns, you can take a Magic action to teleport the Cube up to 30 feet.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 2d4 for each spell slot level above 2.
-
-[source: https://www.dndbeyond.com/spells/2618974-cloud-of-daggers]: #

@@ -25,5 +25,3 @@ Lone crawling claws can continue killing sprees they perpetrated in life. Some r
 ### Crawling Claws
 
 Crawling claws are severed hands that move and act of their own murderous accord. These deathless appendages can spring to life from the severed limbs of killers and villains, and sinister magic-users might animate crawling claws as foul servants. Crawling claws appear in a variety of forms, from decaying human hands to the fresh appendages of animals or monsters
-
-[source: https://www.dndbeyond.com/monsters/5194954-crawling-claw]: #

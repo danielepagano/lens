@@ -17,5 +17,3 @@ Hold Breath. The whale can hold its breath for 30 minutes.
 **Actions**
 
 Bite. Melee Attack Roll: +6, reach 5 ft. Hit: 21 (5d6 + 4) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195095-killer-whale]: #

@@ -14,5 +14,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +4 to hit, reach 5 ft. Hit: 1 Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775803-bat]: #

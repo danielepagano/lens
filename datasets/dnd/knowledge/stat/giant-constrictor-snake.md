@@ -19,5 +19,3 @@ Multiattack. The snake makes one Bite attack and uses Constrict.
 Bite. Melee Attack Roll: +6, reach 10 ft. Hit: 11 (2d6 + 4) Piercing damage.
 
 Constrict. Strength Saving Throw: DC 14, one Large or smaller creature the snake can see within 10 feet. Failure: 13 (2d8 + 4) Bludgeoning damage, and the target has the Grappled condition (escape DC 14).
-
-[source: https://www.dndbeyond.com/monsters/5195015-giant-constrictor-snake]: #

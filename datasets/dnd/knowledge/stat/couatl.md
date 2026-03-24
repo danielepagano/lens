@@ -32,5 +32,3 @@ Embodiments of prophecy and protectors of divine secrets, couatls ensure fate un
 Motivated by eternal mandates, couatls sometimes behave in inscrutable or antagonistic ways. They are inflexible and uncompromising, as their existences are fundamentally tied to their divine directives, but they harm other creatures only when absolutely necessary to achieve divine goals.
 
 Each couatl goes through a period of renewal at the end of an age. In a couatl’s life cycle, an age might correspond to a celestial calendar or some divine chronology. Near the age’s end, the couatl lays a wondrous, rainbow-hued egg. When the age ends, the couatl dies. For a period—perhaps a single day, perhaps until an annual solar event—the couatl’s work is unattended. Once this time passes, the same couatl that laid the egg hatches from it, fully grown and renewed to serve for another age.
-
-[source: https://www.dndbeyond.com/monsters/5194953-couatl]: #

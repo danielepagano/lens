@@ -39,5 +39,3 @@ Arcane Reflection (3/Day). The initiated casts Shield in response to the spellâ€
 **Description**
 
 Having been initiated into the Thaumaturge is in itself a badge of honour and recognition of magical power. Such initiates are not to be trifled with. Skilled in deception, illusions, and arcane trickery, initiates can create chaos in social and combat situations. These crafty mages can create patches of obscure areas, switch places with their enemies, and become invisible before unleashing a custom-crafted cantrip or powerful spell.
-
-[source: https://www.dndbeyond.com/monsters/5817002-thaumaturge-initiated]: #

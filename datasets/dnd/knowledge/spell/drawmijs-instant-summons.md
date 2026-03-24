@@ -10,5 +10,3 @@ You touch the sapphire used in the casting and an object weighing 10 pounds or l
 Thereafter, you can take a Magic action to speak the object’s name and crush the sapphire. The object instantly appears in your hand regardless of physical or planar distances, and the spell ends.
 
 If another creature is holding or carrying the object, crushing the sapphire doesn’t transport it, but instead you learn who that creature is and where that creature is currently located.
-
-[source: https://www.dndbeyond.com/spells/2619154-drawmijs-instant-summons]: #

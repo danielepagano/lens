@@ -44,5 +44,3 @@ Animated Object Catalysts
 | 8 | A spirit possessing the object. |
 | 9 | Wild magic, a spell that went awry, or a chaotic Artifact. |
 | 10 | The will of a powerful psychic being. |
-
-[source: https://www.dndbeyond.com/monsters/5194893-animated-armor]: #

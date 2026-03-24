@@ -45,5 +45,3 @@ Lost Memories
 | 6 | The target loses an inconsequential memory such as what they ate a few nights ago or the name of an unimportant NPC. |
 
 A Remove Curse spell reverses this effect and restores the victim's memory.
-
-[source: https://www.dndbeyond.com/monsters/5816986-dream-whisperer]: #

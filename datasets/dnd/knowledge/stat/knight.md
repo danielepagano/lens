@@ -34,5 +34,3 @@ Knights frequently lead troops in combat or work in units that dominate the batt
 ### Knights
 
 Knights are skilled warriors trained for war and tested in battle. Many serve the rulers of a realm, a religion, or an order devoted to a cause.
-
-[source: https://www.dndbeyond.com/monsters/4904816-knight]: #

@@ -20,5 +20,3 @@ Bite. Melee Attack Roll: +5, reach 5 ft. Hit: 5 (1d4 + 3) Piercing damage.
 **Description**
 
 Blink dogs glimmer with a magic that allows them to teleport, “blinking” from one spot to another. These dogs use this power to chase prey, baffle foes, and express joy. They’re frequently found among Feywild folk, such as centaurs and pixies—often as members of rollicking hunts between worlds.
-
-[source: https://www.dndbeyond.com/monsters/4830980-blink-dog]: #

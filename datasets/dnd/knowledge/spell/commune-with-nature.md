@@ -16,5 +16,3 @@ Choose three of the following facts; you learn those facts as they pertain to th
 - Locations of bodies of water
 
 For example, you could determine the location of a powerful monster in the area, the locations of bodies of water, and the locations of any towns.
-
-[source: https://www.dndbeyond.com/spells/2618989-commune-with-nature]: #

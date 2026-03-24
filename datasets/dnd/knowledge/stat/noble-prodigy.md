@@ -38,5 +38,3 @@ Noble prodigies trace their lineage to a legendary hero, a demigod, a dragon, or
 ### Nobles
 
 Nobles encompass a variety of people with social influence. They might be rulers, wealthy merchants, callous bureaucrats, or the idle elite.
-
-[source: https://www.dndbeyond.com/monsters/5195144-noble-prodigy]: #

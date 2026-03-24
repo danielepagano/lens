@@ -10,5 +10,3 @@ As part of casting this spell, you must expend six Hit Point Dice or the spell a
 Once lodged in the creature, the bloody arrow begins to burrow toward its heart, rendering it susceptible to injury. Until the spell ends, the first successful attack against a creature after its turn ends is automatically a Critical Hit.
 
 The target makes a Constitution saving throw at the end of each of its turns. On a failed save, the effect continues. On a success save, the creature takes 3d8 Necrotic damage and the spell ends.
-
-[source: https://www.dndbeyond.com/spells/3014243-heartseeker]: #

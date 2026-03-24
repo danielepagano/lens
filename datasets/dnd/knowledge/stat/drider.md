@@ -43,5 +43,3 @@ Drider Metamorphoses
 | 4 | A magical means of escaping disaster or some worse fate. |
 | 5 | A mutation after exposure to chaotic planar energies or strange Underdark radiations. |
 | 6 | A punishment from a spiteful god, like Lolth or the Queen of Air and Darkness. |
-
-[source: https://www.dndbeyond.com/monsters/5194975-drider]: #

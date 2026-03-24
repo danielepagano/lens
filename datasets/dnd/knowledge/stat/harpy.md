@@ -25,5 +25,3 @@ Hate-filled creatures, harpies strive to cause pain and bring an end to love and
 Harpies dwell in remote, dismal places tainted by tragedy and despair. Some tales claim harpies offended the gods and were transformed as a punishment; harpies might also be the descendants of such cursed souls.
 
 Every harpy sings a distinct song. While some songs are said to be heartbreaking in their beauty, others are wretched squawking and compel only the magically enthralled.
-
-[source: https://www.dndbeyond.com/monsters/5195069-harpy]: #

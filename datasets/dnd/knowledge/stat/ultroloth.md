@@ -46,5 +46,3 @@ Ultroloth Conspiracies
 | 4 | Provoke hostilities between immortal armies and sell magic weapons to both sides. |
 | 5 | Steal an invention and slay all who know of it. |
 | 6 | Unleash fiendish hordes on a foe’s homeland. |
-
-[source: https://www.dndbeyond.com/monsters/5195244-ultroloth]: #

@@ -29,5 +29,3 @@ Lacedons are loose-skinned, aquatic ghouls. They often arise from the corpses of
 ### Ghouls
 
 Packs of ghouls haunt the rotten corners of the world, ravenously hunting for corpses and those soon to be corpses. These gaunt, animate cadavers with unnaturally long tongues dwell in catacombs and ruins where they devour the contents of graves and paralyze foes with vicious claws.
-
-[source: https://www.dndbeyond.com/monsters/5195102-lacedon-ghoul]: #

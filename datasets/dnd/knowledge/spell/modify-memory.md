@@ -16,5 +16,3 @@ A modified memory doesn’t necessarily affect how a creature behaves, particula
 A Remove Curse or Greater Restoration spell cast on the target restores the creature’s true memory.
 
 **Using a Higher-Level Spell Slot.** You can alter the target’s memories of an event that took place up to 7 days ago (level 6 spell slot), 30 days ago (level 7 spell slot), 365 days ago (level 8 spell slot), or any time in the creature’s past (level 9 spell slot).
-
-[source: https://www.dndbeyond.com/spells/2619109-modify-memory]: #

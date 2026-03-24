@@ -96,5 +96,3 @@ Cursed Fate. Whenever a creature other than the mummy or one of its allies casts
 Soul Drain. Creatures within 1 mile of the lair have Disadvantage on Death Saving Throws.
 
 If the mummy lord is destroyed or moves its lair elsewhere, these effects end immediately. The effects resume if the mummy lord gains a new body (see its Undead Restoration trait).
-
-[source: https://www.dndbeyond.com/monsters/5195134-mummy-lord]: #

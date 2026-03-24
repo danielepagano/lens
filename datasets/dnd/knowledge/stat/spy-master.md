@@ -41,5 +41,3 @@ Spy Personas
 | 2 | A captive or servant of a monster or villain. |
 | 3 | A dignitary or traveler from a distant land. |
 | 4 | A visitor from a different time or world. |
-
-[source: https://www.dndbeyond.com/monsters/5195216-spy-master]: #

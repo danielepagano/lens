@@ -32,5 +32,3 @@ Slam. Melee Attack Roll: +13, reach 10 ft. Hit: 29 (4d10 + 7) Bludgeoning damage
 Terrifying in scale and overwhelming power, goristros are giant demons capable of bringing cities to ruin. These demons embody senseless anarchy and nihilistic destruction, and they take special offense at creatures or structures that rival them in size. Castles, towers, giants, and beasts of war are all common victims of these monsters’ wrath.
 
 Goristros resemble hunched, primeval minotaurs bearing the scars of Abyssal wars or wounds from mighty war machines. Their appearance reflects that of their creator, Baphomet, the demon lord worshiped by many evil minotaurs. Goristros stalk Baphomet’s Abyssal realm, known as the Endless Maze, and pulp any non-demons they encounter in that massive, magical labyrinth.
-
-[source: https://www.dndbeyond.com/monsters/5195053-goristro]: #

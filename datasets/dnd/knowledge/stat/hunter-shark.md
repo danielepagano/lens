@@ -17,5 +17,3 @@ Water Breathing. The shark can breathe only underwater.
 **Actions**
 
 Bite. Melee Attack Roll: +6 (with Advantage if the target doesn’t have all its Hit Points), reach 5 ft. Hit: 14 (3d6 + 4) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195083-hunter-shark]: #

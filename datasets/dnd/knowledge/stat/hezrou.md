@@ -42,5 +42,3 @@ Demonic Undertakings
 | 4 | Guard a site and slay anyone who comes near. |
 | 5 | Hunt down a foe, destroying everything barring the demon’s path. |
 | 6 | Intimidate someone into following orders. |
-
-[source: https://www.dndbeyond.com/monsters/5195073-hezrou]: #

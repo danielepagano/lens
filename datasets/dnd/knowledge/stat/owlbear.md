@@ -39,5 +39,3 @@ Owlbear Den Features
 | 2 | Heaps of regurgitated pellets studded with coins or other treasure. |
 | 3 | A nest with 1d6 owlbear eggs. |
 | 4 | Passages through the earth or hollow trees. |
-
-[source: https://www.dndbeyond.com/monsters/5195152-owlbear]: #

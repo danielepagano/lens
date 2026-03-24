@@ -39,5 +39,3 @@ Helmed Horror Directives
 | 4 | Perform as a laborer or servant. |
 | 5 | Serve in a legion formed from the armors of a land’s ancient defenders. |
 | 6 | Stand sentry in a gallery of mundane armors. |
-
-[source: https://www.dndbeyond.com/monsters/5195072-helmed-horror]: #

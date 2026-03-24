@@ -32,5 +32,3 @@ For quaggoths, every fight means life or death. They battle with wild fury and d
 Beastly hunters endemic to subterranean depths, quaggoths scrape harsh existences from the Underdark. While they can survive on bitter lichens and toxic fungi, they viciously attack anything they can make a meal of, from giant spiders to explorers. Quaggoths sometimes serve as muscle for Underdark-dwelling villains.
 
 Quaggoths frequently collect in small bands led by the most fearsome group member. These bands are proud and quick to hold grudges. Anyone who harms a quaggoth—or who is suspected of doing so—earns the enmity of that quaggoth’s band regardless of reason or fault. These grudges sometimes extend to whole communities rather than individuals. Generations of quaggoths might seek revenge against a settlement’s inhabitants for decades-old slights. Only the leader of a quaggoth band can demand that a grudge ends.
-
-[source: https://www.dndbeyond.com/monsters/5195176-quaggoth]: #

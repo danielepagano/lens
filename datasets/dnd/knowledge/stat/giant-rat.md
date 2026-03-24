@@ -17,5 +17,3 @@ Pack Tactics. The rat has Advantage on an attack roll against a creature if at l
 **Actions**
 
 Bite. Melee Attack Roll: +5, reach 5 feet. Hit: 5 (1d4 + 3) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195025-giant-rat]: #

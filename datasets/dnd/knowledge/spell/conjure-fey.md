@@ -10,5 +10,3 @@ You conjure a Medium spirit from the Feywild in an unoccupied space you can see 
 As a Bonus Action on your later turns, you can teleport the spirit to an unoccupied space you can see within 30 feet of the space it left and make the attack against a creature within 5 feet of it.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d12 for each spell slot level above 6.
-
-[source: https://www.dndbeyond.com/spells/2619048-conjure-fey]: #

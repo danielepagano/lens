@@ -85,8 +85,6 @@ ddb parse --parser spell --url "https://www.dndbeyond.com/spells/2618909-fly"
 ddb parse --parser equipment --url "https://www.dndbeyond.com/spells/2618909-fly"
 ```
 
-Sample D&D Beyond URLs can be taken from the `[source: ...]` lines in `datasets/dnd/knowledge/spell/*.md` (e.g. `fly.md`, `fireball.md`). For list pages use a URL like `https://www.dndbeyond.com/spells?filter-source=<id>` with `--parser list`.
-
 ---
 
 ### `ddb sources`

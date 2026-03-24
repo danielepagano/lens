@@ -14,5 +14,3 @@ The first time a creature enters the chain’s area on a turn or starts its turn
 When a creature Restrained by this spell ends its turn, the creature takes 3d6 Bludgeoning damage.
 
 **Using a Higher-Level Spell Slot.** The initial and subsequent damage increase by 1d6 for each spell slot level above 6.
-
-[source: https://www.dndbeyond.com/spells/3014230-chains-of-beleth]: #

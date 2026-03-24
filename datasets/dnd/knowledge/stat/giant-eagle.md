@@ -17,5 +17,3 @@
 Multiattack. The eagle makes two Rend attacks.
 
 Rend. Melee Attack Roll: +5, reach 5 ft. Hit: 5 (1d4 + 3) Slashing damage plus 3 (1d6) Radiant damage.
-
-[source: https://www.dndbeyond.com/monsters/5195017-giant-eagle]: #

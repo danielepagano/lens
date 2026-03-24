@@ -33,5 +33,3 @@ Fomorian Warping
 | 2 | Excessive sweating of rainbow-hued fluids. |
 | 3 | Patches of wriggling hair. |
 | 4 | Veins that bulge and lurch under the skin. |
-
-[source: https://www.dndbeyond.com/monsters/5195000-fomorian]: #

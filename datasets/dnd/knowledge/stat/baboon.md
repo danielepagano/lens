@@ -16,5 +16,3 @@ Pack Tactics. The baboon has Advantage on an attack roll against a creature if a
 **Actions**
 
 Bite. Melee Attack Roll: +1, reach 5 ft. Hit: 1 (1d4 - 1) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5194910-baboon]: #

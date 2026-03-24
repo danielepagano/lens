@@ -14,5 +14,3 @@
 **Actions**
 
 Hooves. Melee Attack Roll: +6, reach 5 ft. Hit: 6 (1d4 + 4) Bludgeoning damage.
-
-[source: https://www.dndbeyond.com/monsters/4775813-draft-horse]: #

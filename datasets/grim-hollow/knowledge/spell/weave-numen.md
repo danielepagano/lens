@@ -16,5 +16,3 @@ In addition, you gain thirteen threads. You can spend these threads to gain bene
 You lose all remaining threads when this spell ends. If you spend all threads granted by the spell, the spell ends.
 
 **Using a Higher-Level Spell Slot.** You gain an additional two threads per spell slot level above 6.
-
-[source: https://www.dndbeyond.com/spells/3014259-weave-numen]: #

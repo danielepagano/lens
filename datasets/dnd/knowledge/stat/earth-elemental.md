@@ -42,5 +42,3 @@ Earth Elemental Compositions
 | 6 | Rubble or pieces of a ruined structure. |
 | 7 | Striking striations or bands of color. |
 | 8 | Veins of iron or other ore. |
-
-[source: https://www.dndbeyond.com/monsters/5194980-earth-elemental]: #

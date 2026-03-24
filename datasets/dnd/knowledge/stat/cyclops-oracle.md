@@ -40,5 +40,3 @@ Cyclops oracles gaze through history to learn hidden truths. Many share these se
 ### Cyclopes
 
 Cyclopes are gigantic, one-eyed descendants of the gods. Using their mystical vision, cyclopes can witness how future events are likely to occur.
-
-[source: https://www.dndbeyond.com/monsters/5194956-cyclops-oracle]: #

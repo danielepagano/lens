@@ -14,5 +14,3 @@ The wall is an object that can be damaged and thus breached. It has AC 12 and 30
 A creature moving through the sheet of frigid air for the first time on a turn makes a Constitution saving throw, taking 5d6 Cold damage on a failed save or half as much damage on a successful one.
 
 **Using a Higher-Level Spell Slot.** The damage the wall deals when it appears increases by 2d6 and the damage from passing through the sheet of frigid air increases by 1d6 for each spell slot level above 6.
-
-[source: https://www.dndbeyond.com/spells/2619195-wall-of-ice]: #

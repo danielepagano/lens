@@ -14,5 +14,3 @@ When the spell ends, you return to the plane you left in the spot that correspon
 This spell ends instantly if you cast it while you are on the Ethereal Plane or a plane that doesn’t border it, such as one of the Outer Planes.
 
 **Using a Higher-Level Spell Slot.** You can target up to three willing creatures (including yourself) for each spell slot level above 7. The creatures must be within 10 feet of you when you cast the spell.
-
-[source: https://www.dndbeyond.com/spells/2619193-etherealness]: #

@@ -12,5 +12,3 @@ If a creature hits you with a Melee weapon, you can take a Reaction to have clot
 You can trap a number of weapons equal to the number of Hit Dice expended to cast the spell. When the spell ends, the weapons are released.
 
 **Using a Higher-Level Spell Slot.** You can trap an additional weapon for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/3014257-viscous-sheath]: #

@@ -12,5 +12,3 @@ You touch a creature and magically remove one of the following effects from it:
 - A curse, including the target’s Attunement to a cursed magic item
 - Any reduction to one of the target’s ability scores
 - Any reduction to the target’s Hit Point maximum
-
-[source: https://www.dndbeyond.com/spells/2618961-greater-restoration]: #

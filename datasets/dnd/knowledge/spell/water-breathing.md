@@ -6,5 +6,3 @@
 **Duration**: 24 Hours
 
 This spell grants up to ten willing creatures of your choice within range the ability to breathe underwater until the spell ends. Affected creatures also retain their normal mode of respiration.
-
-[source: https://www.dndbeyond.com/spells/2619205-water-breathing]: #

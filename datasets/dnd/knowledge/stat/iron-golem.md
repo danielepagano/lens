@@ -42,5 +42,3 @@ Iron Golem Orders
 | 2 | Exhale poison gas whenever it can, pausing only when someone speaks a passphrase. |
 | 3 | Pose as a statue until a community’s hour of greatest need. |
 | 4 | Stand atop the resting place of a powerful magic item. |
-
-[source: https://www.dndbeyond.com/monsters/5195090-iron-golem]: #

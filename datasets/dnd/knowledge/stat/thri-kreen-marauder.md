@@ -30,5 +30,3 @@ Thri-kreen marauders employ weapons made of stone and bone, such as the spear-li
 ### Thri-kreen
 
 Thri-kreen are mantis-like wanderers who harness their innate camouflage and psychic abilities to survive. Different groups of thri-kreen have distinct carapaces, from the rocky shades of desert dwellers to the vibrant hues of those living in verdant lands. While their language has a distinctly insectile quality, thri-kreen often use telepathy to communicate, and groups can rapidly share a wealth of detailed information without making a sound.
-
-[source: https://www.dndbeyond.com/monsters/5195233-thri-kreen-marauder]: #

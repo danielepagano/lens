@@ -17,5 +17,3 @@ Pack Tactics. The hyena has Advantage on an attack roll against a creature if at
 **Actions**
 
 Bite. Melee Attack Roll: +2, reach 5 ft. Hit: 3 (1d6) Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/5195085-hyena]: #

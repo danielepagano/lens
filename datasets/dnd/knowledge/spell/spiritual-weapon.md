@@ -10,5 +10,3 @@ You create a floating, spectral force that resembles a weapon of your choice and
 As a Bonus Action on your later turns, you can move the force up to 20 feet and repeat the attack against a creature within 5 feet of it.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d8 for every slot level above 2.
-
-[source: https://www.dndbeyond.com/spells/2619081-spiritual-weapon]: #

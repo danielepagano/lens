@@ -33,5 +33,3 @@ Some kobolds are born with wings. Called urds by others of their kind, these kob
 Cowardly cousins to chromatic dragons, kobolds serve draconic overlords as warriors and servants. These scrappy menaces mimic the behaviors of their dragon masters. Though their small stature and recklessness make kobolds poor imitators of dragons, what they lack in ferocity they make up for in zeal and ingenuity. They are especially adept at creating traps and setting ambushes.
 
 Kobolds’ scales resemble those of chromatic dragons that live near their warrens. Rarely, kobolds possess features evocative of metallic dragons or other dragon-like creatures.
-
-[source: https://www.dndbeyond.com/monsters/5195271-winged-kobold]: #

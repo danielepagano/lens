@@ -26,5 +26,3 @@ Tentacle. Melee Attack Roll: +9, reach 15 ft. Hit: 19 (3d8 + 6) Bludgeoning dama
 **Reactions**
 
 Ink Cloud (1/Day). Trigger: The squid takes damage while underwater. Response: The squid releases ink that fills a 15-foot Cube centered on itself, and the squid moves up to its Swim Speed. The Cube is Heavily Obscured for 1 minute or until a strong current or similar effect disperses the ink.
-
-[source: https://www.dndbeyond.com/monsters/5195028-giant-squid]: #

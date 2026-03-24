@@ -5,14 +5,11 @@ import type { LoreChapterData } from "../parsers/lore-chapter.js";
 export interface LoreIndexConfig {
   /** Short, dot-safe title slug used in KB ids, e.g. "grim-hollow". */
   titleKey: string;
-  /** DDB source slug, e.g. "ghcg". Used for tagging and [source] annotation. */
-  sourceSlug: string;
 }
 
 export function formatLoreIndex(
   entries: LoreTocEntry[],
-  config: LoreIndexConfig,
-  sourceUrl: string
+  config: LoreIndexConfig
 ): string {
   const id = `lore.${config.titleKey}`;
 
@@ -59,8 +56,6 @@ export function formatLoreIndex(
     lines.push("");
   }
 
-  lines.push(`[ddb-source:${config.sourceSlug}]: ${sourceUrl}`);
-
   const body = lines.join("\n");
   return wrapKbBlock(id, childIds, body);
 }
@@ -68,8 +63,7 @@ export function formatLoreIndex(
 export function formatLoreChapter(
   chapter: LoreChapterData,
   entry: LoreTocEntry,
-  config: LoreIndexConfig,
-  fullUrl: string
+  config: LoreIndexConfig
 ): string {
   const slugPart = chapter.slug || (entry.href.split("/").filter(Boolean).pop() ?? "");
   const id = buildChapterId(config.titleKey, entry.chapterNumber, slugPart);
@@ -83,7 +77,7 @@ export function formatLoreChapter(
 
   const header = `**${headingLabel}**`;
 
-  const body = `${header}\n\n${chapter.body.trimEnd()}\n\n[ddb-source:${config.sourceSlug}]: ${fullUrl}`;
+  const body = `${header}\n\n${chapter.body.trimEnd()}`;
 
   return wrapKbBlock(id, tags, body);
 }

@@ -24,5 +24,3 @@ Rapier. Melee Attack Roll: +5, reach 5 ft., Hit: 5 (1d8 + 1) Piercing damage and
 **Reactions**
 
 Paper Shield (1/Day): Trigger: A creature that the trade factor can see makes an attack roll against the factor. Response: The trade factor produces a legal document sealed with a magical ward and imposes Disadvantage on the attacker’s roll.
-
-[source: https://www.dndbeyond.com/monsters/5817003-trade-factor]: #

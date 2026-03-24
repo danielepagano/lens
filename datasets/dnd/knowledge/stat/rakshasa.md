@@ -37,5 +37,3 @@ Masters of manipulation, rakshasas infiltrate communities to claim positions of 
 Rakshasas can withstand some degree of magic, but legends tell of blessed warriors felling them with crossbow bolts, arrows, or similar weapons.
 
 Rakshasas’ appearances combine humanlike bodies with the features of animals and monsters. All rakshasas have a physical oddity that remains when they adopt magical disguises, such as palms where the backs of the hands would be on humans.
-
-[source: https://www.dndbeyond.com/monsters/5195178-rakshasa]: #

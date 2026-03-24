@@ -59,5 +59,3 @@ Shadow dragons haunt forgotten, lightless places. While they might have once bee
 Shadow dragons typically dwell in the Underdark, particularly in areas with connections to the Shadowfell or other tenebrous realms. In some cases, they might lurk in dark, corrupted reaches of the regions they preferred before transforming into shadow dragons. Overgrown swamps, sepulchral desert ruins, and ash-choked volcanoes make natural lairs for shadow dragons.
 
 Like many other dragons, shadow dragons collect hoards. Their tastes tend to be morbid—collecting coins from ruined empires and their victims’ skulls.
-
-[source: https://www.dndbeyond.com/monsters/5195201-shadow-dragon-huge]: #

@@ -91,5 +91,3 @@ All-Seeing. While in its lair, the lich can cast Clairvoyance, requiring no spel
 Inevitable Siphon. Whenever a Humanoid dies within 1 mile of the lair, its soul is immediately consumed by the lich. A Humanoid whose soul is consumed in this way can be brought back to life only by a True Resurrection or Wish spell.
 
 If the lich is destroyed or moves its lair elsewhere, these effects end immediately. These effects resume if the lich gains a new body (see its Spirit Jar trait).
-
-[source: https://www.dndbeyond.com/monsters/5195106-lich]: #

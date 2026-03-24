@@ -36,5 +36,3 @@ Questing knights travel in pursuit of a cause, such as slaying a villain, defeat
 ### Knights
 
 Knights are skilled warriors trained for war and tested in battle. Many serve the rulers of a realm, a religion, or an order devoted to a cause.
-
-[source: https://www.dndbeyond.com/monsters/5195177-questing-knight]: #

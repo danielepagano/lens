@@ -68,5 +68,3 @@ Gentle Gusts. Winds buoy creatures that fall within 1 mile of the lair. Such cre
 Sun and Storms. While in its lair, the dragon can cast Control Weather, requiring no Material components and using the same spellcasting ability as its Spellcasting action.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194888-ancient-silver-dragon]: #

@@ -14,5 +14,3 @@
 **Actions**
 
 Bite. Melee Attack Roll: +4, reach 5 ft. Hit: 4 (1d4 + 2) Piercing damage, and the target has the Poisoned condition until the start of the centipede’s next turn.
-
-[source: https://www.dndbeyond.com/monsters/5195014-giant-centipede]: #

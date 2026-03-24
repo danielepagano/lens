@@ -17,5 +17,3 @@ You receive an omen from an otherworldly entity about the results of a course of
 The spell doesn’t account for circumstances, such as other spells, that might change the results.
 
 If you cast the spell more than once before finishing a Long Rest, there is a cumulative 25 percent chance for each casting after the first that you get no answer.
-
-[source: https://www.dndbeyond.com/spells/2618882-augury]: #

@@ -46,5 +46,3 @@ Wight Motives
 | 6 | Obey the cult or deity that gave it unlife. |
 | 7 | Prove it was the greatest warrior to ever live. |
 | 8 | Seek its stolen heart or other treasure. |
-
-[source: https://www.dndbeyond.com/monsters/5195269-wight]: #

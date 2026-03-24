@@ -29,5 +29,3 @@ A violet fungus necrohulk forms when a violet fungus colony infests and animates
 ### Fungi
 
 The dank, sunless Underdark is a fertile breeding ground for weird and dangerous fungi.
-
-[source: https://www.dndbeyond.com/monsters/5195253-violet-fungus-necrohulk]: #

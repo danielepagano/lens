@@ -12,5 +12,3 @@ When you cast the spell, you can use the hand to manipulate an object, open an u
 As a Magic action on your later turns, you can control the hand thus again. As part of that action, you can move the hand up to 30 feet.
 
 The hand can’t attack, activate magic items, or carry more than 10 pounds.
-
-[source: https://www.dndbeyond.com/spells/2619008-mage-hand]: #

@@ -29,5 +29,3 @@ Ghasts frequently organize ghouls into packs to despoil crypts and steal the wea
 ### Ghasts
 
 Ghasts are reeking, undying corpses closely related to ghouls. They hunger for the vices they enjoyed in life as much as they do for rotting flesh.
-
-[source: https://www.dndbeyond.com/monsters/5195007-ghast]: #

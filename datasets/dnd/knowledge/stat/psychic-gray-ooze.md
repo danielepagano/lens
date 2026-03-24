@@ -35,5 +35,3 @@ Psychic gray oozes exhibit violent psionic abilities. These oozes sometimes resu
 ### Gray Oozes
 
 Gray oozes are predatory, corrosive slimes that blend in with stony surroundings.
-
-[source: https://www.dndbeyond.com/monsters/5195172-psychic-gray-ooze]: #

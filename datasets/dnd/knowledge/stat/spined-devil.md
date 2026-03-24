@@ -38,5 +38,3 @@ Spined Devil Intelligence
 | 4 | The identities of incognito individuals. |
 | 5 | The movements of extraplanar armies. |
 | 6 | Prophecies or secrets hidden by gods. |
-
-[source: https://www.dndbeyond.com/monsters/5195214-spined-devil]: #

@@ -38,5 +38,3 @@ Water Elemental Compositions
 | 2 | Energetic effervescence. |
 | 3 | Muddy, polluted, or crystal-clear water. |
 | 4 | Seaweed, tiny fish, or other sea life. |
-
-[source: https://www.dndbeyond.com/monsters/5195261-water-elemental]: #

@@ -10,5 +10,3 @@ You tap into the nightmares of a creature you can see within range and create an
 For the duration, the target makes a Wisdom saving throw at the end of each of its turns. On a failed save, it takes the Psychic damage again. On a successful save, the spell ends.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d10 for each spell slot level above 4.
-
-[source: https://www.dndbeyond.com/spells/2618857-phantasmal-killer]: #

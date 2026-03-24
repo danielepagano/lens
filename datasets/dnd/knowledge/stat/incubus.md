@@ -46,5 +46,3 @@ Incubus Nightmares
 | 6 | A shadowy intruder or monstrous silhouette. |
 | 7 | A traumatic past event. |
 | 8 | A visitor with an eerie or enigmatic message. |
-
-[source: https://www.dndbeyond.com/monsters/4904793-incubus]: #

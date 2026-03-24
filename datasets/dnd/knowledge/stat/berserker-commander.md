@@ -32,5 +32,3 @@ Berserker commanders bear the scars of battle and drive their followers to match
 ### Berserkers
 
 Gripped by the adrenaline of battle, berserkers are reckless invaders, pit fighters, and other ferocious warriors.
-
-[source: https://www.dndbeyond.com/monsters/5194924-berserker-commander]: #

@@ -32,5 +32,3 @@ Reflexive Antennae. Trigger: An attack roll hits the rust monster. Response: The
 **Description**
 
 Rust monsters roam the Underdark searching for ferrous metal. When they find this material—whether natural veins, subterranean structures, or creatures’ equipment—these beetle-like scavengers rush to feed. Using their feathery antennae, rust monsters dissolve metals such as iron and steel into rusted scrap. They easily gnaw through this corroded metal using their mandibles. Rust monsters usually ignore creatures without metal equipment, but they defend themselves if attacked.
-
-[source: https://www.dndbeyond.com/monsters/5195186-rust-monster]: #

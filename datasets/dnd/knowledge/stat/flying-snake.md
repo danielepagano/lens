@@ -16,5 +16,3 @@ Flyby. The snake doesn’t provoke an Opportunity Attack when it flies out of an
 **Actions**
 
 Bite. Melee Attack Roll: +4, reach 5 ft. Hit: 1 Piercing damage plus 5 (2d4) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/5194999-flying-snake]: #

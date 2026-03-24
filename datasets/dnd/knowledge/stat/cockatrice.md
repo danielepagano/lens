@@ -25,5 +25,3 @@ Cockatrices often try to claim eye-catching structures—such as ruins and seclu
 ### Cockatrices
 
 Cockatrices combine the features of irate roosters and starving reptiles. They petrify those they bite, their slightest peck turning their prey to stone.
-
-[source: https://www.dndbeyond.com/monsters/5194949-cockatrice]: #

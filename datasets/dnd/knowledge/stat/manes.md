@@ -25,5 +25,3 @@ Manes lash out at creatures that appear weaker than themselves—or that react t
 ### Manes
 
 The lowest form of demons, manes appear when truly loathsome souls are condemned to the Abyss. These misshapen demons have distorted features and bodies that crawl with Abyssal parasites. Overwhelmed by demonic urges and constant terror, manes know only shock and frenzied outbursts.
-
-[source: https://www.dndbeyond.com/monsters/5195114-manes]: #

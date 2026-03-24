@@ -26,5 +26,3 @@ Hand Crossbow (Humanoid or Hybrid Form Only). Ranged Attack Roll: +5, range 30/1
 **Description**
 
 Wererats can shape-shift from their humanoid forms into giant rats or humanoid-rat hybrids. These creatures can transform voluntarily, but some are magically compelled to shape-shift when exposed to complete darkness or during nights of a new moon. Often, wererats’ nature results from a divine curse—punishment for their deceitful natures or the crimes of their treacherous families. Wererats frequently work in groups, forming bandit gangs or thieves’ guilds.
-
-[source: https://www.dndbeyond.com/monsters/5195265-wererat]: #

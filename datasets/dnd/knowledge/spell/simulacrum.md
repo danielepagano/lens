@@ -12,5 +12,3 @@ The simulacrum is Friendly to you and creatures you designate. It obeys your com
 If the simulacrum takes damage, the only way to restore its Hit Points is to repair it as you take a Long Rest, during which you expend components worth 100 GP per Hit Point restored. The simulacrum must stay within 5 feet of you for the repair.
 
 The simulacrum lasts until it drops to 0 Hit Points, at which point it reverts to snow and melts away. If you cast this spell again, any simulacrum you created with this spell is instantly destroyed.
-
-[source: https://www.dndbeyond.com/spells/2618995-simulacrum]: #

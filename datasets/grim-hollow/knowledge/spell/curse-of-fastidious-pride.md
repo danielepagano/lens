@@ -20,5 +20,3 @@ Stage 2. The cursed creature feels restless unless it is actively working to acc
 Stage 3. The cursed creature believes everyone is involved in a conspiracy to bring about its downfall. Whenever it fails a D20 Test, it has Disadvantage on the next D20 Test it makes.
 
 Culmination. The cursed creature twists into a deformed figure and becomes a Mind Siphon.
-
-[source: https://www.dndbeyond.com/spells/3014300-curse-of-fastidious-pride]: #

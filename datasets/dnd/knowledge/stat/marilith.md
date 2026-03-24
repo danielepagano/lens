@@ -35,5 +35,3 @@ Parry. Trigger: The marilith is hit by a melee attack roll while holding a weapo
 **Description**
 
 Mariliths are six-armed, serpentlike demons that wield lethal, Abyss-forged blades. With these cursed weapons and experience from countless battles, they lead other demons to slaughter virtuous souls. They often command droves of weaker demons.
-
-[source: https://www.dndbeyond.com/monsters/5195117-marilith]: #

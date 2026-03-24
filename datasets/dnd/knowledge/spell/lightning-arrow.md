@@ -10,5 +10,3 @@ As your attack hits or misses the target, the weapon or ammunition you’re usin
 The weapon or ammunition then returns to its normal form.
 
 **Using a Higher-Level Spell Slot.** The damage for both effects of the spell increases by 1d8 for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/2618997-lightning-arrow]: #

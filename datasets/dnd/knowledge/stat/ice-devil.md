@@ -36,5 +36,3 @@ Ice devils act maliciously, disguising their whims as reason and strategy. In th
 When indulging their own schemes, ice devils tempt mortals to forsake empathy and social connections to embrace selfish, destructive visions of intellectualism. After isolating victims, these devils drain them of their secrets or send them forth to spread fractious dogmas cloaked as reason.
 
 Ice devils usually lurk in frozen realms, particularly the frigid layer of Cania in the Nine Hells.
-
-[source: https://www.dndbeyond.com/monsters/5195086-ice-devil]: #

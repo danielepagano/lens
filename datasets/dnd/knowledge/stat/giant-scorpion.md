@@ -18,5 +18,3 @@ Multiattack. The scorpion makes two Claw attacks and one Sting attack.
 Claw. Melee Attack Roll: +5, reach 5 ft. Hit: 6 (1d6 + 3) Bludgeoning damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 13) from one of two claws.
 
 Sting. Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Piercing damage plus 11 (2d10) Poison damage.
-
-[source: https://www.dndbeyond.com/monsters/5195026-giant-scorpion]: #

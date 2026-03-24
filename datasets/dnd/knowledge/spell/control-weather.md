@@ -35,5 +35,3 @@ When you change the weather conditions, find a current condition on the followin
 | 3 | Strong wind |
 | 4 | Gale |
 | 5 | Storm |
-
-[source: https://www.dndbeyond.com/spells/2619054-control-weather]: #

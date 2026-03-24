@@ -41,5 +41,3 @@ Bone Devil Objectives
 | 2 | Convey a message or make an example of someone in the name of an archdevil. |
 | 3 | Find someone who broke a deal with a devil. |
 | 4 | Slay someone or steal something as part of its pact with a wicked magic-user. |
-
-[source: https://www.dndbeyond.com/monsters/5194930-bone-devil]: #

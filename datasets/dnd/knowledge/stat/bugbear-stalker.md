@@ -32,5 +32,3 @@ Bugbear stalkers frequently take their victims hostage, relishing opportunities 
 ### Bugbears
 
 Bugbears embody fear of the wilds and the menace of natural places. They’re notoriously stealthy, and foes that venture into their territories often vanish without a trace.
-
-[source: https://www.dndbeyond.com/monsters/5194934-bugbear-stalker]: #

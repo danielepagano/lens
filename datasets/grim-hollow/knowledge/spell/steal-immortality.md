@@ -20,5 +20,3 @@ Fiend. You have Resistance to Cold and Fire damage and have a Fly Speed of 60 fe
 Undead. You have Immunity to Necrotic damage, and you have Immunity to the Charmed and Frightened conditions.
 
 You have the creature type and benefits until you cast the spell again, or you are reduced to 0 Hit Points.
-
-[source: https://www.dndbeyond.com/spells/3014293-steal-immortality]: #

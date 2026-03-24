@@ -18,5 +18,3 @@ The spell’s duration depends on the object’s material, as shown in the Mater
 | Adamantine or mithral | 1 minute |
 
 **Using a Higher-Level Spell Slot.** The Cube increases by 5 feet for each spell slot level above 5.
-
-[source: https://www.dndbeyond.com/spells/2619077-creation]: #

@@ -12,5 +12,3 @@ Each creature in the Sphere makes a Constitution saving throw, taking 5d8 Poison
 The Sphere moves 10 feet away from you at the start of each of your turns.
 
 **Using a Higher-Level Spell Slot.** The damage increases by 1d8 for each spell slot level above 5.
-
-[source: https://www.dndbeyond.com/spells/2618976-cloudkill]: #

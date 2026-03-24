@@ -16,5 +16,3 @@ Beckon Fire. You create a thin cloud of harmless embers and colored, scented smo
 Beckon Water. You create a spray of cool mist that lightly dampens creatures and objects in a 5-foot Cube. Alternatively, you create 1 cup of clean water either in an open container or on a surface, and the water evaporates in 1 minute.
 
 Sculpt Element. You cause dirt, sand, fire, smoke, mist, or water that can fit in a 1-foot Cube to assume a crude shape (such as that of a creature) for 1 hour.
-
-[source: https://www.dndbeyond.com/spells/2618834-elementalism]: #

@@ -18,5 +18,3 @@ Swarm. The swarm can occupy another creature’s space and vice versa, and the s
 **Actions**
 
 Bites. Melee Attack Roll: +3, reach 5 ft. Hit: 6 (2d4 + 1) Poison damage, or 3 (1d4 + 1) Poison damage if the swarm is Bloodied.
-
-[source: https://www.dndbeyond.com/monsters/5195224-swarm-of-insects]: #

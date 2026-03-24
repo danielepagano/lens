@@ -40,5 +40,3 @@ These merfolk mages use magic to manipulate water, storms, and sea creatures to 
 ### Merfolk
 
 Beneath the waves dwell merfolk, mysterious creatures that merge the features of humans and sea creatures. Some are curious about land dwellers, while others view them with suspicion.
-
-[source: https://www.dndbeyond.com/monsters/5195120-merfolk-wavebender]: #

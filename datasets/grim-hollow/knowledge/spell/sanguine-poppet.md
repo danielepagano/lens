@@ -12,5 +12,3 @@ The poppet’s AC equals 10 plus your Proficiency Bonus and your spellcasting ab
 As a Magic action, you can cause the poppet to detonate in an explosion of blood, ending this spell. Roll the Hit Point Dice expended to cast this spell. Each creature in a 30-foot-radius Sphere centered on the poppet makes a Dexterity saving throw, taking Necrotic damage equal to the roll on a failed save or half as much damage on a successful one.
 
 **Using a Higher-Level Spell Slot.** You can expend an additional Hit Point Die for each spell slot level above 3. Additionally, the duration of this spell increases by 1 hour for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/3014283-sanguine-poppet]: #

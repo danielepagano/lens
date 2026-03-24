@@ -31,5 +31,3 @@ Spellcasting. The preceptor casts one of the following spells, requiring no Mate
 At Will: Light, Mage Hand, Prestidigitation
 
 1/Day Each: Acid Arrow, Animate Dead, Banishment, Detect Magic, Dispel Magic, Enhance Ability, Fireball, Levitate, Magic Circle, Misty Step, Summon Dragon, Unseen Servant
-
-[source: https://www.dndbeyond.com/monsters/5816999-preceptor]: #

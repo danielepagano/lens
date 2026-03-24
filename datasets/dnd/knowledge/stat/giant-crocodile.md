@@ -21,5 +21,3 @@ Multiattack. The crocodile makes one Bite attack and one Tail attack.
 Bite. Melee Attack Roll: +8, reach 5 ft. Hit: 21 (3d10 + 5) Piercing damage. If the target is a Large or smaller creature, it has the Grappled condition (escape DC 15). While Grappled, the target has the Restrained condition and can’t be targeted by the crocodile’s Tail.
 
 Tail. Melee Attack Roll: +8, reach 10 ft. Hit: 18 (3d8 + 5) Bludgeoning damage. If the target is a Large or smaller creature, it has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/5195016-giant-crocodile]: #

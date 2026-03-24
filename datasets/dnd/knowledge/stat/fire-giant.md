@@ -28,5 +28,3 @@ Fire giants inhabit the hollow vaults and molten rivers of mountainous depths. T
 Fire giants have broad frames, skin tones in a variety of rocklike shades, and hair like flame.
 
 Most fire giants dwell in volcanically active mountains or cavernous depths that house their fortress-forges. Evil fire giants tend to be martially minded, and they craft mighty arms to conquer their neighbors and seize valuable resources. More temperate fire giants trade their works for what they need, and they might share the ancient techniques of Giant artisans with other craftspeople. In either case, fire giants are prone to undertaking ambitious designs, and they rarely appreciate interruptions in their titanic workshops.
-
-[source: https://www.dndbeyond.com/monsters/5194994-fire-giant]: #

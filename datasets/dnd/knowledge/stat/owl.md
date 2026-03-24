@@ -17,5 +17,3 @@ Flyby. The owl doesn’t provoke Opportunity Attacks when it flies out of an ene
 **Actions**
 
 Talons. Melee Attack Roll: +3, reach 5 ft. Hit: 1 Slashing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775831-owl]: #

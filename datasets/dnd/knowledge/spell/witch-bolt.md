@@ -12,5 +12,3 @@ On each of your subsequent turns, you can take a Bonus Action to deal 1d12 Light
 The spell ends if the target is ever outside the spell’s range or if it has Total Cover from you.
 
 **Using a Higher-Level Spell Slot.** The initial damage increases by 1d12 for each spell slot level above 1.
-
-[source: https://www.dndbeyond.com/spells/2619215-witch-bolt]: #

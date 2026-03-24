@@ -16,5 +16,3 @@ Swarm. The swarm can occupy another creature’s space and vice versa, and the s
 **Actions**
 
 Bites. Melee Attack Roll: +2, reach 5 ft. Hit: 5 (2d4) Piercing damage, or 2 (1d4) Piercing damage if the swarm is Bloodied.
-
-[source: https://www.dndbeyond.com/monsters/5195228-swarm-of-rats]: #

@@ -35,5 +35,3 @@ Griffon Tales
 | 4 | Prefer the taste of horses over all other prey. |
 | 5 | Serve the first creature they see after hatching. |
 | 6 | Won’t attack those with royal blood. |
-
-[source: https://www.dndbeyond.com/monsters/5195062-griffon]: #

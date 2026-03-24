@@ -56,5 +56,3 @@ Mage Roles
 | 8 | A soothsayer who advises rulers. |
 | 9 | A war mage who aids soldiers in battle. |
 | 10 | A witch who shares secret wisdom. |
-
-[source: https://www.dndbeyond.com/monsters/4831023-mage]: #

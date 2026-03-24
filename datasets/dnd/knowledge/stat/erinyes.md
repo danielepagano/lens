@@ -39,5 +39,3 @@ Erinyes, also known as furies, are winged devils clad in fiendish armor. These f
 Erinyes often serve archdevils and guard the order of the Nine Hells against trespassers and escapees. Although they’re prone to wrathful outbursts, erinyes cooperate well with other devils. They sometimes hunt in trios with other erinyes, forging infamous reputations for themselves.
 
 When not in the service of a diabolical master, erinyes hunt wicked souls. They pursue quarries relentlessly, across the multiverse and for ages if need be. While they might be summoned to serve evil magic-users, erinyes also listen for oaths and curses sworn in their names. In rare cases, wronged mortals who call out with just rage might be heard by an erinyes who appears to take vengeance on their behalf. Once erinyes are so summoned, they won’t leave without claiming the soul of either their quarry or the mortal who summoned them.
-
-[source: https://www.dndbeyond.com/monsters/5194988-erinyes]: #

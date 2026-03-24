@@ -6,5 +6,3 @@
 **Duration**: Concentration 1 Minute
 
 A creature you touch has the Invisible condition until the spell ends.
-
-[source: https://www.dndbeyond.com/spells/2618958-greater-invisibility]: #

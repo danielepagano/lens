@@ -36,5 +36,3 @@ Silver dragons work to preserve peace and encourage greatness. They try to live 
 Silver dragons typically dwell amid snow-capped mountains, though aspirations and congeniality drive some to instead live among cosmopolitan societies. Disguised as humanoids, they ally with artists, historians, knights, and humble leaders who learn from the past to create better futures.
 
 Silver dragons take inspiration from legendary heroes and have grand ambitions. Many collect treasures that reflect these interests, such as histories, ancient art, and the gear of famous champions.
-
-[source: https://www.dndbeyond.com/monsters/5195286-young-silver-dragon]: #

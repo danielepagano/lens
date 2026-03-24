@@ -43,5 +43,3 @@ Ettin Interactions
 | 6 | Performatively ignoring one another. |
 | 7 | Talking over an increasingly convoluted plot. |
 | 8 | Trying to keep one another awake. |
-
-[source: https://www.dndbeyond.com/monsters/5194990-ettin]: #

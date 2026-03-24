@@ -30,5 +30,3 @@ Lizardfolk sovereigns undergo magical rites that imbue them with fantastic stren
 ### Lizardfolk
 
 Lizardfolk dwell in wildernesses suffused with primal magic. While many lizardfolk are Humanoids with varied skills, some forge powerful bonds with the Elemental Plane of Earth, granting them magical connections to the cycle of growth and rebirth.
-
-[source: https://www.dndbeyond.com/monsters/5195108-lizardfolk-sovereign]: #

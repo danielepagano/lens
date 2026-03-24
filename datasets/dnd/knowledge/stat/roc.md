@@ -37,5 +37,3 @@ Roc Nest Remnants
 | 4 | 1d4 eggs larger than adult humans. |
 | 5 | Someone marooned in the nest. |
 | 6 | A statue of a knight riding a rearing steed. |
-
-[source: https://www.dndbeyond.com/monsters/5195184-roc]: #

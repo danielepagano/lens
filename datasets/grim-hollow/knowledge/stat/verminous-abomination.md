@@ -32,5 +32,3 @@ Few demonstrate avarice like those who fall victim to a Curse of Insatiable Gree
 Verminous Abominations dwell beneath large population centers, creating labyrinthine lairs to guard the hoards they amass. Adventurers who seek to clear out a complex—be it within sewers, mines, caverns, or wherever such a creature might dwell—rarely return to the surface, as fighting a Verminous Abomination in its lair is a challenge that few can overcome.
 
 This giant, malformed beast spews swarms of wretched ratlings from its bulging stomach, while it navigates its filth-ridden lair. It emerges from the surrounding filth to ambush interlopers at opportune moments, and then fleeing when overwhelmed.
-
-[source: https://www.dndbeyond.com/monsters/5817004-verminous-abomination]: #

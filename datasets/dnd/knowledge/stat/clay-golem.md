@@ -40,5 +40,3 @@ Clay Golem Orders
 | 2 | Defend any member of their creator’s family or community who is threatened in its sight. |
 | 3 | Prevent any Fiend from crossing a bridge. |
 | 4 | Remove any who enter its creator’s workshop. |
-
-[source: https://www.dndbeyond.com/monsters/5194945-clay-golem]: #

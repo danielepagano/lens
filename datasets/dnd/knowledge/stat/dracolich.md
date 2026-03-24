@@ -81,5 +81,3 @@ Dracolich Soul Gem Vessels
 | 8 | A source of magical wonders, such as a giant tree or mystical pool. |
 | 9 | The vault of an archdevil, a wicked god, or another extraplanar villain. |
 | 10 | The weapon that slew the dracolich. |
-
-[source: https://www.dndbeyond.com/monsters/5194972-dracolich]: #

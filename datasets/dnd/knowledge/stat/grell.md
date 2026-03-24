@@ -41,5 +41,3 @@ Grell Explorations
 | 4 | Supernaturally connected to ravenous alien beings and serve as their feeding appendages. |
 | 5 | Vestiges of an ancient evil that will return if grells collectively consume enough creatures. |
 | 6 | Without souls, but convinced they can attain souls by eating certain beings. |
-
-[source: https://www.dndbeyond.com/monsters/5195059-grell]: #

@@ -31,5 +31,3 @@ A noble’s social advantages typically grant the noble access to greater educat
 ### Nobles
 
 Nobles encompass a variety of people with social influence. They might be rulers, wealthy merchants, callous bureaucrats, or the idle elite.
-
-[source: https://www.dndbeyond.com/monsters/5195145-noble]: #

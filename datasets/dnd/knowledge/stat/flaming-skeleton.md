@@ -44,5 +44,3 @@ Skeleton Pantomimes
 | 4 | Performs a familiar task, such as cleaning, cooking, mining, or praying. |
 | 5 | Repeats its final moments of life. |
 | 6 | Stands guard at the post it protected in life. |
-
-[source: https://www.dndbeyond.com/monsters/5194996-flaming-skeleton]: #

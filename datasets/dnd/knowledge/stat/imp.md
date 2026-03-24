@@ -28,5 +28,3 @@ Shape-Shift. The imp shape-shifts to resemble a rat (Speed 20 ft.), a raven (20 
 Known for their cowardice and toadying, imps serve devils and wicked magic-users. Their abilities to shape-shift and pass unseen make them skillful spies and adept at fleeing danger. Imps sent to surveil other creatures relate what they discover to their masters, but they frequently omit important details or cast events in the worst possible light to mislead their masters into following the imps’ devilish council.
 
 Imps without masters delight in manipulating other creatures and inflating their own egos. They might take over bands of weaker monsters, or they might pose as helpful spirits and trick influential individuals into pursuing nefarious ends.
-
-[source: https://www.dndbeyond.com/monsters/4775825-imp]: #

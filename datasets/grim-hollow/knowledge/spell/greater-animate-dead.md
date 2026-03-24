@@ -12,5 +12,3 @@ On each of your turns, you can take a Bonus Action to mentally command any creat
 To maintain control of the creature for another 24 hours, you must cast this spell on the creature again before the current 24-hour period ends. This use of the spell reasserts your control over up to four creatures you have animated with this spell rather than animating a new creature. Additionally, casting this spell in this manner doesn’t require spell components with a GP cost.
 
 **Using a Higher-Level Spell Slot.** You can animate one additional Undead creature for each spell slot level above 5.
-
-[source: https://www.dndbeyond.com/spells/3014242-greater-animate-dead]: #

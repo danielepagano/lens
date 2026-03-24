@@ -76,5 +76,3 @@ Ocean Tyrant. The kraken exerts its dominance over animals in its domain. All Be
 Sea and Storms. While in its lair, the kraken can cast Control Weather, requiring no spell components and using Intelligence as the spellcasting ability.
 
 If the kraken dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5195097-kraken]: #

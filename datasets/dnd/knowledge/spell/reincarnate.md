@@ -21,5 +21,3 @@ You touch a dead Humanoid or a piece of one. If the creature has been dead no lo
 | 10 | Tiefling |
 
 The reincarnated creature makes any choices that a species’ description offers, and the creature recalls its former life. It retains the capabilities it had in its original form, except it loses the traits of its previous species and gains the traits of its new one.
-
-[source: https://www.dndbeyond.com/spells/2618941-reincarnate]: #

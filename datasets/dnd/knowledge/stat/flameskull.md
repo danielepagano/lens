@@ -47,5 +47,3 @@ Flameskull Details
 | 4 | An iron plate bolted over its mouth. |
 | 5 | Lethal head trauma. |
 | 6 | Mismatched animal teeth. |
-
-[source: https://www.dndbeyond.com/monsters/5194995-flameskull]: #

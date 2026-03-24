@@ -17,5 +17,3 @@ Agile. The rat doesn’t provoke Opportunity Attacks when it moves out of an ene
 **Actions**
 
 Bite. Melee Attack Roll: +2, reach 5 ft. Hit: 1 Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775836-rat]: #

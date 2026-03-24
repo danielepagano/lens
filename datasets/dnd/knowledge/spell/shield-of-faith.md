@@ -6,5 +6,3 @@
 **Duration**: Concentration 10 Minutes
 
 A shimmering field surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration.
-
-[source: https://www.dndbeyond.com/spells/2619020-shield-of-faith]: #

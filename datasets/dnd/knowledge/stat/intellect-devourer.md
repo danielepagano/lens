@@ -30,5 +30,3 @@ If the host body dies, the intellect devourer must leave it. The intellect devou
 **Description**
 
 Intellect devourers serve their mind flayer creators by consuming other creatures’ brains and pup­petizing the mindless bodies. These quadrupedal brains seek to ambush sapient beings, then drain their thoughts until they’re mindless. Then, if their victims are Humanoids, they enter the creatures’ skulls. With access to the victims’ knowledge and control of their bodies, intellect devourers use their perfect disguises to pass as the people they’ve replaced and further mind flayer plots.
-
-[source: https://www.dndbeyond.com/monsters/5195088-intellect-devourer]: #

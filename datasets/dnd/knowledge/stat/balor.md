@@ -32,5 +32,3 @@ Lightning Blade. Melee Attack Roll: +14, reach 10 ft. Hit: 21 (3d8 + 8) Force da
 **Description**
 
 Balors embody demons’ ruinous fury and hatred. Towering, winged terrors, these demonic warlords seethe with wrath, their rage erupting in waves of fire and as a pair of vicious weapons: a sword of crackling lightning and a whip of lashing flames. A balor’s fury persists until the moment of its demise, at which point it explodes—a last act of vengeance against those who slew it. Demon lords and evil gods harness balors’ rage by making balors commanders of armies or guardians of grave secrets.
-
-[source: https://www.dndbeyond.com/monsters/5194911-balor]: #

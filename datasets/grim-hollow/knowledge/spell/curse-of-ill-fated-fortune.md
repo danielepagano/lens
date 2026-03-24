@@ -20,5 +20,3 @@ Stage 2. The cursed creature becomes a beacon of bad luck as otherwise harmless 
 Stage 3. The cursed creature becomes dangerously prone to accidents, as even the simplest tasks have unforeseen life-threatening consequences. The cursed creature has Disadvantage on Initiative checks, its Speed is reduced to 10 feet, and it has the Prone condition if it misses an attack roll.
 
 Culmination. The cursed creature twists into a deformed figure and becomes a Herald of Calamity.
-
-[source: https://www.dndbeyond.com/spells/3014261-curse-of-ill-fated-fortune]: #

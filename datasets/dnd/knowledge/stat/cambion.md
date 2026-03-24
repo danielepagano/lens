@@ -44,5 +44,3 @@ Cambion Origins
 | 4 | Making a bargain with a Fiend. |
 | 5 | Suffering a god’s curse. |
 | 6 | Taking part in fiendish rituals. |
-
-[source: https://www.dndbeyond.com/monsters/5194937-cambion]: #

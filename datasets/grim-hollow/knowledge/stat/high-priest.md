@@ -42,5 +42,3 @@ The Watchers of the Faithful are split into six sects, each following the teachi
 For such a sacred institution, the conclave to elect a Divine Speaker is a surprisingly political affair involving the trading of arguments, favors, and threats as each High Priest tries to prove they have the support of the faction’s members, and the Arch Seraphs themselves. While the Divine Speaker can theoretically come from any sect, in the faction’s history, there have only been two that were not followers of Empyreus. Once for Zabriel, and once for Solyma, and neither held the seat for more than a few years before it was reclaimed by an Empyreusian.
 
 Day to day decisions are made by the Divine Speaker with the advice and guidance of the Council of High Priests. When the Council must decide the direction of the faction or there is a disagreement over policy, the six High Priests vote after a period of negotiation. Ties always go to the side the Divine Speaker voted with.
-
-[source: https://www.dndbeyond.com/monsters/5816996-high-priest]: #

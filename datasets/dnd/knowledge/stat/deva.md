@@ -44,5 +44,3 @@ Deva Messages
 | 4 | A magic weapon usable only by a true hero. |
 | 5 | A seedling that wilts if exposed to anger. |
 | 6 | Someone from another world with a prophesied purpose but no memory. |
-
-[source: https://www.dndbeyond.com/monsters/5194968-deva]: #

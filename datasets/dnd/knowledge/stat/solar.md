@@ -48,5 +48,3 @@ Radiant Teleport. The solar teleports up to 60 feet to an unoccupied space it ca
 Solars stand as the final line of defense between unspeakable evils and the order of the multiverse. They are the servants of just deities and ageless forces of good. Their interests span the planes, but they rarely intervene in conflicts on the worlds of the Material Plane. When they act, they lead vast angelic hosts and wield holy weapons capable of laying low the wickedest Fiends.
 
 Solars can resurrect the dead and often use that power to enlist mortal aid. They bestow grand, new purposes on those they return to life. Solars don’t enforce these destinies, but they trust in the potential of mortals to achieve great things.
-
-[source: https://www.dndbeyond.com/monsters/5195208-solar]: #

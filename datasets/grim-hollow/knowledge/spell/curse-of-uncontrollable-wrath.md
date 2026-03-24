@@ -20,5 +20,3 @@ Stage 2. The cursed creature becomes obsessed with violence. The thrill of solo 
 Stage 3. The cursed creature is driven to insatiable bloodlust, unable to rest while there are enemies to slaughter. The cursed creature gains no benefit from its Short or Long Rests.
 
 Culmination. The cursed creature twists into a deformed figure and becomes an Avatar of Slaughter.
-
-[source: https://www.dndbeyond.com/spells/3014265-curse-of-uncontrollable-wrath]: #

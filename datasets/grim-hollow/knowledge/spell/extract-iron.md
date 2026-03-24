@@ -10,5 +10,3 @@ As part of casting this spell, you must expend three Hit Dice or the spell autom
 You fashion this iron into nonmagical metal objects. The combined weight of these objects must be equal to or less than the number rolled on the expended Hit Point Dice. The quality of these created objects is poor but functional.
 
 **Using a Higher-Level Spell Slot.** You can expend an additional Hit Point Die and create additional iron for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/3014231-extract-iron]: #

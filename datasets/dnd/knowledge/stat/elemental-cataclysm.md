@@ -62,5 +62,3 @@ Elemental Alterations
 | 6 | Rapidly growing rainforest. |
 | 7 | River where previously there was none. |
 | 8 | Series of dramatic rock formations. |
-
-[source: https://www.dndbeyond.com/monsters/5194982-elemental-cataclysm]: #

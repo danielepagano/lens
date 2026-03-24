@@ -68,5 +68,3 @@ Mirages. While in its lair, the dragon can cast Major Image, requiring no Materi
 Refreshing Water. Water within 1 mile of the lair is magically refreshing. A creature that drinks such water gains 2d4 Temporary Hit Points, and the dragon is immediately aware of the creature’s presence.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194871-adult-brass-dragon]: #

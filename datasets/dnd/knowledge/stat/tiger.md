@@ -15,5 +15,3 @@
 **Actions**
 
 Rend. Melee Attack Roll: +5, reach 5 ft. Hit: 10 (2d6 + 3) Slashing damage. If the target is a Large or smaller creature, it has the Prone condition.
-
-[source: https://www.dndbeyond.com/monsters/4775846-tiger]: #

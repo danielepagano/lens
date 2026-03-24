@@ -37,5 +37,3 @@ Peryton Superstitions
 | 2 | It reverts to its original form. |
 | 3 | A new peryton hatches from each heart. |
 | 4 | A portal opens to the Lower Planes. |
-
-[source: https://www.dndbeyond.com/monsters/5195157-peryton]: #

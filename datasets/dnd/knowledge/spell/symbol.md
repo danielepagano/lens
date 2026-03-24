@@ -28,5 +28,3 @@ Pain. Each target must succeed on a Constitution saving throw or have the Incapa
 Sleep. Each target must succeed on a Wisdom saving throw or have the Unconscious condition for 10 minutes. A creature awakens if it takes damage or if someone takes an action to shake it awake.
 
 Stunning. Each target must succeed on a Wisdom saving throw or have the Stunned condition for 1 minute.
-
-[source: https://www.dndbeyond.com/spells/2619127-symbol]: #

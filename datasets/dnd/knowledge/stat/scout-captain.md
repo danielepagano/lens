@@ -35,5 +35,3 @@ Scout captains are experienced explorers and sharpshooters. They might lead band
 ### Scouts
 
 Scouts are warriors of the wilderness, trained in hunting and tracking. They might be explorers or trappers, or they could perform more martial roles as archers, bounty hunters, or outriders.
-
-[source: https://www.dndbeyond.com/monsters/5195197-scout-captain]: #

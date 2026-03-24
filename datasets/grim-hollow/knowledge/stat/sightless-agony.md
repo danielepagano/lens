@@ -38,5 +38,3 @@ Transforming into a Sightless Agony is the result of being afflicted with a Curs
 A Sightless Agony seeks a dark, quiet place to hide itself. They often tear out their own eyes and claw away their skin to escape the agony of sensation, and the company of others becomes entirely unbearable. In such a state, they know only a boundless, white-hot rage.
 
 When discovered, a Sightless Agony appears as a mutated gargoyle with skin flayed from its malformed figure. They attack with razor-sharp claws and a mouthful of fangs, and though a Sightless Agony possesses wings, they are loath to fly far, since the feeling of the wind is nearly unbearable. Even standing in one place, the Sightless Agony quivers and twitches as sensations from their immediate environment cause them to flinch at the unseen.
-
-[source: https://www.dndbeyond.com/monsters/5817000-sightless-agony]: #

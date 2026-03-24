@@ -43,5 +43,3 @@ Spirit Naga Grievances
 | 4 | Other creatures are mocking it. |
 | 5 | A rival is spying on it. |
 | 6 | Someone’s treasure rightfully belongs to it. |
-
-[source: https://www.dndbeyond.com/monsters/5195215-spirit-naga]: #

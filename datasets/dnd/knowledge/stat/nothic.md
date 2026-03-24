@@ -26,5 +26,3 @@ Rotting Gaze. Constitution Saving Throw: DC 13, one creature the nothic can see 
 Consumed by their thirst for forbidden knowledge, nothics are cursed lore seekers transformed by secrets never meant to be known. The bodies of these former scholars are warped into otherworldly shapes, each with a head dominated by a gigantic, unblinking eye. Nothics remember nothing of their past lives and care only for their endless pursuit of hidden mysteries and uncanny truths. They seek revelations amid the rubble of forgotten ruins, and they use their supernatural sight to pierce magical deceptions, rot the flesh of enemies, and steal the secrets of those who interrupt their investigations.
 
 Some nothics seek to end the curse that warped them into their bizarre forms, but many are unaware of—or uninterested in—their transformation.
-
-[source: https://www.dndbeyond.com/monsters/5195146-nothic]: #

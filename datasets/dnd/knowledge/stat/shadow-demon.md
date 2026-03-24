@@ -32,5 +32,3 @@ Shadow demons seek ways to regain their former might and take revenge on those w
 Particularly powerful demons might return as multiple shadow demons after being defeated. These fiendish entities each think they’re the true manifestation of their past self and hunt one another to recover their power.
 
 In rare cases, Fiends other than demons might adopt forms similar to shadow demons.
-
-[source: https://www.dndbeyond.com/monsters/5195200-shadow-demon]: #

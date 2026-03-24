@@ -16,5 +16,3 @@ Choose one or more of the following types of creatures: Celestials, Elementals, 
 Each time you cast this spell, you can cause its magic to operate in the reverse direction, preventing a creature of the specified type from leaving the Cylinder and protecting targets outside it.
 
 **Using a Higher-Level Spell Slot.** The duration increases by 1 hour for each spell slot level above 3.
-
-[source: https://www.dndbeyond.com/spells/2619018-magic-circle]: #

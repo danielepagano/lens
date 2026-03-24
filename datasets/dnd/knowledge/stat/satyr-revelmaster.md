@@ -35,5 +35,3 @@ Satyr revelmasters use magical music to change the moods of other creatures. The
 ### Satyrs
 
 Satyrs embody the untamed joys of the wilderness. They indulge in sprees of merrymaking—eating, drinking, performing, fighting, and frolicking.
-
-[source: https://www.dndbeyond.com/monsters/5195194-satyr-revelmaster]: #

@@ -32,5 +32,3 @@ Gricks tend to be solitary hunters, but young gricks might lurk near dozens of t
 Gricks are wormlike predators that burst from hiding—flailing and snapping—to consume whatever prey passes near. They hide in cavernous crags or amid deadfalls, the scattered bones and possessions of past meals the only evidence of their threat.
 
 Gricks’ origins are unclear, but some suggest these creatures arise from natural worms or similar invertebrates mutated by magical phenomena. Many cite the presence of gricks in a region as evidence of portals to other planes of existence, legendary magic items, or powerful supernatural beings.
-
-[source: https://www.dndbeyond.com/monsters/5195061-grick]: #

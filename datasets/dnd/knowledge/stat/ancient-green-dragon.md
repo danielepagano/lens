@@ -66,5 +66,3 @@ Beast Spies. Tiny Beasts magically gain the ability to understand Draconic and c
 Poisonous Thicket. Ordinary plants growing within 1 mile of the lair poison the air around them. Whenever a creature other than the dragon or its allies finishes a Long Rest in that area, it must succeed on a DC 15 Constitution saving throw or have the Poisoned condition for 1 hour.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194886-ancient-green-dragon]: #

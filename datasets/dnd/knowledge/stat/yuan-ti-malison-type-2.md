@@ -56,5 +56,3 @@ Yuan-ti Transformations
 | 4 | Experiments by spirit nagas or other yuan-ti. |
 | 5 | A ritual involving the skin of a fiendish snake. |
 | 6 | Trials to excise its “weak” human parts. |
-
-[source: https://www.dndbeyond.com/monsters/5195291-yuan-ti-malison-type-2]: #

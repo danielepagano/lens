@@ -34,5 +34,3 @@ Spiderlike hunters, ettercaps lurk in forested depths and seek prey to drag into
 Ettercaps frequently overhunt their environment. Left unchecked, ettercaps might fill whole woodlands with their webs and the cocooned remains of past meals, which puts ettercaps in conflict with Fey. Spiteful ettercaps go out of their way to torment and feed on Fey; they prefer to menace those smaller than themselves, like pixies and sprites. They rarely devour other sapient creatures swiftly, preferring to cocoon their captives and terrorize them for days.
 
 Ettercaps avoid fire, which can quickly burn through their webs and the dead trees where they make their homes.
-
-[source: https://www.dndbeyond.com/monsters/5194989-ettercap]: #

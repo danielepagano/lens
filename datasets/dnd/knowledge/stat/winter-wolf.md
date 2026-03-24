@@ -26,5 +26,3 @@ Cold Breath (Recharge 5–6). Constitution Saving Throw: DC 12, each creature in
 Winter wolves are horse-size, supernatural predators that prowl frigid wildernesses in deadly packs. With their great size and chilling breath, winter wolves pursue megafauna, arctic travelers, and any other creatures they catch on the tundra.
 
 Winter wolves are more intelligent than natural wolves and can speak. Most are predominantly concerned with their next meal, and while they might converse with other creatures in exchange for food, few concern themselves with long-term bargains or keeping their word unless they have something to gain. Winter wolves often hunt alongside frost giants that indulge them with frequent hunts and reliable meals.
-
-[source: https://www.dndbeyond.com/monsters/5195272-winter-wolf]: #

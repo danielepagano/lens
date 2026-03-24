@@ -45,5 +45,3 @@ Empyrean Influences
 | 4 | Disconnected parts, visible thoughts, or errant shapes. |
 | 5 | Machinelike, stoic, symmetrical, or suggestive of judgment. |
 | 6 | Morbid, menacing, or monstrous or that embody the viewer’s fears. |
-
-[source: https://www.dndbeyond.com/monsters/5194987-empyrean-iota-fiend]: #

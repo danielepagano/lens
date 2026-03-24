@@ -44,5 +44,3 @@ Fire Elemental Compositions
 | 6 | Smoke that forms eerie shapes or symbols. |
 | 7 | Soot that smells like cedar, cloves, incense, or burning meat. |
 | 8 | Swirls of cinders and burning debris. |
-
-[source: https://www.dndbeyond.com/monsters/4904758-fire-elemental]: #

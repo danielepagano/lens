@@ -12,5 +12,3 @@ You have a telepathic link with the Charmed target while the two of you are on t
 You can command the target to take a Reaction but must take your own Reaction to do so.
 
 **Using a Higher-Level Spell Slot.** Your Concentration can last longer with a spell slot of level 5 (up to 10 minutes), 6 (up to 1 hour), or 7+ (up to 8 hours).
-
-[source: https://www.dndbeyond.com/spells/2619146-dominate-beast]: #

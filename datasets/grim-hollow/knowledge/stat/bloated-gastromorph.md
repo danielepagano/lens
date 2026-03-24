@@ -34,5 +34,3 @@ Tongue (Recharge 5–6). Melee Attack Roll: +9, reach 25 ft. Hit: 31 (4d12 + 5) 
 Often whispered of in folk tales and legends, most frequently as a warning to children regarding the gruesome consequences awaiting those who recklessly indulge, the Bloated Gastromorph is an incarnation of gluttony and selfishness. This horrific creature has been transformed and twisted by the final stages of a Curse of Ravenous Hunger.
 
 Those afflicted become an enormous, slug-like monster possessing multiple fist-like claws, a wicked tentacular tongue, and a giant, voracious maw of gnashing teeth. Often dwelling in dank ruins of once-great castles, a Bloated Gastromorph cares about nothing but consuming every morsel of flesh it encounters, living or not. Bereft of memories of their prior lives, these creatures dwell fully in this new existence of unfettered consumption.
-
-[source: https://www.dndbeyond.com/monsters/5816984-bloated-gastromorph]: #

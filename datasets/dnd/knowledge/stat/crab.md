@@ -17,5 +17,3 @@ Amphibious. The crab can breathe air and water.
 **Actions**
 
 Claw. Melee Attack Roll: +2, reach 5 ft. Hit: 1 Bludgeoning damage.
-
-[source: https://www.dndbeyond.com/monsters/4775810-crab]: #

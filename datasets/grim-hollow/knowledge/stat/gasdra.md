@@ -21,5 +21,3 @@ Wakeful. While the gasdra sleeps, at least one of its heads is awake.
 Multiattack. The gasdra makes three Beak attacks.
 
 Beak. Melee Attack Roll: +4, reach 5 ft. Hit: 5 (1d6 + 2) Bludgeoning damage.
-
-[source: https://www.dndbeyond.com/monsters/5730216-gasdra]: #

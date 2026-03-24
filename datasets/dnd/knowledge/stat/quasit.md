@@ -30,5 +30,3 @@ Shape-Shift. The quasit shape-shifts to resemble a bat (Speed 10 ft., Fly 40 ft.
 Tirelessly destructive, quasits sow discord through nasty pranks, sabotage, and ambushes. These tiny demons use chaos and violence to terrorize others. By shape-shifting into harmless but ill-omened creatures or by turning invisible, quasits sneak into places where they spy for villainous masters or set vicious traps. Quasits delight in hiding in dark places and—when least expected—bursting forth to slash foes with their poisoned claws.
 
 Quasits are usually overlooked and underestimated by other demons. This drives them to prove themselves through cruel acts or by seeking paths to the Material Plane. Among mortals, quasits sow senseless chaos, and they might find kindred evil spirits among violent cultists and magic-users.
-
-[source: https://www.dndbeyond.com/monsters/4775835-quasit]: #

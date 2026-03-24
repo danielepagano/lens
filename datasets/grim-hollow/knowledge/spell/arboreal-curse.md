@@ -12,5 +12,3 @@ A creature Restrained by this spell makes a Constitution saving throw at the end
 If the creature is burned, chopped down, or otherwise destroyed while Petrified, it is killed.
 
 A creature remains transformed unless the effect is reversed within 1 year with Greater Restoration, Wish, or similar magic. If the creature spends 1 year and 1 day as a tree, the transformation becomes permanent, and nothing can return the creature to its original form.
-
-[source: https://www.dndbeyond.com/spells/3014202-arboreal-curse]: #

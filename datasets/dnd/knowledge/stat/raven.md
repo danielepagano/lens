@@ -17,5 +17,3 @@ Mimicry. The raven can mimic simple sounds it has heard, such as a whisper or ch
 **Actions**
 
 Beak. Melee Attack Roll: +4, reach 5 ft. Hit: 1 Piercing damage.
-
-[source: https://www.dndbeyond.com/monsters/4775837-raven]: #

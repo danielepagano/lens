@@ -27,5 +27,3 @@ Larvae have disjointed, painful memories of their past lives. Most desperately a
 Souls condemned to the Lower Planes often become larvae—repulsive, maggot-like creatures with twisted features evocative of those they possessed in life. These pathetic creatures are nearly helpless and struggle to escape the attention of the more powerful inhabitants of the Lower Planes. Many Fiends view larvae as delicacies to be consumed, while evil magic-users find larvae useful for depraved rituals. Night hags frequently collect and herd larvae, trading them to nefarious parties across the multiverse.
 
 Larvae that survive on the Lower Planes long enough can eventually transform into other sorts of lesser Fiends.
-
-[source: https://www.dndbeyond.com/monsters/5195104-larva]: #

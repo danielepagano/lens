@@ -45,5 +45,3 @@ Green Hag Bargains
 | 4 | A flower from a hidden Feywild garden. |
 | 5 | A gift given freely by a yugoloth. |
 | 6 | A vial filled with a ruler’s tears. |
-
-[source: https://www.dndbeyond.com/monsters/5195057-green-hag]: #

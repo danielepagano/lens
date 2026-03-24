@@ -69,5 +69,3 @@ Acrid Haze. Odorous and stifling fog covers the area within 1 mile of the lair, 
 Foul Water. Water sources within 1 mile of the lair are supernaturally fouled. A creature that drinks such water must succeed on a DC 15 Constitution saving throw or have the Poisoned condition for 1 hour.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194869-adult-black-dragon]: #

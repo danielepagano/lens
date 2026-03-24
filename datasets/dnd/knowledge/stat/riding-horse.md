@@ -14,5 +14,3 @@
 **Actions**
 
 Hooves. Melee Attack Roll: +5, reach 5 ft. Hit: 7 (1d8 + 3) Bludgeoning damage.
-
-[source: https://www.dndbeyond.com/monsters/4775839-riding-horse]: #

@@ -66,5 +66,3 @@ Chatty Critters. Tiny Beasts magically gain the ability to speak and understand 
 Giggle Fits. Whenever a creature other than the dragon and its allies is within 1 mile of the lair and rolls a 1 on a D20 Test, it must succeed on a DC 15 Wisdom saving throw or have the Incapacitated condition until the end of its next turn, as it is wracked with laughter.
 
 If the dragon dies or moves its lair elsewhere, these effects end immediately.
-
-[source: https://www.dndbeyond.com/monsters/5194872-adult-copper-dragon]: #

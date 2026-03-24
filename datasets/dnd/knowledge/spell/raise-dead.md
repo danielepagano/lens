@@ -12,5 +12,3 @@ The creature returns to life with 1 Hit Point. This spell also neutralizes any p
 This spell closes all mortal wounds, but it doesn’t restore missing body parts. If the creature is lacking body parts or organs integral for its survival—its head, for instance—the spell automatically fails.
 
 Coming back from the dead is an ordeal. The target takes a −4 penalty to D20 Tests. Every time the target finishes a Long Rest, the penalty is reduced by 1 until it becomes 0.
-
-[source: https://www.dndbeyond.com/spells/2618922-raise-dead]: #

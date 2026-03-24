@@ -6,5 +6,3 @@
 **Duration**: Concentration 1 Hour
 
 You touch a willing creature, transforming its skin into red scales. Until the spell ends, the target has Resistance to Cold, Fire, and Lightning damage, and the target also gains Immunity to Poison damage.
-
-[source: https://www.dndbeyond.com/spells/3014236-fiend-flesh]: #

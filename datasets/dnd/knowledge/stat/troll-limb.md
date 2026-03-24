@@ -25,5 +25,3 @@ Rend. Melee Attack Roll: +6, reach 5 ft. Hit: 9 (2d4 + 4) Slashing damage.
 Trolls creep forth to prey on smaller creatures and drag captives back to festering lairs. These misshapen brutes can regenerate from wounds and regrow severed body parts—including their heads. A troll’s severed limbs continue to move and attack. Unless they’re burned by flames or acid, trolls can recover from egregious wounds and seek revenge on those who felled them.
 
 Trolls typically hunt alone, but small groups occasionally cooperate to ambush prey or raid villages. Creatures such as hags and hill giants might convince trolls to work for them in exchange for disgusting meals.
-
-[source: https://www.dndbeyond.com/monsters/5195240-troll-limb]: #

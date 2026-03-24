@@ -34,5 +34,3 @@ Petrified Basilisk Victims
 | 6 | A monster such as an umber hulk or a troglodyte. |
 | 7 | Someone caught in a comic pose or making a regrettable face. |
 | 8 | A victim now being used as a nest for insects or other vermin. |
-
-[source: https://www.dndbeyond.com/monsters/5194919-basilisk]: #

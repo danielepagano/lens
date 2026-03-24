@@ -40,5 +40,3 @@ Stone Golem Orders
 | 4 | Obey whoever places a missing crest in its chest, then deactivate for a year. |
 | 5 | Reveal a hidden passage to those who recite a leader’s final words. |
 | 6 | Watch for and do battle with the type of monster that slew the hero it resembles. |
-
-[source: https://www.dndbeyond.com/monsters/4904850-stone-golem]: #

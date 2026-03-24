@@ -44,5 +44,3 @@ A Weeping Willow is the unfortunate victim of a Curse of Conceited Obsession. On
 A Weeping Willow is obsessed with its own appearance, calling for brave heroes to aid it in its distress. Upon reaching the Weeping Willow, however, heroes find only a vicious predator, a grove of unusual shimmering trees, and a very likely fate worse than death.
 
 Combating a Weeping Willow unprepared often ends in disaster. The creature’s enthralling cries and illusory beauty are difficult to resist, drawing its prey closer. The touch of a Weeping Willow can transform any creature's into a tree, bearing mirrored leaves for the vain creature to gaze into. Survivors of these encounters say that if you can resist the creature’s malignant lure, it’s best to leave them alone with their gardens of reflecting trees and self-admiration.
-
-[source: https://www.dndbeyond.com/monsters/5817006-weeping-willow]: #

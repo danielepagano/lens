@@ -37,5 +37,3 @@ Bullywug bog sages channel the magic of the swamp to sicken foes and speak with 
 ### Bullywugs
 
 Fey embodiments of swamplands, bullywugs protect the murky wilds and consider themselves cosmically favored for that role. These human-size, toad- or frog-like creatures have close relationships with the creatures of the swamp.
-
-[source: https://www.dndbeyond.com/monsters/4831048-bullywug-bog-sage]: #
