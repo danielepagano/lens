@@ -1,8 +1,9 @@
 import { get } from 'svelte/store'
-import { runWrite, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent } from '../services/api'
+import { runWrite, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent, type Stats } from '../services/api'
 import { cliOutput, treeRefreshTrigger } from '../stores/ui'
 import { streamingPreview, currentAddress } from '../stores/document'
 import type {
+  CliPayload,
   CommandContext,
   CommandDefinition,
   CommandHandler,
@@ -22,6 +23,16 @@ function scrollPreviewIntoView(): void {
   if (preview) {
     preview.scrollIntoView({ block: 'end', behavior: 'instant' })
   }
+}
+
+function optionsWithLlmIfMultiple(
+  options: CliPayload[] | undefined,
+  stats: Stats
+): CliPayload[] {
+  const manyLlms = (stats.available_llms?.length ?? 0) > 1
+  const list = options ?? []
+  if (manyLlms) return [...list]
+  return list.filter((o) => o.name !== 'llm')
 }
 
 const commands: CommandDefinition[] = [
@@ -373,14 +384,14 @@ export const operatorModule: CommandModule = {
             ...cmd,
             options: [
               { name: 'as', valueType: 'slug', hint: 'acting as', slugSource: pcKeys },
-              ...(cmd.options ?? [])
-            ]
+              ...optionsWithLlmIfMultiple(cmd.options, stats),
+            ],
           })
           continue
         }
       }
-      
-      result.push(cmd)
+
+      result.push({ ...cmd, options: optionsWithLlmIfMultiple(cmd.options, stats) })
     }
     
     return result
