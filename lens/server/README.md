@@ -81,22 +81,9 @@ Both support `--host` and `--port` options. The server uses the project (or data
 | POST | `/checkpoint` | Commit all staged changes and push to the remote repo. Body: `{"message": "...", "push": true}` (both optional). |
 | POST | `/refresh` | Fetch and fast-forward to upstream, or with `{"reset": true}` reset hard to upstream and remove untracked files. |
 
-### CLI streaming
+### Operator streaming
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/cli/run` | Run a lens CLI command as a subprocess, streaming stdout/stderr as SSE. Body: `{"command": "<subcommand>", "payload": "<args string>"}`. Only allowlisted commands accepted; only one run at a time (409 if busy). |
-| POST | `/cli/cancel` | Terminate the currently running CLI subprocess. |
-
-#### CLI SSE events
-
-Each event is a JSON object on the `data:` field:
-
-| `type` | Meaning |
-|--------|---------|
-| `out` | A line of stdout (`text` field) |
-| `err` | A line of stderr (`text` field) |
-| `done` | Process exited (`exit_code` field) |
+`POST /operator/*` endpoints stream progress as SSE (`text/event-stream`). `POST /stream/cancel` aborts the active stream and rolls back partial narrative changes. Only one stream may run at a time (`409` if busy), enforced via `app.state.stream_lock`.
 
 All routes use the same `ProjectSession` (project/dataset and active narrative) fixed when the server starts.
 
@@ -107,7 +94,7 @@ The server is a thin adapter over `lens/core/`. Routes validate input, call core
 - `server/` imports only from `core/`, never from `cli/`.
 - `core/` is synchronous. Routes call blocking core functions directly or via `run_in_threadpool` when needed. Do not make core code async.
 - All domain exceptions must be caught in routes and mapped to HTTP 400/500. Core code must not call `sys.exit()` or `print()`.
-- One CLI subprocess at a time is enforced via `app.state.cli_run`.
+- One SSE stream at a time is enforced via `app.state.stream_lock` (shared by operator routes).
 
 ## Authentication
 

@@ -1,6 +1,5 @@
 import type { CommandDefinition, CommandHandler, CommandModule } from './common'
 import { mediaModule } from './media'
-import { cliModule } from './cli'
 import { transactionModule } from './transaction'
 import { narrativeModule } from './narrative'
 import { operatorModule } from './operators'
@@ -12,7 +11,6 @@ const MODULES: CommandModule[] = [
   transactionModule,
   narrativeModule,
   operatorModule,
-  cliModule,
   mediaModule,
 ]
 

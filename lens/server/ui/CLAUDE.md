@@ -82,10 +82,10 @@ On page load or refresh, fetch the current project state (active narrative, curs
 ## SSE streaming flow
 
 ```
-Operator invoked via /cli/run
-→ backend returns SSE stream
-→ services/sse.ts dispatches events
-→ StreamPanel / CliOutputPanel appends tokens
+Operator invoked via POST /operator/* (SSE)
+→ backend returns text/event-stream
+→ client parses SSE (api.ts + sse.ts)
+→ StreamPanel / CliOutputPanel show tokens or tool output from stores
 → On "done" event, UI refreshes state from backend
 ```
 

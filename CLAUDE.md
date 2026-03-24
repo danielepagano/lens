@@ -188,7 +188,7 @@ The server is a FastAPI adapter over `lens/core/`. CLI and server are sibling in
 - Core is synchronous. Do not make core code async. Use `run_in_threadpool` only at the route boundary if truly needed. Async is contagious — contain it at the edges.
 - Core must raise explicit exceptions, not call `sys.exit()` or `print()`.
 - Routes must catch domain exceptions and return HTTP 400/500. Stack traces must not leak to clients.
-- One CLI subprocess at a time (enforced via `app.state.cli_run`). New routes must not bypass this.
+- One SSE stream at a time (enforced via `app.state.stream_lock`). New streaming routes must acquire the same lock.
 
 **Authentication:** Handled entirely at the Caddy reverse proxy layer. FastAPI trusts all incoming requests as authenticated. Do not add auth logic to routes. If Caddy is removed, the server must not be exposed to the public internet.
 

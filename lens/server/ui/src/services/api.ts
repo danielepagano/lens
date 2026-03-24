@@ -41,16 +41,6 @@ async function del(path: string): Promise<unknown> {
   return text ? JSON.parse(text) : undefined
 }
 
-export class CliRunBusyError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number
-  ) {
-    super(message)
-    this.name = 'CliRunBusyError'
-  }
-}
-
 export interface Stats {
   active_narrative: string | null
   narratives: string[]
@@ -96,20 +86,6 @@ export const setActiveNarrative = (slug: string): Promise<{ active: string }> =>
     active: string
   }>
 
-export interface CliEventOut {
-  type: 'out'
-  text?: string
-}
-export interface CliEventErr {
-  type: 'err'
-  text?: string
-}
-export interface CliEventDone {
-  type: 'done'
-  exit_code?: number
-}
-export type CliEvent = CliEventOut | CliEventErr | CliEventDone
-
 async function errorDetail(r: Response): Promise<string> {
   try {
     const data = (await r.json()) as { detail?: string }
@@ -118,38 +94,6 @@ async function errorDetail(r: Response): Promise<string> {
     /* ignore */
   }
   return `HTTP ${r.status}: ${r.url}`
-}
-
-export async function runCliStream(
-  command: string,
-  payload: string,
-  onEvent: (event: CliEvent) => void
-): Promise<{ exit_code: number }> {
-  const r = await fetch('/cli/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ command, payload }),
-  })
-  if (r.status === 409 || r.status === 423) {
-    throw new CliRunBusyError(await errorDetail(r), r.status)
-  }
-  if (!r.ok) throw new Error(await errorDetail(r))
-  const body = r.body
-  if (body === null) throw new Error('No response body')
-  const { parseSSEFromStream } = await import('./sse')
-  let exitCode = -1
-  for await (const event of parseSSEFromStream(body)) {
-    const parsed = JSON.parse(event.data) as CliEvent
-    onEvent(parsed)
-    if (parsed.type === 'done' && parsed.exit_code !== undefined) {
-      exitCode = parsed.exit_code
-    }
-  }
-  return { exit_code: exitCode }
-}
-
-export async function cancelCliRun(): Promise<void> {
-  await cancelStream()
 }
 
 // ---- Unified stream cancel ----

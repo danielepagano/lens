@@ -1,6 +1,6 @@
 <script lang="ts">
   import OutputPanel from '../../components/OutputPanel.svelte'
-  import { cancelCliRun } from '../../services/api'
+  import { cancelStream } from '../../services/api'
   import { cliOutput } from '../../stores/ui'
 
   const DEFAULT_TITLE = 'CLI output'
@@ -16,7 +16,7 @@
 
   async function handleCancel() {
     try {
-      await cancelCliRun()
+      await cancelStream()
     } catch (e) {
       console.error('Cancel failed:', e)
     }
