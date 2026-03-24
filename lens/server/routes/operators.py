@@ -41,6 +41,7 @@ class PlayBody(BaseModel):
     retry: bool = False
     end: bool = False
     as_pc: str | None = None
+    wait: bool = False
 
 
 class DesignBody(BaseModel):
@@ -271,7 +272,13 @@ async def operator_play(
 
     on_token = _make_on_token(event_queue)
 
-    extra_params = {"as_pc": body.as_pc} if body.as_pc is not None else None
+    extra_params: dict[str, Any] | None = None
+    if body.as_pc is not None or body.wait:
+        extra_params = {}
+        if body.as_pc is not None:
+            extra_params["as_pc"] = body.as_pc
+        if body.wait:
+            extra_params["wait"] = True
 
     def coro_fn() -> Any:
         return PlayOperator.run_session(

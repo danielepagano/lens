@@ -8,7 +8,7 @@ const apiPort = process.env.VITE_API_PORT ?? '8000'
 const apiBase = `http://${apiHost}:${apiPort}`
 
 export default defineConfig({
-  plugins: [svelte({ preprocess: vitePreprocess() })],
+  plugins: [svelte({ preprocess: vitePreprocess(), prebundleSvelteLibraries: false })],
   build: {
     outDir: '../static',
     emptyOutDir: true,

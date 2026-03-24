@@ -14,6 +14,9 @@ Session lifecycle
    Front matter is updated when ``--module`` changes or new pins/unpins are
    supplied.
 *  ``--end`` → appends close tag ``[/play:<id>]: #`` to the parent.
+*  ``--wait`` → append only the player line (and optional HTML comment with
+   expanded ``@mentions``) to the session node; no LLM call. Use for multiple
+   player actions before the GM responds.
 
 Module handling
 ---------------
@@ -28,10 +31,12 @@ LLM knows who the player characters are.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar
 
-from lens.core.context import CrawlResult
+from lens.core.context import CrawlResult, crawl
+from lens.core.dice import DiceError, substitute_rolls
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
 from lens.core.project import ProjectSession
@@ -150,6 +155,122 @@ class PlayOperator(SessionOperator):
                 "play requires at least one player character (pc.*) to be pinned — "
                 "add a pc.* KB object with --pin or kb_pin front matter"
             )
+
+    # ------------------------------------------------------------------
+    # --wait: append player line (+ optional KB HTML comment) without LLM
+    # ------------------------------------------------------------------
+
+    @classmethod
+    async def _run_wait_only(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        prompt: str,
+        pins: list[str],
+        unpins: list[str],
+        extra_params: dict[str, Any] | None,
+        _cursor_override: NarrativeNode | None,
+    ) -> None:
+        cursor = (
+            _cursor_override
+            if _cursor_override is not None
+            else narrative.find_cursor()
+        )
+        if not cursor.key_path:
+            raise OperatorError("play --wait requires a cursor inside a play session sub-node")
+
+        crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
+        cls.check_requirements(crawl_result)
+        params: dict[str, Any] = {"prompt": prompt}
+        if extra_params:
+            params.update(extra_params)
+        cls.enrich_params(crawl_result, params)
+        marker = _pc_marker(params)
+
+        block = f"> [{marker}] {prompt}\n"
+        mention_ids = cls.mention_pins(prompt, session.project_root)
+        if mention_ids:
+            objs = session.kb.get_objects(mention_ids)
+            parts: list[str] = []
+            for mid in mention_ids:
+                obj = objs.get(mid)
+                if obj is not None:
+                    parts.append(obj.format(strip_html_comments=True))
+            if parts:
+                block += "\n<!---\n" + "".join(parts) + "-->\n"
+
+        session_id = cursor.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        parent_rel = str(parent.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(session_id, parent_rel)
+        storage = session.new_storage(owner=owner)
+        md = cursor.md_path()
+        current = md.read_text(encoding="utf-8")
+        if current.strip():
+            sep = "\n" if current.endswith("\n") else "\n\n"
+        else:
+            sep = ""
+        storage.write_file(md, current + sep + block)
+
+    @classmethod
+    async def run_inline(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        prompt: str | None,
+        pins: list[str],
+        unpins: list[str],
+        llm_id: str | None,
+        retry: bool,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+        _tool_call_depth: int = 0,
+        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
+        _chain_storage: Storage | None = None,
+        _cursor_override: NarrativeNode | None = None,
+        extra_params: dict[str, Any] | None = None,
+        cancel_event: asyncio.Event | None = None,
+    ) -> None:
+        ep = dict(extra_params or {})
+        if ep.pop("wait", False):
+            if retry:
+                raise OperatorError("play --wait cannot be combined with --retry")
+            if not prompt:
+                raise OperatorError("play --wait requires a prompt")
+            try:
+                resolved = substitute_rolls(prompt)
+            except DiceError as e:
+                raise OperatorError(str(e)) from e
+            await cls._run_wait_only(
+                session=session,
+                narrative=narrative,
+                prompt=resolved,
+                pins=list(pins),
+                unpins=list(unpins),
+                extra_params=ep if ep else None,
+                _cursor_override=_cursor_override,
+            )
+            return
+        await super().run_inline(
+            session=session,
+            narrative=narrative,
+            prompt=prompt,
+            pins=pins,
+            unpins=unpins,
+            llm_id=llm_id,
+            retry=retry,
+            on_token=on_token,
+            _tool_call_depth=_tool_call_depth,
+            on_confirm=on_confirm,
+            _chain_storage=_chain_storage,
+            _cursor_override=_cursor_override,
+            extra_params=ep if ep else None,
+            cancel_event=cancel_event,
+        )
 
     # ------------------------------------------------------------------
     # SessionOperator hooks — delegate to run_inline with cursor override

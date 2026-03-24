@@ -11,9 +11,9 @@ from lens.core.dice import DiceError, substitute_rolls
 
 def test_bare_roll_replaced():
     result = substitute_rolls("I @roll d20 for stealth")
-    assert result.startswith("I rolled ")
-    assert result.endswith(" for stealth")
-    n = int(result.split("rolled ")[1].split(" ")[0])
+    assert result.startswith("I (rolled ")
+    assert result.endswith(") for stealth")
+    n = int(result.split("(rolled ")[1].split(") ")[0])
     assert 1 <= n <= 20
 
 

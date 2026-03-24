@@ -1,4 +1,4 @@
-"""Unit tests for lens.annotations: strip_markdown_comments and parse_annotations."""
+"""Unit tests for lens.annotations: strip_markdown_comments, strip_html_comments, parse_annotations."""
 
 from __future__ import annotations
 
@@ -11,8 +11,27 @@ from lens.core.annotations import (
     parse_annotations,
     parse_front_matter,
     parse_tail_cursor_annotation,
+    strip_html_comments,
     strip_markdown_comments,
 )
+
+
+class TestStripHtmlComments(unittest.TestCase):
+    def test_empty(self) -> None:
+        self.assertEqual(strip_html_comments(""), "")
+
+    def test_single_line_comment_removed(self) -> None:
+        text = "Before <!-- one --> After"
+        self.assertEqual(strip_html_comments(text), "Before  After")
+
+    def test_multiline_comment_removed(self) -> None:
+        text = "Start <!-- ai:secret:\nline2\nline3\n--> End"
+        self.assertEqual(strip_html_comments(text), "Start  End")
+        self.assertNotIn("-->", strip_html_comments(text))
+
+    def test_sequential_comments(self) -> None:
+        text = "a <!-- x --> b <!-- y --> c"
+        self.assertEqual(strip_html_comments(text), "a  b  c")
 
 
 class TestStripMarkdownComments(unittest.TestCase):

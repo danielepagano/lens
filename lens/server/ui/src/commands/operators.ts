@@ -63,6 +63,7 @@ const commands: CommandDefinition[] = [
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
       { name: 'retry' },
       { name: 'end' },
+      { name: 'wait', hint: 'append player line only, no GM yet' },
     ],
   },
   {
@@ -137,7 +138,7 @@ const handler: CommandHandler = async (
   const pins = (ctx.args.options['pin'] as string[] | undefined) ?? []
   const unpins = (ctx.args.options['unpin'] as string[] | undefined) ?? []
   const llmId = (ctx.args.options['llm'] as string | undefined) || undefined
-  const as_pc = (ctx.args.options['as_pc'] as string | undefined) || undefined
+  const as_pc = (ctx.args.options['as'] as string | undefined) || undefined
   const retry = ctx.args.options['retry'] === true
 
   let errorOutput = ''
@@ -184,6 +185,10 @@ const handler: CommandHandler = async (
       )
     } else if (command === 'play') {
       const endPlay = ctx.args.options['end'] === true
+      const waitPlay = ctx.args.options['wait'] === true
+      if (waitPlay && retry) {
+        throw new Error('Play --wait cannot be combined with --retry')
+      }
       if (!endPlay && !retry && prompt === undefined) {
         throw new Error(`Play requires a prompt (unless using --end or --retry)`)
       }
@@ -199,7 +204,17 @@ const handler: CommandHandler = async (
         }
       }
       result = await runPlay(
-        { prompt, module_id: playModuleId, pins, unpins, llm_id: llmId, retry, end: endPlay, as_pc },
+        {
+          prompt,
+          module_id: playModuleId,
+          pins,
+          unpins,
+          llm_id: llmId,
+          retry,
+          end: endPlay,
+          as_pc,
+          wait: waitPlay,
+        },
         handleEvent
       )
     } else if (command === 'advance') {
@@ -351,13 +366,13 @@ export const operatorModule: CommandModule = {
           continue
         }
         
-        // If more than one PC, add as_pc option with PC keys as slugSource
+        // If more than one PC, add --as (parsed as `as`; API still receives as_pc)
         if (pcPins.length > 1) {
           const pcKeys = pcPins.map(p => p.slice(3)).join(',')
           result.push({
             ...cmd,
             options: [
-              { name: 'as_pc', valueType: 'slug', hint: 'acting as', slugSource: pcKeys },
+              { name: 'as', valueType: 'slug', hint: 'acting as', slugSource: pcKeys },
               ...(cmd.options ?? [])
             ]
           })

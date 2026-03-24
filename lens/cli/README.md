@@ -446,6 +446,7 @@ lens play "I talk to the innkeeper"         # inside session: appends another bl
 lens play "engage the goblins" --module combat  # activate a rules module
 lens play --retry                            # regenerate the last block
 lens play --end                              # close the play session
+lens play "I roll @roll d20+5" --wait       # append player line only; GM on a later play
 ```
 
 Arguments: `[PROMPT]`
@@ -458,6 +459,7 @@ Options:
 - `--as` / `-as` — PC key to attribute the prompt to (e.g. `-as alice` → `[ALICE]`); must be a pinned `pc.*`.
 - `--retry` — discard the last block and regenerate it.
 - `--end` — close the play session and return to the parent node.
+- `--wait` — append the attributed player line only (no LLM). Resolvable `@type.key` mentions are expanded into an HTML comment so the next normal `play` still sees that KB text without cluttering rendered markdown.
 
 **Flow:** The first call outside a play sub-node auto-generates an ID (e.g. `play-combat-engage-the-goblins`) and creates the sub-node, auto-pinning `rules.system` and `rules.rpg`. Subsequent calls detect that the cursor is already inside a play sub-node and append new inline blocks. Module and pin changes update the front matter in place.
 

@@ -175,6 +175,14 @@ def strip_markdown_comments(text: str) -> str:
     return "\n".join(result)
 
 
+_HTML_COMMENT_RE = re.compile(r"<!--[\s\S]*?-->")
+
+
+def strip_html_comments(text: str) -> str:
+    """Remove HTML comments ``<!-- ... -->`` (single-line and multiline)."""
+    return _HTML_COMMENT_RE.sub("", text)
+
+
 def parse_annotations(text: str) -> list[ParsedAnnotation]:
     """Parse Lens operator annotations from markdown. Returns only comments matching the annotation format."""
     lines = text.split("\n")

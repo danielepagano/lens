@@ -74,9 +74,14 @@ class KnowledgeObject:
     text: str
     tags: list[str] = field(default_factory=lambda: cast(list[str], []))
 
-    def format(self, *, include_comments: bool = False) -> str:
+    def format(
+        self, *, include_comments: bool = False, strip_html_comments: bool = False
+    ) -> str:
+        from lens.core.annotations import strip_html_comments as strip_html
         from lens.core.annotations import strip_markdown_comments
         text = self.text if include_comments else strip_markdown_comments(self.text)
+        if strip_html_comments:
+            text = strip_html(text)
         lines: list[str] = [f"KB[{self.id!r}]"]
         lines.append("  " + text.replace("\n", "\n  "))
         if self.tags:

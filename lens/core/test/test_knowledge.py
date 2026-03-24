@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from lens.core.knowledge import KnowledgeStore, parse_id
+from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
 
 
 def _make_project(tmp: Path) -> None:
@@ -942,6 +942,44 @@ class TestKnowledgeDatasets(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             self.store.rename_object("person.hero", "person.hero_renamed")
         self.assertIn("dataset", str(ctx.exception))
+
+
+class TestKnowledgeObjectFormatStripHtml(unittest.TestCase):
+    def test_strip_html_comments_single_line(self) -> None:
+        obj = KnowledgeObject(
+            type="spell",
+            id="spell.foo",
+            text="Hello <!-- hidden --> world",
+            tags=[],
+        )
+        out = obj.format(strip_html_comments=True)
+        self.assertIn("Hello", out)
+        self.assertIn("world", out)
+        self.assertNotIn("hidden", out)
+        self.assertNotIn("<!--", out)
+
+    def test_strip_html_comments_multiline(self) -> None:
+        obj = KnowledgeObject(
+            type="spell",
+            id="spell.bar",
+            text="Line1\n<!-- ai:secret:\nrot13\n-->\nLine2",
+            tags=["arcane"],
+        )
+        out = obj.format(strip_html_comments=True)
+        self.assertIn("Line1", out)
+        self.assertIn("Line2", out)
+        self.assertNotIn("rot13", out)
+        self.assertNotIn("-->", out)
+
+    def test_default_keeps_html_comments(self) -> None:
+        obj = KnowledgeObject(
+            type="note",
+            id="note.x",
+            text="See <!-- tip --> here",
+            tags=[],
+        )
+        out = obj.format()
+        self.assertIn("<!-- tip -->", out)
 
 
 class TestParseId(unittest.TestCase):
