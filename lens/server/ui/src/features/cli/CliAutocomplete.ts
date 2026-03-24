@@ -357,21 +357,23 @@ function getPositionalSuggestions(
     case 'prompt': {
       // Only suggest when typing an @mention
       if (!currentToken.startsWith('@')) return []
-      // @roll autocomplete: token starts with '@roll' but is not a KB id mention (no dot after 'roll')
-      if (currentToken.startsWith('@roll') && !currentToken.slice(1).includes('.')) {
-        return [
-          {
-            label: 'roll',
-            value: '@roll',
-            kind: 'dice-roll' as const,
-            group,
-            completionSuffix: '',
-          },
-        ]
-      }
       const kbPart = currentToken.slice(1)
+      // Do not show roll when the user has typed a dot (KB mention like @spell.fireball)
+      const hasDot = kbPart.includes('.')
       const rawSuggestions = getKbIdSuggestions(kbPart, group, sources, payload.exclude)
-      return rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
+      const kbSuggestions = rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
+      // Inject 'roll' as the first option whenever it matches the typed prefix and no dot yet
+      if (!hasDot && 'roll'.startsWith(kbPart.toLowerCase())) {
+        const rollSuggestion: Suggestion = {
+          label: 'roll',
+          value: '@roll',
+          kind: 'dice-roll' as const,
+          group,
+          completionSuffix: ' ',
+        }
+        return [rollSuggestion, ...kbSuggestions]
+      }
+      return kbSuggestions
     }
     case 'file-path':
       return getFileSuggestions(currentToken, group, sources)

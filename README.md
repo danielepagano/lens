@@ -89,8 +89,10 @@ Any prompt sent to an AI operator (`write`, `play`, `edit`, etc.) may include in
 
 | Form | Example | Use case |
 |------|---------|----------|
-| `@roll<expr>` | `@rolld20+5` | Quick single-die roll (no spaces) |
-| `@roll(<expr>)` | `@roll(2d6 + 3)` | Spaces allowed inside parens |
+| `@roll <expr>` | `@roll d20+5` | No spaces in expression |
+| `@roll (<expr>)` | `@roll (2d6 + 3)` | Spaces allowed inside parens |
+
+A space after `roll` is required. Spaces within the expression are only allowed in the parenthesised form.
 
 Expressions use standard dice notation powered by [python-dice](https://github.com/borntyping/python-dice):
 
@@ -101,9 +103,9 @@ Expressions use standard dice notation powered by [python-dice](https://github.c
 ### Examples
 
 ```
-/play I try to sneak past the guard — @rolld20+3 stealth check
-/write She draws her sword and strikes, @roll(2d6 + 4) slashing damage
-/play With advantage: @roll(2d20h1) to hit
+/play I try to sneak past the guard — @roll d20+3 stealth check
+/write She draws her sword and strikes, @roll (2d6 + 4) slashing damage
+/play With advantage: @roll 2d20h1 to hit
 ```
 
 What the AI receives (rolls already resolved):
@@ -113,11 +115,11 @@ I try to sneak past the guard — rolled 17 stealth check
 
 ### Error handling
 
-If the expression is invalid (e.g. `@rollXYZ`), the command is aborted and an error is shown to the user. The narrative is never written with an unresolved roll.
+If the expression is invalid (e.g. `@roll XYZZY`), the command is aborted and an error is shown to the user. The narrative is never written with an unresolved roll.
 
 ### Web UI
 
-Typing `@roll` in any prompt field shows a purple **⚄ roll** autocomplete chip. After completing it, continue typing the expression directly (e.g. `@rolld20+5`) or open a paren for a spaced expression (`@roll(2d6 + 3`). A ghost hint shows while the expression is active.
+Typing `@` in any prompt field shows a purple **⚄ roll** chip as the first autocomplete option. Selecting it inserts `@roll ` (with trailing space). Continue typing the expression (e.g. `d20+5`) or use parens for spaces (e.g. `(2d6 + 3)`). A "dice expression" ghost hint appears while `@roll` is selected and persists while the expression is being typed.
 
 ## More Documentation
 

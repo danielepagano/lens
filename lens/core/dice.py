@@ -15,12 +15,12 @@ import re
 import dice  # type: ignore[import-untyped]
 
 # Matches either:
-#   @roll(<expression>)   — parenthesised form, allows spaces in expression
-#   @roll<expression>     — bare form, expression runs until whitespace
+#   @roll (<expression>)  — parenthesised form, allows spaces in expression
+#   @roll <expression>    — bare form, space required, expression until next space
 _DICE_ROLL_RE = re.compile(
-    r"@roll\(([^)]+)\)"  # parenthesised: @roll(expr)
+    r"@roll\s+\(([^)]+)\)"  # parenthesised: @roll (expr) or @roll(expr)
     r"|"
-    r"@roll(\S+)",       # bare: @rollexpr (no space)
+    r"@roll\s+(\S+)",       # bare: @roll expr
 )
 
 
