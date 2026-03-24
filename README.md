@@ -81,6 +81,46 @@ verbose_llm  = true            # optional: log full LLM prompts/responses at INF
 
 **`verbose_llm`** — when `true`, each LLM call emits a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` block to the logger at `INFO` level — showing the exact prompt and full response with no raw protocol noise.
 
+## Dice Rolling
+
+Any prompt sent to an AI operator (`write`, `play`, `edit`, etc.) may include inline dice expressions. These are **evaluated before the prompt reaches the AI** — the AI only ever sees the resolved result, never the `@roll` syntax.
+
+### Syntax
+
+| Form | Example | Use case |
+|------|---------|----------|
+| `@roll <expr>` | `@roll d20+5` | No spaces in expression |
+| `@roll (<expr>)` | `@roll (2d6 + 3)` | Spaces allowed inside parens |
+
+A space after `roll` is required. Spaces within the expression are only allowed in the parenthesised form.
+
+Expressions use standard dice notation powered by [python-dice](https://github.com/borntyping/python-dice):
+
+- `d20`, `2d6`, `4d6h3` — standard dice (h = keep highest)
+- `d20+7`, `2d8+1d4+2` — arithmetic
+- `2d20h1` — advantage (roll 2d20, keep highest 1)
+
+### Examples
+
+```
+/play I try to sneak past the guard — @roll d20+3 stealth check
+/write She draws her sword and strikes, @roll (2d6 + 4) slashing damage
+/play With advantage: @roll 2d20h1 to hit
+```
+
+What the AI receives (rolls already resolved):
+```
+I try to sneak past the guard — rolled 17 stealth check
+```
+
+### Error handling
+
+If the expression is invalid (e.g. `@roll XYZZY`), the command is aborted and an error is shown to the user. The narrative is never written with an unresolved roll.
+
+### Web UI
+
+Typing `@` in any prompt field shows a purple **⚄ roll** chip as the first autocomplete option. Selecting it inserts `@roll ` (with trailing space). Continue typing the expression (e.g. `d20+5`) or use parens for spaces (e.g. `(2d6 + 3)`). A "dice expression" ghost hint appears while `@roll` is selected and persists while the expression is being typed.
+
 ## More Documentation
 
 - **[Design](docs/design.md)** - Lens Design doc

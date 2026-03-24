@@ -19,10 +19,11 @@
         class:cli-suggestion--node-suggest={sug.kind === 'node'}
         class:cli-suggestion--prefix-group={sug.completionSuffix === '-'}
         class:cli-suggestion--media-dir={sug.isMountDirectory === true}
+        class:cli-suggestion--dice-roll={sug.kind === 'dice-roll'}
         on:pointerdown|preventDefault
         on:click={() => onSelect(sug)}
       >
-        {sug.label}
+        {#if sug.kind === 'dice-roll'}⚄ roll{:else}{sug.label}{/if}
       </button>
     {/each}
   </div>

@@ -297,6 +297,9 @@
         }
         return
       }
+      case 'dice-roll':
+        replaceCurrentToken(sug.value + (sug.completionSuffix ?? ''))
+        return
     }
   }
 
@@ -491,6 +494,22 @@
 
   $: computedHint = (() => {
     if (!activeCommandDef || !isKnownCommand) return ''
+    // While typing a @roll expression in a prompt slot, show a persistent dice hint.
+    // The hint covers two phases:
+    //   1. currentToken === '@roll'  — user is still on the @roll token itself
+    //   2. The word immediately before currentToken in the input is '@roll' — user
+    //      has pressed space and is now typing the expression.
+    if (currentParseState?.activePayload?.valueType === 'prompt') {
+      const token = currentParseState.currentToken
+      if (token === '@roll') return 'dice expression'
+      // Look at the word immediately before the current token in the raw input
+      const inputTrimmed = input.trimEnd()
+      const beforeCurrent = token
+        ? inputTrimmed.slice(0, inputTrimmed.length - token.length).trimEnd()
+        : inputTrimmed
+      const wordBefore = beforeCurrent.split(/\s+/).pop() ?? ''
+      if (wordBefore === '@roll') return 'dice expression'
+    }
     // Show the hint for whichever payload slot is currently active
     const activeHint = currentParseState?.activePayload?.hint
     if (activeHint) return activeHint

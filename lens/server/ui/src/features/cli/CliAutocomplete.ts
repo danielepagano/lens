@@ -5,7 +5,7 @@ import type { TreeNode, Stats, MountEntry } from '../../services/api'
 export interface Suggestion {
   label: string
   value: string
-  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node'
+  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node' | 'dice-roll'
   group: string
   nodeHasChildren?: boolean
   /** Mount browse only: directory row (yellow dashed chip like prefix groups) */
@@ -355,11 +355,25 @@ function getPositionalSuggestions(
     case 'address':
       return getAddressSuggestions(currentToken, group, sources)
     case 'prompt': {
-      // Only suggest when typing an @mention; strip the '@' for the KB lookup
+      // Only suggest when typing an @mention
       if (!currentToken.startsWith('@')) return []
       const kbPart = currentToken.slice(1)
+      // Do not show roll when the user has typed a dot (KB mention like @spell.fireball)
+      const hasDot = kbPart.includes('.')
       const rawSuggestions = getKbIdSuggestions(kbPart, group, sources, payload.exclude)
-      return rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
+      const kbSuggestions = rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
+      // Inject 'roll' as the first option whenever it matches the typed prefix and no dot yet
+      if (!hasDot && 'roll'.startsWith(kbPart.toLowerCase())) {
+        const rollSuggestion: Suggestion = {
+          label: 'roll',
+          value: '@roll',
+          kind: 'dice-roll' as const,
+          group,
+          completionSuffix: ' ',
+        }
+        return [rollSuggestion, ...kbSuggestions]
+      }
+      return kbSuggestions
     }
     case 'file-path':
       return getFileSuggestions(currentToken, group, sources)

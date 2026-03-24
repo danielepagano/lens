@@ -142,6 +142,7 @@ from lens.core.annotations import (
 from lens.core.chain import ChainSpec
 from lens.core.command_tools import CommandToolFn, get_command_registry
 from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.dice import DiceError, substitute_rolls
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
@@ -805,6 +806,12 @@ class Operator(ABC):
 
         Raises :class:`OperatorError` on user-visible failures.
         """
+        if prompt:
+            try:
+                prompt = substitute_rolls(prompt)
+            except DiceError as e:
+                raise OperatorError(str(e)) from e
+
         mention_pins = cls.mention_pins(prompt, session.project_root)
         if mention_pins:
             pins = pins + mention_pins
