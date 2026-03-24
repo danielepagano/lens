@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines Milestone 4: Deployment, Serving & Security for the Lens web app.
+This document defines Deployment, Serving & Security for the Lens web app.
 
 The deployment model is intentionally narrow:
 
@@ -20,7 +20,7 @@ The design has two target operating modes:
 
 ## 2. Goals And Constraints
 
-Milestone 4 must preserve the current architecture described in `docs/api-design.md` and `docs/app-design.md`:
+Must preserve the current architecture described in `docs/api-design.md` and `docs/app-design.md`:
 
 - `lens serve` remains the production entrypoint
 - the frontend is built and served from the same origin as the API
@@ -32,7 +32,7 @@ The deployment design must satisfy these constraints:
 
 1. Deploy from a local machine.
 2. Build the current Lens code and UI before release.
-3. Package the full Lens repo into the deployed runtime, including bundled datasets such as `datasets/rpg/` and `datasets/dnd/`.
+3. Package the full Lens repo into the deployed runtime, including ALL bundled datasets (`datasets/rpg/`, `datasets/dnd/`, etc.).
 4. Keep the mutable project repo separate from the Lens application code.
 5. Clone and push the project repo over SSH using a separate GitLab identity from the Lens code repo.
 6. Inject LLM secrets only through environment variables referenced by `lens.toml`.
@@ -40,11 +40,9 @@ The deployment design must satisfy these constraints:
 8. Support custom domains.
 9. Stay simple enough that running directly on the user's home machine is a legitimate baseline.
 
-## 3. Chosen Baseline
+## 3. Baseline
 
-This milestone does not need a broad hosting comparison anymore.
-
-Instead, the design is:
+We have two modalities:
 
 - minimum viable deployment: local machine + dynamic DNS + Caddy + external access
 - target deployment: Fly.io single machine + mounted volume + the same Caddy/Lens model
@@ -92,7 +90,7 @@ Any non-local deployment must ship the full Lens repo, not just the server packa
 Reason:
 
 - bundled datasets such as `datasets/rpg/` and `datasets/dnd/` live in the Lens codebase
-- the web app must be able to read those datasets at runtime
+- the web app must be able to read those datasets at runtime (like we do no by running `lens serve` from the project repo)
 - the project repo is separate and mutable; datasets are part of the immutable app payload
 
 So the deployed runtime always has two layers:
@@ -106,22 +104,15 @@ The local-machine setup already has this naturally because it is running from th
 
 ### Why This Is The Minimum
 
-This is the shortest path from the current development model to a usable personal deployment.
-
-Today, you can already:
+Today, we can already:
 
 - run `lens serve`
 - bind to `0.0.0.0`
 - reach it from devices on your local network
-
-The missing pieces are:
-
-- stable external hostname
-- valid TLS certificate
-- Basic Auth credentials
-- router/network setup for inbound access
-
-So the minimum deployment is not a new platform. It is the current app with internet-facing infrastructure on top.
+- use dynamic DNS for stable external hostname
+- leverage valid TLS certificate
+- enforce Basic Auth credentials
+- manual router/network setup for inbound access
 
 ### Shape
 
@@ -131,15 +122,13 @@ So the minimum deployment is not a new platform. It is the current app with inte
 - dynamic DNS points a hostname at the home network
 - the router forwards HTTPS traffic to Caddy
 
-### Runtime
-
-Recommended process model:
+### Runtime:
 
 - Caddy listens on a public port (e.g. `:443` with sudo/setcap, or a high port such as `:8443` with the router forwarding 443 to it)
 - Lens serves only on `127.0.0.1:<port>`
 - Caddy reverse-proxies to Lens
 
-Example flow: browser hits the hostname; dynamic DNS resolves to home IP; router forwards 443 to the machine; Caddy terminates TLS and Basic Auth, then proxies to local `lens serve`.
+Flow: browser hits the hostname; dynamic DNS resolves to home IP; router forwards 443 to the machine; Caddy terminates TLS and Basic Auth, then proxies to local `lens serve`.
 
 ### Security Requirements
 
@@ -245,11 +234,11 @@ lens.example.com:8443 {
 
 **Volume layout.** `/data/repo/` is the canonical working copy (`.git/`, `lens.toml`, `narrative/`, `knowledge/`). The image must never overwrite it; Lens starts against `/data/repo`. Bootstrap: deploy image, inject secrets and SSH config, clone project repo into `/data/repo`, validate, start Lens behind Caddy. Later deploys replace only the image; do not reclone or overwrite uncheckpointed work.
 
-**Refresh.** A `lens refresh` command runs a conservative `git pull` (or fetch + fast-forward); if the server has local uncommitted changes, refresh fails. No automatic merge. One primary branch, no rebases/force-pushes.
+**Refresh.** The `lens refresh` command runs a conservative `git pull` (or fetch + fast-forward); if the server has local uncommitted changes, refresh fails. No automatic merge. One primary branch, no rebases/force-pushes.
 
 **Durability.** Fly volume data survives restart, redeploy, suspend/resume. The volume is still tied to one machine; snapshots are recovery help. GitLab is the primary durable copy; `lens checkpoint` exists to push work off-host. Use Fly volume for normal durability, GitLab for meaningful progress, snapshots for disaster recovery.
 
-**Cost.** Either suspend when idle (`min_machines_running = 0`) and accept wake latency, or keep one machine running. The comparison is “remote availability vs. home-host convenience,” not Fly vs. many clouds.
+**Cost.** Either suspend when idle (`min_machines_running = 0`) and accept wake latency, or keep one machine running. The comparison is “remote availability vs. home-host convenience,” not Fly vs. many clouds. User configurable.
 
 ## 8. Git Access Model
 
@@ -257,7 +246,7 @@ The project repo is separate from the Lens code repo and uses a separate GitLab 
 
 Use:
 
-- one GitLab deploy key
+- one GitLab deploy key (provided as a secret)
 - scoped to the project repo only
 - with write access
 
@@ -269,7 +258,7 @@ Do not use:
 
 Runtime requirements:
 
-- the private key is injected as a secret
+- the private key (like all other secrets, like S3 creds) is injected as a secret (using `fly secrets`)
 - it is written to an ephemeral runtime path
 - permissions are strict
 - `known_hosts` is pinned for `gitlab.com`
@@ -296,17 +285,19 @@ Branch policy for this milestone:
 
 ## 9. Secrets
 
+Use `fly secrets` (that means we need a `fly.toml`... in the lens repo or in the project?)
+
 ### LLM Secrets
 
 The current `lens/core/llm.py` model stays exactly the same:
 
-- `lens.toml` stores env-var names
+- `lens.toml` stores env-var names (unless assumed like git or AWS vars)
 - actual secret values come from runtime environment variables
 
 Deployment behavior must:
 
 1. read `lens.toml`
-2. collect required `api_key_env` names
+2. collect required `api_key_env` names (have user place them in current env)
 3. fail if any required secret is missing
 
 ## 10. Caddy And Public Access
@@ -359,22 +350,5 @@ Fly mode:
 - assign a hostname such as `lens.example.com`
 - attach/configure the hostname on the Fly app
 - update DNS per Fly's setup instructions
+	- could Caddy keep Cloudflare DNS record pointing to the fly machine like it does for dynamic DNS today?
 - let Caddy continue to act as the in-app auth and reverse-proxy layer
-
-## 11. CLI Route And Subprocess Model
-
-The current web CLI route in `lens/server/routes/cli.py` runs Lens commands by spawning:
-
-- Python subprocesses
-- `git` subprocesses as needed
-
-This is acceptable for both deployment modes.
-
-Implications:
-
-- Python must be present in the runtime
-- `git` must be present in the runtime
-- the process must have access to the working tree
-- only one active command at a time is the intended mode
-
-This is not a blocker. It just means the deployment runtime should be practical rather than ultra-minimal.

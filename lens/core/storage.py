@@ -17,12 +17,14 @@ System / non-operator commands use ``None`` (always stages pending first).
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from pathlib import Path
 from typing import ClassVar
 
 from lens.core.address import NarrativeAddress
+from lens.core.exceptions import LensException
 from lens.core.annotations import ANNOTATION_OPEN_RE, ANNOTATION_RE
 
 _HUNK_HEADER_RE = re.compile(
@@ -332,13 +334,156 @@ class Storage:
         )
         return bool(r.stdout.strip())
 
-    def push(self) -> None:
-        """Push the current branch to its upstream (requires remote configured)."""
-        subprocess.run(
+    def _git_env(self) -> dict[str, str]:
+        env = os.environ.copy()
+        env["GIT_TERMINAL_PROMPT"] = "0"
+        return env
+
+    def is_working_tree_clean(self) -> bool:
+        """True when there is no unstaged, untracked, or staged-but-uncommitted work."""
+        return not self.has_pending() and not self.has_staged()
+
+    def _has_upstream(self) -> bool:
+        r = subprocess.run(
+            [self._GIT, "rev-parse", "--verify", "@{upstream}"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        return r.returncode == 0
+
+    def _rev_list_count(self, range_spec: str) -> int:
+        r = subprocess.run(
+            [self._GIT, "rev-list", "--count", range_spec],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if r.returncode != 0:
+            return 0
+        try:
+            return int(r.stdout.strip())
+        except ValueError:
+            return 0
+
+    def fetch_quiet(self) -> None:
+        r = subprocess.run(
+            [self._GIT, "fetch", "-q"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if r.returncode != 0:
+            err = (r.stderr or "").strip()
+            raise LensException(err or "git fetch failed")
+
+    def refresh_fast_forward(self) -> None:
+        """Fetch and fast-forward merge to upstream. Requires clean tree and upstream."""
+        if not self.has_remote():
+            raise LensException("no git remote configured")
+        if not self.is_working_tree_clean():
+            raise LensException(
+                "cannot refresh: uncommitted changes; commit or rollback, or use lens refresh --reset"
+            )
+        self.fetch_quiet()
+        if not self._has_upstream():
+            raise LensException(
+                "no upstream branch; set it on first push (e.g. git push -u <remote> <branch>)"
+            )
+        r = subprocess.run(
+            [self._GIT, "merge", "--ff-only", "@{upstream}"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if r.returncode != 0:
+            err = (r.stderr or "").strip()
+            raise LensException(
+                "cannot fast-forward; histories diverged. Use `lens refresh --reset` to match "
+                "the remote and discard local unpushed commits and uncommitted work, or resolve "
+                f"with git. {err}".strip()
+            )
+
+    def refresh_reset_hard_to_upstream(self) -> None:
+        """Fetch, reset hard to upstream, and remove untracked files."""
+        if not self.has_remote():
+            raise LensException("no git remote configured")
+        self.fetch_quiet()
+        if not self._has_upstream():
+            raise LensException(
+                "no upstream branch; set it on first push (e.g. git push -u <remote> <branch>)"
+            )
+        r = subprocess.run(
+            [self._GIT, "reset", "--hard", "@{upstream}"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if r.returncode != 0:
+            err = (r.stderr or "").strip()
+            raise LensException(err or "git reset --hard failed")
+        c = subprocess.run(
+            [self._GIT, "clean", "-fd"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if c.returncode != 0:
+            err = (c.stderr or "").strip()
+            raise LensException(err or "git clean failed")
+        self._ownership_checked = False
+
+    def push_or_raise(self) -> None:
+        """Push to upstream; on rejection, fetch and explain remote-ahead vs other failures."""
+        r = subprocess.run(
             [self._GIT, "push"],
             cwd=self._root,
-            check=True,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
         )
+        if r.returncode == 0:
+            return
+        push_err = (r.stderr or "").strip()
+        fetch_r = subprocess.run(
+            [self._GIT, "fetch", "-q"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if fetch_r.returncode != 0:
+            fetch_err = (fetch_r.stderr or "").strip()
+            msg = f"push failed: {push_err}" if push_err else "push failed"
+            if fetch_err:
+                msg = f"{msg} (fetch: {fetch_err})"
+            raise LensException(msg)
+        if not self._has_upstream():
+            hint = f" {push_err}" if push_err else ""
+            raise LensException(
+                f"push failed: no upstream branch; set upstream on first push (e.g. git push -u).{hint}"
+            )
+        ahead = self._rev_list_count("HEAD..@{upstream}")
+        if ahead > 0:
+            raise LensException(
+                "cannot push: the remote has commits that are not in this branch yet. "
+                "Run `lens refresh` with a clean tree to fast-forward, or `lens refresh --reset` "
+                "to match the remote and discard local unpushed commits and uncommitted work. "
+                "For merge or rebase, use git on the machine directly."
+            )
+        if push_err:
+            raise LensException(f"push failed: {push_err}")
+        raise LensException("push failed")
+
+    def push(self) -> None:
+        """Push the current branch to its upstream (requires remote configured)."""
+        self.push_or_raise()
 
     # ------------------------------------------------------------------
     # File write operations — all trigger ownership check on first call

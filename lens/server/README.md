@@ -79,6 +79,7 @@ Both support `--host` and `--port` options. The server uses the project (or data
 | POST | `/rollback` | Discard all unstaged changes (pending transaction). |
 | POST | `/commit` | Stage the current pending transaction (moves unstaged → staged). |
 | POST | `/checkpoint` | Commit all staged changes and push to the remote repo. Body: `{"message": "...", "push": true}` (both optional). |
+| POST | `/refresh` | Fetch and fast-forward to upstream, or with `{"reset": true}` reset hard to upstream and remove untracked files. |
 
 ### CLI streaming
 

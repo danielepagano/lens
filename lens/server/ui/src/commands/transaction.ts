@@ -2,6 +2,7 @@ import {
   rollbackTransaction,
   commitTransaction,
   checkpointTransaction,
+  refreshTransaction,
 } from '../services/api'
 import { transactionResult, treeRefreshTrigger } from '../stores/ui'
 import type {
@@ -19,6 +20,11 @@ const commands: CommandDefinition[] = [
     group: 'transactions',
     positional: [{ name: 'message', valueType: 'string', hint: '(optional message)' }],
     options: [{ name: 'no-push' }],
+  },
+  {
+    trigger: 'refresh',
+    group: 'transactions',
+    options: [{ name: 'reset' }],
   },
 ]
 
@@ -42,6 +48,11 @@ const handler: CommandHandler = async (
         const message = (ctx.args.positional['message'] as string | undefined) || undefined
         const noPush = ctx.args.options['no-push'] === true
         result = await checkpointTransaction({ message, push: !noPush })
+        break
+      }
+      case 'refresh': {
+        const reset = ctx.args.options['reset'] === true
+        result = await refreshTransaction({ reset })
         break
       }
       default:

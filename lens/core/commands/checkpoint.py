@@ -18,4 +18,4 @@ def execute_checkpoint(
     msg = message or default_checkpoint_message()
     storage.checkpoint(msg)
     if push and storage.has_remote():
-        storage.push()
+        storage.push_or_raise()

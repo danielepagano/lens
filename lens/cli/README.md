@@ -31,6 +31,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
    lens rollback   # discard or compensate a pending operator transaction
    lens commit     # stage all changes (git add -A)
    lens checkpoint # stage, commit, and push; optional message and --no-push
+   lens refresh    # fetch and fast-forward from remote; --reset to match remote exactly
    ```
 
 Dataset-gated commands (e.g. `lens dnd`) and operators (`play`, `advance`) appear only when their dataset is listed in `[project] datasets`. See [RPG](../rpg/README.md) and [D&D](../dnd/README.md).
@@ -60,6 +61,12 @@ Stage all changes in the project (`git add -A`). Use this to “commit” the cu
 Stage all changes, create a git commit (with *MESSAGE* or a default timestamped message), and push to the remote if one is configured.
 
 - `--no-push` — Create the commit but do not push.
+
+### `lens refresh`
+
+Fetch from the remote and fast-forward the current branch to its upstream (no merge commits). Requires a clean working tree unless you use the destructive option.
+
+- `--reset` — After fetch, reset the branch to match the upstream exactly. Discards unpushed commits, uncommitted changes, and untracked files. Use when a normal refresh or checkpoint cannot proceed (for example, the remote moved forward and you need to align with it).
 
 ### `lens rewind`
 

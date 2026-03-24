@@ -1,15 +1,10 @@
 # Lens Backlog
 
-## Operators  
-
-- 
-
 ## Platform
 
 - **Direct editing** of markdown nodes 
 - **Cloud Deployment**: See [Deployment Design](./deployment-design.md).  
   - Local machine deploy with dynamic DNS and caddy already implemented.
-  - Add S3 bucket support to `attach`/media system
 
 ## Ideas
 

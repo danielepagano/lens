@@ -464,6 +464,11 @@ export const checkpointTransaction = (opts?: {
 }): Promise<TransactionActionResponse> =>
   post('/checkpoint', opts ?? {}) as Promise<TransactionActionResponse>
 
+export const refreshTransaction = (opts?: {
+  reset?: boolean
+}): Promise<TransactionActionResponse> =>
+  post('/refresh', opts ?? {}) as Promise<TransactionActionResponse>
+
 // ---- Narrative API ----
 
 export type PinOperation = 'add' | 'remove' | 'block' | 'unblock'

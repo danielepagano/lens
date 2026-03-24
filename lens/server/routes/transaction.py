@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from lens.core.commands.checkpoint import execute_checkpoint
 from lens.core.commands.commit import execute_commit
+from lens.core.commands.refresh import execute_refresh
 from lens.core.commands.rollback import rollback
 from lens.core.project import ProjectSession
 from lens.core.exceptions import LensException
@@ -18,6 +19,10 @@ router = APIRouter()
 class CheckpointRequest(BaseModel):
     message: str | None = None
     push: bool | None = None
+
+
+class RefreshRequest(BaseModel):
+    reset: bool | None = None
 
 
 @router.post("/rollback")
@@ -55,6 +60,19 @@ def checkpoint(
         message = body.message if body is not None else None
         push = body.push if body is not None and body.push is not None else True
         execute_checkpoint(session, message=message, push=push)
+        return {"status": "ok"}
+    except (RuntimeError, LensException) as e:
+        return {"status": "error", "detail": str(e)}
+
+
+@router.post("/refresh")
+def refresh(
+    body: RefreshRequest | None,
+    session: ProjectSession = Depends(get_session),
+) -> dict[str, Any]:
+    try:
+        reset = body.reset if body is not None and body.reset is not None else False
+        execute_refresh(session, reset=reset)
         return {"status": "ok"}
     except (RuntimeError, LensException) as e:
         return {"status": "error", "detail": str(e)}
