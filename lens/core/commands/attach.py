@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from lens.core.exceptions import LensException
-from lens.core.project import ProjectSession, get_mount_point
+from lens.core.project import ProjectSession, get_mount_backend
 
 SUPPORTED_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".webp", ".gif",
@@ -50,8 +50,8 @@ def attach(
     Returns a dict with keys: path, type, ext (preview mode) or path, type, embed (insert mode).
     Raises LensException for configuration or validation errors.
     """
-    mount = get_mount_point(session.project_root)
-    if mount is None:
+    backend = get_mount_backend(session.project_root)
+    if backend is None:
         raise LensException("no mount_point configured in lens.toml")
 
     ext = Path(relative_path).suffix.lower()
@@ -61,14 +61,11 @@ def attach(
             + ", ".join(sorted(SUPPORTED_EXTENSIONS))
         )
 
-    full_path = (mount / relative_path.lstrip("/")).resolve()
-    # Prevent path traversal outside mount
     try:
-        full_path.relative_to(mount)
-    except ValueError:
-        raise LensException("path escapes the mount directory")
-
-    if not full_path.exists():
+        exists = backend.file_exists(relative_path)
+    except ValueError as e:
+        raise LensException(str(e))
+    if not exists:
         raise LensException(f"file not found: {relative_path}")
 
     mtype = media_type(ext)
