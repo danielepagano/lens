@@ -81,6 +81,44 @@ verbose_llm  = true            # optional: log full LLM prompts/responses at INF
 
 **`verbose_llm`** — when `true`, each LLM call emits a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` block to the logger at `INFO` level — showing the exact prompt and full response with no raw protocol noise.
 
+## Dice Rolling
+
+Any prompt sent to an AI operator (`write`, `play`, `edit`, etc.) may include inline dice expressions. These are **evaluated before the prompt reaches the AI** — the AI only ever sees the resolved result, never the `@roll` syntax.
+
+### Syntax
+
+| Form | Example | Use case |
+|------|---------|----------|
+| `@roll<expr>` | `@rolld20+5` | Quick single-die roll (no spaces) |
+| `@roll(<expr>)` | `@roll(2d6 + 3)` | Spaces allowed inside parens |
+
+Expressions use standard dice notation powered by [python-dice](https://github.com/borntyping/python-dice):
+
+- `d20`, `2d6`, `4d6h3` — standard dice (h = keep highest)
+- `d20+7`, `2d8+1d4+2` — arithmetic
+- `2d20h1` — advantage (roll 2d20, keep highest 1)
+
+### Examples
+
+```
+/play I try to sneak past the guard — @rolld20+3 stealth check
+/write She draws her sword and strikes, @roll(2d6 + 4) slashing damage
+/play With advantage: @roll(2d20h1) to hit
+```
+
+What the AI receives (rolls already resolved):
+```
+I try to sneak past the guard — rolled 17 stealth check
+```
+
+### Error handling
+
+If the expression is invalid (e.g. `@rollXYZ`), the command is aborted and an error is shown to the user. The narrative is never written with an unresolved roll.
+
+### Web UI
+
+Typing `@roll` in any prompt field shows a purple **⚄ roll** autocomplete chip. After completing it, continue typing the expression directly (e.g. `@rolld20+5`) or open a paren for a spaced expression (`@roll(2d6 + 3`). A ghost hint shows while the expression is active.
+
 ## More Documentation
 
 - **[Design](docs/design.md)** - Lens Design doc

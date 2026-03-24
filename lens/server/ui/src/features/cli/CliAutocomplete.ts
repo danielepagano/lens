@@ -5,7 +5,7 @@ import type { TreeNode, Stats, MountEntry } from '../../services/api'
 export interface Suggestion {
   label: string
   value: string
-  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node'
+  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node' | 'dice-roll'
   group: string
   nodeHasChildren?: boolean
   /** Mount browse only: directory row (yellow dashed chip like prefix groups) */
@@ -355,8 +355,20 @@ function getPositionalSuggestions(
     case 'address':
       return getAddressSuggestions(currentToken, group, sources)
     case 'prompt': {
-      // Only suggest when typing an @mention; strip the '@' for the KB lookup
+      // Only suggest when typing an @mention
       if (!currentToken.startsWith('@')) return []
+      // @roll autocomplete: token starts with '@roll' but is not a KB id mention (no dot after 'roll')
+      if (currentToken.startsWith('@roll') && !currentToken.slice(1).includes('.')) {
+        return [
+          {
+            label: 'roll',
+            value: '@roll',
+            kind: 'dice-roll' as const,
+            group,
+            completionSuffix: '',
+          },
+        ]
+      }
       const kbPart = currentToken.slice(1)
       const rawSuggestions = getKbIdSuggestions(kbPart, group, sources, payload.exclude)
       return rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))

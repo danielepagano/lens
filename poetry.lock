@@ -207,6 +207,21 @@ files = [
 markers = {main = "platform_system == \"Windows\" or sys_platform == \"win32\"", dev = "sys_platform == \"win32\"", e2e = "sys_platform == \"win32\""}
 
 [[package]]
+name = "dice"
+version = "4.0.0"
+description = "A library for parsing and evaluating dice notation"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "dice-4.0.0-py3-none-any.whl", hash = "sha256:59aa1f7b23846b32a618697534429fec80be3a1087b4f934022dcdb99cf1417f"},
+    {file = "dice-4.0.0.tar.gz", hash = "sha256:7a1bfd68f21abf245f333de89721cd30379b5413c774a9d34a6b4123c526815c"},
+]
+
+[package.dependencies]
+pyparsing = ">=2.4.1"
+
+[[package]]
 name = "execnet"
 version = "2.1.2"
 description = "execnet: rapid multi-Python deployment"
@@ -882,6 +897,21 @@ files = [
 
 [package.extras]
 windows-terminal = ["colorama (>=0.4.6)"]
+
+[[package]]
+name = "pyparsing"
+version = "3.3.2"
+description = "pyparsing - Classes and methods to define and execute parsing grammars"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "pyparsing-3.3.2-py3-none-any.whl", hash = "sha256:850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d"},
+    {file = "pyparsing-3.3.2.tar.gz", hash = "sha256:c777f4d763f140633dcb6d8a3eda953bf7a214dc4eff598413c070bcdc117cbc"},
+]
+
+[package.extras]
+diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
 name = "pyright"
@@ -1651,4 +1681,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "bd1b1d31cf0a9a046ebc6a9556c1ca1201cd055ac539220e249764782fb83c13"
+content-hash = "0ce9c59e1400d805da82aa496d0a21cae643549cf23eb12492a905ae79babbe0"

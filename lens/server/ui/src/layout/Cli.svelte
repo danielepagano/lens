@@ -297,6 +297,10 @@
         }
         return
       }
+      case 'dice-roll':
+        // Insert @roll without trailing space so the user continues typing the expression
+        replaceCurrentToken(sug.value)
+        return
     }
   }
 
@@ -491,6 +495,13 @@
 
   $: computedHint = (() => {
     if (!activeCommandDef || !isKnownCommand) return ''
+    // While typing a @roll expression in a prompt slot, show a dice expression hint
+    if (currentParseState?.activePayload?.valueType === 'prompt') {
+      const token = currentParseState.currentToken
+      if (token === '@roll' || token === '@roll(') {
+        return token === '@roll(' ? 'expression)' : 'expression'
+      }
+    }
     // Show the hint for whichever payload slot is currently active
     const activeHint = currentParseState?.activePayload?.hint
     if (activeHint) return activeHint

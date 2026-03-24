@@ -598,6 +598,19 @@ details[open]>summary {
   color: #7eb8f7;
 }
 
+.cli-suggestion.cli-suggestion--dice-roll {
+  border-color: rgba(168, 85, 247, 0.7);
+  background: rgba(168, 85, 247, 0.12);
+  color: #d8b4fe;
+  font-variant-numeric: tabular-nums;
+}
+
+.cli-suggestion.cli-suggestion--dice-roll:hover,
+.cli-suggestion.cli-suggestion--dice-roll:focus-visible {
+  border-color: rgba(168, 85, 247, 0.95);
+  background: rgba(168, 85, 247, 0.2);
+}
+
 .cli-suggestion.cli-suggestion--prefix-group,
 .cli-suggestion.cli-suggestion--media-dir {
   border-width: 2px;
