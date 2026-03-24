@@ -49,6 +49,7 @@ def substitute_rolls(prompt: str) -> str:
         expr = (m.group(1) or m.group(2)).strip()
         try:
             result = _roll_to_int(expr)
+            print(f"Evaluated roll: {expr} -> {result}")
             return f"rolled {result}"
         except Exception as e:
             errors.append(f"@roll {expr!r}: {e}")
