@@ -11,6 +11,7 @@ syntax, only the resolved result.
 from __future__ import annotations
 
 import re
+from typing import Any, cast
 
 import dice  # type: ignore[import-untyped]
 
@@ -28,13 +29,14 @@ class DiceError(Exception):
     """Raised when a @roll expression cannot be evaluated."""
 
 
-def _roll_to_int(expr: str) -> int:
-    """Evaluate a dice expression and return the integer total."""
+def _roll_to_text(expr: str) -> str:
+    """Evaluate a dice expression and return a display-ready result."""
     raw: object = dice.roll(expr)  # type: ignore[no-untyped-call]
-    # dice.roll returns a Roll (list-like) or an integer-like element
+    # Keep list-like roll outputs as-is so systems that rely on roll operators
+    # see the library's own rendered result instead of a forced re-sum.
     if isinstance(raw, list):
-        return sum(int(v) for v in raw)  # type: ignore[arg-type]
-    return int(raw)  # type: ignore[arg-type]
+        return str(cast(list[Any], raw))
+    return str(int(cast(Any, raw)))
 
 
 def substitute_rolls(prompt: str) -> str:
@@ -48,7 +50,7 @@ def substitute_rolls(prompt: str) -> str:
     def _replace(m: re.Match[str]) -> str:
         expr = (m.group(1) or m.group(2)).strip()
         try:
-            result = _roll_to_int(expr)
+            result = _roll_to_text(expr)
             return f"(rolled {result})"
         except Exception as e:
             errors.append(f"@roll {expr!r}: {e}")

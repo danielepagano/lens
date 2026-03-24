@@ -9,11 +9,24 @@ import pytest
 from lens.core.dice import DiceError, substitute_rolls
 
 
+def _extract_rolled_payload(result: str) -> str:
+    m = re.search(r"\(rolled ([^)]+)\)", result)
+    assert m is not None
+    return m.group(1)
+
+
+def _extract_ints(value: str) -> list[int]:
+    return [int(n) for n in re.findall(r"-?\d+", value)]
+
+
 def test_bare_roll_replaced():
     result = substitute_rolls("I @roll d20 for stealth")
     assert result.startswith("I (rolled ")
     assert result.endswith(") for stealth")
-    n = int(result.split("(rolled ")[1].split(") ")[0])
+    payload = _extract_rolled_payload(result)
+    ints = _extract_ints(payload)
+    assert ints
+    n = ints[-1]
     assert 1 <= n <= 20
 
 
@@ -36,10 +49,14 @@ def test_paren_roll_allows_spaces():
 
 def test_multiple_rolls_in_prompt():
     result = substitute_rolls("@roll d20 to hit, @roll d6 damage")
-    hits = re.findall(r"rolled (\d+)", result)
-    assert len(hits) == 2
-    assert 1 <= int(hits[0]) <= 20
-    assert 1 <= int(hits[1]) <= 6
+    payloads = re.findall(r"\(rolled ([^)]+)\)", result)
+    assert len(payloads) == 2
+    first_roll_ints = _extract_ints(payloads[0])
+    second_roll_ints = _extract_ints(payloads[1])
+    assert first_roll_ints
+    assert second_roll_ints
+    assert 1 <= first_roll_ints[-1] <= 20
+    assert 1 <= second_roll_ints[-1] <= 6
 
 
 def test_no_roll_unchanged():
@@ -61,7 +78,10 @@ def test_error_message_contains_expression():
 def test_paren_roll_keeps_trailing_text():
     result = substitute_rolls("I @roll (1d6) fire damage to the troll")
     assert "fire damage to the troll" in result
-    assert re.search(r"rolled \d+", result)
+    payload = _extract_rolled_payload(result)
+    ints = _extract_ints(payload)
+    assert ints
+    assert 1 <= ints[-1] <= 6
 
 
 def test_no_space_no_match():
