@@ -24,7 +24,7 @@ def _discover_commands() -> Iterator[tuple[str, Typer]]:
 
 
 def register_commands(main_app: typer.Typer) -> None:
-    from lens.core.project import DATASET_PACKAGES, find_project_root, get_mount_point, get_selected_datasets
+    from lens.core.project import DATASET_PACKAGES, find_project_root, has_mount_config, get_selected_datasets
 
     try:
         project_root = find_project_root()
@@ -36,7 +36,7 @@ def register_commands(main_app: typer.Typer) -> None:
     for name, app in _discover_commands():
         if name in DATASET_PACKAGES and name not in selected:
             continue
-        if name == "attach" and (project_root is None or get_mount_point(project_root) is None):
+        if name == "attach" and (project_root is None or not has_mount_config(project_root)):
             continue
         # Single-callback apps (no subcommands) must be registered directly to avoid
         # Typer wrapping them in a command group, which breaks argument/option parsing.

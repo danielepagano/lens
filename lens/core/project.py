@@ -12,6 +12,7 @@ from lens.core.narrative import NarrativeNode
 
 if TYPE_CHECKING:
     from lens.core.knowledge import KnowledgeStore
+    from lens.core.mount import MountBackend
     from lens.core.storage import Storage
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
@@ -155,8 +156,26 @@ def require_lens_context(start: Path) -> tuple[Path, Path]:
     )
 
 
+def has_mount_config(project_root: Path) -> bool:
+    """Return ``True`` if ``mount_point`` is set in ``lens.toml`` (any backend)."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return False
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return False
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    return isinstance(raw, str) and bool(raw.strip())
+
+
 def get_mount_point(project_root: Path) -> Path | None:
-    """Return the resolved mount_point path from [project] in lens.toml, or None."""
+    """Return the resolved mount_point path from [project] in lens.toml, or None.
+
+    Returns ``None`` for S3 URIs (``s3://...``) — use :func:`get_mount_backend` instead.
+    """
     lens_toml = project_root / "lens.toml"
     if not lens_toml.exists():
         return None
@@ -169,8 +188,42 @@ def get_mount_point(project_root: Path) -> Path | None:
     raw = project.get("mount_point")
     if not isinstance(raw, str) or not raw.strip():
         return None
-    p = Path(raw.strip())
+    raw = raw.strip()
+    if raw.startswith("s3://"):
+        return None
+    p = Path(raw)
     return p if p.is_absolute() else (project_root / p).resolve()
+
+
+def get_mount_backend(project_root: Path) -> "MountBackend | None":
+    """Return a :class:`~lens.core.mount.MountBackend` for the configured mount_point, or ``None``.
+
+    Reads ``mount_point`` from ``[project]`` in ``lens.toml``:
+
+    - A local path (relative or absolute) → :class:`~lens.core.mount.LocalMountBackend`.
+    - An ``s3://`` URI → :class:`~lens.core.mount.S3MountBackend` using standard
+      AWS environment variables for credentials and endpoint.
+    """
+    from lens.core.mount import LocalMountBackend, get_backend_from_uri
+
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return None
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    raw = raw.strip()
+    if raw.startswith("s3://"):
+        return get_backend_from_uri(raw)
+    p = Path(raw)
+    root = p if p.is_absolute() else (project_root / p).resolve()
+    return LocalMountBackend(root)
 
 
 def get_active_narrative(project_root: Path) -> NarrativeNode | None:
