@@ -150,7 +150,6 @@
       fetchKbKeys,
       nodeTree: nodeTreeCache,
       fetchNodeTree,
-      kbKeyThreshold: 10,
       stats: $stats,
       mountDirCache,
       fetchMountDir,
@@ -250,16 +249,14 @@
         completeCommand(sug.value)
         return
       case 'slug':
-        // Replace current token with the slug value and add space
-        replaceCurrentToken(sug.value + ' ')
+        replaceCurrentToken(sug.value + (sug.completionSuffix ?? ' '))
         return
       case 'kb-type':
         // Append the type + dot separator
         replaceCurrentToken(sug.value)
         return
       case 'kb-key':
-        // Complete the full kb-id and add space
-        replaceCurrentToken(sug.value + ' ')
+        replaceCurrentToken(sug.value + (sug.completionSuffix ?? ' '))
         return
       case 'flag':
         // Insert the flag. If the option defines a default, also insert it so it behaves as typed.

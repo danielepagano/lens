@@ -17,6 +17,8 @@
         class:cli-suggestion--rpg={sug.group === 'rpg'}
         class:cli-suggestion--opt-flag={sug.kind === 'flag'}
         class:cli-suggestion--node-suggest={sug.kind === 'node'}
+        class:cli-suggestion--prefix-group={sug.completionSuffix === '-'}
+        class:cli-suggestion--media-dir={sug.isMountDirectory === true}
         on:pointerdown|preventDefault
         on:click={() => onSelect(sug)}
       >

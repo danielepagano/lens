@@ -5,7 +5,7 @@
   $: isOpen = $transactionResult !== null
   $: title = $transactionResult?.title ?? 'Transaction'
   $: message = $transactionResult?.message ?? ''
-  $: panelTheme = $transactionResult?.theme === 'info' ? 'command' : 'error'
+  $: panelTheme = ($transactionResult?.theme === 'info' ? 'command' : 'error') as 'command' | 'error'
 
   function handleClose() {
     transactionResult.set(null)

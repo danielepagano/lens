@@ -584,6 +584,22 @@ details[open]>summary {
   color: #7eb8f7;
 }
 
+.cli-suggestion.cli-suggestion--prefix-group,
+.cli-suggestion.cli-suggestion--media-dir {
+  border-width: 2px;
+  border-style: dashed;
+  border-color: rgba(251, 191, 36, 0.75);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.cli-suggestion.cli-suggestion--prefix-group:hover,
+.cli-suggestion.cli-suggestion--prefix-group:focus-visible,
+.cli-suggestion.cli-suggestion--media-dir:hover,
+.cli-suggestion.cli-suggestion--media-dir:focus-visible {
+  border-color: rgba(251, 191, 36, 0.95);
+  background: rgba(251, 191, 36, 0.14);
+}
+
 .cli-suggestion:hover,
 .cli-suggestion:focus-visible {
   background: rgba(255, 255, 255, 0.12);

@@ -8,6 +8,74 @@ export interface Suggestion {
   kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node'
   group: string
   nodeHasChildren?: boolean
+  /** Mount browse only: directory row (yellow dashed chip like prefix groups) */
+  isMountDirectory?: boolean
+  /** Appended after `value` on Tab/select: `' '` finishes token, `'-'` continues dashed segments */
+  completionSuffix?: string
+}
+
+/**
+ * After picking a grouped dashed row: use `'-'` when longer keys exist (`artificer-*`), else `' '`.
+ */
+export function dashedGroupingCompletionSuffix(
+  selected: string,
+  pool: readonly string[],
+): string {
+  const exact = pool.includes(selected)
+  const hasDashExtension = pool.some(
+    (full) => full !== selected && full.startsWith(`${selected}-`),
+  )
+  if (exact) return ' '
+  if (hasDashExtension) return '-'
+  return ' '
+}
+
+/**
+ * Split `keyPrefix` into a dash-boundary `stem` (complete segments, may end with `-`)
+ * and `inSeg` (partial segment filter). Used to show labels relative to the stem
+ * (e.g. `artificer-a` → stem `artificer-`, inSeg `a` → group on `alchemist-*` not `artificer-alchemist-*`).
+ */
+export function decomposeKbKeyTypingPrefix(
+  keyPrefix: string,
+  filteredKeys: readonly string[],
+): { stem: string; inSeg: string } {
+  if (!keyPrefix) return { stem: '', inSeg: '' }
+
+  if (keyPrefix.endsWith('-')) {
+    return { stem: keyPrefix, inSeg: '' }
+  }
+
+  const allBranch =
+    filteredKeys.length > 0 &&
+    filteredKeys.every((k) => k === keyPrefix || k.startsWith(`${keyPrefix}-`))
+  if (allBranch) {
+    return { stem: keyPrefix, inSeg: '' }
+  }
+
+  const lastDash = keyPrefix.lastIndexOf('-')
+  if (lastDash >= 0) {
+    return {
+      stem: keyPrefix.slice(0, lastDash + 1),
+      inSeg: keyPrefix.slice(lastDash + 1),
+    }
+  }
+
+  return { stem: '', inSeg: keyPrefix }
+}
+
+/** Key text after `stem` (strip leading dashes from remainder). */
+export function kbKeyRemainderAfterStem(fullKey: string, stem: string): string {
+  if (!stem) return fullKey
+  if (!fullKey.startsWith(stem)) return ''
+  return fullKey.slice(stem.length).replace(/^-+/, '')
+}
+
+/** Rebuild full key from stem through a grouped remainder. */
+export function joinKbStemAndGroupedRest(stem: string, groupedRest: string): string {
+  if (!stem) return groupedRest
+  if (!groupedRest) return stem
+  if (stem.endsWith('-')) return stem + groupedRest
+  return `${stem}-${groupedRest}`
 }
 
 export interface DataSources {
@@ -16,10 +84,124 @@ export interface DataSources {
   fetchKbKeys: (type: string) => void
   nodeTree: TreeNode[] | null
   fetchNodeTree: () => void
-  kbKeyThreshold: number
   stats: Stats | null
   mountDirCache: Map<string, MountEntry[]>
   fetchMountDir: (path: string) => void
+}
+
+const DENSE_GROUP_MIN_LEAVES = 4
+
+interface TrieNode {
+  children: Map<string, TrieNode>
+  terminalCount: number
+  leafCount: number
+}
+
+function newTrieNode(): TrieNode {
+  return { children: new Map(), terminalCount: 0, leafCount: 0 }
+}
+
+function splitSegments(s: string, delimiter: string): string[] {
+  return s.split(delimiter).filter(Boolean)
+}
+
+function joinSegments(segments: readonly string[], delimiter: string): string {
+  return segments.join(delimiter)
+}
+
+function insertTrie(root: TrieNode, segments: readonly string[]): void {
+  let node = root
+  for (const seg of segments) {
+    let next = node.children.get(seg)
+    if (!next) {
+      next = newTrieNode()
+      node.children.set(seg, next)
+    }
+    node = next
+  }
+  node.terminalCount += 1
+}
+
+function finalizeLeafCounts(node: TrieNode): number {
+  let n = node.terminalCount
+  for (const ch of node.children.values()) {
+    n += finalizeLeafCounts(ch)
+  }
+  node.leafCount = n
+  return n
+}
+
+function collectLeaves(node: TrieNode, prefixSegs: string[], delimiter: string): string[] {
+  const out: string[] = []
+  if (node.terminalCount > 0) {
+    const j = joinSegments(prefixSegs, delimiter)
+    for (let i = 0; i < node.terminalCount; i += 1) out.push(j)
+  }
+  for (const [k, ch] of node.children) {
+    out.push(...collectLeaves(ch, [...prefixSegs, k], delimiter))
+  }
+  return out
+}
+
+function terminalsHere(node: TrieNode, prefixSegs: string[], delimiter: string): string[] {
+  if (node.terminalCount === 0) return []
+  const j = joinSegments(prefixSegs, delimiter)
+  return Array.from({ length: node.terminalCount }, () => j)
+}
+
+function emitGrouped(node: TrieNode, prefixSegs: string[], delimiter: string): string[] {
+  const lc = node.leafCount
+  if (lc < DENSE_GROUP_MIN_LEAVES) {
+    return collectLeaves(node, prefixSegs, delimiter).sort()
+  }
+  if (node.children.size === 0) {
+    return collectLeaves(node, prefixSegs, delimiter).sort()
+  }
+  if (node.children.size === 1) {
+    const k = [...node.children.keys()][0]!
+    const fromChild = emitGrouped(node.children.get(k)!, [...prefixSegs, k], delimiter)
+    return [...terminalsHere(node, prefixSegs, delimiter), ...fromChild].sort()
+  }
+  const childEntries = [...node.children.entries()]
+  const allTerminalFan =
+    node.terminalCount === 0 &&
+    childEntries.every(([, ch]) => ch.leafCount === 1 && ch.children.size === 0)
+  const pathStr = joinSegments(prefixSegs, delimiter)
+  const manyChildBranches =
+    node.terminalCount === 0 && node.children.size >= DENSE_GROUP_MIN_LEAVES
+  const collapseDensePrefix =
+    pathStr.length > 0 &&
+    lc >= DENSE_GROUP_MIN_LEAVES &&
+    (allTerminalFan || manyChildBranches)
+  if (collapseDensePrefix) {
+    return [pathStr]
+  }
+  const out: string[] = [...terminalsHere(node, prefixSegs, delimiter)]
+  for (const k of [...node.children.keys()].sort()) {
+    out.push(...emitGrouped(node.children.get(k)!, [...prefixSegs, k], delimiter))
+  }
+  return out.sort()
+}
+
+/**
+ * Collapse dense branches into one prefix row: either a fan of terminal children (≥DENSE_GROUP_MIN_LEAVES leaves)
+ * or ≥DENSE_GROUP_MIN_LEAVES distinct next-segment children with no completion ending exactly at this path (e.g. many
+ * `artificer-*` keys that continue deeper). Delimiter is `-` for slugs/keys or `/` for paths.
+ */
+export function groupDenseSegmentedPrefixes(
+  values: readonly string[],
+  delimiter: string,
+): string[] {
+  const unique = [...new Set(values.filter((v) => v.length > 0))]
+  if (unique.length === 0) return []
+  const root = newTrieNode()
+  for (const v of unique) {
+    const segs = splitSegments(v, delimiter)
+    if (segs.length === 0) continue
+    insertTrie(root, segs)
+  }
+  finalizeLeafCounts(root)
+  return emitGrouped(root, [], delimiter)
 }
 
 /** Build command-level suggestions (no definition resolved yet). */
@@ -199,11 +381,14 @@ function getSlugSuggestions(
   }
 
   const matches = prefix ? values.filter((v) => v.startsWith(prefix)) : values
-  return (matches.length > 0 ? matches : values).map((v) => ({
+  const candidates = matches.length > 0 ? matches : values
+  const grouped = groupDenseSegmentedPrefixes(candidates, '-')
+  return grouped.map((v) => ({
     label: v,
     value: v,
     kind: 'slug' as const,
     group,
+    completionSuffix: dashedGroupingCompletionSuffix(v, candidates),
   }))
 }
 
@@ -241,18 +426,51 @@ function getKbIdSuggestions(
 
   const excludeSet = exclude ? new Set(exclude) : null
   const allKeys = sources.kbKeyCache.get(typeName) ?? []
-  if (keyPrefix.length === 0 && allKeys.length >= sources.kbKeyThreshold) {
-    return [] // too many to show without a prefix
-  }
   const matches = keyPrefix ? allKeys.filter((k) => k.startsWith(keyPrefix)) : allKeys
-  return matches
-    .filter((k) => !k.startsWith('_template') && (!excludeSet || !excludeSet.has(typeName + '.' + k)))
-    .map((k) => ({
-      label: k,
-      value: typeName + '.' + k,
+  const filteredKeys = matches.filter(
+    (k) => !k.startsWith('_template') && (!excludeSet || !excludeSet.has(typeName + '.' + k)),
+  )
+
+  const { stem, inSeg } = decomposeKbKeyTypingPrefix(keyPrefix, filteredKeys)
+
+  const restRows: { fullKey: string; rest: string }[] = []
+  for (const fullKey of filteredKeys) {
+    const rest = kbKeyRemainderAfterStem(fullKey, stem)
+    if (inSeg.length > 0 && !rest.startsWith(inSeg)) continue
+    restRows.push({ fullKey, rest })
+  }
+
+  const withTail = restRows.filter((r) => r.rest.length > 0)
+  const exactOnly = restRows.filter((r) => r.rest.length === 0)
+
+  const restPool = withTail.map((r) => r.rest)
+  const groupedRests = groupDenseSegmentedPrefixes(restPool, '-')
+
+  const out: Suggestion[] = []
+  for (const g of groupedRests) {
+    const mergedKey = joinKbStemAndGroupedRest(stem, g)
+    out.push({
+      label: g,
+      value: typeName + '.' + mergedKey,
       kind: 'kb-key' as const,
       group,
-    }))
+      completionSuffix: dashedGroupingCompletionSuffix(g, restPool),
+    })
+  }
+
+  for (const { fullKey } of exactOnly) {
+    const dash = fullKey.lastIndexOf('-')
+    const label = dash < 0 ? fullKey : fullKey.slice(dash + 1)
+    out.push({
+      label,
+      value: typeName + '.' + fullKey,
+      kind: 'kb-key' as const,
+      group,
+      completionSuffix: ' ',
+    })
+  }
+
+  return out.sort((a, b) => a.label.localeCompare(b.label))
 }
 
 function getAddressSuggestions(
@@ -332,11 +550,15 @@ function getFileSuggestions(
     ? entries.filter((e) => e.name.toLowerCase().startsWith(lowerPrefix))
     : entries
 
+  // Do not run groupDenseSegmentedPrefixes here: sibling entries in a directory are the
+  // actual pick targets (files/dirs). Collapsing ≥DENSE_GROUP_MIN_LEAVES leaf names would replace them with the
+  // parent path and make browsing empty or useless.
   return filtered.map((e) => ({
     label: e.name + (e.is_dir ? '/' : ''),
     value: dirPrefix + e.name,
     kind: 'node' as const,
     group,
     nodeHasChildren: e.is_dir,
+    isMountDirectory: e.is_dir,
   }))
 }
