@@ -334,6 +334,19 @@ class Storage:
         )
         return bool(r.stdout.strip())
 
+    def get_remote_url(self, remote: str = "origin") -> str:
+        """Return the URL for the given git remote."""
+        r = subprocess.run(
+            [self._GIT, "config", f"remote.{remote}.url"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if r.returncode != 0:
+            raise LensException(f"no remote URL for '{remote}'")
+        return r.stdout.strip()
+
     def _git_env(self) -> dict[str, str]:
         env = os.environ.copy()
         env["GIT_TERMINAL_PROMPT"] = "0"

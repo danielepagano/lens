@@ -2,9 +2,7 @@
 
 ## Platform
 
-- **Direct editing** of markdown nodes 
-- **Cloud Deployment**: See [Deployment Design](./deployment-design.md).  
-  - Local machine deploy with dynamic DNS and caddy already implemented.
+- **Direct editing** of markdown nodes
 
 ## Ideas
 
