@@ -144,6 +144,40 @@ class TestChildDiscovery(unittest.TestCase):
             node = NarrativeNode(narrative_root=narrative, key_path=())
             self.assertEqual(set(node.child_keys()), {"folder", "leaf"})
 
+    def test_child_keys_ordered_by_annotation(self) -> None:
+        """Children appear in the order their section annotations appear in the parent."""
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            # Create children out of alphabetical order: z, a, m
+            for key in ("z", "a", "m"):
+                (narrative / key).mkdir()
+                (narrative / key / "_node.md").write_text(f"# {key}")
+            # Parent references them in z, a, m order
+            (narrative / "_node.md").write_text(
+                "# root\n\n"
+                "[section:z]: #\n"
+                "[section:a]: #\n"
+                "[section:m]: #\n"
+            )
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            self.assertEqual(node.child_keys(), ["z", "a", "m"])
+
+    def test_child_keys_unannotated_appended_sorted(self) -> None:
+        """Filesystem children not in annotations are appended in sorted order."""
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            narrative = _make_narrative(p)
+            for key in ("b", "c", "a"):
+                (narrative / key).mkdir()
+                (narrative / key / "_node.md").write_text(f"# {key}")
+            # Only 'b' is referenced in annotations
+            (narrative / "_node.md").write_text(
+                "# root\n\n[section:b]: #\n"
+            )
+            node = NarrativeNode(narrative_root=narrative, key_path=())
+            self.assertEqual(node.child_keys(), ["b", "a", "c"])
+
 
 class TestStructuralWarnings(unittest.TestCase):
     def test_file_and_folder_conflict(self) -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -16,6 +17,14 @@ from lens.core.storage import Storage
 
 if TYPE_CHECKING:
     from lens.core.address import NarrativeAddress
+
+# Matches the first line of any non-closing annotation that carries an ID:
+#   [operator:id]: #      (single-line, including self-closing [op:id/]: #)
+#   [operator:id          (first line of multi-line block)
+# Does NOT match closing tags ([/operator:id]: #).
+_CHILD_ID_LINE_RE = re.compile(
+    r"^\[([a-zA-Z_][a-zA-Z0-9_]*):([a-zA-Z0-9_-]+)"
+)
 
 
 def _make_system_storage(near: Path) -> Storage:
@@ -141,9 +150,14 @@ class NarrativeNode:
         st.delete_file(leaf_md)
 
     def child_keys(self) -> list[str]:
-        if self.is_leaf():
+        # Resolve md_path once; leaf nodes (non-_node.md files) have no children.
+        try:
+            md = self.md_path()
+        except FileNotFoundError:
             return []
-        parent = self.md_path().parent
+        if md.name != "_node.md":
+            return []
+        parent = md.parent
         keys: set[str] = set()
         for p in parent.iterdir():
             if p.name == "_node.md":
@@ -152,13 +166,34 @@ class NarrativeNode:
                 keys.add(p.name)
             elif p.suffix == ".md":
                 keys.add(p.stem)
-        result: list[str] = []
-        for k in sorted(keys):
+        valid_keys: set[str] = set()
+        for k in keys:
             if (parent / k).is_dir() and (parent / k / "_node.md").exists():
-                result.append(k)
+                valid_keys.add(k)
             elif (parent / f"{k}.md").exists():
-                result.append(k)
-        return result
+                valid_keys.add(k)
+
+        # Order children by their appearance in the parent node's content.
+        # Any non-closing annotation with an ID may have created a child node
+        # (section, design, play, etc.), so scan for all of them.
+        # valid_keys already constrains to real filesystem children.
+        ordered: list[str] = []
+        seen: set[str] = set()
+        try:
+            for line in md.read_text().splitlines():
+                m = _CHILD_ID_LINE_RE.match(line)
+                if m:
+                    child_id = m.group(2)
+                    if child_id in valid_keys and child_id not in seen:
+                        ordered.append(child_id)
+                        seen.add(child_id)
+        except OSError:
+            pass
+
+        # Append any filesystem children not referenced in annotations.
+        for k in sorted(valid_keys - seen):
+            ordered.append(k)
+        return ordered
 
     def child_node(self, key: str) -> NarrativeNode:
         return NarrativeNode(
