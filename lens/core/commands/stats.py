@@ -15,6 +15,7 @@ class StatsResult:
     trees: list[tuple[str, int]]
     cursor_addr: NarrativeAddress | None
     has_pending: bool
+    has_staged: bool
     pending_owner: NarrativeAddress | None
     dataset_name: str | None = None
     current_datasets: list[str] = field(default_factory=list[str])
@@ -74,21 +75,19 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         if node is not None:
             effective_pins_at_cursor = crawl_pins(node)
 
-    available_llms = list_available_llms(root)
-    has_mount = has_mount_config(root)
-
     return StatsResult(
         kb_types=kb_types,
         kb_count=kb_count,
         trees=trees,
         cursor_addr=cursor_addr,
         has_pending=has_pending,
+        has_staged=storage.has_staged(),
         pending_owner=pending_owner,
         dataset_name=root.name if is_dataset else None,
         current_datasets=current_datasets,
         pending_diff=pending_diff,
         staged_diff=staged_diff,
         effective_pins_at_cursor=effective_pins_at_cursor,
-        available_llms=available_llms,
-        has_mount=has_mount,
+        available_llms=list_available_llms(root),
+        has_mount=has_mount_config(root),
     )

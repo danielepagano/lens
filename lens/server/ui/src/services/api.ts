@@ -46,6 +46,7 @@ export interface Stats {
   narratives: string[]
   cursor: string | null
   has_pending: boolean
+  has_staged: boolean
   pending_owner: string | null
   dataset_name: string | null
   current_datasets: string[] | null

@@ -31,6 +31,7 @@ def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
         "narratives": [t[0] for t in result.trees],
         "cursor": str(result.cursor_addr) if result.cursor_addr is not None else None,
         "has_pending": result.has_pending,
+        "has_staged": result.has_staged,
         "pending_owner": str(result.pending_owner) if result.pending_owner is not None else None,
         "dataset_name": result.dataset_name,
         "current_datasets": result.current_datasets if result.dataset_name is None else [],

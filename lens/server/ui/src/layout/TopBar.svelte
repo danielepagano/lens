@@ -8,6 +8,8 @@
   $: parentAddr = parts.length > 1 ? parts.slice(0, -1).join('/') : null
   $: currentTitle = parts.length > 0 ? parts[parts.length - 1] : null
   $: isCursor = $stats?.cursor !== null && $stats?.cursor === $currentAddress
+  $: has_pending = $stats?.has_pending
+  $: has_staged = $stats?.has_staged
 
   function switchToNarrative() {
     appMode.set('narrative')
@@ -28,6 +30,7 @@
     {/if}
   {/if}
   <div class="mode-switch">
+    <span class="tx-status {(!has_pending) && has_staged ? 'staged':''} ">{has_pending ? '*' : (has_staged ? '^' : '')}</span>
     <button
       class="mode-btn"
       class:active={$appMode === 'narrative'}
