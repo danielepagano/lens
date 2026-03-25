@@ -38,7 +38,7 @@ primary_region = "{region}"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "512mb"
+  memory = "256mb"
 """
 
 _AWS_ENV_VARS = [
