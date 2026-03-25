@@ -152,13 +152,36 @@ class NarrativeNode:
                 keys.add(p.name)
             elif p.suffix == ".md":
                 keys.add(p.stem)
-        result: list[str] = []
-        for k in sorted(keys):
+        valid_keys: set[str] = set()
+        for k in keys:
             if (parent / k).is_dir() and (parent / k / "_node.md").exists():
-                result.append(k)
+                valid_keys.add(k)
             elif (parent / f"{k}.md").exists():
-                result.append(k)
-        return result
+                valid_keys.add(k)
+
+        # Order children by their appearance in the parent node's content.
+        ordered: list[str] = []
+        seen: set[str] = set()
+        try:
+            text = self.md_path().read_text()
+            for ann in parse_annotations(text):
+                if (
+                    ann.operator == "section"
+                    and not ann.closing
+                    and not ann.self_closing
+                    and ann.id is not None
+                    and ann.id in valid_keys
+                    and ann.id not in seen
+                ):
+                    ordered.append(ann.id)
+                    seen.add(ann.id)
+        except OSError:
+            pass
+
+        # Append any filesystem children not referenced in annotations.
+        for k in sorted(valid_keys - seen):
+            ordered.append(k)
+        return ordered
 
     def child_node(self, key: str) -> NarrativeNode:
         return NarrativeNode(
