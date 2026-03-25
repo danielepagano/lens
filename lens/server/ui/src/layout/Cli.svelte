@@ -522,6 +522,15 @@
   })()
 
   $: showHint = !!computedHint && isKnownCommand
+
+  $: cliInputAutocomplete = (() => {
+    const s = currentParseState
+    if (!s?.activePayload) return 'off'
+    const vt = s.activePayload.valueType
+    if (vt !== 'string' && vt !== 'prompt') return 'off'
+    if (s.phase === 'positional' || s.phase === 'option-value') return 'on'
+    return 'off'
+  })()
 </script>
 
 <div class="bottom-bar" data-testid="bottom-bar" bind:this={bottomBarEl}>
@@ -555,6 +564,7 @@
         }}
         rows="1"
         disabled={busy}
+        autocomplete={cliInputAutocomplete}
         data-testid="cli-input"
       />
       {#if showHint}
