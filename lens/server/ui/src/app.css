@@ -284,7 +284,6 @@ ul.tree-list li {
 
 .content p {
   margin-bottom: 0.66rem;
-  text-indent: 1rem;
 }
 
 .content li {
@@ -293,7 +292,6 @@ ul.tree-list li {
 
 .content blockquote p {
   margin-bottom: 0.2rem;
-  text-indent: 0;
 }
 
 .content hr {
@@ -1481,8 +1479,6 @@ ul.kb-item-list {
   padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
-  max-height: 15%;
-  overflow-y: auto;
 }
 
 .kb-viewer-id {
@@ -1491,9 +1487,13 @@ ul.kb-item-list {
 }
 
 .kb-viewer-tags {
-  font-size: 0.7rem;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
   color: var(--pico-muted-color);
   flex: 1;
+  min-width: 0;
+  max-height: min(40vh, 11rem);
+  overflow-y: auto;
 }
 
 .kb-viewer-tags-edit {
@@ -1551,7 +1551,6 @@ ul.kb-item-list {
 .kb-viewer-action-strip {
   display: flex;
   flex-direction: row;
-  align-items: center;
   gap: 0.25rem;
   height: 1.75rem;
 }
@@ -1598,7 +1597,6 @@ ul.kb-item-list {
   position: relative;
   height: 1.75rem;
   display: flex;
-  align-items: center;
 }
 
 .kb-viewer-menu {

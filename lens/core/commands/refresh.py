@@ -9,3 +9,4 @@ def execute_refresh(session: ProjectSession, *, reset: bool = False) -> None:
         storage.refresh_reset_hard_to_upstream()
     else:
         storage.refresh_fast_forward()
+    session.kb.evict_tag_cache()
