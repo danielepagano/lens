@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -16,6 +17,14 @@ from lens.core.storage import Storage
 
 if TYPE_CHECKING:
     from lens.core.address import NarrativeAddress
+
+# Matches the opening line of a non-closing, non-self-closing section annotation:
+#   [section:child-id]: #   (single-line)
+#   [section:child-id       (first line of multi-line)
+# Does NOT match closing ([/section:...]) or self-closing ([section:.../]: #).
+_SECTION_OPEN_LINE_RE = re.compile(
+    r"^\[section:([a-zA-Z0-9_-]+)(?:\]:\s*#)?\s*$"
+)
 
 
 def _make_system_storage(near: Path) -> Storage:
@@ -141,9 +150,14 @@ class NarrativeNode:
         st.delete_file(leaf_md)
 
     def child_keys(self) -> list[str]:
-        if self.is_leaf():
+        # Resolve md_path once; leaf nodes (non-_node.md files) have no children.
+        try:
+            md = self.md_path()
+        except FileNotFoundError:
             return []
-        parent = self.md_path().parent
+        if md.name != "_node.md":
+            return []
+        parent = md.parent
         keys: set[str] = set()
         for p in parent.iterdir():
             if p.name == "_node.md":
@@ -160,21 +174,18 @@ class NarrativeNode:
                 valid_keys.add(k)
 
         # Order children by their appearance in the parent node's content.
+        # Use a simple line scan rather than the full annotation parser — we only
+        # need the IDs of opening section annotations, not their YAML params.
         ordered: list[str] = []
         seen: set[str] = set()
         try:
-            text = self.md_path().read_text()
-            for ann in parse_annotations(text):
-                if (
-                    ann.operator == "section"
-                    and not ann.closing
-                    and not ann.self_closing
-                    and ann.id is not None
-                    and ann.id in valid_keys
-                    and ann.id not in seen
-                ):
-                    ordered.append(ann.id)
-                    seen.add(ann.id)
+            for line in md.read_text().splitlines():
+                m = _SECTION_OPEN_LINE_RE.match(line)
+                if m:
+                    child_id = m.group(1)
+                    if child_id in valid_keys and child_id not in seen:
+                        ordered.append(child_id)
+                        seen.add(child_id)
         except OSError:
             pass
 
