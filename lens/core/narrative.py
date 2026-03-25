@@ -18,12 +18,12 @@ from lens.core.storage import Storage
 if TYPE_CHECKING:
     from lens.core.address import NarrativeAddress
 
-# Matches the opening line of a non-closing, non-self-closing section annotation:
-#   [section:child-id]: #   (single-line)
-#   [section:child-id       (first line of multi-line)
-# Does NOT match closing ([/section:...]) or self-closing ([section:.../]: #).
-_SECTION_OPEN_LINE_RE = re.compile(
-    r"^\[section:([a-zA-Z0-9_-]+)(?:\]:\s*#)?\s*$"
+# Matches the first line of any non-closing annotation that carries an ID:
+#   [operator:id]: #      (single-line, including self-closing [op:id/]: #)
+#   [operator:id          (first line of multi-line block)
+# Does NOT match closing tags ([/operator:id]: #).
+_CHILD_ID_LINE_RE = re.compile(
+    r"^\[([a-zA-Z_][a-zA-Z0-9_]*):([a-zA-Z0-9_-]+)"
 )
 
 
@@ -174,15 +174,16 @@ class NarrativeNode:
                 valid_keys.add(k)
 
         # Order children by their appearance in the parent node's content.
-        # Use a simple line scan rather than the full annotation parser — we only
-        # need the IDs of opening section annotations, not their YAML params.
+        # Any non-closing annotation with an ID may have created a child node
+        # (section, design, play, etc.), so scan for all of them.
+        # valid_keys already constrains to real filesystem children.
         ordered: list[str] = []
         seen: set[str] = set()
         try:
             for line in md.read_text().splitlines():
-                m = _SECTION_OPEN_LINE_RE.match(line)
+                m = _CHILD_ID_LINE_RE.match(line)
                 if m:
-                    child_id = m.group(1)
+                    child_id = m.group(2)
                     if child_id in valid_keys and child_id not in seen:
                         ordered.append(child_id)
                         seen.add(child_id)
