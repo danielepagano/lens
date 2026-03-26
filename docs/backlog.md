@@ -1,6 +1,7 @@
 # Lens Backlog
 
 - **Direct editing** of markdown nodes via CodeMirror 6 (see details below)
+- **AI KB edit in UI** mirrors `kb edit`
 - **KB Diffs**: design operators can change KB files, but it's hard to see this in their kb fenced blocks outputs. Then after they are run we DO NOT currently have a way to see pending KB changes like we do for narrative! So the UI could actually detect kb fenced blocks, fetch the current version, do a diff, and actually show us what changed! This could be on-demand.
 
 ---

@@ -215,7 +215,7 @@ async def _stream_once(
     payload["enable_thinking"] = enable_thinking
     payload["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
     if enable_thinking:
-        payload["reasoning"] = {"effort": "medium"}
+        payload["reasoning"] = {"effort": "high"}
     else:
         payload["reasoning"] = {"effort": "none", "enabled": False}
         if not enable_thinking:
