@@ -38,6 +38,7 @@ from lens.core.context import CrawlResult, crawl
 from lens.core.llm import generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator, OperatorError
+from lens.core.prompts import PromptStore
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import remove_pin
 from lens.core.pinning import unpin as unpin_node
@@ -61,27 +62,17 @@ def prompt_to_slug(prompt: str, max_words: int = 5) -> str:
 # Shared summary generation
 # ---------------------------------------------------------------------------
 
-SUMMARY_SYSTEM_PROMPT = (
-    "You are a skilled editor. Write a concise summary of the provided text,"
-    " preserving the author's voice and style."
-)
-
-SUMMARY_INSTRUCTION_TEMPLATE = (
-    "Write a brief summary of the provided text that:\n"
-    "- contains the key information, without adding or deriving anything else\n"
-    "- preserves key actions taken and consequences or outcomes described\n"
-    "- matches the voice and style of the surrounding narrative\n\n"
-    "Output only the summary text — no preamble, no meta-commentary.\n\n"
-    "TEXT TO SUMMARIZE:\n{content}"
-)
-
-
 def build_summary_messages(crawl_result: CrawlResult, content: str) -> list[dict[str, str]]:
     """Build LLM messages for summarizing section/session content."""
     from lens.core.context import assemble_prompt
 
-    instruction = SUMMARY_INSTRUCTION_TEMPLATE.format(content=content)
-    return assemble_prompt(crawl_result, system_prompt=SUMMARY_SYSTEM_PROMPT, instruction=instruction)
+    prompts = PromptStore(crawl_result.project_root)
+    instruction = prompts.format("session.summary_instruction_template", content=content)
+    return assemble_prompt(
+        crawl_result,
+        system_prompt=prompts.get("session.summary_system"),
+        instruction=instruction,
+    )
 
 
 # ---------------------------------------------------------------------------

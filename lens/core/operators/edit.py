@@ -14,17 +14,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from lens.core.operator import Operator
-# ---------------------------------------------------------------------------
-# Prompt constants
-# ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = (
-    "You are a skilled editor. Rewrite the provided passage following the"
-    " given instructions, preserving the author's voice and style."
-)
-
-INSTRUCTION_TEMPLATE = ("Revise the following passage so it flows from the current passage, "
-    " and following these instructions: '{prompt}'\nPASSAGE TO REVISE:\n{target}")
+from lens.core.prompts import PromptStore
 
 
 # ---------------------------------------------------------------------------
@@ -38,10 +28,11 @@ class EditOperator(Operator):
 
     @property
     def system_prompt(self) -> str:
-        return SYSTEM_PROMPT
+        return PromptStore(self.project_root).get("edit.system")
 
     def build_instruction(self, params: dict[str, Any]) -> str:
-        return INSTRUCTION_TEMPLATE.format(
+        return PromptStore(self.project_root).format(
+            "edit.instruction_template",
             prompt=params.get("prompt", ""),
             target=params.get("target", ""),
         )

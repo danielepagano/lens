@@ -333,6 +333,39 @@ Deleting a dataset-only object is a **no-op** — dataset items are immutable fr
 
 See [D&D](../dnd/README.md) for the `dnd` dataset.
 
+## Prompt store (`lens prompt`)
+
+Operator and shared prompt text is resolved with copy-on-write precedence:
+
+1. built-in Lens prompts (`lens/prompts/default.toml`)
+2. optional selected prompt pack (`[project] prompt_pack = "<name>"`)
+3. project-local overrides (`prompts/prompts.toml`) — always wins
+
+Editing an inherited prompt via `lens prompt set` creates/updates the project-local
+override. Built-in and pack files are never modified by project commands.
+
+| Command | Purpose |
+|---|---|
+| `list` | List prompt keys (optionally by operator/group) |
+| `get` | Print effective prompt text and source layer |
+| `set` | Set/update project-local override for a key |
+| `clear` | Remove project-local override for a key |
+| `path` | Print the project override file path (`--builtin` for default file) |
+| `packs` | List available prompt packs (`*` marks selected pack) |
+| `use-pack` | Select a single prompt pack in `lens.toml` |
+| `clear-pack` | Clear selected prompt pack |
+
+Examples:
+
+```bash
+lens prompt list --operator write
+lens prompt get write.system
+lens prompt set write.system "You are concise and vivid."
+lens prompt clear write.system
+lens prompt packs
+lens prompt use-pack it
+```
+
 ## Knowledge pins (`lens pin`)
 
 Pins attach knowledge objects to a node's front matter so they are automatically included in AI operator prompts. Unpins cancel pins inherited from ancestor nodes.

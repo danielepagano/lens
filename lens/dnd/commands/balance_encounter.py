@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from lens.core.knowledge import KnowledgeStore
+from lens.core.prompts import PromptStore, tool_prompt_key
 from lens.core.tools import OperatorToolDef, register_operator_tool
 from lens.core.project import ProjectSession
 from lens.core.narrative import NarrativeNode
@@ -485,12 +486,7 @@ register_operator_tool(
     "balance_encounter",
     OperatorToolDef(
         parameters=balance_encounter_SCHEMA,
-        prompt_snippet=(
-            "Use balance_encounter to generate up to three balanced encounter proposals from a "
-            "ranked candidate list. Pass PC levels explicitly from context (level:N tags on pinned "
-            "pc.* objects) and ally CRs if any allies fight alongside the party. "
-            "The tool uses D&D 2024 XP budget math (no monster-count multiplier)."
-        ),
+        prompt_snippet=PromptStore(None).get(tool_prompt_key("balance_encounter")),
         keep_text=True,
     ),
     _invoke_balance_encounter,

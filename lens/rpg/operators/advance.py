@@ -33,108 +33,11 @@ from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, 
 from lens.core.operator import Operator, OperatorError
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import unpin as unpin_node
+from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Prompt constants
-# ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = """\
-You are the campaign timeline manager. Your job is to evaluate what happens \
-in the world when time passes by reading and updating fronts, which may include \
-resolving clocks and timers, and determining if anything interrupts a proposed time jump.
-
-Rerence the content of [DESIGN MODULE]: FRONT GROOMING. Follow its \
-front grooming rules when updating or creating fronts. You are running the \
-front design module in the context of time passing: you are in "advance mode".
-
-HOW TO WORK:
-
-1. Think through each front. Use the provided luck rolls to resolve any \
-chance mechanics described in the front (e.g. "every N days there is a Y% \
-chance that Z happens"). The first roll is the primary roll; the second is \
-for tables or secondary checks. Do not use rolls unless a front asks.
-
-2. Update fronts via "KB blocks". Preserve all existing content and only \
-change what the passage of time affects — clocks, timers, phases, statuses. \
-Use kb_get to inspect any front before modifying it.
-
-Using this format, known as a "KB block" (fenced block with front-matter id field) to update a front:
-
-```kb
----
-id: front.key
----
-Markdown content here; fully replaces any existing content!
-```
-
-Include as many blocks as needed, one per item, You can write any text around blocks to \
-think, discuss, or explain; only the blocks have side-effects in the knowledge base, and \
-only the last block for that id has effect, so you can change your mind and try again as you go.
-
-3. At least ONE day has to pass, as this reprsent the day ALREADY ELAPSES in the fiction, \
-therefore the first day increment CANNOT have ANY retroactive time effects or interrupt the narrative. \
-It's likely that the narrative already covered a front effect (for example, the players battled and enemy in \
-a front and now it's at the end of the day. It's therefore important that you account for all that has transpired \
-in the front object. If something was missed that should have happened visible, let's just say it happens \
-the next day. Trigger an interruption and stop advancing time (but still update all fronts for one day).
-
-4. If the first day generates no interruption, and more than one day increment was requested, \
-determine the actual days elapsed by evaluating the fronts and checking any INTERRUPTS the narrative \
-(a random encounter triggers, urgent news reaches the PCs, etc.), only ONE \
-front may interrupt. If this happens, then the timeline and all fronts can only advance by that much.
-Report the actual days that passed before interruption (at least 1 and less than requested). \
-Note that this is NOT common! Only interrupt if the front tells you to, or if it obiously makes sense, \
-for example a visible event occurrs in the same location the narrative is currently at.
-
-5. You can emit an ``advance`` fenced block if either there was an interruption, \
-or if you want to describe anything interesting that happened that the player should \
-know. If time was cut short by an interruption, you myst always include \
-``days_elapsed`` with the actual days elapsed and a summary of what happened to \
-interrupt the original amount!
-
-```advance
-days_elapsed: <N>   # only when interrupted — omit if full time passed
-summary: |
-  Three days pass as you hike through the countryside. The road grows quieter as autumn sets in.
-```
-
-If there is an interruption, the summary must describe the triggering current \
-situation in more detail so the scene can be played out immediately after.
-If a advance block is not emitted, the time will be incremented by the amount \
-requested and the summary will be that that may days have passed. This is \
-normal and usually the default outcome.
-
-What NOT to do:
-- Do not write extended narrative prose — keep the summary brief.
-- Do not roll dice or make decisions for player characters.
-- Do not update fronts that are unaffected by the time passage.
-- Do not create fronts unless the front design module says it's appropriate.
-"""
-
-INSTRUCTION_TEMPLATE = """\
-The player ends the day. Advance time by up to {days} day(s).
-Current day counter: {current_day}.
-
-Luck rolls for each front:
-{rolls_text}
-
-For each front: evaluate what changes given the time passed and the \
-narrative so far. Update clocks, timers, and phases. Use the luck rolls to \
-resolve chance mechanics as described in each front.
-
-If any front INTERRUPTS the time jump (random encounter, urgent event \
-reaching the PCs), only one front may interrupt. Report the actual days \
-that passed before interruption.
-
-Output:
-1. Your reasoning about each front (use thinking)
-2. ```kb blocks for any front updates
-3. ```advance block with summary field (and days_elapsed only if interrupted)\
-"""
 
 DESIGN_MODULE_PIN = "design.front"
 DEFAULT_MESSAGE = " day(s) have passed."
@@ -406,7 +309,7 @@ class AdvanceOperator(Operator):
 
     @property
     def system_prompt(self) -> str:
-        return SYSTEM_PROMPT
+        return PromptStore(self.project_root).get("advance.system")
 
     def build_instruction(self, params: dict[str, Any]) -> str:
         days = params.get("increment", 1)
@@ -421,7 +324,8 @@ class AdvanceOperator(Operator):
             )
         else:
             rolls_text = "  (no fronts tagged to this timeline)"
-        return INSTRUCTION_TEMPLATE.format(
+        return PromptStore(self.project_root).format(
+            "advance.instruction_template",
             days=days,
             current_day=current_day,
             rolls_text=rolls_text,

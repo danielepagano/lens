@@ -39,6 +39,7 @@ from lens.core.context import CrawlResult, crawl
 from lens.core.dice import DiceError, substitute_rolls
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
+from lens.core.prompts import PromptStore, tool_prompt_key
 from lens.core.project import ProjectSession
 from lens.core.narrative import NarrativeNode
 from lens.core.storage import Storage
@@ -54,36 +55,7 @@ def _pc_marker(params: dict[str, Any]) -> str:
     segments = key.replace("_", "-").split("-")
     return " ".join(s.capitalize() for s in segments if s)
 
-# ---------------------------------------------------------------------------
-# Prompt constants
-# ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = (
-    "You are the Game Master. "
-    "The Rules of Engagement are pinned in your context — follow them exactly. "
-    "Player characters are identified by their pinned KB objects (id prefix 'pc.'). "
-    "Write from GM voice only: describe what the world does, what NPCs say and do, "
-    "what the environment presents. If you see KB['encounter.<name>'] object, "
-    "it is a script for the current situation, and you must follow it with the highest priority. "
-    "The user may @-mention items in their text, like 'I cast @spell.hex' or 'I use @feature.aasimar-celestial-revelation', "
-    "in these cases the system will also provide the KB item content for the mentioned item for your reference; "
-    "use the attached item to understand what the user did and appropriate incorporate it the fiction; "
-    "you do no have to repeat the content (the user already knows), you have to integrate it seamlessly without mentioning the rules, "
-    "for example if an effect heals a user, say how the healing manifest; if they cast a spell, say what it looks like as they do, "
-    "and what the results in the fiction are. User will not always do this, only when they want you to incorportate features in fiction. "
-    "Never write PC decisions, thoughts, feelings, or roll any dice. "
-    "Stop at every decision point and yield to the player."
-)
-
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.system", "rules.rpg"})
-
-def _instruction_with_prompt(prompt: str, pc_marker: str) -> str:
-    return (
-        "Continue the scene based on what the PC says below. Follow the script of any KB encounter given. "
-        "Follow the decision gates: adjuticate, narratte, resolve, and engage.\n"
-        f"> [{pc_marker}] {prompt}\n\n"
-    )
-
 
 # ---------------------------------------------------------------------------
 # Operator class
@@ -102,7 +74,7 @@ class PlayOperator(SessionOperator):
 
     @property
     def system_prompt(self) -> str:
-        return SYSTEM_PROMPT
+        return PromptStore(self.project_root).get("play.system")
 
     @classmethod
     def enrich_params(cls, crawl_result: CrawlResult, params: dict[str, Any]) -> None:
@@ -127,7 +99,11 @@ class PlayOperator(SessionOperator):
         prompt = params.get("prompt")
         if not prompt:
             raise OperatorError("play requires a prompt (e.g. what the player says or does)")
-        return _instruction_with_prompt(prompt, _pc_marker(params))
+        return PromptStore(self.project_root).format(
+            "play.instruction_with_prompt",
+            prompt=prompt,
+            pc_marker=_pc_marker(params),
+        )
 
     def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt") or ""
@@ -401,12 +377,7 @@ PlayOperator.register_as_tool(
             },
             "required": ["prompt"],
         },
-        prompt_snippet=(
-            "Use the 'play' tool when the narrative reaches a moment that requires player "
-            "agency — a decision point, an encounter, or a challenge where the player "
-            "characters must act or respond. The play operator narrates in GM voice and "
-            "stops for player input. Provide 'prompt' to describe the situation they face."
-        ),
+        prompt_snippet=PromptStore(None).get(tool_prompt_key("play")),
         keep_text=True,
     )
 )

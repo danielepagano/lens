@@ -8,8 +8,10 @@ from pathlib import Path
 
 from lens.core.project import (
     find_project_root_if_any,
+    get_selected_prompt_pack,
     get_selected_datasets,
     is_dataset_root,
+    set_selected_prompt_pack,
 )
 
 
@@ -110,3 +112,27 @@ class TestFindProjectRootIfAny(unittest.TestCase):
         found = find_project_root_if_any(inner)
         assert found is not None
         self.assertEqual(found.resolve(), inner.resolve())
+
+
+class TestPromptPackSelection(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp()
+        self.root = Path(self.tmp)
+        (self.root / "lens.toml").write_text("[project]\nnarrative = \"story\"\n", encoding="utf-8")
+
+    def tearDown(self) -> None:
+        import shutil
+
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_get_selected_prompt_pack_default_none(self) -> None:
+        self.assertIsNone(get_selected_prompt_pack(self.root))
+
+    def test_set_selected_prompt_pack(self) -> None:
+        set_selected_prompt_pack(self.root, "it")
+        self.assertEqual(get_selected_prompt_pack(self.root), "it")
+
+    def test_clear_selected_prompt_pack(self) -> None:
+        set_selected_prompt_pack(self.root, "it")
+        set_selected_prompt_pack(self.root, None)
+        self.assertIsNone(get_selected_prompt_pack(self.root))

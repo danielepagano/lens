@@ -25,12 +25,8 @@ from lens.core.operator import Operator
 from lens.core.storage import Storage
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, validate_slug
+from lens.core.prompts import PromptStore, tool_prompt_key
 from lens.core.tools import OperatorToolDef, register_operator_tool
-
-from lens.core.operators.session import (
-    SUMMARY_SYSTEM_PROMPT as SYSTEM_PROMPT,
-    SUMMARY_INSTRUCTION_TEMPLATE,
-)
 
 
 def section_open_tag(id: str) -> str:
@@ -49,10 +45,13 @@ class SectionOperator(Operator):
 
     @property
     def system_prompt(self) -> str:
-        return SYSTEM_PROMPT
+        return PromptStore(self.project_root).get("session.summary_system")
 
     def build_instruction(self, params: dict[str, Any]) -> str:
-        return SUMMARY_INSTRUCTION_TEMPLATE.format(content=params.get("content", ""))
+        return PromptStore(self.project_root).format(
+            "session.summary_instruction_template",
+            content=params.get("content", ""),
+        )
 
     def start(
         self,
@@ -252,12 +251,7 @@ register_operator_tool(
             },
             "required": ["id"],
         },
-        prompt_snippet=(
-            "Use the 'section' tool when starting a new scene, location, or narrative unit. "
-            "Provide 'id' (section key, e.g. castle-dorn). Use 'kb_pin' to pin knowledge objects "
-            "(locations, factions, NPCs) that apply to this section. Use 'kb_unpin' to cancel "
-            "ancestor pins that no longer apply."
-        ),
+        prompt_snippet=PromptStore(None).get(tool_prompt_key("section")),
         keep_text=True,
     ),
     _section_tool_invoke,

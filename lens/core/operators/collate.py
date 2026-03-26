@@ -117,6 +117,7 @@ class CollateOperator(Operator):
 
         crawl_result = crawl(target_node, extra_pins=pins, extra_unpins=unpins)
         adjusted_crawl = CrawlResult(
+            project_root=session.project_root,
             knowledge=crawl_result.knowledge,
             previous_summaries=crawl_result.previous_summaries,
             current_content=passage_before or None,

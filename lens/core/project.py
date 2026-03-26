@@ -6,6 +6,7 @@ import re
 import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
+import tomli_w
 
 from lens.core.address import NarrativeAddress
 from lens.core.narrative import NarrativeNode
@@ -43,6 +44,41 @@ def get_selected_datasets(project_root: Path) -> list[str]:
         if isinstance(name, str):
             result.append(name)
     return result
+
+
+def get_selected_prompt_pack(project_root: Path) -> str | None:
+    """Return prompt pack name from ``[project] prompt_pack``, or ``None``."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project", {})
+    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    raw_pack = project.get("prompt_pack")
+    if not isinstance(raw_pack, str):
+        return None
+    prompt_pack = raw_pack.strip()
+    return prompt_pack if prompt_pack else None
+
+
+def set_selected_prompt_pack(project_root: Path, prompt_pack: str | None) -> None:
+    """Set or clear ``[project] prompt_pack`` in lens.toml."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        raise RuntimeError("no lens.toml found in this directory or any parent")
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        raw_project = {}
+    project = cast(dict[str, Any], raw_project)
+    if prompt_pack is None:
+        project.pop("prompt_pack", None)
+    else:
+        project["prompt_pack"] = prompt_pack
+    config["project"] = project
+    lens_toml.write_bytes(tomli_w.dumps(config).encode("utf-8"))
 
 
 def list_available_llms(project_root: Path) -> list[str]:

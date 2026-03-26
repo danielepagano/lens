@@ -14,28 +14,12 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from lens.core.operator import Operator
+from lens.core.prompts import PromptStore, tool_prompt_key
 from lens.core.tools import OperatorToolDef
 
 # ---------------------------------------------------------------------------
 # Prompt constants
 # ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = (
-    'You are a creative and immersive story-writing assistant. Write in a fluent manner,'
-    ' at highest reading level, never hurried, using realistic dialog and lingering on'
-    ' descriptions and senses. The following sections may be provided to help you write'
-    ' accurately: "RELEVANT KNOWLEDGE": leverage but not needlessly repeat facts from'
-    ' these; "PREVIOUS EVENTS SUMMARY": use for orientation, but note they are summaries,'
-    ' and you should write at a higher level of detail; "CURRENT PASSAGE": seamlessly'
-    ' continue writing this passage if provided, using the same style and level of detail.'
-)
-
-INSTRUCTION_CONTINUE = "Continue writing."
-
-INSTRUCTION_WITH_PROMPT = (
-    "Continue writing carefully following these instructions: {prompt}."
-)
-
 
 # ---------------------------------------------------------------------------
 # Operator class
@@ -48,11 +32,12 @@ class WriteOperator(Operator):
 
     @property
     def system_prompt(self) -> str:
-        return SYSTEM_PROMPT
+        return PromptStore(self.project_root).get("write.system")
 
     def build_instruction(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt")
-        return INSTRUCTION_WITH_PROMPT.format(prompt=prompt) if prompt else INSTRUCTION_CONTINUE
+        prompts = PromptStore(self.project_root)
+        return prompts.format("write.instruction_with_prompt", prompt=prompt) if prompt else prompts.get("write.instruction_continue")
 
 
 # ---------------------------------------------------------------------------
@@ -80,11 +65,7 @@ WriteOperator.register_as_tool(
                 },
             },
         },
-        prompt_snippet=(
-            "Use the 'write' tool to continue open narrative — when you need to narrate "
-            "consequences of player actions, describe the world, or advance story events "
-            "without stopping for player decisions. Provide 'prompt' to guide what to write."
-        ),
+        prompt_snippet=PromptStore(None).get(tool_prompt_key("write")),
         keep_text=True,
     )
 )

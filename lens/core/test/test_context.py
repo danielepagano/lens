@@ -15,8 +15,8 @@ from lens.core.context import (
     assemble_prompt_kb_edit,
     crawl,
     crawl_result_from_pins,
-    SYSTEM_PROMPT_FORMATTING_ADDENDUM,
 )
+from lens.core.prompts import PromptStore
 from lens.core.narrative import NarrativeNode
 
 
@@ -350,7 +350,10 @@ class TestAssemblePrompt(unittest.TestCase):
         )
         self.assertEqual(len(msgs), 2)
         self.assertEqual(msgs[0]["role"], "system")
-        self.assertEqual(msgs[0]["content"], "You are helpful." + SYSTEM_PROMPT_FORMATTING_ADDENDUM)
+        self.assertEqual(
+            msgs[0]["content"],
+            "You are helpful." + PromptStore(None).get("shared.formatting_addendum"),
+        )
         self.assertEqual(msgs[1]["role"], "user")
         self.assertIn("TASK", msgs[1]["content"])
         self.assertIn("Do the task.", msgs[1]["content"])

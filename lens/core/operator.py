@@ -147,6 +147,7 @@ from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, ToolCall, generate_stream
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession
+from lens.core.prompts import PromptStore, tool_prompt_key
 from lens.core.storage import Storage
 from lens.core.tools import OperatorToolDef, get_tool_registry, register_operator_tool
 
@@ -198,6 +199,16 @@ class Operator(ABC):
     def __init__(self, storage: Storage, narrative_root: NarrativeNode) -> None:
         self.storage = storage
         self.narrative_root = narrative_root
+
+    @property
+    def project_root(self) -> Path:
+        narrative_root = getattr(self.narrative_root, "narrative_root", None)
+        if isinstance(narrative_root, Path):
+            return narrative_root.parent.parent
+        storage_root = getattr(self.storage, "root", None)
+        if isinstance(storage_root, Path):
+            return storage_root
+        return Path.cwd()
 
     # ------------------------------------------------------------------
     # Owner address construction
@@ -937,10 +948,13 @@ class Operator(ABC):
         interrupted = False
 
         if available_tools:
+            prompts = PromptStore(session.project_root)
             augmented_system = probe_op.system_prompt
-            for _n, (tdef, _fn) in available_tools.items():
-                augmented_system += "\n\n" + tdef.prompt_snippet
-            augmented_system += "\n\n**Chaining**: To run another operator immediately after this one, use the `chain` parameter: `chain: { name: \"operator_name\", arguments: { ... } }`. All parameters for the chained operator go inside `chain.arguments`; do not put them at the top level of the current tool call."
+            for tool_name, (tdef, _fn) in available_tools.items():
+                prompt_key = tool_prompt_key(tool_name)
+                snippet = prompts.get(prompt_key) if prompt_key in prompts.list_keys("tool") else tdef.prompt_snippet
+                augmented_system += "\n\n" + snippet
+            augmented_system += "\n\n" + prompts.get("operator.chaining_instructions")
             messages = assemble_prompt(
                 crawl_result,
                 system_prompt=augmented_system,
@@ -949,22 +963,15 @@ class Operator(ABC):
             HANDOFF_PARAMS: dict[str, Any] = {
                 "keep_text": {
                     "type": "boolean",
-                    "description": (
-                        "If true (default), the text you wrote before calling this tool is "
-                        "saved to the narrative. If false, it is discarded."
-                    ),
+                    "description": prompts.get("operator.handoff_keep_text_description"),
                 },
                 "chain": {
                     "type": "object",
-                    "description": (
-                        "Optional operator to run immediately after this one (same transaction). "
-                        "Structure: { name: \"operator_name\", arguments: { ... } }. "
-                        "The chained operator's parameters belong inside chain.arguments, not at the top level."
-                    ),
+                    "description": prompts.get("operator.handoff_chain_description"),
                     "properties": {
-                        "name": {"type": "string", "description": "Operator name (e.g. write, play, section)"},
-                        "id": {"type": "string", "description": "Optional tool call id"},
-                        "arguments": {"type": "object", "description": "Arguments for the chained operator (e.g. prompt for write, id for section)"},
+                        "name": {"type": "string", "description": prompts.get("operator.handoff_chain_name_description")},
+                        "id": {"type": "string", "description": prompts.get("operator.handoff_chain_id_description")},
+                        "arguments": {"type": "object", "description": prompts.get("operator.handoff_chain_arguments_description")},
                     },
                     "required": ["name", "arguments"],
                 },
@@ -975,11 +982,13 @@ class Operator(ABC):
                 props: dict[str, Any] = dict(params.get("properties", {}))
                 props.update(HANDOFF_PARAMS)
                 params["properties"] = props
+                prompt_key = tool_prompt_key(n)
+                resolved_description = prompts.get(prompt_key) if prompt_key in prompts.list_keys("tool") else tdef.prompt_snippet
                 tools_payload.append({
                     "type": "function",
                     "function": {
                         "name": n,
-                        "description": tdef.prompt_snippet,
+                        "description": resolved_description,
                         "parameters": params,
                     },
                 })
@@ -1420,6 +1429,7 @@ class Operator(ABC):
 
         crawl_result = crawl(node, extra_pins=pins, extra_unpins=unpins)
         crawl_result = CrawlResult(
+            project_root=session.project_root,
             knowledge=crawl_result.knowledge,
             previous_summaries=crawl_result.previous_summaries,
             current_content=passage_before or None,
@@ -1497,6 +1507,7 @@ class Operator(ABC):
         op = cls(session.new_storage(owner=owner), narrative_root)
         crawl_result = crawl(node, extra_pins=pins, extra_unpins=unpins)
         crawl_result = CrawlResult(
+            project_root=session.project_root,
             knowledge=crawl_result.knowledge,
             previous_summaries=crawl_result.previous_summaries,
             current_content=passage_before or None,

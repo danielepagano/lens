@@ -10,14 +10,7 @@ from lens.core.annotations import decode_ai_secrets, strip_markdown_comments
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import KB_PIN, KB_UNPIN
-
-SYSTEM_PROMPT_FORMATTING_ADDENDUM = (
-    "\nFORMATTING: you must emit valid Markdown, and do not emit headers as you are inserting a fragment in a document. "
-    "You are allowed to emit HTML comments (<!-- ai: text -->) (starting with ai: is a courtesy annotation); "
-    "these will not be rendered in the Markdown output, but WILL be visible to user in edit mode. Use HTML comments for storing intermediate thinking if needed. "
-    "You can also emit comments that will be encoded and not readable by the user, but WILL be visible to future AI calls, these have the format "
-    " <!-- ai:secret: text --> (multi-line text is also allowed). Use the ai:secret: marker to hide secrets that may be more interesting to reveal later in the story.\n"
-)
+from lens.core.prompts import PromptStore
 
 @dataclass
 class SliceAnchor:
@@ -42,6 +35,7 @@ class CrawlResult:
     previous_summaries: list[str]
     current_content: str | None
     pinned_ids: list[str] = field(default_factory=list[str])
+    project_root: Path | None = None
 
 
 def _block(title: str, body: str) -> str:
@@ -287,6 +281,7 @@ def crawl(
                     current_content = stripped.strip()
 
     return CrawlResult(
+        project_root=project_root,
         knowledge=knowledge_formatted,
         previous_summaries=previous_summaries,
         current_content=current_content,
@@ -319,22 +314,23 @@ def crawl_pins(
 
 
 def _sections_from_crawl_result(result: CrawlResult) -> list[str]:
+    prompts = PromptStore(result.project_root)
     # The middle of the context receives the lowest attention, so we try to put old story there
     sections: list[str] = []
     if result.knowledge:
-        kb_block = _block("RELEVANT KNOWLEDGE", "\n\n".join(result.knowledge))
+        kb_block = _block(prompts.get("shared.block.relevant_knowledge"), "\n\n".join(result.knowledge))
         if kb_block:
             sections.append(kb_block)
     if result.previous_summaries:
         prev_block = _block(
-            "PREVIOUS EVENTS SUMMARY",
+            prompts.get("shared.block.previous_events_summary"),
             "\n\n".join(result.previous_summaries),
         )
         if prev_block:
             sections.append(prev_block)
     if result.current_content:
         cur_block = _block(
-            "CURRENT PASSAGE",
+            prompts.get("shared.block.current_passage"),
             result.current_content,
         )
         if cur_block:
@@ -371,6 +367,7 @@ def crawl_result_from_pins(
             result_pinned_ids.append(cid)
 
     return CrawlResult(
+        project_root=project_root,
         knowledge=knowledge_formatted,
         previous_summaries=[],
         current_content=None,
@@ -406,17 +403,18 @@ def assemble_prompt_kb_edit(
     template_content: str | None = None,
     include_template: bool = False,
 ) -> list[dict[str, str]]:
+    prompts = PromptStore(result.project_root)
     is_new = existing_content is None
     sections = _sections_from_crawl_result(result)
     if existing_content:
-        kb_item_block = _block("CURRENT TEXT", existing_content)
+        kb_item_block = _block(prompts.get("shared.block.current_text"), existing_content)
         if kb_item_block:
             sections.append(kb_item_block)
     if template_content and (include_template or is_new):
-        tpl_block = _block("RESULT TEMPLATE", template_content)
+        tpl_block = _block(prompts.get("shared.block.result_template"), template_content)
         if tpl_block:
             sections.append(tpl_block)
-    task_block = _block("INSTRUCTIONS", instruction)
+    task_block = _block(prompts.get("shared.block.instructions"), instruction)
     sections.append(task_block or instruction)
     user_content = decode_ai_secrets("\n\n".join(sections))
 
@@ -424,7 +422,7 @@ def assemble_prompt_kb_edit(
         existing_content, template_content, include_template
     )
     return [
-        {"role": "system", "content": system_prompt + SYSTEM_PROMPT_FORMATTING_ADDENDUM},
+        {"role": "system", "content": system_prompt + prompts.get("shared.formatting_addendum")},
         {"role": "user", "content": user_content},
     ]
 
@@ -436,14 +434,15 @@ def assemble_prompt(
     instruction: str,
     extra_sections: list[str] | None = None,
 ) -> list[dict[str, str]]:
+    prompts = PromptStore(result.project_root)
     sections = _sections_from_crawl_result(result)
     if extra_sections:
         sections.extend(extra_sections)
-    task_block = _block("TASK", instruction)
+    task_block = _block(prompts.get("shared.block.task"), instruction)
     sections.append(task_block or instruction)
     user_content = decode_ai_secrets("\n\n".join(sections))
 
     return [
-        {"role": "system", "content": system_prompt + SYSTEM_PROMPT_FORMATTING_ADDENDUM},
+        {"role": "system", "content": system_prompt + prompts.get("shared.formatting_addendum")},
         {"role": "user", "content": user_content},
     ]

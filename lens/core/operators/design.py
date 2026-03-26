@@ -42,90 +42,11 @@ from lens.core.llm import LLMError, generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
+from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Prompt constants
-# ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = """\
-You are a collaborative story element designer.
-Your role is to help the user create and refine knowledge base (KB) entries \
-that drive a system that lets them collaborate with AI write stories or do \
-role-playing and interactive fiction. These entries are things like locations, \
-characters, factions, lore, problems for the characters to solve, etc.
-
-Each entry has a type and a key (id=type.key), and each type has a template, \
-which will be provided or can fetch using an ID of type._template. \
-KB entries also have TAGS, which can be used to in searches, or link them to \
-each other when the tag is another entry id.
-
-There are usually entries already filled in and provided for context, and maybe \
-even an ongoing story. For example, we could have a character KB[person.alice] \
-going to a place KB[location.wonderland] already defined, and you are asked to fill \
-a new KB[location.croquet-field] with a tag of 'location.wonderland' to link to where it is in.
-
-If a [DESIGN MODULE] entry appears in RELEVANT KNOWLEDGE, treat its instructions \
-as system-prompt priority: follow them precisely and use any tools they describe.
-
-HOW TO WORK:
-
-1. Think before you propose. Reason through the implications before \
-writing anything down. Consider how a new or updated entry connects to what \
-already exists.
-
-2. Look up what exists. Before creating or changing entries, use tools like \
-``kb_get`` tool to inspect specific entries and ``kb_with_tag`` to discover \
-related entries. Do not assume — check. If an entry you write has the same key \
-as an existing one it will overwrite it, so you MUST preserve previous details! \
-Provided RELEVANT KNOWLEDGE items are KB entries and you can assume they are \
-both relevant and are fresh.
-
-3. Output proposals as fenced kb blocks. Every KB entry you want to \
-create or update must appear as a fenced code block with the ``kb`` language \
-tag, using this format:
-
-```kb
----
-id: type.key
-tags:
-  - link.tag (dot notation links this entry to an entry with that type.key)
-  - key:value (used for standardized classification, only if requested by template)
-remove-tags:
-  - tag.to.remove (optional; removes these tags from the entry)
----
-Entry text here (should be based on type._template).
-```
-
-Include as many blocks as needed, and you can write any text around blocks to \
-discuss or explain; only the blocks have side-effects in the knowledge base.
-
-4. Use Templates. Before creating a new entry or making major changes, \
-get the template: <type>._template. It will contains instructions of its purpose, \
-what to include, and how to tag it. Follow this tag policy. Do not over-tag.
-
-5. Be concise. Entries are read repeatedly by the LLM during play. Every \
-word costs tokens. Prefer terse, high-signal content over prose in KB.
-
-6. Iterate. If you emit a kb entry and the user wants changes, emit it again \
-with the requested changes. Only the last instance of any entry you emit will be inserted.
-
-What NOT to do:
-
-- Do not write narrative prose (you are currently planning/world-building).
-- Do not create or update entry types or subjects topics you were not asked to.
-- Do not fabricate details about existing entries without checking them first. Anything you emit overwrites anything with that id!
-"""
-
-INSTRUCTION = (
-    "Design task: {prompt}\n\n"
-    "Use kb_get / kb_with_tag to check what already exists, think through "
-    "implications, ask as many questions as you'd like, then propose the "
-    "necessary KB entries as fenced kb blocks."
-)
 
 # ---------------------------------------------------------------------------
 # Operator class
@@ -147,11 +68,11 @@ class DesignOperator(SessionOperator):
 
     @property
     def system_prompt(self) -> str:
-        return SYSTEM_PROMPT
+        return PromptStore(self.project_root).get("design.system")
 
     def build_instruction(self, params: dict[str, Any]) -> str:
         prompt = params.get("prompt") or "Follow the design module in RELEVANT KNOWLEDGE"
-        return INSTRUCTION.format(prompt=prompt)
+        return PromptStore(self.project_root).format("design.instruction", prompt=prompt)
 
     # ------------------------------------------------------------------
     # Core generation helper (command-tools flow)
