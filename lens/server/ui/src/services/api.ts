@@ -82,10 +82,31 @@ export const getTree = (): Promise<TreeNode[]> =>
   get('/narrative/tree') as Promise<TreeNode[]>
 export const getNode = (addr: string): Promise<NodeData> =>
   get(`/narrative/node/${addr}`) as Promise<NodeData>
-export const setActiveNarrative = (slug: string): Promise<{ active: string }> =>
+export const setActiveNarrative = withStats((slug: string): Promise<{ active: string }> =>
   post('/narrative/narratives/active', { narrative: slug }) as Promise<{
     active: string
   }>
+)
+
+// ---- Post-mutation stats refresh ----
+// App registers a callback here; withStats() fires it after every mutation.
+// This avoids a circular import between api.ts and stores/stats.ts.
+
+let _afterMutation: (() => void) | null = null
+
+export function onAfterMutation(fn: () => void): void {
+  _afterMutation = fn
+}
+
+function withStats<A extends unknown[], R>(
+  fn: (...args: A) => Promise<R>
+): (...args: A) => Promise<R> {
+  return async (...args: A): Promise<R> => {
+    const result = await fn(...args)
+    _afterMutation?.()
+    return result
+  }
+}
 
 async function errorDetail(r: Response): Promise<string> {
   try {
@@ -267,10 +288,11 @@ export interface SectionStartResult {
   node: string
 }
 
-export const runSectionStart = (
+export const runSectionStart = withStats((
   params: SectionStartParams
 ): Promise<SectionStartResult> =>
   post('/operator/section/start', params) as Promise<SectionStartResult>
+)
 
 export interface SectionEndParams {
   llm_id?: string
@@ -331,10 +353,11 @@ export const getKbItems = (params?: { type?: string; tags?: string }): Promise<K
 export const getKbItem = (id: string): Promise<KbItemDetail> =>
   get(`/kb/item/${id}`) as Promise<KbItemDetail>
 
-export const saveKbItem = (id: string, content: string): Promise<{ id: string }> =>
+export const saveKbItem = withStats((id: string, content: string): Promise<{ id: string }> =>
   put(`/kb/item/${id}`, { content }) as Promise<{ id: string }>
+)
 
-export const createKbItem = (
+export const createKbItem = withStats((
   id: string,
   content?: string,
   useTemplate?: boolean
@@ -343,6 +366,7 @@ export const createKbItem = (
     id: string
     content: string
   }>
+)
 
 export interface KbTagResponse {
   id: string
@@ -360,20 +384,24 @@ export interface KbRenameResponse {
   new_id: string
 }
 
-export const patchKbItemTags = (
+export const patchKbItemTags = withStats((
   id: string,
   body: { add: string[]; remove: string[] }
 ): Promise<KbTagResponse> =>
   patch(`/kb/item/${encodeURIComponent(id)}/tags`, body) as Promise<KbTagResponse>
+)
 
-export const deleteKbItem = (id: string): Promise<{ id: string }> =>
+export const deleteKbItem = withStats((id: string): Promise<{ id: string }> =>
   del(`/kb/item/${encodeURIComponent(id)}`) as Promise<{ id: string }>
+)
 
-export const renameKbItem = (oldId: string, newId: string): Promise<KbRenameResponse> =>
+export const renameKbItem = withStats((oldId: string, newId: string): Promise<KbRenameResponse> =>
   post('/kb/rename', { old_id: oldId, new_id: newId }) as Promise<KbRenameResponse>
+)
 
-export const copyKbItem = (sourceId: string, targetId: string): Promise<KbCopyResponse> =>
+export const copyKbItem = withStats((sourceId: string, targetId: string): Promise<KbCopyResponse> =>
   post('/kb/copy', { source_id: sourceId, target_id: targetId }) as Promise<KbCopyResponse>
+)
 
 export interface KbWithTagResponse {
   ids: string[]
@@ -397,22 +425,26 @@ export interface TransactionActionResponse {
   is_mutation?: boolean
 }
 
-export const rollbackTransaction = (): Promise<TransactionActionResponse> =>
+export const rollbackTransaction = withStats((): Promise<TransactionActionResponse> =>
   post('/rollback', {}) as Promise<TransactionActionResponse>
+)
 
-export const commitTransaction = (): Promise<TransactionActionResponse> =>
+export const commitTransaction = withStats((): Promise<TransactionActionResponse> =>
   post('/commit', {}) as Promise<TransactionActionResponse>
+)
 
-export const checkpointTransaction = (opts?: {
+export const checkpointTransaction = withStats((opts?: {
   message?: string
   push?: boolean
 }): Promise<TransactionActionResponse> =>
   post('/checkpoint', opts ?? {}) as Promise<TransactionActionResponse>
+)
 
-export const refreshTransaction = (opts?: {
+export const refreshTransaction = withStats((opts?: {
   reset?: boolean
 }): Promise<TransactionActionResponse> =>
   post('/refresh', opts ?? {}) as Promise<TransactionActionResponse>
+)
 
 // ---- Narrative API ----
 
@@ -425,12 +457,13 @@ export interface PinResponse {
   detail?: string
 }
 
-export const narrativePin = (
+export const narrativePin = withStats((
   operation: PinOperation,
   ids: string[],
   node?: string
 ): Promise<PinResponse> =>
   post('/narrative/pin', { operation, ids, node }) as Promise<PinResponse>
+)
 
 export interface RewindParams {
   address: string
@@ -444,8 +477,9 @@ export interface RewindResponse {
   detail?: string
 }
 
-export const narrativeRewind = (params: RewindParams): Promise<RewindResponse> =>
+export const narrativeRewind = withStats((params: RewindParams): Promise<RewindResponse> =>
   post('/narrative/rewind', params) as Promise<RewindResponse>
+)
 
 export interface MountEntry {
   name: string
@@ -462,8 +496,9 @@ export interface AttachResponse {
 export const browseMountDir = (path = ''): Promise<MountEntry[]> =>
   get(`/mount/browse?path=${encodeURIComponent(path)}`) as Promise<MountEntry[]>
 
-export const attachFile = (path: string): Promise<AttachResponse> =>
+export const attachFile = withStats((path: string): Promise<AttachResponse> =>
   post('/attach', { path }) as Promise<AttachResponse>
+)
 
 async function postFormData(path: string, body: FormData): Promise<unknown> {
   const r = await fetch(path, { method: 'POST', body })
@@ -477,12 +512,12 @@ export interface UploadMountFileResponse {
   detail?: string
 }
 
-export const uploadMountFile = (dir: string, file: File): Promise<UploadMountFileResponse> => {
+export const uploadMountFile = withStats((dir: string, file: File): Promise<UploadMountFileResponse> => {
   const form = new FormData()
   form.append('dir', dir)
   form.append('file', file)
   return postFormData('/mount/upload', form) as Promise<UploadMountFileResponse>
-}
+})
 
 export interface DeleteMountPathResponse {
   status: string
@@ -490,8 +525,9 @@ export interface DeleteMountPathResponse {
   detail?: string
 }
 
-export const deleteMountPath = (path: string): Promise<DeleteMountPathResponse> =>
+export const deleteMountPath = withStats((path: string): Promise<DeleteMountPathResponse> =>
   del(`/mount/file/${path}`) as Promise<DeleteMountPathResponse>
+)
 
 export const getNodeAddresses = async (): Promise<string[]> => {
   const tree = await getTree()
