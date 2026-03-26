@@ -159,3 +159,68 @@ Fly handles TLS for the custom domain. No Caddy config changes needed.
 | `deploy/Caddyfile` | Caddy config: Basic Auth + reverse proxy with SSE-safe flushing |
 | `deploy/start.sh` | Container entrypoint: SSH setup, repo clone, starts Caddy + Lens |
 | `<project>/fly.toml` | Generated into the project repo by `lens deploy init` |
+
+## Local deploy (Caddy on your machine)
+
+This is the “minimum” deployment: run Lens on your machine, but expose it safely via Caddy (HTTPS + Basic Auth). The critical rule is **Lens must only bind to localhost**; Caddy is the only public entrypoint.
+
+### 1) Run Lens bound to localhost
+
+From your Lens **project repo** (the one containing `lens.toml`):
+
+```bash
+lens serve --host 127.0.0.1 --port 8000
+```
+
+### 2) Install Caddy and generate a password hash
+
+Install Caddy via your OS package manager, then generate a hash:
+
+```bash
+caddy hash-password --plaintext 'choose-a-strong-password'
+```
+
+### 3) Create a Caddyfile that does Basic Auth + reverse proxy
+
+If you have a real hostname (recommended), Caddy can automatically obtain and renew TLS certificates.
+
+Example `Caddyfile`:
+
+```caddyfile
+lens.example.com {
+  encode gzip zstd
+
+  basic_auth {
+    myuser <paste-hash-here>
+  }
+
+  reverse_proxy 127.0.0.1:8000 {
+    flush_interval -1
+  }
+}
+```
+
+Notes:
+
+- `flush_interval -1` is important for **SSE streaming** (don’t buffer).
+- Do **not** put Lens on `0.0.0.0` (don’t expose it directly to the internet).
+
+### 4) Start Caddy
+
+Run Caddy with your config:
+
+```bash
+caddy run --config ./Caddyfile --adapter caddyfile
+```
+
+### 5) Make it reachable from the internet (optional)
+
+If you want external access from outside your LAN:
+
+- **DNS**: point `lens.example.com` to your home IP (dynamic DNS is fine).
+- **Router**: forward TCP `443` → your machine.
+- **Port choice**:
+  - Preferred: let Caddy bind to `:443` (may require sudo/capabilities depending on OS).
+  - Alternative: run Caddy on a high port (e.g. `:8443`) and forward router `443 → 8443`.
+
+If you want Caddy to both update dynamic DNS records and use DNS-01 for certificates, you’ll typically run a **custom Caddy build** with `dynamic_dns` plus the relevant DNS provider module (for example Cloudflare). Keep the DNS API token in environment variables; don’t write secrets into the Caddyfile.

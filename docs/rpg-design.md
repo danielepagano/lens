@@ -67,7 +67,7 @@ Operators pin the core rules plus any system-specific rules they need. We do NOT
 We create two core rule objects:  
   - `rules.rpg`: our AI-player contract; core layer, ruleset-agnostic
   - `rules.system`: system-specific rules. Lens ships with "Lens in the Dark", a simple "Forged in the Dark" ruleset (https://bladesinthedark.com/licensing) tuned for AI use, but it can be overridden by a game system ruleset by simply replacing that object id in a higher-priority dataset.
-    - `rules.*`: some systems benefit from having multiple rulesets for different phases of play (e.g. Blades in the Dark's downtime, D&D's Bastions, etc., very specific combat rules like in some Powered by the Apocalypse games). In these cases the system rules can just be the foundation, and then the player can alternate phases by splitign the rules and pinning as needed. This is the parallel to `design` having different modules for different things you can work on.
+    - `rules.*`: some systems benefit from having multiple rulesets for different phases of play (e.g. Blades in the Dark's downtime, D&D's Bastions, etc., very specific combat rules like in some Powered by the Apocalypse games). In these cases the system rules can just be the foundation, and then the player can alternate phases by splitting the rules and pinning as needed. This is the parallel to `design` having different modules for different things you can work on.
 
 #### Reference Objects
 
@@ -402,20 +402,31 @@ The world takes its turn. Like `play` being an RPG `write`, this is an RPG-speci
 
 ### Mechanics
 
-**How does it run**:
-1. Does a standard crawl, and then pins ALL fronts that link to the pinned `timeline` to its sub-node (e.g. equivalent of `lens kb with-tag timeline.epic --type front --expand --recurse 1`). Pins `design.front` automatically as well (by the invocation rules, the timeline is already pinned).
-2. Generates "luck rolls", consisting of two random numbers from 1 to 100 for each front; these are invisibly passed to the AI in the prompt. The AI can use them to determine how some chance-based clocks advance, using the second number in case a front has reference tables, etc. The front itself describes if/how these are used, for example a travel front roll to determine weather, or one about random encounters could roll to see if an encounter DOES happen, then roll again on an encounter table if it does. Since the AI does not roll, we just always roll and use the number only if needed.
-  - We could do something like tagging fronts with the type and amount of randomness they want... but that seems overkill and this should cover all sane cases.
-3. Calls the AI with all the above, with thinking mode, and determines  
-  - One day has passed, so what? Update any fronts that care. Regardless of the time increment, it needs to always account for what has transpired in the narrative. So for example if we defeated a baddie, a front can now resolve, etc. If something should have visibly transpired that day but did not yet (was missed during play), we need to trigger the consequence.
-  - Additional time wants to pass: if there is no consequence yet, we can look at all the fronts and evaluate if any will interrupt the proposed time jump; so whether something happens AND if it intersects with the narrative to the point that we need to cut to that scene. This ONLY happens if the front is designed to work that way, like for random encounters, someone looking for the party, major news that reaches the PCs and warrants their reaction, and the like. If an interruption does occur (only ONE front can interrupt, queue the rest for the following day), determine how much time actually passes and update all the fronts by that amount, then trigger the consequence.
-  - Perform any other front grooming that is appropriate, since we ARE running the front design module! For example a new front may be created, particularly if one closes, to continue an arc. This may not be immediately visible to the PCs.
-4. On operator close:
-  - Apply the changes to objects using the usual `kb extract` style blocks. We may need to add a delete operation or at least an un-tag. This includes the timeline; this can be a normal `kb extract` block; if one is not generated, the system will increment the day counter by the full amount requested.
-  - Generate a narrative summary of time passed; normally we just say that time has passed, but sometimes fronts have visible outcomes (like weather changes etc.)
-  - If there is a consequence, this just chains a play operator immediately after design, triggering the required scene.
+**How does it run**:  
+
+  1. Does a standard crawl, and then pins ALL fronts that link to the pinned `timeline` to its sub-node (e.g. equivalent of `lens kb with-tag timeline.epic --type front --expand --recurse 1`). Pins `design.front` automatically as well (by the invocation rules, the timeline is already pinned).
+    - Is a standard crawl okay? Do we need to look for the _previous instance_ of `advance`?
+  2. Generates "luck rolls", consisting of two random numbers from 1 to 100 for each front; these are invisibly passed to the AI in the prompt. The AI can use them to determine how some chance-based clocks advance, using the second number in case a front has reference tables, etc. The front itself describes if/how these are used, for example a travel front roll to determine weather, or one about random encounters could roll to see if an encounter DOES happen, then roll again on an encounter table if it does. Since the AI does not roll, we just always roll and use the number only if needed.
+    - We could do something like tagging fronts with the type and amount of randomness they want... but that seems overkill and this should cover all sane cases.
+  3. Calls the AI with all the above, with thinking mode, and determines  
+    - One day has passed, so what? Update any fronts that care. Regardless of the time increment, it needs to always account for what has transpired in the narrative. So for example if we defeated a baddie, a front can now resolve, etc. If something should have visibly transpired that day but did not yet (was missed during play), we need to trigger the consequence.
+    - Additional time wants to pass: if there is no consequence yet, we can look at all the fronts and evaluate if any will interrupt the proposed time jump; so whether something happens AND if it intersects with the narrative to the point that we need to cut to that scene. This ONLY happens if the front is designed to work that way, like for random encounters, someone looking for the party, major news that reaches the PCs and warrants their reaction, and the like. If an interruption does occur (only ONE front can interrupt, queue the rest for the following day), determine how much time actually passes and update all the fronts by that amount, then trigger the consequence.
+    - Perform any other front grooming that is appropriate, since we ARE running the front design module! For example a new front may be created, particularly if one closes, to continue an arc. This may not be immediately visible to the PCs.
+4. On **`advance --end`** (with the cursor in the advance sub-node):
+    - Apply the changes to objects using the usual `kb extract` style blocks. We may need to add a delete operation or at least an un-tag. This includes the timeline; this can be a normal `kb extract` block; if one is not generated, the system will increment the day counter by the full amount requested.
+    - Append a narrative summary of time passed to the parent; normally we just say that time has passed, but sometimes fronts have visible outcomes (like weather changes etc.). If there is a consequence, this is also narrated, so the user can react with a `play` operator call.
 
 While the above looks somewhat involved, it need not be slow: it's a simple crawl, prompting, and thinking about whether anything needs updating with very specific rules; in most cases, nothing interesting will happen and it should only take a few seconds.
+
+### Updating arbitrary KB objects
+
+The `advance` operator baseline operation is very specific to fronts and timelines, but what if we wanted to use KB objects for general faceted context compression? The model can run over recently committed narrative and update opted-in KB objects using per-type extraction instructions.
+
+- **Scope**: we want this to be incremental, so we probably really need to do it from the previous `advance`.
+- **Mechanism**: just add more KB entries to update to the same sub-node, but an object is eligible for remembering only:  
+  1. It carries a `remember.*` dot-tag (e.g. `remember.person` on `person.alice`). The `remember.person` KB object contains the extraction instructions and template hints for that type. One tag solves both the locking problem (only explicitly opted-in objects are touched) and the hint delivery problem (instructions live in the linked object, not in the object being updated). The system can auto-add `person._template` if present (like we do for design objects) so that we don't have to replicate it and the remember object can focus on WHAT to do remember.  
+  2. The object is relevant. We're not going to look at ALL objects and try to remember them, we will consider only pinned/mentioned objects we encounter.
+    - The AI could also emit something like `<!-- ai:remember:type.key -->` in narrative output to flag that a specific object that is not directly mentioned should be updated... but how does the AI know that such an object exists? By definition only pinned things are visible; we could ALSO look at all the dot-tags of everything pinned (like the baddies references in but not loaded in a front), as that's the horizon of what the AI knows at play-time; that would obviate the need to have this extra comment. 
 
 ## Adventure Design Principles
 

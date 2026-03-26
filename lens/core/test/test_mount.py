@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import io
+import os
 import tempfile
 import unittest
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +25,46 @@ from lens.core.mount import LocalMountBackend, S3MountBackend, normalize_subpath
 
 _BUCKET = "test-bucket"
 _REGION = "us-east-1"
+_AWS_ENV_PREFIX = "AWS_"
+
+
+@contextlib.contextmanager
+def isolated_aws_env_for_moto() -> Iterator[None]:
+    """Clear host AWS_* env so moto is not bypassed (e.g. AWS_ENDPOINT_URL → real S3).
+
+    Restores the previous environment after the block. Uses long dummy credentials
+    so botocore never treats them as the user's real keys if a request slips past moto.
+    """
+    saved = {k: v for k, v in os.environ.items() if k.startswith(_AWS_ENV_PREFIX)}
+    try:
+        for k in list(saved.keys()):
+            del os.environ[k]
+        os.environ["AWS_ACCESS_KEY_ID"] = "moto-test-access-key-id-0001"
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "moto-test-secret-access-key-00000000000000000001"
+        os.environ["AWS_DEFAULT_REGION"] = _REGION
+        yield
+    finally:
+        for k in list(os.environ.keys()):
+            if k.startswith(_AWS_ENV_PREFIX):
+                del os.environ[k]
+        os.environ.update(saved)
+
+
+class UsesMotoS3Env(unittest.TestCase):
+    """Enter isolated AWS env before each test; pair with ``@mock_aws`` on the class."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._aws_env_cm = isolated_aws_env_for_moto()
+        self._aws_env_cm.__enter__()
+
+    def tearDown(self) -> None:
+        try:
+            super().tearDown()
+        finally:
+            cm = getattr(self, "_aws_env_cm", None)
+            if cm is not None:
+                cm.__exit__(None, None, None)
 
 
 def _make_s3_client() -> Any:
@@ -217,9 +260,10 @@ class TestLocalMountBackend(unittest.TestCase):
 
 
 @mock_aws
-class TestS3MountBackend(unittest.TestCase):
+class TestS3MountBackend(UsesMotoS3Env):
 
     def setUp(self) -> None:
+        super().setUp()
         self._s3: Any = _make_s3_client()
         _create_bucket(self._s3)
         self._backend = S3MountBackend(_BUCKET, "", self._s3)
@@ -346,9 +390,10 @@ class TestS3MountBackend(unittest.TestCase):
 
 
 @mock_aws
-class TestS3MountBackendWithPrefix(unittest.TestCase):
+class TestS3MountBackendWithPrefix(UsesMotoS3Env):
 
     def setUp(self) -> None:
+        super().setUp()
         self._s3: Any = _make_s3_client()
         _create_bucket(self._s3)
         self._backend = S3MountBackend(_BUCKET, "media/", self._s3)
@@ -402,26 +447,28 @@ class TestGetMountBackend(unittest.TestCase):
             backend = get_mount_backend(p)
             self.assertIsInstance(backend, LocalMountBackend)
 
-    @mock_aws
     def test_s3_backend_for_s3_uri(self) -> None:
         from lens.core.project import get_mount_backend
-        with tempfile.TemporaryDirectory() as tmp:
-            p = Path(tmp)
-            (p / "lens.toml").write_text('[project]\nmount_point = "s3://my-bucket"\n')
-            backend = get_mount_backend(p)
-            self.assertIsInstance(backend, S3MountBackend)
+        with isolated_aws_env_for_moto(), mock_aws():
+            with tempfile.TemporaryDirectory() as tmp:
+                p = Path(tmp)
+                (p / "lens.toml").write_text('[project]\nmount_point = "s3://my-bucket"\n')
+                backend = get_mount_backend(p)
+                self.assertIsInstance(backend, S3MountBackend)
 
-    @mock_aws
     def test_s3_backend_uri_with_prefix(self) -> None:
         from lens.core.project import get_mount_backend
-        with tempfile.TemporaryDirectory() as tmp:
-            p = Path(tmp)
-            (p / "lens.toml").write_text('[project]\nmount_point = "s3://my-bucket/media"\n')
-            backend = get_mount_backend(p)
-            self.assertIsInstance(backend, S3MountBackend)
-            assert isinstance(backend, S3MountBackend)
-            self.assertEqual(backend.bucket, "my-bucket")
-            self.assertEqual(backend.prefix, "media/")
+        with isolated_aws_env_for_moto(), mock_aws():
+            with tempfile.TemporaryDirectory() as tmp:
+                p = Path(tmp)
+                (p / "lens.toml").write_text(
+                    '[project]\nmount_point = "s3://my-bucket/media"\n'
+                )
+                backend = get_mount_backend(p)
+                self.assertIsInstance(backend, S3MountBackend)
+                assert isinstance(backend, S3MountBackend)
+                self.assertEqual(backend.bucket, "my-bucket")
+                self.assertEqual(backend.prefix, "media/")
 
     def test_none_when_no_lens_toml(self) -> None:
         from lens.core.project import get_mount_backend

@@ -250,6 +250,7 @@ export interface AdvanceParams {
   unpins?: string[]
   llm_id?: string
   retry?: boolean
+  end?: boolean
 }
 
 export const runAdvance = (

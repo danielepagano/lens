@@ -304,7 +304,6 @@
       <textarea
         class="kb-edit-textarea"
         bind:value={editContent}
-        spellcheck="false"
         disabled={saving}
       ></textarea>
     {:else}

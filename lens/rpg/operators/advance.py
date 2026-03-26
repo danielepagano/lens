@@ -1,9 +1,10 @@
 """Advance operator: pass the time, update fronts, resolve consequences.
 
-``lens advance [--days N]`` marks that the day(s) have ended. It creates a
-sub-node, pins all fronts tagged to the pinned timeline (with ``+`` for
-expansion), runs the LLM with the ``design.front`` module to evaluate and
-update fronts, then closes the sub-node with a narrative summary.
+``lens advance [--days N]`` creates an ``advance-day-*`` sub-node, pins fronts
+tagged to the pinned timeline (with ``+`` for expansion), and runs the LLM with
+the ``design.front`` module. KB updates and the timeline day counter apply only
+after ``lens advance --end`` (with the cursor in that sub-node). Use
+``lens advance --retry`` to discard the last generated block and regenerate.
 
 Dataset-gated: requires the ``rpg`` dataset.
 
@@ -21,12 +22,13 @@ from typing import Any, ClassVar, cast
 
 import yaml
 
+from lens.core.annotations import ParsedAnnotation
 from lens.core.command_tools import get_command_registry
 from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, generate_stream
-from lens.core.narrative import NarrativeNode
+from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator, OperatorError
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import unpin as unpin_node
@@ -266,10 +268,12 @@ class AdvanceOperator(Operator):
     def build_instruction(self, params: dict[str, Any]) -> str:
         days = params.get("increment", 1)
         current_day = params.get("current_day", "?")
-        luck_rolls: dict[str, tuple[int, int]] = params.get("luck_rolls", {})
+        luck_rolls: dict[str, tuple[int, int] | list[int]] = params.get(
+            "luck_rolls", {}
+        )
         if luck_rolls:
             rolls_text = "\n".join(
-                f"  - {fid}: roll1={r[0]}, roll2={r[1]}"
+                f"  - {fid}: roll1={_roll_pair(r)[0]}, roll2={_roll_pair(r)[1]}"
                 for fid, r in luck_rolls.items()
             )
         else:
@@ -294,101 +298,79 @@ class AdvanceOperator(Operator):
                 "add a timeline KB object with --pin or kb_pin front matter"
             )
 
-    # ------------------------------------------------------------------
-    # Main entry point
-    # ------------------------------------------------------------------
+    @classmethod
+    def _find_active_session(
+        cls, narrative: NarrativeNode
+    ) -> tuple[NarrativeNode | None, str | None]:
+        cursor = narrative.find_cursor()
+        if not cursor.key_path:
+            return None, None
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        try:
+            parent_text = parent.md_path().read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return None, None
+        open_ann = find_unclosed_cursor_annotation(parent_text)
+        if open_ann is not None and open_ann.operator == cls.name:
+            return cursor, open_ann.id
+        return None, None
 
     @classmethod
-    async def run_advance(
+    def _unclosed_advance_on_node(cls, node: NarrativeNode) -> bool:
+        text = node.md_path().read_text(encoding="utf-8")
+        ann = find_unclosed_cursor_annotation(text)
+        return ann is not None and ann.operator == cls.name
+
+    @staticmethod
+    def _write_inline_block(
+        storage: Storage,
+        child_node: NarrativeNode,
+        ann_params: dict[str, Any],
+        content: str,
+        op: AdvanceOperator,
+    ) -> None:
+        inline_tag = op.build_open_tag(None, ann_params)
+        close_tag = op.build_close_tag(None)
+        child_md = child_node.md_path()
+        existing = child_md.read_text(encoding="utf-8") if child_md.exists() else ""
+        sep = "\n" if existing.endswith("\n") else "\n\n"
+        storage.write_file(
+            child_md,
+            existing
+            + sep
+            + inline_tag
+            + "\n\n"
+            + content.rstrip()
+            + "\n\n"
+            + close_tag
+            + "\n",
+        )
+
+    @classmethod
+    async def _run_generation(
         cls,
         *,
+        op: AdvanceOperator,
+        storage: Storage,
+        child_node: NarrativeNode,
+        ann_params: dict[str, Any],
+        existing_ann: ParsedAnnotation | None,
         session: ProjectSession,
-        narrative: NarrativeNode,
-        increment: int = 1,
-        pins: list[str],
-        unpins: list[str],
-        llm_id: str | None = None,
-        retry: bool = False,
-        on_token: Callable[[str], Awaitable[None]] | None = None,
-        on_stream_target: Callable[[str], Awaitable[None]] | None = None,
-        cancel_event: asyncio.Event | None = None,
-    ) -> KbExtractResult:
-        """Run the advance operator.
-
-        Creates a sub-node, discovers fronts, calls LLM, extracts KB updates,
-        updates the timeline, and closes.
-
-        Returns :class:`~lens.core.commands.kb.KbExtractResult`.
-        """
-        if increment < 1:
-            raise OperatorError("advance increment must be >= 1")
-
-        cursor = narrative.find_cursor()
-        advance_id = generate_advance_id(cursor)
-
-        rel_path = str(cursor.md_path().relative_to(session.git_root))
-        owner = cls.owner_id(advance_id, rel_path)
-        storage = session.new_storage(owner=owner)
-        op = cls(storage, narrative)
-
-        # 1. Create sub-node
-        child_node = op.create_subnode(cursor, advance_id)
-
-        # 2. Pre-crawl the cursor to find pinned timelines
-        pre_crawl = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
-        cls.check_requirements(pre_crawl)
-
-        # 3. Discover fronts tagged to pinned timelines, pin with +
-        front_pins = discover_front_pins(session.kb, pre_crawl.pinned_ids)
-
-        # 4. Pin design.front + front pins to sub-node front matter
-        all_pins = list(pins)
-        if DESIGN_MODULE_PIN not in [
-            p for p in pre_crawl.pinned_ids if p == DESIGN_MODULE_PIN
-        ]:
-            all_pins.append(DESIGN_MODULE_PIN)
-        all_pins.extend(front_pins)
-        if all_pins:
-            pin_node(child_node, all_pins, storage)
-        if unpins:
-            unpin_node(child_node, unpins, storage)
-
-        # 5. Stage sub-node setup
-        storage.stage_all()
-
-        if on_stream_target is not None:
-            await on_stream_target(str(child_node.to_address()))
-
-        # 6. Read current day and generate luck rolls
-        timeline_ids = [
-            p for p in pre_crawl.pinned_ids if p.startswith("timeline.")
-        ]
-        current_day = read_current_day(session.kb, timeline_ids[0])
-        raw_front_ids = [
-            f.rstrip("+") for f in front_pins
-        ]
-        luck_rolls = generate_luck_rolls(raw_front_ids)
-
-        # 7. Build annotation params
-        ann_params: dict[str, Any] = {
-            "steps": 1,
-            "increment": increment,
-            "current_day": current_day,
-            "luck_rolls": luck_rolls,
-        }
-
-        # 8. Crawl the sub-node (fronts expanded via + pins)
-        child_crawl = crawl(child_node)
-
-        # 9. Build messages
+        llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        cancel_event: asyncio.Event | None,
+    ) -> None:
+        crawl_result = crawl(child_node)
         instruction = op.build_instruction(ann_params)
         messages = assemble_prompt(
-            child_crawl,
+            crawl_result,
             system_prompt=op.system_prompt,
             instruction=instruction,
         )
 
-        # 10. Add command tools (kb_get, kb_with_tag)
         cmd_registry = get_command_registry()
         tools_payload = [
             {
@@ -402,15 +384,6 @@ class AdvanceOperator(Operator):
             for name, (cmd_def, _) in cmd_registry.items()
         ]
         command_handlers = {name: fn for name, (_, fn) in cmd_registry.items()}
-
-        # 11. Generate with thinking mode
-        child_rel_path = str(child_node.md_path().relative_to(session.git_root))
-        ann_line = cls.ann_line_for_append(
-            child_node.md_path().read_text(encoding="utf-8")
-        )
-        inline_owner = cls.owner_id(None, child_rel_path, line=ann_line)
-        inline_storage = session.new_storage(owner=inline_owner)
-        inline_op = cls(inline_storage, narrative)
 
         content = ""
         interrupted = False
@@ -437,37 +410,293 @@ class AdvanceOperator(Operator):
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
 
-        # Write content to sub-node
-        if content.strip():
-            inline_tag = inline_op.build_open_tag(None, ann_params)
-            close_tag = inline_op.build_close_tag(None)
-            child_md = child_node.md_path()
-            existing = child_md.read_text(encoding="utf-8") if child_md.exists() else ""
-            sep = "\n" if existing.endswith("\n") else "\n\n"
-            inline_storage.write_file(
-                child_md,
-                existing + sep + inline_tag + "\n\n" + content.rstrip() + "\n\n" + close_tag + "\n",
-            )
-
         if interrupted:
-            return KbExtractResult()
+            if content.strip():
+                if existing_ann is not None:
+                    op.write_append(child_node, existing_ann, content)
+                else:
+                    cls._write_inline_block(
+                        storage, child_node, ann_params, content, op
+                    )
+            return
 
         if not content.strip():
             raise OperatorError("no content generated")
 
-        # 12. Parse advance result (days elapsed + narrative summary)
-        days_elapsed, summary = parse_advance_result(content, increment)
+        if existing_ann is not None:
+            op.write_append(child_node, existing_ann, content)
+        else:
+            cls._write_inline_block(storage, child_node, ann_params, content, op)
 
-        # 13. Extract KB updates from output
-        result = kb_extract_from_text(content, session.project_root, inline_storage)
+    @classmethod
+    async def _run_advance_end(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+    ) -> KbExtractResult:
+        cursor = narrative.find_cursor()
+        if not cursor.key_path:
+            raise OperatorError(
+                "no open advance to close (cursor must be in the advance sub-node)"
+            )
+        session_id = cursor.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        parent_text = parent.md_path().read_text(encoding="utf-8")
+        open_ann = find_unclosed_cursor_annotation(parent_text)
+        if (
+            open_ann is None
+            or open_ann.operator != cls.name
+            or open_ann.id != session_id
+        ):
+            raise OperatorError(
+                f"parent does not have unclosed [advance:{session_id}]: # — "
+                "cursor must be in the advance sub-node"
+            )
+
+        child_text = cursor.md_path().read_text(encoding="utf-8")
+        probe_op = cls(session.new_storage(), narrative)
+        inline_ann = probe_op.find_open_annotation(cursor)
+        if inline_ann is None or inline_ann.id is not None:
+            raise OperatorError(
+                "advance sub-node has no inline [advance …]: # block to read params from"
+            )
+        requested_increment = int(inline_ann.params.get("increment", 1))
+
+        child_crawl = crawl(cursor)
+        cls.check_requirements(child_crawl)
+        timeline_ids = [
+            p for p in child_crawl.pinned_ids if p.startswith("timeline.")
+        ]
+        if not timeline_ids:
+            raise OperatorError(
+                "advance --end requires a pinned timeline.* on the sub-node"
+            )
+
+        rel_path = str(parent.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(session_id, rel_path)
+        storage = session.new_storage(owner=owner)
+        if storage.has_pending() and storage.detect_pending_owner() == owner:
+            storage.stage_all()
+        op = cls(storage, narrative)
+
+        days_elapsed, summary = parse_advance_result(
+            child_text, requested_increment
+        )
+        result = kb_extract_from_text(child_text, session.project_root, storage)
         for err in result.errors:
-            logger.warning("advance: %s", err)
+            logger.warning("advance end: %s", err)
 
-        # 14. Update timeline day counter
-        update_timeline_day(session.kb, timeline_ids[0], days_elapsed, inline_storage)
+        update_timeline_day(
+            session.kb, timeline_ids[0], days_elapsed, storage
+        )
 
-        # 15. Write narrative summary to parent node, then close the advance sub-node
-        inline_op.append_to_node(cursor, summary + "\n\n")
-        inline_op.append_to_node(cursor, inline_op.build_close_tag(advance_id) + "\n")
-
+        op.append_to_node(parent, summary + "\n\n")
+        op.append_to_node(parent, op.build_close_tag(session_id) + "\n")
         return result
+
+    @classmethod
+    async def _run_advance_retry(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        pins: list[str],
+        unpins: list[str],
+        llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None,
+        cancel_event: asyncio.Event | None,
+    ) -> KbExtractResult:
+        cursor = narrative.find_cursor()
+        _session_node, session_id = cls._find_active_session(narrative)
+        if session_id is None or cursor.key_path[-1] != session_id:
+            raise OperatorError(
+                "advance --retry requires the cursor in the active advance sub-node"
+            )
+
+        probe_storage = session.new_storage()
+        has_pending = probe_storage.has_pending()
+        pending_owner = probe_storage.detect_pending_owner() if has_pending else None
+
+        child_rel_path = str(cursor.md_path().relative_to(session.git_root))
+        probe_op = cls(probe_storage, narrative)
+        existing_ann = probe_op.find_open_annotation(cursor)
+        if existing_ann is None:
+            raise OperatorError("no advance annotation found to retry")
+
+        ann_owner = cls._owner_for_ann(existing_ann, child_rel_path)
+        is_owner = (pending_owner == ann_owner) if has_pending else False
+        if not is_owner:
+            raise OperatorError("no pending advance transaction to retry")
+
+        storage = session.new_storage(owner=ann_owner)
+        op = cls(storage, narrative)
+
+        new_params: dict[str, Any] = dict(existing_ann.params)
+        if pins:
+            pin_node(cursor, pins, storage)
+        if unpins:
+            unpin_node(cursor, unpins, storage)
+
+        op.write_discard(cursor, existing_ann, updated_params=new_params)
+        fresh_ann = op.find_open_annotation(cursor)
+        if fresh_ann is None:
+            raise OperatorError("lost annotation after discard")
+
+        if on_stream_target is not None:
+            await on_stream_target(str(cursor.to_address()))
+
+        await cls._run_generation(
+            op=op,
+            storage=storage,
+            child_node=cursor,
+            ann_params=new_params,
+            existing_ann=fresh_ann,
+            session=session,
+            llm_id=llm_id,
+            on_token=on_token,
+            cancel_event=cancel_event,
+        )
+        return KbExtractResult()
+
+    @classmethod
+    async def _run_advance_fresh(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        increment: int,
+        pins: list[str],
+        unpins: list[str],
+        llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None,
+        cancel_event: asyncio.Event | None,
+    ) -> KbExtractResult:
+        cursor = narrative.find_cursor()
+        if cls._unclosed_advance_on_node(cursor):
+            raise OperatorError(
+                "an advance session is already open — open the advance sub-node "
+                "and run `lens advance --end`, or discard changes, before starting another"
+            )
+
+        pre_crawl = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
+        cls.check_requirements(pre_crawl)
+
+        front_pins = discover_front_pins(session.kb, pre_crawl.pinned_ids)
+        timeline_ids = [p for p in pre_crawl.pinned_ids if p.startswith("timeline.")]
+        current_day = read_current_day(session.kb, timeline_ids[0])
+        raw_front_ids = [f.rstrip("+") for f in front_pins]
+        luck_rolls = generate_luck_rolls(raw_front_ids)
+        ann_params: dict[str, Any] = {
+            "steps": 1,
+            "increment": increment,
+            "current_day": current_day,
+            "luck_rolls": luck_rolls,
+        }
+
+        advance_id = generate_advance_id(cursor)
+        rel_path = str(cursor.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(advance_id, rel_path)
+        storage = session.new_storage(owner=owner)
+        op = cls(storage, narrative)
+
+        child_node = op.create_subnode(cursor, advance_id, params=ann_params)
+
+        all_pins = list(pins)
+        if DESIGN_MODULE_PIN not in pre_crawl.pinned_ids:
+            all_pins.append(DESIGN_MODULE_PIN)
+        all_pins.extend(front_pins)
+        if all_pins:
+            pin_node(child_node, all_pins, storage)
+        if unpins:
+            unpin_node(child_node, unpins, storage)
+
+        storage.stage_all()
+
+        if on_stream_target is not None:
+            await on_stream_target(str(child_node.to_address()))
+
+        child_rel_path = str(child_node.md_path().relative_to(session.git_root))
+        ann_line = cls.ann_line_for_append(
+            child_node.md_path().read_text(encoding="utf-8")
+        )
+        inline_owner = cls.owner_id(None, child_rel_path, line=ann_line)
+        inline_storage = session.new_storage(owner=inline_owner)
+        inline_op = cls(inline_storage, narrative)
+
+        await cls._run_generation(
+            op=inline_op,
+            storage=inline_storage,
+            child_node=child_node,
+            ann_params=ann_params,
+            existing_ann=None,
+            session=session,
+            llm_id=llm_id,
+            on_token=on_token,
+            cancel_event=cancel_event,
+        )
+        return KbExtractResult()
+
+    @classmethod
+    async def run_advance(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        increment: int = 1,
+        pins: list[str],
+        unpins: list[str],
+        llm_id: str | None = None,
+        retry: bool = False,
+        end: bool = False,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
+    ) -> KbExtractResult:
+        """Run advance: fresh generation, retry, or end (apply KB + close)."""
+        if end:
+            return await cls._run_advance_end(
+                session=session,
+                narrative=narrative,
+            )
+        if increment < 1:
+            raise OperatorError("advance increment must be >= 1")
+        if retry:
+            return await cls._run_advance_retry(
+                session=session,
+                narrative=narrative,
+                pins=pins,
+                unpins=unpins,
+                llm_id=llm_id,
+                on_token=on_token,
+                on_stream_target=on_stream_target,
+                cancel_event=cancel_event,
+            )
+        active, _ = cls._find_active_session(narrative)
+        if active is not None:
+            raise OperatorError(
+                "an advance session is in progress — use `lens advance --end` "
+                "to apply changes or `lens advance --retry` to regenerate"
+            )
+        return await cls._run_advance_fresh(
+            session=session,
+            narrative=narrative,
+            increment=increment,
+            pins=pins,
+            unpins=unpins,
+            llm_id=llm_id,
+            on_token=on_token,
+            on_stream_target=on_stream_target,
+            cancel_event=cancel_event,
+        )
+
+
+def _roll_pair(r: tuple[int, int] | list[int]) -> tuple[int, int]:
+    if isinstance(r, tuple):
+        return int(r[0]), int(r[1])
+    return int(r[0]), int(r[1])

@@ -88,6 +88,7 @@ const commands: CommandDefinition[] = [
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'retry' },
+      { name: 'end' },
     ],
   },
   {
@@ -229,13 +230,18 @@ const handler: CommandHandler = async (
         handleEvent
       )
     } else if (command === 'advance') {
+      const endAdvance = ctx.args.options['end'] === true
+      const retryAdvance = retry
+      if (endAdvance && retryAdvance) {
+        throw new Error('Cannot use advance --end and --retry together')
+      }
       const rawDays = ctx.args.options['days'] as string | undefined
       const days = rawDays ? parseInt(rawDays, 10) : undefined
-      if (days !== undefined && (!Number.isInteger(days) || days < 1)) {
+      if (!endAdvance && days !== undefined && (!Number.isInteger(days) || days < 1)) {
         throw new Error('days must be a positive integer')
       }
       result = await runAdvance(
-        { days, pins, unpins, llm_id: llmId, retry },
+        { days, pins, unpins, llm_id: llmId, retry: retryAdvance, end: endAdvance },
         handleEvent
       )
     } else if (command === 'design') {

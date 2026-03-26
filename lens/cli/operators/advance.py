@@ -39,9 +39,24 @@ def advance(
         "-r",
         help="Discard generated text and regenerate",
     ),
+    end: bool = typer.Option(
+        False,
+        "--end",
+        help="Apply KB/timeline updates and close the advance session",
+    ),
 ) -> None:
     """Advance time, update fronts, resolve consequences."""
     from lens.rpg.operators.advance import AdvanceOperator
+
+    if end and retry:
+        typer.echo(
+            "lens advance: cannot use --end and --retry together",
+            err=True,
+        )
+        raise typer.Exit(1)
+    if not end and days < 1:
+        typer.echo("lens advance: days must be >= 1", err=True)
+        raise typer.Exit(1)
 
     try:
         session = ProjectSession.from_cwd()
@@ -73,6 +88,7 @@ def advance(
                 unpins=list(unpin),
                 llm_id=llm,
                 retry=retry,
+                end=end,
                 on_token=_print_token,
             )
         )

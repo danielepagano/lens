@@ -355,7 +355,7 @@ def _run_async(coro: Any) -> Any:
 
 
 class TestRunAdvanceSummary(unittest.TestCase):
-    """Verify run_advance writes the summary to the parent (cursor) node."""
+    """Fresh advance writes LLM output to the sub-node; --end applies summary + close on parent."""
 
     def _make_rpg_project(self, d: Path) -> tuple[Path, NarrativeNode]:
         root, narrative = _make_project(d, slug="campaign")
@@ -405,10 +405,26 @@ class TestRunAdvanceSummary(unittest.TestCase):
                     )
                 )
 
-            cursor_md = narrative.find_cursor().md_path()
-            content = cursor_md.read_text(encoding="utf-8")
+            parent_md = narrative.md_path()
+            parent_before_end = parent_md.read_text(encoding="utf-8")
+            self.assertIn("[advance:", parent_before_end)
+            self.assertNotIn("[/advance:", parent_before_end)
 
-            self.assertIn(SUMMARY, content)
+            child_md = narrative.find_cursor().md_path()
+            self.assertIn(SUMMARY, child_md.read_text(encoding="utf-8"))
+
+            _run_async(
+                AdvanceOperator.run_advance(
+                    session=session,
+                    narrative=narrative,
+                    increment=1,
+                    pins=[],
+                    unpins=[],
+                    end=True,
+                )
+            )
+
+            content = parent_md.read_text(encoding="utf-8")
             open_pos = content.find("[advance:")
             close_pos = content.find("[/advance:")
             summary_pos = content.find(SUMMARY)
@@ -417,8 +433,13 @@ class TestRunAdvanceSummary(unittest.TestCase):
             self.assertGreater(summary_pos, open_pos, "summary must be after open tag")
             self.assertLess(summary_pos, close_pos, "summary must be before close tag")
 
+            timeline_text = (d / "knowledge" / "timeline" / "epic.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("- Day: 2", timeline_text)
+
     def test_default_message_when_no_advance_block(self) -> None:
-        """When LLM emits no advance block, the fallback message is written."""
+        """When LLM emits no advance block, end uses the default day message."""
         LLM_RESPONSE = "All fronts are quiet, nothing notable happened."
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -441,13 +462,29 @@ class TestRunAdvanceSummary(unittest.TestCase):
                     )
                 )
 
-            cursor_md = narrative.find_cursor().md_path()
-            content = cursor_md.read_text(encoding="utf-8")
+            parent_md = narrative.md_path()
+            self.assertNotIn("[/advance:", parent_md.read_text(encoding="utf-8"))
 
-            # Default message includes the day count
+            _run_async(
+                AdvanceOperator.run_advance(
+                    session=session,
+                    narrative=narrative,
+                    increment=3,
+                    pins=[],
+                    unpins=[],
+                    end=True,
+                )
+            )
+
+            content = parent_md.read_text(encoding="utf-8")
             self.assertIn("3", content)
             self.assertIn("[advance:", content)
             self.assertIn("[/advance:", content)
+
+            timeline_text = (d / "knowledge" / "timeline" / "epic.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("- Day: 4", timeline_text)
 
 
 if __name__ == "__main__":
