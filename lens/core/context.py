@@ -20,6 +20,23 @@ SYSTEM_PROMPT_FORMATTING_ADDENDUM = (
 )
 
 @dataclass
+class SliceAnchor:
+    """A fixed point in the narrative tree from which to start collecting text.
+
+    Used by :func:`crawl` to replace the standard ancestor-chain narrative with
+    a **spine walk** from a known position to the current node.  KB pin
+    resolution is always based on the full ancestor chain regardless.
+
+    Attributes:
+        node: The narrative node where the anchor lives.
+        line_end: 1-based line number *after* the anchor boundary.  Text
+            collection on this node starts from this line onward.
+    """
+    node: NarrativeNode
+    line_end: int
+
+
+@dataclass
 class CrawlResult:
     knowledge: list[str]
     previous_summaries: list[str]
@@ -143,6 +160,90 @@ def _resolve_pins_for_ancestors(
     return knowledge_formatted, pinned_ids
 
 
+def spine_path(
+    anchor_node: NarrativeNode, cursor_node: NarrativeNode
+) -> list[NarrativeNode]:
+    """Return the ordered list of nodes on the shortest path between two nodes.
+
+    The path goes from *anchor_node* up to the lowest common ancestor, then
+    down to *cursor_node*.  Both endpoints are included.  When the two nodes
+    are the same, a single-element list is returned.
+    """
+    a_path = anchor_node.key_path
+    c_path = cursor_node.key_path
+
+    lca_depth = 0
+    for i in range(min(len(a_path), len(c_path))):
+        if a_path[i] == c_path[i]:
+            lca_depth = i + 1
+        else:
+            break
+
+    # anchor → … → LCA (ascending, inclusive)
+    path: list[NarrativeNode] = []
+    for depth in range(len(a_path), lca_depth - 1, -1):
+        path.append(
+            NarrativeNode(
+                narrative_root=anchor_node.narrative_root,
+                key_path=a_path[:depth],
+            )
+        )
+
+    # LCA+1 → … → cursor (descending, LCA already present)
+    for depth in range(lca_depth + 1, len(c_path) + 1):
+        path.append(
+            NarrativeNode(
+                narrative_root=cursor_node.narrative_root,
+                key_path=c_path[:depth],
+            )
+        )
+
+    return path
+
+
+def _collect_spine_narrative(
+    anchor: SliceAnchor, cursor_node: NarrativeNode
+) -> tuple[list[str], str | None]:
+    """Collect narrative text along the spine from *anchor* to *cursor_node*.
+
+    Returns ``(previous_summaries, current_content)`` matching the shape
+    that :class:`CrawlResult` expects.  Only nodes on the spine are read;
+    lateral subtrees are not descended into.
+
+    * **Anchor node**: text starting from ``anchor.line_end`` onward.
+    * **Intermediate nodes**: full text.
+    * **Cursor node** (last): full text → ``current_content``.
+
+    All collected text is run through :func:`strip_markdown_comments`.
+    """
+    path = spine_path(anchor.node, cursor_node)
+
+    previous_summaries: list[str] = []
+    current_content: str | None = None
+
+    for node in path:
+        if not node.exists():
+            continue
+        text = node.md_path().read_text(encoding="utf-8")
+
+        # On the anchor node, skip everything before the anchor boundary.
+        if node.key_path == anchor.node.key_path:
+            lines = text.split("\n")
+            # line_end is 1-based; convert to 0-based index for slicing.
+            text = "\n".join(lines[anchor.line_end - 1 :])
+
+        stripped = strip_markdown_comments(text).strip()
+        if not stripped:
+            continue
+
+        if node.key_path == cursor_node.key_path:
+            current_content = stripped
+        else:
+            previous_summaries.append(stripped)
+
+    return previous_summaries, current_content
+
+
 def crawl(
     node: NarrativeNode,
     *,
@@ -150,6 +251,7 @@ def crawl(
     extra_unpins: list[str] | None = None,
     include_kb: bool = True,
     include_narrative: bool = True,
+    anchor: SliceAnchor | None = None,
 ) -> CrawlResult:
     project_root = node.narrative_root.parent.parent
     ancestors = _ancestor_chain(node)
@@ -165,19 +267,24 @@ def crawl(
     previous_summaries: list[str] = []
     current_content: str | None = None
     if include_narrative:
-        for anc in ancestors[:-1]:
-            if not anc.exists():
-                continue
-            text = anc.md_path().read_text(encoding="utf-8")
-            stripped = strip_markdown_comments(text)
-            if stripped.strip():
-                previous_summaries.append(stripped.strip())
-        current_node = ancestors[-1]
-        if current_node.exists():
-            text = current_node.md_path().read_text(encoding="utf-8")
-            stripped = strip_markdown_comments(text)
-            if stripped.strip():
-                current_content = stripped.strip()
+        if anchor is not None:
+            previous_summaries, current_content = _collect_spine_narrative(
+                anchor, node
+            )
+        else:
+            for anc in ancestors[:-1]:
+                if not anc.exists():
+                    continue
+                text = anc.md_path().read_text(encoding="utf-8")
+                stripped = strip_markdown_comments(text)
+                if stripped.strip():
+                    previous_summaries.append(stripped.strip())
+            current_node = ancestors[-1]
+            if current_node.exists():
+                text = current_node.md_path().read_text(encoding="utf-8")
+                stripped = strip_markdown_comments(text)
+                if stripped.strip():
+                    current_content = stripped.strip()
 
     return CrawlResult(
         knowledge=knowledge_formatted,

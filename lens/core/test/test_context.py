@@ -9,6 +9,8 @@ from pathlib import Path
 
 from lens.core.context import (
     CrawlResult,
+    SliceAnchor,
+    spine_path,
     assemble_prompt,
     assemble_prompt_kb_edit,
     crawl,
@@ -559,3 +561,141 @@ class TestAssemblePromptKbEdit(unittest.TestCase):
         content = msgs[1]["content"]
         self.assertIn("the secret", content)
         self.assertNotIn("gur frperg", content)
+
+
+# ---------------------------------------------------------------------------
+# spine_path
+# ---------------------------------------------------------------------------
+
+
+class TestSpinePath(unittest.TestCase):
+    def _nr(self, tmp: Path) -> Path:
+        """Return narrative root for a test project."""
+        return tmp / "narrative" / "test"
+
+    def test_same_node(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            nr = self._nr(Path(tmp))
+            nr.mkdir(parents=True)
+            node = NarrativeNode(narrative_root=nr, key_path=("ch1",))
+            path = spine_path(node, node)
+            self.assertEqual(len(path), 1)
+            self.assertEqual(path[0].key_path, ("ch1",))
+
+    def test_ancestor_to_descendant(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            nr = self._nr(Path(tmp))
+            nr.mkdir(parents=True)
+            ancestor = NarrativeNode(narrative_root=nr, key_path=())
+            descendant = NarrativeNode(narrative_root=nr, key_path=("ch1", "sc1"))
+            path = spine_path(ancestor, descendant)
+            key_paths = [n.key_path for n in path]
+            self.assertEqual(key_paths, [(), ("ch1",), ("ch1", "sc1")])
+
+    def test_across_branches(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            nr = self._nr(Path(tmp))
+            nr.mkdir(parents=True)
+            left = NarrativeNode(narrative_root=nr, key_path=("ch1", "sc1"))
+            right = NarrativeNode(narrative_root=nr, key_path=("ch1", "sc2"))
+            path = spine_path(left, right)
+            key_paths = [n.key_path for n in path]
+            # left → parent ch1 → right
+            self.assertEqual(key_paths, [("ch1", "sc1"), ("ch1",), ("ch1", "sc2")])
+
+    def test_deep_cross_branch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            nr = self._nr(Path(tmp))
+            nr.mkdir(parents=True)
+            left = NarrativeNode(narrative_root=nr, key_path=("ch1",))
+            right = NarrativeNode(narrative_root=nr, key_path=("ch2", "sc1"))
+            path = spine_path(left, right)
+            key_paths = [n.key_path for n in path]
+            # ch1 → root → ch2 → ch2/sc1
+            self.assertEqual(key_paths, [("ch1",), (), ("ch2",), ("ch2", "sc1")])
+
+
+# ---------------------------------------------------------------------------
+# crawl with anchor (narrative slice)
+# ---------------------------------------------------------------------------
+
+
+class TestCrawlWithAnchor(unittest.TestCase):
+    def test_anchor_none_is_standard_crawl(self) -> None:
+        """anchor=None produces identical results to the existing behavior."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _root, narrative = _make_project(d)
+            result_default = crawl(narrative)
+            result_explicit = crawl(narrative, anchor=None)
+            self.assertEqual(result_default.previous_summaries, result_explicit.previous_summaries)
+            self.assertEqual(result_default.current_content, result_explicit.current_content)
+
+    def test_anchor_on_same_node_only_text_after_anchor_line(self) -> None:
+        """When anchor is on the cursor's own ancestor, only text after the anchor line is collected."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _root, narrative = _make_project(d)
+            # Write multiline content to root
+            root_md = narrative.md_path()
+            root_md.write_text("Line one BEFORE anchor\nLine two BEFORE anchor\nLine three AFTER anchor\nLine four AFTER anchor\n")
+            # Anchor at line 3 means text from line 3 onward
+            anchor = SliceAnchor(node=narrative, line_end=3)
+            # Crawl at the same node (root)
+            result = crawl(narrative, anchor=anchor)
+            # Root is both anchor and cursor → current_content
+            self.assertIsNotNone(result.current_content)
+            self.assertNotIn("BEFORE anchor", result.current_content or "")
+            self.assertIn("AFTER anchor", result.current_content or "")
+
+    def test_anchor_on_ancestor_spine_to_cursor(self) -> None:
+        """Anchor on root, cursor deeper — collects spine text, not just ancestors."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _root, narrative = _make_project(d)
+            root_md = narrative.md_path()
+            root_md.write_text(
+                "Root line 1 BEFORE\n"
+                "Root line 2 BEFORE\n"
+                "Root line 3 AFTER\n"
+                "[section:ch1]: #\n"
+            )
+            # Create child ch1
+            ch1_dir = narrative.narrative_root / "ch1"
+            ch1_dir.mkdir()
+            (ch1_dir / "_node.md").write_text("Chapter 1 content\n")
+
+            child = NarrativeNode(narrative_root=narrative.narrative_root, key_path=("ch1",))
+            anchor = SliceAnchor(node=narrative, line_end=3)
+            result = crawl(child, anchor=anchor)
+
+            # Root text after anchor → previous_summaries
+            self.assertTrue(len(result.previous_summaries) >= 1)
+            combined_prev = "\n".join(result.previous_summaries)
+            self.assertNotIn("BEFORE", combined_prev)
+            self.assertIn("AFTER", combined_prev)
+            # Child text → current_content
+            self.assertIn("Chapter 1", result.current_content or "")
+
+    def test_kb_resolution_unaffected_by_anchor(self) -> None:
+        """KB pins still resolve from full ancestor chain even with an anchor."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _root, narrative = _make_project(d)
+            # Add a KB object
+            _add_kb(d, "person", "alice", "Alice the adventurer")
+            # Pin it in root front matter
+            root_md = narrative.md_path()
+            root_md.write_text("[\n  kb_pin:\n    - person.alice\n]: #\n\nRoot narrative\n")
+            subprocess.run(["git", "add", "-A"], cwd=d, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "pin"], cwd=d, capture_output=True, check=True)
+
+            # Anchor at line 2 (after front matter) on root
+            anchor = SliceAnchor(node=narrative, line_end=2)
+            result = crawl(narrative, anchor=anchor)
+            # KB should still be resolved
+            self.assertIn("person.alice", result.pinned_ids)
