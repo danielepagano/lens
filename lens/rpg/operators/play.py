@@ -66,7 +66,7 @@ class PlayOperator(SessionOperator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
-    excluded_operator_tools: ClassVar[frozenset[str]] = frozenset({"write"})
+    use_operator_tools: ClassVar[bool] = False
 
     module_prefix: ClassVar[str] = "rules."
     auto_pins: ClassVar[list[str]] = ["rules.system", "rules.rpg"]

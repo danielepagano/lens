@@ -212,5 +212,9 @@ datasets/*/ddb_out/
 
 # Lens dev/test project (created by scripts/dev_project.py and local testing)
 .dev-project/
+
+# Benchmark reports (generated)
+bench/reports/*.json
+bench/reports/*.html
 **/node_modules/**
 lens/server/static/**

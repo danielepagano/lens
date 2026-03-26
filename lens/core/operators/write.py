@@ -29,6 +29,7 @@ from lens.core.tools import OperatorToolDef
 class WriteOperator(Operator):
     name: ClassVar[str] = "write"
     requires_id: ClassVar[bool] = False
+    use_operator_tools: ClassVar[bool] = False
 
     @property
     def system_prompt(self) -> str:

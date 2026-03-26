@@ -1,0 +1,8 @@
+# Local model with extended thinking enabled.
+# Baseline profile: slow but thorough.  Requires a local OpenAI-compatible
+# server (e.g. LM Studio, llama.cpp, vLLM) running on localhost.
+[llm]
+base_url = "http://127.0.0.1:1234/v1"
+model = "qwen/qwen3.5-9b"
+temperature = 0.8
+timeout_seconds = 300

@@ -186,6 +186,14 @@ class Operator(ABC):
     ``write``) keep the default of ``False`` so there is no tool-call overhead.
     """
 
+    use_operator_tools: ClassVar[bool] = True
+    """Whether other operator tools are available during LLM generation.
+
+    Prose-first operators (``write``, ``play``) set this to ``False`` so
+    the LLM writes inline instead of trying to hand off to another operator.
+    Planning operators (``design``) keep the default of ``True``.
+    """
+
     excluded_operator_tools: ClassVar[frozenset[str]] = frozenset()
     """Operator tool names to omit from this operator's tool list (e.g. play excludes write)."""
 
@@ -936,12 +944,15 @@ class Operator(ABC):
         probe_op = cls(session.new_storage(), narrative)
         tag = probe_op.build_open_tag(None, ann_params)
 
-        registry = get_tool_registry(session.project_root)
-        available_tools = {
-            n: v
-            for n, v in registry.items()
-            if n != cls.name and n not in cls.excluded_operator_tools
-        }
+        if cls.use_operator_tools:
+            registry = get_tool_registry(session.project_root)
+            available_tools = {
+                n: v
+                for n, v in registry.items()
+                if n != cls.name and n not in cls.excluded_operator_tools
+            }
+        else:
+            available_tools = {}
 
         content: str = ""
         tool_call: ToolCall | None = None
