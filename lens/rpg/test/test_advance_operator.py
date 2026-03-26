@@ -18,6 +18,7 @@ from lens.core.project import ProjectSession
 from lens.rpg.operators.advance import (
     AdvanceOperator,
     discover_front_pins,
+    find_advance_anchor,
     generate_advance_id,
     generate_luck_rolls,
     parse_advance_result,
@@ -485,6 +486,168 @@ class TestRunAdvanceSummary(unittest.TestCase):
                 encoding="utf-8"
             )
             self.assertIn("- Day: 4", timeline_text)
+
+
+# ---------------------------------------------------------------------------
+# find_advance_anchor
+# ---------------------------------------------------------------------------
+
+
+def _write_completed_advance(
+    parent_node: NarrativeNode,
+    advance_id: str,
+    timeline_id: str,
+    current_day: int,
+    increment: int,
+    days_elapsed: int | None = None,
+) -> None:
+    """Simulate a completed advance session on parent_node.
+
+    Writes the open/close tags on the parent and creates the sub-node
+    with an advance block containing the result.
+    """
+    actual_days = days_elapsed if days_elapsed is not None else increment
+    # Build annotation params YAML
+    params_yaml = (
+        f"  steps: 1\n"
+        f"  increment: {increment}\n"
+        f"  current_day: {current_day}\n"
+        f"  timeline: {timeline_id}\n"
+        f"  luck_rolls: {{}}\n"
+    )
+    open_tag = f"[advance:{advance_id}\n{params_yaml}]: #"
+    close_tag = f"[/advance:{advance_id}]: #"
+
+    summary = f"{actual_days} day(s) have passed."
+    parent_md = parent_node.md_path()
+    existing = parent_md.read_text(encoding="utf-8")
+    parent_md.write_text(
+        existing + f"\n{open_tag}\n\n{summary}\n\n{close_tag}\n"
+    )
+
+    # Create sub-node with advance block
+    child_dir = parent_node.narrative_root / "/".join(parent_node.key_path) / advance_id if parent_node.key_path else parent_node.narrative_root / advance_id
+    child_dir.mkdir(parents=True, exist_ok=True)
+    advance_block = f"```advance\ndays_elapsed: {actual_days}\nsummary: {summary}\n```"
+    (child_dir / "_node.md").write_text(
+        f"[kb_pin: [{timeline_id}]]: #\n\n{advance_block}\n"
+    )
+
+
+class TestFindAdvanceAnchor(unittest.TestCase):
+    def test_no_prior_advance_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            result = find_advance_anchor(narrative, "timeline.epic", 1)
+            self.assertIsNone(result)
+
+    def test_finds_anchor_on_same_node(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            # Simulate a completed advance: started at day 1, elapsed 1, so now day 2
+            _write_completed_advance(
+                narrative, "advance-day-1", "timeline.epic",
+                current_day=1, increment=1,
+            )
+            result = find_advance_anchor(narrative, "timeline.epic", 2)
+            self.assertIsNotNone(result)
+            assert result is not None
+            self.assertEqual(result.advance_id, "advance-day-1")
+            self.assertEqual(result.anchor.node.key_path, narrative.key_path)
+
+    def test_validation_failure_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            # Advance started at day 1, elapsed 1 → timeline should be at 2
+            # But we claim current_day=5 (timeline was edited)
+            _write_completed_advance(
+                narrative, "advance-day-1", "timeline.epic",
+                current_day=1, increment=1,
+            )
+            with self.assertRaises(OperatorError) as ctx:
+                find_advance_anchor(narrative, "timeline.epic", 5)
+            self.assertIn("validation failed", str(ctx.exception))
+
+    def test_skips_wrong_timeline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            # Advance for a DIFFERENT timeline
+            _write_completed_advance(
+                narrative, "advance-day-1", "timeline.other",
+                current_day=1, increment=1,
+            )
+            # Search for timeline.epic → should not find it
+            result = find_advance_anchor(narrative, "timeline.epic", 1)
+            self.assertIsNone(result)
+
+    def test_skips_advance_without_timeline_param(self) -> None:
+        """Old advance annotations without a timeline param are skipped."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            # Write an advance annotation WITHOUT timeline param (legacy format)
+            params_yaml = "  steps: 1\n  increment: 1\n  current_day: 1\n  luck_rolls: {}\n"
+            open_tag = f"[advance:advance-day-1\n{params_yaml}]: #"
+            close_tag = "[/advance:advance-day-1]: #"
+            parent_md = narrative.md_path()
+            existing = parent_md.read_text(encoding="utf-8")
+            parent_md.write_text(existing + f"\n{open_tag}\n\nSummary\n\n{close_tag}\n")
+            # Create minimal sub-node
+            child_dir = narrative.narrative_root / "advance-day-1"
+            child_dir.mkdir()
+            (child_dir / "_node.md").write_text("Legacy advance\n")
+
+            result = find_advance_anchor(narrative, "timeline.epic", 1)
+            self.assertIsNone(result)
+
+    def test_finds_anchor_on_ancestor_node(self) -> None:
+        """Anchor on root, cursor deeper in tree."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            _write_completed_advance(
+                narrative, "advance-day-1", "timeline.epic",
+                current_day=1, increment=1,
+            )
+            # Create a child node (simulating the cursor being deeper)
+            ch1_dir = narrative.narrative_root / "ch1"
+            ch1_dir.mkdir()
+            (ch1_dir / "_node.md").write_text("Chapter content\n")
+            child = NarrativeNode(
+                narrative_root=narrative.narrative_root, key_path=("ch1",)
+            )
+            result = find_advance_anchor(child, "timeline.epic", 2)
+            self.assertIsNotNone(result)
+            assert result is not None
+            self.assertEqual(result.advance_id, "advance-day-1")
+            self.assertEqual(result.anchor.node.key_path, ())  # root
+
+    def test_interrupted_advance_validates_correctly(self) -> None:
+        """An interrupted advance (days_elapsed < increment) validates correctly."""
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            # Advance requested 3 days but was interrupted after 2
+            _write_completed_advance(
+                narrative, "advance-day-1", "timeline.epic",
+                current_day=5, increment=3, days_elapsed=2,
+            )
+            # Timeline is now at 5+2=7
+            result = find_advance_anchor(narrative, "timeline.epic", 7)
+            self.assertIsNotNone(result)
+            assert result is not None
+            self.assertEqual(result.advance_id, "advance-day-1")
 
 
 if __name__ == "__main__":

@@ -17,7 +17,8 @@ import asyncio
 import logging
 import random
 import re
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
+from dataclasses import dataclass
 from typing import Any, ClassVar, cast
 
 import yaml
@@ -25,10 +26,10 @@ import yaml
 from lens.core.annotations import ParsedAnnotation
 from lens.core.command_tools import get_command_registry
 from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
-from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.context import CrawlResult, SliceAnchor, assemble_prompt, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, generate_stream
-from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
+from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator, OperatorError
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import unpin as unpin_node
@@ -250,6 +251,148 @@ def update_timeline_day(
 
 
 # ---------------------------------------------------------------------------
+# Narrative slice: anchor finding
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class AdvanceAnchorResult:
+    """Result of searching for the previous completed advance."""
+    anchor: SliceAnchor
+    advance_id: str
+
+
+def _rightmost_dfs(node: NarrativeNode) -> Iterator[NarrativeNode]:
+    """Yield *node* and its descendants in reverse reading order (deepest-rightmost first)."""
+    children = node.child_keys()
+    for key in reversed(children):
+        yield from _rightmost_dfs(node.child_node(key))
+    yield node
+
+
+def _walk_reading_order_backward(start: NarrativeNode) -> Iterator[NarrativeNode]:
+    """Yield nodes in reverse reading order, starting just before *start*.
+
+    Does **not** yield *start* itself.
+    """
+    node = start
+    while node.key_path:
+        parent = NarrativeNode(
+            narrative_root=node.narrative_root,
+            key_path=node.key_path[:-1],
+        )
+        try:
+            siblings = parent.child_keys()
+        except FileNotFoundError:
+            node = parent
+            continue
+        try:
+            my_idx = siblings.index(node.key_path[-1])
+        except ValueError:
+            node = parent
+            continue
+
+        # Previous siblings in reverse, depth-first (rightmost descendants first).
+        for i in range(my_idx - 1, -1, -1):
+            yield from _rightmost_dfs(parent.child_node(siblings[i]))
+
+        # Then the parent itself.
+        yield parent
+
+        node = parent
+
+
+def _check_node_for_advance_anchor(
+    node: NarrativeNode,
+    timeline_id: str,
+    current_day: int,
+) -> AdvanceAnchorResult | None:
+    """Check *node* for a completed advance matching *timeline_id*.
+
+    Scans segments in reverse (most recent first).  Returns the first valid
+    anchor found, or ``None`` if no matching advance exists on this node.
+
+    Raises :class:`OperatorError` if a matching-timeline advance is found but
+    fails day-counter validation.
+    """
+    try:
+        text = node.md_path().read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+
+    segments = parse_segments(text)
+
+    for seg in reversed(segments):
+        ann = seg.annotation
+        if ann is None or ann.operator != "advance" or seg.close is None:
+            continue
+        # Must have timeline param to be a valid anchor.
+        ann_timeline = ann.params.get("timeline")
+        if ann_timeline is None:
+            continue
+        if ann_timeline != timeline_id:
+            continue
+
+        # Found a matching-timeline completed advance.  Validate.
+        advance_id = ann.id
+        if advance_id is None:
+            continue
+
+        start_day = int(ann.params.get("current_day", 1))
+        increment = int(ann.params.get("increment", 1))
+
+        # Read the sub-node to get actual days_elapsed.
+        child = node.child_node(advance_id)
+        if child.exists():
+            child_text = child.md_path().read_text(encoding="utf-8")
+            days_elapsed, _summary = parse_advance_result(child_text, increment)
+        else:
+            days_elapsed = increment
+
+        if start_day + days_elapsed != current_day:
+            raise OperatorError(
+                f"advance anchor validation failed for {advance_id}: "
+                f"start_day ({start_day}) + days_elapsed ({days_elapsed}) = "
+                f"{start_day + days_elapsed}, but current timeline day is "
+                f"{current_day}. The timeline may have been edited manually."
+            )
+
+        return AdvanceAnchorResult(
+            anchor=SliceAnchor(node=node, line_end=seg.close.line_end + 1),
+            advance_id=advance_id,
+        )
+
+    return None
+
+
+def find_advance_anchor(
+    cursor: NarrativeNode,
+    timeline_id: str,
+    current_day: int,
+) -> AdvanceAnchorResult | None:
+    """Find the most recent completed advance for *timeline_id*.
+
+    Searches backward in narrative reading order from *cursor*.  Returns
+    ``None`` if no prior advance exists (first advance for this timeline).
+
+    Raises :class:`OperatorError` if a matching advance is found but the
+    day-counter validation fails.
+    """
+    # Check the cursor node itself first.
+    result = _check_node_for_advance_anchor(cursor, timeline_id, current_day)
+    if result is not None:
+        return result
+
+    # Walk backward through the tree.
+    for node in _walk_reading_order_backward(cursor):
+        result = _check_node_for_advance_anchor(node, timeline_id, current_day)
+        if result is not None:
+            return result
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Operator class
 # ---------------------------------------------------------------------------
 
@@ -363,7 +506,22 @@ class AdvanceOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
     ) -> None:
-        crawl_result = crawl(child_node)
+        # Narrative slice: use spine from previous advance instead of full
+        # ancestor crawl.  KB pin resolution is always full-chain.
+        slice_anchor: SliceAnchor | None = None
+        timeline_id = ann_params.get("timeline")
+        if isinstance(timeline_id, str):
+            parent_node = NarrativeNode(
+                narrative_root=child_node.narrative_root,
+                key_path=child_node.key_path[:-1],
+            )
+            anchor_result = find_advance_anchor(
+                parent_node, timeline_id, int(ann_params.get("current_day", 1))
+            )
+            if anchor_result is not None:
+                slice_anchor = anchor_result.anchor
+
+        crawl_result = crawl(child_node, anchor=slice_anchor)
         instruction = op.build_instruction(ann_params)
         messages = assemble_prompt(
             crawl_result,
@@ -596,6 +754,7 @@ class AdvanceOperator(Operator):
             "steps": 1,
             "increment": increment,
             "current_day": current_day,
+            "timeline": timeline_ids[0],
             "luck_rolls": luck_rolls,
         }
 
