@@ -196,7 +196,21 @@
         fetchNodeTree() // ensure cache is available; triggers updateCommandState() on load
         const navAddr = displayAddrToNavAddr(displayAddr)
         if (navAddr) {
-          linePickMode.set({ address: navAddr })
+          // Determine if this is the second pick (end line) and which operator's rules apply
+          const payloadName = state.activePayload?.name
+          const isEndPick = payloadName === 'end'
+          const startVal = isEndPick
+            ? parseInt(state.completedPositional['start'] as string, 10)
+            : undefined
+          const trigger = activeCommandDef.trigger
+          const operatorMode: 'edit' | 'collate' | undefined =
+            (trigger === 'edit' || trigger === 'collate') ? trigger : undefined
+
+          linePickMode.set({
+            address: navAddr,
+            startLine: isEndPick && startVal && !isNaN(startVal) ? startVal : undefined,
+            operatorMode,
+          })
           if (navAddr !== $currentAddress) void navigate?.(navAddr)
         }
         // else: tree not loaded yet — updateCommandState() will rerun once it loads

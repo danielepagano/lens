@@ -1042,6 +1042,16 @@ details[open]>summary {
   opacity: 0.3;
 }
 
+.line-row.disabled {
+  background: color-mix(in srgb, var(--pico-del-color, #c62828) 8%, transparent);
+}
+
+.line-row.disabled .line-number,
+.line-row.disabled .line-text {
+  opacity: 0.45;
+  color: var(--pico-del-color, #c62828);
+}
+
 /* ---- Annotation dividers and headings in rendered markdown ---- */
 
 /* Thin link bar for empty/self-closing annotations */

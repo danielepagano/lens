@@ -480,6 +480,9 @@ export function preprocessAnnotations(
  * Return the set of 1-indexed line numbers that are part of annotation or
  * front-matter blocks in the given raw markdown content. These lines are
  * structural and not valid targets for line-pick operations.
+ *
+ * Only marks the tag lines themselves (open tag, params, close tag, front
+ * matter), NOT the body content between open and close tags.
  */
 export function buildAnnotationLineSet(content: string): Set<number> {
   const lines = content.split('\n')
@@ -497,6 +500,338 @@ export function buildAnnotationLineSet(content: string): Set<number> {
       result.add(lineNo)
       inBlock = true
     }
+  }
+  return result
+}
+
+/**
+ * A parsed annotation or front-matter block with span information.
+ * All line numbers are 1-indexed inclusive.
+ */
+export interface AnnotationBlock {
+  /** First line of the opening tag (1-indexed). */
+  lineStart: number
+  /** Last line of the block (inclusive, 1-indexed).
+   *  For closed blocks: last line of the close tag.
+   *  For unclosed blocks: last line of the open tag. */
+  lineEnd: number
+  operator: string
+  id: string | null
+  isClosing: boolean
+  isSelfClosing: boolean
+  isFrontMatter: boolean
+  isClosed: boolean
+  /** First line of the close tag (1-indexed), if closed. */
+  closeLineStart?: number
+  /** Last line of the close tag (1-indexed), if closed. */
+  closeLineEnd?: number
+}
+
+/**
+ * Parse raw markdown into structured annotation block info.
+ *
+ * Returns one entry per annotation or front-matter block. For annotations
+ * that have a matching close tag, the block spans from open through close.
+ * Mirrors Python's `parse_annotations()` + `parse_segments()` pairing logic.
+ */
+export function buildAnnotationBlocks(content: string): AnnotationBlock[] {
+  const lines = content.split('\n')
+  const blocks: AnnotationBlock[] = []
+
+  // First pass: collect all raw annotation spans (open, close, self-closing, front-matter)
+  interface RawSpan {
+    lineStart: number  // 1-indexed
+    lineEnd: number    // 1-indexed inclusive
+    operator: string
+    id: string | null
+    isClosing: boolean
+    isSelfClosing: boolean
+    isFrontMatter: boolean
+  }
+  const spans: RawSpan[] = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]!
+    const lineNo = i + 1
+
+    // Front-matter: bare `[` on its own line
+    if (FRONT_MATTER_OPEN_RE.test(line)) {
+      const start = lineNo
+      i++
+      while (i < lines.length && !ANNOTATION_END_RE.test(lines[i]!)) i++
+      const end = i < lines.length ? i + 1 : i // include `]: #`
+      spans.push({
+        lineStart: start, lineEnd: end,
+        operator: '', id: null,
+        isClosing: false, isSelfClosing: false, isFrontMatter: true,
+      })
+      i++
+      continue
+    }
+
+    // Multi-line annotation: [op(:id)? on its own line (no `]: #`)
+    if (ANNOTATION_OPEN_RE.test(line) && !ANNOTATION_RE.test(line)) {
+      const m = line.match(ANNOTATION_OPEN_RE)
+      const start = lineNo
+      i++
+      while (i < lines.length && !ANNOTATION_END_RE.test(lines[i]!)) i++
+      const end = i < lines.length ? i + 1 : i
+      if (m?.groups) {
+        spans.push({
+          lineStart: start, lineEnd: end,
+          operator: m.groups.operator ?? '',
+          id: m.groups.id ?? null,
+          isClosing: Boolean(m.groups.close),
+          isSelfClosing: Boolean(m.groups.self_close),
+          isFrontMatter: false,
+        })
+      }
+      i++
+      continue
+    }
+
+    // Single-line annotation: [op(:id)?(/)?]: #
+    const m = line.match(ANNOTATION_RE)
+    if (m?.groups) {
+      spans.push({
+        lineStart: lineNo, lineEnd: lineNo,
+        operator: m.groups.operator ?? '',
+        id: m.groups.id ?? null,
+        isClosing: Boolean(m.groups.close),
+        isSelfClosing: Boolean(m.groups.self_close),
+        isFrontMatter: false,
+      })
+      i++
+      continue
+    }
+
+    i++
+  }
+
+  // Second pass: pair opens with closes (mirrors parse_segments logic)
+  const closesByKey = new Map<string, RawSpan[]>()
+  for (const s of spans) {
+    if (s.isClosing) {
+      const key = `${s.operator}:${s.id ?? ''}`
+      const arr = closesByKey.get(key) ?? []
+      arr.push(s)
+      closesByKey.set(key, arr)
+    }
+  }
+  const closePtr = new Map<string, number>()
+
+  for (const span of spans) {
+    if (span.isFrontMatter) {
+      blocks.push({
+        lineStart: span.lineStart, lineEnd: span.lineEnd,
+        operator: '', id: null,
+        isClosing: false, isSelfClosing: false,
+        isFrontMatter: true, isClosed: false,
+      })
+      continue
+    }
+
+    if (span.isClosing) {
+      // Standalone close tags are included as blocks (they occupy lines)
+      blocks.push({
+        lineStart: span.lineStart, lineEnd: span.lineEnd,
+        operator: span.operator, id: span.id,
+        isClosing: true, isSelfClosing: false,
+        isFrontMatter: false, isClosed: false,
+      })
+      continue
+    }
+
+    if (span.isSelfClosing) {
+      blocks.push({
+        lineStart: span.lineStart, lineEnd: span.lineEnd,
+        operator: span.operator, id: span.id,
+        isClosing: false, isSelfClosing: true,
+        isFrontMatter: false, isClosed: true,
+      })
+      continue
+    }
+
+    // Opening annotation: try to find matching close
+    const key = `${span.operator}:${span.id ?? ''}`
+    const closes = closesByKey.get(key) ?? []
+    let ptr = closePtr.get(key) ?? 0
+    let matchedClose: RawSpan | null = null
+    while (ptr < closes.length) {
+      if (closes[ptr].lineStart > span.lineStart) {
+        matchedClose = closes[ptr]
+        closePtr.set(key, ptr + 1)
+        break
+      }
+      ptr++
+    }
+    if (!matchedClose) closePtr.set(key, ptr)
+
+    if (matchedClose) {
+      blocks.push({
+        lineStart: span.lineStart, lineEnd: matchedClose.lineEnd,
+        operator: span.operator, id: span.id,
+        isClosing: false, isSelfClosing: false,
+        isFrontMatter: false, isClosed: true,
+        closeLineStart: matchedClose.lineStart,
+        closeLineEnd: matchedClose.lineEnd,
+      })
+    } else {
+      blocks.push({
+        lineStart: span.lineStart, lineEnd: span.lineEnd,
+        operator: span.operator, id: span.id,
+        isClosing: false, isSelfClosing: false,
+        isFrontMatter: false, isClosed: false,
+      })
+    }
+  }
+
+  return blocks
+}
+
+/**
+ * Compute valid end lines for a line-pick operation given a start line.
+ *
+ * For **edit** mode: mirrors `operator.py:1395-1402` — rejects ranges where
+ * any annotation's opening line falls within [startLine, endLine].
+ *
+ * For **collate** mode: mirrors `collate.py:54-109` — rejects ranges that
+ * split closed blocks, overlap unclosed annotations, or split front matter.
+ */
+export function computeValidEndLines(
+  content: string,
+  startLine: number,
+  mode: 'edit' | 'collate',
+): Set<number> {
+  const totalLines = content.split('\n').length
+  const annoSet = buildAnnotationLineSet(content)
+  const blocks = buildAnnotationBlocks(content)
+
+  const result = new Set<number>()
+
+  if (mode === 'edit') {
+    // Edit rule: range [startLine, L] must not contain any annotation's lineStart.
+    // Find the first annotation lineStart > startLine — that's the ceiling.
+    // (startLine itself is already a non-annotation line since the user picked it)
+    let ceiling = totalLines
+    for (const block of blocks) {
+      // Only care about opening annotations (not standalone close tags, not front matter)
+      // The Python check is: for a in anns: if start_line <= a.line_start <= end_line
+      // So any annotation start within the range invalidates it.
+      if (block.lineStart > startLine && block.lineStart <= totalLines) {
+        ceiling = Math.min(ceiling, block.lineStart - 1)
+      }
+    }
+    // Valid end lines: non-annotation lines in [startLine, ceiling]
+    for (let l = startLine; l <= ceiling; l++) {
+      if (!annoSet.has(l)) result.add(l)
+    }
+  } else {
+    // Collate mode: more complex validation
+    // For each candidate end line L >= startLine, check all blocks
+    for (let l = startLine; l <= totalLines; l++) {
+      if (annoSet.has(l)) continue  // annotation lines are not pickable
+
+      let valid = true
+      for (const block of blocks) {
+        if (block.isClosing) continue  // standalone close tags handled via their paired open
+
+        if (block.isFrontMatter) {
+          // Front matter: cannot split
+          const fmFirst = block.lineStart
+          const fmLast = block.lineEnd
+          const overlaps = fmFirst <= l && fmLast >= startLine
+          const fullyInside = fmFirst >= startLine && fmLast <= l
+          if (overlaps && !fullyInside) { valid = false; break }
+          continue
+        }
+
+        if (block.isSelfClosing) continue  // self-closing: single line, already filtered by annoSet
+
+        if (!block.isClosed) {
+          // Unclosed annotation: any overlap is invalid
+          // The unclosed annotation extends to end of file conceptually
+          const segFirst = block.lineStart
+          const segLast = totalLines
+          const overlaps = segFirst <= l && segLast >= startLine
+          if (overlaps) { valid = false; break }
+          continue
+        }
+
+        // Closed annotation: cannot partially overlap
+        const segFirst = block.lineStart
+        const segLast = block.lineEnd  // includes close tag
+        const overlaps = segFirst <= l && segLast >= startLine
+        const fullyInside = segFirst >= startLine && segLast <= l
+        if (overlaps && !fullyInside) { valid = false; break }
+      }
+      if (valid) result.add(l)
+    }
+  }
+
+  return result
+}
+
+/**
+ * Compute valid start lines for a line-pick operation.
+ *
+ * For **edit** mode: any non-annotation line (same as before — every
+ * non-annotation start line has at least itself as a valid end).
+ *
+ * For **collate** mode: a start line is only valid if at least one end line
+ * exists for it. Lines inside the body of a closed annotation block or after
+ * an unclosed annotation are never valid starts because the range would always
+ * partially overlap that block.
+ */
+export function computeValidStartLines(
+  content: string,
+  mode: 'edit' | 'collate',
+): Set<number> {
+  const annoSet = buildAnnotationLineSet(content)
+
+  if (mode === 'edit') {
+    // For edit, any non-annotation line is a valid start
+    const totalLines = content.split('\n').length
+    const result = new Set<number>()
+    for (let l = 1; l <= totalLines; l++) {
+      if (!annoSet.has(l)) result.add(l)
+    }
+    return result
+  }
+
+  // Collate mode: a start line is invalid if it's inside a block body
+  // (between open and close tags of a closed block, or after an unclosed open tag)
+  // because the range would always partially overlap that block.
+  const totalLines = content.split('\n').length
+  const blocks = buildAnnotationBlocks(content)
+
+  // Build a set of lines that are "trapped" inside block bodies
+  const trappedLines = new Set<number>()
+  for (const block of blocks) {
+    if (block.isClosing || block.isSelfClosing) continue
+
+    if (block.isFrontMatter) {
+      // Lines inside front matter body are annotation lines (already filtered)
+      continue
+    }
+
+    if (block.isClosed) {
+      // Any start line inside a closed block (after its open tag) can never
+      // fully contain the block, so the range always partially overlaps → trapped.
+      for (let l = block.lineStart + 1; l <= block.lineEnd; l++) {
+        trappedLines.add(l)
+      }
+    } else {
+      // Unclosed: everything from this annotation to end of file is trapped
+      for (let l = block.lineStart; l <= totalLines; l++) {
+        trappedLines.add(l)
+      }
+    }
+  }
+
+  const result = new Set<number>()
+  for (let l = 1; l <= totalLines; l++) {
+    if (!annoSet.has(l) && !trappedLines.has(l)) result.add(l)
   }
   return result
 }

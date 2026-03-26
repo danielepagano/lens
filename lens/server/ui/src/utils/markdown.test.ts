@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
+  buildAnnotationBlocks,
+  buildAnnotationLineSet,
   buildNodeTransactionOverlay,
+  computeValidEndLines,
+  computeValidStartLines,
   preprocessAnnotations,
   type NodeTransactionOverlay,
 } from './markdown'
@@ -521,5 +525,298 @@ Replacement line two.
     const removedIdx = result.indexOf('transaction-removed')
     const addedIdx = result.indexOf('transaction-added')
     expect(removedIdx).toBeLessThan(addedIdx)
+  })
+})
+
+describe('buildAnnotationBlocks', () => {
+  it('parses single-line annotations', () => {
+    const content = `Line 1
+[write]: #
+Line 3`
+    const blocks = buildAnnotationBlocks(content)
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].operator).toBe('write')
+    expect(blocks[0].lineStart).toBe(2)
+    expect(blocks[0].lineEnd).toBe(2)
+    expect(blocks[0].isClosed).toBe(false)
+  })
+
+  it('pairs open and close annotations', () => {
+    const content = `[section:ch1]: #
+Some body
+[/section:ch1]: #`
+    const blocks = buildAnnotationBlocks(content)
+    // The paired open+close block, plus the standalone close (consumed by pairing)
+    const paired = blocks.filter(b => b.isClosed && !b.isSelfClosing && !b.isClosing)
+    expect(paired).toHaveLength(1)
+    expect(paired[0].lineStart).toBe(1)
+    expect(paired[0].lineEnd).toBe(3)
+    expect(paired[0].closeLineStart).toBe(3)
+    expect(paired[0].closeLineEnd).toBe(3)
+  })
+
+  it('parses front matter blocks', () => {
+    const content = `[
+  kb_pin: [npc.test]
+]: #
+Content`
+    const blocks = buildAnnotationBlocks(content)
+    const fm = blocks.filter(b => b.isFrontMatter)
+    expect(fm).toHaveLength(1)
+    expect(fm[0].lineStart).toBe(1)
+    expect(fm[0].lineEnd).toBe(3)
+  })
+
+  it('parses multi-line annotations', () => {
+    const content = `[write
+  prompt: continue
+]: #
+Body text`
+    const blocks = buildAnnotationBlocks(content)
+    const opens = blocks.filter(b => !b.isClosing && !b.isFrontMatter)
+    expect(opens).toHaveLength(1)
+    expect(opens[0].lineStart).toBe(1)
+    expect(opens[0].lineEnd).toBe(3)
+    expect(opens[0].operator).toBe('write')
+  })
+
+  it('parses self-closing annotations', () => {
+    const content = `[section:ch1/]: #`
+    const blocks = buildAnnotationBlocks(content)
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0].isSelfClosing).toBe(true)
+    expect(blocks[0].isClosed).toBe(true)
+  })
+})
+
+describe('buildAnnotationLineSet (refactored)', () => {
+  it('returns same results as before for basic content', () => {
+    const content = `Line 1
+[section:ch1]: #
+Body
+[/section:ch1]: #
+Line 5`
+    const set = buildAnnotationLineSet(content)
+    expect(set.has(1)).toBe(false)
+    expect(set.has(2)).toBe(true)
+    expect(set.has(3)).toBe(false)
+    expect(set.has(4)).toBe(true)
+    expect(set.has(5)).toBe(false)
+  })
+
+  it('marks front matter lines', () => {
+    const content = `[
+  kb_pin: [npc.test]
+]: #
+Content`
+    const set = buildAnnotationLineSet(content)
+    expect(set.has(1)).toBe(true)
+    expect(set.has(2)).toBe(true)
+    expect(set.has(3)).toBe(true)
+    expect(set.has(4)).toBe(false)
+  })
+
+  it('marks multi-line annotation lines', () => {
+    const content = `[write
+  prompt: go
+]: #
+Body`
+    const set = buildAnnotationLineSet(content)
+    expect(set.has(1)).toBe(true)
+    expect(set.has(2)).toBe(true)
+    expect(set.has(3)).toBe(true)
+    expect(set.has(4)).toBe(false)
+  })
+})
+
+describe('computeValidEndLines — edit mode', () => {
+  it('allows end lines before any annotation', () => {
+    const content = `Line 1
+Line 2
+Line 3
+[section:ch1]: #
+Body
+[/section:ch1]: #`
+    const valid = computeValidEndLines(content, 1, 'edit')
+    expect(valid.has(1)).toBe(true)
+    expect(valid.has(2)).toBe(true)
+    expect(valid.has(3)).toBe(true)
+  })
+
+  it('rejects end lines that would include an annotation start', () => {
+    const content = `Line 1
+Line 2
+[section:ch1]: #
+Body
+[/section:ch1]: #
+Line 6`
+    // Start at line 1: annotation starts at line 3, so ceiling is 2
+    const valid = computeValidEndLines(content, 1, 'edit')
+    expect(valid.has(1)).toBe(true)
+    expect(valid.has(2)).toBe(true)
+    expect(valid.has(3)).toBe(false)  // annotation line
+    expect(valid.has(4)).toBe(false)  // past ceiling
+    expect(valid.has(5)).toBe(false)  // past ceiling
+    expect(valid.has(6)).toBe(false)  // past ceiling
+  })
+
+  it('allows end lines when start is after annotations', () => {
+    const content = `[section:ch1]: #
+Body
+[/section:ch1]: #
+Line 4
+Line 5`
+    // Start at line 4 (after all annotations)
+    const valid = computeValidEndLines(content, 4, 'edit')
+    expect(valid.has(4)).toBe(true)
+    expect(valid.has(5)).toBe(true)
+  })
+
+  it('handles front matter as annotation block', () => {
+    const content = `[
+  kb_pin: [npc.test]
+]: #
+Line 4
+Line 5`
+    // Start at line 4: front matter block starts at line 1 which is <= 4, not > 4
+    // So ceiling is 5 (no annotation starts after line 4)
+    const valid = computeValidEndLines(content, 4, 'edit')
+    expect(valid.has(4)).toBe(true)
+    expect(valid.has(5)).toBe(true)
+  })
+})
+
+describe('computeValidEndLines — collate mode', () => {
+  it('rejects end lines that split a closed annotation block', () => {
+    const content = `Line 1
+[section:ch1]: #
+Body
+[/section:ch1]: #
+Line 5`
+    // Start at line 1: the section block spans lines 1-4 (paired).
+    // End at line 3 would overlap [1,4] but not fully contain it → invalid
+    const valid = computeValidEndLines(content, 1, 'collate')
+    expect(valid.has(1)).toBe(true)   // no overlap with [2,4] since [1,1] doesn't reach 2
+    // Actually [startLine=1, L=3] overlaps [2,4] (2 <= 3 and 4 >= 1) but doesn't fully contain (4 > 3) → invalid
+    // Wait: the block lineStart=1 (the [section:ch1]: # opening). Let me reconsider.
+    // Actually looking at the blocks output: the paired block has lineStart=1 (open tag line), lineEnd=4 (close tag line)
+    // No wait, [section:ch1]: # is on line 2, not line 1.
+    // Content: Line 1\n[section:ch1]: #\nBody\n[/section:ch1]: #\nLine 5
+    // Line 1: "Line 1", Line 2: "[section:ch1]: #", Line 3: "Body", Line 4: "[/section:ch1]: #", Line 5: "Line 5"
+    // So the paired block: lineStart=2, lineEnd=4
+    // [startLine=1, L=1]: no overlap with [2,4] → valid
+    expect(valid.has(1)).toBe(true)
+    // [startLine=1, L=3]: overlaps [2,4] (2<=3 and 4>=1), not fully inside (4>3) → invalid
+    expect(valid.has(3)).toBe(false)
+    // Line 2 and 4 are annotation lines → not pickable
+    expect(valid.has(2)).toBe(false)
+    expect(valid.has(4)).toBe(false)
+    // [startLine=1, L=5]: fully contains [2,4] (2>=1 and 4<=5) → valid
+    expect(valid.has(5)).toBe(true)
+  })
+
+  it('rejects end lines that overlap unclosed annotations', () => {
+    const content = `Line 1
+Line 2
+[write]: #
+Body text`
+    // [write]: # is unclosed, extends to end of file conceptually
+    // Start at 1: any L >= 3 overlaps → only lines 1-2 valid (minus annotation lines)
+    const valid = computeValidEndLines(content, 1, 'collate')
+    expect(valid.has(1)).toBe(true)
+    expect(valid.has(2)).toBe(true)
+    expect(valid.has(3)).toBe(false)  // annotation line
+    expect(valid.has(4)).toBe(false)  // overlaps unclosed
+  })
+
+  it('allows end lines that fully contain a closed block', () => {
+    const content = `Line 1
+[section:ch1]: #
+Body
+[/section:ch1]: #
+Line 5`
+    // Start at line 1, end at line 5: fully contains [2,4] → valid
+    const valid = computeValidEndLines(content, 1, 'collate')
+    expect(valid.has(5)).toBe(true)
+  })
+
+  it('rejects splitting front matter', () => {
+    const content = `[
+  kb_pin: [npc.test]
+]: #
+Line 4
+Line 5`
+    // Front matter spans lines 1-3. Start at line 2 would be inside FM → but line 2 is annotation so not pickable
+    // Start at line 4 is after FM → no overlap → valid
+    const valid = computeValidEndLines(content, 4, 'collate')
+    expect(valid.has(4)).toBe(true)
+    expect(valid.has(5)).toBe(true)
+  })
+})
+
+describe('computeValidStartLines — edit mode', () => {
+  it('allows any non-annotation line', () => {
+    const content = `Line 1
+[section:ch1]: #
+Body
+[/section:ch1]: #
+Line 5`
+    const valid = computeValidStartLines(content, 'edit')
+    expect(valid.has(1)).toBe(true)
+    expect(valid.has(2)).toBe(false)  // annotation
+    expect(valid.has(3)).toBe(true)
+    expect(valid.has(4)).toBe(false)  // annotation
+    expect(valid.has(5)).toBe(true)
+  })
+})
+
+describe('computeValidStartLines — collate mode', () => {
+  it('rejects lines inside a closed annotation block body', () => {
+    const content = `Line 1
+[section:ch1]: #
+Body line 3
+[/section:ch1]: #
+Line 5`
+    const valid = computeValidStartLines(content, 'collate')
+    expect(valid.has(1)).toBe(true)   // before block
+    expect(valid.has(2)).toBe(false)  // annotation (open tag)
+    expect(valid.has(3)).toBe(false)  // inside block body → trapped
+    expect(valid.has(4)).toBe(false)  // annotation (close tag)
+    expect(valid.has(5)).toBe(true)   // after block
+  })
+
+  it('rejects lines after an unclosed annotation', () => {
+    const content = `Line 1
+Line 2
+[write]: #
+Body text`
+    const valid = computeValidStartLines(content, 'collate')
+    expect(valid.has(1)).toBe(true)
+    expect(valid.has(2)).toBe(true)
+    expect(valid.has(3)).toBe(false)  // annotation
+    expect(valid.has(4)).toBe(false)  // after unclosed annotation → trapped
+  })
+
+  it('allows lines between closed blocks', () => {
+    const content = `[section:ch1]: #
+Summary
+[/section:ch1]: #
+Free text
+[section:ch2]: #
+Summary 2
+[/section:ch2]: #`
+    const valid = computeValidStartLines(content, 'collate')
+    expect(valid.has(4)).toBe(true)  // free text between blocks
+  })
+
+  it('allows lines before any annotations', () => {
+    const content = `Prologue line 1
+Prologue line 2
+[section:ch1]: #
+Body
+[/section:ch1]: #`
+    const valid = computeValidStartLines(content, 'collate')
+    expect(valid.has(1)).toBe(true)
+    expect(valid.has(2)).toBe(true)
   })
 })

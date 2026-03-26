@@ -29,6 +29,10 @@ export const selectedKbId = writable<string | null>(null)
 // Line pick mode: active when CLI is waiting for a line number input
 export interface LinePickState {
   address: string
+  /** Set when picking the end line (second pick) — the already-picked start line. */
+  startLine?: number
+  /** Which operator's validation rules to apply for end-line filtering. */
+  operatorMode?: 'edit' | 'collate'
 }
 export const linePickMode = writable<LinePickState | null>(null)
 export const linePickSelection = writable<number | null>(null)

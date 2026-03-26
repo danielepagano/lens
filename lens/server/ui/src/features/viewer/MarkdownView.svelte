@@ -7,6 +7,8 @@
     createMarkdownRenderer,
     buildNodeTransactionOverlay,
     buildAnnotationLineSet,
+    computeValidEndLines,
+    computeValidStartLines,
   } from '../../utils/markdown'
   import { syncQuoteBlockAccents } from '../../utils/quoteBlockAccent'
   import { linePickMode, linePickSelection, scrollContentToBottom } from '../../stores/ui'
@@ -127,12 +129,38 @@
 
   $: sourceLines = (() => {
     if (!isLinePicking || !$nodeContent) return []
+    const mode = $linePickMode!
     const annoSet = buildAnnotationLineSet($nodeContent)
-    return $nodeContent.split('\n').map((text, i) => ({
-      lineNo: i + 1,
-      text,
-      pickable: !annoSet.has(i + 1),
-    }))
+    if (mode.startLine != null && mode.operatorMode) {
+      // Second pick (end line): use operator-aware validation
+      const validEnds = computeValidEndLines($nodeContent, mode.startLine, mode.operatorMode)
+      return $nodeContent.split('\n').map((text, i) => {
+        const lineNo = i + 1
+        return {
+          lineNo, text,
+          pickable: validEnds.has(lineNo),
+          state: annoSet.has(lineNo) ? 'annotation' as const
+            : validEnds.has(lineNo) ? 'pickable' as const
+            : 'disabled' as const,
+        }
+      })
+    }
+    // First pick (start line): operator-aware start validation
+    const validStarts = mode.operatorMode
+      ? computeValidStartLines($nodeContent, mode.operatorMode)
+      : null
+    return $nodeContent.split('\n').map((text, i) => {
+      const lineNo = i + 1
+      const isAnno = annoSet.has(lineNo)
+      const pick = isAnno ? false : (validStarts ? validStarts.has(lineNo) : true)
+      return {
+        lineNo, text,
+        pickable: pick,
+        state: isAnno ? 'annotation' as const
+          : pick ? 'pickable' as const
+          : 'disabled' as const,
+      }
+    })
   })()
 </script>
 
@@ -150,13 +178,13 @@
     {/if}
     {#if isLinePicking}
       <div class="line-picker" data-testid="line-picker">
-        {#each sourceLines as { lineNo, text, pickable } (lineNo)}
+        {#each sourceLines as { lineNo, text, pickable, state } (lineNo)}
           {#if pickable}
             <button class="line-row pickable" on:click={() => linePickSelection.set(lineNo)}>
               <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
             </button>
           {:else}
-            <div class="line-row annotation">
+            <div class="line-row {state}">
               <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
             </div>
           {/if}
