@@ -191,6 +191,23 @@ The result of the crawl is usually meant to be assembled into LLM prompts. These
 
 A module also exists to reliably assemble this prompt from crawl outputs into a string that works well.
 
+### Narrative slices
+
+The standard crawl collects narrative from the **full ancestor chain**—root through every intermediate node down to the cursor. This is the right default for narrative append operators like `write` need the fractal-summarization view of the whole story so far.
+
+Some operators have a summarization intent, so they need a different narrative window. The `advance` operator, for example, must reason about **what happened since the last calendar tick**, not the entire story from the beginning. Including the full ancestor chain would waste context budget on distant material that has no bearing on front updates.
+
+**Narrative slices** generalize crawl by introducing an **anchor**—a fixed point in the narrative tree from which text collection begins. The anchor is a `(node, line_end)` pair: text on the anchor node starts from `line_end` onward, skipping everything before it. When no anchor is supplied, crawl behaves exactly as described above (full ancestor chain). When an anchor is supplied, crawl replaces the ancestor narrative with a **spine walk**: the shortest path through the tree from anchor to cursor, via their lowest common ancestor.
+
+The key properties:
+
+1. **KB pin resolution is always full-chain.** Pins are structural (declared in front matter at each tree level), so the ancestor chain is always walked for pin/unpin resolution regardless of the anchor. Only the narrative text collection changes.
+2. **Spine-only traversal.** The slice collects text only from nodes on the spine path—it does not descend into lateral subtrees. The contract is that operators like `section` and `play` summarize upward into parent narrative, so anything important from sibling branches should already appear as rolled-up prose on the spine.
+3. **Anchor node partial read.** On the anchor node itself, only text from `line_end` onward is collected. On intermediate spine nodes, full text is collected. The cursor node becomes `current_content` as usual.
+4. **Standard crawl as special case.** With no anchor, crawl reads all ancestors top-to-bottom—equivalent to a slice anchored at line 1 of the narrative root.
+
+Operators that use slices are responsible for finding and validating their own anchors. For example, `advance` searches backward in narrative reading order for the most recent completed advance on the same timeline and validates the day-counter arithmetic before using it as an anchor.
+
 ## Architecture
 
 Lens is purposely simple, and it's designed to be a stateless script. It just needs to have a file system mount, be pointed to a content repo, and have credentials to push to the repo's origin and configuration/credentials to connect to an OpenAI-compatible chat completion API endpoint. That's it: the server could have a lifecycle only around a single git commit. It may be a good fit for a fly.io sprite or the like.
