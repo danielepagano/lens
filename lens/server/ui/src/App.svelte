@@ -14,7 +14,7 @@
   import MediaPreviewPanel from './features/cli/MediaPreviewPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
-  import { getStats, getNode } from './services/api'
+  import { getStats, getNode, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
   import { appMode, selectedKbId, kbFilters } from './stores/ui'
@@ -119,6 +119,7 @@
 
   onMount(async () => {
     window.addEventListener('hashchange', handleHashChange)
+    onAfterMutation(() => { void getStats().then(applyStats) })
 
     try {
       const stats = await getStats()
