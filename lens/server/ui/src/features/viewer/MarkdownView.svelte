@@ -4,6 +4,7 @@
   import {
     preprocessAnnotations,
     preprocessBlockquotePills,
+    preprocessThinkingTags,
     createMarkdownRenderer,
     buildNodeTransactionOverlay,
     buildAnnotationLineSet,
@@ -34,7 +35,9 @@
 
   $: rendered = $nodeContent
     ? md.render(
-        preprocessAnnotations(preprocessBlockquotePills($nodeContent), $currentAddress, overlay),
+        preprocessThinkingTags(
+          preprocessAnnotations(preprocessBlockquotePills($nodeContent), $currentAddress, overlay),
+        ),
       )
     : ''
 

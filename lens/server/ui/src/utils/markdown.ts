@@ -862,6 +862,23 @@ function renderToolCallFence(md: MarkdownIt, content: string): string {
   )
 }
 
+const THINKING_BLOCK_RE = /<(think|thinking)\b[^>]*>([\s\S]*?)<\/\1>/gi
+
+export function preprocessThinkingTags(markdown: string): string {
+  return markdown.replace(THINKING_BLOCK_RE, (_fullMatch, _tag, content: string) => {
+    const body = content.replace(/^\n+|\n+$/g, '')
+    return (
+      `\n<details class="md-fence-tool-call md-fence-thinking">` +
+      `<summary class="md-fence-tool-call-summary">` +
+      `<span class="md-fence-tool-call-preview">Thinking</span>` +
+      `<span class="md-fence-tool-call-expand" aria-hidden="true"></span>` +
+      `</summary>` +
+      `\n\n${body}\n\n` +
+      `</details>\n`
+    )
+  })
+}
+
 /** Shared markdown-it instance with settings matching the app's rendering needs. */
 export function createMarkdownRenderer(): MarkdownIt {
   const md = new MarkdownIt({ html: true, linkify: true, typographer: true })

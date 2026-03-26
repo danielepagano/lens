@@ -5,7 +5,9 @@ import {
   buildNodeTransactionOverlay,
   computeValidEndLines,
   computeValidStartLines,
+  createMarkdownRenderer,
   preprocessAnnotations,
+  preprocessThinkingTags,
   type NodeTransactionOverlay,
 } from './markdown'
 
@@ -173,6 +175,35 @@ describe('buildNodeTransactionOverlay', () => {
     expect(result).not.toBeNull()
     expect(result!.addedLines.has(8)).toBe(true)
     expect(result!.addedLines.has(5)).toBe(false)
+  })
+})
+
+describe('preprocessThinkingTags', () => {
+  it('collapses think blocks into a Thinking details section', () => {
+    const markdown = `Before
+<think>
+line one
+line two
+</think>
+After`
+    const result = preprocessThinkingTags(markdown)
+    expect(result).toContain('md-fence-thinking')
+    expect(result).toContain('<span class="md-fence-tool-call-preview">Thinking</span>')
+    expect(result).not.toContain('<think>')
+    expect(result).toContain('line one')
+  })
+
+  it('renders thinking block body as markdown (not code)', () => {
+    const md = createMarkdownRenderer()
+    const markdown = `<thinking>
+1. first
+2. second
+</thinking>`
+    const rendered = md.render(preprocessThinkingTags(markdown))
+    expect(rendered).toContain('md-fence-thinking')
+    expect(rendered).toContain('<ol>')
+    expect(rendered).toContain('<li>first</li>')
+    expect(rendered).not.toContain('<thinking>')
   })
 })
 
