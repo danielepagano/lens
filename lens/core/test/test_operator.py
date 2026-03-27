@@ -128,6 +128,19 @@ class TestTagBuilders(unittest.TestCase):
             self.assertIn("prompt: hello", tag)
             self.assertTrue(tag.endswith("]: #"))
 
+    def test_open_tag_tuple_params_use_portable_yaml_not_python_tuple_tag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            owner = _TestOp.owner_id("ch1", "narrative/test/_node.md")
+            op = _TestOp(Storage(root, owner=owner), narrative)
+            tag = op.build_open_tag(
+                "ch1",
+                {"luck_rolls": {"front.a": (65, 50), "front.b": (1, 2)}},
+            )
+            self.assertNotIn("!!python", tag)
+            self.assertIn("- 65", tag)
+            self.assertIn("- 50", tag)
+
     def test_close_tag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))

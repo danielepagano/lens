@@ -11,16 +11,14 @@ datasets:
 ## Setup
 
 `setup_bench.py` only creates an empty project with narrative `default`. Explain
-what state this scenario builds and list the commands to get there:
+what state this scenario builds.
 
-```bash
-lens kb add type.key "..."
-lens pin add type.key
-lens commit
+For anything beyond a couple of lines, add a checked-in
+`bench/scenarios/<scenario>_setup.sh` (see `advance_fronts_setup.sh`) and point
+to it from here. From the repo root: `export PROJECT` and
+`bash bench/scenarios/<scenario>_setup.sh`.
 
-lens write "Opening passage that establishes the narrative state."
-lens commit
-```
+Small scenarios may keep inline fenced `bash` in this file instead.
 
 ## Steps
 

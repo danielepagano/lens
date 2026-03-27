@@ -27,6 +27,10 @@ logger = logging.getLogger(__name__)
 # Maximum number of consecutive command-tool round-trips per response.
 _MAX_COMMAND_TOOL_ITERATIONS = 20
 
+# When ``enable_thinking`` is True, reasoning budget for providers that support
+# it (e.g. OpenRouter). Medium leaves more room for visible completion than high.
+_REASONING_EFFORT = "medium"
+
 CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
 
 
@@ -215,7 +219,7 @@ async def _stream_once(
     payload["enable_thinking"] = enable_thinking
     payload["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
     if enable_thinking:
-        payload["reasoning"] = {"effort": "high"}
+        payload["reasoning"] = {"effort": _REASONING_EFFORT}
     else:
         payload["reasoning"] = {"effort": "none", "enabled": False}
         if not enable_thinking:

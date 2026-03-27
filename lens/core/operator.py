@@ -128,7 +128,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 from collections.abc import Callable, Awaitable
 import yaml
 
@@ -165,6 +165,25 @@ def _lines_prefix(before_lines: list[str]) -> str:
     if not before_lines:
         return ""
     return "\n".join(before_lines) + "\n"
+
+
+def _normalize_for_yaml_dump(obj: Any) -> Any:
+    """Recursively convert tuples to lists so PyYAML emits portable YAML.
+
+    ``yaml.dump`` uses ``!!python/tuple`` for tuples; ``yaml.safe_load`` in
+    annotation parsing cannot reconstruct that tag, which breaks re-parsing
+    operator params (e.g. ``luck_rolls`` from advance).
+    """
+    if isinstance(obj, tuple):
+        t = cast(tuple[Any, ...], obj)
+        return [_normalize_for_yaml_dump(item) for item in t]
+    if isinstance(obj, dict):
+        d = cast(dict[Any, Any], obj)
+        return {str(k): _normalize_for_yaml_dump(v) for k, v in d.items()}
+    if isinstance(obj, list):
+        lst = cast(list[Any], obj)
+        return [_normalize_for_yaml_dump(item) for item in lst]
+    return obj
 
 
 class OperatorError(Exception):
@@ -283,7 +302,11 @@ class Operator(ABC):
             header += f":{id}"
         if not params:
             return f"{header}]: #"
-        yaml_text = yaml.dump(params, default_flow_style=False).rstrip("\n")
+        yaml_text = yaml.dump(
+            _normalize_for_yaml_dump(params),
+            default_flow_style=False,
+            allow_unicode=True,
+        ).rstrip("\n")
         indented = re.sub(r"^", "    ", yaml_text, flags=re.MULTILINE)
         return f"{header}\n{indented}\n]: #"
 

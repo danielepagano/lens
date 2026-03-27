@@ -27,6 +27,9 @@ time; switching ``--module`` removes all ``rules.*`` pins except the auto-pinned
 
 Requires at least one ``pc.*`` KB object pinned (at any ancestor level) so the
 LLM knows who the player characters are.
+
+Refuses to run if any ``design.*`` KB object is pinned in context — design
+modules belong in ``lens design`` sessions, not mixed into play prompts.
 """
 
 from __future__ import annotations
@@ -118,6 +121,14 @@ class PlayOperator(SessionOperator):
         (including ancestor nodes and operator annotations) are seen correctly.
         """
         pinned = set(crawl_result.pinned_ids)
+        design_pins = sorted(p for p in crawl_result.pinned_ids if p.startswith("design."))
+        if design_pins:
+            raise OperatorError(
+                "play refuses to run while design modules are pinned ("
+                + ", ".join(design_pins)
+                + "). Design sessions use their own node; remove design.* from kb_pin "
+                "here so prompts do not conflict with play."
+            )
         missing = REQUIRED_PINS - pinned
         if missing:
             raise OperatorError(

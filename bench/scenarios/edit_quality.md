@@ -22,28 +22,11 @@ datasets:
 Replace the scaffolded root node with the prepared passage (pins are embedded in
 the front matter) and commit.
 
-The **`--`** before the heredoc is required so YAML `---` is not parsed as a Typer option.
+**Implementation:** `bench/scenarios/edit_quality_setup.sh`. From the repo root:
 
 ```bash
-N=$(wc -l < narrative/default/_node.md | tr -d ' ')
-lens edit / 1 "$N" --replace -- "$(cat <<'EOF'
----
-kb_pin:
-  - location.registry
----
-
-# default
-
-The hall smelled of vinegar and sealing wax. Torches guttered along the cedar beams; clerks shuffled past with armloads of ribbon-tied folios, each one a small war of ink and precedent.
-
-Martine stood at the counter with her hands flat on the deal-book. She was nervous. She was worried about the deal. She thought that the deal might be bad. She did not like feeling uncertain. The clerk waited for her seal, fingers tapping the brass edge in a rhythm that matched nothing in her chest.
-
-Beyond the arch, someone laughed at a joke about taxes; the sound made her jaw ache. Wax dripped from a nearby taper; she watched it crawl, slow as a verdict.
-
-The inkwell reflected the torchlight; she did not look up.
-EOF
-)"
-lens commit
+export PROJECT
+bash bench/scenarios/edit_quality_setup.sh
 ```
 
 ## Steps

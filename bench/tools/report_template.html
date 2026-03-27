@@ -103,7 +103,7 @@ function renderSingle(r) {
     html += '<h2>Steps</h2>';
     for (const s of r.steps) {
       html += `<div class="step">
-        <div class="step-cmd">$ lens ${(s.command || []).map(esc).join(' ')}</div>
+        <div class="step-cmd">$ ${Array.isArray(s.command) ? 'lens ' + s.command.map(esc).join(' ') : esc(s.command || '')}</div>
         ${s.description ? `<div class="step-desc">${esc(s.description)}</div>` : ''}
         <details><summary>Output (${(s.output || '').length} chars)</summary>
           <div class="output">${esc(s.output || '')}</div>

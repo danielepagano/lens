@@ -15,7 +15,7 @@ cd "$PROJECT"
 lens check
 # If this fails, you stop and report to user
 
-# 3. Run the scenario (read the scenario file + the relevant script under bench/scripts/)
+# 3. Run the scenario (read the scenario file + the relevant script under bench/scripts/). If the scenario has a bench/scenarios/<name>_setup.sh, run it from the repo root with PROJECT exported (see bench/agent.md).
 
 # 4. Create report JSON + HTML (init prints the JSON path — use that path for merge/sync; optional: -o bench/reports/<label>.json)
 python bench/tools/report.py init \

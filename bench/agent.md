@@ -13,6 +13,10 @@ Task brief for any automated or semi-automated run (Cursor agent, script, or hum
 3. **Run lens from a shell** — After `setup_bench.py` prints `PROJECT`, `cd` there and invoke `lens` in that same shell so **environment variables** (API keys, `PATH`) and **network** reach the LLM as intended. `lens` commands always run from `$PROJECT`; `report.py` always runs from the **repo root** (it resolves `bench/…` paths relative to the repo). Run **`lens check`** to verify `lens.toml`, keys (if any), bundled datasets, and the active narrative; **if it fails, stop and report** — do not treat the benchmark as valid.
 4. **Create a report** — `report.py init`, then fill `steps` and `evaluation` and keep JSON and HTML consistent (see below).
 
+**Stop — no workarounds.** If **any** Setup command fails, the first benchmark step errors (operator requirements, missing pins, parse errors, etc.), or you discover the **scenario file** is inconsistent with how Lens works, **stop immediately** and report. **Do not** hand-edit `$PROJECT` (narrative, KB, pins, commits) to “make the run succeed” while leaving the scenario broken. Fixes belong in **`bench/scenarios/…`** (or core docs), then re-run from `setup_bench.py`. Treat surprise failures during Setup or step 1 as **scenario or product bugs** until proven otherwise.
+
+**Setup scripts (canonical).** Scenarios that need non-trivial shell live next to the Markdown: `bench/scenarios/<scenario>_setup.sh` (e.g. `advance_fronts_setup.sh`). That file is the **single source of truth** for KB edits and `lens` commands; the `.md` describes intent and points at the script. From the **repo root**, after `setup_bench.py` prints the path: `export PROJECT` and run `bash bench/scenarios/<scenario>_setup.sh` (the script `cd`s to `$PROJECT`). **During a benchmark run, do not** create new shell files or other artifacts for one test case — not under `/tmp`, not ad-hoc in `bench/`. If Setup needs to change, edit the **checked-in** `*_setup.sh` (and the scenario `.md` summary if needed), then re-run.
+
 A run is **not finished** while `steps` / `evaluation` are empty or while HTML is stale relative to the final JSON.
 
 ## Required outputs
@@ -59,16 +63,17 @@ Exit code **0** means required fields are present and, with **`--scenario`**, re
 
 ## End-to-end flow
 
-1. `python bench/tools/setup_bench.py --profile <profile> --scenario bench/scenarios/<scenario>.md` → capture printed **`PROJECT`**.
-2. **`cd "$PROJECT"`** — all `lens` commands run from here, in a **shell** (see above).
-3. **`lens check`** — must pass before you rely on the project.
-4. Follow your **script** and the **scenario**: run Setup once, then each step (see scenario format below).
-5. **`python bench/tools/report.py init --scenario … --profile … --project-dir "$PROJECT"`** → keep the JSON path it prints (including the **repo-relative** line for copy-paste). Optional **`-o …`** if you want a chosen filename instead of the timestamped default.
-6. **Fill the report** — run **`merge`** / **`sync`** / **`render`** on **that same JSON** (the `.html` sits beside it), e.g. **`python bench/tools/report.py merge <path> < patch.json`**.
-7. Confirm the HTML mtime is **at or after** the JSON after the final fill.
-8. Run **`report.py validate`** on the final JSON (with **`--scenario`** when possible).
+1. `python bench/tools/setup_bench.py --profile <profile> --scenario bench/scenarios/<scenario>.md` → capture printed **`PROJECT`** and **`export PROJECT`**.
+2. **Setup** — from the **repo root**, run `bash bench/scenarios/<scenario>_setup.sh` when that file exists (see **Setup scripts** above). Otherwise follow inline Setup in the `.md`.
+3. **`cd "$PROJECT"`** — all benchmark **`lens`** steps run from here, in a **shell** (see above).
+4. **`lens check`** — must pass before you rely on the project.
+5. Follow your **script** and the **scenario**: run each benchmark step (see scenario format below). If Setup succeeds but the **first** operator step fails (e.g. “requires … pinned”), treat that as a **bad scenario** until the narrative’s effective pins are verified — see **Narrative front matter** under *Scenario format*. **Do not** patch the project and continue; fix the `*_setup.sh` / `.md` and recreate `$PROJECT`.
+6. **`python bench/tools/report.py init --scenario … --profile … --project-dir "$PROJECT"`** → keep the JSON path it prints (including the **repo-relative** line for copy-paste). Optional **`-o …`** if you want a chosen filename instead of the timestamped default.
+7. **Fill the report** — run **`merge`** / **`sync`** / **`render`** on **that same JSON** (the `.html` sits beside it), e.g. **`python bench/tools/report.py merge <path> < patch.json`**.
+8. Confirm the HTML mtime is **at or after** the JSON after the final fill.
+9. Run **`report.py validate`** on the final JSON (with **`--scenario`** when possible).
 
-Verification (`<your_report>` = the JSON basename from step 5, or your `-o` path):
+Verification (`<your_report>` = the JSON basename from the `report.py init` step, or your `-o` path):
 
 ```bash
 python bench/tools/report.py sync bench/reports/<your_report>.json
@@ -94,10 +99,24 @@ PATH="$VENV:$PATH" lens stats
 |---------|---------|
 | Title + description | What the scenario tests |
 | ` ```config` block | Machine-readable: `datasets` (optional) |
-| Setup | CLI commands to build narrative state (run once) |
+| Setup | How to build narrative state (run once). Prefer a checked-in `bench/scenarios/<name>_setup.sh` when present; otherwise fenced commands in the `.md`. |
 | Steps | Benchmark operations to evaluate (each has an ID) |
 | Evaluation criteria | Scoring rubric (1–5 scale) |
 | Prompt iteration guidance | Focus key, goal, anti-patterns |
+
+**Narrative front matter (pins, `kb_pin`, etc.):** Lens resolves these from **Markdown comment blocks** with YAML inside — open with `[`, close with `]: #`. Example:
+
+```text
+[
+  kb_pin:
+    - timeline.vale
+]: #
+
+# My node title
+Body…
+```
+
+Do **not** use Hugo/Jekyll-style `---` / `---` YAML fences for narrative front matter: **they are not parsed** by `parse_front_matter` / `crawl`, so operators will see **no pins**. (The **`--`** before a `lens edit … "$(cat <<'EOF'` heredoc is only there to end Typer’s option parsing — it is unrelated to `---` in file content.)
 
 ## Scoring scale
 

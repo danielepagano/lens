@@ -259,16 +259,14 @@ class TestReadCurrentDay(unittest.TestCase):
 
 
 class TestCheckRequirements(unittest.TestCase):
-    def test_missing_design_front(self) -> None:
+    def test_timeline_only_passes_without_design_front(self) -> None:
         cr = CrawlResult(
             knowledge=[],
             pinned_ids=["timeline.epic"],
             previous_summaries=[],
             current_content="",
         )
-        with self.assertRaises(OperatorError) as ctx:
-            AdvanceOperator.check_requirements(cr)
-        self.assertIn("design.front", str(ctx.exception))
+        AdvanceOperator.check_requirements(cr)
 
     def test_missing_timeline(self) -> None:
         cr = CrawlResult(
@@ -281,14 +279,13 @@ class TestCheckRequirements(unittest.TestCase):
             AdvanceOperator.check_requirements(cr)
         self.assertIn("timeline", str(ctx.exception))
 
-    def test_passes_with_both(self) -> None:
+    def test_passes_with_timeline_and_optional_design_front(self) -> None:
         cr = CrawlResult(
             knowledge=[],
             pinned_ids=["design.front", "timeline.epic"],
             previous_summaries=[],
             current_content="",
         )
-        # Should not raise
         AdvanceOperator.check_requirements(cr)
 
 
@@ -401,7 +398,7 @@ class TestRunAdvanceSummary(unittest.TestCase):
                         session=session,
                         narrative=narrative,
                         increment=1,
-                        pins=["design.front", "timeline.epic"],
+                        pins=["timeline.epic"],
                         unpins=[],
                     )
                 )
@@ -458,7 +455,7 @@ class TestRunAdvanceSummary(unittest.TestCase):
                         session=session,
                         narrative=narrative,
                         increment=3,
-                        pins=["design.front", "timeline.epic"],
+                        pins=["timeline.epic"],
                         unpins=[],
                     )
                 )

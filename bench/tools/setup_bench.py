@@ -65,13 +65,19 @@ def _load_profile(profile_path: Path) -> dict[str, object]:
 def _load_scenario_datasets(scenario_path: Path) -> list[str]:
     """Read a scenario Markdown and return the ``datasets`` list from its config block.
 
-    Scenarios contain a fenced config block::
+    Scenarios contain a fenced config block in one of two forms::
 
         ```config
         datasets: rpg, dnd
         ```
 
-    An empty ``datasets:`` line (or no config block) means no extra datasets.
+        ```config
+        datasets:
+          - rpg
+          - dnd
+        ```
+
+    An empty ``datasets:`` line with no list items means no extra datasets.
     """
     import re
 
@@ -79,13 +85,23 @@ def _load_scenario_datasets(scenario_path: Path) -> list[str]:
     m = re.search(r"```config\n(.*?)```", text, re.DOTALL)
     if not m:
         return []
-    for line in m.group(1).splitlines():
-        line = line.strip()
-        if line.startswith("datasets:"):
-            raw = line[len("datasets:") :].strip()
-            if not raw:
-                return []
-            return [d.strip() for d in raw.split(",") if d.strip()]
+    lines = m.group(1).splitlines()
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("datasets:"):
+            raw = stripped[len("datasets:"):].strip()
+            if raw:
+                # Inline form: datasets: rpg, dnd
+                return [d.strip() for d in raw.split(",") if d.strip()]
+            # YAML list form: collect following "- item" lines
+            result: list[str] = []
+            for follow in lines[i + 1:]:
+                fs = follow.strip()
+                if fs.startswith("- "):
+                    result.append(fs[2:].strip())
+                elif fs and not fs.startswith("#"):
+                    break
+            return result
     return []
 
 

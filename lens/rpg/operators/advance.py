@@ -8,7 +8,9 @@ after ``lens advance --end`` (with the cursor in that sub-node). Use
 
 Dataset-gated: requires the ``rpg`` dataset.
 
-Requirements: ``design.front`` and at least one ``timeline.*`` must be pinned.
+Requirements: at least one ``timeline.*`` must be pinned on the node where you
+start advance. The operator pins ``design.front`` on the advance sub-node; do
+not add ``design.*`` pins to story nodes yourself (that conflicts with play).
 """
 
 from __future__ import annotations
@@ -334,11 +336,6 @@ class AdvanceOperator(Operator):
     @classmethod
     def check_requirements(cls, crawl_result: CrawlResult) -> None:
         pinned = set(crawl_result.pinned_ids)
-        if DESIGN_MODULE_PIN not in pinned:
-            raise OperatorError(
-                "advance requires design.front to be pinned — "
-                "add it with --pin or kb_pin front matter"
-            )
         if not any(pid.startswith("timeline.") for pid in pinned):
             raise OperatorError(
                 "advance requires at least one timeline.* to be pinned — "

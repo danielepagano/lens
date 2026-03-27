@@ -600,6 +600,20 @@ class TestPlayOperatorRequirements(unittest.TestCase):
         # Should not raise with rules + pc.* pins
         PlayOperator.check_requirements(_play_result(["rules.system", "rules.rpg", "pc.hero"]))
 
+    def test_design_pin_raises(self) -> None:
+        with self.assertRaises(OperatorError) as ctx:
+            PlayOperator.check_requirements(
+                _play_result(
+                    [
+                        "rules.system",
+                        "rules.rpg",
+                        "pc.hero",
+                        "design.front",
+                    ]
+                )
+            )
+        self.assertIn("design", str(ctx.exception).lower())
+
     def test_ancestor_pins_are_visible(self) -> None:
         # Verifies the fix: pc.* resolved anywhere in the ancestor hierarchy is visible
         PlayOperator.check_requirements(_play_result(["rules.system", "rules.rpg", "pc.theron"]))

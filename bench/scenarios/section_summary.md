@@ -22,39 +22,11 @@ Pin the crossroads, then **overwrite** the scaffolded root node with the scripte
 (including front matter). Open the section, **overwrite** the empty child with the
 scripted beat. Commit before the benchmark step.
 
-The **`--`** before each heredoc is required so YAML `---` is not parsed as a Typer option.
+**Implementation:** `bench/scenarios/section_summary_setup.sh`. From the repo root:
 
 ```bash
-lens pin add location.crossroads
-lens commit
-
-N=$(wc -l < narrative/default/_node.md | tr -d ' ')
-lens edit / 1 "$N" --replace -- "$(cat <<'EOF'
----
-kb_pin:
-  - location.crossroads
----
-
-# default
-
-Mira reaches the Old Crossroads at dusk, rain weighing in her cloak. The milepost lists leagues in chipped paint; a burned wagon shell slumps in the ditch.
-
-EOF
-)"
-lens commit
-
-lens section arrival
-lens edit /arrival 1 1 --replace -- "$(cat <<'EOF'
-At the milepost Mira meets Corin, a peddler with wax-stained fingers who sells a map of the eastern forks for two silver coins and warns of bandits on the east road.
-
-He points out fresh hoofprints in the mud — at least four riders, heading east, within the last day.
-
-Mira gives her horse a short rest, tightens the saddle girth, and chooses the highway north despite the longer miles.
-
-Corin asks no fee for the warning; he counts the coins twice and slips away into the hedge line before the light fails.
-EOF
-)"
-lens commit
+export PROJECT
+bash bench/scenarios/section_summary_setup.sh
 ```
 
 ## Steps
