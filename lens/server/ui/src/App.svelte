@@ -12,6 +12,7 @@
   import MediaUploadPanel from './features/cli/MediaUploadPanel.svelte'
   import MediaRemovePanel from './features/cli/MediaRemovePanel.svelte'
   import MediaPreviewPanel from './features/cli/MediaPreviewPanel.svelte'
+  import KbDiffModal from './features/kb/KbDiffModal.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
   import InlineEditView from './features/editor/InlineEditView.svelte'
@@ -160,6 +161,7 @@
   <MediaUploadPanel />
   <MediaRemovePanel />
   <MediaPreviewPanel />
+  <KbDiffModal />
 
   <svelte:fragment slot="bottombar">
     <Cli onCliDone={handleCliDone} navigate={navigate} />

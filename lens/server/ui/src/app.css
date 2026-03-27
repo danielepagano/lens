@@ -1746,3 +1746,63 @@ ul.kb-item-list {
 .kb-linked-from-link:hover {
   color: var(--pico-primary-hover);
 }
+
+/* ---- KB diff modal ---- */
+
+.kb-diff-dialog > article {
+  max-width: 95%;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- KB diff button (injected into rendered markdown) ---- */
+
+.kb-diff-wrap {
+  position: relative;
+}
+
+.kb-diff-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  line-height: 1.4;
+  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.kb-diff-btn:hover {
+  border-color: var(--pico-primary);
+  color: var(--pico-primary);
+}
+
+.kb-diff-btn--no-change {
+  background: var(--pico-del-color);
+  border-color: var(--pico-del-color);
+  color: #fff;
+}
+
+.kb-diff-btn--no-change:hover {
+  background: var(--pico-del-color);
+  border-color: var(--pico-del-color);
+  color: #fff;
+}
+
+.kb-diff-btn--new-item {
+  background: var(--pico-ins-color);
+  border-color: var(--pico-ins-color);
+  color: #fff;
+}
+
+.kb-diff-btn--new-item:hover {
+  background: var(--pico-ins-color);
+  border-color: var(--pico-ins-color);
+  color: #fff;
+}

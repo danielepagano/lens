@@ -74,3 +74,10 @@ export interface InlineEditState {
 }
 export const inlineEditMode = writable<InlineEditState | null>(null)
 export const inlineEditResult = writable<string | null>(null)
+
+export interface KbDiffRequest {
+  kbId: string
+  proposed: string
+  current: string
+}
+export const kbDiffRequest = writable<KbDiffRequest | null>(null)

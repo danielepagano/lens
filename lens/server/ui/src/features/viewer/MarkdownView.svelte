@@ -12,10 +12,12 @@
     computeValidStartLines,
   } from '../../utils/markdown'
   import { syncQuoteBlockAccents } from '../../utils/quoteBlockAccent'
-  import { linePickMode, linePickSelection, scrollContentToBottom } from '../../stores/ui'
+  import { linePickMode, linePickSelection, scrollContentToBottom, kbDiffRequest } from '../../stores/ui'
+  import { getKbItem } from '../../services/api'
   import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
   import type { LinePickRowState } from '../editor/cmLinePick'
   import { tick } from 'svelte'
+  import { parseKbBlocks, injectKbDiffButtons, stripKbFrontMatter } from '../../utils/kbDiffAction'
 
   // html: true so that <!-- comments --> are rendered as real HTML comments
   // (invisible in browser) rather than as literal text. Safe for a private
@@ -132,6 +134,39 @@
     })
   }
 
+  $: kbBlockMap = $nodeContent ? parseKbBlocks($nodeContent) : new Map<string, string>()
+
+  async function handleMarkdownClick(e: MouseEvent) {
+    const btn = (e.target as HTMLElement).closest('[data-kb-id]') as HTMLButtonElement | null
+    if (!btn) return
+    const kbId = btn.dataset.kbId
+    if (!kbId) return
+    const proposed = kbBlockMap.get(kbId) ?? ''
+    btn.textContent = 'Loading…'
+    btn.disabled = true
+    try {
+      const item = await getKbItem(kbId)
+      const strippedProposed = stripKbFrontMatter(proposed)
+      if (item.content.trim() === strippedProposed.trim()) {
+        btn.textContent = 'No Change'
+        btn.classList.add('kb-diff-btn--no-change')
+      } else {
+        kbDiffRequest.set({ kbId, proposed: strippedProposed, current: item.content })
+        btn.textContent = 'Show Diff'
+      }
+    } catch (err) {
+      if (String(err).includes('404')) {
+        btn.textContent = 'New Item'
+        btn.classList.add('kb-diff-btn--new-item')
+      } else {
+        btn.textContent = 'Error'
+        console.error('KB diff fetch error:', err)
+      }
+    } finally {
+      btn.disabled = false
+    }
+  }
+
   $: linePickLineStatesMap = ((): Map<number, LinePickRowState> | null => {
     if (!isLinePicking || !$nodeContent) return null
     const mode = $linePickMode!
@@ -189,7 +224,13 @@
       </div>
     {:else}
       {#if rendered}
-        <div class="markdown-html-root" use:syncQuoteBlockAccents={{ key: rendered, pcKeys }}>
+        <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+        <div
+          class="markdown-html-root"
+          use:syncQuoteBlockAccents={{ key: rendered, pcKeys }}
+          use:injectKbDiffButtons={rendered}
+          on:click={handleMarkdownClick}
+        >
           <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
           {@html rendered}
         </div>
