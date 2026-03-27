@@ -305,7 +305,10 @@ const handler: CommandHandler = async (
         const lines = content.split('\n')
         const originalText = lines.slice(startLine - 1, endLine).join('\n')
         inlineEditResult.set(null)
-        inlineEditMode.set({ address: address!, startLine, endLine, originalText })
+        // Use currentAddress (nav format) not address (display format) — MarkdownView
+        // checks inlineEditMode.address === $currentAddress for the match.
+        const navAddress = get(currentAddress) ?? address!
+        inlineEditMode.set({ address: navAddress, startLine, endLine, originalText })
 
         const editedText = await new Promise<string | null>((resolve) => {
           const unsubResult = inlineEditResult.subscribe((val) => {

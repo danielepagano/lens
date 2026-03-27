@@ -71,10 +71,12 @@
   $: resizeCliInput(input)
 
   function focusCliInput() {
-    setTimeout(() => {
-      if (!cliInputEl) return
-      try { cliInputEl.focus({ preventScroll: true }) } catch { cliInputEl.focus() }
-    }, 0)
+    if (!cliInputEl) return
+    try {
+      cliInputEl.focus({ preventScroll: true })
+    } catch {
+      cliInputEl.focus()
+    }
   }
 
   function pushHistory(command: string) {
@@ -288,10 +290,12 @@
             const d = opt.default
             const needsTrailingSpace = !d.endsWith('.')
             replaceCurrentToken(`${sug.value} ${d}${needsTrailingSpace ? ' ' : ''}`)
+            trySubmitIfCompleteEditReplace()
             return
           }
         }
         replaceCurrentToken(sug.value + ' ')
+        trySubmitIfCompleteEditReplace()
         return
       case 'node': {
         const inAddressSlot = currentParseState?.activePayload?.valueType === 'address'
@@ -357,6 +361,32 @@
     }
   }
 
+  /** Space after ``--replace`` submits ``/edit … --replace`` with no prompt (same as Enter), like line-pick tokens ending with a space. */
+  function shouldSpaceSubmitEditReplace(candidateInput: string): boolean {
+    const def = COMMAND_DEFINITIONS.find((d) => d.trigger === 'edit')
+    if (!def) return false
+    if (!candidateInput.trim().startsWith('/')) return false
+    const state = parseCliInput(candidateInput, def)
+    const args = buildArgs(state, def)
+    if (args.options['replace'] !== true) return false
+    const prompt = args.positional['prompt'] as string | undefined
+    if (prompt !== undefined && String(prompt).trim() !== '') return false
+    const addr = args.positional['address']
+    const start = args.positional['start']
+    const end = args.positional['end']
+    if (addr === undefined || start === undefined || end === undefined) return false
+    const sn = parseInt(String(start), 10)
+    const en = parseInt(String(end), 10)
+    if (!Number.isFinite(sn) || !Number.isFinite(en)) return false
+    return true
+  }
+
+  function trySubmitIfCompleteEditReplace() {
+    if (shouldSpaceSubmitEditReplace(input)) {
+      void submit()
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     const isTouchDevice = typeof window !== 'undefined' && 'ontouchstart' in window
     const trimmed = input.trim()
@@ -377,6 +407,29 @@
         if (isTouchDevice) {
           e.preventDefault()
           cliInputEl?.blur()
+          return
+        }
+      }
+    }
+
+    if (
+      e.key === ' ' &&
+      !busy &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      !e.isComposing
+    ) {
+      const el = cliInputEl
+      if (el) {
+        const start = el.selectionStart ?? input.length
+        const end = el.selectionEnd ?? input.length
+        const candidate = input.slice(0, start) + ' ' + input.slice(end)
+        if (shouldSpaceSubmitEditReplace(candidate)) {
+          e.preventDefault()
+          input = candidate
+          updateCommandState()
+          void submit()
           return
         }
       }
@@ -503,7 +556,6 @@
     const n = $linePickSelection
     linePickSelection.set(null)
     replaceCurrentToken(String(n) + ' ')
-    focusCliInput()
   }
 
   $: computedHint = (() => {

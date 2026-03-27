@@ -14,6 +14,7 @@
   import MediaPreviewPanel from './features/cli/MediaPreviewPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
+  import InlineEditView from './features/editor/InlineEditView.svelte'
   import { getStats, getNode, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
@@ -144,7 +145,9 @@
     <TopBar />
   </svelte:fragment>
 
-  {#if $appMode === 'narrative'}
+  {#if $inlineEditMode !== null}
+    <InlineEditView />
+  {:else if $appMode === 'narrative'}
     <TreeBrowser {navigate} />
     <MarkdownView />
   {:else}

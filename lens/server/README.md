@@ -105,3 +105,121 @@ Caddy is configured to:
 - Enforce HTTP Basic Authentication
 - Forward authenticated traffic to FastAPI (localhost only)
 - Pass through SSE (`text/event-stream`) without buffering (`X-Accel-Buffering: no`)
+
+## UI testing (Playwright)
+
+End-to-end browser tests live under the repo root in `e2e/tests/test_browser.py`. They use **pytest-playwright** against a real Chromium instance. The same session fixtures as the rest of `e2e/` apply (`e2e/conftest.py`): a throwaway Lens project, fake LLM, and an in-process uvicorn server on a free port, unless you point tests at an already-running server.
+
+### Prerequisites
+
+1. **Install the e2e dependency group** (provides `pytest-playwright`; the `page` fixture comes from this plugin):
+
+   ```bash
+   poetry install --with e2e
+   ```
+
+2. **Install the Chromium browser binary** (one-time per machine):
+
+   ```bash
+   playwright install chromium
+   ```
+
+3. **Build the frontend** so FastAPI can serve `lens/server/static/` (or run `poe check`, which runs `build-ui` before `test-e2e`):
+
+   ```bash
+   poe build-ui
+   ```
+
+### Running the tests
+
+```bash
+# Full e2e suite (API + browser; browser tests skip if Chromium or static assets are missing)
+poe test-e2e
+
+# Browser tests only
+pytest e2e/tests/test_browser.py -v
+```
+
+### External server (optional)
+
+To drive the UI against a server you already have running (e.g. while iterating on the frontend), set `LENS_DEV_SERVER_URL` to the **same origin the browser should load** — the URL that serves the SPA and can reach the API:
+
+- **`lens serve`** (or production-style single port): use that URL, e.g. `http://127.0.0.1:8000`.
+- **`poe dev`**: use the **Vite** URL (`http://localhost:5173` by default), which proxies API routes to uvicorn — not only the API port alone, or the test will not load the bundled UI.
+
+```bash
+LENS_DEV_SERVER_URL=http://127.0.0.1:8000 pytest e2e/tests/test_browser.py -v
+```
+
+With `LENS_DEV_SERVER_URL` set, the session skips creating a temp project and fake LLM; tests run against whatever project that server was started with.
+
+### Browse what Playwright sees (e2e fixture project)
+
+Pytest’s **auto mode** (no `LENS_DEV_SERVER_URL`) builds a **throwaway** temp project: narrative slug **`story`**, opening text from the **fake LLM** (Lorem ipsum), `testing` dataset. That is **not** your `test-lens` tree.
+
+To point **your browser** at that same data without running pytest:
+
+```bash
+poe build-ui    # if static assets are missing
+poe e2e-sandbox
+```
+
+Open the printed URL — usually `http://127.0.0.1:<port>/#story`. That stack matches what `live_server_url` uses in `e2e/conftest.py` (fake LLM + `setup_test_project` + uvicorn). Ctrl+C tears down the temp directory.
+
+Optional: `poe e2e-sandbox -- --port 8123` to pin a port.
+
+### Your own project (e.g. `test-lens`)
+
+To make Playwright hit **the same server and repo** you use in the browser:
+
+1. **Start the app from your content repo** (so `lens.toml` and `narrative/` are that project):
+
+   ```bash
+   cd /Users/daniele/dev/test-lens   # or your project path
+   lens serve                        # note host:port (often http://127.0.0.1:8000); builds UI if needed
+   ```
+
+   Build the static bundle first if you rely on a fresh `lens/server/static` (from the **Lens** repo: `poe build-ui`, or your usual workflow).
+
+   Or **`lens dev`**: use the **Vite** URL printed in the log (often `http://localhost:5173`), not only the API port.
+
+2. **From the Lens tool repo** (where `pytest` / `e2e/` live), point tests at that origin:
+
+   ```bash
+   cd /path/to/lens   # this repository
+   poetry install --with e2e
+   LENS_DEV_SERVER_URL=http://127.0.0.1:8000 pytest e2e/tests/test_browser.py -v
+   ```
+
+   Use the same scheme/host/port you open in the browser (`localhost` vs `127.0.0.1` must match what you use manually if cookies/storage matter).
+
+3. **What still differs from your manual flow**
+
+   - **`test_edit_replace_after_line_pick_shows_inline_codemirror`** navigates to **`#story`** and builds the command with **line-picker clicks** + `--replace`, not a **single pasted line** like  
+     `/edit /amy-story/amy-morning 16 18 --replace`.  
+     That is a **different** parse/interaction path than typing everything in one go.
+   - To get **closer** to your one-line command, either:
+     - Use **Playwright Codegen** against your URL and record typing/pasting that exact string, or  
+     - Run a small script that sets the CLI value and fires the same events Svelte sees, e.g. after `goto` to the right hash (`#amy-story/amy-morning`):
+
+       ```js
+       const t = document.querySelector('[data-testid="cli-input"]');
+       t.value = '/edit /amy-story/amy-morning 16 18 --replace';
+       t.dispatchEvent(new InputEvent('input', { bubbles: true }));
+       ```
+
+       then focus the textarea and press Enter (or dispatch a `keydown` for Enter the way the app expects).
+
+   - **`#` in the URL** must match the narrative **address** you care about (`#story` vs `#amy-story/amy-morning`); the bundled test assumes the throwaway project’s root slug.
+
+4. **Debug**
+
+   - `PWDEBUG=1 pytest e2e/tests/test_browser.py::TestBrowser::test_edit_replace_after_line_pick_shows_inline_codemirror -v` opens the Playwright inspector (step through, compare with manual).
+
+### Selectors and what to assert
+
+Prefer **`data-testid`** hooks already used in the app (examples: `top-bar`, `tree-browser`, `cli-input`, `markdown-view`, `line-picker`, `streaming-preview`, `inline-edit-view`). That keeps tests stable when class names or layout change.
+
+Example behaviour covered today: while the CLI is filling an `edit` command and the active slot is a **line** (`valueType: line` in `lens/server/ui/src/commands/operators.ts`), the main content switches from rendered markdown (`.markdown-html-root` inside `markdown-view`) to the line list (`line-picker`). A regression test for that lives in `test_edit_line_slot_shows_line_picker_not_markdown_preview`.
+
+**`edit --replace`** after line pick (no prompt) should show **`InlineEditView`** / **`data-testid="inline-edit-view"`** with CodeMirror. **`test_edit_replace_after_line_pick_shows_inline_codemirror`** uses the **line-picker** sequence in the **e2e** fixture project (`#story`). It is a normal regression test (timeouts if the editor never mounts). For your own project and a **one-line** `/edit … --replace` command, use **`LENS_DEV_SERVER_URL`** and the notes under **Your own project** above.

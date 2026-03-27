@@ -1482,6 +1482,21 @@ ul.kb-item-list {
   overflow: hidden;
 }
 
+.kb-viewer .cm-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.kb-viewer .cm-editor {
+  height: 100%;
+  max-height: none;
+}
+
+.kb-viewer .cm-scroller {
+  overflow: auto;
+}
+
 .kb-viewer-header {
   display: flex;
   flex-wrap: wrap;

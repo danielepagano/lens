@@ -191,3 +191,96 @@ class TestBrowser:
         assert idx_removed < idx_replacement, (
             "Expected .transaction-removed to appear before the replacement text in the DOM"
         )
+
+    def test_edit_line_slot_shows_line_picker_not_markdown_preview(
+        self,
+        page: "Page",
+        live_server_url: str,
+    ) -> None:
+        """Typing `/edit / ` leaves the `start` line slot active: line-picker UI, no rendered MD.
+
+        This asserts the valueType ``line`` path in ``Cli.svelte`` + ``MarkdownView``: the
+        main pane switches from ``.markdown-html-root`` to ``[data-testid="line-picker"]``.
+
+        The ``edit --replace`` narrative UX is tracked separately (see
+        ``test_edit_replace_after_line_pick_shows_inline_codemirror``).
+        """
+        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+        page.locator('[data-testid="markdown-view"] .markdown-html-root').wait_for(
+            timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/edit / ")
+
+        page.wait_for_selector(
+            '[data-testid="markdown-view"] [data-testid="line-picker"]',
+            timeout=10000,
+        )  # type: ignore[union-attr]
+        assert page.locator('[data-testid="line-picker"]').is_visible()  # type: ignore[union-attr]
+        assert page.locator('[data-testid="markdown-view"] .markdown-html-root').count() == 0
+
+    def test_edit_replace_after_line_pick_shows_inline_codemirror(
+        self,
+        page: "Page",
+        live_server_url: str,
+    ) -> None:
+        """After `/edit / `, two line picks, ``--replace``, **Space** (not Enter), inline CodeMirror must mount."""
+        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+        page.locator('[data-testid="markdown-view"] .markdown-html-root').wait_for(
+            timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/edit / ")
+
+        page.wait_for_selector(
+            '[data-testid="line-picker"]', timeout=10000
+        )  # type: ignore[union-attr]
+        pickable = page.locator(".line-picker .line-row.pickable")  # type: ignore[union-attr]
+        pickable.first.click()  # type: ignore[union-attr]
+
+        page.wait_for_selector(
+            '[data-testid="line-picker"]', timeout=10000
+        )  # type: ignore[union-attr]
+        pickable.first.click()  # type: ignore[union-attr]
+
+        cli.press_sequentially("--replace")
+        page.keyboard.press("Space")
+
+        page.wait_for_selector(
+            '[data-testid="inline-edit-view"]', state="visible", timeout=8000
+        )  # type: ignore[union-attr]
+        assert page.locator('[data-testid="inline-edit-view"] .cm-editor').count() >= 1
+
+    def test_edit_replace_full_command_no_line_picker(
+        self,
+        page: "Page",
+        live_server_url: str,
+    ) -> None:
+        """``/edit / <start> <end> --replace`` as one string, then **Space** (not Enter)."""
+        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+        page.locator('[data-testid="markdown-view"] .markdown-html-root').wait_for(
+            timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/edit / 13 15 --replace")
+        page.keyboard.press("Space")
+
+        page.wait_for_selector(
+            '[data-testid="inline-edit-view"]', state="visible", timeout=8000
+        )  # type: ignore[union-attr]
+        assert page.locator('[data-testid="inline-edit-view"] .cm-editor').count() >= 1

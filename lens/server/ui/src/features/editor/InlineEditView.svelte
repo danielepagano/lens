@@ -1,9 +1,8 @@
 <script lang="ts">
+  import { get } from 'svelte/store'
   import CodeMirrorEditor from './CodeMirrorEditor.svelte'
   import { nodeContent } from '../../stores/document'
   import { inlineEditMode, inlineEditResult } from '../../stores/ui'
-
-  $: state = $inlineEditMode!
 
   let currentText = ''
 
@@ -16,52 +15,69 @@
   }
 
   function confirm() {
-    const editedLines = extractLines(currentText, state.startLine, state.endLine)
-    if (editedLines !== state.originalText) {
+    const s = get(inlineEditMode)
+    if (!s) return
+    const fullText = currentText.length > 0 ? currentText : get(nodeContent)
+    const editedLines = extractLines(fullText, s.startLine, s.endLine)
+    if (editedLines !== s.originalText) {
       inlineEditResult.set(editedLines)
     }
     inlineEditMode.set(null)
   }
 
   function cancel() {
+    inlineEditResult.set(null)
     inlineEditMode.set(null)
   }
 
-  function handleKeydown(e: KeyboardEvent) {
+  function handleWindowKeydown(e: KeyboardEvent) {
+    if (!$inlineEditMode) return
     if (e.key === 'Escape') {
       e.preventDefault()
       cancel()
-    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    }
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
       confirm()
     }
   }
 </script>
 
-<!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="inline-edit-view" on:keydown={handleKeydown}>
-  <div class="inline-edit-hint">
-    Editing lines {state.startLine}–{state.endLine}
-    <span class="inline-edit-shortcut">Ctrl+Enter to confirm, Esc to cancel</span>
+<svelte:window on:keydown={handleWindowKeydown} />
+
+{#if $inlineEditMode}
+  {@const state = $inlineEditMode}
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="inline-edit-view" data-testid="inline-edit-view" on:keydown={handleKeydown}>
+    <div class="inline-edit-hint">
+      Editing lines {state.startLine}–{state.endLine}
+      <span class="inline-edit-shortcut">Ctrl+Enter to apply · Esc to cancel</span>
+    </div>
+    <CodeMirrorEditor
+      content={$nodeContent}
+      editableRange={{ fromLine: state.startLine, toLine: state.endLine }}
+      lang="markdown"
+      on:change={handleChange}
+    />
+    <div class="inline-edit-toolbar">
+      <button type="button" class="inline-edit-ok" on:click={confirm}>OK</button>
+      <button type="button" class="inline-edit-cancel secondary" on:click={cancel}>Cancel</button>
+    </div>
   </div>
-  <CodeMirrorEditor
-    content={$nodeContent}
-    editableRange={{ fromLine: state.startLine, toLine: state.endLine }}
-    lang="markdown"
-    on:change={handleChange}
-  />
-  <div class="inline-edit-toolbar">
-    <button class="inline-edit-ok" on:click={confirm}>OK</button>
-    <button class="inline-edit-cancel secondary" on:click={cancel}>Cancel</button>
-  </div>
-</div>
+{/if}
 
 <style>
   .inline-edit-view {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem;
+    overflow: hidden;
   }
   .inline-edit-hint {
     font-size: 0.8rem;
