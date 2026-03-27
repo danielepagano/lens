@@ -21,10 +21,13 @@ h3 { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: var(--muted); }
 
 .meta { display: flex; gap: 1.5rem; flex-wrap: wrap; color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
 .meta span { background: var(--surface); padding: 0.2rem 0.6rem; border-radius: 4px; border: 1px solid var(--border); }
+.meta span.badge { border: 0; }
 
 .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.9rem; }
 .badge-pass { background: var(--green); color: #111; }
 .badge-fail { background: var(--red); color: #fff; }
+.meta span.badge-pass { background: var(--green); color: #111; }
+.meta span.badge-fail { background: var(--red); color: #fff; }
 
 .step { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
 .step-cmd { font-family: var(--mono); font-size: 0.85rem; color: var(--accent); margin-bottom: 0.5rem; }
