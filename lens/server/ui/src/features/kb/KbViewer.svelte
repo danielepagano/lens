@@ -224,7 +224,7 @@
             />
           </span>
         </span>
-      {:else}
+      {:else if !editMode}
         {#if item.tags.length > 0}
           <span class="kb-viewer-tags">
             {#each item.tags as tag, i (tag)}

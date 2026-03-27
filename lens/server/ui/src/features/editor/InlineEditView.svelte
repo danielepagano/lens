@@ -76,10 +76,15 @@
     gap: 0.5rem;
     flex: 1;
     min-height: 0;
+    min-width: 0;
+    width: 100%;
     padding: 0.5rem;
+    padding-bottom: 0.35rem;
     overflow: hidden;
+    box-sizing: border-box;
   }
   .inline-edit-hint {
+    flex-shrink: 0;
     font-size: 0.8rem;
     color: var(--pico-muted-color, #73828c);
     padding: 0 0.25rem;
@@ -89,9 +94,10 @@
     opacity: 0.7;
   }
   .inline-edit-toolbar {
+    flex-shrink: 0;
     display: flex;
     gap: 0.5rem;
-    padding: 0.25rem 0;
+    padding: 0.15rem 0 0;
   }
   .inline-edit-toolbar button {
     padding: 0.35rem 1rem;

@@ -245,7 +245,9 @@ class TestBrowser:
         page.wait_for_selector(
             '[data-testid="line-picker"]', timeout=10000
         )  # type: ignore[union-attr]
-        pickable = page.locator(".line-picker .line-row.pickable")  # type: ignore[union-attr]
+        pickable = page.locator(
+            '[data-testid="line-picker"] .cm-line.cm-linepick-pickable'
+        )  # type: ignore[union-attr]
         pickable.first.click()  # type: ignore[union-attr]
 
         page.wait_for_selector(

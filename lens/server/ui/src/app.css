@@ -991,65 +991,43 @@ details[open]>summary {
   margin: 0.35rem 0 0;
 }
 
-/* ---- Line picker (source view for line-number selection) ---- */
+/* ---- Line picker (CodeMirror source view for line-number selection) ---- */
 
-.line-picker {
-  font-family: monospace;
-  font-size: 0.8rem;
-  line-height: 1.4;
-}
-
-.line-row {
+.content.content-line-picking {
   display: flex;
-  background-color: transparent;
-  gap: 0.6rem;
-  padding: 0;
-  border-radius: 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0.75rem;
 }
 
-.line-row.pickable {
-  cursor: pointer;
-  width: 100%;
-}
-
-.line-row.pickable:hover,
-.line-row.pickable:focus {
-  background: var(--pico-primary-background, rgba(99, 102, 241, 0.12));
-  outline: none;
-}
-
-.line-number {
-  color: var(--pico-muted-color, #888);
-  min-width: 2.5rem;
-  text-align: right;
-  user-select: none;
+.content.content-line-picking .pin-pills-front-matter {
   flex-shrink: 0;
 }
 
-.line-text {
-  white-space: pre;
-  text-wrap: auto;
-  text-align: left;
-  overflow-x: hidden;
-  font-size: 0.8rem;
+.line-picker {
   flex: 1;
-  min-width: 0;
-  padding-right: 0.5rem;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.line-row.annotation .line-number,
-.line-row.annotation .line-text {
-  opacity: 0.3;
+.line-picker .cm-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.line-row.disabled {
-  background: color-mix(in srgb, var(--pico-del-color, #c62828) 8%, transparent);
+.line-picker .cm-editor {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: none !important;
 }
 
-.line-row.disabled .line-number,
-.line-row.disabled .line-text {
-  opacity: 0.45;
-  color: var(--pico-del-color, #c62828);
+.line-picker .cm-scroller {
+  min-height: 0;
 }
 
 /* ---- Annotation dividers and headings in rendered markdown ---- */
@@ -1495,6 +1473,24 @@ ul.kb-item-list {
 
 .kb-viewer .cm-scroller {
   overflow: auto;
+}
+
+.inline-edit-view .cm-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.inline-edit-view .cm-editor {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: none !important;
+}
+
+.inline-edit-view .cm-scroller {
+  min-height: 0;
 }
 
 .kb-viewer-header {

@@ -17,6 +17,15 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         preview: resolve(__dirname, 'preview.html'),
       },
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('@lezer')) return 'lezer'
+          if (id.includes('@codemirror') || id.includes('node_modules/codemirror/')) {
+            return 'codemirror'
+          }
+        },
+      },
     },
   },
   server: {

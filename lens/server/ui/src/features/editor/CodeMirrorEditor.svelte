@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte'
   import { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLine } from '@codemirror/view'
-  import { EditorState, type Extension } from '@codemirror/state'
+  import { Compartment, EditorState, type Extension } from '@codemirror/state'
   import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
   import { markdown } from '@codemirror/lang-markdown'
   import { syntaxHighlighting, HighlightStyle, bracketMatching } from '@codemirror/language'
   import { tags } from '@lezer/highlight'
   import { Decoration, type DecorationSet, ViewPlugin, type ViewUpdate } from '@codemirror/view'
+  import { pickLineNumbers, pickRestExtensions, type LinePickRowState } from './cmLinePick'
 
   /** Theme-aware highlighter: defaultHighlightStyle uses fixed dark blues (#219 etc.) whose
    *  StyleMod classes (e.g. …ec) are illegible on Pico dark backgrounds. */
@@ -47,8 +48,16 @@
   export let content: string
   export let editableRange: { fromLine: number; toLine: number } | null = null
   export let lang: 'markdown' | 'plain' = 'markdown'
+  /** When set, the editor is read-only; pickable lines are chosen via click or gutter. */
+  export let linePickLineStates: Map<number, LinePickRowState> | null = null
 
-  const dispatch = createEventDispatcher<{ change: string }>()
+  const dispatch = createEventDispatcher<{ change: string; linePick: number }>()
+  const lineNumbersCompartment = new Compartment()
+  const pickRestCompartment = new Compartment()
+
+  function emitLinePick(line: number) {
+    dispatch('linePick', line)
+  }
 
   let container: HTMLDivElement
   let view: EditorView | undefined
@@ -107,6 +116,20 @@
     },
     '.cm-dropcursor': {
       borderTop: '2px solid var(--pico-color)',
+    },
+    '.cm-content .cm-line.cm-linepick-pickable': {
+      cursor: 'pointer',
+    },
+    '.cm-content .cm-line.cm-linepick-pickable:hover': {
+      backgroundColor: 'color-mix(in srgb, var(--pico-primary) 12%, transparent)',
+    },
+    '.cm-content .cm-line.cm-linepick-annotation': {
+      opacity: '0.35',
+    },
+    '.cm-content .cm-line.cm-linepick-disabled': {
+      backgroundColor: 'color-mix(in srgb, var(--pico-del-color, #c62828) 8%, transparent)',
+      opacity: '0.45',
+      color: 'var(--pico-del-color, #c62828)',
     },
   })
 
@@ -168,7 +191,9 @@
   function buildExtensions(): Extension[] {
     const exts: Extension[] = [
       lensCmTheme,
-      lineNumbers(),
+      lineNumbersCompartment.of(
+        linePickLineStates ? pickLineNumbers(linePickLineStates, emitLinePick) : lineNumbers(),
+      ),
       drawSelection(),
     ]
     if (!editableRange) {
@@ -192,6 +217,9 @@
           _sync.suppress = false
         }
       }),
+      pickRestCompartment.of(
+        linePickLineStates ? pickRestExtensions(linePickLineStates, emitLinePick) : [],
+      ),
     )
     if (editableRange) {
       exts.push(rangeFilter(), readonlyPlugin)
@@ -225,6 +253,26 @@
         changes: { from: 0, to: view.state.doc.length, insert: content },
       })
     }
+  }
+
+  $: pickFingerprint =
+    linePickLineStates == null
+      ? ''
+      : `${content.length}|${[...linePickLineStates.entries()].sort((a, b) => a[0] - b[0]).map(([k, v]) => `${k}:${v}`).join(',')}`
+
+  let lastPickFingerprint = ''
+  $: if (view && pickFingerprint !== lastPickFingerprint) {
+    lastPickFingerprint = pickFingerprint
+    view.dispatch({
+      effects: [
+        lineNumbersCompartment.reconfigure(
+          linePickLineStates ? pickLineNumbers(linePickLineStates, emitLinePick) : lineNumbers(),
+        ),
+        pickRestCompartment.reconfigure(
+          linePickLineStates ? pickRestExtensions(linePickLineStates, emitLinePick) : [],
+        ),
+      ],
+    })
   }
 </script>
 

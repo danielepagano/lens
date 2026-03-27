@@ -13,6 +13,8 @@
   } from '../../utils/markdown'
   import { syncQuoteBlockAccents } from '../../utils/quoteBlockAccent'
   import { linePickMode, linePickSelection, scrollContentToBottom } from '../../stores/ui'
+  import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
+  import type { LinePickRowState } from '../editor/cmLinePick'
   import { tick } from 'svelte'
 
   // html: true so that <!-- comments --> are rendered as real HTML comments
@@ -130,44 +132,41 @@
     })
   }
 
-  $: sourceLines = (() => {
-    if (!isLinePicking || !$nodeContent) return []
+  $: linePickLineStatesMap = ((): Map<number, LinePickRowState> | null => {
+    if (!isLinePicking || !$nodeContent) return null
     const mode = $linePickMode!
     const annoSet = buildAnnotationLineSet($nodeContent)
+    const m = new Map<number, LinePickRowState>()
     if (mode.startLine != null && mode.operatorMode) {
-      // Second pick (end line): use operator-aware validation
       const validEnds = computeValidEndLines($nodeContent, mode.startLine, mode.operatorMode)
-      return $nodeContent.split('\n').map((text, i) => {
+      $nodeContent.split('\n').forEach((_, i) => {
         const lineNo = i + 1
-        return {
-          lineNo, text,
-          pickable: validEnds.has(lineNo),
-          state: annoSet.has(lineNo) ? 'annotation' as const
-            : validEnds.has(lineNo) ? 'pickable' as const
-            : 'disabled' as const,
-        }
+        m.set(
+          lineNo,
+          annoSet.has(lineNo) ? 'annotation' : validEnds.has(lineNo) ? 'pickable' : 'disabled',
+        )
       })
+      return m
     }
-    // First pick (start line): operator-aware start validation
     const validStarts = mode.operatorMode
       ? computeValidStartLines($nodeContent, mode.operatorMode)
       : null
-    return $nodeContent.split('\n').map((text, i) => {
+    $nodeContent.split('\n').forEach((_, i) => {
       const lineNo = i + 1
       const isAnno = annoSet.has(lineNo)
-      const pick = isAnno ? false : (validStarts ? validStarts.has(lineNo) : true)
-      return {
-        lineNo, text,
-        pickable: pick,
-        state: isAnno ? 'annotation' as const
-          : pick ? 'pickable' as const
-          : 'disabled' as const,
-      }
+      const pick = isAnno ? false : validStarts ? validStarts.has(lineNo) : true
+      m.set(lineNo, isAnno ? 'annotation' : pick ? 'pickable' : 'disabled')
     })
+    return m
   })()
 </script>
 
-<article data-testid="markdown-view" class="content" bind:this={contentEl}>
+<article
+  data-testid="markdown-view"
+  class="content"
+  class:content-line-picking={isLinePicking}
+  bind:this={contentEl}
+>
   {#if $currentAddress}
     {#if frontMatterPins.pins.length || frontMatterPins.unpins.length}
       <div class="pin-pills pin-pills-front-matter" data-testid="front-matter-pins">
@@ -179,24 +178,14 @@
         {/each}
       </div>
     {/if}
-    {#if isLinePicking}
+    {#if isLinePicking && linePickLineStatesMap}
       <div class="line-picker" data-testid="line-picker">
-        {#each sourceLines as { lineNo, text, pickable, state } (lineNo)}
-          {#if pickable}
-            <button
-              type="button"
-              class="line-row pickable"
-              on:mousedown|preventDefault
-              on:click={() => linePickSelection.set(lineNo)}
-            >
-              <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
-            </button>
-          {:else}
-            <div class="line-row {state}">
-              <span class="line-number">{lineNo}</span><span class="line-text">{text || '\u00a0'}</span>
-            </div>
-          {/if}
-        {/each}
+        <CodeMirrorEditor
+          content={$nodeContent ?? ''}
+          lang="plain"
+          linePickLineStates={linePickLineStatesMap}
+          on:linePick={(e) => linePickSelection.set(e.detail)}
+        />
       </div>
     {:else}
       {#if rendered}
