@@ -67,9 +67,9 @@
     padding: 0;
     margin: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     max-width: 100vw;
-    max-height: 100vh;
+    max-height: 100dvh;
   }
 
   .media-preview-dialog::backdrop {

@@ -98,6 +98,7 @@
     display: flex;
     gap: 0.5rem;
     padding: 0.15rem 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .inline-edit-toolbar button {
     padding: 0.35rem 1rem;

@@ -16,7 +16,7 @@ select {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   min-height: 0;
 }
 
@@ -1473,6 +1473,7 @@ ul.kb-item-list {
 
 .kb-viewer .cm-scroller {
   overflow: auto;
+  padding-bottom: 3rem;
 }
 
 .inline-edit-view .cm-wrapper {
