@@ -12,7 +12,10 @@
     "check": "svelte-check --tsconfig ./tsconfig.json --threshold error"
   },
   "dependencies": {
+    "@codemirror/lang-markdown": "^6.5.0",
+    "@codemirror/language": "^6.12.3",
     "@picocss/pico": "^2.0.6",
+    "codemirror": "^6.0.2",
     "markdown-it": "^14.1.1",
     "svelte": "^4.2.7"
   },

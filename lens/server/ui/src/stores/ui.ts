@@ -64,3 +64,13 @@ export const mediaPreviewRequest = writable<MediaPreviewRequest | null>(null)
 
 /** Increment to force the mount directory autocomplete cache to reload. */
 export const mountCacheRefreshTrigger = writable(0)
+
+// Inline edit mode: active when the user entered `edit --replace` with no prompt text
+export interface InlineEditState {
+  address: string
+  startLine: number
+  endLine: number
+  originalText: string
+}
+export const inlineEditMode = writable<InlineEditState | null>(null)
+export const inlineEditResult = writable<string | null>(null)

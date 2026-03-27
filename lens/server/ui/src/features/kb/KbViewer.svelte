@@ -12,6 +12,7 @@
   } from '../../services/api'
   import type { KbItemDetail } from '../../services/api'
   import { createMarkdownRenderer, preprocessBlockquotePills } from '../../utils/markdown'
+  import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
 
   const md = createMarkdownRenderer()
 
@@ -301,11 +302,12 @@
     {/if}
 
     {#if editMode}
-      <textarea
-        class="kb-edit-textarea"
-        bind:value={editContent}
-        disabled={saving}
-      ></textarea>
+      <CodeMirrorEditor
+        content={editContent}
+        editableRange={null}
+        lang="markdown"
+        on:change={(e) => { editContent = e.detail }}
+      />
     {:else}
       <article class="content kb-rendered">
         <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->

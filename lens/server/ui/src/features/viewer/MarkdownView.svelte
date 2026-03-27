@@ -12,7 +12,8 @@
     computeValidStartLines,
   } from '../../utils/markdown'
   import { syncQuoteBlockAccents } from '../../utils/quoteBlockAccent'
-  import { linePickMode, linePickSelection, scrollContentToBottom } from '../../stores/ui'
+  import { linePickMode, linePickSelection, scrollContentToBottom, inlineEditMode } from '../../stores/ui'
+  import InlineEditView from '../editor/InlineEditView.svelte'
   import { tick } from 'svelte'
 
   // html: true so that <!-- comments --> are rendered as real HTML comments
@@ -119,6 +120,7 @@
     window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
   }
 
+  $: isInlineEditing = $inlineEditMode !== null && $inlineEditMode.address === $currentAddress
   $: isLinePicking = $linePickMode !== null && $linePickMode.address === $currentAddress
 
   let contentEl: HTMLElement | null = null
@@ -179,7 +181,9 @@
         {/each}
       </div>
     {/if}
-    {#if isLinePicking}
+    {#if isInlineEditing}
+      <InlineEditView />
+    {:else if isLinePicking}
       <div class="line-picker" data-testid="line-picker">
         {#each sourceLines as { lineNo, text, pickable, state } (lineNo)}
           {#if pickable}
