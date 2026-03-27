@@ -102,7 +102,7 @@ function renderSingle(r) {
       html += `<div class="step">
         <div class="step-cmd">$ lens ${(s.command || []).map(esc).join(' ')}</div>
         ${s.description ? `<div class="step-desc">${esc(s.description)}</div>` : ''}
-        <details><summary>Output (${s.output_length || (s.output || '').length} chars)</summary>
+        <details><summary>Output (${(s.output || '').length} chars)</summary>
           <div class="output">${esc(s.output || '')}</div>
         </details>
       </div>`;

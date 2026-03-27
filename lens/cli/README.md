@@ -21,6 +21,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
 
    ```bash
    lens stats      # count objects and list narratives (-v for transaction diffs)
+   lens check      # verify lens.toml, API keys, mount, and paths (--skip-network optional)
    lens kb         # knowledge store (see lens kb --help)
    lens section    # start or end a section at cursor
    lens collate    # crete a section after the fact from completed prose
@@ -45,6 +46,12 @@ Initialize a Lens project in the current git repo. Creates `lens.toml`, `knowled
 ### `lens use <slug>`
 
 Select the active narrative. *slug* must be alphanumeric with optional underscores and hyphens. Creates the narrative folder and root `_node.md` if they do not exist.
+
+### `lens check`
+
+Validate configuration and environment for the current project: each `[[llm]]` entry’s `base_url` is probed over TCP (unless `--skip-network`), `api_key_env` variables are present when set, optional `mount_point` is checked (local directory exists, or S3 URI with required `AWS_*` variables), bundled `datasets` entries exist, `prompt_pack` file is present when set, and the configured `narrative` folder exists when set. Exits with status 1 if any **error**-level check fails; **warn**-level issues are printed but do not fail the command.
+
+- `--skip-network` — Skip LLM host/port reachability; still validates URL shape, keys, and paths.
 
 ### `lens stats`
 

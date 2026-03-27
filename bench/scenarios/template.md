@@ -2,15 +2,16 @@
 
 One-paragraph description of what this scenario tests and why it matters.
 
-~~~config
+```config
 datasets:
-~~~
+```
 
 **Prompt keys exercised:** `operator.key_name`
 
 ## Setup
 
-Explain what state this builds and why. Then list the commands:
+`setup_bench.py` only creates an empty project with narrative `default`. Explain
+what state this scenario builds and list the commands to get there:
 
 ```bash
 lens kb add type.key "..."

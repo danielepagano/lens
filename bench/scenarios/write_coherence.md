@@ -4,25 +4,24 @@ Tests whether the write operator produces narrative text that reflects pinned
 KB facts naturally, continues coherently from existing prose, and maintains
 consistent voice, tense, and POV.
 
-~~~config
+Uses **`person.elena`** and **`location.thornwood`** from the bundled `testing`
+dataset (no `lens kb add`).
+
+```config
 datasets:
-~~~
+```
 
 **Prompt keys exercised:** `write.system`, `write.instruction_with_prompt`
 
 ## Setup
 
-Build a narrative state with rich KB context for the write operator to use.
+Pin the dataset character and forest, then open the scene with `lens write`.
 
 ```bash
-lens kb add person.elena "Elena Ashwood is a half-elf ranger who tracks a corrupted beast through the Thornwood. She carries a silver-tipped spear inherited from her mother and speaks with a Dalish accent — clipped consonants, rolling r's. She is cautious by nature but fiercely protective of the forest she grew up in."
-
-lens kb add place.thornwood "The Thornwood is a dense, fog-laden forest on the kingdom's northern border. Corrupted animals have been attacking travelers for three weeks. Ancient standing stones mark a ritual site at its heart, overgrown with black moss. The canopy is so thick that noon looks like twilight. It smells of wet earth and something faintly metallic."
-
 lens kb tag person.elena --add protagonist
 
 lens pin add person.elena
-lens pin add place.thornwood
+lens pin add location.thornwood
 lens commit
 
 lens write "Elena enters the Thornwood for the first time, following the beast's trail from the village road."

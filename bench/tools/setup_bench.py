@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Create a Lens benchmark project connected to a real LLM.
+"""Create an empty Lens benchmark project with a real LLM profile.
 
 Usage::
 
     # From the repo root:
     python bench/tools/setup_bench.py --profile local_thinking
     python bench/tools/setup_bench.py --profile grok --scenario bench/scenarios/write_coherence.md
-    python bench/tools/setup_bench.py --profile local_thinking --project-dir /tmp/mybench
+    python bench/tools/setup_bench.py --profile local_thinking --project-dir path/to/mybench
+    python bench/tools/setup_bench.py --profile grok --print-env   # stderr: export PROJECT='…'
 
-The script creates a Lens project (git repo, lens.toml, narrative, KB, opening
-passage) using the same ``setup_test_project()`` helper that powers the test
-suite, then patches ``lens.toml`` to use a real LLM instead of the fake one.
+Without ``--project-dir``, the project is created under ``bench/projects/`` (gitignored),
+still with a unique ``lens_bench_*`` directory name.
+
+The script creates a git repo, runs ``lens init``, applies the profile's ``[[llm]]``
+and optional datasets from the scenario's ``config`` block, then ``lens use default``
+(equivalent: active narrative ``default`` with an empty root ``_node.md``).
+
+**Bench scenarios** own narrative and KB setup — see each scenario's **Setup** section.
 
 The project directory is printed to stdout so a calling agent or script can
 capture it.
@@ -20,19 +26,29 @@ from __future__ import annotations
 
 import argparse
 import io
+import os
+import shlex
+import subprocess
 import sys
 import tempfile
 import tomllib
 from pathlib import Path
+from typing import Any, cast
 
 import tomli_w
 
 # Ensure the repo root is importable.
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_BENCH_PROJECTS_PARENT = _REPO_ROOT / "bench" / "projects"
 sys.path.insert(0, str(_REPO_ROOT))
 
-from lens.testing.fake_llm import FakeLLMServer  # noqa: E402
-from lens.testing.project import setup_test_project  # noqa: E402
+from lens.core.commands.init import init_project  # noqa: E402
+from lens.core.commands.use import use_narrative_for_project  # noqa: E402
+from lens.core.storage import Storage  # noqa: E402
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=cwd, capture_output=True, check=True)
 
 
 def _load_profile(profile_path: Path) -> dict[str, object]:
@@ -51,16 +67,16 @@ def _load_scenario_datasets(scenario_path: Path) -> list[str]:
 
     Scenarios contain a fenced config block::
 
-        ~~~config
+        ```config
         datasets: rpg, dnd
-        ~~~
+        ```
 
     An empty ``datasets:`` line (or no config block) means no extra datasets.
     """
     import re
 
     text = scenario_path.read_text(encoding="utf-8")
-    m = re.search(r"~~~config\n(.*?)~~~", text, re.DOTALL)
+    m = re.search(r"```config\n(.*?)```", text, re.DOTALL)
     if not m:
         return []
     for line in m.group(1).splitlines():
@@ -73,28 +89,27 @@ def _load_scenario_datasets(scenario_path: Path) -> list[str]:
     return []
 
 
-def _patch_llm_config(project_dir: Path, profile: dict[str, object]) -> None:
-    """Replace the mock [[llm]] entry in lens.toml with the real LLM config.
-
-    Keeps the mock entry as a fallback (useful for setup_test_project's opening
-    write which already ran against the mock).  The real LLM becomes the default
-    (first entry) so operators use it by default.
-    """
+def _apply_bench_lens_config(
+    project_dir: Path,
+    profile: dict[str, object],
+    datasets: list[str],
+) -> None:
+    """Set ``[project].datasets`` and a single ``[[llm]]`` entry from the profile."""
     lens_toml = project_dir / "lens.toml"
     with lens_toml.open("rb") as fh:
-        cfg = tomllib.load(fh)
+        cfg: dict[str, Any] = tomllib.load(fh)
+    raw_project = cfg.get("project")
+    project: dict[str, Any] = (
+        dict(cast(dict[str, Any], raw_project)) if isinstance(raw_project, dict) else {}
+    )
+    project["datasets"] = datasets
+    cfg["project"] = project
 
-    real_entry: dict[str, object] = {"id": "bench"}
+    bench_entry: dict[str, object] = {"id": "bench"}
     for key in ("base_url", "model", "api_key_env", "temperature", "timeout_seconds"):
         if key in profile:
-            real_entry[key] = profile[key]
-
-    existing = cfg.get("llm", [])
-    if not isinstance(existing, list):
-        existing = []
-
-    # Real LLM first (default), then any existing entries (mock).
-    cfg["llm"] = [real_entry, *existing]
+            bench_entry[key] = profile[key]
+    cfg["llm"] = [bench_entry]
 
     with io.BytesIO() as buf:
         tomli_w.dump(cfg, buf)
@@ -110,7 +125,6 @@ def setup_project(
     """Create and configure a benchmark project.  Returns the project directory."""
     profile = _load_profile(profile_path)
 
-    # Determine datasets from scenario (if given).
     datasets = ["testing"]
     if scenario_path is not None:
         extra = _load_scenario_datasets(scenario_path)
@@ -118,30 +132,41 @@ def setup_project(
             if ds not in datasets:
                 datasets.append(ds)
 
-    # Create project directory.
     if project_dir is None:
-        project_dir = Path(tempfile.mkdtemp(prefix="lens_bench_"))
+        _BENCH_PROJECTS_PARENT.mkdir(parents=True, exist_ok=True)
+        project_dir = Path(
+            tempfile.mkdtemp(prefix="lens_bench_", dir=_BENCH_PROJECTS_PARENT)
+        )
     else:
         project_dir.mkdir(parents=True, exist_ok=True)
 
-    # The opening write needs a working LLM.  Use the fake one for that step,
-    # then patch in the real one afterward.
-    server = FakeLLMServer()
-    server.start()
+    project_dir = project_dir.resolve()
+    orig_cwd = Path.cwd()
+    os.chdir(project_dir)
     try:
-        setup_test_project(project_dir, server.base_url, datasets=datasets)
-    finally:
-        server.stop()
+        _git(project_dir, "init")
+        _git(project_dir, "config", "user.email", "bench@lens.local")
+        _git(project_dir, "config", "user.name", "Lens Bench")
+        _git(project_dir, "config", "commit.gpgsign", "false")
+        (project_dir / ".gitkeep").write_text("")
+        _git(project_dir, "add", "-A")
+        _git(project_dir, "commit", "-m", "root")
 
-    # Patch lens.toml with the real LLM config.
-    _patch_llm_config(project_dir, profile)
+        init_project()
+        _apply_bench_lens_config(project_dir, profile, datasets)
+        use_narrative_for_project("default", project_dir, project_dir)
+
+        Storage(project_dir).stage_all()
+        _git(project_dir, "commit", "-m", "bench: init project")
+    finally:
+        os.chdir(orig_cwd)
 
     return project_dir
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Create a Lens benchmark project with a real LLM.",
+        description="Create an empty Lens benchmark project with a real LLM.",
     )
     parser.add_argument(
         "--profile",
@@ -156,11 +181,15 @@ def main() -> None:
     parser.add_argument(
         "--project-dir",
         default=None,
-        help="Directory to create the project in (default: temp dir)",
+        help="Directory to create the project in (default: bench/projects/lens_bench_*)",
+    )
+    parser.add_argument(
+        "--print-env",
+        action="store_true",
+        help="Also print a shell-safe 'export PROJECT=…' line to stderr (stdout is still the path)",
     )
     args = parser.parse_args()
 
-    # Resolve profile path.
     profile_path = Path(args.profile)
     if not profile_path.exists():
         profile_path = _REPO_ROOT / "bench" / "llm_profiles" / f"{args.profile}.toml"
@@ -176,6 +205,8 @@ def main() -> None:
         project_dir=project_dir,
     )
     print(result)
+    if args.print_env:
+        print(f"export PROJECT={shlex.quote(str(result))}", file=sys.stderr)
 
 
 if __name__ == "__main__":

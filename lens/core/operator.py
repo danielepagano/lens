@@ -156,6 +156,17 @@ _AT_MENTION_RE = re.compile(
 )
 
 
+def _lines_prefix(before_lines: list[str]) -> str:
+    """Join lines that precede a splice; empty when *before_lines* is empty.
+
+    Using ``"\\n".join(before) + "\\n"`` would incorrectly insert a leading
+    newline when *before* is empty (e.g. mutations starting at line 1).
+    """
+    if not before_lines:
+        return ""
+    return "\n".join(before_lines) + "\n"
+
+
 class OperatorError(Exception):
     """User-visible error raised by operator flow orchestrators."""
 
@@ -464,8 +475,7 @@ class Operator(ABC):
         open_tag = self.build_open_tag(id, params)
         close_tag = self.build_close_tag(id)
         rebuilt = (
-            "\n".join(before)
-            + "\n"
+            _lines_prefix(before)
             + open_tag
             + "\n"
             + "\n".join(claimed)
@@ -504,7 +514,12 @@ class Operator(ABC):
         lines = text.split("\n")
         before = lines[: open_ann.line_start - 1]
         after = lines[close_ann.line_end :]
-        rebuilt = "\n".join(before) + "\n" + new_content + "\n" + "\n".join(after)
+        rebuilt = (
+            _lines_prefix(before)
+            + new_content
+            + "\n"
+            + "\n".join(after)
+        )
         self.storage.write_file(file_path, rebuilt)
 
     def cancel_mutation(
@@ -535,7 +550,12 @@ class Operator(ABC):
         before = lines[: open_ann.line_start - 1]
         claimed = lines[open_ann.line_end : close_ann.line_start - 1]
         after = lines[close_ann.line_end :]
-        rebuilt = "\n".join(before) + "\n" + "\n".join(claimed) + "\n" + "\n".join(after)
+        rebuilt = (
+            _lines_prefix(before)
+            + "\n".join(claimed)
+            + "\n"
+            + "\n".join(after)
+        )
         self.storage.write_file(file_path, rebuilt)
         self.storage.stage_all()
 

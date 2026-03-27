@@ -216,5 +216,8 @@ datasets/*/ddb_out/
 # Benchmark reports (generated)
 bench/reports/*.json
 bench/reports/*.html
+
+# Benchmark throwaway Lens projects (setup_bench.py default --project-dir)
+bench/projects/
 **/node_modules/**
 lens/server/static/**

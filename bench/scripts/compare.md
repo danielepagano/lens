@@ -2,7 +2,7 @@
 
 Run the same scenario against different models, compare scores side-by-side.
 
-Prerequisite: read `core.md` for setup and scoring mechanics.
+Prerequisite: read `bench/agent.md` for setup and scoring mechanics.
 
 ## Steps
 
@@ -10,10 +10,10 @@ Prerequisite: read `core.md` for setup and scoring mechanics.
 
 ```bash
 python bench/tools/setup_bench.py --profile local_thinking --scenario bench/scenarios/write_coherence.md
-# cd into project, run setup + steps, evaluate, produce report JSON
+# cd into project, run setup + steps, evaluate, then report.py init + complete report (merge or render/sync) — see bench/agent.md
 
 python bench/tools/setup_bench.py --profile grok --scenario bench/scenarios/write_coherence.md
-# cd into project, run same scenario, produce report JSON
+# same scenario; report.py init with --profile grok, then fill steps/evaluation (merge recommended)
 ```
 
 2. **Render comparison:**
@@ -22,7 +22,9 @@ python bench/tools/setup_bench.py --profile grok --scenario bench/scenarios/writ
 python bench/tools/report.py compare bench/reports/run_a.json bench/reports/run_b.json
 ```
 
-This produces a side-by-side HTML with per-criterion scores and deltas.
+Paths are resolved **relative to the repository root** (as with `report.py merge` / `validate`). Absolute paths work too.
+
+This produces a side-by-side HTML with per-criterion scores and deltas (default output: **`comparison.html`** next to the first report path unless **`-o`** is set).
 
 ## Tips
 

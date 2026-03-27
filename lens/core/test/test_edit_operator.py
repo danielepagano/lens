@@ -312,6 +312,10 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             self.assertIn("Manual replacement", text)
             self.assertNotIn("Original line one.", text)
             self.assertNotIn("[edit:e1_1]: #", text)
+            self.assertFalse(
+                text.startswith("\n"),
+                "replace from line 1 must not prepend a spurious blank line",
+            )
 
     def test_run_mutation_manual_replace_stores_params_in_claim(self) -> None:
         """Manual replace stores manual flag and prompt in the claim tag."""

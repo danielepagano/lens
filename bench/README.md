@@ -5,44 +5,65 @@ Functional quality benchmarks for Lens operators against real LLMs.
 ## Quick start
 
 ```bash
-# 1. Create a benchmark project (requires a local LLM server on :1234)
-python bench/tools/setup_bench.py --profile local_thinking --scenario bench/scenarios/write_coherence.md
+# 1. Create an empty benchmark project (active narrative: default; scenario Setup adds KB/prose)
+PROJECT=$(python bench/tools/setup_bench.py --profile local_thinking --scenario bench/scenarios/write_coherence.md)
 
-# 2. cd into the printed project directory
-cd /tmp/lens_bench_...
+# 2. cd into the project directory (default: bench/projects/lens_bench_*)
+cd "$PROJECT"
 
-# 3. Run the scenario (read the scenario file + the relevant use-case prompt)
+# Optional: verify lens.toml, keys, datasets, and narrative (run after cd)
+lens check
+# If this fails, you stop and report to user
 
-# 4. Render the report
-python bench/tools/report.py render bench/reports/your_report.json
-open bench/reports/your_report.html
+# 3. Run the scenario (read the scenario file + the relevant script under bench/scripts/)
+
+# 4. Create report JSON + HTML (init prints the JSON path — use that path for merge/sync; optional: -o bench/reports/<label>.json)
+python bench/tools/report.py init \
+  --scenario bench/scenarios/write_coherence.md \
+  --profile local_thinking \
+  --project-dir "$PROJECT"
+
+# 5. Complete the report — same JSON basename as step 4 (…json → …html next to it)
+python bench/tools/report.py merge bench/reports/<your_report>.json < patch.json
+# or: edit JSON, then: python bench/tools/report.py sync bench/reports/<your_report>.json
+
+# Optional: verify shape + scenario step IDs
+python bench/tools/report.py validate bench/reports/<your_report>.json --scenario bench/scenarios/write_coherence.md
+
+# 6. Open the paired HTML
+open bench/reports/<your_report>.html
 ```
+
+Replace `<your_report>` with the JSON filename from step 4 (`init` output or your `-o` value). The HTML is the same basename with `.html`.
+
+**Agents:** read `bench/agent.md` first — a run starts there; it requires a **script**, **scenario**, and **LLM profile** (plus optional user instructions); **run `lens` from a shell** after `cd` into the project (env + network), and **`lens check`** must succeed; then **create the report**. Empty `steps` / `evaluation` is not a finished run.
 
 ## Three use cases
 
-1. **Develop & baseline** — `prompts/baseline.md`
-2. **Compare LLMs** — `prompts/compare.md`
-3. **Iterative prompt engineering** — `prompts/iterate.md`
+1. **Develop & baseline** — `bench/scripts/baseline.md`
+2. **Compare LLMs** — `bench/scripts/compare.md`
+3. **Iterative prompt engineering** — `bench/scripts/iterate.md`
 
-Read `prompts/core.md` first (shared mechanics), then the use-case prompt you need.
+Read `bench/agent.md` for shared mechanics, then the script you need.
 
 ## Directory structure
 
 ```
 bench/
+  agent.md                Agent run: inputs, shell + lens check, outputs, reports
   README.md
   tools/
-    setup_bench.py        Setup script: creates project with real LLM
-    report.py             JSON -> HTML renderer (render, compare)
+    setup_bench.py        Setup script: empty project + LLM profile; narrative `default`
+    report.py             Reports: init, merge, sync, render, compare
     report_template.html  Self-contained HTML template
-  prompts/
-    core.md               Shared mechanics (setup, replay, scoring, reports)
+  scripts/
     baseline.md           Use case 1: develop & baseline
     compare.md            Use case 2: compare LLMs
     iterate.md            Use case 3: iterative prompt engineering
   llm_profiles/           LLM configuration presets (TOML)
   scenarios/              Test scenario definitions (Markdown)
     template.md           Blank scenario template
+  projects/               Default throwaway Lens projects (gitignored)
   reports/                Output directory (gitignored)
 ```
 
@@ -64,7 +85,7 @@ timeout_seconds = 300
 Markdown files in `scenarios/`. Each has:
 
 - **Title + description** — what the scenario tests
-- **`~~~config` block** — machine-readable datasets (the only part Python parses)
+- **````config` block** — machine-readable datasets (the only part Python parses)
 - **Setup** — CLI commands to build narrative state
 - **Steps** — benchmark operations to evaluate
 - **Evaluation criteria** — scoring rubric (1–5)
@@ -84,3 +105,5 @@ Lens provides built-in replay for cheap iteration (no project rebuild needed):
 | `lens rewind /` | Rewind to narrative root |
 | `lens prompt set <key> "..."` | Override a prompt at project level |
 | `lens prompt clear <key>` | Restore the default prompt |
+
+Details and the full agent contract are in `bench/agent.md`.

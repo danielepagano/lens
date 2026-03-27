@@ -3,7 +3,7 @@
 Improve an operator's output quality by mutating its prompt, re-running, and
 measuring the difference — all without rebuilding the project.
 
-Prerequisite: read `core.md` for setup, replay mechanics, and scoring.
+Prerequisite: read `bench/agent.md` for setup, replay mechanics, and scoring.
 
 ## Steps
 
@@ -85,7 +85,8 @@ lens write --retry
 
 ### 7. Produce the iteration report
 
-The report JSON includes an `iterations` array:
+Create or update the report JSON and HTML as in `bench/agent.md`: use
+`report.py init` when you start a report, then **`merge`** (preferred) or edit JSON and **`render`** / **`sync`** after each change so HTML never lags. The report JSON includes an `iterations` array:
 
 ```json
 {
