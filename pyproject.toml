@@ -51,6 +51,7 @@ dev = { cmd = "python scripts/dev_project.py" }
 bench-setup = { cmd = "python bench/tools/setup_bench.py" }
 bench-report = { cmd = "python bench/tools/report.py" }
 build-ui = { shell = "cd lens/server/ui && npm install --no-package-lock --silent && npm run build" }
+e2e-sandbox = { cmd = "python -m lens.testing.e2e_sandbox" }
 check = { sequence = ["lint", "test", "test-integration", "test-ui", "build-ui", "test-e2e"] }
 
 [tool.pytest.ini_options]

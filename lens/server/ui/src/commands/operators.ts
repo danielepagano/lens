@@ -1,7 +1,7 @@
 import { get } from 'svelte/store'
 import { runWrite, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent, type Stats } from '../services/api'
-import { cliOutput, treeRefreshTrigger } from '../stores/ui'
-import { streamingPreview, currentAddress } from '../stores/document'
+import { cliOutput, treeRefreshTrigger, inlineEditMode, inlineEditResult } from '../stores/ui'
+import { streamingPreview, currentAddress, nodeContent } from '../stores/document'
 import type {
   CliPayload,
   CommandContext,
@@ -298,20 +298,68 @@ const handler: CommandHandler = async (
       const endLine = parseInt(ctx.args.positional['end'] as string, 10)
       const replace = ctx.args.options['replace'] === true
 
-      result = await runEdit(
-        {
-          address: address!,
-          start_line: startLine,
-          end_line: endLine,
-          prompt,
-          pins,
-          unpins,
-          llm_id: llmId,
-          retry,
-          replace,
-        },
-        handleEvent
-      )
+      if (replace && !prompt) {
+        // Inline edit mode: show CodeMirror editor instead of sending to server
+        streamingPreview.set(null)
+        const content = get(nodeContent)
+        const lines = content.split('\n')
+        const originalText = lines.slice(startLine - 1, endLine).join('\n')
+        inlineEditResult.set(null)
+        // Use currentAddress (nav format) not address (display format) — MarkdownView
+        // checks inlineEditMode.address === $currentAddress for the match.
+        const navAddress = get(currentAddress) ?? address!
+        inlineEditMode.set({ address: navAddress, startLine, endLine, originalText })
+
+        const editedText = await new Promise<string | null>((resolve) => {
+          const unsubResult = inlineEditResult.subscribe((val) => {
+            if (val !== null) {
+              unsubResult()
+              unsubMode()
+              resolve(val)
+            }
+          })
+          const unsubMode = inlineEditMode.subscribe((val) => {
+            if (val === null) {
+              unsubResult()
+              unsubMode()
+              // If result was already set, it resolved above; otherwise cancelled
+              resolve(get(inlineEditResult))
+            }
+          })
+        })
+
+        if (editedText === null) {
+          return { clearInput: false }
+        }
+
+        result = await runEdit(
+          {
+            address: address!,
+            start_line: startLine,
+            end_line: endLine,
+            prompt: editedText,
+            replace: true,
+            pins,
+            unpins,
+          },
+          handleEvent
+        )
+      } else {
+        result = await runEdit(
+          {
+            address: address!,
+            start_line: startLine,
+            end_line: endLine,
+            prompt,
+            pins,
+            unpins,
+            llm_id: llmId,
+            retry,
+            replace,
+          },
+          handleEvent
+        )
+      }
     }
 
     // Clear streaming preview before refreshing

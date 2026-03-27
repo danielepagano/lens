@@ -14,10 +14,11 @@
   import MediaPreviewPanel from './features/cli/MediaPreviewPanel.svelte'
   import KbSidebar from './features/kb/KbSidebar.svelte'
   import KbViewer from './features/kb/KbViewer.svelte'
+  import InlineEditView from './features/editor/InlineEditView.svelte'
   import { getStats, getNode, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
-  import { appMode, selectedKbId, kbFilters } from './stores/ui'
+  import { appMode, selectedKbId, kbFilters, inlineEditMode } from './stores/ui'
 
   function hashKbParam(): string | null {
     return get(appMode) === 'kb' ? get(selectedKbId) : null
@@ -56,6 +57,7 @@
   async function navigate(addr: string): Promise<void> {
     if (!addr) return
     try {
+      inlineEditMode.set(null)
       const data = await getNode(addr)
       currentAddress.set(data.address)
       nodeContent.set(data.content)
@@ -143,7 +145,9 @@
     <TopBar />
   </svelte:fragment>
 
-  {#if $appMode === 'narrative'}
+  {#if $inlineEditMode !== null}
+    <InlineEditView />
+  {:else if $appMode === 'narrative'}
     <TreeBrowser {navigate} />
     <MarkdownView />
   {:else}

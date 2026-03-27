@@ -26,7 +26,7 @@ Two modes
 
    Example::
 
-       LENS_DEV_SERVER_URL=http://127.0.0.1:8000 pytest playwright/
+       LENS_DEV_SERVER_URL=http://127.0.0.1:8000 pytest e2e/
 
 The ``base_url`` for Playwright (and the ``live_server_url`` fixture) always
 resolves to the URL of the running API server regardless of mode.
