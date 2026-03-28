@@ -25,7 +25,7 @@ from typing import Any
 from lens.core.commands.kb import kb_get as _cmd_kb_get
 from lens.core.commands.kb import kb_list_tags as _cmd_kb_list_tags
 from lens.core.commands.kb import kb_with_tag as _cmd_kb_with_tag
-from lens.core.knowledge import KnowledgeObject
+from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 
 CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
 
@@ -104,7 +104,13 @@ async def _kb_with_tag(args: dict[str, Any], project_root: Path) -> str:
     expand: bool = bool(args.get("expand", False))
     type_filter: str | None = args.get("type_filter") or None
 
-    result = _cmd_kb_with_tag(tags, expand=expand, recurse=recurse, type_filter=type_filter)
+    result = _cmd_kb_with_tag(
+        tags,
+        expand=expand,
+        recurse=recurse,
+        type_filter=type_filter,
+        store=KnowledgeStore.for_project(project_root),
+    )
     if not result.ids:
         return f"(no KB objects found with tags: {', '.join(tags)})"
 

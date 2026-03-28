@@ -37,19 +37,30 @@ def kb_add(id: str, content: str | None, use_template: bool) -> None:
     kb = get_store()
     kb.store_object(id, content, use_template=use_template)
 
-def kb_template(type_name: str, content: str | None) -> str | None:
-    kb = get_store()
+def kb_template(
+    type_name: str,
+    content: str | None,
+    *,
+    store: KnowledgeStore | None = None,
+) -> str | None:
+    kb = store if store is not None else get_store()
     if content is not None:
         kb.set_template(type_name, content)
         return None
     return kb.get_template(type_name)
 
-def kb_tag(id: str, add: list[str], remove: list[str]) -> tuple[list[str], list[str]]:
+def kb_tag(
+    id: str,
+    add: list[str],
+    remove: list[str],
+    *,
+    store: KnowledgeStore | None = None,
+) -> tuple[list[str], list[str]]:
     try:
         parse_id(id)
     except ValueError as e:
         raise LensException(str(e)) from e
-    kb = get_store()
+    kb = store if store is not None else get_store()
     if add:
         err = kb.add_tags(id, add)
         if err is not None:
@@ -60,35 +71,45 @@ def kb_tag(id: str, add: list[str], remove: list[str]) -> tuple[list[str], list[
     invalid = kb.get_invalid_dot_tags(current) if current else []
     return current, invalid
 
-def kb_delete(id: str) -> None:
+def kb_delete(id: str, *, store: KnowledgeStore | None = None) -> None:
     try:
         parse_id(id)
     except ValueError as e:
         raise LensException(str(e)) from e
-    kb = get_store()
+    kb = store if store is not None else get_store()
     kb.delete_object(id)
 
 
-def kb_copy(source_id: str, target_id: str) -> None:
+def kb_copy(
+    source_id: str,
+    target_id: str,
+    *,
+    store: KnowledgeStore | None = None,
+) -> None:
     try:
         parse_id(source_id)
         parse_id(target_id)
     except ValueError as e:
         raise LensException(str(e)) from e
-    kb = get_store()
+    kb = store if store is not None else get_store()
     try:
         kb.copy_object(source_id, target_id)
     except ValueError as e:
         raise LensException(str(e)) from e
 
 
-def kb_rename(old_id: str, new_id: str) -> None:
+def kb_rename(
+    old_id: str,
+    new_id: str,
+    *,
+    store: KnowledgeStore | None = None,
+) -> None:
     try:
         parse_id(old_id)
         parse_id(new_id)
     except ValueError as e:
         raise LensException(str(e)) from e
-    kb = get_store()
+    kb = store if store is not None else get_store()
     try:
         kb.rename_object(old_id, new_id)
     except ValueError as e:
@@ -151,13 +172,14 @@ def kb_with_tag(
     recurse: int | None = None,
     same_type_only: bool = False,
     type_filter: str | None = None,
+    store: KnowledgeStore | None = None,
 ) -> WithTagResult:
     if not tags:
         raise LensException("at least one tag is required")
     groups = parse_tag_groups(tags)
     if not groups:
         raise LensException("at least one tag is required")
-    kb = get_store()
+    kb = store if store is not None else get_store()
     first_tag = groups[0][0] if groups and groups[0] else ""
 
     def _apply_type_filter(id_list: list[str]) -> list[str]:

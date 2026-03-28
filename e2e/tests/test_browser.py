@@ -286,3 +286,77 @@ class TestBrowser:
             '[data-testid="inline-edit-view"]', state="visible", timeout=8000
         )  # type: ignore[union-attr]
         assert page.locator('[data-testid="inline-edit-view"] .cm-editor').count() >= 1
+
+    def test_kb_editor_edit_append_and_save_persists(
+        self,
+        page: "Page",
+        live_server_url: str,
+    ) -> None:
+        """KB viewer: open an item, Edit, change body text, Save — change must appear after save.
+
+        Uses the throwaway e2e project from ``setup_test_project`` (``person.amy`` with a known
+        baseline line). Flow matches manual use: KB mode → filter by type → pick item → Edit →
+        type in CodeMirror → Save → read-only markdown view should include the appended text.
+
+        If typing does not update bound state or Save does not persist, this test fails.
+        """
+        marker = " [[e2e-kb-editor-append]]"
+        page.set_viewport_size({"width": 1280, "height": 720})  # type: ignore[union-attr]
+        # Full reload to clear stale client state from earlier tests.
+        page.goto(f"{live_server_url}#story", wait_until="networkidle")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="top-bar"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        page.get_by_role("button", name="KB").click()  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="kb-browser"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        type_select = page.locator(
+            '[data-testid="kb-browser"] select.kb-type-select'
+        )  # type: ignore[union-attr]
+        type_select.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        page.wait_for_function(
+            """() => {
+              const s = document.querySelector(
+                '[data-testid="kb-browser"] select.kb-type-select'
+              );
+              return (
+                s !== null &&
+                Array.from((s).options).some((o) => o.value === 'person')
+              );
+            }""",
+            timeout=15000,
+        )  # type: ignore[union-attr]
+        type_select.select_option("person")  # type: ignore[union-attr]
+        amy_btn = page.locator("button.kb-item-btn").filter(has_text="amy")  # type: ignore[union-attr]
+        amy_btn.wait_for(timeout=10000)  # type: ignore[union-attr]
+        amy_btn.click()  # type: ignore[union-attr]
+
+        viewer = page.locator(".kb-viewer")  # type: ignore[union-attr]
+        viewer.locator(".kb-viewer-id").filter(has_text="person.amy").wait_for(
+            timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+        viewer.get_by_text("Amy is the brave protagonist.", exact=False).wait_for(
+            timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        viewer.get_by_role("button", name="Edit", exact=True).click()  # type: ignore[union-attr]
+        cm_content = viewer.locator(".cm-content")  # type: ignore[union-attr]
+        cm_content.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        cm_content.click()  # type: ignore[union-attr]
+        page.keyboard.press("ControlOrMeta+End")  # type: ignore[union-attr]
+        page.keyboard.type(marker)  # type: ignore[union-attr]
+
+        viewer.get_by_role("button", name="Save").click()  # type: ignore[union-attr]
+        viewer.locator(".kb-rendered").wait_for(
+            state="visible", timeout=10000
+        )  # type: ignore[union-attr]
+        page.locator(".kb-viewer .cm-content").wait_for(state="detached", timeout=10000)  # type: ignore[union-attr]
+
+        saved_text = viewer.locator(".kb-rendered").inner_text()  # type: ignore[union-attr]
+        assert marker.strip() in saved_text, (
+            f"Expected appended marker in KB read view after save; got excerpt: {saved_text[:400]!r}"
+        )
+        assert viewer.locator(".kb-save-error").count() == 0

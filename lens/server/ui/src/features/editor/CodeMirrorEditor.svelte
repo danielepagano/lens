@@ -61,7 +61,7 @@
 
   let container: HTMLDivElement
   let view: EditorView | undefined
-  const _sync = { suppress: false }
+  const _sync = { prevContent: content }
 
   const lensCmTheme = EditorView.theme({
     '&': {
@@ -212,9 +212,8 @@
       keymap.of([...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          _sync.suppress = true
-          dispatch('change', update.state.doc.toString())
-          _sync.suppress = false
+          const doc = update.state.doc.toString()
+          dispatch('change', doc)
         }
       }),
       pickRestCompartment.of(
@@ -246,9 +245,10 @@
     view?.destroy()
   })
 
-  $: if (view) {
+  $: if (view && content !== _sync.prevContent) {
+    _sync.prevContent = content
     const current = view.state.doc.toString()
-    if (!_sync.suppress && content !== current) {
+    if (content !== current) {
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: content },
       })

@@ -183,7 +183,7 @@ def kb_delete_item(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     try:
-        kb_delete(id)
+        kb_delete(id, store=session.kb)
         return KbItemSaveResponse(id=id)
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -200,7 +200,7 @@ def kb_copy_item(
     session: ProjectSession = Depends(get_session),
 ) -> KbCopyResponse:
     try:
-        kb_copy(body.source_id, body.target_id)
+        kb_copy(body.source_id, body.target_id, store=session.kb)
         return KbCopyResponse(source_id=body.source_id, target_id=body.target_id)
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -217,7 +217,7 @@ def kb_rename_item(
     session: ProjectSession = Depends(get_session),
 ) -> KbRenameResponse:
     try:
-        kb_rename(body.old_id, body.new_id)
+        kb_rename(body.old_id, body.new_id, store=session.kb)
         return KbRenameResponse(old_id=body.old_id, new_id=body.new_id)
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -239,7 +239,9 @@ def kb_tag_item(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     try:
-        current_tags, invalid_tags = kb_tag(id, body.add, body.remove)
+        current_tags, invalid_tags = kb_tag(
+            id, body.add, body.remove, store=session.kb
+        )
         return KbTagResponse(id=id, tags=current_tags, invalid_dot_tags=invalid_tags or None)
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -254,7 +256,7 @@ def kb_get_template(
     type: str,
     session: ProjectSession = Depends(get_session),
 ) -> KbTemplateResponse:
-    content = kb_template(type, None)
+    content = kb_template(type, None, store=session.kb)
     return KbTemplateResponse(type=type, content=content)
 
 
@@ -264,7 +266,7 @@ def kb_set_template(
     body: KbTemplateRequest,
     session: ProjectSession = Depends(get_session),
 ) -> KbTemplateSetResponse:
-    kb_template(type, body.content)
+    kb_template(type, body.content, store=session.kb)
     return KbTemplateSetResponse(type=type)
 
 
@@ -288,6 +290,7 @@ def kb_with_tag_query(
             recurse=body.recurse,
             same_type_only=body.same_type_only,
             type_filter=body.type_filter,
+            store=session.kb,
         )
         layers_out = None
         if result.layers is not None:
