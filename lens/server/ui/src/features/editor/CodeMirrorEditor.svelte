@@ -55,13 +55,6 @@
   const lineNumbersCompartment = new Compartment()
   const pickRestCompartment = new Compartment()
 
-  // On touch/mobile devices, drawSelection() sets `caret-color: transparent`
-  // on the contenteditable div, which triggers a WebKit bug where iOS Safari
-  // won't show the virtual keyboard. Skip it on touch devices so the native
-  // browser cursor is used instead.
-  const isTouchDevice =
-    typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-
   function emitLinePick(line: number) {
     dispatch('linePick', line)
   }
@@ -201,10 +194,8 @@
       lineNumbersCompartment.of(
         linePickLineStates ? pickLineNumbers(linePickLineStates, emitLinePick) : lineNumbers(),
       ),
+      drawSelection(),
     ]
-    if (!isTouchDevice) {
-      exts.push(drawSelection())
-    }
     if (!editableRange) {
       exts.push(highlightActiveLine())
     }
