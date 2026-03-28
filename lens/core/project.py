@@ -28,6 +28,56 @@ def datasets_root() -> Path:
     return Path(__file__).parent.parent.parent / "datasets"
 
 
+def _lens_repo_root() -> Path:
+    """Return the Lens repository root (parent of ``datasets/``)."""
+    return datasets_root().parent
+
+
+def read_local_dataset_paths(project_root: Path) -> dict[str, str]:
+    """Parse ``[dataset_paths]`` from ``lens.local.toml`` in *project_root*.
+
+    Returns an empty dict if the file is missing or has no such section.
+    """
+    local_toml = project_root / "lens.local.toml"
+    if not local_toml.exists():
+        return {}
+    with local_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw = config.get("dataset_paths", {})
+    if not isinstance(raw, dict):
+        return {}
+    raw_dict = cast(dict[str, Any], raw)
+    return {k: str(v) for k, v in raw_dict.items() if isinstance(v, str)}
+
+
+def resolve_dataset_path(project_root: Path, name: str) -> Path | None:
+    """Locate a dataset directory by *name*.
+
+    Resolution order:
+
+    1. Bundled with Lens: ``datasets/<name>``
+    2. Sibling of the Lens repo root: ``<lens-repo>/../<name>``
+    3. Explicit path in ``lens.local.toml`` ``[dataset_paths]``
+    """
+    # 1. Bundled
+    bundled = datasets_root() / name
+    if bundled.is_dir():
+        return bundled
+    # 2. Sibling of lens repo
+    sibling = _lens_repo_root().parent / name
+    if sibling.is_dir():
+        return sibling
+    # 3. lens.local.toml override
+    overrides = read_local_dataset_paths(project_root)
+    if name in overrides:
+        p = Path(overrides[name])
+        if not p.is_absolute():
+            p = (project_root / p).resolve()
+        if p.is_dir():
+            return p
+    return None
+
+
 def get_selected_datasets(project_root: Path) -> list[str]:
     """Return the dataset names from ``[project] datasets`` in lens.toml, or [] if unset."""
     lens_toml = project_root / "lens.toml"

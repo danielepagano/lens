@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
+import tempfile
 import tomllib
 from pathlib import Path
 from typing import Any, cast
@@ -11,6 +13,7 @@ from typing import Any, cast
 import bcrypt  # type: ignore[import-untyped]
 
 from lens.core.exceptions import LensException
+from lens.core.project import datasets_root, get_selected_datasets, resolve_dataset_path
 from lens.core.storage import Storage
 
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -119,6 +122,27 @@ def _run(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[
     return r
 
 
+def _resolve_external_datasets(project_root: Path) -> list[tuple[str, Path]]:
+    """Return ``[(name, path)]`` for datasets not bundled with Lens.
+
+    Resolves every dataset declared in lens.toml and filters to those
+    whose resolved path is outside the bundled ``datasets/`` directory.
+    Raises :class:`LensException` if any dataset cannot be found.
+    """
+    ds_root = datasets_root().resolve()
+    external: list[tuple[str, Path]] = []
+    for name in get_selected_datasets(project_root):
+        path = resolve_dataset_path(project_root, name)
+        if path is None:
+            raise LensException(
+                f"dataset '{name}' not found — cannot deploy. "
+                f"Checked {datasets_root() / name} and {datasets_root().parent.parent / name}"
+            )
+        if not path.resolve().is_relative_to(ds_root):
+            external.append((name, path))
+    return external
+
+
 def init_deploy(
     project_root: Path,
     git_root: Path,
@@ -164,16 +188,12 @@ def init_deploy(
     _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
 
 
-def push_deploy(project_root: Path) -> None:
-    """Deploy (or redeploy) the Lens application to Fly.io."""
-    fly_toml = project_root / "fly.toml"
-    if not fly_toml.exists():
-        raise LensException("fly.toml not found — run 'lens deploy init' first")
-
-    dockerfile = _LENS_ROOT / "deploy" / "Dockerfile"
+def _fly_deploy(build_context: Path, fly_toml: Path) -> None:
+    """Run ``fly deploy`` against a build context directory."""
+    dockerfile = build_context / "deploy" / "Dockerfile"
     result = subprocess.run(
         [
-            "fly", "deploy", str(_LENS_ROOT),
+            "fly", "deploy", str(build_context),
             "--config", str(fly_toml),
             "--dockerfile", str(dockerfile),
         ],
@@ -181,3 +201,31 @@ def push_deploy(project_root: Path) -> None:
     )
     if result.returncode != 0:
         raise LensException("fly deploy failed")
+
+
+def push_deploy(project_root: Path) -> None:
+    """Deploy (or redeploy) the Lens application to Fly.io.
+
+    If the project uses external datasets (resolved outside the bundled
+    ``datasets/`` directory), a temporary build context is created that
+    copies them into ``datasets/`` so the Docker image contains everything.
+    """
+    fly_toml = project_root / "fly.toml"
+    if not fly_toml.exists():
+        raise LensException("fly.toml not found — run 'lens deploy init' first")
+
+    external = _resolve_external_datasets(project_root)
+
+    if not external:
+        _fly_deploy(_LENS_ROOT, fly_toml)
+        return
+
+    # Build a temporary context with external datasets placed alongside bundled ones.
+    # Uses hard links where possible (fast, no extra disk) with copy fallback.
+    with tempfile.TemporaryDirectory(prefix="lens-deploy-") as tmp:
+        ctx = Path(tmp) / "context"
+        _IGNORE = shutil.ignore_patterns(".git", ".venv", "node_modules", "__pycache__", ".DS_Store")
+        shutil.copytree(_LENS_ROOT, ctx, ignore=_IGNORE, copy_function=os.link)
+        for name, path in external:
+            shutil.copytree(path, ctx / "datasets" / name, ignore=_IGNORE, copy_function=os.link)
+        _fly_deploy(ctx, fly_toml)

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, cast
 from lens.core.exceptions import LensException
-from lens.core.project import datasets_root, get_selected_datasets
+from lens.core.project import get_selected_datasets, resolve_dataset_path
 
 import tomli_w
 
@@ -114,11 +114,10 @@ class KnowledgeStore:
     def _build_dataset_stores(cls, project_root: Path) -> list[KnowledgeStore]:
         """Read selected datasets and return read-only stores for each."""
         dataset_names = get_selected_datasets(project_root)
-        ds_root = datasets_root()
         stores: list[KnowledgeStore] = []
         for name in dataset_names:
-            path = ds_root / name
-            if path.is_dir():
+            path = resolve_dataset_path(project_root, name)
+            if path is not None:
                 stores.append(cls(path, storage=None))
         return stores
 
