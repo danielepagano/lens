@@ -61,7 +61,12 @@
 
   let container: HTMLDivElement
   let view: EditorView | undefined
-  const _sync = { suppress: false }
+  // Track the last content we emitted via on:change so the reactive sync
+  // below can tell the difference between our own echoed prop update and
+  // a genuinely external content change. On mobile, the Svelte flush that
+  // delivers the echoed prop can arrive after _sync.suppress is already false,
+  // so a simple boolean flag is not reliable.
+  const _sync = { lastEmitted: content }
 
   const lensCmTheme = EditorView.theme({
     '&': {
@@ -212,9 +217,9 @@
       keymap.of([...defaultKeymap, ...historyKeymap]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          _sync.suppress = true
-          dispatch('change', update.state.doc.toString())
-          _sync.suppress = false
+          const newDoc = update.state.doc.toString()
+          _sync.lastEmitted = newDoc
+          dispatch('change', newDoc)
         }
       }),
       pickRestCompartment.of(
@@ -248,7 +253,13 @@
 
   $: if (view) {
     const current = view.state.doc.toString()
-    if (!_sync.suppress && content !== current) {
+    // Only push content into CodeMirror when it changed from outside (not
+    // echoed back from our own on:change emission). Without this guard a
+    // mobile browser's async input pipeline can deliver the echoed prop
+    // after _sync.lastEmitted has already been updated, causing a false
+    // "external change" detection that replaces the doc and snaps the
+    // cursor to position 0.
+    if (content !== current && content !== _sync.lastEmitted) {
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: content },
       })
