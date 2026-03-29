@@ -25,12 +25,12 @@ Participants include any given PCs, plus:
 
 IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest that the user load the appropriate module; if they decline, add necessary detail in the encounter itself, not new objects.
 
-3: COMBAT BALANCING (when the scene includes the possibily for combat)
+3: COMBAT BALANCING (when the scene includes the possibility of combat)
 - `kb_get` **`rules.system`** if you need how combat is framed for this table.
 - Take PC levels from pinned **`pc.*`** objects (e.g. tags **`level:N`**).
 - Discover enemies: `stat._template` describes conventions; use **`kb_with_tag`** to find **`stat.*`** candidates (CR, type, habitat, etc.). Rank by **narrative fit** first.
-- Use **`balance_encounter`** on your ranked list. Pass **`pcs`** as one level per PC. If NPCs fight **on the party's side**, pass **`allies`** as **one CR string per fighting ally** (`"1/8"`, `"1/2"`, `"1"`, …). Each entry **adds XP to the encounter budget** so enemy counts match **PCs and all those allies** — the list is not decorative.
-- **Ally stat blocks you write under Prep must match those CR strings** (check **`cr:`** tags on **`stat.*`**). If you want stronger officers than the CRs you passed, change **`allies`** and call the tool again.
+- Use **`balance_encounter`** on your ranked list. Pass **`pcs`** as one level per PC. Pass **`allies`** in the **same shape as `required`**: `{ "id": "stat.…", "count": N }` per allied stat block that fights on the party's side. The tool reads each ally's **`cr:`** tags and adds **count × build XP** to the budget so enemy totals match **PCs plus exactly those allies** — use the same ids and counts you will list under Prep.
+- If you change the ally roster after balancing, call the tool again with updated **`allies`**.
 - When the tool returns creature IDs and counts, you **must** note every fighting **`stat.*`** into **`## Prep and reference`** as **`N× KB['stat.…']`** lines (same token shape as pinned objects in context). Do **not** paste full stat text into the encounter. Do **not** use **`KB['…']`** for other object types (PCs etc.) as pins already surface those. Do **not** scatter **`KB['stat.…']`** outside **`## Prep and reference`**.
 
 4: WRITE THE ENCOUNTER OBJECT
@@ -40,7 +40,7 @@ IMPORTANT: if you think you are missing objects, DO NOT just create them! There 
 
 **Part 3 — `## Prep and reference`:** For combat, **mandatory** **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). Non-combat or no stat-backed creatures: note **`— none`** or omit stat lines.
 
-Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list; pasting stat bodies instead of tokens; **`KB['stat.…']`** outside Prep; ally stat picks that don't match **`allies`** CRs.
+Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list; pasting stat bodies instead of tokens; **`KB['stat.…']`** outside Prep; **`allies`** in the tool that don't match the allied **`stat.*`** lines you write in Prep (ids or counts).
 
 5: SECRETS
 Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.

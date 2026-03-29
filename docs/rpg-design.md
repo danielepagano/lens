@@ -251,7 +251,7 @@ Most encounters are short. If the rules for a situation are simple ("you're talk
 id: encounter._template
 ---
 <!-- A prepared situation for play. Usage: pin this when the scene starts; play reads it as a script. Can be any situation type: combat, social, chase, puzzle, heist, or any mix. Link to participants and relevant objects. -->
-Encounter name (short, evocative)
+Encounter name
 
 - Situation: (what's happening, in one or two sentences)
 - Stakes: (what can go wrong, what's at risk)
@@ -336,7 +336,7 @@ An encounter object is compact and links to everything `play` needs:
 
 If we're playing D&D, the `design.encounter` module can use the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
 
-The party has an XP budget from PC levels and chosen difficulty (low/moderate/high); allies reduce that budget. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by narrative-fit rank) or, if required alone exceed the budget, suggests reduced counts. Encounters can be re-balanced on the fly — situations change, allies join, character levels shift — so the encounter object stores the parameters used, and `design` can refresh the balance without rebuilding the whole encounter.
+The party has an XP budget from PC levels and chosen difficulty (low/moderate/high). Allied combatants are passed as `{ id, count }` stat blocks (same shape as required enemies); their CR-derived XP is **added** to that budget so enemy counts match the full battlefield. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by narrative-fit rank) or, if required alone exceed the budget, suggests reduced counts. Encounters can be re-balanced on the fly — situations change, allies join, character levels shift — so the encounter object can record the parameters used, and `design` can refresh the balance without rebuilding the whole encounter.
 
 ### Play with `play`
 

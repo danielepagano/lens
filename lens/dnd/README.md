@@ -26,7 +26,7 @@ Project-local knowledge overrides dataset items; mutating a dataset object creat
 Balanced combat encounter proposals from PC levels, difficulty, and ranked stat-block candidates. Only when `dnd` is in `datasets`. Uses D&D 2024 DMG-style XP budgets internally.
 
 ```bash
-echo '{"difficulty": "moderate", "pcs": [3, 3], "required": [{"id": "stat.ghast", "count": 1}], "optional": ["stat.ghoul", "stat.skeleton"], "allies": ["1"]}' | lens dnd balance
+echo '{"difficulty": "moderate", "pcs": [3, 3], "required": [{"id": "stat.ghast", "count": 1}], "optional": ["stat.ghoul", "stat.skeleton"], "allies": [{"id": "stat.guard", "count": 2}]}' | lens dnd balance
 lens dnd balance --input encounter_params.json
 ```
 
@@ -36,7 +36,7 @@ JSON fields:
 - `optional` — stat block IDs (ranked)
 - `difficulty` — `"low"` | `"moderate"` | `"high"`
 - `pcs` — PC levels
-- `allies` — optional ally CR strings (e.g. `["1/2", "2"]`)
+- `allies` — optional allied combatants, same shape as `required` (e.g. `[{ "id": "stat.guard", "count": 4 }]`)
 
 ## `lens play`
 

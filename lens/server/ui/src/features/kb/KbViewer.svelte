@@ -11,7 +11,11 @@
     copyKbItem,
   } from '../../services/api'
   import type { KbItemDetail } from '../../services/api'
-  import { createMarkdownRenderer, preprocessBlockquotePills } from '../../utils/markdown'
+  import {
+    createMarkdownRenderer,
+    preprocessBlockquotePills,
+    preprocessKbReferencePills,
+  } from '../../utils/markdown'
   import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
 
   const md = createMarkdownRenderer()
@@ -181,7 +185,9 @@
     }
   }
 
-  $: rendered = item ? md.render(preprocessBlockquotePills(item.content)) : ''
+  $: rendered = item
+    ? md.render(preprocessKbReferencePills(preprocessBlockquotePills(item.content)))
+    : ''
 
   function isDotTag(tag: string): boolean {
     return tag.includes('.')
@@ -190,6 +196,13 @@
   function openKbItem(id: string) {
     const path = $currentAddress || ''
     window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
+  }
+
+  function handleKbMarkdownClick(e: MouseEvent) {
+    const pinEl = (e.target as HTMLElement).closest('[data-kb-open-id]')
+    if (!pinEl) return
+    const id = pinEl.getAttribute('data-kb-open-id')
+    if (id) openKbItem(id)
   }
 </script>
 
@@ -310,8 +323,11 @@
       />
     {:else}
       <article class="content kb-rendered">
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
-        {@html rendered}
+        <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+        <div class="kb-rendered-md" on:click={handleKbMarkdownClick}>
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
+          {@html rendered}
+        </div>
       </article>
     {/if}
 

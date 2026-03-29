@@ -1,7 +1,7 @@
 import math
 import random
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from pathlib import Path
 
@@ -330,27 +330,62 @@ def _rank_solutions(solutions: list[CandidateSolution], budget: int) -> list[Can
     return deduped[:3]
 
 
+def _validate_id_count_entries(raw: list[Any], *, label: str) -> str | None:
+    for item in raw:
+        if not isinstance(item, dict):
+            return (
+                f"Error: each '{label}' entry must be an object with 'id' and 'count' "
+                '(shape: {"id": "stat.…", "count": N}).'
+            )
+        entry = cast(dict[str, Any], item)
+        if "id" not in entry or "count" not in entry:
+            return f"Error: each '{label}' entry must include both 'id' and 'count'."
+        sid = str(entry["id"]).strip()
+        if not sid:
+            return f"Error: each '{label}' entry must have a non-empty 'id'."
+        try:
+            c = int(entry["count"])
+        except (TypeError, ValueError):
+            return f"Error: each '{label}' entry must have a numeric 'count' of at least 1."
+        if c < 1:
+            return f"Error: each '{label}' entry must have a numeric 'count' of at least 1."
+    return None
+
+
+def _entries_from_raw(raw: list[Any]) -> list[RequiredEntry]:
+    """Build entries after `_validate_id_count_entries` passed for the same *raw*."""
+    out: list[RequiredEntry] = []
+    for item in raw:
+        entry = cast(dict[str, Any], item)
+        out.append(
+            RequiredEntry(id=str(entry["id"]).strip(), count=int(entry["count"]))
+        )
+    return out
+
+
 def compute_encounters(
-    required_raw: list[dict[str, Any]],
+    required_raw: list[Any],
     optional: list[str],
     difficulty: str,
     pcs: list[int],
-    allies: list[str],
+    allies_raw: list[Any],
     kb: KnowledgeStore,
 ) -> str:
     if not required_raw and not optional:
         return "Error: Both required and optional lists are empty. Nothing to build an encounter from."
-        
+
+    for label, arr in (("required", required_raw), ("allies", allies_raw)):
+        err = _validate_id_count_entries(arr, label=label)
+        if err is not None:
+            return err
+
     budget = 0
     for pc_lvl in pcs:
         if pc_lvl in XP_BUDGET and difficulty in XP_BUDGET[pc_lvl]:
             budget += XP_BUDGET[pc_lvl][difficulty]
-            
-    ally_xp = 0
-    for ally_cr in allies:
-        f = cr_str_to_float(ally_cr)
-        if f is not None and f in CR_XP:
-            ally_xp += CR_XP[f]
+
+    ally_entries = _entries_from_raw(allies_raw)
+    ally_xp = sum(e.count * _stat_xp(e.id, kb) for e in ally_entries)
 
     # Allies increase party strength, so we add their XP to the budget (more room for monsters at same difficulty).
     adjusted_budget = budget + ally_xp
@@ -358,10 +393,7 @@ def compute_encounters(
     if budget == 0:
         return f"Error: Invalid difficulty '{difficulty}' (should be low, moderate, or high) or invalid PC levels."
 
-    required: list[RequiredEntry] = []
-    for r in required_raw:
-        if "id" in r and "count" in r:
-            required.append(RequiredEntry(id=r["id"], count=r["count"]))
+    required = _entries_from_raw(required_raw)
 
     committed_xp = sum(e.count * _stat_xp(e.id, kb) for e in required)
 
@@ -390,7 +422,7 @@ def compute_encounters(
         
     ranked = _rank_solutions(solutions, adjusted_budget)
     
-    party_size = len(pcs) + len(allies)
+    party_size = len(pcs) + sum(e.count for e in ally_entries)
     
     output: list[str] = [
         "Encounter Proposals",
@@ -438,7 +470,10 @@ balance_encounter_SCHEMA = {
                 },
                 "required": ["id", "count"]
             },
-            "description": "Monsters that must appear with specific counts. Can be empty if the AI has no fixed requirements."
+            "description": (
+                "Enemy stat blocks that must appear with specific counts. Same entry shape as `allies`. "
+                "Can be empty if the AI has no fixed requirements."
+            ),
         },
         "optional": {
             "type": "array",
@@ -457,14 +492,22 @@ balance_encounter_SCHEMA = {
         },
         "allies": {
             "type": "array",
-            "items": {"type": "string"},
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Stat block ID for an NPC fighting on the party's side, e.g. 'stat.guard'",
+                    },
+                    "count": {"type": "integer", "minimum": 1},
+                },
+                "required": ["id", "count"],
+            },
             "description": (
-                "One CR string per combatant fighting on the party's side (same format as monster CR: "
-                "'1/8', '1/2', '1', …). Each ally's CR is converted to build XP and **added** to the "
-                "encounter budget so enemy counts match **PCs plus every ally** — the tool uses this "
-                "list; omit it only when no allies join the fight."
+                "Allied combatants: same entry shape as `required`. Build XP is read from each stat's `cr:` tags. "
+                "Use [] when no allies fight."
             ),
-        }
+        },
     },
     "required": ["required", "optional", "difficulty", "pcs"]
 }
@@ -475,9 +518,9 @@ async def _balance_encounter_command_tool(args: dict[str, Any], project_root: Pa
     optional = args.get("optional", [])
     difficulty = args.get("difficulty", "moderate")
     pcs = args.get("pcs", [])
-    allies = args.get("allies", [])
+    allies_raw = args.get("allies", [])
     kb = KnowledgeStore.for_project(project_root)
-    return compute_encounters(required, optional, difficulty, pcs, allies, kb)
+    return compute_encounters(required, optional, difficulty, pcs, allies_raw, kb)
 
 
 _BALANCE_ENCOUNTER_DESCRIPTION = PromptStore(None).get(tool_prompt_key("balance_encounter"))

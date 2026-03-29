@@ -71,6 +71,49 @@ export function preprocessBlockquotePills(markdown: string): string {
     .join('\n')
 }
 
+function replaceKbReferencesInPlainLine(line: string): string {
+  return line.replace(/KB\['([a-z][a-z0-9_.-]*)'\]/g, (full, id: string, offset) => {
+    const before = line.slice(0, offset)
+    if ((before.match(/`/g) ?? []).length % 2 === 1) return full
+    return `<button type="button" class="pin-pill markdown-kb-ref" data-kb-open-id="${escapeHtmlText(id)}">${escapeHtmlText(id)}</button>`
+  })
+}
+
+/**
+ * Turn `KB['type.key']` (same token as `KnowledgeObject.format()`) into pin-style
+ * buttons that open the KB panel (`data-kb-open-id`). Skips fenced code blocks
+ * and inline `` `...` `` spans (odd backtick count before the match).
+ * Run after `preprocessBlockquotePills`, before `preprocessAnnotations`.
+ */
+export function preprocessKbReferencePills(markdown: string): string {
+  const lines = markdown.split('\n')
+  const out: string[] = []
+  let inFence = false
+  let fenceMarker: '`' | '~' = '`'
+  let fenceLen = 3
+
+  for (const line of lines) {
+    if (inFence) {
+      if (isFenceCloser(line, fenceMarker, fenceLen)) inFence = false
+      out.push(line)
+      continue
+    }
+
+    const info = fenceInfo(line)
+    if (info) {
+      inFence = true
+      fenceMarker = info.marker
+      fenceLen = info.length
+      out.push(line)
+      continue
+    }
+
+    out.push(replaceKbReferencesInPlainLine(line))
+  }
+
+  return out.join('\n')
+}
+
 export interface RemovedGroup {
   beforeLine: number
   lines: string[]

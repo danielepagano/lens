@@ -4,6 +4,7 @@
   import {
     preprocessAnnotations,
     preprocessBlockquotePills,
+    preprocessKbReferencePills,
     preprocessThinkingTags,
     createMarkdownRenderer,
     buildNodeTransactionOverlay,
@@ -40,7 +41,11 @@
   $: rendered = $nodeContent
     ? md.render(
         preprocessThinkingTags(
-          preprocessAnnotations(preprocessBlockquotePills($nodeContent), $currentAddress, overlay),
+          preprocessAnnotations(
+            preprocessKbReferencePills(preprocessBlockquotePills($nodeContent)),
+            $currentAddress,
+            overlay,
+          ),
         ),
       )
     : ''
@@ -137,6 +142,12 @@
   $: kbBlockMap = $nodeContent ? parseKbBlocks($nodeContent) : new Map<string, string>()
 
   async function handleMarkdownClick(e: MouseEvent) {
+    const pinEl = (e.target as HTMLElement).closest('[data-kb-open-id]')
+    if (pinEl) {
+      const id = pinEl.getAttribute('data-kb-open-id')
+      if (id) openKbItem(id)
+      return
+    }
     const btn = (e.target as HTMLElement).closest('[data-kb-id]') as HTMLButtonElement | null
     if (!btn) return
     const kbId = btn.dataset.kbId

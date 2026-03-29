@@ -1,5 +1,5 @@
 <!-- A prepared situation for play. Usage: pin this when the scene starts; play reads it as a script. Can be any situation type: combat, social, chase, puzzle, heist, or any mix. Link to participants and relevant objects. -->
-Encounter name (short, evocative)
+Encounter name
 
 - Situation: (what's happening, in one or two sentences)
 - Stakes: (what can go wrong, what's at risk)

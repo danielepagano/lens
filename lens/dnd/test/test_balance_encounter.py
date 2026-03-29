@@ -126,15 +126,23 @@ class TestBalanceEncounter(unittest.TestCase):
             "stat.zombie": ["cr:1-4", "type:undead"], # XP 50
             "stat.dragon": ["cr:24", "type:dragon"], # XP 62000
             "stat.rat": ["cr:0", "type:beast"], # XP 10
-            "stat.wight": ["cr:3", "type:undead"] # XP 700
+            "stat.wight": ["cr:3", "type:undead"], # XP 700
+            "stat.ally_cr20": ["cr:20", "type:humanoid"],
         })
         
         # Empty everything
         res = compute_encounters([], [], "moderate", [5], [], kb)
         self.assertTrue("Error:" in res)
         
-        # Allies are applied to the budget (not ignored): CR 20 ally adds 25_000 XP → vastly more filler.
-        res = compute_encounters([{"id": "stat.zombie", "count": 1}], [], "moderate", [1], ["20"], kb)
+        # Allies use stat ids + counts; XP from cr: tags (CR 20 → 25_000 per ally stat block).
+        res = compute_encounters(
+            [{"id": "stat.zombie", "count": 1}],
+            [],
+            "moderate",
+            [1],
+            [{"id": "stat.ally_cr20", "count": 1}],
+            kb,
+        )
         self.assertIn("stat.zombie", res)
         self.assertNotIn("Error:", res)
         # Adjusted budget = 75 + 25000 = 25075, remaining 25025 → many zombies
@@ -179,7 +187,7 @@ class TestBalanceEncounter(unittest.TestCase):
         self.assertTrue("Option A" in res)
 
     def test_allies_increase_budget_deterministic_fill(self) -> None:
-        """Each ally CR adds XP to the budget; enemy counts scale to PCs + allies."""
+        """Each allied stat block adds count × XP(cr:) to the budget; enemy counts scale."""
         import re
 
         def zombie_qty_option_a(s: str) -> int:
@@ -191,18 +199,34 @@ class TestBalanceEncounter(unittest.TestCase):
             assert m is not None, block
             return int(m.group(1))
 
-        kb = self._mock_kb({"stat.zombie": ["cr:1-4", "type:undead"]})
+        kb = self._mock_kb({
+            "stat.zombie": ["cr:1-4", "type:undead"],
+            "stat.ally_fodder": ["cr:1-8", "type:humanoid"],
+            "stat.ally_officer": ["cr:1", "type:humanoid"],
+        })
         required = [{"id": "stat.zombie", "count": 1}]
         optional: list[str] = []
         pcs = [3, 3, 3, 3]
 
         res_pc_only = compute_encounters(required, optional, "moderate", pcs, [], kb)
-        allies = ["1/8"] * 12 + ["1", "1"]
+        allies = [{"id": "stat.ally_fodder", "count": 12}, {"id": "stat.ally_officer", "count": 2}]
         res_with_allies = compute_encounters(required, optional, "moderate", pcs, allies, kb)
 
         self.assertEqual(zombie_qty_option_a(res_pc_only), 18)
         self.assertEqual(zombie_qty_option_a(res_with_allies), 32)
         self.assertGreater(zombie_qty_option_a(res_with_allies), zombie_qty_option_a(res_pc_only))
+
+    def test_allies_rejects_non_object_entries(self) -> None:
+        kb = self._mock_kb({"stat.zombie": ["cr:1-4"]})
+        res = compute_encounters([], ["stat.zombie"], "moderate", [3], ["stat.guard"], kb)
+        self.assertIn("Error:", res)
+        self.assertIn("each 'allies' entry", res)
+
+    def test_required_rejects_non_object_entries(self) -> None:
+        kb = self._mock_kb({"stat.zombie": ["cr:1-4"]})
+        res = compute_encounters(["stat.zombie"], [], "moderate", [3], [], kb)
+        self.assertIn("Error:", res)
+        self.assertIn("each 'required' entry", res)
 
 
 class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):

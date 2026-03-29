@@ -1,5 +1,5 @@
 <!-- D&D: prepared situation for play. Pin when the scene starts. Combat uses stat.* blocks and Prep roster below. -->
-Encounter name (short, evocative)
+Encounter name
 
 ## Situation
 
