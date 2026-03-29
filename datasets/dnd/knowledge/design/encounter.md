@@ -20,7 +20,7 @@ Ask about:
 2: ASSEMBLE PARTICIPANTS
 Participants include any given PCs, plus:
 - Named NPCs (recurring non-player characters) have `npc.*` objects
-- Factions have `faction.*` objects (if any are provided)
+- Factions have `faction.*` objects
 - Locations: if the encounter is in a specific, sufficiently complex, recurring place, it may have a `location.*` object
 
 IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest that the user load the appropriate module; if they decline, add necessary detail in the encounter itself, not new objects.
@@ -40,7 +40,7 @@ IMPORTANT: if you think you are missing objects, DO NOT just create them! There 
 
 **Part 3 — `## Prep and reference`:** For combat, **mandatory** **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). Non-combat or no stat-backed creatures: note **`— none`** or omit stat lines.
 
-Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list; pasting stat bodies instead of tokens; **`KB['stat.…']`** outside Prep; **`allies`** in the tool that don't match the allied **`stat.*`** lines you write in Prep (ids or counts).
+Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list; pasting stat bodies instead of tokens; **`KB['stat.…']`** outside Prep; **`allies`** in the tool that don't match the allied **`stat.*`** lines you write in Prep (ids or counts). You should never emit kb items for any other object type (faction, npc, location, etc.), only the encounter.
 
 5: SECRETS
 Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.

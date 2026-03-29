@@ -423,6 +423,7 @@ details[open]>summary {
   padding: 0.1rem 0.5rem;
   font-size: 0.8rem;
   font-family: inherit;
+  margin-bottom: 0;
   background-color: var(--pico-secondary-background);
   color: var(--pico-color);
   border: 1px solid var(--pico-muted-border-color);

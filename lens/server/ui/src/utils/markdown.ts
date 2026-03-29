@@ -71,8 +71,17 @@ export function preprocessBlockquotePills(markdown: string): string {
     .join('\n')
 }
 
+// Canonical id with exactly one `.` (type.key); no dots inside type or key segments.
+const KB_PIN_ID = '[a-z][a-z0-9_-]*\\.[a-z0-9][a-z0-9_-]*'
+const KB_PIN_RE = new RegExp(
+  `KB\\['(${KB_PIN_ID})'\\]|(?<![a-zA-Z0-9])@(${KB_PIN_ID})\\b`,
+  'g',
+)
+
 function replaceKbReferencesInPlainLine(line: string): string {
-  return line.replace(/KB\['([a-z][a-z0-9_.-]*)'\]/g, (full, id: string, offset) => {
+  return line.replace(KB_PIN_RE, (full, kbQuoted: string | undefined, atForm: string | undefined, offset) => {
+    const id = kbQuoted ?? atForm
+    if (!id) return full
     const before = line.slice(0, offset)
     if ((before.match(/`/g) ?? []).length % 2 === 1) return full
     return `<button type="button" class="pin-pill markdown-kb-ref" data-kb-open-id="${escapeHtmlText(id)}">${escapeHtmlText(id)}</button>`
@@ -80,9 +89,10 @@ function replaceKbReferencesInPlainLine(line: string): string {
 }
 
 /**
- * Turn `KB['type.key']` (same token as `KnowledgeObject.format()`) into pin-style
- * buttons that open the KB panel (`data-kb-open-id`). Skips fenced code blocks
- * and inline `` `...` `` spans (odd backtick count before the match).
+ * Turn `KB['type.key']` (same token as `KnowledgeObject.format()`) and `@type.key`
+ * into pin-style buttons (`data-kb-open-id`). Each id must contain exactly one
+ * period (no `a.b.c`). `@` is not matched after alphanumerics (avoids `user@host`).
+ * Skips fenced code blocks and inline `` `...` `` spans.
  * Run after `preprocessBlockquotePills`, before `preprocessAnnotations`.
  */
 export function preprocessKbReferencePills(markdown: string): string {
