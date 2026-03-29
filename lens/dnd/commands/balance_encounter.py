@@ -406,7 +406,10 @@ def compute_encounters(
 
         total_monsters = sum(e.count for e in sol.entries)
         if party_size > 0 and (total_monsters / party_size) > 4:
-            remarks.append("You have more than the recommended number of enemies per ally; this encounter may be harder than CR math suggests, consider lowering enemy count")
+            remarks.append(
+                "You have more than the recommended number of enemies per party member (PCs + allies); "
+                "this encounter may be harder than CR math suggests, consider lowering enemy count"
+            )
             
         if not optional and remaining > 0 and committed_xp <= adjusted_budget and not [e for e in required if _stat_xp(e.id, kb) > 0 and math.floor(remaining / _stat_xp(e.id, kb)) >= 1]:
             remarks.append("no optional candidates provided; consider using kb with-tag to discover candidates first")
@@ -455,7 +458,12 @@ balance_encounter_SCHEMA = {
         "allies": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "Optional ally CRs as fraction strings ('1/2', '2', etc.) that fight with the party and increase the effective budget (encounter becomes easier)."
+            "description": (
+                "One CR string per combatant fighting on the party's side (same format as monster CR: "
+                "'1/8', '1/2', '1', …). Each ally's CR is converted to build XP and **added** to the "
+                "encounter budget so enemy counts match **PCs plus every ally** — the tool uses this "
+                "list; omit it only when no allies join the fight."
+            ),
         }
     },
     "required": ["required", "optional", "difficulty", "pcs"]

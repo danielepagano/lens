@@ -133,13 +133,13 @@ class TestBalanceEncounter(unittest.TestCase):
         res = compute_encounters([], [], "moderate", [5], [], kb)
         self.assertTrue("Error:" in res)
         
-        # Strong allies: we still fill to adjusted budget (more opponents), no special remark
+        # Allies are applied to the budget (not ignored): CR 20 ally adds 25_000 XP → vastly more filler.
         res = compute_encounters([{"id": "stat.zombie", "count": 1}], [], "moderate", [1], ["20"], kb)
         self.assertIn("stat.zombie", res)
         self.assertNotIn("Error:", res)
         # Adjusted budget = 75 + 25000 = 25075, remaining 25025 → many zombies
         self.assertIn("[50", res)  # count 501 or similar
-        
+
         # Invalid difficulty / PC levels
         res = compute_encounters([], ["stat.zombie"], "impossible", [1], [], kb)
         self.assertTrue("Error: Invalid difficulty 'impossible'" in res)
@@ -158,10 +158,9 @@ class TestBalanceEncounter(unittest.TestCase):
         res = compute_encounters([{"id": "stat.wight", "count": 1}], [], "moderate", [5, 1], [], kb) # Budget 750+75=825. Remaining 125.
         self.assertTrue("no optional candidates provided; consider using kb with-tag" in res)
         
-        # Too many enemies per ally
-        # PCs: 4, so threshold is 4 * 4 = 16. If we have 20 zombies, it should warn.
+        # Too many enemies per party member (PCs only here → party_size 4, threshold 16 monsters)
         res = compute_encounters([{"id": "stat.zombie", "count": 20}], [], "moderate", [5, 5, 5, 5], [], kb)
-        self.assertTrue("You have more than the recommended number of enemies per ally" in res)
+        self.assertIn("enemies per party member", res)
 
     def test_compute_encounters_full_run(self) -> None:
         kb = self._mock_kb({
@@ -178,6 +177,32 @@ class TestBalanceEncounter(unittest.TestCase):
         self.assertTrue("stat.zombie" in res)
         self.assertTrue("stat.wight" in res)
         self.assertTrue("Option A" in res)
+
+    def test_allies_increase_budget_deterministic_fill(self) -> None:
+        """Each ally CR adds XP to the budget; enemy counts scale to PCs + allies."""
+        import re
+
+        def zombie_qty_option_a(s: str) -> int:
+            start = s.find("> Option A")
+            assert start >= 0, s
+            end = s.find("> Option B", start)
+            block = s[start:end] if end > start else s[start:]
+            m = re.search(r"\[(\d+)\] stat\.zombie", block)
+            assert m is not None, block
+            return int(m.group(1))
+
+        kb = self._mock_kb({"stat.zombie": ["cr:1-4", "type:undead"]})
+        required = [{"id": "stat.zombie", "count": 1}]
+        optional: list[str] = []
+        pcs = [3, 3, 3, 3]
+
+        res_pc_only = compute_encounters(required, optional, "moderate", pcs, [], kb)
+        allies = ["1/8"] * 12 + ["1", "1"]
+        res_with_allies = compute_encounters(required, optional, "moderate", pcs, allies, kb)
+
+        self.assertEqual(zombie_qty_option_a(res_pc_only), 18)
+        self.assertEqual(zombie_qty_option_a(res_with_allies), 32)
+        self.assertGreater(zombie_qty_option_a(res_with_allies), zombie_qty_option_a(res_pc_only))
 
 
 class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):

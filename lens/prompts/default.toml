@@ -158,4 +158,4 @@ Output only the summary text — no preamble, no meta-commentary.
 TEXT TO SUMMARIZE:
 {content}'''
 
-tool.balance_encounter.prompt_snippet = '''Use balance_encounter to generate up to three balanced encounter proposals from a ranked candidate list. Pass PC levels explicitly from context (level:N tags on pinned pc.* objects) and ally CRs if any allies fight alongside the party. The tool uses D&D 2024 XP budget math (no monster-count multiplier).'''
+tool.balance_encounter.prompt_snippet = '''Use balance_encounter to generate up to three balanced encounter proposals from a ranked candidate list. Pass PC levels explicitly from context (level:N tags on pinned pc.* objects). If NPCs fight on the party's side, pass `allies` as one CR string per fighting ally (e.g. twelve 1/8 guards and two CR-1 veterans → twelve "1/8" and two "1"); each entry adds XP to the budget so enemies scale to the **whole** battlefield, not PCs alone. The tool uses D&D 2024 XP budget math (no monster-count multiplier).'''
