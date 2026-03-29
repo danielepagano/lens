@@ -309,6 +309,7 @@ When the user is done with a design session, `lens design --end` runs `kb extrac
 | Encounter | `design.encounter` | `encounter.*` objects | Prepared situations for play (see below) |
 | Location | `design.location` | `location.*` network with parent links | Geography at any scale; story-service gated |
 | NPC | `design.npc` | `npc.*` with links and secrets | Recurring characters; story-service gated |
+| Faction | `design.faction` | `faction.*` with links and secrets | Groups with collective stakes; controls group behavior in encounters |
 
 #### Encounter objects: the script for `play`
 
