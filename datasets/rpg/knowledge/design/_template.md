@@ -1,5 +1,5 @@
 <!-- Design module. Usage: given to the design operator to guide a specific task. Contains instructions for the AI on how to approach a specific build-out task. These are NOT objects the player creates — they are tools for the design operator. -->
-# [DESIGN MODULE]: <TITLE>
+# [DESIGN MODULE]: {TITLE}
 
 Instructions for the design operator on how to approach a specific build-out task.
 
