@@ -18,7 +18,7 @@ This keeps narrative writes predictable.
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +34,7 @@ CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
 class CommandToolDef:
     description: str
     parameters: dict[str, Any]  # JSON Schema for the LLM
+    limited_to_datasets: list[str] = field(default_factory=list[str])
 
 
 _REGISTRY: dict[str, tuple[CommandToolDef, CommandToolFn]] = {}
@@ -47,8 +48,26 @@ def register_command_tool(
     _REGISTRY[name] = (tool_def, fn)
 
 
-def get_command_registry() -> dict[str, tuple[CommandToolDef, CommandToolFn]]:
-    return dict(_REGISTRY)
+def get_command_registry(
+    project_root: Path | None = None,
+) -> dict[str, tuple[CommandToolDef, CommandToolFn]]:
+    """Return command tools, optionally filtered by the project's active datasets.
+
+    When *project_root* is None all tools are returned (e.g. for tests that
+    don't have a live project).  When provided, tools whose
+    ``limited_to_datasets`` list is non-empty are excluded unless at least one
+    of their required datasets is active for that project.
+    """
+    if project_root is None:
+        return dict(_REGISTRY)
+    from lens.core.project import get_selected_datasets
+    from lens.core.tools import operator_applies_to_session
+    selected = get_selected_datasets(project_root)
+    return {
+        name: (tool_def, fn)
+        for name, (tool_def, fn) in _REGISTRY.items()
+        if operator_applies_to_session(selected, tool_def.limited_to_datasets)
+    }
 
 
 # ---------------------------------------------------------------------------

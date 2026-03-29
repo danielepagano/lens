@@ -1055,7 +1055,7 @@ class Operator(ABC):
         # use_command_tools = False.
         command_handlers: dict[str, CommandToolFn] | None = None
         if cls.use_command_tools:
-            cmd_registry = get_command_registry()
+            cmd_registry = get_command_registry(session.project_root)
             if cmd_registry:
                 command_handlers = {
                     name: fn for name, (_def, fn) in cmd_registry.items()
