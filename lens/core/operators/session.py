@@ -445,6 +445,10 @@ class SessionOperator(Operator):
                 cancel_event=cancel_event,
             )
 
+        mention_ids = cls.mention_pins(prompt, session.project_root)
+        if mention_ids:
+            pins = pins + mention_ids
+
         session_node, _ = cls.find_active_session(narrative)
 
         if session_node is not None:
