@@ -106,7 +106,7 @@ class DesignOperator(SessionOperator):
             instruction=instruction,
         )
 
-        cmd_registry = get_command_registry()
+        cmd_registry = get_command_registry(session.project_root)
         tools_payload = [
             {
                 "type": "function",

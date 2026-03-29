@@ -58,7 +58,7 @@ async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
     yield StreamEvent(
         final=FinalPayload(
             text="Generated content",
-            tool_call=None,
+            tool_calls=[],
             usage=None,
             interrupted=False,
         )
@@ -78,21 +78,19 @@ def _run_inline(
 ) -> None:
     mock = generate_mock or _fake_generate_stream
     with patch("lens.core.operator.generate_stream", new=mock):
-        # Ensure no operator tools are active so tests use the stream_output path.
-        with patch("lens.core.operator.get_tool_registry", return_value={}):
-            with contextlib.redirect_stdout(io.StringIO()):
-                with contextlib.redirect_stderr(io.StringIO()):
-                    asyncio.run(
-                        WriteOperator.run_inline(
-                            session=ProjectSession(root, root),
-                            narrative=narrative,
-                            prompt=prompt,
-                            pins=pins or [],
-                            unpins=unpins or [],
-                            llm_id=llm_id,
-                            retry=retry,
-                        )
+        with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stderr(io.StringIO()):
+                asyncio.run(
+                    WriteOperator.run_inline(
+                        session=ProjectSession(root, root),
+                        narrative=narrative,
+                        prompt=prompt,
+                        pins=pins or [],
+                        unpins=unpins or [],
+                        llm_id=llm_id,
+                        retry=retry,
                     )
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +191,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="More text",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -226,7 +224,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Retried content",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -255,7 +253,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Fresh content",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -285,7 +283,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Updated content",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )

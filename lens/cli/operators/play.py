@@ -6,7 +6,6 @@ from typing import Any
 import typer
 
 from lens.cli.options import pin_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
-from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
@@ -139,7 +138,6 @@ def play(
                 on_stream_target=None,
                 cancel_event=None,
                 extra_params=_play_extra_params(as_pc, wait),
-                on_confirm=confirm_tool_call,
             )
         )
         print()  # ensure final newline

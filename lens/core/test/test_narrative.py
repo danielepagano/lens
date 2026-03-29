@@ -28,7 +28,7 @@ async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
     yield StreamEvent(
         final=FinalPayload(
             text="Section summary.",
-            tool_call=None,
+            tool_calls=[],
             usage=None,
             interrupted=False,
         )

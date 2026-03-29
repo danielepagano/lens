@@ -374,7 +374,7 @@ class TestRunAdvanceSummary(unittest.TestCase):
 
         async def _gen(*_args: Any, **_kwargs: Any) -> Any:
             yield StreamEvent(
-                final=FinalPayload(text=response_text, tool_call=None, usage=None, interrupted=False)
+                final=FinalPayload(text=response_text, tool_calls=[], usage=None, interrupted=False)
             )
 
         return _gen

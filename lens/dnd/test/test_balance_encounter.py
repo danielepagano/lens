@@ -1,4 +1,7 @@
+import shutil
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 from lens.dnd.commands.balance_encounter import (
     cr_tag_to_float,
@@ -9,6 +12,10 @@ from lens.dnd.commands.balance_encounter import (
     _rank_solutions, # pyright: ignore[reportPrivateUsage]
     RequiredEntry,
     CandidateSolution,
+)
+from lens.core.command_tools import (
+    _REGISTRY as _CMD_REGISTRY,  # pyright: ignore[reportPrivateUsage]
+    get_command_registry,
 )
 
 class TestBalanceEncounter(unittest.TestCase):
@@ -171,3 +178,74 @@ class TestBalanceEncounter(unittest.TestCase):
         self.assertTrue("stat.zombie" in res)
         self.assertTrue("stat.wight" in res)
         self.assertTrue("Option A" in res)
+
+
+class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):
+    """Verify balance_encounter is registered as a command tool and is correctly
+    gated on the 'dnd' dataset so it is visible to the design operator."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self.root = Path(self._tmp)
+        # Registration happens at module import time; the top-level imports in
+        # this test file already load lens.dnd.commands.balance_encounter.
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_balance_encounter_in_command_registry(self) -> None:
+        """balance_encounter must be present in the command tool registry."""
+        self.assertIn(
+            "balance_encounter",
+            _CMD_REGISTRY,
+            "balance_encounter was not registered as a command tool; "
+            "it will be invisible to the design operator",
+        )
+
+    def test_balance_encounter_limited_to_dnd_dataset(self) -> None:
+        """balance_encounter's limited_to_datasets must be ['dnd']."""
+        tool_def, _ = _CMD_REGISTRY["balance_encounter"]
+        self.assertEqual(
+            tool_def.limited_to_datasets,
+            ["dnd"],
+            "balance_encounter should be limited to the 'dnd' dataset",
+        )
+
+    def test_balance_encounter_excluded_without_dnd_dataset(self) -> None:
+        """When lens.toml has no datasets, balance_encounter must not appear."""
+        (self.root / "lens.toml").write_text("[project]\n")
+        registry = get_command_registry(self.root)
+        self.assertNotIn(
+            "balance_encounter",
+            registry,
+            "balance_encounter should be hidden when the dnd dataset is not active",
+        )
+
+    def test_balance_encounter_excluded_with_other_dataset(self) -> None:
+        """When lens.toml lists only a non-dnd dataset, balance_encounter must not appear."""
+        (self.root / "lens.toml").write_text('[project]\ndatasets = ["rpg"]\n')
+        registry = get_command_registry(self.root)
+        self.assertNotIn("balance_encounter", registry)
+
+    def test_balance_encounter_included_with_dnd_dataset(self) -> None:
+        """When lens.toml includes 'dnd', balance_encounter must appear in the registry."""
+        (self.root / "lens.toml").write_text('[project]\ndatasets = ["dnd"]\n')
+        registry = get_command_registry(self.root)
+        self.assertIn(
+            "balance_encounter",
+            registry,
+            "balance_encounter should be available when the dnd dataset is active",
+        )
+
+    def test_balance_encounter_included_with_dnd_among_datasets(self) -> None:
+        """balance_encounter appears when 'dnd' is one of multiple datasets."""
+        (self.root / "lens.toml").write_text('[project]\ndatasets = ["rpg", "dnd"]\n')
+        registry = get_command_registry(self.root)
+        self.assertIn("balance_encounter", registry)
+
+    def test_balance_encounter_has_schema_and_description(self) -> None:
+        """The command tool definition must include a non-empty description and schema."""
+        tool_def, fn = _CMD_REGISTRY["balance_encounter"]
+        self.assertTrue(tool_def.description, "description must not be empty")
+        self.assertIn("required", tool_def.parameters.get("required", []))
+        self.assertIsNotNone(fn)

@@ -285,8 +285,8 @@ class TestParseTailCursorAnnotation(unittest.TestCase):
         self.assertEqual(ann.operator, "section")
         self.assertEqual(ann.id, "ch1")
 
-    def test_multi_line_with_chain_params_returns_cursor(self) -> None:
-        tail = "[section:ch1\n  chain:\n    write: {}\n]: #\n"
+    def test_multi_line_with_yaml_params_returns_cursor(self) -> None:
+        tail = "[section:ch1\n  kb_pin: [a.b]\n]: #\n"
         ann = parse_tail_cursor_annotation(tail)
         self.assertIsNotNone(ann)
         assert ann is not None

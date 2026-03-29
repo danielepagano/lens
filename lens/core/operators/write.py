@@ -14,22 +14,12 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from lens.core.operator import Operator
-from lens.core.prompts import PromptStore, tool_prompt_key
-from lens.core.tools import OperatorToolDef
-
-# ---------------------------------------------------------------------------
-# Prompt constants
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# Operator class
-# ---------------------------------------------------------------------------
+from lens.core.prompts import PromptStore
 
 
 class WriteOperator(Operator):
     name: ClassVar[str] = "write"
     requires_id: ClassVar[bool] = False
-    use_operator_tools: ClassVar[bool] = False
 
     @property
     def system_prompt(self) -> str:
@@ -39,34 +29,3 @@ class WriteOperator(Operator):
         prompt = params.get("prompt")
         prompts = PromptStore(self.project_root)
         return prompts.format("write.instruction_with_prompt", prompt=prompt) if prompt else prompts.get("write.instruction_continue")
-
-
-# ---------------------------------------------------------------------------
-# Tool registration
-# ---------------------------------------------------------------------------
-
-WriteOperator.register_as_tool(
-    OperatorToolDef(
-        parameters={
-            "type": "object",
-            "properties": {
-                "prompt": {
-                    "type": "string",
-                    "description": "Writing direction or instruction for the narrative continuation",
-                },
-                "kb_pin": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "KB IDs to pin for this call",
-                },
-                "kb_unpin": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "KB IDs to unpin for this call",
-                },
-            },
-        },
-        prompt_snippet=PromptStore(None).get(tool_prompt_key("write")),
-        keep_text=True,
-    )
-)

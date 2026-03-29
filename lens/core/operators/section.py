@@ -14,19 +14,16 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Awaitable
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar
 
 from lens.core.annotations import strip_markdown_comments
-from lens.core.knowledge import validate_ids_exist
 from lens.core.context import crawl
 from lens.core.llm import generate_stream
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator
-from lens.core.storage import Storage
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, validate_slug
-from lens.core.prompts import PromptStore, tool_prompt_key
-from lens.core.tools import OperatorToolDef, register_operator_tool
+from lens.core.prompts import PromptStore
 
 
 def section_open_tag(id: str) -> str:
@@ -58,7 +55,6 @@ class SectionOperator(Operator):
         id: str,
         pins: list[str] | None = None,
         unpins: list[str] | None = None,
-        chain: dict[str, object] | None = None,
     ) -> NarrativeNode:
         """Create a child node and open the section annotation."""
         cursor = self.narrative_root.find_cursor()
@@ -69,8 +65,6 @@ class SectionOperator(Operator):
             params["kb_pin"] = pins
         if unpins:
             params["kb_unpin"] = unpins
-        if chain:
-            params["chain"] = chain
         child = self.create_subnode(cursor, id, params=params if params else None)
         if pins:
             pin_to_node(child, pins, self.storage)
@@ -173,86 +167,3 @@ class SectionOperator(Operator):
         await op.end(session, llm_id=llm_id, on_token=on_token, cancel_event=cancel_event)
         return key
 
-
-# ---------------------------------------------------------------
-# Tool registration
-# ---------------------------------------------------------------
-
-
-def _section_invoke(
-    args: dict[str, object],
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    storage: Storage | None = None,
-) -> NarrativeNode:
-    id_val = args.get("id")
-    if not isinstance(id_val, str) or not id_val:
-        raise ValueError("section tool requires non-empty 'id'")
-    raw_pins = args.get("kb_pin")
-    pins: list[str] = (
-        [x for x in raw_pins if isinstance(x, str)]  # pyright: ignore[reportUnknownVariableType]
-        if isinstance(raw_pins, list)
-        else []
-    )
-    raw_unpins = args.get("kb_unpin")
-    unpins: list[str] = (
-        [x for x in raw_unpins if isinstance(x, str)]  # pyright: ignore[reportUnknownVariableType]
-        if isinstance(raw_unpins, list)
-        else []
-    )
-    if pins or unpins:
-        validate_ids_exist(session.project_root, pins + unpins)
-    cursor = narrative.find_cursor()
-    rel_path = str(cursor.md_path().relative_to(session.git_root))
-    owner = SectionOperator.owner_id(id_val, rel_path)
-    st = storage if storage is not None else session.new_storage(owner=owner)
-    op = SectionOperator(st, narrative)
-    raw_chain = args.get("chain")
-    chain_for_ann: dict[str, object] | None = (
-        cast(dict[str, object], raw_chain) if isinstance(raw_chain, dict) else None
-    )
-    return op.start(id_val, pins=pins, unpins=unpins, chain=chain_for_ann)
-
-
-async def _section_tool_invoke(
-    args: dict[str, object],
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    depth: int,
-    on_token: Callable[[str], Awaitable[None]] | None,
-    on_confirm: Callable[[str, str], Awaitable[bool]] | None,
-    *,
-    storage: Storage | None = None,
-    cursor: NarrativeNode | None = None,
-) -> NarrativeNode | None:
-    return _section_invoke(args, session, narrative, storage=storage)
-
-
-register_operator_tool(
-    "section",
-    OperatorToolDef(
-        parameters={
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string",
-                    "description": "Section ID (alphanumeric, underscores, hyphens)",
-                },
-                "kb_pin": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "KB IDs to pin in the new section's front matter",
-                },
-                "kb_unpin": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "KB IDs to unpin in the new section's front matter",
-                },
-            },
-            "required": ["id"],
-        },
-        prompt_snippet=PromptStore(None).get(tool_prompt_key("section")),
-        keep_text=True,
-    ),
-    _section_tool_invoke,
-)

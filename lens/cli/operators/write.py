@@ -5,7 +5,6 @@ import asyncio
 import typer
 
 from lens.cli.options import pin_option, unpin_option
-from lens.cli.utils import confirm_tool_call
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
@@ -70,7 +69,6 @@ def write(
                 llm_id=llm,
                 retry=retry,
                 on_token=_print_token,
-                on_confirm=confirm_tool_call,
             )
         )
         print() # ensure final newline

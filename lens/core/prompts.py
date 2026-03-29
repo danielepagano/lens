@@ -43,15 +43,6 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "advance.instruction_template": PromptSpec("advance.instruction_template", frozenset({"days", "current_day", "rolls_text"})),
     "session.summary_system": PromptSpec("session.summary_system", frozenset()),
     "session.summary_instruction_template": PromptSpec("session.summary_instruction_template", frozenset({"content"})),
-    "operator.chaining_instructions": PromptSpec("operator.chaining_instructions", frozenset()),
-    "operator.handoff_keep_text_description": PromptSpec("operator.handoff_keep_text_description", frozenset()),
-    "operator.handoff_chain_description": PromptSpec("operator.handoff_chain_description", frozenset()),
-    "operator.handoff_chain_name_description": PromptSpec("operator.handoff_chain_name_description", frozenset()),
-    "operator.handoff_chain_id_description": PromptSpec("operator.handoff_chain_id_description", frozenset()),
-    "operator.handoff_chain_arguments_description": PromptSpec("operator.handoff_chain_arguments_description", frozenset()),
-    "tool.write.prompt_snippet": PromptSpec("tool.write.prompt_snippet", frozenset()),
-    "tool.play.prompt_snippet": PromptSpec("tool.play.prompt_snippet", frozenset()),
-    "tool.section.prompt_snippet": PromptSpec("tool.section.prompt_snippet", frozenset()),
     "tool.balance_encounter.prompt_snippet": PromptSpec("tool.balance_encounter.prompt_snippet", frozenset()),
 }
 
