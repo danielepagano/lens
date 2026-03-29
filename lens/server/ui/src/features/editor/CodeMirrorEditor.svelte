@@ -46,7 +46,12 @@
   ])
 
   export let content: string
-  export let editableRange: { fromLine: number; toLine: number } | null = null
+  /** Inline replace: pass `linesAfterSelection` so prefix + last N lines stay read-only when line count changes. */
+  export let editableRange: {
+    fromLine: number
+    toLine: number
+    linesAfterSelection?: number
+  } | null = null
   export let lang: 'markdown' | 'plain' = 'markdown'
   /** When set, the editor is read-only; pickable lines are chosen via click or gutter. */
   export let linePickLineStates: Map<number, LinePickRowState> | null = null
@@ -135,11 +140,45 @@
 
   const readonlyLineDeco = Decoration.line({ class: 'cm-readonly-line' })
 
+  /** Character range allowed to change; computed on a given document state. */
+  function editableCharRange(state: EditorState): { from: number; to: number } | null {
+    if (!editableRange) return null
+    const n = state.doc.lines
+    const fl = editableRange.fromLine
+    const tl = editableRange.toLine
+    const tail = editableRange.linesAfterSelection
+    if (tail === undefined) {
+      if (n < 1) return null
+      const a = Math.min(Math.max(1, fl), n)
+      const b = Math.min(Math.max(1, tl), n)
+      if (a > b) return null
+      return { from: state.doc.line(a).from, to: state.doc.line(b).to }
+    }
+    const prefixEnd = fl - 1
+    const suffixStart = n - tail + 1
+    const firstEditable = prefixEnd + 1
+    const lastEditable = suffixStart - 1
+    if (firstEditable < 1 || lastEditable > n || firstEditable > lastEditable) return null
+    return { from: state.doc.line(firstEditable).from, to: state.doc.line(lastEditable).to }
+  }
+
   function buildReadonlyDecorations(state: EditorState): DecorationSet {
     if (!editableRange) return Decoration.none
     const builder: import('@codemirror/state').Range<Decoration>[] = []
-    for (let i = 1; i <= state.doc.lines; i++) {
-      if (i < editableRange.fromLine || i > editableRange.toLine) {
+    const n = state.doc.lines
+    const tail = editableRange.linesAfterSelection
+    if (tail === undefined) {
+      for (let i = 1; i <= n; i++) {
+        if (i < editableRange.fromLine || i > editableRange.toLine) {
+          builder.push(readonlyLineDeco.range(state.doc.line(i).from))
+        }
+      }
+      return Decoration.set(builder)
+    }
+    const prefixEnd = editableRange.fromLine - 1
+    const suffixStart = n - tail + 1
+    for (let i = 1; i <= n; i++) {
+      if (i <= prefixEnd || i >= suffixStart) {
         builder.push(readonlyLineDeco.range(state.doc.line(i).from))
       }
     }
@@ -163,16 +202,13 @@
 
   function rangeFilter(): Extension {
     if (!editableRange) return []
-    const fromLine = editableRange.fromLine
-    const toLine = editableRange.toLine
     return EditorState.transactionFilter.of((tr) => {
       if (!tr.docChanged) return tr
-      const doc = tr.startState.doc
-      const editFrom = doc.line(Math.min(fromLine, doc.lines)).from
-      const editTo = doc.line(Math.min(toLine, doc.lines)).to
+      const band = editableCharRange(tr.startState)
+      if (!band) return []
       let dominated = true
       tr.changes.iterChangedRanges((chFrom, chTo) => {
-        if (chFrom < editFrom || chTo > editTo) dominated = false
+        if (chFrom < band.from || chTo > band.to) dominated = false
       })
       return dominated ? tr : []
     })

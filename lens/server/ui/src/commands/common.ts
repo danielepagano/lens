@@ -57,11 +57,32 @@ export interface CommandModule {
 }
 
 /**
- * Normalize a narrative address: ensure it starts with `/` and does not end with `/`.
+ * Normalize a narrative address for CLI/API: trim trailing slashes.
+ * - Nav form (`story/chapter`) — first segment is the narrative slug — is passed through unchanged.
+ * - Bare segment (`chapter`) becomes `/chapter` (display form: path under active narrative).
  */
 export function normalizeAddress(addr: string | undefined): string | undefined {
   if (!addr) return undefined
-  let normalized = addr.replace(/\/+$/, '')
-  if (!normalized.startsWith('/')) normalized = '/' + normalized
-  return normalized
+  const normalized = addr.replace(/\/+$/, '')
+  if (!normalized) return '/'
+  if (normalized.startsWith('/')) return normalized
+  if (normalized.includes('/')) return normalized
+  return '/' + normalized
+}
+
+/**
+ * Convert a normalized address to the nav string used by `currentAddress` / `getNode` (e.g. `story/chapter-1`).
+ * Display-relative paths (`/scene`) are prefixed with the active narrative root slug.
+ */
+export function addressToNavAddress(normalized: string, narrativeRoot: string): string {
+  if (normalized.includes('/') && !normalized.startsWith('/')) {
+    return normalized
+  }
+  if (normalized === '/' || normalized === '') {
+    return narrativeRoot
+  }
+  if (normalized.startsWith('/')) {
+    return narrativeRoot + normalized
+  }
+  return narrativeRoot + '/' + normalized
 }

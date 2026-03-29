@@ -9,7 +9,8 @@ import type {
   CommandHandler,
   CommandModule,
 } from './common'
-import { normalizeAddress } from './common'
+import { normalizeAddress, addressToNavAddress } from './common'
+import { stats } from '../stores/stats'
 
 function scrollContentToBottom(): void {
   const content = document.querySelector('[data-testid="markdown-view"]')
@@ -301,14 +302,30 @@ const handler: CommandHandler = async (
       if (replace && !prompt) {
         // Inline edit mode: show CodeMirror editor instead of sending to server
         streamingPreview.set(null)
+        const root =
+          get(stats)?.active_narrative ??
+          (() => {
+            const cur = get(currentAddress)
+            if (!cur) return ''
+            const i = cur.indexOf('/')
+            return i === -1 ? cur : cur.slice(0, i)
+          })()
+        const navAddress = root ? addressToNavAddress(address!, root) : address!
+        if (ctx.navigate) {
+          await ctx.navigate(navAddress)
+        }
         const content = get(nodeContent)
         const lines = content.split('\n')
         const originalText = lines.slice(startLine - 1, endLine).join('\n')
+        const linesAfterSelection = lines.length - endLine
         inlineEditResult.set(null)
-        // Use currentAddress (nav format) not address (display format) — MarkdownView
-        // checks inlineEditMode.address === $currentAddress for the match.
-        const navAddress = get(currentAddress) ?? address!
-        inlineEditMode.set({ address: navAddress, startLine, endLine, originalText })
+        inlineEditMode.set({
+          address: navAddress,
+          startLine,
+          endLine,
+          originalText,
+          linesAfterSelection,
+        })
 
         const editedText = await new Promise<string | null>((resolve) => {
           const unsubResult = inlineEditResult.subscribe((val) => {

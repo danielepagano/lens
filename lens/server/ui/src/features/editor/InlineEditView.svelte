@@ -10,15 +10,14 @@
     currentText = e.detail
   }
 
-  function extractLines(text: string, from: number, to: number): string {
-    return text.split('\n').slice(from - 1, to).join('\n')
-  }
-
   function confirm() {
     const s = get(inlineEditMode)
     if (!s) return
     const fullText = currentText.length > 0 ? currentText : get(nodeContent)
-    const editedLines = extractLines(fullText, s.startLine, s.endLine)
+    const modifiedLines = fullText.split('\n')
+    const suffix = s.linesAfterSelection
+    const end = modifiedLines.length - suffix
+    const editedLines = modifiedLines.slice(s.startLine - 1, end).join('\n')
     if (editedLines !== s.originalText) {
       inlineEditResult.set(editedLines)
     }
@@ -58,7 +57,11 @@
     </div>
     <CodeMirrorEditor
       content={$nodeContent}
-      editableRange={{ fromLine: state.startLine, toLine: state.endLine }}
+      editableRange={{
+        fromLine: state.startLine,
+        toLine: state.endLine,
+        linesAfterSelection: state.linesAfterSelection,
+      }}
       lang="markdown"
       on:change={handleChange}
     />

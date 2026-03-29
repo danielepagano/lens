@@ -71,6 +71,8 @@ export interface InlineEditState {
   startLine: number
   endLine: number
   originalText: string
+  /** Count of lines strictly after `endLine` in the original document (unchanged suffix). */
+  linesAfterSelection: number
 }
 export const inlineEditMode = writable<InlineEditState | null>(null)
 export const inlineEditResult = writable<string | null>(null)
