@@ -1,6 +1,6 @@
 # [DESIGN MODULE]: NPC CREATION
 
-Build `npc.*` objects — recurring characters controlled by the AI. NOT for transient characters (one-off vendors, random guards, unnamed cultists). Only characters who will appear multiple times or whose behavior needs to be consistent across scenes.
+Build `npc.*` objects — recurring characters controlled by the AI. NOT for transient characters (one-off vendors, random guards, unnamed cultists-they are designed in bulk as factions). Only characters who will appear multiple times or whose behavior needs to be consistent across scenes.
 
 The `npc._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
@@ -14,12 +14,12 @@ WHEN TO CREATE AN NPC OBJECT:
 - The character has secrets, goals, or plans that span multiple encounters
 - The character's relationship with PCs is story-relevant
 - The character needs a consistent voice and personality
-- The character is mechanically significant (has a stat block, special abilities)
+- The character is powerful or mechanically complex (has secrets, special abilities)
 
 WHEN NOT TO:
 - One-scene characters (the innkeeper who gives directions, the guard at the gate)
 - Unnamed members of a faction (use the faction object instead)
-- Monsters that appear once and are fought (use stat block references in encounters)
+- Monsters that appear once and are fought
 
 STEP 1: UNDERSTAND THE CHARACTER
 Ask about:
@@ -27,6 +27,8 @@ Ask about:
 - What do they want? (goals, motivations)
 - How do they present? (appearance, mannerisms, speech patterns)
 - What's their relationship to the PCs?
+- What's their context? Ensure you have relevant faction or location KB objects loaded.
+- Do they have an archetype? The user may provide you with objects/lore about characters of this type.
 - Any secrets?
 
 STEP 2: WRITE THE OBJECT
@@ -45,11 +47,10 @@ If the NPC has secrets:
 - The visible text should read naturally without the secret
 - Secrets should be revealable through play — they're not permanent hidden state, they're things the PCs can discover
 
-STEP 4: TAGS AND LINKS
+STEP 4: LINKS
 - Link to their faction(s) if any
-- Link to their stat block if they have one (`stat.*`)
+- Link to any archetype objects you were provided 
 - Link to any front they drive or are involved in
-- Add mechanical tags if relevant (movement speeds, resistances, conditions)
 
 GUIDELINES:
 - Voice is the most important thing. If the AI can't speak AS this character distinctively, the object needs more personality details and fewer facts.

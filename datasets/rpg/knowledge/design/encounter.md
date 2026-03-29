@@ -1,54 +1,57 @@
 # [DESIGN MODULE]: ENCOUNTER DESIGN
 
-Build `encounter.*` objects — prepared situations for `play` to use as scripts. An encounter is ANY prepared situation with stakes, not just combat. A conversation with a nervous informant, a chase through a burning market, a courtroom trial, a puzzle door, a boss fight — these are all encounters.
+Build `encounter.*` objects — prepared situations for play to use as scripts. An encounter is ANY prepared situation with stakes, not just combat. A conversation with a nervous informant, a chase through a burning market, a courtroom trial, a puzzle door, a boss fight — these are all encounters.
 
 The `encounter._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
 STEP 0: STORY SERVICE CHECK
 Before building anything, establish the connection to the story:
-- What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes.
+- What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes (unless it was already provided).
 - Which PCs does it challenge? Check their `lore.<name>` objects for core questions this scene could pressure.
-- If the encounter doesn't connect to an active front or PC story, push back: why does this scene matter? If the user wants it anyway, suggest creating a front stub for whatever tension drives the scene.
+- If the encounter doesn't connect to an active front or PC story, reflect: why does this scene matter? You may propose a front for whatever tension drives the scene; if the user wants to actually create the front, they will engage with a front design module; your job is still to create the encounter.
 
-STEP 1: UNDERSTAND THE SITUATION
+1: UNDERSTAND THE SITUATION
 Ask about:
 - What's the scene? (where, when, who's involved)
 - What type of situation? (combat, social, chase, puzzle, exploration, or a mix)
 - What's at stake? (consequences of success and failure)
 - Any secrets? (information the player shouldn't see until revealed through play)
 
-STEP 2: BUILD PARTICIPANTS
-For each participant, check if a KB object already exists (`kb_get`). If not:
-- Named NPCs who recur: create `npc.*` objects (fetch `npc._template`)
-- Factions acting as groups: create or link `faction.*` objects
-- Monsters/enemies for combat: link to `stat.*` objects by tag search
+2: ASSEMBLE PARTICIPANTS
+Participants include any given PC's, plus:
+- Named NPCs (recurring non-player characters) have `npc.*` objects
+- Factions, both as context and to control the rules of of groups of creatures have `faction.*` objects
+- Locations: if the encouter occurs is a specific, sufficiently complex, and recurring location, it will have a `location.*` object.
 
-STEP 3: COMBAT BALANCING (if applicable)
+IMPORTANT: if you think you are missing objects, DO NOT just creat them! There are specialized Design Modules for each of these. Suggest to the user that you want to introduce an NPC, faction, or location, and have them decide whether to accept and load the appropriate module for the task. If they decline, just add necessary character and location details in the encounter itself, not other objects.  
+
+3: COMBAT BALANCING (if applicable)
 If the encounter includes combat:
+- Ensure you understand how combat works; `kb_get` the `rules.system` object if you don't already have it.
 - Identify participant power levels from pinned `pc.*` objects (check tags like `level:N`)
-- Use `kb_with_tag` to find stat block candidates by type, habitat, or other relevant tags
+- The system may include pre-made enemies, check for a `stats._template` object for details and useful tags, then use `kb_with_tag` to find stat block candidates by type, habitat, or other relevant tags
 - Rank candidates by narrative fit (a goblin ambush wants goblins, not random level-appropriate monsters)
-- If the game system provides a balancing tool, use it to generate proposals; otherwise use GM judgment to match challenge to party capability
-- Include the selected stat block links in the encounter object
+- If the game system provides a balancing tool like `balance_encounter`, it will be visible to you; use it to generate proposals; otherwise use the game rules and GM judgment to match challenge to party capability
+- Include any selected stat block links in the encounter object
 
-STEP 4: WRITE THE ENCOUNTER OBJECT
-The encounter object should be compact — aim for under 300 words in the body. It's a script, not a novel:
+4: WRITE THE ENCOUNTER OBJECT
+The encounter object should be compact. It's a script, not a novel:
 - Situation: one or two sentences
 - Stakes: what can go wrong
-- Participants: links to npc/faction/stat objects
-- Scene rules: special mechanics. KEEP SHORT. If complex (multi-room dungeon, heist phases), write a brief summary here and link to a `lore.*` object with full details
+- Participants: links or inline descriptions of npc/faction/stat objects
+- Scene rules: special mechanics.
 - Triggers: what causes shifts (dialog to combat, timer expires, reinforcements, secret revealed)
 - Resolution: how it ends and what changes
 
-STEP 5: SECRETS
+5: SECRETS
 If the encounter has secrets (the informant is actually a trap, the merchant is poisoning the drinks, the "abandoned" tower has invisible watchers):
 - Encode secrets using the `ai:secret` comment format so only the AI sees them during play
 - The encounter object's visible text should read naturally without the secret — the player may glimpse object names in pin lists
 
-ENCOUNTER TYPES — NOT RIGID CATEGORIES:
-These are guidelines for scene rules, not separate templates:
+APPENDIX - ENCOUNTER TYPES
+These are guidelines for scene rules, not separate templates or rigid categories:
 
-**Combat**: Link stat blocks. Note terrain features, environmental hazards, and enemy goals (not just "attack"). Enemies have motivations — bandits flee when losing, cultists sacrifice themselves, intelligent foes adapt.
+**Combat**: Link stat blocks or create mechanically interesting adversaries. Note terrain features, environmental hazards, and enemy goals (not just "attack"). Enemies have motivations — bandits flee when losing, cultists sacrifice themselves, intelligent foes adapt.
 
 **Social**: Note each NPC's goals, what they know, what they'll share freely, and what requires checks. Conversation encounters don't need rolls for every exchange — only when the PC pushes past what the NPC would naturally give.
 

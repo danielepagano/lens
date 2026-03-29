@@ -317,7 +317,9 @@ def extract(
     """Extract and upsert KB objects from structured markdown (single transaction).
 
     Each ```kb block must contain YAML front matter (delimited by ---) with an
-    'id' field and an optional 'tags' list. The block body becomes the object content.
+    'id' field and optional 'tags' / 'remove-tags' lists. The block body becomes
+    the object content when non-empty; if the body is empty or whitespace-only
+    and the object already exists, only tags are updated (stored text unchanged).
     Content between blocks is ignored. When given a folder, all .md files within
     it (and its sub-folders) are processed in depth-first lexicographical order.
     """

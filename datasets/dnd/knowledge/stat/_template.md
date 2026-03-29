@@ -1,7 +1,6 @@
-Tags for finding monsters (use with `lens kb with-tag <tag>`):
+Tags for finding stat blocks (use with `lens kb with-tag <tag>`):
 
-- **source:** `source:mm-2025` etc.
-- **cr:** `cr:0`, `cr:1`, `cr:2`, … `cr:25`, and fractional `cr:1-2`, `cr:1-4`, `cr:1-8` (slash encoded as hyphen)
+- **cr (challenge rating):** `cr:0`, `cr:1`, `cr:2`, … `cr:25`, and fractional `cr:1-2`, `cr:1-4`, `cr:1-8` (slash encoded as hyphen)
 - **type:** `type:aberration`, `type:beast`, `type:celestial`, `type:construct`, `type:dragon`, `type:elemental`, `type:fey`, `type:fiend`, `type:giant`, `type:humanoid`, `type:monstrosity`, `type:ooze`, `type:plant`, `type:undead`
 - **size:** `size:tiny`, `size:small`, `size:medium`, `size:large`, `size:huge`, `size:gargantuan`
 - **habitat:** `habitat:arctic`, `habitat:coastal`, `habitat:desert`, `habitat:forest`, `habitat:grassland`, `habitat:hill`, `habitat:mountain`, `habitat:swamp`, `habitat:underdark`, `habitat:underwater`, `habitat:urban`, `habitat:any`; planar: `habitat:planar-abyss`, `habitat:planar-acheron`, `habitat:planar-astral-plane`, `habitat:planar-beastlands`, `habitat:planar-elemental-chaos`, `habitat:planar-elemental-plane-of-air`, `habitat:planar-elemental-plane-of-earth`, `habitat:planar-elemental-plane-of-fire`, `habitat:planar-elemental-plane-of-water`, `habitat:planar-elemental-planes`, `habitat:planar-ethereal-plane`, `habitat:planar-feywild`, `habitat:planar-gehenna`, `habitat:planar-limbo`, `habitat:planar-lower-planes`, `habitat:planar-mechanus`, `habitat:planar-nine-hells`, `habitat:planar-shadowfell`, `habitat:planar-upper-planes`

@@ -527,6 +527,91 @@ Second version.
         tags = store.get_tags("npc.hero")
         self.assertEqual(tags, ["second-tag"])
 
+    def test_tag_only_preserves_body_when_object_exists(self) -> None:
+        kb = KnowledgeStore(self.root)
+        kb.store_object("location.tavern", "Original tavern text.")
+        kb.add_tags("location.tavern", ["location.city"])
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "seed tavern"],
+            cwd=self.root,
+            capture_output=True,
+            check=True,
+        )
+        KnowledgeStore.clear_registry()
+
+        path = self._write_md("tag_only.md", """\
+```kb
+---
+id: location.tavern
+tags:
+  - location.district
+remove-tags:
+  - location.city
+---
+```
+""")
+        result = kb_extract([path])
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.inserted, [])
+        self.assertEqual(result.updated, ["location.tavern"])
+        obj_path = self.root / "knowledge" / "location" / "tavern.md"
+        self.assertEqual(obj_path.read_text(), "Original tavern text.")
+        kb2 = KnowledgeStore(self.root)
+        tags = kb2.get_tags("location.tavern")
+        self.assertIn("location.district", tags)
+        self.assertNotIn("location.city", tags)
+
+    def test_tag_only_new_object_still_writes_empty_body(self) -> None:
+        path = self._write_md("new_tag_only.md", """\
+```kb
+---
+id: place.stub
+tags:
+  - faction.mercs
+---
+```
+""")
+        result = kb_extract([path])
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.inserted, ["place.stub"])
+        self.assertEqual(result.updated, [])
+        obj_path = self.root / "knowledge" / "place" / "stub.md"
+        self.assertTrue(obj_path.exists())
+        self.assertEqual(obj_path.read_text(), "")
+        kb = KnowledgeStore(self.root)
+        self.assertIn("faction.mercs", kb.get_tags("place.stub"))
+
+    def test_whitespace_only_body_treated_as_tag_only_when_exists(self) -> None:
+        kb = KnowledgeStore(self.root)
+        kb.store_object("npc.guard", "Stoic.")
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "seed guard"],
+            cwd=self.root,
+            capture_output=True,
+            check=True,
+        )
+        KnowledgeStore.clear_registry()
+
+        path = self._write_md("ws.md", """\
+```kb
+---
+id: npc.guard
+tags:
+  - location.gate
+---
+
+
+
+```
+""")
+        result = kb_extract([path])
+        self.assertEqual(result.errors, [])
+        obj_path = self.root / "knowledge" / "npc" / "guard.md"
+        self.assertEqual(obj_path.read_text(), "Stoic.")
+        self.assertIn("location.gate", KnowledgeStore(self.root).get_tags("npc.guard"))
+
 
 if __name__ == "__main__":
     unittest.main()

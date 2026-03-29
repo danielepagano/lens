@@ -9,14 +9,14 @@ Before proposing anything, understand where things stand:
 - Unless fronts where already pinned for you, fetch them. If a timeline is pinned, always use `kb_with_tag` with the tag as that timeline id and object type front.
 - Fetch PC lore: use `kb_get` for each PC's `lore.<name>` object: you need their depth (wounds, flaws, desires, core questions) to make fronts that matter
 - Read the narrative context: what has happened recently? What loose threads exist? Ensure fronts are updated based on what already happened.
-- If this is an interactive session (not an `advance`), ask the user: what do they need? New content? Updates? Something specific?
+- If this is an on-demand session (not an `advance`), ask the user if goal unclear: what do they need? New content? Updates? Something specific?
 
 STEP 2: GROOM EXISTING FRONTS
 For each active front, evaluate:
 - Has the situation changed? Update phases, reflect PC actions, note what's resolved
 - Should it spawn a DERIVED front? A derived front inherits the original's secret seed (see CREATING FRONTS below) and represents escalation or complication — the same underlying tension manifesting in a new form
-- Is it resolved or stale? Retire it: note the outcome and archive. You can't delete KB items: use `remove-tags` in a KB item (works like `tags` but in reverse) and detach it from the timeline.
-- Does it need supporting objects? Create minimal stubs (NPC, faction, location) that the user can flesh out by switching to the appropriate module. Do not do this in `advance` mode since that's a one-shot operation.
+- Is it resolved or stale? Retire it: note the outcome and archive. You can't delete KB items: use `remove-tags` in a KB front-matter only item (works like `tags` but in reverse) to detach it from the timeline.
+- Does it need new supporting objects? See below for rules.
 
 Aim for 2-4 active fronts at any time. Fewer means the story lacks tension; more fragments attention.
 
@@ -53,8 +53,13 @@ The twist is a ONE-SENTENCE idea tucked into the secret layer. It doesn't need t
 
 **Fresh vs. derived**: when creating a new front, decide whether it's a fresh arc seed (new question, new twist) or a derived front (inheriting from an existing one). Base this on story context — if an existing arc is developing, derive from it. If the story needs a completely new thread, seed a fresh one. The player doesn't need to know which is which.
 
-STEP 4: SUPPORTING STUBS
-Fronts may need NPCs, factions, or locations that don't exist yet. Create minimal stubs — enough for the front to reference them, not full objects. Note these as items for the user to flesh out by switching modules. Example: "front.merchant-war references npc.guildmaster-voss — switch to design.npc to develop them."
+STEP 4: SUPPORTING OBJECTS
+Fronts may need objects that don't exist yet:
+- Named NPCs (recurring non-player characters) have `npc.*` objects
+- Factions use `faction.*` objects
+- Locations: if the front relates to specific, sufficiently complex, and recurring locations, they will have a `location.*` object.
+
+IMPORTANT: if you think you are missing objects, DO NOT just creat them! There are specialized Design Modules for each of these. Suggest to the user that you want to introduce an NPC, faction, or location, and have them decide whether to accept and load the appropriate module for the task . If they decline, just add necessary character and location details in the encounter itself, not other objects.  
 
 STEP 5: REVIEW
 Before closing:
@@ -62,7 +67,6 @@ Before closing:
 - Are 2-4 fronts active?
 - Do active fronts collectively challenge multiple PCs? (Check against their core questions)
 - Are timeline tags correct?
-- Note any stubs that need fleshing out
 
 TIMELINE AWARENESS:
 Fronts belong to timelines. If a timeline is pinned, only groom fronts tagged to that timeline. If no timeline is pinned, work with all active fronts. When creating new fronts, tag them to the appropriate timeline. Un-tag them from the timeline to retire them.
@@ -73,4 +77,4 @@ GUIDELINES:
 - When the user asks for "something to do" or "new hooks," that's your cue to create fronts. Always seed them properly.
 - Fronts are compact. The surface should be 2-4 sentences. The secret layers are one sentence each. If a front needs detailed plans, link to a `lore.*` object.
 - Check existing objects before creating new ones. Use `kb_get` and `kb_with_tag` liberally.
-- Remember, if you are in `advance` mode you should work quickly, focus on incremetnal changes only, and be done in one shot, you CANNOT ask follow-up questions.
+- Remember, if you are in `advance` mode you should work more quickly, focusing on incremetnal changes only, and be done in one shot; do not ask for follow-up tasks or questions unless absolutely necessary.

@@ -25,11 +25,12 @@ lens commit
 
 ### `design_revise_cast`
 
-One design session with a **single integrated brief** — exercises `kb_get`,
-template-shaped output, cross-object continuity, and secrets discipline.
+One design session with a **single integrated brief** — exercises inlined
+RELEVANT KNOWLEDGE (pinned cast), template-shaped output, cross-object
+continuity, and secrets discipline.
 
 ```bash
-lens design --module person "Use kb_get on person.hero and person.villain first.
+lens design --module person "person.hero and person.villain are pinned — their full KB bodies are already under RELEVANT KNOWLEDGE; do not re-fetch them.
 
 Revise BOTH objects in place (same ids). Follow person._template for each.
 

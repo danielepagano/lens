@@ -362,6 +362,9 @@ def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
 
     Returns ``(entries, errors)`` where errors are human-readable messages for
     blocks that could not be parsed (missing front matter, missing id, etc.).
+    Empty or whitespace-only body is preserved in ``KbExtractEntry.content``;
+    :func:`kb_extract_from_text` uses that to apply tag-only updates for objects
+    that already exist.
     """
     entries_by_id: dict[str, KbExtractEntry] = {}
     errors: list[str] = []
@@ -450,6 +453,11 @@ def kb_extract_from_text(
     Uses the provided *storage* instance so the writes join an existing
     transaction.  This is the core extraction logic shared by ``kb_extract``
     (CLI/file-path version) and the ``design`` operator (in-memory version).
+
+    When a block's body is empty or whitespace-only after parsing, and the
+    object already exists, the body is not written: only ``tags`` /
+    ``remove-tags`` are applied. New objects still get an empty body (or use
+    the same rules as ``store_object``) so tag-only blocks can create stubs.
     """
     entries, parse_errors = parse_kb_fences(text)
     result = KbExtractResult(errors=list(parse_errors))
@@ -468,7 +476,9 @@ def kb_extract_from_text(
             continue
 
         is_new = not kb.exists(entry.id)
-        kb.store_object(entry.id, entry.content)
+        tags_only = not entry.content.strip()
+        if not tags_only or is_new:
+            kb.store_object(entry.id, entry.content)
 
         if entry.tags:
             err = kb.add_tags(entry.id, entry.tags)

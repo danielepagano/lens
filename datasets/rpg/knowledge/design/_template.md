@@ -12,5 +12,5 @@ Each design object describes:
 
 Core principles all modules share:
 - Story service: all content must connect to PCs and active fronts. No content in a vacuum.
-- Modules are conversational stepping stones: the user may create stubs in one module and switch to another to develop them. Note what needs follow-up.
+- Modules are conversational stepping stones: a module may suggest the creation of objects that another module develops. This is always a user decision and a follow-up.
 - Front arc structure: when creating fronts (in any module), apply the three-layer structure (surface, adventure core question, twist) as embedded AI behavior — not as a player-visible workflow.

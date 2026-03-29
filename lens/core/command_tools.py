@@ -141,7 +141,9 @@ register_command_tool(
         description=(
             "Retrieve one or more KB objects by canonical ID. Use to look up a specific "
             "entity before writing about it. Append '+' to an ID (e.g. 'npc.gandalf+') "
-            "to also fetch objects linked from it (only if needed!)"
+            "to also fetch objects linked from it (only if needed!). Do not request IDs "
+            "already inlined in the user message under RELEVANT KNOWLEDGE (each object "
+            "starts with a KB['id'] line)—that text is current."
         ),
         parameters={
             "type": "object",
