@@ -307,7 +307,7 @@ class AdvanceOperator(Operator):
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     use_command_tools: ClassVar[bool] = True
-    excluded_operator_tools: ClassVar[frozenset[str]] = frozenset({"write"})
+    use_operator_tools: ClassVar[bool] = False
 
     @property
     def system_prompt(self) -> str:

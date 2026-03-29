@@ -8,9 +8,6 @@ from pathlib import Path
 from lens.core.command_tools import CommandToolDef, register_command_tool
 from lens.core.knowledge import KnowledgeStore
 from lens.core.prompts import PromptStore, tool_prompt_key
-from lens.core.tools import OperatorToolDef, register_operator_tool
-from lens.core.project import ProjectSession
-from lens.core.narrative import NarrativeNode
 
 CR_TAG_ORDER: list[tuple[float, str]] = [
     (0, "cr:0"),
@@ -463,38 +460,6 @@ balance_encounter_SCHEMA = {
     },
     "required": ["required", "optional", "difficulty", "pcs"]
 }
-
-
-async def _invoke_balance_encounter(
-    args: dict[str, Any],
-    session: ProjectSession,
-    narrative: NarrativeNode,
-    depth: int,
-    on_token: Any,
-    on_confirm: Any,
-) -> None:
-    required = args.get("required", [])
-    optional = args.get("optional", [])
-    difficulty = args.get("difficulty", "moderate")
-    pcs = args.get("pcs", [])
-    allies = args.get("allies", [])
-    
-    kb = KnowledgeStore.for_project(session.project_root)
-    result = compute_encounters(required, optional, difficulty, pcs, allies, kb)
-    
-    await on_token(result)
-
-
-register_operator_tool(
-    "balance_encounter",
-    OperatorToolDef(
-        parameters=balance_encounter_SCHEMA,
-        prompt_snippet=PromptStore(None).get(tool_prompt_key("balance_encounter")),
-        keep_text=True,
-    ),
-    _invoke_balance_encounter,
-    limited_to_datasets=["dnd"],
-)
 
 
 async def _balance_encounter_command_tool(args: dict[str, Any], project_root: Path) -> str:

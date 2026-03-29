@@ -42,6 +42,7 @@ def section_close_tag(id: str) -> str:
 class SectionOperator(Operator):
     name: ClassVar[str] = "section"
     requires_id: ClassVar[bool] = True
+    use_operator_tools: ClassVar[bool] = False
 
     @property
     def system_prompt(self) -> str:
