@@ -496,22 +496,22 @@ class TestGenerateStream(unittest.TestCase):
         self.assertIn("10 bytes", final.text)  # len("kb content")
         self.assertTrue(any("```tool-call" in p for p in previews))
 
-    def test_multiple_tool_calls_folded_into_chain(self) -> None:
-        """When LLM returns two tool calls, they are folded: last becomes chain of first."""
-        tc_section = {
+    def test_multiple_tool_calls_all_returned(self) -> None:
+        """When LLM returns multiple tool calls, all are returned in order."""
+        tc_kb1 = {
             "index": 0,
             "id": "call_1",
-            "function": {"name": "section", "arguments": '{"id":"ch1"}'},
+            "function": {"name": "kb_get", "arguments": '{"id":"npc.bob"}'},
         }
-        tc_write = {
+        tc_kb2 = {
             "index": 1,
             "id": "call_2",
-            "function": {"name": "write", "arguments": '{"prompt":"opening"}'},
+            "function": {"name": "kb_get", "arguments": '{"id":"loc.tavern"}'},
         }
         chunk = {
             "choices": [
                 {
-                    "delta": {"tool_calls": [tc_section, tc_write]},
+                    "delta": {"tool_calls": [tc_kb1, tc_kb2]},
                     "finish_reason": "tool_calls",
                 }
             ]
@@ -521,13 +521,11 @@ class TestGenerateStream(unittest.TestCase):
         _, final, _ = self._run(resp)
         self.assertIsNotNone(final)
         assert final is not None
-        self.assertIsNotNone(final.tool_call)
-        assert final.tool_call is not None
-        self.assertEqual(final.tool_call.name, "section")
-        self.assertIn("chain", final.tool_call.arguments)
-        chain = final.tool_call.arguments["chain"]
-        self.assertEqual(chain.get("name"), "write")
-        self.assertEqual(chain.get("arguments", {}).get("prompt"), "opening")
+        self.assertEqual(len(final.tool_calls), 2)
+        self.assertEqual(final.tool_calls[0].name, "kb_get")
+        self.assertEqual(final.tool_calls[0].arguments, {"id": "npc.bob"})
+        self.assertEqual(final.tool_calls[1].name, "kb_get")
+        self.assertEqual(final.tool_calls[1].arguments, {"id": "loc.tavern"})
 
 
 async def anext(gen: Any) -> Any:

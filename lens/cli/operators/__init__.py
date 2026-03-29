@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import typer
 
 from lens.core.operator import Operator
+
 from lens.core.project import find_project_root, get_selected_datasets, operator_applies_to_session
 
 if TYPE_CHECKING:

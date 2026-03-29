@@ -68,7 +68,7 @@ async def _fake_summary(*args: Any, **kwargs: Any) -> Any:
     yield StreamEvent(
         final=FinalPayload(
             text="Section summary.",
-            tool_call=None,
+            tool_calls=[],
             usage=None,
             interrupted=False,
         )
@@ -581,7 +581,7 @@ class TestCollateEdgeCases(unittest.TestCase):
             yield StreamEvent(
                 final=FinalPayload(
                     text="",
-                    tool_call=None,
+                    tool_calls=[],
                     usage=None,
                     interrupted=False,
                 )

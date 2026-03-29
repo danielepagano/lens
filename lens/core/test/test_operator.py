@@ -705,7 +705,7 @@ class TestCrossOperatorAutoStage(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Content from operator B.",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -754,7 +754,7 @@ class TestCrossOperatorAutoStage(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="First output.",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -785,7 +785,7 @@ class TestCrossOperatorAutoStage(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Second output.",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )

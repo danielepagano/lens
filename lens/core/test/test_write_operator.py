@@ -58,7 +58,7 @@ async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
     yield StreamEvent(
         final=FinalPayload(
             text="Generated content",
-            tool_call=None,
+            tool_calls=[],
             usage=None,
             interrupted=False,
         )
@@ -191,7 +191,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="More text",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -224,7 +224,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Retried content",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -253,7 +253,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Fresh content",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )
@@ -283,7 +283,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Updated content",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )

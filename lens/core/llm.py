@@ -117,7 +117,7 @@ class ToolCall:
 @dataclass(slots=True)
 class FinalPayload:
     text: str
-    tool_call: ToolCall | None
+    tool_calls: list[ToolCall]
     usage: dict[str, int] | None
     interrupted: bool
 
@@ -331,65 +331,30 @@ async def _stream_once(
     full_text = "".join(chunks)
     encoded_text = encode_ai_secrets(full_text)
 
-    tool_call: ToolCall | None = None
-    fold_error = False
-    if tool_calls_by_index:
-        ordered = [tool_calls_by_index[k] for k in sorted(tool_calls_by_index)]
-        while len(ordered) > 1:
-            last_acc = ordered.pop()
-            prev_acc = ordered[-1]
-            raw_last = "".join(last_acc["arguments_fragments"])
-            try:
-                last_args: dict[str, Any] = json.loads(raw_last) if raw_last else {}
-            except json.JSONDecodeError:
-                last_args = {}
-            if prev_acc.get("arguments_parsed") is None:
-                raw_prev = "".join(prev_acc["arguments_fragments"])
-                try:
-                    prev_acc["arguments_parsed"] = (
-                        json.loads(raw_prev) if raw_prev else {}
-                    )
-                except json.JSONDecodeError:
-                    prev_acc["arguments_parsed"] = {}
-            if "chain" in prev_acc["arguments_parsed"]:
-                logger.error(
-                    "Lens folding: previous tool call already has chain; "
-                    "cannot fold multiple tool calls"
-                )
-                fold_error = True
-                interrupted = True
-                break
-            prev_acc["arguments_parsed"]["chain"] = {
-                "name": last_acc["name"],
-                "id": last_acc["id"] or None,
-                "arguments": last_args,
-            }
-        if not fold_error and ordered:
-            acc = ordered[0]
-            if acc.get("arguments_parsed") is None:
-                raw_args = "".join(acc["arguments_fragments"])
-                try:
-                    parsed_args: dict[str, Any] = (
-                        json.loads(raw_args) if raw_args else {}
-                    )
-                except json.JSONDecodeError:
-                    parsed_args = {}
-            else:
-                parsed_args = acc["arguments_parsed"]
-            if acc["name"]:
-                tool_call = ToolCall(
+    parsed_tool_calls: list[ToolCall] = []
+    for idx in sorted(tool_calls_by_index):
+        acc = tool_calls_by_index[idx]
+        raw_args = "".join(acc["arguments_fragments"])
+        try:
+            parsed_args: dict[str, Any] = json.loads(raw_args) if raw_args else {}
+        except json.JSONDecodeError:
+            parsed_args = {}
+        if acc["name"]:
+            parsed_tool_calls.append(
+                ToolCall(
                     id=acc["id"],
                     name=acc["name"],
                     arguments=parsed_args if isinstance(parsed_args, dict) else {},  # pyright: ignore[reportUnnecessaryIsInstance]
                 )
+            )
 
     if verbose:
         sep = "─" * 60
         log_body = "".join(chunks)
-        if tool_call:
+        for tc in parsed_tool_calls:
             log_body += encode_ai_secrets(
                 _format_tool_call_markdown(
-                    tool_call.name, tool_call.arguments, response_char_len=None
+                    tc.name, tc.arguments, response_char_len=None
                 )
             )
         if log_body.strip():
@@ -398,7 +363,7 @@ async def _stream_once(
     yield StreamEvent(
         final=FinalPayload(
             text=encoded_text,
-            tool_call=tool_call,
+            tool_calls=parsed_tool_calls,
             usage=usage,
             interrupted=interrupted,
         )
@@ -423,15 +388,11 @@ async def generate_stream(
     for command tools, to the accumulated ``final.text``. A single
     ``StreamEvent(final=...)`` ends each outer iteration.
 
-    When *command_tool_handlers* is provided and the LLM calls a tool whose
-    name appears in that mapping, the handler is executed immediately, the
-    result is appended to the working message list, and the LLM is re-invoked
-    — all without exiting this generator.  Preview events from every iteration
-    are forwarded to the caller.
-
-    Tool calls whose names are **not** in *command_tool_handlers* (i.e.
-    operator tools) cause the generator to return a ``FinalPayload`` with
-    ``tool_call`` set, exactly as before — the caller dispatches them.
+    When *command_tool_handlers* is provided and the LLM returns tool calls
+    whose names appear in that mapping, all matching handlers are executed
+    immediately, results are appended to the working message list, and the
+    LLM is re-invoked — all without exiting this generator. Multiple command
+    tool calls in a single LLM response are handled in one iteration.
     """
     _cancel = cancel_event if cancel_event is not None else asyncio.Event()
     _interrupted = False
@@ -489,7 +450,7 @@ async def generate_stream(
                 yield StreamEvent(
                     final=FinalPayload(
                         text=accumulated_text + final.text,
-                        tool_call=final.tool_call,
+                        tool_calls=final.tool_calls,
                         usage=last_usage,
                         interrupted=True,
                     )
@@ -498,80 +459,73 @@ async def generate_stream(
                 break
 
             # ── Command tool path ─────────────────────────────────────────
-            if (
-                final.tool_call is not None
-                and command_tool_handlers is not None
-                and final.tool_call.name in command_tool_handlers
-            ):
-                handler = command_tool_handlers[final.tool_call.name]
-                # Strip "chain" key before passing to handler — chain is an
-                # operator concept and does not apply to command tools.
-                handler_args = {
-                    k: v
-                    for k, v in final.tool_call.arguments.items()
-                    if k != "chain"
-                }
-                result = await handler(handler_args, project_root)
-                if not warned_at_half and iteration + 1 >= half_limit:
-                    warned_at_half = True
-                    warning = (
-                        f"\n\n[Warning: you have used {iteration + 1} of "
-                        f"{_MAX_COMMAND_TOOL_ITERATIONS} allowed tool calls "
-                        "this response.]"
+            # Execute all command tool calls in this iteration.
+            command_tcs = (
+                [tc for tc in final.tool_calls if tc.name in command_tool_handlers]
+                if command_tool_handlers is not None
+                else []
+            )
+            if command_tcs:
+                assert command_tool_handlers is not None
+                assistant_tool_calls: list[dict[str, Any]] = []
+                tool_results: list[dict[str, Any]] = []
+                tool_markdowns: list[str] = []
+                for tc in command_tcs:
+                    handler = command_tool_handlers[tc.name]
+                    result = await handler(tc.arguments, project_root)
+                    if not warned_at_half and iteration + 1 >= half_limit:
+                        warned_at_half = True
+                        warning = (
+                            f"\n\n[Warning: you have used {iteration + 1} of "
+                            f"{_MAX_COMMAND_TOOL_ITERATIONS} allowed tool calls "
+                            "this response.]"
+                        )
+                        result = result + warning
+                        yield StreamEvent(preview=warning)
+                    md = encode_ai_secrets(
+                        _format_tool_call_markdown(
+                            tc.name, tc.arguments, response_char_len=len(result),
+                        )
                     )
-                    result = result + warning
-                    yield StreamEvent(preview=warning)
-                tool_markdown = encode_ai_secrets(
-                    _format_tool_call_markdown(
-                        final.tool_call.name,
-                        final.tool_call.arguments,
-                        response_char_len=len(result),
+                    yield StreamEvent(preview=md)
+                    tool_markdowns.append(md)
+                    assistant_tool_calls.append(
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.name,
+                                "arguments": json.dumps(tc.arguments),
+                            },
+                        }
                     )
-                )
-                yield StreamEvent(preview=tool_markdown)
-                accumulated_text += final.text + tool_markdown
+                    tool_results.append(
+                        {"role": "tool", "tool_call_id": tc.id, "content": result}
+                    )
+                accumulated_text += final.text + "".join(tool_markdowns)
                 working_messages.append(
                     {
                         "role": "assistant",
                         "content": final.text or None,
-                        "tool_calls": [
-                            {
-                                "id": final.tool_call.id,
-                                "type": "function",
-                                "function": {
-                                    "name": final.tool_call.name,
-                                    "arguments": json.dumps(
-                                        final.tool_call.arguments
-                                    ),
-                                },
-                            }
-                        ],
+                        "tool_calls": assistant_tool_calls,
                     }
                 )
-                working_messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": final.tool_call.id,
-                        "content": result,
-                    }
-                )
+                working_messages.extend(tool_results)
                 continue
 
-            # ── Operator tool or normal end ───────────────────────────────
-            if final.tool_call is not None:
+            # ── Normal end (no tool calls or unknown tools) ───────────────
+            for tc in final.tool_calls:
                 yield StreamEvent(
                     preview=encode_ai_secrets(
                         _format_tool_call_markdown(
-                            final.tool_call.name,
-                            final.tool_call.arguments,
-                            response_char_len=None,
+                            tc.name, tc.arguments, response_char_len=None,
                         )
                     )
                 )
             yield StreamEvent(
                 final=FinalPayload(
                     text=accumulated_text + final.text,
-                    tool_call=final.tool_call,
+                    tool_calls=final.tool_calls,
                     usage=last_usage,
                     interrupted=False,
                 )
@@ -591,7 +545,7 @@ async def generate_stream(
             yield StreamEvent(
                 final=FinalPayload(
                     text=limit_msg,
-                    tool_call=None,
+                    tool_calls=[],
                     usage=last_usage,
                     interrupted=False,
                 )

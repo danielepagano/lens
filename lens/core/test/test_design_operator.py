@@ -71,7 +71,7 @@ async def _fake_generate_stream(*args: Any, **kwargs: Any) -> AsyncIterator[Stre
     yield StreamEvent(
         final=FinalPayload(
             text=_FAKE_CONTENT,
-            tool_call=None,
+            tool_calls=[],
             usage=None,
             interrupted=False,
         )
@@ -82,7 +82,7 @@ async def _fake_generate_empty(*args: Any, **kwargs: Any) -> AsyncIterator[Strea
     yield StreamEvent(
         final=FinalPayload(
             text="",
-            tool_call=None,
+            tool_calls=[],
             usage=None,
             interrupted=False,
         )
@@ -518,7 +518,7 @@ class TestDesignRetry(unittest.TestCase):
                 yield StreamEvent(
                     final=FinalPayload(
                         text="Completely different content.",
-                        tool_call=None,
+                        tool_calls=[],
                         usage=None,
                         interrupted=False,
                     )

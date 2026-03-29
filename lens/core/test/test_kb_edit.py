@@ -63,7 +63,7 @@ def _make_stream_mock(text: str = "New content"):
         yield StreamEvent(
             final=FinalPayload(
                 text=text,
-                tool_call=None,
+                tool_calls=[],
                 usage=None,
                 interrupted=False,
             )
@@ -125,7 +125,7 @@ class TestKbEditCrawlResolution(unittest.TestCase):
             async def capture_stream(*args: Any, **kwargs: Any) -> Any:
                 messages_captured.append(args[0] if args else kwargs.get("messages", []))
                 yield StreamEvent(
-                    final=FinalPayload(text="OK", tool_call=None, usage=None, interrupted=False)
+                    final=FinalPayload(text="OK", tool_calls=[], usage=None, interrupted=False)
                 )
 
             with patch("lens.core.commands.kb.generate_stream", new=capture_stream):

@@ -1,10 +1,10 @@
 """Command tools: lightweight KB lookup tools callable mid-LLM-generation.
 
-Unlike operator tools (which exit the LLM layer and hand off control),
-command tools execute *inline* within the generation loop.  After the handler
-returns a string result, the assistant turn + tool result are appended to the
+Command tools execute *inline* within the generation loop.  After each handler
+returns a string result, the assistant turn + tool results are appended to the
 working message list and the LLM is re-invoked without rebuilding the full
-prompt.
+prompt.  Multiple command tool calls in a single LLM response are all executed
+before re-invoking.
 
 Operators opt in by setting ``use_command_tools = True``.  Currently only
 ``design`` does this — operators that prioritise speed (e.g. ``play``) keep

@@ -57,30 +57,21 @@ Fresh inline: _do_fresh_inline step-by-step
    :meth:`enrich_params`(crawl_result, ann_params) — override to derive
    params from crawl result and/or extra_params (e.g. play resolves
    ``as_pc`` against pinned_ids, sets ``pc_key``, pops ``as_pc`` so it
-   isn’t stored in the tag).
+   isn't stored in the tag).
 
 4. **Build tag and messages**  
    Open tag is built from ann_params (so stored annotation reflects
    enriched params). Messages come from :meth:`build_messages` (default:
    :func:`~lens.core.context.assemble_prompt` with system_prompt and
-   :meth:`build_instruction`(ann_params)). If operator tools are
-   available, system prompt is augmented with tool snippets and
-   chaining instructions, and the LLM may receive tools.
+   :meth:`build_instruction`(ann_params)).
 
-5. **Generate**  
+5. **Generate**
    :func:`~lens.core.llm.generate_stream` with optional tools. Result is
    either plain text or a tool call.
 
-6. **Tool call path**  
-   If the LLM returned a tool call for a registered operator tool:
-   :meth:`_dispatch_tool_call` writes any kept text, then invokes that
-   operator’s run_inline (or run_sub_node) via the tool’s invoke_fn.
-   Chaining is supported: the tool call can include a ``chain`` spec to run
-   another operator in the same transaction after this one completes.
-
-7. **Normal path**  
+6. **Normal path**  
    No tool call (or unknown tool): :meth:`content_prefix_for_fresh`(ann_params)
-   can prepend text (e.g. play’s ``> [Alice] prompt\\n\\n``), then
+   can prepend text (e.g. play's ``> [Alice] prompt\\n\\n``), then
    :meth:`write_start`(cursor, tag, content) appends open tag + content +
    close tag.
 
