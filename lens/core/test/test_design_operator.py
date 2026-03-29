@@ -589,6 +589,54 @@ class TestDesignEnd(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# @ mention expansion
+# ---------------------------------------------------------------------------
+
+
+class TestDesignMentionExpansion(unittest.TestCase):
+    def test_mention_in_fresh_prompt_pins_kb_object(self) -> None:
+        """@type.key mentions in the design prompt must be pinned in the sub-node."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "npc").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "npc" / "smith.md").write_text("A blacksmith NPC.\n")
+
+            _run_design(root, narrative, prompt="Design @npc.smith as a quest giver")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text(encoding="utf-8"))
+            self.assertIn("npc.smith", fm.get("kb_pin", []))
+
+    def test_mention_in_continuation_prompt_pins_kb_object(self) -> None:
+        """@type.key mentions must be pinned when continuing an existing session."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "npc").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "npc" / "smith.md").write_text("A blacksmith NPC.\n")
+
+            # First call to start the session.
+            _run_design(root, narrative)
+
+            # Second call (continuation) with mention in prompt.
+            _run_design(root, narrative, prompt="Continue with @npc.smith")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text(encoding="utf-8"))
+            self.assertIn("npc.smith", fm.get("kb_pin", []))
+
+    def test_nonexistent_mention_not_pinned(self) -> None:
+        """@ mentions for KB objects that don't exist must not be pinned."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            _run_design(root, narrative, prompt="Design @npc.ghost who does not exist")
+
+            cursor = narrative.find_cursor()
+            fm = parse_front_matter(cursor.md_path().read_text(encoding="utf-8"))
+            self.assertNotIn("npc.ghost", fm.get("kb_pin", []))
+
+
+# ---------------------------------------------------------------------------
 # Error cases
 # ---------------------------------------------------------------------------
 
