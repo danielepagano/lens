@@ -78,21 +78,19 @@ def _run_inline(
 ) -> None:
     mock = generate_mock or _fake_generate_stream
     with patch("lens.core.operator.generate_stream", new=mock):
-        # Ensure no operator tools are active so tests use the stream_output path.
-        with patch("lens.core.operator.get_tool_registry", return_value={}):
-            with contextlib.redirect_stdout(io.StringIO()):
-                with contextlib.redirect_stderr(io.StringIO()):
-                    asyncio.run(
-                        WriteOperator.run_inline(
-                            session=ProjectSession(root, root),
-                            narrative=narrative,
-                            prompt=prompt,
-                            pins=pins or [],
-                            unpins=unpins or [],
-                            llm_id=llm_id,
-                            retry=retry,
-                        )
+        with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stderr(io.StringIO()):
+                asyncio.run(
+                    WriteOperator.run_inline(
+                        session=ProjectSession(root, root),
+                        narrative=narrative,
+                        prompt=prompt,
+                        pins=pins or [],
+                        unpins=unpins or [],
+                        llm_id=llm_id,
+                        retry=retry,
                     )
+                )
 
 
 # ---------------------------------------------------------------------------

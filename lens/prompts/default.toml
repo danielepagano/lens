@@ -158,14 +158,4 @@ Output only the summary text — no preamble, no meta-commentary.
 TEXT TO SUMMARIZE:
 {content}'''
 
-operator.chaining_instructions = '''**Chaining**: To run another operator immediately after this one, use the `chain` parameter: `chain: { name: "operator_name", arguments: { ... } }`. All parameters for the chained operator go inside `chain.arguments`; do not put them at the top level of the current tool call.'''
-operator.handoff_keep_text_description = '''If true (default), the text you wrote before calling this tool is saved to the narrative. If false, it is discarded.'''
-operator.handoff_chain_description = '''Optional operator to run immediately after this one (same transaction). Structure: { name: "operator_name", arguments: { ... } }. The chained operator's parameters belong inside chain.arguments, not at the top level.'''
-operator.handoff_chain_name_description = '''Operator name (e.g. write, play, section)'''
-operator.handoff_chain_id_description = '''Optional tool call id'''
-operator.handoff_chain_arguments_description = '''Arguments for the chained operator (e.g. prompt for write, id for section)'''
-
-tool.write.prompt_snippet = '''Use the 'write' tool to continue open narrative — when you need to narrate consequences of player actions, describe the world, or advance story events without stopping for player decisions. Provide 'prompt' to guide what to write.'''
-tool.play.prompt_snippet = '''Use the 'play' tool when the narrative reaches a moment that requires player agency — a decision point, an encounter, or a challenge where the player characters must act or respond. The play operator narrates in GM voice and stops for player input. Provide 'prompt' to describe the situation they face.'''
-tool.section.prompt_snippet = '''Use the 'section' tool when starting a new scene, location, or narrative unit. Provide 'id' (section key, e.g. castle-dorn). Use 'kb_pin' to pin knowledge objects (locations, factions, NPCs) that apply to this section. Use 'kb_unpin' to cancel ancestor pins that no longer apply.'''
 tool.balance_encounter.prompt_snippet = '''Use balance_encounter to generate up to three balanced encounter proposals from a ranked candidate list. Pass PC levels explicitly from context (level:N tags on pinned pc.* objects) and ally CRs if any allies fight alongside the party. The tool uses D&D 2024 XP budget math (no monster-count multiplier).'''

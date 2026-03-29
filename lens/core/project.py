@@ -78,6 +78,20 @@ def resolve_dataset_path(project_root: Path, name: str) -> Path | None:
     return None
 
 
+def operator_applies_to_session(selected: list[str], limited: list[str]) -> bool:
+    """Return True if an operator/tool should be available for the active session.
+
+    - If ``limited`` is empty: always available.
+    - If ``limited`` is non-empty and ``selected`` is empty: excluded.
+    - If both are non-empty: available only if they share at least one member.
+    """
+    if not limited:
+        return True
+    if not selected:
+        return False
+    return bool(set(selected) & set(limited))
+
+
 def get_selected_datasets(project_root: Path) -> list[str]:
     """Return the dataset names from ``[project] datasets`` in lens.toml, or [] if unset."""
     lens_toml = project_root / "lens.toml"

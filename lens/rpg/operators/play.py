@@ -42,11 +42,10 @@ from lens.core.context import CrawlResult, crawl
 from lens.core.dice import DiceError, substitute_rolls
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
-from lens.core.prompts import PromptStore, tool_prompt_key
+from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
 from lens.core.narrative import NarrativeNode
 from lens.core.storage import Storage
-from lens.core.tools import OperatorToolDef
 
 
 def _pc_marker(params: dict[str, Any]) -> str:
@@ -69,7 +68,6 @@ class PlayOperator(SessionOperator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
-    use_operator_tools: ClassVar[bool] = False
 
     module_prefix: ClassVar[str] = "rules."
     auto_pins: ClassVar[list[str]] = ["rules.system", "rules.rpg"]
@@ -215,9 +213,6 @@ class PlayOperator(SessionOperator):
         llm_id: str | None,
         retry: bool,
         on_token: Callable[[str], Awaitable[None]] | None = None,
-        _tool_call_depth: int = 0,
-        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
-        _chain_storage: Storage | None = None,
         _cursor_override: NarrativeNode | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
@@ -251,9 +246,6 @@ class PlayOperator(SessionOperator):
             llm_id=llm_id,
             retry=retry,
             on_token=on_token,
-            _tool_call_depth=_tool_call_depth,
-            on_confirm=on_confirm,
-            _chain_storage=_chain_storage,
             _cursor_override=_cursor_override,
             extra_params=ep if ep else None,
             cancel_event=cancel_event,
@@ -279,7 +271,6 @@ class PlayOperator(SessionOperator):
         **kwargs: Any,
     ) -> None:
         extra_params = kwargs.get("extra_params")
-        on_confirm = kwargs.get("on_confirm")
         await cls.run_inline(
             session=session,
             narrative=narrative,
@@ -292,7 +283,6 @@ class PlayOperator(SessionOperator):
             _cursor_override=node,
             extra_params=extra_params,
             cancel_event=cancel_event,
-            on_confirm=on_confirm,
         )
 
     @classmethod
@@ -313,7 +303,6 @@ class PlayOperator(SessionOperator):
         **kwargs: Any,
     ) -> None:
         extra_params = kwargs.get("extra_params")
-        on_confirm = kwargs.get("on_confirm")
 
         if retry:
             # For retry: update front-matter with the same owner as the
@@ -358,37 +347,6 @@ class PlayOperator(SessionOperator):
             _cursor_override=node,
             extra_params=extra_params,
             cancel_event=cancel_event,
-            on_confirm=on_confirm,
         )
 
 
-# ---------------------------------------------------------------------------
-# Tool registration
-# ---------------------------------------------------------------------------
-
-PlayOperator.register_as_tool(
-    OperatorToolDef(
-        parameters={
-            "type": "object",
-            "properties": {
-                "prompt": {
-                    "type": "string",
-                    "description": "Situation or scene direction for the player-facing moment",
-                },
-                "kb_pin": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "KB IDs to pin for this call",
-                },
-                "kb_unpin": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "KB IDs to unpin for this call",
-                },
-            },
-            "required": ["prompt"],
-        },
-        prompt_snippet=PromptStore(None).get(tool_prompt_key("play")),
-        keep_text=True,
-    )
-)

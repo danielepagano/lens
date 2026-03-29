@@ -60,8 +60,7 @@ def get_command_registry(
     """
     if project_root is None:
         return dict(_REGISTRY)
-    from lens.core.project import get_selected_datasets
-    from lens.core.tools import operator_applies_to_session
+    from lens.core.project import get_selected_datasets, operator_applies_to_session
     selected = get_selected_datasets(project_root)
     return {
         name: (tool_def, fn)

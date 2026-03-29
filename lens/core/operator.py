@@ -103,7 +103,7 @@ Subclass integration points
 -------------------------------------------------------------------------------
 
 - **Class vars**: ``name``, ``requires_id``, ``limited_to_datasets``,
-  ``excluded_operator_tools``, ``use_command_tools``.
+  ``use_command_tools``.
 
 - **Required**: :meth:`system_prompt`, :meth:`build_instruction`(params).
 
@@ -113,12 +113,7 @@ Subclass integration points
   :meth:`build_messages`(crawl_result, params) (default uses
   assemble_prompt with instruction from build_instruction).
 
-- **Tool registration**: :meth:`register_as_tool`(tool_def) registers this
-  operator as an LLM-callable tool; :meth:`_make_invoke_fn` returns a
-  closure that calls this operator’s run_inline with args from the tool
-  call (prompt, kb_pin, kb_unpin, etc.). No extra_params from tool calls;
-  subclasses that need run-time context (e.g. which PC is speaking) use
-  enrich_params and crawl_result only.
+
 """
 
 from __future__ import annotations
@@ -139,17 +134,14 @@ from lens.core.annotations import (
     parse_annotations,
     strip_markdown_comments,
 )
-from lens.core.chain import ChainSpec
 from lens.core.command_tools import CommandToolFn, get_command_registry
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.dice import DiceError, substitute_rolls
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import LLMError, ToolCall, generate_stream
+from lens.core.llm import LLMError, generate_stream
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession
-from lens.core.prompts import PromptStore, tool_prompt_key
 from lens.core.storage import Storage
-from lens.core.tools import OperatorToolDef, get_tool_registry, register_operator_tool
 
 _AT_MENTION_RE = re.compile(
     r"@([a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+)(?=\s|$)", re.MULTILINE
@@ -215,17 +207,6 @@ class Operator(ABC):
     (e.g. ``design``) do so; operators that prioritise speed (e.g. ``play``,
     ``write``) keep the default of ``False`` so there is no tool-call overhead.
     """
-
-    use_operator_tools: ClassVar[bool] = True
-    """Whether other operator tools are available during LLM generation.
-
-    Prose-first operators (``write``, ``play``) set this to ``False`` so
-    the LLM writes inline instead of trying to hand off to another operator.
-    Planning operators (``design``) keep the default of ``True``.
-    """
-
-    excluded_operator_tools: ClassVar[frozenset[str]] = frozenset()
-    """Operator tool names to omit from this operator's tool list (e.g. play excludes write)."""
 
     @property
     @abstractmethod
@@ -638,53 +619,6 @@ class Operator(ABC):
         The default implementation imposes no requirements.
         """
 
-    @classmethod
-    def _make_invoke_fn(cls: type[Operator]) -> Any:
-        """Return an async invoke_fn that calls this operator's run_inline.
-
-        Used by :meth:`register_as_tool` to create a tool that hands off
-        generation to this operator. The caller's depth is incremented so
-        that nested tool calls beyond the first require user confirmation.
-        """
-        async def _invoke(
-            args: dict[str, Any],
-            session: ProjectSession,
-            narrative: NarrativeNode,
-            depth: int,
-            on_token: Callable[[str], Awaitable[None]] | None,
-            on_confirm: Callable[[str, str], Awaitable[bool]] | None,
-            *,
-            storage: Storage | None = None,
-            cursor: NarrativeNode | None = None,
-            llm_id: str | None = None,
-        ) -> None:
-            raw = args or {}
-            pins = cls.extract_list(raw, "kb_pin")
-            unpins = cls.extract_list(raw, "kb_unpin")
-            await cls.run_inline(
-                session=session,
-                narrative=narrative,
-                prompt=raw.get("prompt"),
-                pins=pins,
-                unpins=unpins,
-                llm_id=llm_id,
-                retry=False,
-                on_token=on_token,
-                on_confirm=on_confirm,
-                _tool_call_depth=depth + 1,
-                _chain_storage=storage,
-                _cursor_override=cursor,
-            )
-
-        return _invoke
-
-    @classmethod
-    def register_as_tool(cls, tool_def: OperatorToolDef) -> None:
-        """Register this operator in the tool registry as an LLM-callable tool."""
-        register_operator_tool(
-            cls.name, tool_def, cls._make_invoke_fn(), limited_to_datasets=list(cls.limited_to_datasets)
-        )
-
     @staticmethod
     async def stream_output(
         messages: list[dict[str, str]],
@@ -857,12 +791,9 @@ class Operator(ABC):
         llm_id: str | None,
         retry: bool,
         on_token: Callable[[str], Awaitable[None]] | None = None,
-        _tool_call_depth: int = 0,
-        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
-        _chain_storage: Storage | None = None,
-        _cursor_override: NarrativeNode | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
+        _cursor_override: NarrativeNode | None = None,
     ) -> None:
         """Run the inline-appending flow (fresh / continue / retry / update-retry).
 
@@ -878,11 +809,7 @@ class Operator(ABC):
         if mention_pins:
             pins = pins + mention_pins
 
-        cursor = (
-            _cursor_override
-            if _cursor_override is not None
-            else narrative.find_cursor()
-        )
+        cursor = _cursor_override if _cursor_override is not None else narrative.find_cursor()
         cursor_md = cursor.md_path()
         rel_path = str(cursor_md.relative_to(session.git_root))
 
@@ -920,9 +847,6 @@ class Operator(ABC):
                     session, narrative, cursor, rel_path,
                     prompt, pins, unpins, llm_id,
                     on_token=on_token,
-                    tool_call_depth=_tool_call_depth,
-                    on_confirm=on_confirm,
-                    chain_storage=_chain_storage,
                     extra_params=extra_params,
                     cancel_event=cancel_event,
                 )
@@ -939,9 +863,6 @@ class Operator(ABC):
                 session, narrative, cursor, rel_path,
                 prompt, pins, unpins, llm_id,
                 on_token=on_token,
-                tool_call_depth=_tool_call_depth,
-                on_confirm=on_confirm,
-                chain_storage=_chain_storage,
                 extra_params=extra_params,
                 cancel_event=cancel_event,
             )
@@ -958,9 +879,6 @@ class Operator(ABC):
         unpins: list[str],
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
-        tool_call_depth: int = 0,
-        on_confirm: Callable[[str, str], Awaitable[bool]] | None = None,
-        chain_storage: Storage | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
@@ -987,68 +905,11 @@ class Operator(ABC):
         probe_op = cls(session.new_storage(), narrative)
         tag = probe_op.build_open_tag(None, ann_params)
 
-        if cls.use_operator_tools:
-            registry = get_tool_registry(session.project_root)
-            available_tools = {
-                n: v
-                for n, v in registry.items()
-                if n != cls.name and n not in cls.excluded_operator_tools
-            }
-        else:
-            available_tools = {}
-
         content: str = ""
-        tool_call: ToolCall | None = None
         interrupted = False
 
-        if available_tools:
-            prompts = PromptStore(session.project_root)
-            augmented_system = probe_op.system_prompt
-            for tool_name, (tdef, _fn) in available_tools.items():
-                prompt_key = tool_prompt_key(tool_name)
-                snippet = prompts.get(prompt_key) if prompt_key in prompts.list_keys("tool") else tdef.prompt_snippet
-                augmented_system += "\n\n" + snippet
-            augmented_system += "\n\n" + prompts.get("operator.chaining_instructions")
-            messages = assemble_prompt(
-                crawl_result,
-                system_prompt=augmented_system,
-                instruction=probe_op.build_instruction(ann_params),
-            )
-            HANDOFF_PARAMS: dict[str, Any] = {
-                "keep_text": {
-                    "type": "boolean",
-                    "description": prompts.get("operator.handoff_keep_text_description"),
-                },
-                "chain": {
-                    "type": "object",
-                    "description": prompts.get("operator.handoff_chain_description"),
-                    "properties": {
-                        "name": {"type": "string", "description": prompts.get("operator.handoff_chain_name_description")},
-                        "id": {"type": "string", "description": prompts.get("operator.handoff_chain_id_description")},
-                        "arguments": {"type": "object", "description": prompts.get("operator.handoff_chain_arguments_description")},
-                    },
-                    "required": ["name", "arguments"],
-                },
-            }
-            tools_payload: list[dict[str, Any]] = []
-            for n, (tdef, _fn) in available_tools.items():
-                params = dict(tdef.parameters)
-                props: dict[str, Any] = dict(params.get("properties", {}))
-                props.update(HANDOFF_PARAMS)
-                params["properties"] = props
-                prompt_key = tool_prompt_key(n)
-                resolved_description = prompts.get(prompt_key) if prompt_key in prompts.list_keys("tool") else tdef.prompt_snippet
-                tools_payload.append({
-                    "type": "function",
-                    "function": {
-                        "name": n,
-                        "description": resolved_description,
-                        "parameters": params,
-                    },
-                })
-        else:
-            messages = probe_op.build_messages(crawl_result, ann_params)
-            tools_payload = []
+        messages = probe_op.build_messages(crawl_result, ann_params)
+        tools_payload: list[dict[str, Any]] = []
 
         # ── Command tools ─────────────────────────────────────────────────
         # Operators that prioritise speed (e.g. play) opt out via
@@ -1088,7 +949,6 @@ class Operator(ABC):
                         interrupted = True
                         break
                     content = event.final.text
-                    tool_call = event.final.tool_call
                     break
         except KeyboardInterrupt:
             interrupted = True
@@ -1098,168 +958,15 @@ class Operator(ABC):
         if interrupted:
             return
 
-        # Tool call path
-        if tool_call is not None and tool_call.name in available_tools:
-            tdef, invoke_fn = available_tools[tool_call.name]
-            storage = chain_storage if chain_storage is not None else session.new_storage(owner=owner)
-            op = cls(storage, narrative)
-            await cls._dispatch_tool_call(
-                tool_call=tool_call,
-                text=content,
-                cursor=cursor,
-                op=op,
-                tag=tag,
-                session=session,
-                narrative=narrative,
-                tool_def=tdef,
-                invoke_fn=invoke_fn,
-                llm_id=llm_id,
-                depth=tool_call_depth,
-                on_token=on_token,
-                on_confirm=on_confirm,
-                pins=pins,
-                unpins=unpins,
-                prompt=prompt,
-            )
-            return
-
-        # Normal path (no tool call or unknown tool name)
         if not content.strip():
             raise OperatorError("no content generated")
 
-        storage = chain_storage if chain_storage is not None else session.new_storage(owner=owner)
+        storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
         content_prefix = op.content_prefix_for_fresh(ann_params)
         if content_prefix:
             content = content_prefix + content
         op.write_start(cursor, tag, content)
-
-    @classmethod
-    async def _dispatch_tool_call(
-        cls,
-        *,
-        tool_call: ToolCall,
-        text: str,
-        cursor: NarrativeNode,
-        op: Operator,
-        tag: str,
-        session: ProjectSession,
-        narrative: NarrativeNode,
-        tool_def: OperatorToolDef,
-        invoke_fn: Any,
-        llm_id: str | None,
-        depth: int,
-        on_token: Callable[[str], Awaitable[None]] | None,
-        on_confirm: Callable[[str, str], Awaitable[bool]] | None,
-        pins: list[str],
-        unpins: list[str],
-        prompt: str | None,
-    ) -> None:
-        """Dispatch a tool call produced by the LLM during inline generation.
-
-        At depth 0 the call is automatic. At depth ≥ 1 the ``on_confirm``
-        callback is required and the user must approve before continuing.
-        """
-        keep_text = bool(tool_call.arguments.get("keep_text", tool_def.keep_text))
-
-        if depth >= 1:
-            if on_confirm is None:
-                raise OperatorError(
-                    "tool call at depth > 0 requires an on_confirm callback"
-                )
-            confirmed = await on_confirm(
-                text.strip() or "(no text)",
-                f"{tool_call.name}({tool_call.arguments})",
-            )
-            if not confirmed:
-                if keep_text and text.strip():
-                    op.write_start(cursor, tag, text)
-                return
-
-        if keep_text and text.strip():
-            op.write_start(cursor, tag, text)
-
-        args_for_op = {k: v for k, v in tool_call.arguments.items() if k != "chain"}
-        chain_spec = ChainSpec.from_dict(tool_call.arguments.get("chain"))
-        if chain_spec is not None and tool_call.name == "section":
-            args_for_op["chain"] = {chain_spec.name: chain_spec.arguments}
-
-        invoke_result = await invoke_fn(
-            args_for_op, session, narrative, depth, on_token, on_confirm,
-            storage=op.storage,
-            llm_id=llm_id,
-        )
-
-        chain_cursor: NarrativeNode | None = None
-        if chain_spec is not None and tool_call.name == "section" and isinstance(
-            invoke_result, NarrativeNode
-        ):
-            chain_cursor = invoke_result
-
-        if chain_spec is not None:
-            await cls._run_chained_operator(
-                chain_spec=chain_spec,
-                storage=op.storage,
-                session=session,
-                narrative=narrative,
-                depth=depth,
-                on_token=on_token,
-                on_confirm=on_confirm,
-                cursor_override=chain_cursor,
-                llm_id=llm_id,
-            )
-
-    @classmethod
-    async def _run_chained_operator(
-        cls: type[Operator],
-        *,
-        chain_spec: ChainSpec,
-        storage: Storage,
-        session: ProjectSession,
-        narrative: NarrativeNode,
-        depth: int,
-        on_token: Callable[[str], Awaitable[None]] | None,
-        on_confirm: Callable[[str, str], Awaitable[bool]] | None,
-        cursor_override: NarrativeNode | None = None,
-        llm_id: str | None = None,
-    ) -> None:
-        """Run a chained operator, then recursively run any chain in its args."""
-        registry = get_tool_registry(session.project_root)
-        if chain_spec.name not in registry:
-            raise OperatorError(f"chained operator {chain_spec.name!r} not found")
-        _tdef, invoke_fn = registry[chain_spec.name]
-        next_depth = depth + 1
-        if next_depth >= 2 and on_confirm is not None:
-            confirmed = await on_confirm(
-                "(chained)",
-                f"{chain_spec.name}({chain_spec.arguments})",
-            )
-            if not confirmed:
-                return
-        elif next_depth >= 2 and on_confirm is None:
-            raise OperatorError(
-                "chained operator at depth >= 2 requires on_confirm callback"
-            )
-        next_args = dict(chain_spec.arguments)
-        next_chain = ChainSpec.from_dict(next_args.pop("chain", None))
-        invoke_kwargs: dict[str, Any] = {"storage": storage, "llm_id": llm_id}
-        if cursor_override is not None:
-            invoke_kwargs["cursor"] = cursor_override
-        await invoke_fn(
-            next_args, session, narrative, next_depth, on_token, on_confirm,
-            **invoke_kwargs,
-        )
-        if next_chain is not None:
-            await cls._run_chained_operator(
-                chain_spec=next_chain,
-                storage=storage,
-                session=session,
-                narrative=narrative,
-                depth=next_depth,
-                on_token=on_token,
-                on_confirm=on_confirm,
-                llm_id=llm_id,
-            )
 
     @classmethod
     async def _do_continue(
