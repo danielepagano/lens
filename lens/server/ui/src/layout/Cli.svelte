@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte'
   import type { CommandContext, CommandResult, CommandDefinition } from '../commands/common'
   import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
   import { parseCliInput, buildArgs } from '../commands/parser'
@@ -66,6 +67,17 @@
       const newHeight = Math.min(cliInputEl.scrollHeight + 3, maxHeightPx)
       cliInputEl.style.height = `${newHeight}px`
     })
+  }
+
+  function inputIsMultiLine(): boolean {
+    const el = cliInputEl
+    if (!el) return false
+    const prev = el.style.height
+    el.style.height = '0px'
+    const naturalHeight = el.scrollHeight
+    el.style.height = prev
+    const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 20
+    return naturalHeight > lineHeight * 1.5
   }
 
   $: resizeCliInput(input)
@@ -461,6 +473,7 @@
       return
     }
     if (e.key === 'ArrowUp') {
+      if (inputIsMultiLine()) return
       e.preventDefault()
       if (history.length === 0) return
       if (historyIndex === -1) {
@@ -474,6 +487,7 @@
       return
     }
     if (e.key === 'ArrowDown') {
+      if (inputIsMultiLine()) return
       e.preventDefault()
       if (historyIndex === -1) {
         input = ''
@@ -545,6 +559,7 @@
       }
     } finally {
       busy = false
+      await tick()
       focusCliInput()
     }
   }
