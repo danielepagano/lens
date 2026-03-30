@@ -360,3 +360,80 @@ class TestBrowser:
             f"Expected appended marker in KB read view after save; got excerpt: {saved_text[:400]!r}"
         )
         assert viewer.locator(".kb-save-error").count() == 0
+
+    def test_write_manual_shows_inline_codemirror(
+        self,
+        page: "Page",
+        live_server_url: str,
+    ) -> None:
+        """`/write --manual` with no text opens the inline CodeMirror append editor."""
+        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+        page.locator('[data-testid="markdown-view"] .markdown-html-root').wait_for(
+            timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/write --manual")
+        page.keyboard.press("Space")
+
+        page.wait_for_selector(
+            '[data-testid="inline-edit-view"]', state="visible", timeout=8000
+        )  # type: ignore[union-attr]
+        assert page.locator('[data-testid="inline-edit-view"] .cm-editor').count() >= 1
+
+    def test_write_manual_appends_typed_text(
+        self,
+        page: "Page",
+        live_server_url: str,
+        lens_project_dir: "Path | None",
+    ) -> None:
+        """`/write --manual`, type text, Ctrl+Enter → text appended to node, no annotations."""
+        if lens_project_dir is None:
+            pytest.skip("Requires local project dir; not supported in external-server mode")
+
+        marker = "[[e2e-write-manual-append]]"
+
+        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+        page.locator('[data-testid="markdown-view"] .markdown-html-root').wait_for(
+            timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/write --manual")
+        page.keyboard.press("Space")
+
+        page.wait_for_selector(
+            '[data-testid="inline-edit-view"]', state="visible", timeout=8000
+        )  # type: ignore[union-attr]
+
+        cm_content = page.locator('[data-testid="inline-edit-view"] .cm-content')  # type: ignore[union-attr]
+        cm_content.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        cm_content.click()  # type: ignore[union-attr]
+        page.keyboard.type(marker)  # type: ignore[union-attr]
+        page.keyboard.press("Control+Enter")  # type: ignore[union-attr]
+
+        page.wait_for_selector(
+            '[data-testid="inline-edit-view"]', state="detached", timeout=8000
+        )  # type: ignore[union-attr]
+
+        # Verify text appeared in the document view
+        page.locator('[data-testid="markdown-view"]').get_by_text(marker).wait_for(
+            timeout=8000
+        )  # type: ignore[union-attr]
+
+        # Verify no write annotations in the file
+        from lens.core.project import ProjectSession
+        session = ProjectSession(lens_project_dir, lens_project_dir)
+        narrative = session.active_narrative
+        assert narrative is not None
+        content = narrative.find_cursor().md_path().read_text()
+        assert marker in content
+        assert "[write" not in content or content.count("[write") == content.count("[/write")

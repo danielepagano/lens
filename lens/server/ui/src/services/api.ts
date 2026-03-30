@@ -211,6 +211,17 @@ export const runWrite = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/write', params, onEvent)
 
+export interface WriteManualResult {
+  status: string
+  node: string
+}
+
+export const runWriteManual = withStats((
+  params: { text: string }
+): Promise<WriteManualResult> =>
+  post('/operator/write/manual', params) as Promise<WriteManualResult>
+)
+
 export interface PlayParams {
   prompt?: string
   module_id?: string

@@ -13,6 +13,15 @@
   function confirm() {
     const s = get(inlineEditMode)
     if (!s) return
+    if (s.appendMode) {
+      const fullText = currentText.length > 0 ? currentText : ''
+      const appendedText = fullText.split('\n').slice(s.startLine - 1).join('\n')
+      if (appendedText.trim()) {
+        inlineEditResult.set(appendedText)
+      }
+      inlineEditMode.set(null)
+      return
+    }
     const fullText = currentText.length > 0 ? currentText : get(nodeContent)
     const modifiedLines = fullText.split('\n')
     const suffix = s.linesAfterSelection
@@ -49,14 +58,21 @@
 
 {#if $inlineEditMode}
   {@const state = $inlineEditMode}
+  {@const appendContent = state.appendMode
+    ? ($nodeContent.endsWith('\n') ? $nodeContent + '\n' : $nodeContent + '\n\n')
+    : $nodeContent}
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="inline-edit-view" data-testid="inline-edit-view" on:keydown={handleKeydown}>
     <div class="inline-edit-hint">
-      Editing lines {state.startLine}–{state.endLine}
+      {#if state.appendMode}
+        Append text
+      {:else}
+        Editing lines {state.startLine}–{state.endLine}
+      {/if}
       <span class="inline-edit-shortcut">Ctrl+Enter to apply · Esc to cancel</span>
     </div>
     <CodeMirrorEditor
-      content={$nodeContent}
+      content={appendContent}
       editableRange={{
         fromLine: state.startLine,
         toLine: state.endLine,

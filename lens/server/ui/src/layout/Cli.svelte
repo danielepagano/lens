@@ -449,8 +449,21 @@
     return true
   }
 
+  /** Space after ``--manual`` submits ``/write --manual`` with no prompt (opens append editor). */
+  function shouldSpaceSubmitWriteManual(candidateInput: string): boolean {
+    const def = COMMAND_DEFINITIONS.find((d) => d.trigger === 'write')
+    if (!def) return false
+    if (!candidateInput.trim().startsWith('/')) return false
+    const state = parseCliInput(candidateInput, def)
+    const args = buildArgs(state, def)
+    if (args.options['manual'] !== true) return false
+    const prompt = args.positional['prompt'] as string | undefined
+    if (prompt !== undefined && String(prompt).trim() !== '') return false
+    return true
+  }
+
   function trySubmitIfCompleteEditReplace() {
-    if (shouldSpaceSubmitEditReplace(input)) {
+    if (shouldSpaceSubmitEditReplace(input) || shouldSpaceSubmitWriteManual(input)) {
       void submit()
     }
   }
@@ -505,7 +518,7 @@
         const start = el.selectionStart ?? input.length
         const end = el.selectionEnd ?? input.length
         const candidate = input.slice(0, start) + ' ' + input.slice(end)
-        if (shouldSpaceSubmitEditReplace(candidate)) {
+        if (shouldSpaceSubmitEditReplace(candidate) || shouldSpaceSubmitWriteManual(candidate)) {
           e.preventDefault()
           input = candidate
           updateCommandState()

@@ -37,6 +37,12 @@ def write(
         "-r",
         help="Discard generated text and regenerate",
     ),
+    manual: str | None = typer.Option(
+        None,
+        "--manual",
+        "-m",
+        help="Append text directly to the cursor node without AI",
+    ),
 ) -> None:
     """Generate narrative text at the cursor."""
     try:
@@ -51,6 +57,14 @@ def write(
             "lens write: no active narrative (run 'lens use <slug>' first)", err=True
         )
         raise typer.Exit(1)
+
+    if manual is not None:
+        try:
+            WriteOperator.run_manual(session=session, narrative=narrative, text=manual)
+        except LensException as e:
+            typer.echo(f"lens write: {e}", err=True)
+            raise typer.Exit(1)
+        return
 
     try:
         validate_ids_exist(session.project_root, list(pin) + list(unpin))

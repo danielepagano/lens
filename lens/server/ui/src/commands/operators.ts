@@ -1,6 +1,6 @@
 import { get } from 'svelte/store'
-import { runWrite, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent, type Stats } from '../services/api'
-import { cliOutput, treeRefreshTrigger, inlineEditMode, inlineEditResult } from '../stores/ui'
+import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent, type Stats } from '../services/api'
+import { cliOutput, treeRefreshTrigger, inlineEditMode, inlineEditResult, type InlineEditState } from '../stores/ui'
 import { streamingPreview, currentAddress, nodeContent } from '../stores/document'
 import type {
   CliPayload,
@@ -46,6 +46,7 @@ const commands: CommandDefinition[] = [
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
       { name: 'retry' },
+      { name: 'manual', hint: 'append text directly without AI' },
     ],
   },
   {
@@ -153,6 +154,91 @@ const handler: CommandHandler = async (
   const llmId = (ctx.args.options['llm'] as string | undefined) || undefined
   const as_pc = (ctx.args.options['as'] as string | undefined) || undefined
   const retry = ctx.args.options['retry'] === true
+
+  const isManual = ctx.args.options['manual'] === true
+
+  // write --manual with no prompt text: open inline append editor
+  if (command === 'write' && isManual && !prompt) {
+    const cursor = get(stats)?.cursor
+    if (!cursor) {
+      cliOutput.set({ output: 'No cursor position', exitCode: 1, streaming: false })
+      return { clearInput: false }
+    }
+    streamingPreview.set(null)
+    if (ctx.navigate) {
+      await ctx.navigate(cursor)
+    }
+    // Pad the current content with one blank line so the user has an editable line at the end.
+    const rawContent = get(nodeContent)
+    const paddedContent = rawContent.endsWith('\n') ? rawContent + '\n' : rawContent + '\n\n'
+    const appendLine = paddedContent.split('\n').length
+    inlineEditResult.set(null)
+    const editState: InlineEditState = {
+      address: cursor,
+      startLine: appendLine,
+      endLine: appendLine,
+      originalText: '',
+      linesAfterSelection: 0,
+      appendMode: true,
+    }
+    inlineEditMode.set(editState)
+
+    const editedText = await new Promise<string | null>((resolve) => {
+      const unsubResult = inlineEditResult.subscribe((val) => {
+        if (val !== null) {
+          unsubResult()
+          unsubMode()
+          resolve(val)
+        }
+      })
+      const unsubMode = inlineEditMode.subscribe((val) => {
+        if (val === null) {
+          unsubResult()
+          unsubMode()
+          resolve(get(inlineEditResult))
+        }
+      })
+    })
+
+    if (editedText === null) {
+      return { clearInput: false }
+    }
+
+    try {
+      await runWriteManual({ text: editedText })
+      if (ctx.onDone) await ctx.onDone()
+      treeRefreshTrigger.update((n) => n + 1)
+      cliOutput.set(null)
+      return { clearInput: true }
+    } catch (err) {
+      cliOutput.set({
+        output: err instanceof Error ? err.message : String(err),
+        exitCode: 1,
+        streaming: false,
+      })
+      if (ctx.onDone) await ctx.onDone()
+      return { clearInput: false }
+    }
+  }
+
+  // write --manual SOME TEXT: append directly without opening editor
+  if (command === 'write' && isManual && prompt) {
+    try {
+      await runWriteManual({ text: prompt })
+      if (ctx.onDone) await ctx.onDone()
+      treeRefreshTrigger.update((n) => n + 1)
+      cliOutput.set(null)
+      return { clearInput: true }
+    } catch (err) {
+      cliOutput.set({
+        output: err instanceof Error ? err.message : String(err),
+        exitCode: 1,
+        streaming: false,
+      })
+      if (ctx.onDone) await ctx.onDone()
+      return { clearInput: false }
+    }
+  }
 
   let errorOutput = ''
 

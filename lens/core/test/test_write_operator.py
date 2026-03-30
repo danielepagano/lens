@@ -314,3 +314,70 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                         retry=True,
                     )
                 )
+
+
+class TestWriteManual(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp()
+        self.root, self.narrative = _make_project(_init_repo(Path(self.tmp)))
+        self.session = ProjectSession(self.root, self.root)
+
+    def _node_content(self) -> str:
+        return (self.root / "narrative" / "test" / "_node.md").read_text()
+
+    def test_appends_text_to_cursor(self) -> None:
+        """run_manual appends the given text after the existing content."""
+        addr = WriteOperator.run_manual(
+            session=self.session,
+            narrative=self.narrative,
+            text="Manually added paragraph.",
+        )
+        content = self._node_content()
+        self.assertIn("Manually added paragraph.", content)
+        self.assertTrue(content.startswith("# test"))
+        self.assertIsInstance(addr, str)
+
+    def test_no_operator_annotations(self) -> None:
+        """run_manual must not add any [write...] annotations."""
+        WriteOperator.run_manual(
+            session=self.session,
+            narrative=self.narrative,
+            text="No annotations here.",
+        )
+        content = self._node_content()
+        self.assertNotIn("[write", content)
+        self.assertNotIn("]: #", content)
+
+    def test_blank_line_separator(self) -> None:
+        """run_manual ensures a blank line between existing content and appended text."""
+        WriteOperator.run_manual(
+            session=self.session,
+            narrative=self.narrative,
+            text="New paragraph.",
+        )
+        content = self._node_content()
+        # The original content ends with \n; appended text must be separated
+        self.assertIn("\n\nNew paragraph.", content)
+
+    def test_multiple_appends(self) -> None:
+        """run_manual can be called multiple times; each append is independent."""
+        WriteOperator.run_manual(session=self.session, narrative=self.narrative, text="First.")
+        # Stage the first change so we own a fresh transaction for the second
+        self.session.new_storage().stage_all()
+        WriteOperator.run_manual(session=self.session, narrative=self.narrative, text="Second.")
+        content = self._node_content()
+        self.assertIn("First.", content)
+        self.assertIn("Second.", content)
+        idx_first = content.index("First.")
+        idx_second = content.index("Second.")
+        self.assertLess(idx_first, idx_second)
+
+    def test_returns_cursor_address(self) -> None:
+        """run_manual returns the address string of the cursor node."""
+        addr = WriteOperator.run_manual(
+            session=self.session,
+            narrative=self.narrative,
+            text="Check address.",
+        )
+        # Root narrative cursor address is the narrative name with no subpath
+        self.assertEqual(addr, "test")

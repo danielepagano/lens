@@ -32,6 +32,10 @@ class WriteBody(BaseModel):
     retry: bool = False
 
 
+class WriteManualBody(BaseModel):
+    text: str
+
+
 class PlayBody(BaseModel):
     prompt: str | None = None
     module_id: str | None = None
@@ -241,6 +245,25 @@ async def operator_write(
         )
 
     return _start_operator_stream(lock, event_queue, session, "write", node_addr, coro_fn)
+
+
+@router.post("/operator/write/manual")
+async def operator_write_manual(
+    body: WriteManualBody,
+    session: ProjectSession = Depends(get_session),
+) -> dict[str, Any]:
+    from lens.core.operators.write import WriteOperator
+
+    narrative = _require_narrative(session)
+    try:
+        node_addr = WriteOperator.run_manual(
+            session=session,
+            narrative=narrative,
+            text=body.text,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return {"status": "ok", "node": node_addr}
 
 
 @router.post("/operator/play")

@@ -65,7 +65,8 @@ export const mediaPreviewRequest = writable<MediaPreviewRequest | null>(null)
 /** Increment to force the mount directory autocomplete cache to reload. */
 export const mountCacheRefreshTrigger = writable(0)
 
-// Inline edit mode: active when the user entered `edit --replace` with no prompt text
+// Inline edit mode: active when the user entered `edit --replace` with no prompt text,
+// or `write --manual` with no text (appendMode).
 export interface InlineEditState {
   address: string
   startLine: number
@@ -73,6 +74,8 @@ export interface InlineEditState {
   originalText: string
   /** Count of lines strictly after `endLine` in the original document (unchanged suffix). */
   linesAfterSelection: number
+  /** When true: append new text at end of node rather than replacing a range. */
+  appendMode?: boolean
 }
 export const inlineEditMode = writable<InlineEditState | null>(null)
 export const inlineEditResult = writable<string | null>(null)
