@@ -39,6 +39,8 @@
   let currentParseState: ParseState | null = null
   let lastAutoFilledCommand: string | null = null
   let addressAutoFilled = false
+  let sessionFillSuppressed = false
+  let lastSessionOperator: string | null = null
 
   // Data source caches for autocomplete
   let kbKeyCache = new Map<string, string[]>()
@@ -83,6 +85,15 @@
   }
 
   $: resizeCliInput(input)
+
+  $: {
+    const newOp = $stats?.active_session_operator ?? null
+    if (newOp !== lastSessionOperator) {
+      lastSessionOperator = newOp
+      sessionFillSuppressed = false
+      updateCommandState()
+    }
+  }
 
   function focusCliInput() {
     if (!cliInputEl) return
@@ -190,6 +201,17 @@
 
   function updateCommandState() {
     const trimmed = input.trim()
+
+    // Session operator auto-fill: when input is empty and cursor is inside a session, pre-select it.
+    if ((trimmed === '' || trimmed === '/') && !sessionFillSuppressed) {
+      const sessionOp = $stats?.active_session_operator
+      if (sessionOp && KNOWN_COMMANDS.includes(sessionOp)) {
+        input = '/' + sessionOp + ' '
+        updateCommandState()
+        return
+      }
+    }
+
     const startsWithSlash = trimmed.startsWith('/')
     const withoutSlash = startsWithSlash ? trimmed.slice(1) : trimmed
     const parts = withoutSlash.split(/\s+/).filter(Boolean)
@@ -438,6 +460,18 @@
     const trimmed = input.trim()
     const isLogicalEmpty = trimmed === '' || trimmed === '/'
 
+    // Backspace on the session auto-filled command clears to empty and suppresses re-fill.
+    if (e.key === 'Backspace' && !sessionFillSuppressed) {
+      const sessionOp = $stats?.active_session_operator
+      if (sessionOp && (trimmed === '/' + sessionOp || trimmed === '/' + sessionOp + ' ')) {
+        e.preventDefault()
+        input = ''
+        sessionFillSuppressed = true
+        updateCommandState()
+        return
+      }
+    }
+
     if (isLogicalEmpty) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
@@ -589,6 +623,7 @@
       const result: CommandResult = await handler(command, payload, ctx)
       if (result.clearInput) {
         input = ''
+        sessionFillSuppressed = false
         updateCommandState()
       }
     } finally {

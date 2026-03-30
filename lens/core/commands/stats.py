@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from lens.core.address import NarrativeAddress
 from lens.core.context import crawl_pins
+from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.project import ProjectSession, has_mount_config, get_selected_datasets, is_dataset_root, list_available_llms
 from lens.core.knowledge import KnowledgeStore
 
@@ -24,6 +25,7 @@ class StatsResult:
     effective_pins_at_cursor: list[str] = field(default_factory=list[str])
     available_llms: list[str] = field(default_factory=list[str])
     has_mount: bool = False
+    active_session_operator: str | None = None
 
 
 def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
@@ -66,6 +68,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         staged_diff = storage.staged_diff()
 
     effective_pins_at_cursor: list[str] = []
+    active_session_operator: str | None = None
     if not is_dataset and cursor_addr is not None:
         node_addr = cursor_addr.node_only()
         try:
@@ -74,6 +77,18 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             node = None  # type: ignore[assignment]
         if node is not None:
             effective_pins_at_cursor = crawl_pins(node)
+            if node.key_path:
+                parent = NarrativeNode(
+                    narrative_root=node.narrative_root,
+                    key_path=node.key_path[:-1],
+                )
+                try:
+                    parent_text = parent.md_path().read_text(encoding="utf-8")
+                    open_ann = find_unclosed_cursor_annotation(parent_text)
+                    if open_ann is not None:
+                        active_session_operator = open_ann.operator
+                except FileNotFoundError:
+                    pass
 
     return StatsResult(
         kb_types=kb_types,
@@ -90,4 +105,5 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         effective_pins_at_cursor=effective_pins_at_cursor,
         available_llms=list_available_llms(root),
         has_mount=has_mount_config(root),
+        active_session_operator=active_session_operator,
     )
