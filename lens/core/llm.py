@@ -45,6 +45,7 @@ class _LLMConfig:
     api_key: str
     temperature: float
     timeout_seconds: int
+    reasoning_effort: str
 
 
 def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bool]:
@@ -102,6 +103,7 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
             api_key=api_key,
             temperature=float(raw.get("temperature", 0.8)),
             timeout_seconds=int(raw.get("timeout_seconds", 120)),
+            reasoning_effort=str(raw.get("reasoning_effort", _REASONING_EFFORT)),
         ),
         verbose_llm,
     )
@@ -219,7 +221,7 @@ async def _stream_once(
     payload["enable_thinking"] = enable_thinking
     payload["chat_template_kwargs"] = {"enable_thinking": enable_thinking}
     if enable_thinking:
-        payload["reasoning"] = {"effort": _REASONING_EFFORT}
+        payload["reasoning"] = {"effort": cfg.reasoning_effort}
     else:
         payload["reasoning"] = {"effort": "none", "enabled": False}
         if not enable_thinking:
