@@ -37,6 +37,8 @@
   let isFocused = false
   let activeCommandDef: CommandDefinition | null = null
   let currentParseState: ParseState | null = null
+  let lastAutoFilledCommand: string | null = null
+  let addressAutoFilled = false
 
   // Data source caches for autocomplete
   let kbKeyCache = new Map<string, string[]>()
@@ -109,6 +111,14 @@
     if (normalized === '' || normalized === '/') return root.address
     if (normalized.startsWith('/')) return root.address + normalized
     return normalized
+  }
+
+  function navAddrToDisplayAddr(navAddr: string): string | null {
+    if (!nodeTreeCache || nodeTreeCache.length === 0) return null
+    const root = nodeTreeCache[0]!
+    if (navAddr === root.address) return '/'
+    if (navAddr.startsWith(root.address + '/')) return navAddr.slice(root.address.length)
+    return null
   }
 
   function parseCommandAndPayload(value: string): { command: string | null; payload: string } {
@@ -198,6 +208,30 @@
     // Parse input against definition
     const state = parseCliInput(input, activeCommandDef)
     currentParseState = state
+
+    // Reset address auto-fill flag when command changes
+    const currentTrigger = activeCommandDef?.trigger ?? null
+    if (currentTrigger !== lastAutoFilledCommand) {
+      lastAutoFilledCommand = currentTrigger
+      addressAutoFilled = false
+    }
+
+    // Pre-fill address slot with currently visible node on first entry
+    if (
+      !addressAutoFilled &&
+      state.activePayload?.valueType === 'address' &&
+      state.currentToken === '' &&
+      $currentAddress
+    ) {
+      fetchNodeTree()
+      const displayAddr = navAddrToDisplayAddr($currentAddress)
+      if (displayAddr) {
+        addressAutoFilled = true
+        input = input.trimEnd() + ' ' + displayAddr + ' '
+        updateCommandState()
+        return
+      }
+    }
 
     // Line pick mode: always update from current input so it clears when history is navigated
     const activeType = state.activePayload?.valueType

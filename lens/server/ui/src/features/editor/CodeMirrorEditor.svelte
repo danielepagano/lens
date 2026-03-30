@@ -129,10 +129,11 @@
       backgroundColor: 'color-mix(in srgb, var(--pico-primary) 12%, transparent)',
     },
     '.cm-content .cm-line.cm-linepick-annotation': {
+      backgroundColor: 'color-mix(in srgb, var(--pico-del-color, #c62828) 10%, transparent)',
       opacity: '0.35',
     },
     '.cm-content .cm-line.cm-linepick-disabled': {
-      backgroundColor: 'color-mix(in srgb, var(--pico-del-color, #c62828) 8%, transparent)',
+      backgroundColor: 'color-mix(in srgb, var(--pico-del-color, #c62828) 10%, transparent)',
       opacity: '0.45',
       color: 'var(--pico-del-color, #c62828)',
     },

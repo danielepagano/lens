@@ -46,7 +46,7 @@ def _set_front_matter(path: Path, data: dict[str, Any], storage: Storage) -> Non
         i = 0
         while i < len(lines) and not lines[i].strip():
             i += 1
-        new_lines = lines[:i] + [block, ""] + lines[i:]
+        new_lines = [block, ""] + lines[i:]
     storage.write_file(path, "\n".join(new_lines))
 
 
