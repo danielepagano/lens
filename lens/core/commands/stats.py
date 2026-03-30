@@ -8,6 +8,8 @@ from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.project import ProjectSession, has_mount_config, get_selected_datasets, is_dataset_root, list_available_llms
 from lens.core.knowledge import KnowledgeStore
 
+SESSION_OPERATOR_NAMES: frozenset[str] = frozenset({"design", "play", "advance"})
+
 
 @dataclass
 class StatsResult:
@@ -85,7 +87,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
                 try:
                     parent_text = parent.md_path().read_text(encoding="utf-8")
                     open_ann = find_unclosed_cursor_annotation(parent_text)
-                    if open_ann is not None:
+                    if open_ann is not None and open_ann.operator in SESSION_OPERATOR_NAMES:
                         active_session_operator = open_ann.operator
                 except FileNotFoundError:
                     pass
