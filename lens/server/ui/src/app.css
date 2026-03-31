@@ -1184,6 +1184,103 @@ details[open]>summary {
   color: var(--pico-color);
 }
 
+/* ---- Narrative content wrapper ---- */
+
+.narrative-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* On mobile, hide narrative when KB panel is open */
+@media (max-width: 767px) {
+  .narrative-content.kb-open {
+    display: none;
+  }
+}
+
+/* ---- KB panel (right side on desktop, full-screen on mobile) ---- */
+
+.kb-panel {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background: var(--pico-background-color);
+}
+
+/* Mobile: fill the whole main area */
+@media (max-width: 767px) {
+  .kb-panel {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* Desktop: fixed-width right panel */
+@media (min-width: 768px) {
+  .kb-panel {
+    width: 420px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--pico-muted-border-color);
+  }
+}
+
+.kb-panel-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  flex-shrink: 0;
+}
+
+.kb-panel-title {
+  flex: 1;
+  font-weight: bold;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kb-browse-btn,
+.kb-panel-close {
+  background: none;
+  border: none;
+  color: #777;
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.kb-browse-btn:hover,
+.kb-panel-close:hover {
+  background: var(--pico-secondary-hover-background);
+}
+
+/* KB browser overlay — covers the KB panel (absolute within .kb-panel) */
+.kb-browser-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: var(--pico-background-color);
+  overflow: hidden;
+}
+
 /* ---- KB Browser ---- */
 
 .kb-browser {
