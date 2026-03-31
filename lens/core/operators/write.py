@@ -4,7 +4,7 @@
 creating a ``[write ... ]: #`` annotation that records the configuration.
 
 When called again while owning a pending transaction:
-- no arguments  → continue, appending new content to existing
+- no arguments  → error (prompt required); start a new block with a prompt
 - ``--retry``   → discard generated text and regenerate with same config
 - prompt/pins   → discard and regenerate with updated config
 

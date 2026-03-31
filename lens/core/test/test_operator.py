@@ -279,35 +279,17 @@ class TestMode1Inline(unittest.TestCase):
             self.assertIn("Generated text.", text)
             self.assertIn("[/testop:w1]: #", text)
 
-    def test_open_and_close_inline(self) -> None:
+    def test_close_inline_appends_close_tag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             owner = _TestOp.owner_id("m1", "narrative/test/_node.md")
             storage = Storage(root, owner=owner)
             op = _TestOp(storage, narrative)
 
-            op.open_inline(narrative, "m1", {"prompt": "go"})
-            text = narrative.md_path().read_text()  # type: ignore[union-attr]
-            self.assertIn("[testop:m1", text)
-            self.assertIn("steps: 1", text)
-            self.assertNotIn("[/testop:m1]", text)
-
+            op.append_to_node(narrative, "[testop:m1]: #\n")
             op.close_inline(narrative, "m1")
             text = narrative.md_path().read_text()  # type: ignore[union-attr]
             self.assertIn("[/testop:m1]: #", text)
-
-    def test_continue_inline_increments_steps(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root, narrative = _make_project(_init_repo(Path(tmp)))
-            owner = _TestOp.owner_id("m1", "narrative/test/_node.md")
-            storage = Storage(root, owner=owner)
-            op = _TestOp(storage, narrative)
-
-            op.open_inline(narrative, "m1")
-            op.continue_inline(narrative, "m1", "More content.")
-            text = narrative.md_path().read_text()  # type: ignore[union-attr]
-            self.assertIn("steps: 2", text)
-            self.assertIn("More content.", text)
 
 
 # ------------------------------------------------------------------
@@ -415,7 +397,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
     def test_find_open_annotation_found(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            narrative.md_path().write_text("[cao\n    steps: 1\n]: #\n\nGenerated text\n")
+            narrative.md_path().write_text("[cao]: #\n\nGenerated text\n")
             op = _ConcreteCAO(Storage(root), narrative)
             ann = op.find_open_annotation(narrative)
             self.assertIsNotNone(ann)
@@ -432,7 +414,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         """Closed annotations are returned: pending state is tracked by git, not tag structure."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            narrative.md_path().write_text("[cao\n    steps: 1\n]: #\n\nText\n\n[/cao]: #\n")
+            narrative.md_path().write_text("[cao]: #\n\nText\n\n[/cao]: #\n")
             op = _ConcreteCAO(Storage(root), narrative)
             ann = op.find_open_annotation(narrative)
             self.assertIsNotNone(ann)
@@ -444,10 +426,9 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             owner = _ConcreteCAO.owner_id(None, "narrative/test/_node.md", line=3)
             op = _ConcreteCAO(Storage(root, owner=owner), narrative)
-            op.write_start(narrative, "[cao\n    steps: 1\n]: #", "Generated text")
+            op.write_start(narrative, "[cao]: #", "Generated text")
             text = narrative.md_path().read_text()
             self.assertIn("[cao", text)
-            self.assertIn("steps: 1", text)
             self.assertIn("Generated text", text)
             self.assertIn("[/cao]: #", text)
             self.assertLess(text.index("Generated text"), text.index("[/cao]: #"))
@@ -456,7 +437,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             narrative.md_path().write_text(
-                "[cao\n    steps: 1\n]: #\n\nFirst content\n\n[/cao]: #\n"
+                "[cao]: #\n\nFirst content\n\n[/cao]: #\n"
             )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
@@ -474,7 +455,6 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             op.write_append(narrative, ann, "Second content")
 
             text = narrative.md_path().read_text()
-            self.assertIn("steps: 2", text)
             self.assertIn("First content", text)
             self.assertIn("Second content", text)
             self.assertIn("[/cao]: #", text)
@@ -489,7 +469,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             narrative.md_path().write_text(
-                "[cao\n    steps: 3\n]: #\n\nContent to remove\n\n[/cao]: #\n"
+                "[cao]: #\n\nContent to remove\n\n[/cao]: #\n"
             )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
@@ -507,7 +487,6 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             op.write_discard(narrative, ann)
 
             text = narrative.md_path().read_text()
-            self.assertIn("steps: 0", text)
             self.assertNotIn("Content to remove", text)
             self.assertNotIn("[/cao]: #", text)
 
@@ -515,7 +494,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             narrative.md_path().write_text(
-                "[cao\n    steps: 2\n]: #\n\nOld content\n\n[/cao]: #\n"
+                "[cao]: #\n\nOld content\n\n[/cao]: #\n"
             )
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
@@ -530,10 +509,9 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             assert ann is not None
             owner = _ConcreteCAO.owner_id(None, "narrative/test/_node.md", line=ann.line_start)
             op = _ConcreteCAO(Storage(root, owner=owner), narrative)
-            op.write_discard(narrative, ann, updated_params={"steps": 2, "prompt": "new"})
+            op.write_discard(narrative, ann, updated_params={"prompt": "new"})
 
             text = narrative.md_path().read_text()
-            self.assertIn("steps: 0", text)
             self.assertIn("new", text)
             self.assertNotIn("Old content", text)
             self.assertNotIn("[/cao]: #", text)
@@ -687,7 +665,7 @@ class TestCrossOperatorAutoStage(unittest.TestCase):
             # --- Operator A writes its output (unstaged) ---
             storage_a = Storage(root)
             op_a = _NoIdOp(storage_a, narrative)
-            tag_a = op_a.build_open_tag(None, {"steps": 1, "prompt": "scene one"})
+            tag_a = op_a.build_open_tag(None, {"prompt": "scene one"})
             op_a.write_start(cursor, tag_a, "Content from operator A.")
 
             # Sanity: pending changes exist, nothing staged yet

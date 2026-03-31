@@ -365,9 +365,7 @@ class TestDetectPendingOwnerFromDiff(unittest.TestCase):
             "@@ -1,4 +1,4 @@\n"
             " # root\n"
             "-[write\n"
-            "-  steps: 1\n"
             "+[write\n"
-            "+  steps: 2\n"
             " ]: #\n"
         )
         owner = detect_pending_owner_from_diff(diff)

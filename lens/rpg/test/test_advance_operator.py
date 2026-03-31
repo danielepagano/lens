@@ -506,7 +506,6 @@ def _write_completed_advance(
     actual_days = days_elapsed if days_elapsed is not None else increment
     # Build annotation params YAML
     params_yaml = (
-        f"  steps: 1\n"
         f"  increment: {increment}\n"
         f"  current_day: {current_day}\n"
         f"  timeline: {timeline_id}\n"
@@ -592,7 +591,7 @@ class TestFindAdvanceAnchor(unittest.TestCase):
             _init_repo(d)
             _, narrative = _make_project(d)
             # Write an advance annotation WITHOUT timeline param (legacy format)
-            params_yaml = "  steps: 1\n  increment: 1\n  current_day: 1\n  luck_rolls: {}\n"
+            params_yaml = "  increment: 1\n  current_day: 1\n  luck_rolls: {}\n"
             open_tag = f"[advance:advance-day-1\n{params_yaml}]: #"
             close_tag = "[/advance:advance-day-1]: #"
             parent_md = narrative.md_path()

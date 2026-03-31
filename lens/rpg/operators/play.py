@@ -64,7 +64,6 @@ class PlayOperator(SessionOperator):
     name: ClassVar[str] = "play"
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
-    use_steps: ClassVar[bool] = False
 
     module_prefix: ClassVar[str] = "rules."
     auto_pins: ClassVar[list[str]] = ["rules.system", "rules.rpg"]

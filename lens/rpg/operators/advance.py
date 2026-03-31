@@ -651,7 +651,6 @@ class AdvanceOperator(Operator):
         raw_front_ids = [f.rstrip("+") for f in front_pins]
         luck_rolls = generate_luck_rolls(raw_front_ids)
         ann_params: dict[str, Any] = {
-            "steps": 1,
             "increment": increment,
             "current_day": current_day,
             "timeline": timeline_ids[0],

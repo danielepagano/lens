@@ -199,14 +199,6 @@ class Operator(ABC):
     ``write``) keep the default of ``False`` so there is no tool-call overhead.
     """
 
-    use_steps: ClassVar[bool] = True
-    """Whether inline annotations track a `steps` counter.
-
-    Most operators increment `steps` on each append so retries and continuations
-    can be traced. Some operators (e.g. `play`) want annotations to contain only
-    generated content with no metadata; they can set this to False.
-    """
-
     @property
     @abstractmethod
     def system_prompt(self) -> str: ...
@@ -406,11 +398,7 @@ class Operator(ABC):
         id: str | None,
         params: dict[str, Any] | None = None,
     ) -> None:
-        """Multi-step inline: open tag with ``steps: 1``, no close tag."""
-        p = dict(params) if params else {}
-        p["steps"] = 1
-        tag = self.build_open_tag(id, p)
-        self.append_to_node(node, tag + "\n")
+        raise NotImplementedError("open_inline is removed (steps are no longer supported)")
 
     def continue_inline(
         self,
@@ -418,31 +406,7 @@ class Operator(ABC):
         id: str | None,
         content: str,
     ) -> None:
-        """Increment the ``steps`` counter and append *content*.
-
-        Reads the node, finds the open annotation, bumps ``steps``,
-        re-writes the file.
-        """
-        md = node.md_path()
-        text = md.read_text(encoding="utf-8")
-        anns = self.find_my_annotations(text)
-        target: ParsedAnnotation | None = None
-        for a in anns:
-            if a.id == id and not a.closing and not a.self_closing:
-                target = a
-        if target is None:
-            raise ValueError(
-                f"No open [{self.name}:{id}] annotation found in {node.path_str()}"
-            )
-        old_steps = target.params.get("steps", 1)
-        new_params = dict(target.params)
-        new_params["steps"] = int(old_steps) + 1
-        new_tag = self.build_open_tag(id, new_params)
-        lines = text.split("\n")
-        before = lines[: target.line_start - 1]
-        after = lines[target.line_end :]
-        rebuilt = "\n".join(before) + "\n" + new_tag + "\n" + content + "\n" + "\n".join(after)
-        self.storage.write_file(md, rebuilt)
+        raise NotImplementedError("continue_inline is removed (steps are no longer supported)")
 
     def close_inline(self, node: NarrativeNode, id: str | None) -> None:
         """Append a close tag for the open inline block."""
@@ -688,15 +652,10 @@ class Operator(ABC):
     def write_append(
         self, node: NarrativeNode, ann: ParsedAnnotation, new_content: str
     ) -> None:
-        """Increment ``steps``, preserve existing content, append new content before close tag."""
+        """Preserve existing content, append new content before close tag."""
         md = node.md_path()
         text = md.read_text(encoding="utf-8")
-        if self.use_steps:
-            new_params = dict(ann.params)
-            new_params["steps"] = int(ann.params.get("steps", 1)) + 1
-            new_tag = self.build_open_tag(ann.id, new_params)
-        else:
-            new_tag = self.build_open_tag(ann.id, dict(ann.params) or None)
+        new_tag = self.build_open_tag(ann.id, dict(ann.params) or None)
         close_tag = self.build_close_tag(ann.id)
 
         close_ann: ParsedAnnotation | None = None
@@ -746,19 +705,11 @@ class Operator(ABC):
         ann: ParsedAnnotation,
         updated_params: dict[str, Any] | None = None,
     ) -> None:
-        """Remove generated content, reset steps to 0, optionally update params.
-
-        Steps is set to 0 so that the subsequent ``write_append`` call lands
-        at ``steps: 1`` (one generation for one step).
-        """
+        """Remove generated content, optionally update params."""
         md = node.md_path()
         text = md.read_text(encoding="utf-8")
         params = dict(updated_params if updated_params is not None else ann.params)
-        if self.use_steps:
-            params["steps"] = 0
-            new_tag = self.build_open_tag(ann.id, params)
-        else:
-            new_tag = self.build_open_tag(ann.id, params or None)
+        new_tag = self.build_open_tag(ann.id, params or None)
         lines = text.split("\n")
         before = lines[: ann.line_start - 1]
         rebuilt = "\n".join(before) + "\n" + new_tag + "\n"
@@ -800,7 +751,7 @@ class Operator(ABC):
         cancel_event: asyncio.Event | None = None,
         _cursor_override: NarrativeNode | None = None,
     ) -> None:
-        """Run the inline-appending flow (fresh / continue / retry / update-retry).
+        """Run the inline flow (fresh / retry / update-retry).
 
         Raises :class:`OperatorError` on user-visible failures.
         """
@@ -856,10 +807,17 @@ class Operator(ABC):
                     cancel_event=cancel_event,
                 )
             else:
-                await cls._do_continue(
+                # Previously: continue in the same annotation (steps++).
+                # Now: always stage and start a new annotation.
+                if not prompt:
+                    raise OperatorError(f"{cls.name} requires a prompt (or --retry)")
+                session.new_storage().stage_all()
+                await cls._do_fresh_inline(
                     session, narrative, cursor, rel_path,
-                    existing_ann,
-                    on_token=on_token, cancel_event=cancel_event,
+                    prompt, pins, unpins, llm_id,
+                    on_token=on_token,
+                    extra_params=extra_params,
+                    cancel_event=cancel_event,
                 )
         else:
             if has_pending:
@@ -887,7 +845,7 @@ class Operator(ABC):
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
-        ann_params: dict[str, Any] = {"steps": 1} if cls.use_steps else {}
+        ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
         if pins:

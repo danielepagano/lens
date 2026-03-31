@@ -313,7 +313,7 @@ When the user is done with a design session, `lens design --end` runs `kb extrac
 
 #### Encounter objects: the script for `play`
 
-The central design insight: **an encounter object is not "combat." It's any prepared situation.** A conversation that could go wrong, a negotiation with hidden stakes, a chase through a burning building, a combat with tactical complexity, a puzzle with mechanical rules — or any combination of these in sequence or simultaneously. The encounter object is the _script_ that `play` follows.
+Key tenet: **an encounter object is not "combat." It's any prepared situation.** A conversation that could go wrong, a negotiation with hidden stakes, a chase through a burning building, a combat with tactical complexity, a puzzle with mechanical rules — or any combination of these in sequence or simultaneously. The encounter object is the _script_ that `play` follows.
 
 This is powerful because:
 1. **The encounter carries its own rules.** If combat is complex, the object says so and links the relevant stat blocks. If it's a simple bar chat, the object just describes the principal NPC's goals and what they know. No operator switch needed.
@@ -342,7 +342,7 @@ The party has an XP budget from PC levels and chosen difficulty (low/moderate/hi
 
 **One operator. Fast, flexible, and prepared.**
 
-`play` is the only narrative operator during play. It receives directorial intent from the player, authors the scene, and maintains the authority model. Whether the current beat is exploration, conversation, combat, a chase, or a quiet campfire — it's all `play`. What changes is not the operator, but the **preparation**: the knowledge objects pinned to the current scene.
+`play` is the only narrative operator during play. It simulates a conversation between the player (possibly acting in-character) and the GM; the AI listens to what the player says (this is part of the stored conversation, its NOT simply hidden directorial intent like in `write`), authors the scene, and maintains the authority model. Whether the current beat is exploration, conversation, combat, a chase, or a quiet campfire — it's all `play`. What changes is not the operator, but the **preparation**: the knowledge objects pinned to the current scene.
 
 When an `encounter.*` object is pinned, `play` reads it as a script: it knows the situation, the stakes, the participants, and the rules for this specific scene. When no encounter is pinned, `play` operates in general mode — the world breathes, NPCs react, and the AI follows the baseline rules in `rules.rpg`. The transition is seamless and invisible to the operator machinery.
 

@@ -198,7 +198,7 @@ class DesignOperator(SessionOperator):
         cancel_event: asyncio.Event | None,
         **kwargs: Any,
     ) -> KbExtractResult:
-        ann_params: dict[str, Any] = {"steps": 1}
+        ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
 
@@ -301,7 +301,7 @@ class DesignOperator(SessionOperator):
                 )
                 fm_storage.stage_all()
 
-            ann_params: dict[str, Any] = {"steps": 1}
+            ann_params: dict[str, Any] = {}
             if prompt:
                 ann_params["prompt"] = prompt
 

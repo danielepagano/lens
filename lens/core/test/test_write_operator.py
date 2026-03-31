@@ -160,7 +160,6 @@ class TestWriteOperatorRunInline(unittest.TestCase):
 
             text = node_file.read_text()
             self.assertIn("[write", text)
-            self.assertIn("steps: 1", text)
             self.assertIn("Generated content", text)
             self.assertIn("[/write]: #", text)
             self.assertTrue(Storage(root).has_pending())
@@ -178,11 +177,9 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             close_pos = text.index("[/write]: #")
             self.assertLess(content_pos, close_pos)
 
-    def test_run_inline_continue(self) -> None:
+    def test_run_inline_second_call_requires_prompt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            node_file = narrative.find_cursor().md_path()
-
             _run_inline(root, narrative)
 
             async def _second(*args: Any, **kwargs: Any) -> Any:
@@ -197,19 +194,8 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                     )
                 )
 
-            _run_inline(root, narrative, generate_mock=_second)
-
-            text = node_file.read_text()
-            self.assertIn("steps: 2", text)
-            self.assertIn("Generated content", text)
-            self.assertIn("More text", text)
-            self.assertIn("[/write]: #", text)
-            # Only one close tag
-            self.assertEqual(text.count("[/write]: #"), 1)
-            # Both batches precede the close tag
-            close_pos = text.index("[/write]: #")
-            self.assertLess(text.index("Generated content"), close_pos)
-            self.assertLess(text.index("More text"), close_pos)
+            with self.assertRaises(OperatorError):
+                _run_inline(root, narrative, prompt=None, generate_mock=_second)
 
     def test_run_inline_retry(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -235,7 +221,6 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             text = node_file.read_text()
             self.assertIn("Retried content", text)
             self.assertNotIn("Generated content", text)
-            self.assertIn("steps: 1", text)
             self.assertIn("[/write]: #", text)
             self.assertLess(text.index("Retried content"), text.index("[/write]: #"))
 

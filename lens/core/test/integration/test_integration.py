@@ -31,6 +31,7 @@ from lens.core.commands.kb import kb_edit
 from lens.core.commands.rollback import execute_rollback
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
+from lens.core.operator import OperatorError
 from lens.core.operators.edit import EditOperator
 from lens.core.operators.section import SectionOperator
 from lens.core.operators.write import WriteOperator
@@ -63,7 +64,7 @@ class TestHappyPath(unittest.TestCase):
 
     ``setUpClass`` uses ``setup_test_project`` which already performs git init,
     project init, KB population, pin, and a first write — so the suite starts
-    with a committed project that has one ``[write … steps: 1 …]`` passage.
+    with a committed project that has one ``[write …]`` passage.
 
     Methods are numbered to enforce execution order (unittest sorts
     alphabetically).  Each test depends on state left by the previous one.
@@ -129,7 +130,6 @@ class TestHappyPath(unittest.TestCase):
         node_md = self._project_dir / "narrative" / "story" / "_node.md"
         text = node_md.read_text()
         self.assertIn("[write", text)
-        self.assertIn("steps: 1", text)
         self.assertIn("Lorem ipsum", text)
         self.assertIn("[/write]: #", text)
         self.assertLess(text.index("Lorem ipsum"), text.index("[/write]: #"))
@@ -154,11 +154,11 @@ class TestHappyPath(unittest.TestCase):
         self._checkpoint("kb: add villain")
 
     # ------------------------------------------------------------------
-    # 03 — write fresh then continue: steps increments within pending state
+    # 03 — write fresh then second call errors
     # ------------------------------------------------------------------
 
     def test_03_write_continue(self) -> None:
-        """A second write with no prompt merges into the pending annotation."""
+        """A second write with no prompt errors (continuation is removed)."""
         self._rebuild_session()
         session = self._session
         narrative = session.active_narrative
@@ -171,17 +171,12 @@ class TestHappyPath(unittest.TestCase):
         ))
         self._assert_pending()
 
-        # Continue: no prompt → must merge into the open annotation → steps:2.
-        _run_async(WriteOperator.run_inline(
-            session=session, narrative=narrative,
-            prompt=None, pins=[], unpins=[], llm_id=None, retry=False,
-        ))
-
-        text = (self._project_dir / "narrative" / "story" / "_node.md").read_text()
-        self.assertIn("steps: 2", text)
-        # The continued block has exactly one close tag (not two).
-        last_write = text.rfind("[write")
-        self.assertEqual(text[last_write:].count("[/write]: #"), 1)
+        # Second call without prompt now errors.
+        with self.assertRaises(OperatorError):
+            _run_async(WriteOperator.run_inline(
+                session=session, narrative=narrative,
+                prompt=None, pins=[], unpins=[], llm_id=None, retry=False,
+            ))
         self._assert_pending()
 
     # ------------------------------------------------------------------
