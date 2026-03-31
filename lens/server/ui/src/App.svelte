@@ -104,8 +104,7 @@
       selectedKbId.set(kb)
       kbPanelOpen.set(true)
     } else {
-      if (currentKb === null && !currentOpen) return
-      selectedKbId.set(null)
+      if (!currentOpen) return
       kbPanelOpen.set(false)
     }
   }

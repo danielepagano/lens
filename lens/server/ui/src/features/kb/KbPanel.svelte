@@ -3,24 +3,16 @@
   import KbViewer from './KbViewer.svelte'
   import HamburgerIcon from '../../components/icons/HamburgerIcon.svelte'
   import CloseIcon from '../../components/icons/CloseIcon.svelte'
-  import { treeOpen, kbPanelOpen } from '../../stores/ui'
-  import { currentAddress } from '../../stores/document'
-  import { get } from 'svelte/store'
+  import { treeOpen } from '../../stores/ui'
 
   function closeBrowser() {
     treeOpen.set(false)
-  }
-
-  function closePanel() {
-    kbPanelOpen.set(false)
-    const addr = get(currentAddress) || ''
-    window.location.hash = addr
   }
 </script>
 
 <div class="kb-panel" data-testid="kb-panel">
   {#if $treeOpen}
-    <div class="kb-browser-overlay">
+    <div class="kb-browser-overlay" data-testid="kb-browser">
       <div class="sidebar-header">
         <strong>Knowledge Base</strong>
         <button class="sidebar-close" on:click={closeBrowser} aria-label="Close browser">
@@ -38,9 +30,6 @@
         <HamburgerIcon size={20} />
       </button>
       <span class="kb-panel-title">Knowledge Base</span>
-      <button class="kb-panel-close" on:click={closePanel} aria-label="Close knowledge base panel">
-        <CloseIcon size={18} />
-      </button>
     </div>
     <KbViewer />
   </div>

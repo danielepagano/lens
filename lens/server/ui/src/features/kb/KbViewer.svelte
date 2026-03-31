@@ -36,6 +36,7 @@
   let renameId = ''
   let copyTargetId = ''
   let actionError = ''
+  let metaOpen = false
 
   async function loadItem(id: string) {
     loadError = ''
@@ -43,6 +44,7 @@
     actionError = ''
     editMode = false
     tagsEditMode = false
+    metaOpen = false
     linkedFrom = []
     try {
       item = await getKbItem(id)
@@ -81,6 +83,7 @@
     editMode = false
     saveError = ''
     tagsEditMode = true
+    metaOpen = true
     actionsOpen = false
   }
 
@@ -204,6 +207,14 @@
     const id = pinEl.getAttribute('data-kb-open-id')
     if (id) openKbItem(id)
   }
+
+  $: metaSummary = (() => {
+    if (!item) return ''
+    const parts: string[] = []
+    if (item.tags.length > 0) parts.push(`${item.tags.length} tag${item.tags.length === 1 ? '' : 's'}`)
+    if (linkedFrom.length > 0) parts.push(`linked from ${linkedFrom.length} ${linkedFrom.length === 1 ? 'item' : 'items'}`)
+    return parts.join(' · ')
+  })()
 </script>
 
 <div class="kb-viewer">
@@ -214,43 +225,6 @@
   {:else}
     <div class="kb-viewer-header">
       <span class="kb-viewer-id">{item.id}</span>
-      {#if tagsEditMode}
-        <span class="kb-viewer-tags kb-viewer-tags-edit">
-          {#each item.tags as tag (tag)}
-            <span class="kb-viewer-tag-chip">
-              {#if isDotTag(tag)}
-                <a class="kb-viewer-tag kb-viewer-tag-link" href="#{tag}" on:click|preventDefault={() => openKbItem(tag)}>{tag}</a>
-              {:else}
-                <span class="kb-viewer-tag">{tag}</span>
-              {/if}
-              <button type="button" class="kb-viewer-tag-remove" on:click={() => removeTag(tag)} aria-label="Remove tag {tag}">×</button>
-            </span>
-          {/each}
-          <span class="kb-viewer-tag-input-wrap">
-            <input
-              type="text"
-              class="kb-viewer-tag-input"
-              placeholder="Add tag…"
-              bind:value={tagInput}
-              on:keydown={(e) => e.key === 'Enter' && addTagFromInput()}
-              on:blur={() => addTagFromInput()}
-            />
-          </span>
-        </span>
-      {:else if !editMode}
-        {#if item.tags.length > 0}
-          <span class="kb-viewer-tags">
-            {#each item.tags as tag, i (tag)}
-              {#if i > 0}<span class="kb-viewer-tag-sep"> · </span>{/if}
-              {#if isDotTag(tag)}
-                <a class="kb-viewer-tag kb-viewer-tag-link" href="#{tag}" on:click|preventDefault={() => openKbItem(tag)}>{tag}</a>
-              {:else}
-                <span class="kb-viewer-tag">{tag}</span>
-              {/if}
-            {/each}
-          </span>
-        {/if}
-      {/if}
       <div class="kb-viewer-actions">
         <div class="kb-viewer-action-strip">
           {#if editMode}
@@ -258,10 +232,7 @@
               {saving ? 'Saving…' : 'Save'}
             </button>
             <button type="button" class="kb-action-btn" on:click={cancelEdit} disabled={saving}>Cancel</button>
-          {:else if tagsEditMode}
-            <button type="button" class="kb-action-btn" on:click={() => (tagsEditMode = false)}>Done</button>
           {:else}
-            <button type="button" class="kb-action-btn" on:click={enterTagsEdit}>Edit tags</button>
             <button type="button" class="kb-action-btn" on:click={enterEdit}>Edit</button>
             <div class="kb-viewer-menu-wrap">
               <button
@@ -310,9 +281,6 @@
     {#if saveError}
       <p class="error-state kb-save-error">{saveError}</p>
     {/if}
-    {#if actionError && (tagsEditMode || actionsOpen)}
-      <p class="error-state kb-save-error">{actionError}</p>
-    {/if}
 
     {#if editMode}
       <CodeMirrorEditor
@@ -331,14 +299,60 @@
       </article>
     {/if}
 
-    {#if linkedFrom.length > 0}
-      <div class="kb-linked-from">
-        <span class="kb-linked-from-label">Linked from:</span>
-        {#each linkedFrom as linkedId, i (linkedId)}
-          {#if i > 0}<span class="kb-linked-from-sep">, </span>{/if}
-          <a class="kb-linked-from-link" href="#{linkedId}" on:click|preventDefault={() => openKbItem(linkedId)}>{linkedId}</a>
-        {/each}
-      </div>
+    {#if metaSummary}
+      <details class="kb-meta-section" bind:open={metaOpen}>
+        <summary class="kb-meta-summary">{metaSummary}</summary>
+        <div class="kb-meta-body">
+          {#if tagsEditMode}
+            <div class="kb-tags-edit-area">
+              {#each item.tags as tag (tag)}
+                <button type="button" class="kb-tag-delete-pill" on:click={() => removeTag(tag)} title="Remove tag">{tag} ×</button>
+              {/each}
+            </div>
+            <div class="kb-tags-edit-input-row">
+              <input
+                type="text"
+                class="kb-viewer-tag-input"
+                placeholder="Add tag…"
+                bind:value={tagInput}
+                on:keydown={(e) => e.key === 'Enter' && addTagFromInput()}
+                on:blur={() => addTagFromInput()}
+              />
+              <button type="button" class="kb-meta-small-btn" on:click={() => (tagsEditMode = false)}>Done</button>
+            </div>
+            {#if actionError}
+              <p class="error-state kb-save-error">{actionError}</p>
+            {/if}
+          {:else}
+            {#if item.tags.length > 0}
+              <div class="kb-meta-tags-row">
+                <span class="kb-meta-tags-list">
+                  {#each item.tags as tag, i (tag)}
+                    {#if i > 0}<span class="kb-viewer-tag-sep"> · </span>{/if}
+                    {#if isDotTag(tag)}
+                      <a class="kb-viewer-tag kb-viewer-tag-link" href="#{tag}" on:click|preventDefault={() => openKbItem(tag)}>{tag}</a>
+                    {:else}
+                      <span class="kb-viewer-tag">{tag}</span>
+                    {/if}
+                  {/each}
+                </span>
+                {#if !editMode}
+                  <button type="button" class="kb-meta-small-btn" on:click={enterTagsEdit}>Edit tags</button>
+                {/if}
+              </div>
+            {/if}
+            {#if linkedFrom.length > 0}
+              <div class="kb-meta-linked-row">
+                <span class="kb-linked-from-label">Linked from:</span>
+                {#each linkedFrom as linkedId, i (linkedId)}
+                  {#if i > 0}<span class="kb-linked-from-sep">, </span>{/if}
+                  <a class="kb-linked-from-link" href="#{linkedId}" on:click|preventDefault={() => openKbItem(linkedId)}>{linkedId}</a>
+                {/each}
+              </div>
+            {/if}
+          {/if}
+        </div>
+      </details>
     {/if}
   {/if}
 </div>

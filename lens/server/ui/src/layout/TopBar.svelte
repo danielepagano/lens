@@ -15,11 +15,15 @@
   function toggleKb() {
     if (get(kbPanelOpen)) {
       kbPanelOpen.set(false)
-      selectedKbId.set(null)
+      treeOpen.set(false)
       const addr = get(currentAddress) || ''
       window.location.hash = addr
     } else {
       kbPanelOpen.set(true)
+      // Auto-open browser if no item is selected yet
+      if (!get(selectedKbId)) {
+        treeOpen.set(true)
+      }
     }
   }
 </script>
