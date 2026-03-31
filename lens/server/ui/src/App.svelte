@@ -13,16 +13,15 @@
   import MediaRemovePanel from './features/cli/MediaRemovePanel.svelte'
   import MediaPreviewPanel from './features/cli/MediaPreviewPanel.svelte'
   import KbDiffModal from './features/kb/KbDiffModal.svelte'
-  import KbSidebar from './features/kb/KbSidebar.svelte'
-  import KbViewer from './features/kb/KbViewer.svelte'
+  import KbPanel from './features/kb/KbPanel.svelte'
   import InlineEditView from './features/editor/InlineEditView.svelte'
   import { getStats, getNode, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
-  import { appMode, selectedKbId, kbFilters, inlineEditMode } from './stores/ui'
+  import { kbPanelOpen, selectedKbId, kbFilters, inlineEditMode } from './stores/ui'
 
   function hashKbParam(): string | null {
-    return get(appMode) === 'kb' ? get(selectedKbId) : null
+    return get(kbPanelOpen) ? get(selectedKbId) : null
   }
 
   interface ParsedHash {
@@ -95,19 +94,18 @@
 
   function applyKbFromUrl(kb: string | null) {
     const currentKb = get(selectedKbId)
-    const currentMode = get(appMode)
+    const currentOpen = get(kbPanelOpen)
 
     if (kb) {
-      if (kb === currentKb && currentMode === 'kb') return
+      if (kb === currentKb && currentOpen) return
       const dotIndex = kb.indexOf('.')
       const type = dotIndex > 0 ? kb.slice(0, dotIndex) : ''
       kbFilters.set({ type, tags: [] })
       selectedKbId.set(kb)
-      appMode.set('kb')
+      kbPanelOpen.set(true)
     } else {
-      if (currentKb === null && currentMode === 'narrative') return
-      selectedKbId.set(null)
-      appMode.set('narrative')
+      if (!currentOpen) return
+      kbPanelOpen.set(false)
     }
   }
 
@@ -148,12 +146,14 @@
 
   {#if $inlineEditMode !== null}
     <InlineEditView />
-  {:else if $appMode === 'narrative'}
-    <TreeBrowser {navigate} />
-    <MarkdownView />
   {:else}
-    <KbSidebar />
-    <KbViewer />
+    <div class="narrative-content" class:kb-open={$kbPanelOpen}>
+      <TreeBrowser {navigate} />
+      <MarkdownView />
+    </div>
+    {#if $kbPanelOpen}
+      <KbPanel />
+    {/if}
   {/if}
   <CliOutputPanel />
   <TransactionResultPanel />

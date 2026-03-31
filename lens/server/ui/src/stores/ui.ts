@@ -1,8 +1,6 @@
 import { writable } from 'svelte/store'
 
-export type AppMode = 'narrative' | 'kb'
-
-export const appMode = writable<AppMode>('narrative')
+export const kbPanelOpen = writable(false)
 export const activePanel = writable<'document' | 'tree'>('document')
 export const treeOpen = writable(false)
 
