@@ -38,7 +38,7 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "design.system": PromptSpec("design.system", frozenset()),
     "design.instruction": PromptSpec("design.instruction", frozenset({"prompt"})),
     "play.system": PromptSpec("play.system", frozenset()),
-    "play.instruction_with_prompt": PromptSpec("play.instruction_with_prompt", frozenset({"prompt", "pc_marker"})),
+    "play.instruction_continue": PromptSpec("play.instruction_continue", frozenset()),
     "advance.system": PromptSpec("advance.system", frozenset()),
     "advance.instruction_template": PromptSpec("advance.instruction_template", frozenset({"days", "current_day", "rolls_text"})),
     "session.summary_system": PromptSpec("session.summary_system", frozenset()),

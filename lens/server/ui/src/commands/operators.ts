@@ -76,7 +76,7 @@ const commands: CommandDefinition[] = [
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
       { name: 'retry' },
       { name: 'end' },
-      { name: 'wait', hint: 'append player line only, no GM yet' },
+      { name: 'pass', hint: 'have the GM respond now' },
     ],
   },
   {
@@ -284,12 +284,12 @@ const handler: CommandHandler = async (
       )
     } else if (command === 'play') {
       const endPlay = ctx.args.options['end'] === true
-      const waitPlay = ctx.args.options['wait'] === true
-      if (waitPlay && retry) {
-        throw new Error('Play --wait cannot be combined with --retry')
+      const passPlay = ctx.args.options['pass'] === true
+      if (passPlay && retry) {
+        throw new Error('Play --pass cannot be combined with --retry')
       }
-      if (!endPlay && !retry && prompt === undefined) {
-        throw new Error(`Play requires a prompt (unless using --end or --retry)`)
+      if (!endPlay && !retry && !passPlay && prompt === undefined) {
+        throw new Error(`Play requires a prompt (unless using --end, --retry, or --pass)`)
       }
       const rawPlayModule = (ctx.args.options['module'] as string | undefined) || undefined
       let playModuleId: string | undefined
@@ -312,7 +312,7 @@ const handler: CommandHandler = async (
           retry,
           end: endPlay,
           as_pc,
-          wait: waitPlay,
+          pass: passPlay,
         },
         handleEvent
       )
@@ -533,19 +533,18 @@ export const operatorModule: CommandModule = {
         if (pcPins.length === 0) {
           continue
         }
-        
-        // If more than one PC, add --as (parsed as `as`; API still receives as_pc)
-        if (pcPins.length > 1) {
-          const pcKeys = pcPins.map(p => p.slice(3)).join(',')
-          result.push({
-            ...cmd,
-            options: [
-              { name: 'as', valueType: 'slug', hint: 'acting as', slugSource: pcKeys },
-              ...optionsWithLlmIfMultiple(cmd.options, stats),
-            ],
-          })
-          continue
-        }
+
+        // Always expose --as (parsed as `as`; API receives as_pc) so the user can
+        // speak in-character; default is over-the-table Player voice.
+        const pcKeys = pcPins.map(p => p.slice(3)).join(',')
+        result.push({
+          ...cmd,
+          options: [
+            { name: 'as', valueType: 'slug', hint: 'speaking as', slugSource: pcKeys },
+            ...optionsWithLlmIfMultiple(cmd.options, stats),
+          ],
+        })
+        continue
       }
 
       result.push({ ...cmd, options: optionsWithLlmIfMultiple(cmd.options, stats) })

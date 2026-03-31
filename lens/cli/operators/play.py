@@ -19,12 +19,12 @@ async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
 
-def _play_extra_params(as_pc: str | None, wait: bool) -> dict[str, Any] | None:
+def _play_extra_params(as_pc: str | None, do_pass: bool) -> dict[str, Any] | None:
     ep: dict[str, Any] = {}
     if as_pc is not None:
         ep["as_pc"] = as_pc
-    if wait:
-        ep["wait"] = True
+    if do_pass:
+        ep["pass"] = True
     return ep if ep else None
 
 
@@ -67,10 +67,10 @@ def play(
         "--end",
         help="Close the current play session",
     ),
-    wait: bool = typer.Option(
+    do_pass: bool = typer.Option(
         False,
-        "--wait",
-        help="Append player line only (no GM / LLM); use @mentions for KB in an HTML comment",
+        "--pass",
+        help="Have the GM respond now (call the LLM)",
     ),
 ) -> None:
     """Narrate a player-agency moment in GM voice, then pause for player response.
@@ -79,17 +79,21 @@ def play(
     session.  Use --module to activate a rules module (e.g. combat, downtime).
     Use --end to close the session.
 
-    Use --wait to append only what the player says (no GM / LLM). Resolvable
-    @mentions are expanded into an HTML comment for the next normal play call.
+    By default, play appends only what the player says (no GM / LLM). Use --pass
+    when you want the GM to respond. Resolvable @mentions are expanded into an
+    HTML comment for later reference.
 
     Requires at least one player character (KB object tagged 'pc') to be pinned.
     Use -as <key> to attribute the prompt to a specific pinned PC (e.g. -as alice → [Alice]).
     """
-    if not end and not retry and not prompt:
-        typer.echo("lens play: prompt is required (unless using --end or --retry)", err=True)
+    if not end and not retry and not do_pass and not prompt:
+        typer.echo(
+            "lens play: prompt is required (unless using --end, --retry, or --pass)",
+            err=True,
+        )
         raise typer.Exit(1)
-    if wait and retry:
-        typer.echo("lens play: --wait cannot be combined with --retry", err=True)
+    if do_pass and retry:
+        typer.echo("lens play: --pass cannot be combined with --retry", err=True)
         raise typer.Exit(1)
 
     try:
@@ -137,7 +141,7 @@ def play(
                 on_token=_print_token,
                 on_stream_target=None,
                 cancel_event=None,
-                extra_params=_play_extra_params(as_pc, wait),
+                extra_params=_play_extra_params(as_pc, do_pass),
             )
         )
         print()  # ensure final newline

@@ -11,7 +11,7 @@ datasets:
   - rpg
 ```
 
-**Prompt keys exercised:** `play.system`, `play.instruction_with_prompt`
+**Prompt keys exercised:** `play.system`, `play.instruction_continue`
 
 ## Setup
 
@@ -34,7 +34,7 @@ for a skill check (RESOLVE gate) without deciding the outcome, and whether the
 warden's evasive personality from the KB comes through in voiced dialogue.
 
 ```bash
-lens play "I tell the warden I know this forest and I know he's hiding something. I ask him directly who sent him and why he's really here."
+lens play "I tell the warden I know this forest and I know he's hiding something. I ask him directly who sent him and why he's really here." --pass
 ```
 
 ### `exploration_beat`
@@ -44,7 +44,7 @@ output grounded in the Thornwood's KB details, ending on a genuine ENGAGE
 pause rather than a manufactured roll.
 
 ```bash
-lens play "I walk past the warden onto the path into the trees."
+lens play "I walk past the warden onto the path into the trees." --pass
 ```
 
 ### `combat_opening`
@@ -54,7 +54,7 @@ intent before acting, withholds all PC mechanics, and closes on a clear ENGAGE
 gate rather than resolving the fight.
 
 ```bash
-lens play "Two figures drop from the branches ahead with drawn blades. I raise my spear."
+lens play "Two figures drop from the branches ahead with drawn blades. I raise my spear." --pass
 ```
 
 ## Evaluation criteria

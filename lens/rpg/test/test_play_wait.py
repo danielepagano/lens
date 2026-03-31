@@ -1,4 +1,4 @@
-"""Tests for play --wait (append player line without LLM)."""
+"""Tests for play player-line append behavior (no LLM unless --pass)."""
 
 from __future__ import annotations
 
@@ -68,11 +68,11 @@ def _make_play_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNo
 
 
 async def _never_stream(*_args: Any, **_kwargs: Any):
-    raise AssertionError("generate_stream must not be called for play --wait")
+    raise AssertionError("generate_stream must not be called unless --pass is used")
     yield  # pragma: no cover — makes this an async generator; unreachable
 
 
-class TestPlayWait(unittest.TestCase):
+class TestPlayAppend(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         tmp = Path(self._tmp.name)
@@ -91,7 +91,7 @@ class TestPlayWait(unittest.TestCase):
         child = self.narrative.child_node(keys[0])
         return child.md_path().read_text(encoding="utf-8")
 
-    def test_wait_appends_blockquote_without_llm(self) -> None:
+    def test_appends_player_blockquote_without_llm(self) -> None:
         with patch("lens.core.operator.generate_stream", _never_stream):
             asyncio.run(
                 PlayOperator.run_session(
@@ -100,15 +100,15 @@ class TestPlayWait(unittest.TestCase):
                     prompt="I ready my shield",
                     pins=[],
                     unpins=[],
-                    extra_params={"wait": True},
+                    extra_params=None,
                 )
             )
         text = self._play_child_md()
-        self.assertIn("> [Bob] I ready my shield", text)
+        self.assertIn("> [Player] I ready my shield", text)
         self.assertNotIn("[play\n", text)
         self.assertNotIn("[/play", text)
 
-    def test_wait_mention_html_comment_strips_inner_html_comments(self) -> None:
+    def test_mention_html_comment_strips_inner_html_comments(self) -> None:
         spell_dir = self.root / "knowledge" / "spell"
         spell_dir.mkdir(parents=True)
         (spell_dir / "foo.md").write_text(
@@ -136,13 +136,45 @@ class TestPlayWait(unittest.TestCase):
                     prompt="I cast @spell.foo",
                     pins=[],
                     unpins=[],
-                    extra_params={"wait": True},
+                    extra_params=None,
                 )
             )
         text = self._play_child_md()
-        self.assertIn("> [Bob] I cast @spell.foo", text)
+        self.assertIn("> [Player] I cast @spell.foo", text)
         self.assertIn("<!---", text)
         self.assertIn("KB['spell.foo']", text)
         self.assertIn("visible line", text)
         self.assertNotIn("inner-secret", text)
         self.assertEqual(text.count("-->"), 1)
+
+    def test_mention_kb_is_not_emitted_twice(self) -> None:
+        spell_dir = self.root / "knowledge" / "spell"
+        spell_dir.mkdir(parents=True)
+        (spell_dir / "foo.md").write_text("Foo spell\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(["git", "commit", "-m", "spell"], cwd=self.root, capture_output=True, check=True)
+        KnowledgeStore.clear_registry()
+
+        with patch("lens.core.operator.generate_stream", _never_stream):
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="I cast @spell.foo",
+                    pins=[],
+                    unpins=[],
+                    extra_params=None,
+                )
+            )
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="I cast @spell.foo again",
+                    pins=[],
+                    unpins=[],
+                    extra_params=None,
+                )
+            )
+        text = self._play_child_md()
+        self.assertEqual(text.count("KB['spell.foo']"), 1)

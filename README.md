@@ -135,7 +135,7 @@ Expressions use standard dice notation powered by [python-dice](https://github.c
 /play With advantage: @roll 2d20h1 to hit
 ```
 
-For tabletop pacing, **`/play … --wait`** (CLI and web UI) appends only the player line; run `/play` again without `--wait` when you want the GM response. See [RPG / play](lens/rpg/README.md).
+For tabletop pacing, **`/play …`** appends only the player line; use **`/play --pass`** when you want the GM response. See [RPG / play](lens/rpg/README.md).
 
 What the AI receives (rolls already resolved):
 ```

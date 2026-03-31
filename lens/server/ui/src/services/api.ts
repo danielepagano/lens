@@ -231,7 +231,7 @@ export interface PlayParams {
   retry?: boolean
   end?: boolean
   as_pc?: string
-  wait?: boolean
+  pass?: boolean
 }
 
 export const runPlay = (

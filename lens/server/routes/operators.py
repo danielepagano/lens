@@ -8,7 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -45,7 +45,7 @@ class PlayBody(BaseModel):
     retry: bool = False
     end: bool = False
     as_pc: str | None = None
-    wait: bool = False
+    pass_: bool = Field(False, alias="pass")
 
 
 class DesignBody(BaseModel):
@@ -297,12 +297,12 @@ async def operator_play(
     on_token = _make_on_token(event_queue)
 
     extra_params: dict[str, Any] | None = None
-    if body.as_pc is not None or body.wait:
+    if body.as_pc is not None or body.pass_:
         extra_params = {}
         if body.as_pc is not None:
             extra_params["as_pc"] = body.as_pc
-        if body.wait:
-            extra_params["wait"] = True
+        if body.pass_:
+            extra_params["pass"] = True
 
     def coro_fn() -> Any:
         return PlayOperator.run_session(

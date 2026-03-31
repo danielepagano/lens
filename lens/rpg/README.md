@@ -30,6 +30,8 @@ datasets = ["rpg", "dnd"]
 
 **Modules**: `--module <key>` pins `rules.<key>` (e.g. `rules.combat`, `rules.downtime`) into the session. Only one extra module is active at a time; switching swaps it out. Use `lens section` + a new `play` call to nest sessions with different modules.
 
-**`--wait`**: append one or more player lines (blockquotes) without calling the GM / LLM — useful when several characters act before narration. `@mentions` in the prompt are dumped as `KnowledgeObject`-formatted text inside an HTML comment so the next full `play` sees spells and features without pinning them for that turn.
+Default: append one or more player lines (blockquotes) without calling the GM / LLM — useful when several characters act before narration. `@mentions` in the prompt are dumped as `KnowledgeObject`-formatted text inside an HTML comment for later reference.
+
+**`--pass`**: call the GM / LLM to respond, writing a `[play]...[/play]` block containing only GM output. With no prompt text, it generates a GM response based on the current passage.
 
 With `["rpg", "dnd"]`, `rules.system` resolves to the D&D rules body from the `dnd` dataset.

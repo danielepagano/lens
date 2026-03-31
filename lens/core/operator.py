@@ -199,6 +199,14 @@ class Operator(ABC):
     ``write``) keep the default of ``False`` so there is no tool-call overhead.
     """
 
+    use_steps: ClassVar[bool] = True
+    """Whether inline annotations track a `steps` counter.
+
+    Most operators increment `steps` on each append so retries and continuations
+    can be traced. Some operators (e.g. `play`) want annotations to contain only
+    generated content with no metadata; they can set this to False.
+    """
+
     @property
     @abstractmethod
     def system_prompt(self) -> str: ...
@@ -683,9 +691,12 @@ class Operator(ABC):
         """Increment ``steps``, preserve existing content, append new content before close tag."""
         md = node.md_path()
         text = md.read_text(encoding="utf-8")
-        new_params = dict(ann.params)
-        new_params["steps"] = int(ann.params.get("steps", 1)) + 1
-        new_tag = self.build_open_tag(ann.id, new_params)
+        if self.use_steps:
+            new_params = dict(ann.params)
+            new_params["steps"] = int(ann.params.get("steps", 1)) + 1
+            new_tag = self.build_open_tag(ann.id, new_params)
+        else:
+            new_tag = self.build_open_tag(ann.id, dict(ann.params) or None)
         close_tag = self.build_close_tag(ann.id)
 
         close_ann: ParsedAnnotation | None = None
@@ -743,8 +754,11 @@ class Operator(ABC):
         md = node.md_path()
         text = md.read_text(encoding="utf-8")
         params = dict(updated_params if updated_params is not None else ann.params)
-        params["steps"] = 0
-        new_tag = self.build_open_tag(ann.id, params)
+        if self.use_steps:
+            params["steps"] = 0
+            new_tag = self.build_open_tag(ann.id, params)
+        else:
+            new_tag = self.build_open_tag(ann.id, params or None)
         lines = text.split("\n")
         before = lines[: ann.line_start - 1]
         rebuilt = "\n".join(before) + "\n" + new_tag + "\n"
@@ -873,7 +887,7 @@ class Operator(ABC):
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
-        ann_params: dict[str, Any] = {"steps": 1}
+        ann_params: dict[str, Any] = {"steps": 1} if cls.use_steps else {}
         if prompt:
             ann_params["prompt"] = prompt
         if pins:
