@@ -67,9 +67,8 @@ def _make_play_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNo
     return tmp, node
 
 
-async def _never_stream(*_args: Any, **_kwargs: Any):
-    raise AssertionError("generate_stream must not be called unless --pass is used")
-    yield  # pragma: no cover — makes this an async generator; unreachable
+async def _never_generate_text(*_args: Any, **_kwargs: Any) -> str:
+    raise AssertionError("LLM generation must not be called unless --pass is used")
 
 
 class TestPlayAppend(unittest.TestCase):
@@ -92,7 +91,7 @@ class TestPlayAppend(unittest.TestCase):
         return child.md_path().read_text(encoding="utf-8")
 
     def test_appends_player_blockquote_without_llm(self) -> None:
-        with patch("lens.core.operator.generate_stream", _never_stream):
+        with patch("lens.core.operator.generate_text", _never_generate_text):
             asyncio.run(
                 PlayOperator.run_session(
                     session=self.session,
@@ -128,7 +127,7 @@ class TestPlayAppend(unittest.TestCase):
         )
         KnowledgeStore.clear_registry()
 
-        with patch("lens.core.operator.generate_stream", _never_stream):
+        with patch("lens.core.operator.generate_text", _never_generate_text):
             asyncio.run(
                 PlayOperator.run_session(
                     session=self.session,
@@ -155,7 +154,7 @@ class TestPlayAppend(unittest.TestCase):
         subprocess.run(["git", "commit", "-m", "spell"], cwd=self.root, capture_output=True, check=True)
         KnowledgeStore.clear_registry()
 
-        with patch("lens.core.operator.generate_stream", _never_stream):
+        with patch("lens.core.operator.generate_text", _never_generate_text):
             asyncio.run(
                 PlayOperator.run_session(
                     session=self.session,

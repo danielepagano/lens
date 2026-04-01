@@ -18,7 +18,7 @@ from typing import Any, ClassVar
 
 from lens.core.annotations import strip_markdown_comments
 from lens.core.context import crawl
-from lens.core.llm import generate_stream
+from lens.core.llm import generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
@@ -96,27 +96,16 @@ class SectionOperator(Operator):
         crawl_result = crawl(parent)
         messages = self.build_messages(crawl_result, {"content": child_clean})
 
-        summary = ""
-        interrupted = False
-        try:
-            async for event in generate_stream(
-                messages, session.project_root, llm_id=llm_id,
+        summary = (
+            await generate_text(
+                messages,
+                session.project_root,
+                llm_id=llm_id,
                 cancel_event=cancel_event,
-            ):
-                if event.preview:
-                    if on_token:
-                        await on_token(event.preview)
-                if event.final:
-                    if event.final.interrupted:
-                        interrupted = True
-                        break
-                    summary = event.final.text.strip()
-                    break
-        except KeyboardInterrupt:
-            interrupted = True
-
-        if interrupted:
-            raise KeyboardInterrupt
+                on_preview=on_token,
+                interrupt_policy="raise",
+            )
+        ).strip()
         if not summary:
             raise ValueError("LLM returned no summary content")
 

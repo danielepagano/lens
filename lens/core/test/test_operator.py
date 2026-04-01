@@ -8,14 +8,12 @@ import io
 import subprocess
 import tempfile
 import unittest
-from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any, ClassVar
 from unittest.mock import patch
 
 from lens.core.annotations import parse_annotations
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator
 from lens.core.project import ProjectSession
@@ -677,21 +675,12 @@ class TestCrossOperatorAutoStage(unittest.TestCase):
             self.assertEqual(staged, "")
 
             # --- Operator B runs via run_inline (different operator) ---
-            async def _fake_stream(
-                *_args: Any, **_kwargs: Any
-            ) -> AsyncIterator[StreamEvent]:
-                yield StreamEvent(
-                    final=FinalPayload(
-                        text="Content from operator B.",
-                        tool_calls=[],
-                        usage=None,
-                        interrupted=False,
-                    )
-                )
+            async def _fake_text(*_args: Any, **_kwargs: Any) -> str:
+                return "Content from operator B."
 
             with contextlib.redirect_stderr(io.StringIO()):
                 with patch(
-                    "lens.core.operator.generate_stream", new=_fake_stream
+                    "lens.core.operator.generate_text", new=_fake_text
                 ):
                     asyncio.run(
                         _SecondOp.run_inline(
@@ -726,21 +715,12 @@ class TestCrossOperatorAutoStage(unittest.TestCase):
             md = cursor.md_path()
 
             # --- First call leaves unstaged output ---
-            async def _fake_stream_a(
-                *_args: Any, **_kwargs: Any
-            ) -> AsyncIterator[StreamEvent]:
-                yield StreamEvent(
-                    final=FinalPayload(
-                        text="First output.",
-                        tool_calls=[],
-                        usage=None,
-                        interrupted=False,
-                    )
-                )
+            async def _fake_text_a(*_args: Any, **_kwargs: Any) -> str:
+                return "First output."
 
             with contextlib.redirect_stderr(io.StringIO()):
                 with patch(
-                    "lens.core.operator.generate_stream", new=_fake_stream_a
+                    "lens.core.operator.generate_text", new=_fake_text_a
                 ):
                     asyncio.run(
                         _NoIdOp.run_inline(
@@ -757,21 +737,12 @@ class TestCrossOperatorAutoStage(unittest.TestCase):
             self.assertIn("First output", md.read_text())
 
             # --- Second call with different prompt ---
-            async def _fake_stream_b(
-                *_args: Any, **_kwargs: Any
-            ) -> AsyncIterator[StreamEvent]:
-                yield StreamEvent(
-                    final=FinalPayload(
-                        text="Second output.",
-                        tool_calls=[],
-                        usage=None,
-                        interrupted=False,
-                    )
-                )
+            async def _fake_text_b(*_args: Any, **_kwargs: Any) -> str:
+                return "Second output."
 
             with contextlib.redirect_stderr(io.StringIO()):
                 with patch(
-                    "lens.core.operator.generate_stream", new=_fake_stream_b
+                    "lens.core.operator.generate_text", new=_fake_text_b
                 ):
                     asyncio.run(
                         _NoIdOp.run_inline(

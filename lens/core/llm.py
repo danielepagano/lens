@@ -13,10 +13,10 @@ import logging
 import os
 import signal
 import tomllib
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 
@@ -32,6 +32,7 @@ _MAX_COMMAND_TOOL_ITERATIONS = 20
 _REASONING_EFFORT = "medium"
 
 CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
+PreviewHandler = Callable[[str], Awaitable[None]]
 
 
 class LLMError(Exception):
@@ -128,6 +129,96 @@ class FinalPayload:
 class StreamEvent:
     preview: str | None = None
     final: FinalPayload | None = None
+
+
+@dataclass(slots=True)
+class CommandToolsBundle:
+    tools: list[dict[str, Any]] | None
+    handlers: dict[str, CommandToolFn] | None
+
+
+def build_command_tools_bundle(project_root: Path) -> CommandToolsBundle:
+    from lens.core.command_tools import get_command_registry
+
+    cmd_registry = get_command_registry(project_root)
+    if not cmd_registry:
+        return CommandToolsBundle(tools=None, handlers=None)
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": cmd_def.description,
+                "parameters": cmd_def.parameters,
+            },
+        }
+        for name, (cmd_def, _fn) in cmd_registry.items()
+    ]
+    handlers = {name: fn for name, (_def, fn) in cmd_registry.items()}
+    return CommandToolsBundle(tools=tools, handlers=handlers)
+
+
+async def collect_final_payload(
+    stream: AsyncIterator[StreamEvent],
+    *,
+    on_preview: PreviewHandler | None,
+) -> FinalPayload | None:
+    final: FinalPayload | None = None
+    async for event in stream:
+        if event.preview and on_preview is not None:
+            await on_preview(event.preview)
+        if event.final is not None:
+            final = event.final
+            break
+    return final
+
+
+InterruptPolicy = Literal["return_empty", "raise"]
+
+
+async def generate_text(
+    messages: list[dict[str, Any]],
+    project_root: Path,
+    *,
+    llm_id: str | None = None,
+    stop_sequences: list[str] | None = None,
+    tools: list[dict[str, Any]] | None = None,
+    cancel_event: asyncio.Event | None = None,
+    command_tool_handlers: dict[str, CommandToolFn] | None = None,
+    enable_thinking: bool = False,
+    on_preview: PreviewHandler | None = None,
+    interrupt_policy: InterruptPolicy = "return_empty",
+    on_llm_error: Callable[[LLMError], Exception] | None = None,
+) -> str:
+    try:
+        final = await collect_final_payload(
+            generate_stream(
+                messages,
+                project_root,
+                llm_id=llm_id,
+                stop_sequences=stop_sequences,
+                tools=tools,
+                cancel_event=cancel_event,
+                command_tool_handlers=command_tool_handlers,
+                enable_thinking=enable_thinking,
+            ),
+            on_preview=on_preview,
+        )
+        if final is None:
+            return ""
+        if final.interrupted:
+            if interrupt_policy == "raise":
+                raise KeyboardInterrupt
+            return ""
+        return final.text
+    except KeyboardInterrupt:
+        if interrupt_policy == "raise":
+            raise
+        return ""
+    except LLMError as e:
+        if on_llm_error is not None:
+            raise on_llm_error(e) from e
+        raise
 
 
 def _format_messages(messages: list[dict[str, Any]]) -> str:

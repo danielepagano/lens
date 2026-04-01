@@ -7,13 +7,13 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
 from unittest.mock import patch
 
 from lens.core.annotations import encode_ai_secrets
 from lens.core.commands.kb import kb_edit
 from lens.core.exceptions import LensException
-from lens.core.llm import FinalPayload, StreamEvent
 
 
 def _init_repo(tmp: Path) -> Path:
@@ -56,19 +56,15 @@ api_key_env = "OPENAI_API_KEY"
     return tmp
 
 
-def _make_stream_mock(text: str = "New content"):
-    async def mock_stream(*args: Any, **kwargs: Any) -> Any:
-        for chunk in text.split():
-            yield StreamEvent(preview=chunk + " ")
-        yield StreamEvent(
-            final=FinalPayload(
-                text=text,
-                tool_calls=[],
-                usage=None,
-                interrupted=False,
-            )
-        )
-    return mock_stream
+def _make_text_mock(text: str = "New content"):
+    async def mock_text(*args: Any, **kwargs: Any) -> str:
+        on_preview = kwargs.get("on_preview")
+        if on_preview is not None:
+            cb = cast(Callable[[str], Awaitable[None]], on_preview)
+            for chunk in text.split():
+                await cb(chunk + " ")
+        return text
+    return mock_text
 
 
 def _run_in_project(root: Path, fn: Any, *args: Any, **kwargs: Any) -> Any:
@@ -84,7 +80,7 @@ class TestKbEditValidation(unittest.TestCase):
     def test_rejects_template_id(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = _make_project(_init_repo(Path(tmp)))
-            with patch("lens.core.commands.kb.generate_stream", new=_make_stream_mock()):
+            with patch("lens.core.commands.kb.generate_text", new=_make_text_mock()):
                 with self.assertRaises(LensException) as ctx:
                     _run_in_project(root, kb_edit, "person._template", "add name", pins=[], unpins=[])
                 self.assertIn("template", str(ctx.exception).lower())
@@ -96,7 +92,7 @@ class TestKbEditValidation(unittest.TestCase):
             (root / "knowledge").mkdir(exist_ok=True)
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "ds"], cwd=root, capture_output=True, check=True)
-            with patch("lens.core.commands.kb.generate_stream", new=_make_stream_mock()):
+            with patch("lens.core.commands.kb.generate_text", new=_make_text_mock()):
                 with self.assertRaises(LensException) as ctx:
                     _run_in_project(
                         root, kb_edit, "person.amy", "edit",
@@ -122,13 +118,11 @@ class TestKbEditCrawlResolution(unittest.TestCase):
 
             messages_captured: list[Any] = []
 
-            async def capture_stream(*args: Any, **kwargs: Any) -> Any:
+            async def capture_text(*args: Any, **kwargs: Any) -> str:
                 messages_captured.append(args[0] if args else kwargs.get("messages", []))
-                yield StreamEvent(
-                    final=FinalPayload(text="OK", tool_calls=[], usage=None, interrupted=False)
-                )
+                return "OK"
 
-            with patch("lens.core.commands.kb.generate_stream", new=capture_stream):
+            with patch("lens.core.commands.kb.generate_text", new=capture_text):
                 _run_in_project(root, kb_edit, "person.new", "create", pins=["person.amy"], unpins=[])
 
             self.assertEqual(len(messages_captured), 1)
@@ -142,7 +136,7 @@ class TestKbEditStorage(unittest.TestCase):
     def test_new_item_stores_llm_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = _make_project(_init_repo(Path(tmp)))
-            with patch("lens.core.commands.kb.generate_stream", new=_make_stream_mock("New content")):
+            with patch("lens.core.commands.kb.generate_text", new=_make_text_mock("New content")):
                 _run_in_project(root, kb_edit, "person.hero", "create a hero", pins=[], unpins=[])
 
             path = root / "knowledge" / "person" / "hero.md"
@@ -157,7 +151,7 @@ class TestKbEditStorage(unittest.TestCase):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(["git", "commit", "-m", "kb"], cwd=root, capture_output=True, check=True)
 
-            with patch("lens.core.commands.kb.generate_stream", new=_make_stream_mock("Updated")):
+            with patch("lens.core.commands.kb.generate_text", new=_make_text_mock("Updated")):
                 _run_in_project(root, kb_edit, "person.amy", "update", pins=[], unpins=[])
 
             path = root / "knowledge" / "person" / "amy.md"
@@ -170,8 +164,8 @@ class TestKbEditStorage(unittest.TestCase):
             raw_output = f"Public part\n\n<!-- ai:secret:\n{secret_text}\n-->"
             encoded_output = encode_ai_secrets(raw_output)
             with patch(
-                "lens.core.commands.kb.generate_stream",
-                new=_make_stream_mock(encoded_output),
+                "lens.core.commands.kb.generate_text",
+                new=_make_text_mock(encoded_output),
             ):
                 _run_in_project(root, kb_edit, "person.x", "add secret", pins=[], unpins=[])
 

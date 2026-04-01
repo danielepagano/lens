@@ -13,26 +13,12 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import (
     NarrativeNode,
     find_unclosed_cursor_annotation,
     parse_segments,
 )
 from lens.core.project import get_active_narrative
-
-
-async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
-    for chunk in ["Section", " summary."]:
-        yield StreamEvent(preview=chunk)
-    yield StreamEvent(
-        final=FinalPayload(
-            text="Section summary.",
-            tool_calls=[],
-            usage=None,
-            interrupted=False,
-        )
-    )
 
 
 def _make_narrative(tmp: Path, slug: str = "test") -> Path:
@@ -684,7 +670,18 @@ class TestSectionOperator(unittest.TestCase):
             rel = str(parent.md_path().relative_to(p))
             owner = SectionOperator.owner_id(key, rel)
             op = SectionOperator(Storage(p, owner=owner), narrative)
-            with patch("lens.core.operators.section.generate_stream", new=_fake_generate_stream):
+            async def _fake_generate_text(*args: Any, **kwargs: Any) -> str:
+                from collections.abc import Awaitable, Callable
+                from typing import cast
+
+                on_preview = kwargs.get("on_preview")
+                if on_preview is not None:
+                    cb = cast(Callable[[str], Awaitable[None]], on_preview)
+                    await cb("Section")
+                    await cb(" summary.")
+                return "Section summary."
+
+            with patch("lens.core.operators.section.generate_text", new=_fake_generate_text):
                 with contextlib.redirect_stdout(io.StringIO()):
                     asyncio.run(op.end(ProjectSession(p, p)))
             node_md = p / "narrative" / "test" / "_node.md"

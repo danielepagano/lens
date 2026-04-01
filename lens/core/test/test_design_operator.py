@@ -8,8 +8,9 @@ import tempfile
 import unittest
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
+from collections.abc import Awaitable, Callable
 
 from lens.core.annotations import parse_front_matter
 from lens.core.annotations import parse_annotations
@@ -79,6 +80,15 @@ async def _fake_generate_stream(*args: Any, **kwargs: Any) -> AsyncIterator[Stre
     )
 
 
+async def _fake_generate_text(*args: Any, **kwargs: Any) -> str:
+    on_preview = kwargs.get("on_preview")
+    if on_preview is not None:
+        cb = cast(Callable[[str], Awaitable[None]], on_preview)
+        await cb("Here are")
+        await cb(" my proposals...")
+    return _FAKE_CONTENT
+
+
 async def _fake_generate_empty(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
     yield StreamEvent(
         final=FinalPayload(
@@ -100,9 +110,23 @@ def _run_design(
     end: bool = False,
     generate_mock: Any = None,
 ) -> Any:
-    mock = generate_mock or _fake_generate_stream
-    with patch("lens.core.operators.design.generate_stream", new=mock):
-        with patch("lens.core.operators.design.get_command_registry", return_value={}):
+    raw_mock = generate_mock or _fake_generate_text
+
+    async def _mock_text(*args: Any, **kwargs: Any) -> str:
+        res = raw_mock(*args, **kwargs)
+        if hasattr(res, "__aiter__"):
+            on_preview = kwargs.get("on_preview")
+            cb = cast(Callable[[str], Awaitable[None]] | None, on_preview)
+            async for ev in cast(AsyncIterator[StreamEvent], res):
+                if ev.preview and cb is not None:
+                    await cb(ev.preview)
+                if ev.final is not None:
+                    return ev.final.text
+            return ""
+        return await cast(Awaitable[str], res)
+
+    with patch("lens.core.operators.design.generate_text", new=_mock_text):
+        with patch("lens.core.command_tools.get_command_registry", return_value={}):
             return asyncio.run(
                 DesignOperator.run_design(
                     session=ProjectSession(root, root),
@@ -435,8 +459,8 @@ class TestDesignContinueRun(unittest.TestCase):
                 from lens.core.context import crawl as real_crawl
                 return real_crawl(node, **kwargs)
 
-            with patch("lens.core.operators.design.generate_stream", new=_fake_generate_stream):
-                with patch("lens.core.operators.design.get_command_registry", return_value={}):
+            with patch("lens.core.operators.design.generate_text", new=_fake_generate_text):
+                with patch("lens.core.command_tools.get_command_registry", return_value={}):
                     with patch("lens.core.operators.design.crawl", side_effect=capture_crawl):
                         asyncio.run(
                             DesignOperator.run_design(

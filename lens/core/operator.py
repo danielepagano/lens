@@ -125,11 +125,11 @@ from lens.core.annotations import (
     parse_annotations,
     strip_markdown_comments,
 )
-from lens.core.command_tools import CommandToolFn, get_command_registry
+from lens.core.command_tools import CommandToolFn
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.dice import DiceError, substitute_rolls
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import LLMError, generate_stream
+from lens.core.llm import LLMError, build_command_tools_bundle, generate_text
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
@@ -591,20 +591,15 @@ class Operator(ABC):
         cancel_event: asyncio.Event | None = None,
     ) -> str:
         """Stream LLM output and return the full collected text."""
-        try:
-            async for event in generate_stream(
-                messages, project_root, llm_id=llm_id, tools=None,
-                cancel_event=cancel_event,
-            ):
-                if event.preview and on_token:
-                    await on_token(event.preview)
-                if event.final:
-                    if event.final.interrupted:
-                        return ""
-                    return event.final.text
-        except KeyboardInterrupt:
-            return ""
-        return ""
+        return await generate_text(
+            messages,
+            project_root,
+            llm_id=llm_id,
+            tools=None,
+            cancel_event=cancel_event,
+            on_preview=on_token,
+            interrupt_policy="return_empty",
+        )
 
     # ------------------------------------------------------------------
     # Instance helpers
@@ -880,47 +875,28 @@ class Operator(ABC):
         interrupted = False
 
         messages = probe_op.build_messages(crawl_result, ann_params)
-        tools_payload: list[dict[str, Any]] = []
 
         # ── Command tools ─────────────────────────────────────────────────
         # Operators that prioritise speed (e.g. play) opt out via
         # use_command_tools = False.
+        tools_payload: list[dict[str, Any]] | None = None
         command_handlers: dict[str, CommandToolFn] | None = None
         if cls.use_command_tools:
-            cmd_registry = get_command_registry(session.project_root)
-            if cmd_registry:
-                command_handlers = {
-                    name: fn for name, (_def, fn) in cmd_registry.items()
-                }
-                for cmd_name, (cmd_def, _fn) in cmd_registry.items():
-                    tools_payload.append(
-                        {
-                            "type": "function",
-                            "function": {
-                                "name": cmd_name,
-                                "description": cmd_def.description,
-                                "parameters": cmd_def.parameters,
-                            },
-                        }
-                    )
+            bundle = build_command_tools_bundle(session.project_root)
+            tools_payload = bundle.tools
+            command_handlers = bundle.handlers
 
         try:
-            async for event in generate_stream(
+            content = await generate_text(
                 messages,
                 session.project_root,
                 llm_id=llm_id,
-                tools=tools_payload if tools_payload else None,
+                tools=tools_payload,
                 command_tool_handlers=command_handlers,
                 cancel_event=cancel_event,
-            ):
-                if event.preview and on_token:
-                    await on_token(event.preview)
-                if event.final:
-                    if event.final.interrupted:
-                        interrupted = True
-                        break
-                    content = event.final.text
-                    break
+                on_preview=on_token,
+                interrupt_policy="raise",
+            )
         except KeyboardInterrupt:
             interrupted = True
         except LLMError as e:

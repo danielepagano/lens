@@ -9,8 +9,9 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
+from collections.abc import Awaitable, Callable
 
 from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
@@ -59,17 +60,13 @@ def _commit_node_content(root: Path, node: NarrativeNode, content: str) -> None:
     )
 
 
-async def _fake_generate_stream(*args: Any, **kwargs: Any) -> Any:
-    for chunk in ["Generated", " content"]:
-        yield StreamEvent(preview=chunk)
-    yield StreamEvent(
-        final=FinalPayload(
-            text="Generated content",
-            tool_calls=[],
-            usage=None,
-            interrupted=False,
-        )
-    )
+async def _fake_generate_text(*args: Any, **kwargs: Any) -> str:
+    on_preview = kwargs.get("on_preview")
+    if on_preview is not None:
+        cb = cast(Callable[[str], Awaitable[None]], on_preview)
+        await cb("Generated")
+        await cb(" content")
+    return "Generated content"
 
 
 def _run_mutation(
@@ -85,8 +82,22 @@ def _run_mutation(
     generate_mock: Any = None,
     manual: bool = False,
 ) -> None:
-    mock = generate_mock or _fake_generate_stream
-    with patch("lens.core.operator.generate_stream", new=mock):
+    raw_mock = generate_mock or _fake_generate_text
+
+    async def _mock_text(*args: Any, **kwargs: Any) -> str:
+        res = raw_mock(*args, **kwargs)
+        if hasattr(res, "__aiter__"):
+            on_preview = kwargs.get("on_preview")
+            cb = cast(Callable[[str], Awaitable[None]] | None, on_preview)
+            async for ev in cast(Any, res):
+                if getattr(ev, "preview", None) and cb is not None:
+                    await cb(cast(str, ev.preview))
+                if getattr(ev, "final", None) is not None:
+                    return ev.final.text
+            return ""
+        return await cast(Awaitable[str], res)
+
+    with patch("lens.core.operator.generate_text", new=_mock_text):
         with contextlib.redirect_stdout(io.StringIO()):
             with contextlib.redirect_stderr(io.StringIO()):
                 asyncio.run(

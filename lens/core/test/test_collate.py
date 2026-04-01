@@ -9,10 +9,10 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
 from unittest.mock import patch
 
-from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.collate import CollateOperator
 from lens.core.project import ProjectSession
@@ -62,17 +62,13 @@ def _commit_content(root: Path, node: NarrativeNode, content: str) -> None:
     )
 
 
-async def _fake_summary(*args: Any, **kwargs: Any) -> Any:
-    for chunk in ["Section", " summary."]:
-        yield StreamEvent(preview=chunk)
-    yield StreamEvent(
-        final=FinalPayload(
-            text="Section summary.",
-            tool_calls=[],
-            usage=None,
-            interrupted=False,
-        )
-    )
+async def _fake_summary_text(*args: Any, **kwargs: Any) -> str:
+    on_preview = kwargs.get("on_preview")
+    if on_preview is not None:
+        cb = cast(Callable[[str], Awaitable[None]], on_preview)
+        await cb("Section")
+        await cb(" summary.")
+    return "Section summary."
 
 
 def _run_collate(
@@ -85,14 +81,14 @@ def _run_collate(
     *,
     generate_mock: Any = None,
 ) -> None:
-    mock = generate_mock or _fake_summary
+    mock = generate_mock or _fake_summary_text
     address_str = (
         "/".join([target_node.narrative_root.name] + list(target_node.key_path))
         if target_node.key_path
         else target_node.narrative_root.name
     )
 
-    with patch("lens.core.operators.collate.generate_stream", new=mock):
+    with patch("lens.core.operators.collate.generate_text", new=mock):
         with contextlib.redirect_stdout(io.StringIO()):
             asyncio.run(
                 CollateOperator.run_collate(
@@ -577,15 +573,8 @@ class TestCollateRollback(unittest.TestCase):
 class TestCollateEdgeCases(unittest.TestCase):
 
     def test_empty_llm_response_raises(self) -> None:
-        async def _empty(*args: Any, **kwargs: Any) -> Any:
-            yield StreamEvent(
-                final=FinalPayload(
-                    text="",
-                    tool_calls=[],
-                    usage=None,
-                    interrupted=False,
-                )
-            )
+        async def _empty(*args: Any, **kwargs: Any) -> str:
+            return ""
 
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))

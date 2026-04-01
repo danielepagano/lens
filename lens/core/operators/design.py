@@ -35,10 +35,9 @@ from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar
 
 from lens.core.annotations import ParsedAnnotation
-from lens.core.command_tools import get_command_registry
 from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import assemble_prompt, crawl
-from lens.core.llm import LLMError, generate_stream
+from lens.core.llm import LLMError, build_command_tools_bundle, generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
@@ -108,40 +107,22 @@ class DesignOperator(SessionOperator):
             instruction=instruction,
         )
 
-        cmd_registry = get_command_registry(session.project_root)
-        tools_payload = [
-            {
-                "type": "function",
-                "function": {
-                    "name": name,
-                    "description": cmd_def.description,
-                    "parameters": cmd_def.parameters,
-                },
-            }
-            for name, (cmd_def, _) in cmd_registry.items()
-        ]
-        command_handlers = {name: fn for name, (_, fn) in cmd_registry.items()}
+        bundle = build_command_tools_bundle(session.project_root)
 
         content = ""
         interrupted = False
         try:
-            async for event in generate_stream(
+            content = await generate_text(
                 messages,
                 session.project_root,
                 llm_id=llm_id,
-                tools=tools_payload if tools_payload else None,
-                command_tool_handlers=command_handlers if command_handlers else None,
+                tools=bundle.tools,
+                command_tool_handlers=bundle.handlers,
                 enable_thinking=True,
                 cancel_event=cancel_event,
-            ):
-                if event.preview and on_token:
-                    await on_token(event.preview)
-                if event.final:
-                    if event.final.interrupted:
-                        interrupted = True
-                        break
-                    content = event.final.text
-                    break
+                on_preview=on_token,
+                interrupt_policy="raise",
+            )
         except KeyboardInterrupt:
             interrupted = True
         except LLMError as e:

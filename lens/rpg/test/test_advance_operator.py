@@ -370,12 +370,8 @@ class TestRunAdvanceSummary(unittest.TestCase):
         return root, narrative
 
     def _fake_generate(self, response_text: str) -> Any:
-        from lens.core.llm import FinalPayload, StreamEvent
-
-        async def _gen(*_args: Any, **_kwargs: Any) -> Any:
-            yield StreamEvent(
-                final=FinalPayload(text=response_text, tool_calls=[], usage=None, interrupted=False)
-            )
+        async def _gen(*_args: Any, **_kwargs: Any) -> str:
+            return response_text
 
         return _gen
 
@@ -390,7 +386,7 @@ class TestRunAdvanceSummary(unittest.TestCase):
             session = ProjectSession(root, root)
 
             with patch(
-                "lens.rpg.operators.advance.generate_stream",
+                "lens.rpg.operators.advance.generate_text",
                 self._fake_generate(LLM_RESPONSE),
             ):
                 _run_async(
@@ -447,7 +443,7 @@ class TestRunAdvanceSummary(unittest.TestCase):
             session = ProjectSession(root, root)
 
             with patch(
-                "lens.rpg.operators.advance.generate_stream",
+                "lens.rpg.operators.advance.generate_text",
                 self._fake_generate(LLM_RESPONSE),
             ):
                 _run_async(

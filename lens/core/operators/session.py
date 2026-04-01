@@ -35,7 +35,7 @@ from typing import Any, ClassVar
 
 from lens.core.annotations import parse_front_matter, strip_markdown_comments
 from lens.core.context import CrawlResult, crawl
-from lens.core.llm import generate_stream
+from lens.core.llm import generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator, OperatorError
 from lens.core.prompts import PromptStore
@@ -389,24 +389,16 @@ class SessionOperator(Operator):
             if child_clean:
                 crawl_result = crawl(parent)
                 messages = build_summary_messages(crawl_result, child_clean)
-                interrupted = False
-                try:
-                    async for event in generate_stream(
-                        messages, session.project_root, llm_id=llm_id,
+                summary = (
+                    await generate_text(
+                        messages,
+                        session.project_root,
+                        llm_id=llm_id,
                         cancel_event=cancel_event,
-                    ):
-                        if event.preview and on_token:
-                            await on_token(event.preview)
-                        if event.final:
-                            if event.final.interrupted:
-                                interrupted = True
-                                break
-                            summary = event.final.text.strip()
-                            break
-                except KeyboardInterrupt:
-                    interrupted = True
-                if interrupted:
-                    raise KeyboardInterrupt
+                        on_preview=on_token,
+                        interrupt_policy="raise",
+                    )
+                ).strip()
 
         op.close_subnode(parent, id, summary)
         return None

@@ -17,7 +17,7 @@ from lens.core.context import (
 )
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
-from lens.core.llm import LLMError, generate_stream
+from lens.core.llm import LLMError, generate_text
 from lens.core.project import find_git_root_from, find_project_root, is_dataset_root, resolve_address
 from lens.core.storage import Storage
 
@@ -308,23 +308,20 @@ def kb_edit(
     )
 
     async def _run() -> str:
-        full_text = ""
+        async def _on_preview(s: str) -> None:
+            if on_token is not None:
+                on_token(s)
+
         try:
-            async for event in generate_stream(
+            return await generate_text(
                 messages,
                 project_root,
                 llm_id=llm_id,
-            ):
-                if event.preview and on_token:
-                    on_token(event.preview)
-                if event.final:
-                    if event.final.interrupted:
-                        return ""
-                    full_text = event.final.text
-                    break
+                on_preview=_on_preview if on_token is not None else None,
+                interrupt_policy="return_empty",
+            )
         except LLMError as e:
             raise LensException(str(e)) from e
-        return full_text
 
     content = asyncio.run(_run())
     if not content.strip():
