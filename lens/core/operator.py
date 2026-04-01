@@ -745,8 +745,13 @@ class Operator(ABC):
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
         _cursor_override: NarrativeNode | None = None,
+        empty_prompt_ok: bool = False,
     ) -> None:
         """Run the inline flow (fresh / retry / update-retry).
+
+        *empty_prompt_ok* is for operators (e.g. play) that persist the user
+        turn outside the annotation and call the LLM with instruction-only
+        context; they pass ``prompt=None`` into this orchestrator.
 
         Raises :class:`OperatorError` on user-visible failures.
         """
@@ -804,7 +809,7 @@ class Operator(ABC):
             else:
                 # Previously: continue in the same annotation (steps++).
                 # Now: always stage and start a new annotation.
-                if not prompt:
+                if not prompt and not empty_prompt_ok:
                     raise OperatorError(f"{cls.name} requires a prompt (or --retry)")
                 session.new_storage().stage_all()
                 await cls._do_fresh_inline(

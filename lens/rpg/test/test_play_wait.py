@@ -71,6 +71,10 @@ async def _never_generate_text(*_args: Any, **_kwargs: Any) -> str:
     raise AssertionError("LLM generation must not be called unless --pass is used")
 
 
+async def _mock_gm_reply(*_args: Any, **_kwargs: Any) -> str:
+    return "The scene continues.\n"
+
+
 class TestPlayAppend(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
@@ -177,3 +181,43 @@ class TestPlayAppend(unittest.TestCase):
             )
         text = self._play_child_md()
         self.assertEqual(text.count("KB['spell.foo']"), 1)
+
+    def test_pass_only_after_player_turn_with_prior_gm_block(self) -> None:
+        """Regression: pending owner can match the last [play] tag in-file; --pass must still run."""
+        with patch("lens.core.operator.generate_text", _mock_gm_reply):
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="I approach",
+                    pins=[],
+                    unpins=[],
+                    extra_params={"pass": True},
+                )
+            )
+        with patch("lens.core.operator.generate_text", _never_generate_text):
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="I wait",
+                    pins=[],
+                    unpins=[],
+                    extra_params=None,
+                )
+            )
+        with patch("lens.core.operator.generate_text", _mock_gm_reply):
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"pass": True},
+                )
+            )
+        text = self._play_child_md()
+        self.assertIn("> [Player] I approach", text)
+        self.assertIn("> [Player] I wait", text)
+        self.assertGreaterEqual(text.count("[/play"), 2)

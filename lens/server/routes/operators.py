@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from lens.core.commands.rollback import execute_rollback
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
@@ -161,8 +162,10 @@ async def _run_operator_task(
                 done_payload["section_key"] = result
         await event_queue.put(done_payload)
     except OperatorError as e:
+        execute_rollback(session)
         await event_queue.put({"type": "error", "message": str(e)})
     except LensException as e:
+        execute_rollback(session)
         await event_queue.put({"type": "error", "message": str(e)})
     except asyncio.CancelledError:
         await event_queue.put({

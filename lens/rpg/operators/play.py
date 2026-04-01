@@ -55,6 +55,11 @@ def _titlecase_pc_key(key: str) -> str:
 
 REQUIRED_PINS: frozenset[str] = frozenset({"rules.system", "rules.rpg"})
 
+_PLAY_PASS_FAIL_AFTER_PLAYER_MSG = (
+    "\n\nYour player line was saved (pending checkpoint). "
+    "Run play --pass again for a GM reply, or rewind to remove it."
+)
+
 # ---------------------------------------------------------------------------
 # Operator class
 # ---------------------------------------------------------------------------
@@ -219,6 +224,7 @@ class PlayOperator(SessionOperator):
         _cursor_override: NarrativeNode | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
+        empty_prompt_ok: bool = False,
     ) -> None:
         await super().run_inline(
             session=session,
@@ -232,11 +238,43 @@ class PlayOperator(SessionOperator):
             _cursor_override=_cursor_override,
             extra_params=None,
             cancel_event=cancel_event,
+            empty_prompt_ok=empty_prompt_ok or True,
         )
 
     # ------------------------------------------------------------------
     # SessionOperator hooks — delegate to run_inline with cursor override
     # ------------------------------------------------------------------
+
+    @classmethod
+    async def _run_pass_inline_or_reraise(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        node: NarrativeNode,
+        llm_id: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        cancel_event: Any | None,
+        appended_player_line: bool,
+    ) -> None:
+        try:
+            await cls.run_inline(
+                session=session,
+                narrative=narrative,
+                prompt=None,
+                pins=[],
+                unpins=[],
+                llm_id=llm_id,
+                retry=False,
+                on_token=on_token,
+                _cursor_override=node,
+                extra_params=None,
+                cancel_event=cancel_event,
+            )
+        except OperatorError as e:
+            if appended_player_line:
+                raise OperatorError(f"{e}{_PLAY_PASS_FAIL_AFTER_PLAYER_MSG}") from e
+            raise
 
     @classmethod
     async def _run_fresh(
@@ -265,6 +303,7 @@ class PlayOperator(SessionOperator):
             extra_params.get("as_pc") if isinstance(extra_params.get("as_pc"), str) else None
         )
 
+        appended_player_line = False
         if prompt:
             try:
                 resolved = substitute_rolls(prompt)
@@ -279,20 +318,17 @@ class PlayOperator(SessionOperator):
                 as_pc=as_pc,
                 _cursor_override=node,
             )
+            appended_player_line = True
 
         if do_pass:
-            await cls.run_inline(
+            await cls._run_pass_inline_or_reraise(
                 session=session,
                 narrative=narrative,
-                prompt=None,
-                pins=[],
-                unpins=[],
+                node=node,
                 llm_id=llm_id,
-                retry=False,
                 on_token=on_token,
-                _cursor_override=node,
-                extra_params=None,
                 cancel_event=cancel_event,
+                appended_player_line=appended_player_line,
             )
 
     @classmethod
@@ -369,6 +405,7 @@ class PlayOperator(SessionOperator):
             )
             return
 
+        appended_player_line = False
         if prompt:
             try:
                 resolved = substitute_rolls(prompt)
@@ -383,20 +420,17 @@ class PlayOperator(SessionOperator):
                 as_pc=as_pc,
                 _cursor_override=node,
             )
+            appended_player_line = True
 
         if do_pass:
-            await cls.run_inline(
+            await cls._run_pass_inline_or_reraise(
                 session=session,
                 narrative=narrative,
-                prompt=None,
-                pins=[],
-                unpins=[],
+                node=node,
                 llm_id=llm_id,
-                retry=False,
                 on_token=on_token,
-                _cursor_override=node,
-                extra_params=None,
                 cancel_event=cancel_event,
+                appended_player_line=appended_player_line,
             )
 
 
