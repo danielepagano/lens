@@ -9,6 +9,7 @@ from lens.core.commands.checkpoint import execute_checkpoint
 from lens.core.commands.commit import execute_commit
 from lens.core.commands.refresh import execute_refresh
 from lens.core.commands.rollback import rollback
+from lens.core.commands.tx_status import get_tx_status
 from lens.core.project import ProjectSession
 from lens.core.exceptions import LensException
 from lens.server.dependencies import get_session
@@ -76,3 +77,18 @@ def refresh(
         return {"status": "ok"}
     except (RuntimeError, LensException) as e:
         return {"status": "error", "detail": str(e)}
+
+
+@router.get("/tx/status")
+def tx_status(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
+    result = get_tx_status(session)
+    return {
+        "pending_files": result.pending_files,
+        "staged_files": result.staged_files,
+        "has_remote": result.has_remote,
+        "has_upstream": result.has_upstream,
+        "fetch_error": result.fetch_error,
+        "incoming": result.incoming,
+        "unpushed": result.unpushed,
+        "remote_head": result.remote_head,
+    }

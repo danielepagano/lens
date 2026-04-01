@@ -217,16 +217,55 @@ export function getCommandSuggestions(
   prefix: string,
 ): Suggestion[] {
   const lower = prefix.toLowerCase()
+  const allTriggers = definitions.map((d) => d.trigger)
   const matches = lower
     ? definitions.filter((d) => d.trigger.startsWith(lower))
     : definitions
   const list = matches.length > 0 ? matches : definitions
-  return list.map((d) => ({
-    label: '/' + d.trigger,
-    value: d.trigger,
-    kind: 'command' as const,
-    group: d.group,
-  }))
+  const listTriggers = list.map((d) => d.trigger)
+
+  const { stem, inSeg } = decomposeKbKeyTypingPrefix(lower, listTriggers)
+
+  const restRows: { def: CommandDefinition; rest: string }[] = []
+  for (const def of list) {
+    const rest = kbKeyRemainderAfterStem(def.trigger, stem)
+    if (inSeg.length > 0 && !rest.startsWith(inSeg)) continue
+    restRows.push({ def, rest })
+  }
+
+  const withTail = restRows.filter((r) => r.rest.length > 0)
+  const exactOnly = restRows.filter((r) => r.rest.length === 0)
+
+  const restPool = withTail.map((r) => r.rest)
+  const groupedRests = groupDenseSegmentedPrefixes(restPool, '-')
+
+  const out: Suggestion[] = []
+
+  for (const g of groupedRests) {
+    const fullTrigger = joinKbStemAndGroupedRest(stem, g)
+    const isExact = allTriggers.includes(fullTrigger)
+    const def = definitions.find((d) => d.trigger === fullTrigger)
+    out.push({
+      label: stem ? g : isExact ? '/' + fullTrigger : fullTrigger,
+      value: fullTrigger,
+      kind: 'command' as const,
+      group: def?.group ?? list[0]?.group ?? 'cli',
+      completionSuffix: isExact ? ' ' : dashedGroupingCompletionSuffix(g, restPool),
+    })
+  }
+
+  for (const { def } of exactOnly) {
+    const dash = def.trigger.lastIndexOf('-')
+    out.push({
+      label: stem ? (dash >= 0 ? def.trigger.slice(dash + 1) : def.trigger) : '/' + def.trigger,
+      value: def.trigger,
+      kind: 'command' as const,
+      group: def.group,
+      completionSuffix: ' ',
+    })
+  }
+
+  return out
 }
 
 /**

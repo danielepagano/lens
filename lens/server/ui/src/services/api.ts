@@ -459,6 +459,25 @@ export const refreshTransaction = withStats((opts?: {
   post('/refresh', opts ?? {}) as Promise<TransactionActionResponse>
 )
 
+export interface TxStatusCommit {
+  hash: string
+  message: string
+}
+
+export interface TxStatusResponse {
+  pending_files: string[]
+  staged_files: string[]
+  has_remote: boolean
+  has_upstream: boolean
+  fetch_error: string | null
+  incoming: TxStatusCommit[]
+  unpushed: TxStatusCommit[]
+  remote_head: TxStatusCommit | null
+}
+
+export const getTxStatus = (): Promise<TxStatusResponse> =>
+  get('/tx/status') as Promise<TxStatusResponse>
+
 // ---- Narrative API ----
 
 export type PinOperation = 'add' | 'remove' | 'block' | 'unblock'

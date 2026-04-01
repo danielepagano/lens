@@ -181,6 +181,35 @@ class Storage:
         )
         return r.stdout
 
+    def staged_files(self) -> list[str]:
+        """List files in the staging area (``git diff --cached --name-only``)."""
+        r = subprocess.run(
+            [self._GIT, "diff", "--cached", "--name-only"],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+        )
+        return [line for line in r.stdout.strip().splitlines() if line]
+
+    def commit_log(self, range_spec: str, max_count: int = 20) -> list[dict[str, str]]:
+        """Return commits in *range_spec* as a list of ``{hash, message}`` dicts."""
+        r = subprocess.run(
+            [self._GIT, "log", "--oneline", f"--max-count={max_count}", range_spec],
+            cwd=self._root,
+            capture_output=True,
+            text=True,
+            env=self._git_env(),
+        )
+        if r.returncode != 0:
+            return []
+        commits: list[dict[str, str]] = []
+        for line in r.stdout.strip().splitlines():
+            if not line:
+                continue
+            short_hash, _, message = line.partition(" ")
+            commits.append({"hash": short_hash, "message": message})
+        return commits
+
     def staged_diff(self) -> str:
         """Return the staged diff (``git diff --cached``).
 
@@ -355,6 +384,10 @@ class Storage:
     def is_working_tree_clean(self) -> bool:
         """True when there is no unstaged, untracked, or staged-but-uncommitted work."""
         return not self.has_pending() and not self.has_staged()
+
+    def has_upstream(self) -> bool:
+        """Return True if the current branch has an upstream tracking branch."""
+        return self._has_upstream()
 
     def _has_upstream(self) -> bool:
         r = subprocess.run(

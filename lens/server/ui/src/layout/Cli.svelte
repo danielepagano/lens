@@ -235,7 +235,7 @@
     const lower = commandPart.toLowerCase()
 
     isKnownCommand = !hasCommandText || KNOWN_COMMANDS.includes(lower)
-    showInvalid = !busy && startsWithSlash && hasCommandText && !isKnownCommand
+    showInvalid = !busy && startsWithSlash && hasCommandText && !isKnownCommand && !KNOWN_COMMANDS.some((c) => c.startsWith(lower))
 
     // Resolve definition
     activeCommandDef = hasCommandText
@@ -371,7 +371,13 @@
   function completeSuggestion(sug: Suggestion) {
     switch (sug.kind) {
       case 'command':
-        completeCommand(sug.value)
+        if (sug.completionSuffix === '-') {
+          input = '/' + sug.value + '-'
+          updateCommandState()
+          focusCliInput()
+        } else {
+          completeCommand(sug.value)
+        }
         return
       case 'slug':
         replaceCurrentToken(sug.value + (sug.completionSuffix ?? ' '))

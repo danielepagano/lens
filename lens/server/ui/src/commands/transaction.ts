@@ -3,8 +3,10 @@ import {
   commitTransaction,
   checkpointTransaction,
   refreshTransaction,
+  getTxStatus,
+  type TxStatusCommit,
 } from '../services/api'
-import { transactionResult, treeRefreshTrigger } from '../stores/ui'
+import { transactionResult, treeRefreshTrigger, cliOutput } from '../stores/ui'
 import type {
   CommandContext,
   CommandDefinition,
@@ -13,20 +15,80 @@ import type {
 } from './common'
 
 const commands: CommandDefinition[] = [
-  { trigger: 'commit', group: 'transactions' },
-  { trigger: 'rollback', group: 'transactions' },
+  { trigger: 'tx-commit', group: 'transactions' },
+  { trigger: 'tx-rollback', group: 'transactions' },
   {
-    trigger: 'checkpoint',
+    trigger: 'tx-checkpoint',
     group: 'transactions',
     positional: [{ name: 'message', valueType: 'string', hint: '(optional message)' }],
     options: [{ name: 'no-push' }],
   },
   {
-    trigger: 'refresh',
+    trigger: 'tx-refresh',
     group: 'transactions',
     options: [{ name: 'reset' }],
   },
+  { trigger: 'tx-status', group: 'transactions' },
 ]
+
+function formatCommit(c: TxStatusCommit): string {
+  return `  ${c.hash}  ${c.message}`
+}
+
+function formatTxStatus(status: Awaited<ReturnType<typeof getTxStatus>>): string {
+  const lines: string[] = []
+
+  if (status.pending_files.length > 0) {
+    lines.push('Unstaged:')
+    for (const f of status.pending_files) lines.push('  ' + f)
+  } else {
+    lines.push('Unstaged:  none')
+  }
+
+  lines.push('')
+
+  if (status.staged_files.length > 0) {
+    lines.push('Staged:')
+    for (const f of status.staged_files) lines.push('  ' + f)
+  } else {
+    lines.push('Staged:    none')
+  }
+
+  lines.push('')
+
+  if (!status.has_remote) {
+    lines.push('Remote:    not configured')
+  } else if (status.fetch_error) {
+    lines.push('Remote:    fetch failed — ' + status.fetch_error)
+  } else if (!status.has_upstream) {
+    lines.push('Remote:    no upstream branch')
+  } else {
+    const inCount = status.incoming.length
+    if (inCount > 0) {
+      lines.push(`Incoming:  ${inCount} commit${inCount !== 1 ? 's' : ''} (run /tx-refresh to pull)`)
+      for (const c of status.incoming) lines.push(formatCommit(c))
+    } else {
+      lines.push('Incoming:  none')
+    }
+
+    lines.push('')
+
+    const upCount = status.unpushed.length
+    if (upCount > 0) {
+      lines.push(`Unpushed:  ${upCount} commit${upCount !== 1 ? 's' : ''}`)
+      for (const c of status.unpushed) lines.push(formatCommit(c))
+    } else {
+      lines.push('Unpushed:  none')
+    }
+
+    if (status.remote_head) {
+      lines.push('')
+      lines.push('Remote:   ' + formatCommit(status.remote_head))
+    }
+  }
+
+  return lines.join('\n')
+}
 
 const handler: CommandHandler = async (
   command,
@@ -35,22 +97,38 @@ const handler: CommandHandler = async (
 ) => {
   transactionResult.set(null)
 
+  if (command === 'tx-status') {
+    ctx.setBusyMessage('Fetching…')
+    try {
+      const status = await getTxStatus()
+      cliOutput.set({ output: formatTxStatus(status), exitCode: 0, streaming: false })
+      return { clearInput: true }
+    } catch (err) {
+      cliOutput.set({
+        output: err instanceof Error ? err.message : String(err),
+        exitCode: 1,
+        streaming: false,
+      })
+      return { clearInput: false }
+    }
+  }
+
   try {
     let result
     switch (command) {
-      case 'rollback':
+      case 'tx-rollback':
         result = await rollbackTransaction()
         break
-      case 'commit':
+      case 'tx-commit':
         result = await commitTransaction()
         break
-      case 'checkpoint': {
+      case 'tx-checkpoint': {
         const message = (ctx.args.positional['message'] as string | undefined) || undefined
         const noPush = ctx.args.options['no-push'] === true
         result = await checkpointTransaction({ message, push: !noPush })
         break
       }
-      case 'refresh': {
+      case 'tx-refresh': {
         const reset = ctx.args.options['reset'] === true
         result = await refreshTransaction({ reset })
         break
