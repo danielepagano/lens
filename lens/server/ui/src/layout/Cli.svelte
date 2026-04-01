@@ -17,6 +17,7 @@
   import { stats } from '../stores/stats'
   import { getKbItems, getTree, browseMountDir } from '../services/api'
   import type { TreeNode, MountEntry } from '../services/api'
+  import { kbMentionAtCaret, promptDiceExpressionHint } from '../utils/cliCaret'
 
   const MAX_HISTORY = 50
 
@@ -41,6 +42,20 @@
   let addressAutoFilled = false
   let sessionFillSuppressed = false
   let lastSessionOperator: string | null = null
+
+  /** Caret end position, kept fresh so chip clicks can find @-mentions after textarea blurs. */
+  let cliCaretHi = 0
+
+  function captureCliCaret() {
+    if (!cliInputEl) return
+    const n = input.length
+    cliCaretHi = Math.min(Math.max(cliInputEl.selectionEnd ?? n, cliInputEl.selectionStart ?? n), n)
+  }
+
+  /** Snapshot caret on chip pointerdown (before blur can clear textarea selection). */
+  function snapshotCaretBeforeChipPointer() {
+    if (cliInputEl && document.activeElement === cliInputEl) captureCliCaret()
+  }
 
   // Data source caches for autocomplete
   let kbKeyCache = new Map<string, string[]>()
@@ -293,6 +308,10 @@
       linePickSelection.set(null)
     }
 
+    if (isFocused && cliInputEl) {
+      captureCliCaret()
+    }
+
     if (!isFocused) {
       suggestions = []
       return
@@ -321,7 +340,23 @@
     }
 
     // Get payload-level suggestions from the autocomplete engine
-    suggestions = limitCliSuggestions(getSuggestions(state, activeCommandDef, makeDataSources()))
+    let suggestionState = state
+    if (
+      state.phase === 'positional' &&
+      cliInputEl &&
+      (state.activePayload?.valueType === 'prompt' || state.activePayload?.valueType === 'string')
+    ) {
+      const el = cliInputEl
+      const a = el.selectionStart ?? input.length
+      const b = el.selectionEnd ?? input.length
+      const hi = Math.max(a, b)
+      const mention = kbMentionAtCaret(input, hi)
+      suggestionState = {
+        ...state,
+        currentToken: mention ? mention.token : state.currentToken,
+      }
+    }
+    suggestions = limitCliSuggestions(getSuggestions(suggestionState, activeCommandDef, makeDataSources()))
   }
 
   // --- Completion helpers ---
@@ -342,7 +377,6 @@
         replaceCurrentToken(sug.value + (sug.completionSuffix ?? ' '))
         return
       case 'kb-type':
-        // Append the type + dot separator
         replaceCurrentToken(sug.value)
         return
       case 'kb-key':
@@ -368,12 +402,8 @@
       case 'node': {
         const inAddressSlot = currentParseState?.activePayload?.valueType === 'address'
         if (sug.value === '/') {
-          // Root: insert bare '/' (no trailing space) when it has children so the parser
-          // keeps '/' as the current typing token and autocomplete can show children.
-          // If root is a leaf, add a space to mark it complete.
           replaceCurrentToken(sug.nodeHasChildren ? '/' : '/ ')
         } else {
-          // Non-root: drill into children with trailing '/', or complete with space.
           replaceCurrentToken(sug.value + (sug.nodeHasChildren ? '/' : ' '))
         }
         if (inAddressSlot) {
@@ -390,6 +420,36 @@
   }
 
   function replaceCurrentToken(replacement: string) {
+    const state = currentParseState
+    const freeformPositional =
+      state?.phase === 'positional' &&
+      (state.activePayload?.valueType === 'prompt' || state.activePayload?.valueType === 'string')
+    if (freeformPositional) {
+      const hi = Math.min(Math.max(cliCaretHi, 0), input.length)
+      const mention = kbMentionAtCaret(input, hi)
+      if (mention) {
+        // Replace @token at caret position
+        input = input.slice(0, mention.at) + replacement + input.slice(hi)
+        const pos = mention.at + replacement.length
+        updateCommandState()
+        void tick().then(() => {
+          focusCliInput()
+          cliInputEl?.setSelectionRange(pos, pos)
+        })
+      } else {
+        // Non-mention completions always append to end (flags, etc.)
+        const sep = input.endsWith(' ') ? '' : ' '
+        input = input + sep + replacement
+        const pos = input.length
+        updateCommandState()
+        void tick().then(() => {
+          focusCliInput()
+          cliInputEl?.setSelectionRange(pos, pos)
+        })
+      }
+      return
+    }
+
     const trimmed = input.trim()
     const withoutSlash = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed
     const allTokens = withoutSlash.split(/\s+/).filter(Boolean)
@@ -662,16 +722,20 @@
     //   1. currentToken === '@roll'  — user is still on the @roll token itself
     //   2. The word immediately before currentToken in the input is '@roll' — user
     //      has pressed space and is now typing the expression.
-    if (currentParseState?.activePayload?.valueType === 'prompt') {
-      const token = currentParseState.currentToken
-      if (token === '@roll') return 'dice expression'
-      // Look at the word immediately before the current token in the raw input
-      const inputTrimmed = input.trimEnd()
-      const beforeCurrent = token
-        ? inputTrimmed.slice(0, inputTrimmed.length - token.length).trimEnd()
-        : inputTrimmed
-      const wordBefore = beforeCurrent.split(/\s+/).pop() ?? ''
-      if (wordBefore === '@roll') return 'dice expression'
+    if (currentParseState?.activePayload?.valueType === 'prompt' && currentParseState.phase === 'positional') {
+      if (cliInputEl) {
+        const a = cliInputEl.selectionStart ?? input.length
+        const b = cliInputEl.selectionEnd ?? input.length
+        if (promptDiceExpressionHint(input, Math.max(a, b))) return 'dice expression'
+      } else {
+        const token = currentParseState.currentToken
+        if (token === '@roll') return 'dice expression'
+        const inputTrimmed = input.trimEnd()
+        const beforeCurrent = token
+          ? inputTrimmed.slice(0, inputTrimmed.length - token.length).trimEnd()
+          : inputTrimmed
+        if ((beforeCurrent.split(/\s+/).pop() ?? '') === '@roll') return 'dice expression'
+      }
     }
     // Show the hint for whichever payload slot is currently active
     const activeHint = currentParseState?.activePayload?.hint
@@ -700,6 +764,7 @@
   <CliSuggestions
     {suggestions}
     noWrap={$cliOutput !== null}
+    onBeforeSelect={snapshotCaretBeforeChipPointer}
     onSelect={completeSuggestion}
   />
   <div class="cli-input-row">
@@ -712,6 +777,25 @@
         bind:value={input}
         on:input={handleInput}
         on:keydown={handleKeydown}
+        on:keyup={(e) => {
+          if (busy) return
+          if (
+            e.key === 'ArrowLeft' ||
+            e.key === 'ArrowRight' ||
+            e.key === 'Home' ||
+            e.key === 'End' ||
+            e.key === 'PageUp' ||
+            e.key === 'PageDown'
+          ) {
+            updateCommandState()
+          }
+        }}
+        on:click={() => {
+          if (!busy) updateCommandState()
+        }}
+        on:select={() => {
+          if (!busy) updateCommandState()
+        }}
         on:beforeinput={handleBeforeInput}
         on:focus={() => {
           isFocused = true

@@ -4,6 +4,8 @@
   export let suggestions: Suggestion[] = []
   export let noWrap = false
   export let onSelect: (suggestion: Suggestion) => void = () => {}
+  /** Runs on pointerdown before blur so the textarea selection is still valid. */
+  export let onBeforeSelect: (() => void) | undefined = undefined
 </script>
 
 {#if suggestions.length > 0}
@@ -20,7 +22,10 @@
         class:cli-suggestion--prefix-group={sug.completionSuffix === '-'}
         class:cli-suggestion--media-dir={sug.isMountDirectory === true}
         class:cli-suggestion--dice-roll={sug.kind === 'dice-roll'}
-        on:pointerdown|preventDefault
+        on:pointerdown={(e) => {
+          onBeforeSelect?.()
+          e.preventDefault()
+        }}
         on:click={() => onSelect(sug)}
       >
         {#if sug.kind === 'dice-roll'}⚄ roll{:else}{sug.label}{/if}
