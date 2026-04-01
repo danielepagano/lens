@@ -139,6 +139,45 @@ _AT_MENTION_RE = re.compile(
 )
 
 
+def build_feedback_messages(
+    previous_content: str, feedback: str, project_root: Path | None
+) -> list[dict[str, str]]:
+    """Return the two extra message turns for a feedback-guided retry.
+
+    The assistant turn contains the previous output verbatim; the user turn
+    is formatted via ``shared.retry_feedback_template`` so it can be
+    customised per project/pack like any other prompt.
+    """
+    from lens.core.prompts import PromptStore
+
+    user_turn = PromptStore(project_root).format(
+        "shared.retry_feedback_template", feedback=feedback
+    )
+    return [
+        {"role": "assistant", "content": previous_content},
+        {"role": "user", "content": user_turn},
+    ]
+
+
+def extract_annotation_content(md_path: Path, ann: ParsedAnnotation) -> str | None:
+    """Return the generated text between an annotation's open and close tags.
+
+    Returns ``None`` if the annotation has no close tag (content not yet
+    written or incomplete).  The result is stripped of leading/trailing
+    whitespace.
+    """
+    text = md_path.read_text(encoding="utf-8")
+    for seg in parse_segments(text):
+        if seg.annotation is None or seg.annotation.line_start != ann.line_start:
+            continue
+        if seg.close is None:
+            return None
+        lines = text.split("\n")
+        content_lines = lines[ann.line_end : seg.close.line_start - 1]
+        return "\n".join(content_lines).strip()
+    return None
+
+
 def _lines_prefix(before_lines: list[str]) -> str:
     """Join lines that precede a splice; empty when *before_lines* is empty.
 
@@ -971,9 +1010,20 @@ class Operator(ABC):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
+        # When a prompt is supplied on --retry, treat it as feedback rather than
+        # a replacement for the stored prompt.  We capture the previous generated
+        # content, keep the original annotation params intact, and append two
+        # extra turns before re-generating:
+        #   • assistant: previous output
+        #   • user:      feedback
+        feedback = prompt
+        previous_content: str | None = None
+        if feedback:
+            previous_content = extract_annotation_content(cursor.md_path(), existing_ann)
+
         new_params: dict[str, Any] = dict(existing_ann.params)
-        if prompt is not None:
-            new_params["prompt"] = prompt
+        # Do NOT overwrite the stored prompt — feedback is a separate message
+        # turn, not a new annotation param.
         if pins:
             new_params["kb_pin"] = pins
         if unpins:
@@ -1010,6 +1060,8 @@ class Operator(ABC):
             raise OperatorError("lost annotation after discard")
 
         messages = op.build_messages(crawl_result, new_params)
+        if feedback and previous_content:
+            messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))
 
         try:
             content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token, cancel_event=cancel_event)

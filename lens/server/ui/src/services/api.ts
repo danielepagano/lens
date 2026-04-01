@@ -262,6 +262,7 @@ export interface AdvanceParams {
   unpins?: string[]
   llm_id?: string
   retry?: boolean
+  feedback?: string
   end?: boolean
 }
 

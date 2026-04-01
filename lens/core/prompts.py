@@ -23,6 +23,7 @@ class ResolvedPrompt:
 
 PROMPT_SPECS: dict[str, PromptSpec] = {
     "shared.formatting_addendum": PromptSpec("shared.formatting_addendum", frozenset()),
+    "shared.retry_feedback_template": PromptSpec("shared.retry_feedback_template", frozenset({"feedback"})),
     "shared.block.relevant_knowledge": PromptSpec("shared.block.relevant_knowledge", frozenset()),
     "shared.block.previous_events_summary": PromptSpec("shared.block.previous_events_summary", frozenset()),
     "shared.block.current_passage": PromptSpec("shared.block.current_passage", frozenset()),

@@ -229,7 +229,9 @@ class PlayOperator(SessionOperator):
         await super().run_inline(
             session=session,
             narrative=narrative,
-            prompt=None,
+            # On retry, forward the prompt as feedback to _do_retry.
+            # On fresh/continue, always None (player text is stored separately).
+            prompt=prompt if retry else None,
             pins=pins,
             unpins=unpins,
             llm_id=llm_id,
@@ -393,7 +395,7 @@ class PlayOperator(SessionOperator):
             await cls.run_inline(
                 session=session,
                 narrative=narrative,
-                prompt=None,
+                prompt=prompt,  # forwarded as feedback to _do_retry
                 pins=[],
                 unpins=[],
                 llm_id=llm_id,

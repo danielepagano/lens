@@ -31,7 +31,7 @@ from lens.core.context import CrawlResult, SliceAnchor, assemble_prompt, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, build_command_tools_bundle, generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
-from lens.core.operator import Operator, OperatorError
+from lens.core.operator import Operator, OperatorError, extract_annotation_content, build_feedback_messages
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import unpin as unpin_node
 from lens.core.prompts import PromptStore
@@ -404,6 +404,7 @@ class AdvanceOperator(Operator):
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
+        feedback_messages: list[dict[str, str]] | None = None,
     ) -> None:
         # Narrative slice: use spine from previous advance instead of full
         # ancestor crawl.  KB pin resolution is always full-chain.
@@ -427,6 +428,8 @@ class AdvanceOperator(Operator):
             system_prompt=op.system_prompt,
             instruction=instruction,
         )
+        if feedback_messages:
+            messages.extend(feedback_messages)
 
         bundle = build_command_tools_bundle(session.project_root)
 
@@ -546,6 +549,7 @@ class AdvanceOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        feedback: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
@@ -572,6 +576,11 @@ class AdvanceOperator(Operator):
         if not is_owner:
             raise OperatorError("no pending advance transaction to retry")
 
+        # Capture previous content before discarding (for feedback mode).
+        previous_content: str | None = None
+        if feedback:
+            previous_content = extract_annotation_content(cursor.md_path(), existing_ann)
+
         storage = session.new_storage(owner=ann_owner)
         op = cls(storage, narrative)
 
@@ -589,6 +598,10 @@ class AdvanceOperator(Operator):
         if on_stream_target is not None:
             await on_stream_target(str(cursor.to_address()))
 
+        feedback_messages: list[dict[str, str]] | None = None
+        if feedback and previous_content:
+            feedback_messages = build_feedback_messages(previous_content, feedback, session.project_root)
+
         await cls._run_generation(
             op=op,
             storage=storage,
@@ -599,6 +612,7 @@ class AdvanceOperator(Operator):
             llm_id=llm_id,
             on_token=on_token,
             cancel_event=cancel_event,
+            feedback_messages=feedback_messages,
         )
         return KbExtractResult()
 
@@ -692,6 +706,7 @@ class AdvanceOperator(Operator):
         unpins: list[str],
         llm_id: str | None = None,
         retry: bool = False,
+        feedback: str | None = None,
         end: bool = False,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
@@ -712,6 +727,7 @@ class AdvanceOperator(Operator):
                 pins=pins,
                 unpins=unpins,
                 llm_id=llm_id,
+                feedback=feedback,
                 on_token=on_token,
                 on_stream_target=on_stream_target,
                 cancel_event=cancel_event,

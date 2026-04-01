@@ -328,7 +328,7 @@ const handler: CommandHandler = async (
         throw new Error('days must be a positive integer')
       }
       result = await runAdvance(
-        { days, pins, unpins, llm_id: llmId, retry: retryAdvance, end: endAdvance },
+        { days, pins, unpins, llm_id: llmId, retry: retryAdvance, feedback: retryAdvance ? prompt : undefined, end: endAdvance },
         handleEvent
       )
     } else if (command === 'design') {

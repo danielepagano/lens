@@ -87,6 +87,7 @@ class AdvanceBody(BaseModel):
     unpins: list[str] = []
     llm_id: str | None = None
     retry: bool = False
+    feedback: str | None = None
     end: bool = False
 
 
@@ -366,6 +367,7 @@ async def operator_advance(
             unpins=body.unpins,
             llm_id=body.llm_id,
             retry=body.retry,
+            feedback=body.feedback,
             end=body.end,
             on_token=on_token,
             on_stream_target=on_stream_target,

@@ -267,8 +267,8 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             # Two separate close tags (one per block)
             self.assertEqual(text.count("[/write]: #"), 2)
 
-    def test_run_inline_retry_with_new_prompt(self) -> None:
-        """--retry with a new prompt discards the pending result and regenerates."""
+    def test_run_inline_retry_with_feedback(self) -> None:
+        """--retry with a prompt treats it as feedback: original prompt kept, new content written."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             node_file = narrative.find_cursor().md_path()
@@ -287,11 +287,13 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                     )
                 )
 
-            _run_inline(root, narrative, retry=True, prompt="new direction", generate_mock=_updated)
+            _run_inline(root, narrative, retry=True, prompt="that part was wrong", generate_mock=_updated)
 
             text = node_file.read_text()
             self.assertIn("Updated content", text)
-            self.assertIn("new direction", text)
+            # Original prompt stays in the annotation; feedback is NOT stored.
+            self.assertIn("original direction", text)
+            self.assertNotIn("that part was wrong", text)
             self.assertNotIn("Generated content", text)
             self.assertIn("[/write]: #", text)
             self.assertEqual(text.count("[/write]: #"), 1)

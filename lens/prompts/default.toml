@@ -155,6 +155,8 @@ Output:
 2. ``kb`` fenced blocks for any front updates (non-empty body replaces content; front-matter-only on an existing id adjusts tags only)
 3. ```advance block with summary field (and days_elapsed only if interrupted)'''
 
+shared.retry_feedback_template = 'Feedback: {feedback}\n\nRewrite from scratch. Output only the replacement.'
+
 session.summary_system = '''You are a skilled editor. Write a concise summary of the provided text, preserving the author's voice and style.'''
 session.summary_instruction_template = '''Write a brief summary of the provided text that:
 - contains the key information, without adding or deriving anything else

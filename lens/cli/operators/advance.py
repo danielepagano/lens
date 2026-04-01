@@ -19,6 +19,10 @@ async def _print_token(chunk: str) -> None:
 
 @app.callback()
 def advance(
+    feedback: str | None = typer.Argument(
+        None,
+        help="Feedback for --retry (ignored otherwise)",
+    ),
     days: int = typer.Option(
         1,
         "--days",
@@ -88,6 +92,7 @@ def advance(
                 unpins=list(unpin),
                 llm_id=llm,
                 retry=retry,
+                feedback=feedback,
                 end=end,
                 on_token=_print_token,
             )

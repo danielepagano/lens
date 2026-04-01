@@ -39,7 +39,7 @@ from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import assemble_prompt, crawl
 from lens.core.llm import LLMError, build_command_tools_bundle, generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
-from lens.core.operator import OperatorError
+from lens.core.operator import OperatorError, extract_annotation_content, build_feedback_messages
 from lens.core.operators.session import SessionOperator
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
@@ -90,12 +90,14 @@ class DesignOperator(SessionOperator):
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
+        feedback_messages: list[dict[str, str]] | None = None,
     ) -> None:
         """Crawl *design_child*, generate with command tools, write to child.
 
         If *existing_ann* is None, writes a fresh inline block (open + content
         + close).  If *existing_ann* is provided (retry path), calls
-        ``write_append`` instead.
+        ``write_append`` instead.  *feedback_messages* are appended after the
+        assembled prompt to provide a prior-answer / feedback turn pair.
         """
         ann_pins = op.extract_list(ann_params, "kb_pin")
         ann_unpins = op.extract_list(ann_params, "kb_unpin")
@@ -106,6 +108,8 @@ class DesignOperator(SessionOperator):
             system_prompt=op.system_prompt,
             instruction=instruction,
         )
+        if feedback_messages:
+            messages.extend(feedback_messages)
 
         bundle = build_command_tools_bundle(session.project_root)
 
@@ -246,13 +250,17 @@ class DesignOperator(SessionOperator):
             storage = session.new_storage(owner=ann_owner)
             op = cls(storage, narrative)
 
+            # When a prompt is provided on --retry, treat it as feedback:
+            # capture the previous output and add a prior-answer/feedback turn.
+            feedback = prompt
+            previous_content: str | None = None
+            if feedback:
+                previous_content = extract_annotation_content(
+                    node.md_path(), existing_ann
+                )
+
             new_params: dict[str, Any] = dict(existing_ann.params)
-            if prompt:
-                new_params["prompt"] = prompt
-                mention_ids = cls.mention_pins(prompt, session.project_root)
-                if mention_ids:
-                    existing_pins = cls.extract_list(new_params, "kb_pin")
-                    new_params["kb_pin"] = existing_pins + mention_ids
+            # Do NOT replace the stored prompt — feedback is a message turn.
 
             # Update front matter before discard so context reflects new module.
             if module_id or pins or unpins:
@@ -266,6 +274,10 @@ class DesignOperator(SessionOperator):
             if fresh_ann is None:
                 raise OperatorError("lost annotation after discard")
 
+            feedback_messages: list[dict[str, str]] | None = None
+            if feedback and previous_content:
+                feedback_messages = build_feedback_messages(previous_content, feedback, session.project_root)
+
             await cls._run_generation(
                 op=op,
                 storage=storage,
@@ -276,6 +288,7 @@ class DesignOperator(SessionOperator):
                 llm_id=llm_id,
                 on_token=on_token,
                 cancel_event=cancel_event,
+                feedback_messages=feedback_messages,
             )
         else:
             # Auto-stage any pending transaction before a fresh inline block.
