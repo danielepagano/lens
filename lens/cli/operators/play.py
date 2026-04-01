@@ -15,6 +15,11 @@ from lens.core.project import ProjectSession
 app = typer.Typer(invoke_without_command=True, add_completion=False)
 
 
+def _pins_with_encounter_expand(pins: list[str]) -> list[str]:
+    """Ensure ``encounter.*`` pins use one-hop link expansion (``+``) in play."""
+    return [p + "+" if p.startswith("encounter.") and not p.endswith("+") else p for p in pins]
+
+
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
@@ -127,13 +132,14 @@ def play(
         raise typer.Exit(1)
 
     try:
+        pins = _pins_with_encounter_expand(list(pin))
         asyncio.run(
             PlayOperator.run_session(
                 session=session,
                 narrative=narrative,
                 prompt=prompt,
                 module_id=module_id,
-                pins=list(pin),
+                pins=pins,
                 unpins=list(unpin),
                 llm_id=llm,
                 retry=retry,

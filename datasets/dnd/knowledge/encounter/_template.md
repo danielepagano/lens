@@ -19,7 +19,7 @@ Add encounter-specific notes only: checks, puzzle solution secrets, priorities, 
 
 ## Prep and reference
 
-Include this section for combat encounters only. **`stat.*` only — use `KB['stat.…']` only in this section.** List every stat block in play with counts. Use the same **`KB['stat.key']`** header form as pinned knowledge in context. Do not paste or paraphrase stat rules here.
+Include this section for combat encounters only. **`stat.*` only — use `KB['stat.…']` only in this section.** List every stat block in play with counts. Use the same **`KB['stat.key']`** header form as pinned knowledge in context. Do not paste or paraphrase stat rules here. Every **`stat.*`** listed here should also be present as a tag on the encounter object so `encounter.*+` expands to the real combatants at play time.
 
 Example:
 
@@ -33,4 +33,4 @@ Subheadings (**Enemies** / **Allies**) optional. Repeat a **`KB['stat.*']`** on 
 Do **not** add **`KB['pc.…']`**, **`KB['npc.…']`**, **`KB['faction.…']`**, etc. Refer to those by name or dot-ids in Situation and Running.
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag with location, front, npc as appropriate. Combat: difficulty:low/moderate/high. -->
+<!-- TAG POLICY: tag with location, front, npc, faction as appropriate. Combat: difficulty:low/moderate/high, plus every `stat.*` used in Prep. If the scene depends on a special procedures object, tag the relevant `rules.*` too. -->

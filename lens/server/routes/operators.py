@@ -121,6 +121,11 @@ def _validate_pins(session: ProjectSession, pins: list[str], unpins: list[str]) 
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+def _play_pins_with_encounter_expand(pins: list[str]) -> list[str]:
+    """Ensure ``encounter.*`` pins use one-hop link expansion (``+``) in play."""
+    return [p + "+" if p.startswith("encounter.") and not p.endswith("+") else p for p in pins]
+
+
 def _resolve_node(node_address: str | Callable[[], str]) -> str:
     return node_address() if callable(node_address) else node_address
 
@@ -284,6 +289,7 @@ async def operator_play(
     else:
         module_key = None
         _validate_pins(session, pins, unpins)
+    pins = _play_pins_with_encounter_expand(pins)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
