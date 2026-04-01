@@ -98,7 +98,9 @@ class DesignOperator(SessionOperator):
         + close).  If *existing_ann* is provided (retry path), calls
         ``write_append`` instead.
         """
-        crawl_result = crawl(design_child)
+        ann_pins = op.extract_list(ann_params, "kb_pin")
+        ann_unpins = op.extract_list(ann_params, "kb_unpin")
+        crawl_result = crawl(design_child, extra_pins=ann_pins, extra_unpins=ann_unpins)
         instruction = op.build_instruction(ann_params)
         messages = assemble_prompt(
             crawl_result,
@@ -201,6 +203,9 @@ class DesignOperator(SessionOperator):
         ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
+            mention_ids = cls.mention_pins(prompt, session.project_root)
+            if mention_ids:
+                ann_params["kb_pin"] = mention_ids
 
         # Create a new storage whose owner is keyed to the inline annotation.
         child_rel_path = str(node.md_path().relative_to(session.git_root))
@@ -263,6 +268,10 @@ class DesignOperator(SessionOperator):
             new_params: dict[str, Any] = dict(existing_ann.params)
             if prompt:
                 new_params["prompt"] = prompt
+                mention_ids = cls.mention_pins(prompt, session.project_root)
+                if mention_ids:
+                    existing_pins = cls.extract_list(new_params, "kb_pin")
+                    new_params["kb_pin"] = existing_pins + mention_ids
 
             # Update front matter before discard so context reflects new module.
             if module_id or pins or unpins:
@@ -304,6 +313,9 @@ class DesignOperator(SessionOperator):
             ann_params: dict[str, Any] = {}
             if prompt:
                 ann_params["prompt"] = prompt
+                mention_ids = cls.mention_pins(prompt, session.project_root)
+                if mention_ids:
+                    ann_params["kb_pin"] = mention_ids
 
             child_rel_path = str(node.md_path().relative_to(session.git_root))
             ann_line = cls.ann_line_for_append(node.md_path().read_text(encoding="utf-8"))

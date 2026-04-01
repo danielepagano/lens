@@ -12,6 +12,7 @@ from typing import Any
 from unittest.mock import patch
 
 from lens.core.annotations import parse_front_matter
+from lens.core.annotations import parse_annotations
 from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
@@ -595,7 +596,7 @@ class TestDesignEnd(unittest.TestCase):
 
 class TestDesignMentionExpansion(unittest.TestCase):
     def test_mention_in_fresh_prompt_pins_kb_object(self) -> None:
-        """@type.key mentions in the design prompt must be pinned in the sub-node."""
+        """@type.key mentions in prompts must be stored on the operator annotation (not node front matter)."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             (root / "knowledge" / "npc").mkdir(parents=True, exist_ok=True)
@@ -604,11 +605,15 @@ class TestDesignMentionExpansion(unittest.TestCase):
             _run_design(root, narrative, prompt="Design @npc.smith as a quest giver")
 
             cursor = narrative.find_cursor()
-            fm = parse_front_matter(cursor.md_path().read_text(encoding="utf-8"))
-            self.assertIn("npc.smith", fm.get("kb_pin", []))
+            text = cursor.md_path().read_text(encoding="utf-8")
+            fm = parse_front_matter(text)
+            self.assertNotIn("npc.smith", fm.get("kb_pin", []))
+            anns = [a for a in parse_annotations(text) if a.operator == "design" and not a.closing]
+            self.assertTrue(anns)
+            self.assertIn("npc.smith", anns[-1].params.get("kb_pin", []))
 
     def test_mention_in_continuation_prompt_pins_kb_object(self) -> None:
-        """@type.key mentions must be pinned when continuing an existing session."""
+        """@type.key mentions in continuation prompts must be stored on the operator annotation (not node front matter)."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             (root / "knowledge" / "npc").mkdir(parents=True, exist_ok=True)
@@ -621,8 +626,12 @@ class TestDesignMentionExpansion(unittest.TestCase):
             _run_design(root, narrative, prompt="Continue with @npc.smith")
 
             cursor = narrative.find_cursor()
-            fm = parse_front_matter(cursor.md_path().read_text(encoding="utf-8"))
-            self.assertIn("npc.smith", fm.get("kb_pin", []))
+            text = cursor.md_path().read_text(encoding="utf-8")
+            fm = parse_front_matter(text)
+            self.assertNotIn("npc.smith", fm.get("kb_pin", []))
+            anns = [a for a in parse_annotations(text) if a.operator == "design" and not a.closing]
+            self.assertTrue(anns)
+            self.assertIn("npc.smith", anns[-1].params.get("kb_pin", []))
 
     def test_nonexistent_mention_not_pinned(self) -> None:
         """@ mentions for KB objects that don't exist must not be pinned."""

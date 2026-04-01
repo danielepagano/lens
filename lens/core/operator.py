@@ -861,7 +861,15 @@ class Operator(ABC):
         ann_line = cls.ann_line_for_append(current_text)
         owner = cls.owner_id(None, rel_path, line=ann_line)
 
-        crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
+        mention_ids = cls.mention_pins(prompt, session.project_root)
+        if mention_ids:
+            existing_pins = cls.extract_list(ann_params, "kb_pin")
+            ann_params["kb_pin"] = existing_pins + mention_ids
+        crawl_result = crawl(
+            cursor,
+            extra_pins=pins + mention_ids,
+            extra_unpins=unpins,
+        )
         cls.check_requirements(crawl_result)
         cls.enrich_params(crawl_result, ann_params)
 
@@ -1003,7 +1011,18 @@ class Operator(ABC):
         op = cls(session.new_storage(owner=owner), narrative)
         op.write_discard(cursor, existing_ann, updated_params=new_params if params_changed else None)
 
-        crawl_result = crawl(cursor, extra_pins=eff_pins, extra_unpins=eff_unpins)
+        mention_ids = cls.mention_pins(
+            new_params.get("prompt") if isinstance(new_params.get("prompt"), str) else None,
+            session.project_root,
+        )
+        if mention_ids:
+            existing_pins = cls.extract_list(new_params, "kb_pin")
+            new_params["kb_pin"] = existing_pins + mention_ids
+        crawl_result = crawl(
+            cursor,
+            extra_pins=eff_pins + mention_ids,
+            extra_unpins=eff_unpins,
+        )
         cls.enrich_params(crawl_result, new_params)
         fresh_ann = op.find_open_annotation(cursor)
         if fresh_ann is None:

@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+from lens.core.annotations import parse_annotations, parse_front_matter
 from lens.core.context import CrawlResult
+from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
@@ -299,6 +301,69 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                         retry=True,
                     )
                 )
+
+    def test_at_mention_is_persisted_on_write_annotation_and_in_crawl(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            kb_dir = root / "knowledge" / "person"
+            kb_dir.mkdir(parents=True, exist_ok=True)
+            (kb_dir / "amy.md").write_text("Amy the merchant.\n", encoding="utf-8")
+
+            async def _assert_prompt_contains_kb(
+                messages: list[dict[str, str]], *_args: Any, **_kwargs: Any
+            ) -> Any:
+                user_content = messages[1]["content"]
+                self.assertIn("RELEVANT KNOWLEDGE", user_content)
+                self.assertIn("Amy the merchant.", user_content)
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Generated content",
+                        tool_calls=[],
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            _run_inline(root, narrative, prompt="Write a scene with @person.amy", generate_mock=_assert_prompt_contains_kb)
+
+            text = narrative.find_cursor().md_path().read_text(encoding="utf-8")
+            fm = parse_front_matter(text)
+            self.assertNotIn("person.amy", fm.get("kb_pin", []))
+            anns = [a for a in parse_annotations(text) if a.operator == "write" and not a.closing]
+            self.assertTrue(anns)
+            self.assertIn("person.amy", anns[-1].params.get("kb_pin", []))
+
+    def test_at_mention_added_on_retry_prompt_updates_annotation_pins(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            kb_dir = root / "knowledge" / "person"
+            kb_dir.mkdir(parents=True, exist_ok=True)
+            (kb_dir / "amy.md").write_text("Amy the merchant.\n", encoding="utf-8")
+
+            _run_inline(root, narrative, prompt="Original direction")
+
+            async def _retry_stream(
+                messages: list[dict[str, str]], *_args: Any, **_kwargs: Any
+            ) -> Any:
+                # Mention appears only on retry prompt; it must be pinned and present in crawl.
+                self.assertIn("Amy the merchant.", messages[1]["content"])
+                yield StreamEvent(
+                    final=FinalPayload(
+                        text="Retried content",
+                        tool_calls=[],
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            _run_inline(root, narrative, retry=True, prompt="Now include @person.amy", generate_mock=_retry_stream)
+
+            text = narrative.find_cursor().md_path().read_text(encoding="utf-8")
+            anns = [a for a in parse_annotations(text) if a.operator == "write" and not a.closing]
+            self.assertTrue(anns)
+            self.assertIn("person.amy", anns[-1].params.get("kb_pin", []))
 
 
 class TestWriteManual(unittest.TestCase):
