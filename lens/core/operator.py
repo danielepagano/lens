@@ -989,7 +989,7 @@ class Operator(ABC):
             raise OperatorError(f"LLM error: {e}") from e
 
         if not content.strip():
-            return
+            raise OperatorError("no content generated")
 
         op.write_append(cursor, existing_ann, content)
         print(f"Continued writing in {cursor.path_str()}", file=sys.stderr)

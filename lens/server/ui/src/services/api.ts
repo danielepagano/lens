@@ -154,7 +154,29 @@ export interface OperatorErrorEvent {
   message: string
 }
 
-export type OperatorEvent = OperatorTargetEvent | OperatorTokenEvent | OperatorDoneEvent | OperatorErrorEvent
+/** LLM / operator lifecycle (before first streamed token). */
+export interface OperatorProgressEvent {
+  type: 'progress'
+  phase: string
+  message?: string
+  operator?: string
+  model?: string
+  host?: string
+  llm_id?: string
+  message_count?: number
+  round?: number
+  iteration?: number
+  http_status?: number
+  elapsed_ms?: number
+  interrupted?: boolean
+}
+
+export type OperatorEvent =
+  | OperatorTargetEvent
+  | OperatorTokenEvent
+  | OperatorDoneEvent
+  | OperatorErrorEvent
+  | OperatorProgressEvent
 
 export class StreamBusyError extends Error {
   constructor(

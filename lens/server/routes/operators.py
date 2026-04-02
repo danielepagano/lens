@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -14,11 +15,13 @@ from lens.core.commands.rollback import execute_rollback
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
+from lens.core.llm import llm_progress_scope
 from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
 from lens.server.streaming import StreamLock, operator_stream_response
 
 router = APIRouter()
+_log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +135,19 @@ def _resolve_node(node_address: str | Callable[[], str]) -> str:
     return node_address() if callable(node_address) else node_address
 
 
+def _make_on_llm_progress(
+    event_queue: asyncio.Queue[dict[str, Any] | None],
+) -> Any:
+    async def on_llm_progress(phase: str, detail: dict[str, Any]) -> None:
+        payload: dict[str, Any] = {"type": "progress", "phase": phase}
+        for key, val in detail.items():
+            if isinstance(val, (str, int, float, bool)) or val is None:
+                payload[key] = val
+        await event_queue.put(payload)
+
+    return on_llm_progress
+
+
 async def _run_operator_task(
     coro_fn: Any,
     event_queue: asyncio.Queue[dict[str, Any] | None],
@@ -142,48 +158,55 @@ async def _run_operator_task(
     extra_done_fields: dict[str, Any] | None = None,
 ) -> None:
     """Wrapper that runs an operator coroutine and pushes events to the queue."""
+    progress = _make_on_llm_progress(event_queue)
     try:
-        result = await coro_fn()
-        done_payload: dict[str, Any] = {
-            "type": "done",
-            "operator": operator_name,
-            "node": _resolve_node(node_address),
-            "interrupted": False,
-        }
-        if extra_done_fields:
-            done_payload.update(extra_done_fields)
-        if result is not None:
-            # Design returns KbExtractResult
-            if hasattr(result, "inserted"):
-                done_payload["inserted"] = result.inserted
-                done_payload["updated"] = result.updated
-                done_payload["errors"] = result.errors
-            # Section end returns key string
-            elif isinstance(result, str):
-                done_payload["section_key"] = result
-        await event_queue.put(done_payload)
-    except OperatorError as e:
-        execute_rollback(session)
-        await event_queue.put({"type": "error", "message": str(e)})
-    except LensException as e:
-        execute_rollback(session)
-        await event_queue.put({"type": "error", "message": str(e)})
-    except asyncio.CancelledError:
-        await event_queue.put({
-            "type": "done",
-            "operator": operator_name,
-            "node": _resolve_node(node_address),
-            "interrupted": True,
-        })
-    except KeyboardInterrupt:
-        await event_queue.put({
-            "type": "done",
-            "operator": operator_name,
-            "node": _resolve_node(node_address),
-            "interrupted": True,
-        })
-    except Exception as e:
-        await event_queue.put({"type": "error", "message": str(e)})
+        async with llm_progress_scope(progress):
+            try:
+                result = await coro_fn()
+                done_payload: dict[str, Any] = {
+                    "type": "done",
+                    "operator": operator_name,
+                    "node": _resolve_node(node_address),
+                    "interrupted": False,
+                }
+                if extra_done_fields:
+                    done_payload.update(extra_done_fields)
+                if result is not None:
+                    # Design returns KbExtractResult
+                    if hasattr(result, "inserted"):
+                        done_payload["inserted"] = result.inserted
+                        done_payload["updated"] = result.updated
+                        done_payload["errors"] = result.errors
+                    # Section end returns key string
+                    elif isinstance(result, str):
+                        done_payload["section_key"] = result
+                await event_queue.put(done_payload)
+            except OperatorError as e:
+                execute_rollback(session)
+                _log.warning("operator %s failed: %s", operator_name, e)
+                await event_queue.put({"type": "error", "message": str(e)})
+            except LensException as e:
+                execute_rollback(session)
+                _log.warning("operator %s lens error: %s", operator_name, e)
+                await event_queue.put({"type": "error", "message": str(e)})
+            except asyncio.CancelledError:
+                _log.info("operator %s task cancelled", operator_name)
+                await event_queue.put({
+                    "type": "done",
+                    "operator": operator_name,
+                    "node": _resolve_node(node_address),
+                    "interrupted": True,
+                })
+            except KeyboardInterrupt:
+                await event_queue.put({
+                    "type": "done",
+                    "operator": operator_name,
+                    "node": _resolve_node(node_address),
+                    "interrupted": True,
+                })
+            except Exception as e:
+                _log.exception("operator %s unexpected error", operator_name)
+                await event_queue.put({"type": "error", "message": str(e)})
     finally:
         await event_queue.put(None)  # sentinel
         session.kb.evict_tag_cache()
@@ -208,6 +231,12 @@ def _start_operator_stream(
     """Acquire the stream lock, launch operator task, return SSE response."""
     lock.acquire(operator_name)
     event_queue.put_nowait({"type": "target", "node": _resolve_node(node_address)})
+    event_queue.put_nowait({
+        "type": "progress",
+        "phase": "operator_started",
+        "operator": operator_name,
+        "message": f"Starting {operator_name}…",
+    })
 
     task = asyncio.ensure_future(
         _run_operator_task(

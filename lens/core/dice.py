@@ -1,11 +1,11 @@
 """Dice roll substitution for prompts.
 
 Replaces ``@roll <expr>`` and ``@roll(<expr>)`` tokens in a prompt string
-with ``(rolled <result>)`` before the prompt is sent to the LLM.  The dice
+with ``[rolled <expr>=<result>]`` before the prompt is sent to the LLM.  The dice
 library (https://github.com/borntyping/python-dice) evaluates the expression.
 
 This is a user-side convenience feature — the LLM never sees the @roll
-syntax, only the resolved result.
+syntax, only ``[rolled <expr>=<result>]``.
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ def substitute_rolls(prompt: str) -> str:
         expr = (m.group(1) or m.group(2)).strip()
         try:
             result = _roll_to_text(expr)
-            return f"(rolled {result})"
+            return f"[rolled {expr}={result}]"
         except Exception as e:
             errors.append(f"@roll {expr!r}: {e}")
             return m.group(0)  # leave unchanged so we can report later

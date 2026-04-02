@@ -5,6 +5,8 @@
 
   $: isOpen = $streamingPreview !== null
   $: isWaiting = $streamingPreview !== null && $streamingPreview.text === ''
+  $: waitLabel =
+    $streamingPreview?.statusLine ?? (isWaiting ? 'Waiting…' : 'Streaming…')
 
   async function handleCancel() {
     try {
@@ -33,7 +35,7 @@
 
 {#if isOpen}
   <div class="streaming-panel" data-testid="streaming-panel">
-    <span class="streaming-label">{isWaiting ? 'Waiting...' : 'Streaming...'}</span>
+    <span class="streaming-label">{waitLabel}</span>
     <button
       type="button"
       class="streaming-cancel-btn"

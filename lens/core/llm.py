@@ -8,21 +8,64 @@ Configuration is read from the project's ``lens.toml``. Add one or more
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import json
 import logging
 import os
 import signal
+import time
 import tomllib
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
+from urllib.parse import urlparse
 
 import httpx
 
 from lens.core.annotations import encode_ai_secrets
 
 logger = logging.getLogger(__name__)
+
+# Optional UI progress hook (e.g. SSE) — set by ``llm_progress_scope`` from the server.
+LLMProgressHandler = Callable[[str, dict[str, Any]], Awaitable[None]]
+_llm_progress_cb: contextvars.ContextVar[LLMProgressHandler | None] = contextvars.ContextVar(
+    "lens_llm_progress_cb",
+    default=None,
+)
+
+
+def _llm_api_host(base_url: str) -> str:
+    try:
+        netloc = urlparse(base_url).netloc
+        return netloc if netloc else base_url
+    except Exception:
+        return base_url
+
+
+async def _emit_llm_progress(phase: str, detail: dict[str, Any]) -> None:
+    cb = _llm_progress_cb.get()
+    if cb is None:
+        return
+    try:
+        await cb(phase, detail)
+    except Exception:
+        logger.exception("LLM progress handler failed (phase=%s)", phase)
+
+
+@asynccontextmanager
+async def llm_progress_scope(handler: LLMProgressHandler | None):
+    """Bind an async progress callback for nested ``generate_stream`` / ``generate_text`` calls."""
+    if handler is None:
+        yield
+        return
+    token = _llm_progress_cb.set(handler)
+    try:
+        yield
+    finally:
+        _llm_progress_cb.reset(token)
+
 
 # Maximum number of consecutive command-tool round-trips per response.
 _MAX_COMMAND_TOOL_ITERATIONS = 20
@@ -205,7 +248,8 @@ async def generate_text(
             on_preview=on_preview,
         )
         if final is None:
-            return ""
+            logger.error("generate_text: stream ended without a final payload")
+            raise LLMError("LLM stream ended without a completion event")
         if final.interrupted:
             if interrupt_policy == "raise":
                 raise KeyboardInterrupt
@@ -286,6 +330,7 @@ async def _stream_once(
     tools: list[dict[str, Any]] | None,
     cancel_event: asyncio.Event,
     enable_thinking: bool = False,
+    round_index: int = 0,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Execute one HTTP streaming request.
 
@@ -335,14 +380,57 @@ async def _stream_once(
 
     tool_calls_by_index: dict[int, dict[str, Any]] = {}
 
+    host = _llm_api_host(cfg.base_url)
+    model_label = cfg.model or "(unspecified)"
+    read_timeout = float(cfg.timeout_seconds)
+    timeout = httpx.Timeout(connect=30.0, read=read_timeout, write=120.0, pool=30.0)
+    t0 = time.monotonic()
+    logger.info(
+        "LLM HTTP POST starting round=%s host=%s model=%s read_timeout_s=%s",
+        round_index,
+        host,
+        model_label,
+        read_timeout,
+    )
+    await _emit_llm_progress(
+        "http_request",
+        {
+            "message": "Sending request to LLM API…",
+            "round": round_index,
+            "host": host,
+            "model": model_label,
+        },
+    )
+
     try:
-        async with httpx.AsyncClient(timeout=cfg.timeout_seconds) as client:
+        async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream("POST", url, json=payload, headers=headers) as response:
                 if response.status_code != 200:
                     body = await response.aread()
+                    logger.error(
+                        "LLM HTTP error status=%s host=%s round=%s body_prefix=%s",
+                        response.status_code,
+                        host,
+                        round_index,
+                        body[:500].decode(errors="replace"),
+                    )
                     raise LLMError(
                         f"LLM API returned HTTP {response.status_code}: {body.decode()}"
                     )
+
+                logger.info(
+                    "LLM HTTP connected status=200 round=%s (%.2fs to headers)",
+                    round_index,
+                    time.monotonic() - t0,
+                )
+                await _emit_llm_progress(
+                    "http_stream_open",
+                    {
+                        "message": "Connected — receiving stream…",
+                        "round": round_index,
+                        "http_status": 200,
+                    },
+                )
 
                 async for line in response.aiter_lines():
                     if cancel_event.is_set():
@@ -415,11 +503,41 @@ async def _stream_once(
                             acc["arguments_fragments"].append(fn["arguments"])
 
     except httpx.TimeoutException as exc:
+        logger.error(
+            "LLM HTTP timeout round=%s host=%s after %.2fs",
+            round_index,
+            host,
+            time.monotonic() - t0,
+        )
         raise LLMError(
             f"LLM request timed out after {cfg.timeout_seconds}s"
         ) from exc
     except httpx.RequestError as exc:
+        logger.error(
+            "LLM HTTP request error round=%s host=%s: %s",
+            round_index,
+            host,
+            exc,
+        )
         raise LLMError(f"LLM request failed: {exc}") from exc
+
+    elapsed = time.monotonic() - t0
+    logger.info(
+        "LLM HTTP stream finished round=%s host=%s elapsed_s=%.2f interrupted=%s",
+        round_index,
+        host,
+        elapsed,
+        interrupted,
+    )
+    await _emit_llm_progress(
+        "http_stream_closed",
+        {
+            "message": "Stream finished",
+            "round": round_index,
+            "elapsed_ms": int(elapsed * 1000),
+            "interrupted": interrupted,
+        },
+    )
 
     full_text = "".join(chunks)
     encoded_text = encode_ai_secrets(full_text)
@@ -506,6 +624,27 @@ async def generate_stream(
 
     cfg, verbose = _load_config(project_root, llm_id)
 
+    host = _llm_api_host(cfg.base_url)
+    model_label = cfg.model or "(unspecified)"
+    logger.info(
+        "LLM generate_stream start llm_id=%s model=%s host=%s message_count=%d tools=%s",
+        llm_id,
+        model_label,
+        host,
+        len(messages),
+        "yes" if tools else "no",
+    )
+    await _emit_llm_progress(
+        "llm_configured",
+        {
+            "message": f"Ready — {model_label} @ {host}",
+            "model": model_label,
+            "host": host,
+            "llm_id": llm_id or "",
+            "message_count": len(messages),
+        },
+    )
+
     if verbose:
         logger.info("LLM PROMPT\n%s", _format_messages(messages))
 
@@ -519,6 +658,10 @@ async def generate_stream(
         for iteration in range(_MAX_COMMAND_TOOL_ITERATIONS + 1):
             final: FinalPayload | None = None
 
+            await _emit_llm_progress(
+                "llm_round",
+                {"message": f"LLM round {iteration + 1}…", "iteration": iteration},
+            )
             async for event in _stream_once(
                 working_messages,
                 cfg,
@@ -527,6 +670,7 @@ async def generate_stream(
                 tools=tools,
                 cancel_event=_cancel,
                 enable_thinking=enable_thinking,
+                round_index=iteration,
             ):
                 if event.preview:
                     yield event
@@ -536,8 +680,13 @@ async def generate_stream(
                         last_usage = event.final.usage
 
             if final is None:
-                # Should not happen; guard against empty responses
-                break
+                logger.error(
+                    "generate_stream: no final event from _stream_once (iteration=%s)",
+                    iteration,
+                )
+                raise LLMError(
+                    "LLM stream ended without a completion event (internal error)"
+                )
 
             if final.interrupted:
                 yield StreamEvent(

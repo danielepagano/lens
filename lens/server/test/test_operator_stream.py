@@ -104,6 +104,10 @@ class TestPlayOperatorStream:
                 {"prompt": "I enter", "pass": True, "pins": [], "unpins": []},
             )
             assert any(e.get("type") == "done" for e in ev1)
+            assert any(
+                e.get("type") == "progress" and e.get("phase") == "operator_started"
+                for e in ev1
+            )
 
         with patch("lens.core.operator.generate_text", _gm):
             ev2 = _drain_sse_events(

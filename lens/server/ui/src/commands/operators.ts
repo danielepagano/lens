@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent, type Stats } from '../services/api'
+import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
 import { cliOutput, treeRefreshTrigger, inlineEditMode, inlineEditResult, type InlineEditState } from '../stores/ui'
 import { streamingPreview, currentAddress, nodeContent } from '../stores/document'
 import type {
@@ -23,6 +23,26 @@ function scrollPreviewIntoView(): void {
   const preview = document.querySelector('[data-testid="streaming-preview"]')
   if (preview) {
     preview.scrollIntoView({ block: 'end', behavior: 'instant' })
+  }
+}
+
+function progressLabel(event: OperatorProgressEvent): string {
+  if (event.message) return event.message
+  switch (event.phase) {
+    case 'operator_started':
+      return event.operator ? `Starting ${event.operator}…` : 'Starting…'
+    case 'llm_configured':
+      return 'Preparing LLM…'
+    case 'llm_round':
+      return 'Calling model…'
+    case 'http_request':
+      return 'Connecting to API…'
+    case 'http_stream_open':
+      return 'Receiving response…'
+    case 'http_stream_closed':
+      return 'Finishing…'
+    default:
+      return 'Working…'
   }
 }
 
@@ -261,10 +281,16 @@ const handler: CommandHandler = async (
       }))
     } else if (event.type === 'token') {
       streamingPreview.update((prev) => {
-        if (prev) return { ...prev, text: prev.text + event.text }
+        if (prev) return { ...prev, text: prev.text + event.text, statusLine: undefined }
         return { targetNode: '', text: event.text }
       })
       requestAnimationFrame(scrollPreviewIntoView)
+    } else if (event.type === 'progress') {
+      const label = progressLabel(event)
+      streamingPreview.update((prev) => {
+        if (prev) return { ...prev, statusLine: label }
+        return { targetNode: '', text: '', statusLine: label }
+      })
     }
   }
 

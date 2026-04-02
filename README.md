@@ -139,7 +139,7 @@ For tabletop pacing, **`/play …`** appends only the player line; use **`/play 
 
 What the AI receives (rolls already resolved):
 ```
-I try to sneak past the guard — (rolled 17) stealth check
+I try to sneak past the guard — [rolled d20+2=17] stealth check
 ```
 
 ### Error handling
