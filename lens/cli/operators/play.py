@@ -77,6 +77,12 @@ def play(
         "--pass",
         help="Have the GM respond now (call the LLM)",
     ),
+    slug: str | None = typer.Option(
+        None,
+        "--slug",
+        "-s",
+        help="Sub-node id to use when starting a new session (default: auto-generated from prompt)",
+    ),
 ) -> None:
     """Narrate a player-agency moment in GM voice, then pause for player response.
 
@@ -144,6 +150,7 @@ def play(
                 llm_id=llm,
                 retry=retry,
                 end=end,
+                slug=slug if not end and not retry else None,
                 on_token=_print_token,
                 on_stream_target=None,
                 cancel_event=None,

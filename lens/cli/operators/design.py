@@ -48,6 +48,12 @@ def design(
         "--end",
         help="Close the current design session and extract KB entries",
     ),
+    slug: str | None = typer.Option(
+        None,
+        "--slug",
+        "-s",
+        help="Sub-node id to use when starting a new session (default: auto-generated from prompt)",
+    ),
 ) -> None:
     """Collaborative KB design session: think, look up, and propose changes.
 
@@ -92,6 +98,7 @@ def design(
                 llm_id=llm,
                 retry=retry,
                 end=end,
+                slug=slug if not end and not retry else None,
                 on_token=_print_token,
             )
         )

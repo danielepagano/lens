@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
+import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
 import { cliOutput, treeRefreshTrigger, inlineEditMode, inlineEditResult, type InlineEditState } from '../stores/ui'
 import { streamingPreview, currentAddress, nodeContent } from '../stores/document'
 import type {
@@ -82,6 +82,7 @@ const commands: CommandDefinition[] = [
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'retry' },
       { name: 'end' },
+      { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
     ],
   },
   {
@@ -97,6 +98,7 @@ const commands: CommandDefinition[] = [
       { name: 'retry' },
       { name: 'end' },
       { name: 'pass', hint: 'have the GM respond now' },
+      { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
     ],
   },
   {
@@ -155,6 +157,15 @@ const commands: CommandDefinition[] = [
       { name: 'unpin', valueType: 'kb-id', repeatable: true },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
     ],
+  },
+  {
+    trigger: 'rename',
+    group: 'narrative',
+    positional: [
+      { name: 'address', valueType: 'address', required: true, hint: 'node to rename (e.g. /chapter-1/design-old)' },
+      { name: 'new_slug', valueType: 'slug', required: true, hint: 'new slug' },
+    ],
+    options: [],
   },
 ]
 
@@ -328,6 +339,9 @@ const handler: CommandHandler = async (
           throw new Error(`Play module must include a key after 'rules.': ${rawPlayModule}`)
         }
       }
+      const playSlug = (!endPlay && !retry)
+        ? ((ctx.args.options['slug'] as string | undefined) || undefined)
+        : undefined
       result = await runPlay(
         {
           prompt,
@@ -339,6 +353,7 @@ const handler: CommandHandler = async (
           end: endPlay,
           as_pc,
           do_pass: passPlay,
+          slug: playSlug,
         },
         handleEvent
       )
@@ -371,8 +386,11 @@ const handler: CommandHandler = async (
           throw new Error(`Design module must include a key after 'design.': ${rawModule}`)
         }
       }
+      const designSlug = (!endDesign && !retry)
+        ? ((ctx.args.options['slug'] as string | undefined) || undefined)
+        : undefined
       result = await runDesign(
-        { prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId, retry, end: endDesign },
+        { prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId, retry, end: endDesign, slug: designSlug },
         handleEvent
       )
     } else if (command === 'section') {
@@ -388,6 +406,21 @@ const handler: CommandHandler = async (
       } else {
         throw new Error('Section requires an ID or --end')
       }
+    } else if (command === 'rename') {
+      const renameAddress = normalizeAddress(ctx.args.positional['address'] as string)
+      const newSlug = ctx.args.positional['new_slug'] as string
+      if (!renameAddress) throw new Error('rename requires an address')
+      if (!newSlug) throw new Error('rename requires a new slug')
+      streamingPreview.set(null)
+      const renameResult = await renameNode({ address: renameAddress, new_slug: newSlug })
+      if (ctx.onDone) await ctx.onDone()
+      treeRefreshTrigger.update((n) => n + 1)
+      if (renameResult.status === 'error') {
+        cliOutput.set({ output: renameResult.detail ?? 'rename failed', exitCode: 1, streaming: false })
+        return { clearInput: false }
+      }
+      cliOutput.set(null)
+      return { clearInput: true }
     } else if (command === 'collate') {
       const address = normalizeAddress(ctx.args.positional['address'] as string)
       const startLine = parseInt(ctx.args.positional['start'] as string, 10)

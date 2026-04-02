@@ -303,8 +303,8 @@ ul.tree-list li {
   vertical-align: middle;
   margin-right: 0.4rem;
   margin-bottom: 0.1rem;
-  border-radius: 9999px;
-  padding: 0.08rem 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.08rem 0.4rem;
   font-size: 1rem;
   font-variant: small-caps;
   font-family: Verdana, Geneva, Tahoma, sans-serif;
@@ -419,9 +419,9 @@ details[open]>summary {
 }
 
 .pin-pill {
-  border-radius: 9999px;
-  padding: 0.1rem 0.5rem;
-  font-size: 0.8rem;
+  border-radius: 0.5rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.75rem;
   font-family: inherit;
   margin-bottom: 0;
   background-color: var(--pico-secondary-background);
@@ -1042,11 +1042,20 @@ details[open]>summary {
   padding-top: 0.5rem;
 }
 
+.annotation-divider::before {
+  content: ">";
+  font-family: monospace;
+  font-weight: bold;
+  margin-right: 0.5rem;
+  color: #33ff77;
+}
+
 .annotation-divider a {
-  font-size: 0.8rem;
-  color: var(--pico-muted-color);
+  font-size: 1.4rem;
+  font-weight: bold;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  color: #c2c7d0;
   text-decoration: none;
-  font-weight: 500;
 }
 
 .annotation-divider a:hover {
@@ -1218,11 +1227,11 @@ details[open]>summary {
   }
 }
 
-/* 950px+: side panel, 350px at 950 → 500px at 1400 → capped */
+/* 950px+: side panel, 350px at 950 → 550px at 1400 → capped */
 @media (min-width: 950px) {
   .kb-panel {
-    /* Linear interpolation: 350 + (vw - 950) * 150/450 ≈ 350 + (vw - 950) / 3 */
-    width: clamp(350px, calc(350px + (100vw - 950px) / 3), 500px);
+    /* Linear interpolation: 350 + (vw - 950) * 200/450 */
+    width: clamp(350px, calc(350px + (100vw - 950px) * 4 / 9), 550px);
     flex-shrink: 0;
     border-left: 1px solid var(--pico-muted-border-color);
   }

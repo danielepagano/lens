@@ -1,0 +1,66 @@
+"""``lens rename`` — rename a narrative node."""
+
+from __future__ import annotations
+
+import typer
+
+from lens.core.commands.rename_node import rename_node
+from lens.core.exceptions import LensException
+from lens.core.project import ProjectSession
+
+app = typer.Typer(invoke_without_command=True, add_completion=False, no_args_is_help=True)
+
+
+@app.callback()
+def rename(
+    address: str = typer.Argument(
+        ...,
+        help="Address of the node to rename (e.g. /chapter-1/design-old)",
+    ),
+    new_slug: str = typer.Argument(
+        ...,
+        help="New slug (alphanumeric, underscores, hyphens only)",
+    ),
+) -> None:
+    """Rename a narrative node, updating its annotation tag and file/folder name."""
+    try:
+        session = ProjectSession.from_cwd()
+    except RuntimeError as e:
+        typer.echo(f"lens rename: {e}", err=True)
+        raise typer.Exit(1)
+
+    narrative = session.active_narrative
+    if narrative is None:
+        typer.echo(
+            "lens rename: no active narrative (run 'lens use <slug>' first)", err=True
+        )
+        raise typer.Exit(1)
+
+    from lens.core.address import NarrativeAddress
+    from lens.core.project import resolve_address
+
+    try:
+        addr = NarrativeAddress.parse(address)
+    except ValueError as e:
+        typer.echo(f"lens rename: invalid address: {e}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        resolved = resolve_address(addr, session.project_root)
+        node = resolved.to_node(session.project_root)
+    except (ValueError, FileNotFoundError) as e:
+        typer.echo(f"lens rename: {e}", err=True)
+        raise typer.Exit(1)
+
+    if not node.exists():
+        typer.echo(f"lens rename: node does not exist: {address}", err=True)
+        raise typer.Exit(1)
+
+    storage = session.new_storage()
+    try:
+        effective_slug = rename_node(node, new_slug, storage)
+    except (ValueError, LensException) as e:
+        typer.echo(f"lens rename: {e}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"renamed: {address} → {effective_slug}")

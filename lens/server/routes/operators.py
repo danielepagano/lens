@@ -50,6 +50,7 @@ class PlayBody(BaseModel):
     end: bool = False
     as_pc: str | None = None
     do_pass: bool = False
+    slug: str | None = None
 
 
 class DesignBody(BaseModel):
@@ -60,6 +61,7 @@ class DesignBody(BaseModel):
     llm_id: str | None = None
     retry: bool = False
     end: bool = False
+    slug: str | None = None
 
 
 class EditBody(BaseModel):
@@ -354,6 +356,7 @@ async def operator_play(
             llm_id=body.llm_id,
             retry=body.retry,
             end=body.end,
+            slug=body.slug if not body.end and not body.retry else None,
             on_token=on_token,
             on_stream_target=on_stream_target,
             cancel_event=lock.cancel_event,
@@ -449,6 +452,7 @@ async def operator_design(
             llm_id=body.llm_id,
             retry=body.retry,
             end=body.end,
+            slug=body.slug if not body.end and not body.retry else None,
             on_token=on_token,
             on_stream_target=on_stream_target,
             cancel_event=lock.cancel_event,

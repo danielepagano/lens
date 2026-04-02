@@ -254,6 +254,7 @@ export interface PlayParams {
   end?: boolean
   as_pc?: string
   do_pass?: boolean
+  slug?: string
 }
 
 export const runPlay = (
@@ -270,6 +271,7 @@ export interface DesignParams {
   llm_id?: string
   retry?: boolean
   end?: boolean
+  slug?: string
 }
 
 export const runDesign = (
@@ -534,6 +536,22 @@ export interface RewindResponse {
 
 export const narrativeRewind = withStats((params: RewindParams): Promise<RewindResponse> =>
   post('/narrative/rewind', params) as Promise<RewindResponse>
+)
+
+export interface RenameNodeParams {
+  address: string
+  new_slug: string
+}
+
+export interface RenameNodeResponse {
+  status: 'ok' | 'error'
+  address?: string
+  new_slug?: string
+  detail?: string
+}
+
+export const renameNode = withStats((params: RenameNodeParams): Promise<RenameNodeResponse> =>
+  post('/narrative/rename', params) as Promise<RenameNodeResponse>
 )
 
 export interface MountEntry {

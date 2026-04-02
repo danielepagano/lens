@@ -42,7 +42,7 @@ from lens.core.prompts import PromptStore
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import remove_pin
 from lens.core.pinning import unpin as unpin_node
-from lens.core.project import ProjectSession
+from lens.core.project import ProjectSession, validate_slug
 from lens.core.storage import Storage
 
 # ---------------------------------------------------------------------------
@@ -245,6 +245,7 @@ class SessionOperator(Operator):
         pins: list[str],
         unpins: list[str],
         on_stream_target: Callable[[str], Awaitable[None]] | None,
+        slug: str | None = None,
     ) -> tuple[NarrativeNode, Storage]:
         """Create a sub-node, pin auto_pins + module, stage setup.
 
@@ -252,7 +253,23 @@ class SessionOperator(Operator):
         storage keyed to the child.
         """
         cursor = narrative.find_cursor()
-        session_id = cls.generate_session_id(prompt, module_id, cursor)
+        if slug is not None:
+            if not validate_slug(slug):
+                raise OperatorError(
+                    f"invalid slug '{slug}' (alphanumeric, underscores, hyphens only)"
+                )
+            # Auto-prepend operator prefix (e.g. "design-", "play-") if absent,
+            # keeping session slugs consistent with auto-generated ones.
+            prefix = f"{cls.name}-"
+            if not slug.startswith(prefix):
+                slug = prefix + slug
+            if slug in set(cursor.child_keys()):
+                raise OperatorError(
+                    f"a node named '{slug}' already exists here"
+                )
+            session_id = slug
+        else:
+            session_id = cls.generate_session_id(prompt, module_id, cursor)
 
         rel_path = str(cursor.md_path().relative_to(session.git_root))
         owner = cls.owner_id(session_id, rel_path)
@@ -435,6 +452,7 @@ class SessionOperator(Operator):
         llm_id: str | None = None,
         retry: bool = False,
         end: bool = False,
+        slug: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: Any | None = None,
@@ -455,6 +473,10 @@ class SessionOperator(Operator):
         session_node, _ = cls.find_active_session(narrative)
 
         if session_node is not None:
+            if slug is not None:
+                raise OperatorError(
+                    "--slug can only be used when starting a new session"
+                )
             return await cls._run_inside(
                 session=session,
                 narrative=narrative,
@@ -478,6 +500,7 @@ class SessionOperator(Operator):
                 pins=pins,
                 unpins=unpins,
                 on_stream_target=on_stream_target,
+                slug=slug,
             )
             return await cls._run_fresh(
                 session=session,
