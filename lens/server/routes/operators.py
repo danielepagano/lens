@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from lens.core.commands.rollback import execute_rollback
 from lens.core.exceptions import LensException
@@ -49,7 +49,7 @@ class PlayBody(BaseModel):
     retry: bool = False
     end: bool = False
     as_pc: str | None = None
-    pass_: bool = Field(False, alias="pass")
+    do_pass: bool = False
 
 
 class DesignBody(BaseModel):
@@ -336,11 +336,11 @@ async def operator_play(
     on_token = _make_on_token(event_queue)
 
     extra_params: dict[str, Any] | None = None
-    if body.as_pc is not None or body.pass_:
+    if body.as_pc is not None or body.do_pass:
         extra_params = {}
         if body.as_pc is not None:
             extra_params["as_pc"] = body.as_pc
-        if body.pass_:
+        if body.do_pass:
             extra_params["pass"] = True
 
     def coro_fn() -> Any:

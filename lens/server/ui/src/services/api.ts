@@ -253,7 +253,7 @@ export interface PlayParams {
   retry?: boolean
   end?: boolean
   as_pc?: string
-  pass?: boolean
+  do_pass?: boolean
 }
 
 export const runPlay = (

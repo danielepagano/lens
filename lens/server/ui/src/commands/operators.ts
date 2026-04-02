@@ -338,7 +338,7 @@ const handler: CommandHandler = async (
           retry,
           end: endPlay,
           as_pc,
-          pass: passPlay,
+          do_pass: passPlay,
         },
         handleEvent
       )

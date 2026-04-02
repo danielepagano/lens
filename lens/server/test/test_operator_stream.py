@@ -101,7 +101,7 @@ class TestPlayOperatorStream:
             ev1 = _drain_sse_events(
                 rpg_play_client,
                 "/operator/play",
-                {"prompt": "I enter", "pass": True, "pins": [], "unpins": []},
+                {"prompt": "I enter", "do_pass": True, "pins": [], "unpins": []},
             )
             assert any(e.get("type") == "done" for e in ev1)
             assert any(
@@ -121,7 +121,7 @@ class TestPlayOperatorStream:
             ev3 = _drain_sse_events(
                 rpg_play_client,
                 "/operator/play",
-                {"prompt": None, "pass": True, "pins": [], "unpins": []},
+                {"prompt": None, "do_pass": True, "pins": [], "unpins": []},
             )
             assert any(e.get("type") == "done" for e in ev3)
 
@@ -143,7 +143,7 @@ class TestPlayOperatorStream:
             ev1 = _drain_sse_events(
                 rpg_play_client,
                 "/operator/play",
-                {"prompt": "setup", "pass": True, "pins": [], "unpins": []},
+                {"prompt": "setup", "do_pass": True, "pins": [], "unpins": []},
             )
             assert any(e.get("type") == "done" for e in ev1)
 
@@ -152,7 +152,7 @@ class TestPlayOperatorStream:
             ev2 = _drain_sse_events(
                 rpg_play_client,
                 "/operator/play",
-                {"prompt": marker, "pass": True, "pins": [], "unpins": []},
+                {"prompt": marker, "do_pass": True, "pins": [], "unpins": []},
             )
         assert any(e.get("type") == "error" for e in ev2)
         assert not any(e.get("type") == "done" for e in ev2)
