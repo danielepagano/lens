@@ -73,6 +73,8 @@ class PlayOperator(SessionOperator):
     module_prefix: ClassVar[str] = "rules."
     auto_pins: ClassVar[list[str]] = ["rules.system", "rules.rpg"]
     summarize_on_end: ClassVar[bool] = True
+    summary_system_prompt_key: ClassVar[str] = "play.summary_system"
+    summary_instruction_prompt_key: ClassVar[str] = "play.summary_instruction_template"
 
     @property
     def system_prompt(self) -> str:

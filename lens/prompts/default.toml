@@ -91,6 +91,21 @@ Treat the player's reported mechanics as the authoritative current state. Do not
 Do not repeat rule text. Never write PC decisions, thoughts, or feelings. Stop at decision points and yield to the player.
 '''
 
+play.summary_system = '''You distill finished tabletop play into narrative prose for an ongoing story. The transcript is raw — full of dice, turns, and table-talk — but your summary will be read by a writing AI as context for future scenes. It must carry forward everything that endures in the fiction while reading as polished prose, not session notes.'''
+
+play.summary_instruction_template = '''Summarize this play session for a reader who will use it as context to write what comes next.
+
+Focus on **what endures beyond this session**: relationships shifted, alliances formed or broken, secrets revealed or still hidden, promises and debts incurred, places reached or left behind, emotional stakes that will color future scenes, and threads left open.
+
+**Omit entirely** (even when the transcript is full of them): dice, rolls, modifiers, DCs, checks, saves, HP, damage, initiative, turns, action economy, spell slots, rules citations, or any blow-by-blow of how a moment was resolved mechanically. Collapse combat and skill challenges into what ended up true in the fiction — who won, what was lost, what changed — not how it was played at the table.
+
+Write in the voice of the surrounding narrative — not telegraphic notes, not a bulleted debrief, but fluid prose a future scene can lean against without a quality drop. Shorter is better, but never at the cost of sounding like a synopsis.
+
+Output only the summary — no preamble or meta-commentary.
+
+TEXT TO SUMMARIZE:
+{content}'''
+
 advance.system = '''You are the campaign timeline manager. Your job is to evaluate what happens in the world when time passes by reading and updating fronts, which may include resolving clocks and timers, and determining if anything interrupts a proposed time jump.
 
 Rerence the content of [DESIGN MODULE]: FRONT GROOMING. Follow its front grooming rules when updating or creating fronts. You are running the front design module in the context of time passing: you are in "advance mode".
@@ -157,13 +172,16 @@ Output:
 
 shared.retry_feedback_template = 'Feedback: {feedback}\n\nRewrite from scratch. Output only the replacement.'
 
-session.summary_system = '''You are a skilled editor. Write a concise summary of the provided text, preserving the author's voice and style.'''
-session.summary_instruction_template = '''Write a brief summary of the provided text that:
-- contains the key information, without adding or deriving anything else
-- preserves key actions taken and consequences or outcomes described
-- matches the voice and style of the surrounding narrative
+session.summary_system = '''You condense finished narrative passages for an ongoing story. Your summaries will be read by a writing AI as context for future scenes — they must carry forward everything that endures while reading as natural prose, not notes.'''
+session.summary_instruction_template = '''Summarize this passage for a reader who will use it as context to write what comes next.
 
-Output only the summary text — no preamble, no meta-commentary.
+Focus on **what endures beyond this passage**: relationships shifted, promises made, secrets revealed or still hidden, places reached, emotional states that will color future scenes, and threads left open.
+
+**Omit** anything whose relevance ends with the passage itself: moment-to-moment action sequences, transitional beats, scenic description that won't recur, internal deliberation that resolved into a decision (keep the decision, drop the deliberation).
+
+Write in the same voice and at the same reading level as the source text — not telegraphic notes, not a list of events, but fluid prose a future scene can lean against without a quality drop. Shorter is better, but never at the cost of sounding like a synopsis.
+
+Output only the summary — no preamble or meta-commentary.
 
 TEXT TO SUMMARIZE:
 {content}'''

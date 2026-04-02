@@ -62,15 +62,21 @@ def prompt_to_slug(prompt: str, max_words: int = 5) -> str:
 # Shared summary generation
 # ---------------------------------------------------------------------------
 
-def build_summary_messages(crawl_result: CrawlResult, content: str) -> list[dict[str, str]]:
+def build_summary_messages(
+    crawl_result: CrawlResult,
+    content: str,
+    *,
+    system_key: str = "session.summary_system",
+    instruction_key: str = "session.summary_instruction_template",
+) -> list[dict[str, str]]:
     """Build LLM messages for summarizing section/session content."""
     from lens.core.context import assemble_prompt
 
     prompts = PromptStore(crawl_result.project_root)
-    instruction = prompts.format("session.summary_instruction_template", content=content)
+    instruction = prompts.format(instruction_key, content=content)
     return assemble_prompt(
         crawl_result,
-        system_prompt=prompts.get("session.summary_system"),
+        system_prompt=prompts.get(system_key),
         instruction=instruction,
     )
 
@@ -337,6 +343,10 @@ class SessionOperator(Operator):
     """When True, ``run_session_end`` generates an LLM summary of the session
     content and includes it as a blockquote before the close tag."""
 
+    # Keys for :func:`build_summary_messages` when ``summarize_on_end`` runs.
+    summary_system_prompt_key: ClassVar[str] = "session.summary_system"
+    summary_instruction_prompt_key: ClassVar[str] = "session.summary_instruction_template"
+
     @classmethod
     async def run_session_end(
         cls,
@@ -388,7 +398,12 @@ class SessionOperator(Operator):
             child_clean = strip_markdown_comments(child_text).strip()
             if child_clean:
                 crawl_result = crawl(parent)
-                messages = build_summary_messages(crawl_result, child_clean)
+                messages = build_summary_messages(
+                    crawl_result,
+                    child_clean,
+                    system_key=cls.summary_system_prompt_key,
+                    instruction_key=cls.summary_instruction_prompt_key,
+                )
                 summary = (
                     await generate_text(
                         messages,
