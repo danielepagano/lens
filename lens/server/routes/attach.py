@@ -1,4 +1,4 @@
-"""Server routes for mount-point file browsing, proxying, and attach-at-cursor."""
+"""Server routes for mount-point file browsing, proxying, and attach-at-line."""
 
 from __future__ import annotations
 
@@ -129,6 +129,8 @@ def delete_mount_file(
 
 class AttachRequest(BaseModel):
     path: str
+    address: str | None = None
+    line: int | None = None
 
 
 @router.post("/attach")
@@ -136,9 +138,9 @@ def attach(
     body: AttachRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
-    """Attach a mount-relative media file at the narrative cursor."""
+    """Attach a mount-relative media file after a line in a narrative node."""
     try:
-        result = attach_core(session, body.path)
+        result = attach_core(session, body.path, address=body.address, line=body.line)
         return {"status": "ok", "type": result["type"], "embed": result["embed"]}
     except LensException as e:
         return {"status": "error", "detail": str(e)}

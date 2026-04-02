@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it'
+import type { LinePickRowState } from '../features/editor/cmLinePick'
 import { findFileHunks } from './diff'
 
 // Mirrors Python's ANNOTATION_RE: single-line [op(:id)?(/)?]: #
@@ -555,6 +556,62 @@ export function buildAnnotationLineSet(content: string): Set<number> {
     }
   }
   return result
+}
+
+/**
+ * 1-based line numbers that cannot be used as “insert after this line” for media attach.
+ * Matches Python `validate_attach_insertion_point`: front matter (all lines including `]: #`),
+ * and strict interiors of multiline annotation tags (excluding the closing `]: #` line).
+ */
+export function collectAttachForbiddenLines(content: string): Set<number> {
+  const lines = content.split('\n')
+  const forbidden = new Set<number>()
+  let inBlock = false
+  let isFm = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!
+    const lineNo = i + 1
+
+    if (inBlock) {
+      if (ANNOTATION_END_RE.test(line)) {
+        if (isFm) forbidden.add(lineNo)
+        inBlock = false
+        isFm = false
+        continue
+      }
+      forbidden.add(lineNo)
+      continue
+    }
+
+    if (ANNOTATION_RE.test(line)) {
+      continue
+    }
+    if (ANNOTATION_OPEN_RE.test(line) && !ANNOTATION_END_RE.test(line)) {
+      inBlock = true
+      isFm = false
+      forbidden.add(lineNo)
+      continue
+    }
+    if (FRONT_MATTER_OPEN_RE.test(line)) {
+      inBlock = true
+      isFm = true
+      forbidden.add(lineNo)
+      continue
+    }
+  }
+
+  return forbidden
+}
+
+export function buildAttachLinePickStates(content: string): Map<number, LinePickRowState> {
+  const forbidden = collectAttachForbiddenLines(content)
+  const m = new Map<number, LinePickRowState>()
+  const n = content.split('\n').length
+  for (let L = 1; L <= n; L++) {
+    m.set(L, forbidden.has(L) ? 'annotation' : 'pickable')
+  }
+  return m
 }
 
 /**

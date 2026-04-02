@@ -566,12 +566,20 @@ export interface AttachResponse {
   detail?: string
 }
 
+export interface AttachParams {
+  address?: string
+  line?: number
+}
+
 export const browseMountDir = (path = ''): Promise<MountEntry[]> =>
   get(`/mount/browse?path=${encodeURIComponent(path)}`) as Promise<MountEntry[]>
 
-export const attachFile = withStats((path: string): Promise<AttachResponse> =>
-  post('/attach', { path }) as Promise<AttachResponse>
-)
+export const attachFile = withStats((path: string, params?: AttachParams): Promise<AttachResponse> => {
+  const body: { path: string; address?: string; line?: number } = { path }
+  if (params?.address !== undefined) body.address = params.address
+  if (params?.line !== undefined) body.line = params.line
+  return post('/attach', body) as Promise<AttachResponse>
+})
 
 async function postFormData(path: string, body: FormData): Promise<unknown> {
   const r = await fetch(path, { method: 'POST', body })

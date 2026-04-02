@@ -1,6 +1,7 @@
 import { attachFile } from '../services/api'
 import { treeRefreshTrigger, transactionResult, mediaUploadRequest, mediaRemoveRequest, mediaPreviewRequest } from '../stores/ui'
 import type { CommandContext, CommandModule } from './common'
+import { normalizeAddress } from './common'
 
 const mediaHandler = async (
   _command: string,
@@ -51,8 +52,16 @@ const mediaHandler = async (
   }
 
   if (action === 'attach') {
+    const rawAddress = ctx.args.positional['address'] as string | undefined
+    const attachAddress = normalizeAddress(rawAddress)
+    const lineRaw = ctx.args.positional['line'] as string | undefined
+    const parsedLine = lineRaw !== undefined && lineRaw !== '' ? parseInt(lineRaw, 10) : NaN
+    const attachLine = Number.isInteger(parsedLine) ? parsedLine : undefined
     try {
-      const result = await attachFile(path)
+      const result = await attachFile(path, {
+        ...(attachAddress !== undefined ? { address: attachAddress } : {}),
+        ...(attachLine !== undefined ? { line: attachLine } : {}),
+      })
       if (result.status === 'ok') {
         if (ctx.onDone) await ctx.onDone()
         treeRefreshTrigger.update((n) => n + 1)
@@ -82,7 +91,7 @@ export const mediaModule: CommandModule = {
           {
             trigger: 'media',
             group: 'narrative',
-            hint: 'attach, upload, download, or remove a media file',
+            hint: 'attach (address, line), upload, download, or remove a media file',
             positional: [
               {
                 name: 'action',
@@ -95,6 +104,18 @@ export const mediaModule: CommandModule = {
                 valueType: 'file-path',
                 required: false,
                 hint: 'mount-relative path',
+              },
+              {
+                name: 'address',
+                valueType: 'address',
+                required: false,
+                hint: 'narrative address (attach)',
+              },
+              {
+                name: 'line',
+                valueType: 'line',
+                required: false,
+                hint: 'line to insert after (attach)',
               },
             ],
           },

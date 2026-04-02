@@ -9,6 +9,7 @@
     createMarkdownRenderer,
     buildNodeTransactionOverlay,
     buildAnnotationLineSet,
+    buildAttachLinePickStates,
     computeValidEndLines,
     computeValidStartLines,
   } from '../../utils/markdown'
@@ -183,6 +184,9 @@
     const mode = $linePickMode!
     const annoSet = buildAnnotationLineSet($nodeContent)
     const m = new Map<number, LinePickRowState>()
+    if (mode.operatorMode === 'attach') {
+      return buildAttachLinePickStates($nodeContent)
+    }
     if (mode.startLine != null && mode.operatorMode) {
       const validEnds = computeValidEndLines($nodeContent, mode.startLine, mode.operatorMode)
       $nodeContent.split('\n').forEach((_, i) => {

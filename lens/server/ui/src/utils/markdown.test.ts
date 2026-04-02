@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest'
 import {
   buildAnnotationBlocks,
   buildAnnotationLineSet,
+  buildAttachLinePickStates,
   buildNodeTransactionOverlay,
+  collectAttachForbiddenLines,
   computeValidEndLines,
   computeValidStartLines,
   createMarkdownRenderer,
@@ -657,6 +659,43 @@ Body`
     expect(set.has(2)).toBe(true)
     expect(set.has(3)).toBe(true)
     expect(set.has(4)).toBe(false)
+  })
+})
+
+describe('collectAttachForbiddenLines', () => {
+  it('forbids all front matter lines including close', () => {
+    const content = `[
+  kb_pin: [npc.test]
+]: #
+Content`
+    const f = collectAttachForbiddenLines(content)
+    expect(f.has(1)).toBe(true)
+    expect(f.has(2)).toBe(true)
+    expect(f.has(3)).toBe(true)
+    expect(f.has(4)).toBe(false)
+  })
+
+  it('forbids interior of multiline tag but not closing line', () => {
+    const content = `[write
+  prompt: go
+]: #
+Body`
+    const f = collectAttachForbiddenLines(content)
+    expect(f.has(1)).toBe(true)
+    expect(f.has(2)).toBe(true)
+    expect(f.has(3)).toBe(false)
+    expect(f.has(4)).toBe(false)
+  })
+
+  it('buildAttachLinePickStates marks pickable body lines', () => {
+    const content = `[write
+  prompt: go
+]: #
+Body`
+    const m = buildAttachLinePickStates(content)
+    expect(m.get(3)).toBe('pickable')
+    expect(m.get(4)).toBe('pickable')
+    expect(m.get(1)).toBe('annotation')
   })
 })
 

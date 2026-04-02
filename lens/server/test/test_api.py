@@ -283,6 +283,25 @@ class TestAttachEndpoint:
         assert r.status_code == 200
         assert r.json()["status"] == "error"
 
+    def test_attach_with_address_and_line_returns_ok(self, attach_client: TestClient) -> None:
+        r = attach_client.post(
+            "/attach",
+            json={"path": "hero.jpg", "address": "/", "line": 1},
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "ok"
+        assert "hero.jpg" in data["embed"]
+
+    def test_attach_invalid_line_returns_error(self, attach_client: TestClient) -> None:
+        r = attach_client.post(
+            "/attach",
+            json={"path": "hero.jpg", "address": "/", "line": 999},
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "error"
+        assert "out of range" in r.json()["detail"]
+
 
 class TestStatsHasMount:
     def test_has_mount_false_without_config(self, test_client: TestClient) -> None:

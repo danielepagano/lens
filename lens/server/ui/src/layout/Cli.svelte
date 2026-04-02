@@ -253,8 +253,13 @@
       addressAutoFilled = false
     }
 
-    // Pre-fill address slot with currently visible node on first entry
+    // Pre-fill address slot with currently visible node on first entry (rewind, attach, etc.)
+    const attachAddressAutofillOk =
+      activeCommandDef?.trigger === 'attach' ||
+      (activeCommandDef?.trigger === 'media' &&
+        (state.completedPositional['action'] as string | undefined) === 'attach')
     if (
+      attachAddressAutofillOk &&
       !addressAutoFilled &&
       state.activePayload?.valueType === 'address' &&
       state.currentToken === '' &&
@@ -288,8 +293,15 @@
             ? parseInt(state.completedPositional['start'] as string, 10)
             : undefined
           const trigger = activeCommandDef.trigger
-          const operatorMode: 'edit' | 'collate' | undefined =
-            (trigger === 'edit' || trigger === 'collate') ? trigger : undefined
+          const mediaAttach =
+            trigger === 'media' &&
+            (state.completedPositional['action'] as string | undefined) === 'attach'
+          const operatorMode: 'edit' | 'collate' | 'attach' | undefined =
+            trigger === 'edit' || trigger === 'collate'
+              ? trigger
+              : mediaAttach
+                ? 'attach'
+                : undefined
 
           linePickMode.set({
             address: navAddr,

@@ -7,7 +7,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from lens.core.commands.attach import SUPPORTED_EXTENSIONS, attach, build_embed, media_type
+from lens.core.commands.attach import (
+    SUPPORTED_EXTENSIONS,
+    attach,
+    build_embed,
+    insert_embed_after_line,
+    media_type,
+    validate_attach_insertion_point,
+)
 from lens.core.exceptions import LensException
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession, get_mount_point
@@ -248,3 +255,60 @@ class TestAttachInsert(unittest.TestCase):
         result = attach(session, "hero.jpg")
         self.assertIn("embed", result)
         self.assertIn("/mount/file/hero.jpg", result["embed"])
+
+    def test_insert_after_line_inserts_embed_with_blank_padding(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        attach(session, "hero.jpg", address="/", line=3)
+        after = self.node.md_path().read_text()
+        self.assertIn("\n\n![", after)
+        self.assertIn("Some content.", after)
+        self.assertLess(after.index("Some content."), after.index("!["))
+
+    def test_insert_after_line_with_existing_blank_no_triple_newline(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        path = self.node.md_path()
+        path.write_text("# Story\n\nSome content.\n\n")
+        attach(session, "hero.jpg", address="/", line=3)
+        after = path.read_text()
+        self.assertNotIn("\n\n\n![", after)
+        self.assertIn("\n\n![", after)
+
+    def test_rejects_line_inside_multiline_annotation_tag(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        path = self.node.md_path()
+        path.write_text(
+            "# T\n\n[write\n  prompt: x\n]: #\n\nBody.\n"
+        )
+        with self.assertRaises(LensException) as ctx:
+            attach(session, "hero.jpg", address="/", line=4)
+        self.assertIn("annotation tag", str(ctx.exception))
+
+    def test_allows_line_on_closing_tag_line(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        path = self.node.md_path()
+        path.write_text(
+            "# T\n\n[write\n  prompt: x\n]: #\n\nBody.\n"
+        )
+        attach(session, "hero.jpg", address="/", line=5)
+        after = path.read_text()
+        self.assertIn("/mount/file/hero.jpg", after)
+
+
+class TestAttachValidateAndInsert(unittest.TestCase):
+
+    def test_validate_rejects_front_matter_line(self) -> None:
+        text = (
+            "[\n"
+            "    kb_pin:\n"
+            "        - thing\n"
+            "]: #\n"
+            "\n"
+            "Story content here.\n"
+        )
+        with self.assertRaises(LensException):
+            validate_attach_insertion_point(text, 2)
+
+    def test_insert_embed_after_line(self) -> None:
+        embed = "![x](/mount/file/x.jpg)"
+        out = insert_embed_after_line("a\nb\n", 1, embed)
+        self.assertIn("a\n\n" + embed + "\n\nb", out)
