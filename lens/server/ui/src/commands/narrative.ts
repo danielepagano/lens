@@ -23,8 +23,8 @@ const commands: CommandDefinition[] = [
     ],
   },
   {
-    trigger: 'rewind',
-    group: 'narrative',
+    trigger: 'structure-rewind',
+    group: 'structure',
     positional: [
       { name: 'address', valueType: 'address', required: true, hint: 'node address' },
       { name: 'line', valueType: 'line', required: false, hint: 'line number' },
@@ -39,7 +39,7 @@ const handler: CommandHandler = async (
 ) => {
   transactionResult.set(null)
 
-  if (command === 'rewind') {
+  if (command === 'structure-rewind') {
     const rawAddress = ctx.args.positional['address'] as string | undefined
     const address = normalizeAddress(rawAddress)
     const lineRaw = ctx.args.positional['line'] as string | undefined

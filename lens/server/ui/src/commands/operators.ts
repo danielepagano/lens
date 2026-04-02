@@ -133,8 +133,8 @@ const commands: CommandDefinition[] = [
     ],
   },
   {
-    trigger: 'section',
-    group: 'narrative',
+    trigger: 'structure-section',
+    group: 'structure',
     positional: [{ name: 'id', valueType: 'slug', required: false, hint: 'section ID to start (or use --end to close)' }],
     options: [
       { name: 'end', hint: 'close the current section' },
@@ -144,8 +144,8 @@ const commands: CommandDefinition[] = [
     ],
   },
   {
-    trigger: 'collate',
-    group: 'narrative',
+    trigger: 'structure-collate',
+    group: 'structure',
     positional: [
       { name: 'id', valueType: 'slug', required: true, hint: 'section ID for the new child' },
       { name: 'address', valueType: 'address', required: true, hint: 'node address to section' },
@@ -159,8 +159,8 @@ const commands: CommandDefinition[] = [
     ],
   },
   {
-    trigger: 'rename',
-    group: 'narrative',
+    trigger: 'structure-rename',
+    group: 'structure',
     positional: [
       { name: 'address', valueType: 'address', required: true, hint: 'node to rename (e.g. /chapter-1/design-old)' },
       { name: 'new_slug', valueType: 'slug', required: true, hint: 'new slug' },
@@ -393,7 +393,7 @@ const handler: CommandHandler = async (
         { prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId, retry, end: endDesign, slug: designSlug },
         handleEvent
       )
-    } else if (command === 'section') {
+    } else if (command === 'structure-section') {
       const endSection = ctx.args.options['end'] === true
       const sectionId = ctx.args.positional['id'] as string | undefined
       if (endSection && sectionId) {
@@ -406,7 +406,7 @@ const handler: CommandHandler = async (
       } else {
         throw new Error('Section requires an ID or --end')
       }
-    } else if (command === 'rename') {
+    } else if (command === 'structure-rename') {
       const renameAddress = normalizeAddress(ctx.args.positional['address'] as string)
       const newSlug = ctx.args.positional['new_slug'] as string
       if (!renameAddress) throw new Error('rename requires an address')
@@ -421,7 +421,7 @@ const handler: CommandHandler = async (
       }
       cliOutput.set(null)
       return { clearInput: true }
-    } else if (command === 'collate') {
+    } else if (command === 'structure-collate') {
       const address = normalizeAddress(ctx.args.positional['address'] as string)
       const startLine = parseInt(ctx.args.positional['start'] as string, 10)
       const endLine = parseInt(ctx.args.positional['end'] as string, 10)

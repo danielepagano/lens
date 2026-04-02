@@ -253,13 +253,18 @@
       addressAutoFilled = false
     }
 
-    // Pre-fill address slot with currently visible node on first entry (rewind, attach, etc.)
-    const attachAddressAutofillOk =
+    // Pre-fill address slot with currently visible node on first entry (not for every command —
+    // e.g. /pin --node should stay empty until chosen).
+    const autofillAddressFromVisibleNode =
       activeCommandDef?.trigger === 'attach' ||
+      activeCommandDef?.trigger === 'edit' ||
+      activeCommandDef?.trigger === 'structure-rewind' ||
+      activeCommandDef?.trigger === 'structure-rename' ||
+      activeCommandDef?.trigger === 'structure-collate' ||
       (activeCommandDef?.trigger === 'media' &&
         (state.completedPositional['action'] as string | undefined) === 'attach')
     if (
-      attachAddressAutofillOk &&
+      autofillAddressFromVisibleNode &&
       !addressAutoFilled &&
       state.activePayload?.valueType === 'address' &&
       state.currentToken === '' &&
@@ -297,11 +302,13 @@
             trigger === 'media' &&
             (state.completedPositional['action'] as string | undefined) === 'attach'
           const operatorMode: 'edit' | 'collate' | 'attach' | undefined =
-            trigger === 'edit' || trigger === 'collate'
-              ? trigger
-              : mediaAttach
-                ? 'attach'
-                : undefined
+            trigger === 'edit'
+              ? 'edit'
+              : trigger === 'structure-collate'
+                ? 'collate'
+                : mediaAttach
+                  ? 'attach'
+                  : undefined
 
           linePickMode.set({
             address: navAddr,
