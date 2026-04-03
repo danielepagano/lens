@@ -10,4 +10,4 @@ Encounter name
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag an encounter with the location where it takes place and any driving front, npc, or faction. For combat encounters, tag with difficulty:low/moderate/high and every relevant `stat.*`. Note: `rules.encounter` auto-pins when any encounter is in play context; tag other `rules.*` only if the scene depends on specialized procedures (e.g. `rules.chase`). -->
+<!-- TAG POLICY: tag an encounter with the location where it takes place and any driving front, npc, or faction. For combat encounters, tag with difficulty:low/moderate/high and every relevant `stat.*`. -->

@@ -41,7 +41,7 @@ IMPORTANT: if you think you are missing objects, DO NOT just create them! There 
 
 **Part 3 — `## Prep and reference`:** For combat, **mandatory** **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). Non-combat or no stat-backed creatures: note **`— none`** or omit stat lines.
 
-**Tags on the encounter object:** Include story links as usual (`location.*`, relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it. Tag other `rules.*` only if the scene depends on specialized procedures beyond standard encounter running (e.g. a future `rules.chase`).
+**Tags on the encounter object:** Include story links as usual (`location.*`, relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it.
 
 Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list; pasting stat bodies instead of tokens; **`KB['stat.…']`** outside Prep; **`allies`** in the tool that don't match the allied **`stat.*`** lines you write in Prep (ids or counts). You should never emit kb items for any other object type (faction, npc, location, etc.), only the encounter.
 
