@@ -5,6 +5,7 @@ Encounter name
 
 - **Situation**: (what's happening — where, when, who is present — one or two tight paragraphs or short bullets)
 - **Stakes**: (what can go wrong, what's at risk)
+- **Initial positions**: (for combat/physical encounters: starting distances between groups in feet, formations, terrain zones, cover, elevation, chokepoints — enough for theater-of-mind)
 - **Scene rules**: (terrain, light, hazards, time pressure, social dynamics — keep short; link `location.*` if detail is large)
 - **Triggers**: (dialog escalates, timer, reinforcements, secret surfaces, phase change)
 - **Resolution**: (how it can end — fronts, attitudes, loot, intel)
@@ -33,4 +34,4 @@ Subheadings (**Enemies** / **Allies**) optional. Repeat a **`KB['stat.*']`** on 
 Do **not** add **`KB['pc.…']`**, **`KB['npc.…']`**, **`KB['faction.…']`**, etc. Refer to those by name or dot-ids in Situation and Running.
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag with location, front, npc, faction as appropriate. Combat: difficulty:low/moderate/high, plus every `stat.*` used in Prep. If the scene depends on a special procedures object, tag the relevant `rules.*` too. -->
+<!-- TAG POLICY: tag with location, front, npc, faction as appropriate. Combat: difficulty:low/moderate/high, plus every `stat.*` used in Prep. Note: `rules.encounter` auto-pins when any encounter is in play context; tag other `rules.*` only if the scene depends on specialized procedures (e.g. `rules.chase`). -->
