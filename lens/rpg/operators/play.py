@@ -41,6 +41,7 @@ from typing import Any, ClassVar, cast
 
 from lens.core.context import CrawlResult, crawl
 from lens.core.dice import DiceError, substitute_rolls
+from lens.core.knowledge import KnowledgeStore
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
 from lens.core.prompts import PromptStore
@@ -79,6 +80,52 @@ class PlayOperator(SessionOperator):
     @property
     def system_prompt(self) -> str:
         return PromptStore(self.project_root).get("play.system")
+
+    # ------------------------------------------------------------------
+    # Rules auto-pin: inject ``rules.<type>`` companions for pinned objects
+    # ------------------------------------------------------------------
+
+    def _inject_rules_companions(self, crawl_result: CrawlResult) -> None:
+        """Auto-pin ``rules.<type>`` for each KB object type in *pinned_ids*.
+
+        Scans pinned IDs for type prefixes (the part before the first dot).
+        For each type, if ``rules.<type>`` exists in KB and isn't already
+        pinned, it is appended to *crawl_result.knowledge* and
+        *crawl_result.pinned_ids* so the LLM sees it as relevant knowledge.
+        """
+        if crawl_result.project_root is None:
+            return
+        kb = KnowledgeStore.for_project(crawl_result.project_root)
+        pinned_set = set(crawl_result.pinned_ids)
+
+        types_seen: set[str] = set()
+        for pid in crawl_result.pinned_ids:
+            if "." in pid:
+                obj_type = pid.split(".", 1)[0]
+                if obj_type != "rules":
+                    types_seen.add(obj_type)
+
+        companion_ids: list[str] = []
+        for obj_type in sorted(types_seen):
+            rules_id = f"rules.{obj_type}"
+            if rules_id not in pinned_set and kb.exists(rules_id):
+                companion_ids.append(rules_id)
+
+        if companion_ids:
+            objs = kb.get_objects(companion_ids)
+            for cid in companion_ids:
+                obj = objs.get(cid)
+                if obj is not None:
+                    crawl_result.knowledge.append(
+                        obj.format(include_comments=False)
+                    )
+                    crawl_result.pinned_ids.append(cid)
+
+    def build_messages(
+        self, crawl_result: CrawlResult, params: dict[str, Any]
+    ) -> list[dict[str, str]]:
+        self._inject_rules_companions(crawl_result)
+        return super().build_messages(crawl_result, params)
 
     @classmethod
     def enrich_params(cls, crawl_result: CrawlResult, params: dict[str, Any]) -> None:
