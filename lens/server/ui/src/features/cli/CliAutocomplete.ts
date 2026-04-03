@@ -5,7 +5,7 @@ import type { TreeNode, Stats, MountEntry } from '../../services/api'
 export interface Suggestion {
   label: string
   value: string
-  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node' | 'dice-roll'
+  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node' | 'dice-roll' | 'go-cursor'
   group: string
   nodeHasChildren?: boolean
   /** Mount browse only: directory row (yellow dashed chip like prefix groups) */
@@ -21,6 +21,15 @@ export const MAX_CLI_SUGGESTIONS = 32
 
 export function limitCliSuggestions(suggestions: readonly Suggestion[]): Suggestion[] {
   return suggestions.slice(0, MAX_CLI_SUGGESTIONS)
+}
+
+/** When the viewer is not on the narrative cursor node, hide commands that only make sense at the cursor (`cursorTargeting: 'always'`). */
+export function filterCommandDefinitionsForViewingNode(
+  definitions: readonly CommandDefinition[],
+  viewingAtProjectCursor: boolean,
+): CommandDefinition[] {
+  if (viewingAtProjectCursor) return [...definitions]
+  return definitions.filter((d) => d.cursorTargeting !== 'always')
 }
 
 /** Cursor chip styling: omit `never` and ambiguous prefix groups. */
@@ -124,7 +133,7 @@ export interface DataSources {
   fetchMountDir: (path: string) => void
 }
 
-const DENSE_GROUP_MIN_LEAVES = 4
+const DENSE_GROUP_MIN_LEAVES = 3
 
 interface TrieNode {
   children: Map<string, TrieNode>
@@ -643,7 +652,7 @@ function getFileSuggestions(
     : entries
 
   // Do not run groupDenseSegmentedPrefixes here: sibling entries in a directory are the
-  // actual pick targets (files/dirs). Collapsing ≥DENSE_GROUP_MIN_LEAVES leaf names would replace them with the
+  // actual pick targets (files/dirs). Collapsing at the dense threshold would replace them with the
   // parent path and make browsing empty or useless.
   return filtered.map((e) => ({
     label: e.name + (e.is_dir ? '/' : ''),

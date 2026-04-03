@@ -1,11 +1,32 @@
 import { describe, it, expect } from 'vitest'
+import type { CommandDefinition } from '../../commands/common'
 import {
   dashedGroupingCompletionSuffix,
   decomposeKbKeyTypingPrefix,
+  filterCommandDefinitionsForViewingNode,
   groupDenseSegmentedPrefixes,
   joinKbStemAndGroupedRest,
   kbKeyRemainderAfterStem,
 } from './CliAutocomplete'
+
+const SAMPLE_DEFS: CommandDefinition[] = [
+  { trigger: 'always-op', group: 'rpg', cursorTargeting: 'always' },
+  { trigger: 'never-op', group: 'rpg', cursorTargeting: 'never' },
+  { trigger: 'override-op', group: 'narrative', cursorTargeting: 'can-override' },
+]
+
+describe('filterCommandDefinitionsForViewingNode', () => {
+  it('returns all definitions when viewing at project cursor', () => {
+    expect(filterCommandDefinitionsForViewingNode(SAMPLE_DEFS, true)).toEqual(SAMPLE_DEFS)
+  })
+
+  it('drops cursorTargeting always when not viewing at project cursor', () => {
+    expect(filterCommandDefinitionsForViewingNode(SAMPLE_DEFS, false).map((d) => d.trigger)).toEqual([
+      'never-op',
+      'override-op',
+    ])
+  })
+})
 
 describe('decomposeKbKeyTypingPrefix / kbKeyRemainderAfterStem / joinKbStemAndGroupedRest', () => {
   it('uses stem after last dash when typing inside a segment (artificer-a)', () => {
@@ -77,12 +98,12 @@ describe('groupDenseSegmentedPrefixes', () => {
     ).toEqual(['one-1', 'one-thing', 'two-1', 'two-2'])
   })
 
-  it('does not collapse when exactly three leaves share a parent', () => {
-    expect(groupDenseSegmentedPrefixes(['one-1', 'one-2', 'one-3'], '-')).toEqual([
-      'one-1',
-      'one-2',
-      'one-3',
-    ])
+  it('does not collapse when exactly two leaves share a parent', () => {
+    expect(groupDenseSegmentedPrefixes(['one-1', 'one-2'], '-')).toEqual(['one-1', 'one-2'])
+  })
+
+  it('collapses when exactly three leaves share a parent', () => {
+    expect(groupDenseSegmentedPrefixes(['one-1', 'one-2', 'one-3'], '-')).toEqual(['one'])
   })
 
   it('collapses after a single-child chain to a dense fan-out', () => {

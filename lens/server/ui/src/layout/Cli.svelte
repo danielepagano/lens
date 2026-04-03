@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { tick } from 'svelte'
+  import { tick, onMount, onDestroy } from 'svelte'
+  import { get } from 'svelte/store'
   import type { CommandContext, CommandResult, CommandDefinition } from '../commands/common'
   import { COMMAND_DEFINITIONS, KNOWN_COMMANDS, resolveHandler } from '../commands/handlers'
   import { parseCliInput, buildArgs } from '../commands/parser'
@@ -8,11 +9,20 @@
     getCommandSuggestions,
     getSuggestions,
     limitCliSuggestions,
+    filterCommandDefinitionsForViewingNode,
     type Suggestion,
     type DataSources,
   } from '../features/cli/CliAutocomplete'
   import CliSuggestions from '../features/cli/CliSuggestions.svelte'
-  import { cliOutput, transactionResult, treeRefreshTrigger, linePickMode, linePickSelection, mountCacheRefreshTrigger } from '../stores/ui'
+  import {
+    cliOutput,
+    transactionResult,
+    treeRefreshTrigger,
+    linePickMode,
+    linePickSelection,
+    mountCacheRefreshTrigger,
+    scrollContentToBottom,
+  } from '../stores/ui'
   import { currentAddress } from '../stores/document'
   import { stats } from '../stores/stats'
   import { getKbItems, getTree, browseMountDir } from '../services/api'
@@ -42,6 +52,8 @@
   let addressAutoFilled = false
   let sessionFillSuppressed = false
   let lastSessionOperator: string | null = null
+  /** `undefined` = initial; used to detect navigation away from the narrative cursor. */
+  let prevCliNavAddress: string | null | undefined = undefined
 
   /** Caret end position, kept fresh so chip clicks can find @-mentions after textarea blurs. */
   let cliCaretHi = 0
@@ -119,6 +131,32 @@
     }
   }
 
+  function isFocusCliShortcut(e: KeyboardEvent): boolean {
+    if (e.code !== 'Backquote') return false
+    if (!e.ctrlKey || e.metaKey || e.altKey) return false
+    if (e.shiftKey) return false
+    return true
+  }
+
+  function globalKeydownFocusCli(e: KeyboardEvent) {
+    if (busy || e.defaultPrevented || e.isComposing) return
+    if (!isFocusCliShortcut(e)) return
+    const t = e.target
+    if (t instanceof HTMLElement && t.closest('dialog[open]')) return
+    e.preventDefault()
+    e.stopPropagation()
+    focusCliInput()
+    updateCommandState()
+  }
+
+  onMount(() => {
+    window.addEventListener('keydown', globalKeydownFocusCli, true)
+  })
+
+  onDestroy(() => {
+    window.removeEventListener('keydown', globalKeydownFocusCli, true)
+  })
+
   function pushHistory(command: string) {
     if (!command) return
     history = [...history, command].slice(-MAX_HISTORY)
@@ -147,6 +185,18 @@
     return null
   }
 
+  /** Command token after `/`; with the CLI’s leading slash this spells `/@cursor`, same as `lens.core.address._CURSOR_REF`. */
+  const GO_CURSOR_CHIP = '@cursor'
+
+  /** When off the narrative cursor, show the @cursor chip for empty input or while typing a matching prefix. */
+  function goCursorChipMatchesToken(commandToken: string): boolean {
+    const p = commandToken.toLowerCase()
+    if (p === '') return true
+    if (GO_CURSOR_CHIP.startsWith(p)) return true
+    if (GO_CURSOR_CHIP.slice(1).startsWith(p)) return true
+    return false
+  }
+
   function parseCommandAndPayload(value: string): { command: string | null; payload: string } {
     const trimmed = value.trim()
     if (!trimmed.startsWith('/')) return { command: null, payload: '' }
@@ -156,6 +206,29 @@
     const command = parts[0]?.toLowerCase() ?? null
     const payload = parts.slice(1).join(' ').trimStart()
     return { command, payload }
+  }
+
+  function cliContainsOnlySessionOperator(sessionOp: string): boolean {
+    const { command, payload } = parseCommandAndPayload(input)
+    return command === sessionOp.toLowerCase() && payload.trim() === ''
+  }
+
+  $: {
+    const addr = $currentAddress
+    const cursorAddr = $stats?.cursor ?? null
+    const sessionOp = $stats?.active_session_operator
+    if (prevCliNavAddress !== undefined && cursorAddr != null && sessionOp) {
+      const leftCursor =
+        prevCliNavAddress === cursorAddr &&
+        addr != null &&
+        addr !== cursorAddr
+      if (leftCursor && cliContainsOnlySessionOperator(sessionOp)) {
+        input = '/'
+        sessionFillSuppressed = false
+        updateCommandState()
+      }
+    }
+    prevCliNavAddress = addr
   }
 
   // --- Data sources for autocomplete ---
@@ -217,8 +290,13 @@
   function updateCommandState() {
     const trimmed = input.trim()
 
+    const cursorAddr = $stats?.cursor ?? null
+    const viewingAtProjectCursor = cursorAddr == null || $currentAddress === cursorAddr
+    const viewingOffCursorNode = cursorAddr != null && $currentAddress !== cursorAddr
+
     // Session operator auto-fill: when input is empty and cursor is inside a session, pre-select it.
-    if ((trimmed === '' || trimmed === '/') && !sessionFillSuppressed) {
+    // Skip while viewing a node other than the narrative cursor so @cursor + reduced chips stay reachable.
+    if ((trimmed === '' || trimmed === '/') && !sessionFillSuppressed && !viewingOffCursorNode) {
       const sessionOp = $stats?.active_session_operator
       if (sessionOp && KNOWN_COMMANDS.includes(sessionOp)) {
         input = '/' + sessionOp + ' '
@@ -234,8 +312,17 @@
     const hasCommandText = commandPart.length > 0
     const lower = commandPart.toLowerCase()
 
-    isKnownCommand = !hasCommandText || KNOWN_COMMANDS.includes(lower)
-    showInvalid = !busy && startsWithSlash && hasCommandText && !isKnownCommand && !KNOWN_COMMANDS.some((c) => c.startsWith(lower))
+    isKnownCommand =
+      !hasCommandText ||
+      KNOWN_COMMANDS.includes(lower) ||
+      goCursorChipMatchesToken(lower)
+    showInvalid =
+      !busy &&
+      startsWithSlash &&
+      hasCommandText &&
+      !isKnownCommand &&
+      !KNOWN_COMMANDS.some((c) => c.startsWith(lower)) &&
+      !goCursorChipMatchesToken(lower)
 
     // Resolve definition
     activeCommandDef = hasCommandText
@@ -338,7 +425,18 @@
 
     // Command-level suggestions
     if (state.phase === 'command') {
-      suggestions = limitCliSuggestions(getCommandSuggestions(COMMAND_DEFINITIONS, state.currentToken))
+      const defsForView = filterCommandDefinitionsForViewingNode(COMMAND_DEFINITIONS, viewingAtProjectCursor)
+      let cmdSugs = getCommandSuggestions(defsForView, state.currentToken)
+      if (viewingOffCursorNode && cursorAddr && goCursorChipMatchesToken(state.currentToken)) {
+        const goCursor: Suggestion = {
+          label: '@cursor',
+          value: '@cursor',
+          kind: 'go-cursor',
+          group: 'cli',
+        }
+        cmdSugs = [goCursor, ...cmdSugs]
+      }
+      suggestions = limitCliSuggestions(cmdSugs)
       // Hide command suggestions once a known command with a hint is fully typed
       if (activeCommandDef && !input.trim().includes(' ') && activeCommandDef.hint) {
         // Still showing command list while typing partial
@@ -389,6 +487,9 @@
 
   function completeSuggestion(sug: Suggestion) {
     switch (sug.kind) {
+      case 'go-cursor':
+        completeCommand(GO_CURSOR_CHIP)
+        return
       case 'command':
         if (sug.completionSuffix === '-') {
           input = '/' + sug.value + '-'
@@ -688,6 +789,41 @@
 
     const { command, payload } = parseCommandAndPayload(raw)
     if (!command) return
+
+    if (command === GO_CURSOR_CHIP) {
+      if (payload.trim() !== '') {
+        flashInvalid = true
+        showInvalid = true
+        setTimeout(() => {
+          flashInvalid = false
+        }, 150)
+        focusCliInput()
+        return
+      }
+      const c = get(stats)?.cursor
+      if (!c || !navigate) {
+        flashInvalid = true
+        showInvalid = true
+        setTimeout(() => {
+          flashInvalid = false
+        }, 150)
+        focusCliInput()
+        return
+      }
+      pushHistory(raw)
+      try {
+        await navigate(c)
+        scrollContentToBottom.update((n) => n + 1)
+        input = ''
+        sessionFillSuppressed = false
+        updateCommandState()
+      } catch (e) {
+        console.error('Navigation failed:', e)
+      }
+      await tick()
+      focusCliInput()
+      return
+    }
 
     if (!KNOWN_COMMANDS.includes(command)) {
       flashInvalid = true
