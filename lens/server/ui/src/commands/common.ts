@@ -3,6 +3,9 @@ import type { Stats } from '../services/api'
 
 export type CliPayloadType = 'flag' | 'string' | 'slug' | 'kb-id' | 'address' | 'line' | 'int' | 'prompt' | 'file-path'
 
+// Commands like write always append at cursor, edit never does, pin does by default but can be overriden, etc. 
+export type CliCommandCursorTarget = 'always' | 'never' | 'can-override'
+
 export interface CliPayload {
   name: string
   hint?: string
@@ -26,6 +29,7 @@ export interface ParsedArgs {
 export interface CommandDefinition {
   trigger: string
   group: string
+  cursorTargeting: CliCommandCursorTarget
   hint?: string
   positional?: CliPayload[]
   options?: CliPayload[]

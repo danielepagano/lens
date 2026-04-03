@@ -14,6 +14,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'pin',
     group: 'narrative',
+    cursorTargeting: 'can-override',
     positional: [
       { name: 'action', valueType: 'slug', required: true, slugSource: 'add,remove,block,unblock' },
       { name: 'ids', valueType: 'kb-id', required: true, repeatable: true, hint: 'KB object ID' },
@@ -25,6 +26,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'structure-rewind',
     group: 'structure',
+    cursorTargeting: 'never',
     positional: [
       { name: 'address', valueType: 'address', required: true, hint: 'node address' },
       { name: 'line', valueType: 'line', required: false, hint: 'line number' },

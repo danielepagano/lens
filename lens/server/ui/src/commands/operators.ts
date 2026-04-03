@@ -60,6 +60,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'write',
     group: 'narrative',
+    cursorTargeting: 'always',
     positional: [{ name: 'prompt', valueType: 'prompt', hint: 'prompt text' }],
     options: [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
@@ -72,6 +73,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'design',
     group: 'narrative',
+    cursorTargeting: 'always',
     positional: [
       { name: 'prompt', valueType: 'prompt', hint: 'design prompt' },
     ],
@@ -89,6 +91,7 @@ const commands: CommandDefinition[] = [
     trigger: 'play',
     group: 'rpg',
     requiresDataset: 'rpg',
+    cursorTargeting: 'always',
     positional: [{ name: 'prompt', valueType: 'prompt', hint: 'what do you do?' }],
     options: [
       { name: 'module', valueType: 'kb-id', repeatable: false, hint: 'rules module to use', default: 'rules.', exclude: ['rules.system', 'rules.rpg'] },
@@ -105,6 +108,7 @@ const commands: CommandDefinition[] = [
     trigger: 'advance',
     group: 'rpg',
     requiresDataset: 'rpg',
+    cursorTargeting: 'always',
     positional: [],
     options: [
       { name: 'days', valueType: 'int', hint: 'days to advance (default: 1)' },
@@ -118,6 +122,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'edit',
     group: 'narrative',
+    cursorTargeting: 'never',
     positional: [
       { name: 'address', valueType: 'address', required: true, hint: "node to edit" },
       { name: 'start', valueType: 'line', required: true, hint: 'start line number' },
@@ -135,6 +140,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'structure-section',
     group: 'structure',
+    cursorTargeting: 'always',
     positional: [{ name: 'id', valueType: 'slug', required: false, hint: 'section ID to start (or use --end to close)' }],
     options: [
       { name: 'end', hint: 'close the current section' },
@@ -146,6 +152,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'structure-collate',
     group: 'structure',
+    cursorTargeting: 'never',
     positional: [
       { name: 'id', valueType: 'slug', required: true, hint: 'section ID for the new child' },
       { name: 'address', valueType: 'address', required: true, hint: 'node address to section' },
@@ -161,6 +168,7 @@ const commands: CommandDefinition[] = [
   {
     trigger: 'structure-rename',
     group: 'structure',
+    cursorTargeting: 'never',
     positional: [
       { name: 'address', valueType: 'address', required: true, hint: 'node to rename (e.g. /chapter-1/design-old)' },
       { name: 'new_slug', valueType: 'slug', required: true, hint: 'new slug' },

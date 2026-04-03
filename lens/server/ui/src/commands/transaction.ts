@@ -15,20 +15,22 @@ import type {
 } from './common'
 
 const commands: CommandDefinition[] = [
-  { trigger: 'tx-commit', group: 'transactions' },
-  { trigger: 'tx-rollback', group: 'transactions' },
+  { trigger: 'tx-commit', group: 'transactions', cursorTargeting: 'never' },
+  { trigger: 'tx-rollback', group: 'transactions', cursorTargeting: 'never' },
   {
     trigger: 'tx-checkpoint',
     group: 'transactions',
+    cursorTargeting: 'never',
     positional: [{ name: 'message', valueType: 'string', hint: '(optional message)' }],
     options: [{ name: 'no-push' }],
   },
   {
     trigger: 'tx-refresh',
     group: 'transactions',
+    cursorTargeting: 'never',
     options: [{ name: 'reset' }],
   },
-  { trigger: 'tx-status', group: 'transactions' },
+  { trigger: 'tx-status', group: 'transactions', cursorTargeting: 'never' },
 ]
 
 function formatCommit(c: TxStatusCommit): string {

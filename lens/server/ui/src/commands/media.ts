@@ -91,6 +91,7 @@ export const mediaModule: CommandModule = {
           {
             trigger: 'media',
             group: 'narrative',
+            cursorTargeting: 'can-override',
             hint: 'attach (address, line), upload, download, or remove a media file',
             positional: [
               {

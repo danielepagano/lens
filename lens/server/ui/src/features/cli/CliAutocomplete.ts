@@ -1,4 +1,4 @@
-import type { CommandDefinition } from '../../commands/common'
+import type { CliCommandCursorTarget, CommandDefinition } from '../../commands/common'
 import type { ParseState } from '../../commands/parser'
 import type { TreeNode, Stats, MountEntry } from '../../services/api'
 
@@ -12,6 +12,8 @@ export interface Suggestion {
   isMountDirectory?: boolean
   /** Appended after `value` on Tab/select: `' '` finishes token, `'-'` continues dashed segments */
   completionSuffix?: string
+  /** From active command: chips that target the narrative cursor vs explicit node */
+  cursorTargeting?: CliCommandCursorTarget
 }
 
 /** Hard cap on CLI suggestion chips (display + Tab cycle use the same list). */
@@ -19,6 +21,32 @@ export const MAX_CLI_SUGGESTIONS = 32
 
 export function limitCliSuggestions(suggestions: readonly Suggestion[]): Suggestion[] {
   return suggestions.slice(0, MAX_CLI_SUGGESTIONS)
+}
+
+/** Cursor chip styling: omit `never` and ambiguous prefix groups. */
+function suggestionCursorFromCommandDef(
+  ct: CliCommandCursorTarget | undefined,
+): CliCommandCursorTarget | undefined {
+  return ct === 'always' || ct === 'can-override' ? ct : undefined
+}
+
+function resolveCommandChipCursorTargeting(
+  definitions: readonly CommandDefinition[],
+  value: string,
+  isExact: boolean,
+): CliCommandCursorTarget | undefined {
+  if (isExact) {
+    return suggestionCursorFromCommandDef(
+      definitions.find((d) => d.trigger === value)?.cursorTargeting,
+    )
+  }
+  const below = definitions.filter(
+    (d) => d.trigger === value || d.trigger.startsWith(value + '-'),
+  )
+  if (below.length === 0) return undefined
+  const t0 = below[0].cursorTargeting
+  if (!below.every((d) => d.cursorTargeting === t0)) return undefined
+  return suggestionCursorFromCommandDef(t0)
 }
 
 /**
@@ -245,23 +273,27 @@ export function getCommandSuggestions(
     const fullTrigger = joinKbStemAndGroupedRest(stem, g)
     const isExact = allTriggers.includes(fullTrigger)
     const def = definitions.find((d) => d.trigger === fullTrigger)
+    const cursorTargeting = resolveCommandChipCursorTargeting(definitions, fullTrigger, isExact)
     out.push({
       label: stem ? g : isExact ? '/' + fullTrigger : fullTrigger,
       value: fullTrigger,
       kind: 'command' as const,
       group: def?.group ?? list[0]?.group ?? 'cli',
       completionSuffix: isExact ? ' ' : dashedGroupingCompletionSuffix(g, restPool),
+      ...(cursorTargeting ? { cursorTargeting } : {}),
     })
   }
 
   for (const { def } of exactOnly) {
     const dash = def.trigger.lastIndexOf('-')
+    const cursorTargeting = resolveCommandChipCursorTargeting(definitions, def.trigger, true)
     out.push({
       label: stem ? (dash >= 0 ? def.trigger.slice(dash + 1) : def.trigger) : '/' + def.trigger,
       value: def.trigger,
       kind: 'command' as const,
       group: def.group,
       completionSuffix: ' ',
+      ...(cursorTargeting ? { cursorTargeting } : {}),
     })
   }
 

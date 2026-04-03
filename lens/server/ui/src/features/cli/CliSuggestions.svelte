@@ -22,6 +22,8 @@
         class:cli-suggestion--prefix-group={sug.completionSuffix === '-'}
         class:cli-suggestion--media-dir={sug.isMountDirectory === true}
         class:cli-suggestion--dice-roll={sug.kind === 'dice-roll'}
+        class:cli-suggestion--cursor-target-always={sug.cursorTargeting === 'always'}
+        class:cli-suggestion--cursor-target-override={sug.cursorTargeting === 'can-override'}
         on:pointerdown={(e) => {
           onBeforeSelect?.()
           e.preventDefault()
