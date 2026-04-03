@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte'
+  import { get } from 'svelte/store'
   import { EditorView, keymap, lineNumbers, drawSelection, highlightActiveLine } from '@codemirror/view'
   import { Compartment, EditorState, type Extension } from '@codemirror/state'
   import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
@@ -8,6 +9,7 @@
   import { tags } from '@lezer/highlight'
   import { Decoration, type DecorationSet, ViewPlugin, type ViewUpdate } from '@codemirror/view'
   import { pickLineNumbers, pickRestExtensions, type LinePickRowState } from './cmLinePick'
+  import { scrollCodeMirrorToBottom } from '../../stores/ui'
 
   /** Theme-aware highlighter: defaultHighlightStyle uses fixed dark blues (#219 etc.) whose
    *  StyleMod classes (e.g. …ec) are illegible on Pico dark backgrounds. */
@@ -215,14 +217,44 @@
     })
   }
 
-  function scrollEditableRangeIntoView(v: EditorView) {
-    if (!editableRange) return
-    const lineNo = Math.min(Math.max(1, editableRange.fromLine), v.state.doc.lines)
-    const pos = v.state.doc.line(lineNo).from
+  /** Scroll to the end of the editable band, or the end of the document (line pick / full edit). */
+  function scrollViewToLatest(v: EditorView) {
+    const state = v.state
+    const n = state.doc.lines
+    if (n < 1) return
+    let pos: number
+    if (editableRange) {
+      const tail = editableRange.linesAfterSelection
+      if (tail === undefined) {
+        const lineNo = Math.min(Math.max(1, editableRange.toLine), n)
+        pos = state.doc.line(lineNo).to
+      } else {
+        const suffixStart = n - tail + 1
+        const lastEditable = suffixStart - 1
+        if (lastEditable < 1) {
+          pos = state.doc.line(n).to
+        } else {
+          pos = state.doc.line(Math.min(lastEditable, n)).to
+        }
+      }
+    } else {
+      pos = state.doc.line(n).to
+    }
     v.dispatch({
       selection: { anchor: pos, head: pos },
-      effects: EditorView.scrollIntoView(pos, { y: 'start', yMargin: 8 }),
+      effects: EditorView.scrollIntoView(pos, { y: 'end', yMargin: 12 }),
     })
+  }
+
+  let lastCmScrollRequest = get(scrollCodeMirrorToBottom)
+  $: if (view && (editableRange || linePickLineStates)) {
+    const t = $scrollCodeMirrorToBottom
+    if (t !== lastCmScrollRequest) {
+      lastCmScrollRequest = t
+      requestAnimationFrame(() => {
+        if (view) scrollViewToLatest(view)
+      })
+    }
   }
 
   function buildExtensions(): Extension[] {
@@ -269,10 +301,10 @@
       extensions: buildExtensions(),
     })
     view = new EditorView({ state, parent: container })
-    if (editableRange) {
+    if (editableRange || linePickLineStates) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (view) scrollEditableRangeIntoView(view)
+          if (view) scrollViewToLatest(view)
         })
       })
     }

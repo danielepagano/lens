@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib
+import logging
 import pkgutil
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,30 @@ from lens.server import routes as routes_pkg
 from lens.server.streaming import StreamLock
 
 _STATIC_DIR = Path(__file__).parent / "static"
+
+
+def _configure_lens_server_logging() -> None:
+    """Attach a handler for ``lens.*`` when running under uvicorn.
+
+    Uvicorn configures handlers only for its own loggers; the root logger stays
+    without handlers. ``lens`` log records then hit logging's lastResort, which
+    only prints WARNING and above — so LLM INFO lines (e.g. HTTP POST start)
+    vanish while ERROR (e.g. timeouts) still appear. A dedicated ``lens``
+    handler fixes that for ``lens dev`` / ``lens serve`` and reload workers,
+    which never run ``lens.cli.main``'s ``basicConfig``.
+    """
+    lens_log = logging.getLogger("lens")
+    if lens_log.handlers:
+        return
+    lens_log.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    lens_log.addHandler(handler)
+    lens_log.propagate = False
+
+
+_configure_lens_server_logging()
 
 
 def create_app(session: ProjectSession) -> FastAPI:

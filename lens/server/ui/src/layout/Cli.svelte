@@ -485,6 +485,31 @@
     focusCliInput()
   }
 
+  function commandHasNoCliParameters(def: CommandDefinition | undefined): boolean {
+    if (!def) return false
+    return (def.positional?.length ?? 0) === 0 && (def.options?.length ?? 0) === 0
+  }
+
+  /** Chip click/tap only: run immediately when picking a zero-arity command or @cursor. Tab still uses completeSuggestion. */
+  function suggestionChipRunsImmediately(sug: Suggestion): boolean {
+    if (sug.kind === 'go-cursor') return true
+    if (sug.kind !== 'command') return false
+    if (sug.completionSuffix !== ' ') return false
+    const def = COMMAND_DEFINITIONS.find((d) => d.trigger === sug.value)
+    return commandHasNoCliParameters(def)
+  }
+
+  function handleSuggestionChipClick(sug: Suggestion) {
+    if (busy) return
+    if (suggestionChipRunsImmediately(sug)) {
+      input = sug.kind === 'go-cursor' ? `/${GO_CURSOR_CHIP}` : `/${sug.value}`
+      updateCommandState()
+      void tick().then(() => void submit())
+      return
+    }
+    completeSuggestion(sug)
+  }
+
   function completeSuggestion(sug: Suggestion) {
     switch (sug.kind) {
       case 'go-cursor':
@@ -926,7 +951,7 @@
     {suggestions}
     noWrap={$cliOutput !== null}
     onBeforeSelect={snapshotCaretBeforeChipPointer}
-    onSelect={completeSuggestion}
+    onSelect={handleSuggestionChipClick}
   />
   <div class="cli-input-row">
     <div class="cli-input-wrapper">

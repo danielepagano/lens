@@ -1,5 +1,10 @@
 import { narrativePin, narrativeRewind, type PinOperation } from '../services/api'
-import { treeRefreshTrigger, transactionResult } from '../stores/ui'
+import {
+  treeRefreshTrigger,
+  transactionResult,
+  scrollContentToBottom,
+  scrollCodeMirrorToBottom,
+} from '../stores/ui'
 import type {
   CommandContext,
   CommandDefinition,
@@ -55,6 +60,8 @@ const handler: CommandHandler = async (
       if (result.status === 'ok') {
         if (ctx.onDone) await ctx.onDone()
         treeRefreshTrigger.update((n) => n + 1)
+        scrollContentToBottom.update((n) => n + 1)
+        scrollCodeMirrorToBottom.update((n) => n + 1)
         return { clearInput: true }
       }
       transactionResult.set({

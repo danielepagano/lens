@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import re
 
 import pytest
@@ -67,6 +68,21 @@ def test_multiple_rolls_in_prompt():
 def test_no_roll_unchanged():
     prompt = "I sneak past the guard quietly."
     assert substitute_rolls(prompt) == prompt
+
+
+def test_pure_arithmetic_uses_calculated_not_rolled():
+    result = substitute_rolls("sum @roll (10+20) total")
+    assert "sum [calculated 10+20=30] total" == result
+    assert "rolled" not in result
+
+
+def test_custom_rng_is_used_for_dice():
+    rng_a = random.Random(12345)
+    rng_b = random.Random(12345)
+    r1 = substitute_rolls("x @roll d100 y", rng=rng_a)
+    r2 = substitute_rolls("x @roll d100 y", rng=rng_b)
+    assert r1 == r2
+    assert "[rolled d100=" in r1
 
 
 def test_invalid_expression_raises_dice_error():

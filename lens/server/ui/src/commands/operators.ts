@@ -1,6 +1,14 @@
 import { get } from 'svelte/store'
 import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
-import { cliOutput, treeRefreshTrigger, inlineEditMode, inlineEditResult, type InlineEditState } from '../stores/ui'
+import {
+  cliOutput,
+  treeRefreshTrigger,
+  inlineEditMode,
+  inlineEditResult,
+  scrollContentToBottom,
+  scrollCodeMirrorToBottom,
+  type InlineEditState,
+} from '../stores/ui'
 import { streamingPreview, currentAddress, nodeContent } from '../stores/document'
 import type {
   CliPayload,
@@ -12,7 +20,7 @@ import type {
 import { normalizeAddress, addressToNavAddress } from './common'
 import { stats } from '../stores/stats'
 
-function scrollContentToBottom(): void {
+function scrollMarkdownViewElToBottom(): void {
   const content = document.querySelector('[data-testid="markdown-view"]')
   if (content) {
     content.scrollTop = content.scrollHeight
@@ -314,7 +322,7 @@ const handler: CommandHandler = async (
   }
 
   // Scroll to bottom when starting the command
-  scrollContentToBottom()
+  scrollMarkdownViewElToBottom()
 
   // Show waiting state immediately (before first token arrives)
   streamingPreview.set({ targetNode: '', text: '' })
@@ -546,6 +554,11 @@ const handler: CommandHandler = async (
         streaming: false,
       })
       return { clearInput: false }
+    }
+
+    if (command === 'edit') {
+      scrollContentToBottom.update((n) => n + 1)
+      scrollCodeMirrorToBottom.update((n) => n + 1)
     }
 
     if ('type' in result && result.type === 'done') {

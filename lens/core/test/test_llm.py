@@ -80,11 +80,15 @@ class _FakeResponse:
         lines: list[str] | None = None,
         body: bytes = b"",
         raise_in_iter: BaseException | None = None,
+        delay_first_line_s: float = 0.0,
+        delay_mid_line_s: float = 0.0,
     ) -> None:
         self.status_code = status_code
         self._lines = lines or []
         self._body = body
         self._raise_in_iter = raise_in_iter
+        self._delay_first_line_s = delay_first_line_s
+        self._delay_mid_line_s = delay_mid_line_s
         self.last_method: str = ""
         self.last_url: str = ""
         self.last_kwargs: dict[str, Any] = {}
@@ -93,10 +97,17 @@ class _FakeResponse:
         return self._body
 
     async def aiter_lines(self):  # type: ignore[return]
-        for line in self._lines:
+        for i, line in enumerate(self._lines):
+            if i == 0 and self._delay_first_line_s > 0:
+                await asyncio.sleep(self._delay_first_line_s)
+            elif i > 0 and self._delay_mid_line_s > 0:
+                await asyncio.sleep(self._delay_mid_line_s)
             if self._raise_in_iter is not None:
                 raise self._raise_in_iter
             yield line
+
+    async def aclose(self) -> None:
+        pass
 
     async def __aenter__(self) -> _FakeResponse:
         return self
@@ -118,6 +129,16 @@ class _FakeClient:
         self.captured_method = method
         self.captured_url = url
         self.captured_kwargs = kwargs
+        return self._response
+
+    def build_request(self, method: str, url: str, **kwargs: Any) -> object:
+        self.captured_method = method
+        self.captured_url = url
+        self.captured_kwargs = kwargs
+        return object()
+
+    async def send(self, _request: object, *, stream: bool = False) -> _FakeResponse:
+        _ = stream
         return self._response
 
     async def __aenter__(self) -> _FakeClient:
@@ -237,7 +258,8 @@ class TestLoadConfig(unittest.TestCase):
         self._write("[[llm]]\nbase_url = \"https://api.example.com/v1\"\n")
         cfg, _ = _load_config(self.root, None)
         self.assertAlmostEqual(cfg.temperature, 0.8)
-        self.assertEqual(cfg.timeout_seconds, 120)
+        self.assertAlmostEqual(cfg.first_token_timeout_seconds, 10.0)
+        self.assertAlmostEqual(cfg.timeout_seconds, 120.0)
 
     def test_custom_temperature_and_timeout(self) -> None:
         self._write(
@@ -246,7 +268,15 @@ class TestLoadConfig(unittest.TestCase):
         )
         cfg, _ = _load_config(self.root, None)
         self.assertAlmostEqual(cfg.temperature, 0.2)
-        self.assertEqual(cfg.timeout_seconds, 30)
+        self.assertAlmostEqual(cfg.timeout_seconds, 30.0)
+
+    def test_custom_first_token_timeout(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+            "first_token_timeout_seconds = 90\n"
+        )
+        cfg, _ = _load_config(self.root, None)
+        self.assertAlmostEqual(cfg.first_token_timeout_seconds, 90.0)
 
 
 # ---------------------------------------------------------------------------
@@ -362,6 +392,32 @@ class TestGenerateStream(unittest.TestCase):
             self._run(resp)
         self.assertIn("timed out", str(ctx.exception).lower())
 
+    def test_first_token_timeout_sse_delayed(self) -> None:
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\nmodel = \"m\"\n"
+            "first_token_timeout_seconds = 0.05\n"
+        )
+        resp = _FakeResponse(
+            lines=_sse(_chunk("slow")),
+            delay_first_line_s=0.2,
+        )
+        with self.assertRaises(LLMError) as ctx:
+            self._run(resp)
+        self.assertIn("first_token", str(ctx.exception).lower())
+
+    def test_stream_idle_timeout_between_chunks(self) -> None:
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\nmodel = \"m\"\n"
+            "timeout_seconds = 0.05\n"
+        )
+        resp = _FakeResponse(
+            lines=_sse(_chunk("a"), _chunk("b")),
+            delay_mid_line_s=0.3,
+        )
+        with self.assertRaises(LLMError) as ctx:
+            self._run(resp)
+        self.assertIn("stalled", str(ctx.exception).lower())
+
     def test_request_error_raises_llm_error(self) -> None:
         resp = _FakeResponse(
             lines=["data: keep going"],
@@ -454,8 +510,15 @@ class TestGenerateStream(unittest.TestCase):
             async def __aexit__(self, *_: Any) -> None:
                 pass
 
+            async def aclose(self) -> None:
+                pass
+
         class _TwoPhaseClient:
-            def stream(self, _method: str, _url: str, **_kw: Any) -> _TwoPhaseResponse:
+            def build_request(self, _m: str, _u: str, **_kw: Any) -> object:
+                return object()
+
+            async def send(self, _req: object, *, stream: bool = False) -> _TwoPhaseResponse:
+                _ = stream
                 return _TwoPhaseResponse()
 
             async def __aenter__(self) -> _TwoPhaseClient:

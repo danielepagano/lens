@@ -52,7 +52,8 @@ base_url         = "https://api.openai.com/v1"
 model            = "gpt-4o"
 api_key_env      = "OPENAI_API_KEY"   # env var that holds the API key
 temperature      = 0.8                # optional, default 0.8
-timeout_seconds  = 120                # optional, default 120
+first_token_timeout_seconds = 10      # optional: wall clock until headers + first SSE data line (cold start / thinking)
+timeout_seconds  = 120                # optional: max idle between stream lines after the first data line
 
 [[llm]]
 id               = "fast"             # optional name for non-default models

@@ -122,7 +122,14 @@ def _apply_bench_lens_config(
     cfg["project"] = project
 
     bench_entry: dict[str, object] = {"id": "bench"}
-    for key in ("base_url", "model", "api_key_env", "temperature", "timeout_seconds"):
+    for key in (
+        "base_url",
+        "model",
+        "api_key_env",
+        "temperature",
+        "timeout_seconds",
+        "first_token_timeout_seconds",
+    ):
         if key in profile:
             bench_entry[key] = profile[key]
     cfg["llm"] = [bench_entry]

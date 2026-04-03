@@ -45,6 +45,9 @@ export const kbFilters = writable<KbFilterState>({ type: '', tags: [] })
 /** Increment to request the main content area to scroll to bottom (e.g. when opening cursor node from tree). */
 export const scrollContentToBottom = writable(0)
 
+/** Increment to request any visible CodeMirror instance to scroll to the latest lines (line pick, inline edit). */
+export const scrollCodeMirrorToBottom = writable(0)
+
 export interface MediaUploadRequest {
   dir: string
 }

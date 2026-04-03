@@ -77,6 +77,7 @@ base_url = "http://127.0.0.1:1234/v1"
 model = "qwen3-8b"
 temperature = 0.7
 timeout_seconds = 300
+first_token_timeout_seconds = 120   # optional; cold local models
 # api_key_env = "XAI_API_KEY"   # for cloud providers
 ```
 

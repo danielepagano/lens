@@ -44,6 +44,11 @@ def _llm_api_host(base_url: str) -> str:
         return base_url
 
 
+def _first_phase_time_remaining(t_request_start: float, budget_s: float) -> float:
+    """Seconds left for headers + first SSE ``data:`` line (wall clock from request start)."""
+    return max(0.001, budget_s - (time.monotonic() - t_request_start))
+
+
 async def _emit_llm_progress(phase: str, detail: dict[str, Any]) -> None:
     cb = _llm_progress_cb.get()
     if cb is None:
@@ -88,7 +93,8 @@ class _LLMConfig:
     model: str
     api_key: str
     temperature: float
-    timeout_seconds: int
+    first_token_timeout_seconds: float
+    timeout_seconds: float
     reasoning_effort: str
 
 
@@ -146,7 +152,8 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
             model=model,
             api_key=api_key,
             temperature=float(raw.get("temperature", 0.8)),
-            timeout_seconds=int(raw.get("timeout_seconds", 120)),
+            first_token_timeout_seconds=float(raw.get("first_token_timeout_seconds", 10)),
+            timeout_seconds=float(raw.get("timeout_seconds", 120)),
             reasoning_effort=str(raw.get("reasoning_effort", _REASONING_EFFORT)),
         ),
         verbose_llm,
@@ -382,20 +389,22 @@ async def _stream_once(
 
     host = _llm_api_host(cfg.base_url)
     model_label = cfg.model or "(unspecified)"
-    read_timeout = float(cfg.timeout_seconds)
-    timeout = httpx.Timeout(connect=30.0, read=read_timeout, write=120.0, pool=30.0)
+    first_token_budget = float(cfg.first_token_timeout_seconds)
+    stream_idle_s = float(cfg.timeout_seconds)
+    timeout = httpx.Timeout(connect=30.0, read=None, write=120.0, pool=30.0)
     t0 = time.monotonic()
     logger.info(
-        "LLM HTTP POST starting round=%s host=%s model=%s read_timeout_s=%s",
+        "LLM HTTP POST starting round=%s host=%s model=%s first_token_timeout_s=%s stream_idle_timeout_s=%s",
         round_index,
         host,
         model_label,
-        read_timeout,
+        first_token_budget,
+        stream_idle_s,
     )
     await _emit_llm_progress(
         "http_request",
         {
-            "message": "Sending request to LLM API…",
+            "message": "Sending LLM request…",
             "round": round_index,
             "host": host,
             "model": model_label,
@@ -404,7 +413,27 @@ async def _stream_once(
 
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
-            async with client.stream("POST", url, json=payload, headers=headers) as response:
+            req = client.build_request("POST", url, json=payload, headers=headers)
+            try:
+                response = await asyncio.wait_for(
+                    client.send(req, stream=True),
+                    timeout=_first_phase_time_remaining(t0, first_token_budget),
+                )
+            except asyncio.TimeoutError as exc:
+                logger.error(
+                    "LLM HTTP timeout round=%s host=%s phase=first_token after %.2fs (budget=%ss)",
+                    round_index,
+                    host,
+                    time.monotonic() - t0,
+                    first_token_budget,
+                )
+                raise LLMError(
+                    f"LLM request produced no response within {cfg.first_token_timeout_seconds}s "
+                    "(headers or first stream data; increase [[llm]] first_token_timeout_seconds "
+                    "for slow cold starts)"
+                ) from exc
+
+            try:
                 if response.status_code != 200:
                     body = await response.aread()
                     logger.error(
@@ -432,15 +461,56 @@ async def _stream_once(
                     },
                 )
 
-                async for line in response.aiter_lines():
+                line_iter = response.aiter_lines().__aiter__()
+                first_phase = True
+                while True:
                     if cancel_event.is_set():
                         interrupted = True
                         break
 
-                    line = line.strip()
-                    if not line or not line.startswith("data: "):
+                    try:
+                        wait_s = (
+                            _first_phase_time_remaining(t0, first_token_budget)
+                            if first_phase
+                            else stream_idle_s
+                        )
+                        line = await asyncio.wait_for(line_iter.__anext__(), timeout=wait_s)
+                    except StopAsyncIteration:
+                        break
+                    except asyncio.TimeoutError as exc:
+                        if first_phase:
+                            logger.error(
+                                "LLM HTTP timeout round=%s host=%s phase=first_sse_line after %.2fs (budget=%ss)",
+                                round_index,
+                                host,
+                                time.monotonic() - t0,
+                                first_token_budget,
+                            )
+                            raise LLMError(
+                                f"LLM stream produced no SSE data within {cfg.first_token_timeout_seconds}s "
+                                "from request start (increase [[llm]] first_token_timeout_seconds "
+                                "for long provider thinking / cold start)"
+                            ) from exc
+                        logger.error(
+                            "LLM HTTP timeout round=%s host=%s phase=stream_idle after %.2fs (idle_limit=%ss)",
+                            round_index,
+                            host,
+                            time.monotonic() - t0,
+                            stream_idle_s,
+                        )
+                        raise LLMError(
+                            f"LLM stream stalled: no data for {cfg.timeout_seconds}s "
+                            "(increase [[llm]] timeout_seconds)"
+                        ) from exc
+
+                    stripped = line.strip()
+                    if not stripped:
                         continue
-                    data_str = line[6:]
+                    if not stripped.startswith("data:"):
+                        continue
+                    if first_phase:
+                        first_phase = False
+                    data_str = stripped[5:].lstrip()
                     if data_str == "[DONE]":
                         break
 
@@ -501,6 +571,8 @@ async def _stream_once(
                             acc["name"] = fn["name"]
                         if fn.get("arguments"):
                             acc["arguments_fragments"].append(fn["arguments"])
+            finally:
+                await response.aclose()
 
     except httpx.TimeoutException as exc:
         logger.error(
@@ -510,7 +582,7 @@ async def _stream_once(
             time.monotonic() - t0,
         )
         raise LLMError(
-            f"LLM request timed out after {cfg.timeout_seconds}s"
+            "LLM request timed out (connection or write; try increasing [[llm]] first_token_timeout_seconds)"
         ) from exc
     except httpx.RequestError as exc:
         logger.error(

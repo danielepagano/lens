@@ -106,7 +106,7 @@ Each turn: move (up to Speed) + one Action + one Bonus Action (if available). Ea
 
 STANDARD ACTIONS
 
-- ATTACK: Make one attack (or more if Extra Attack applies).
+- ATTACK: Make one attack (or more if Extra Attack applies). A creature with "Multiattack" may only have multi-attack on some of its attacks; in that case the other attacks take the full Action.
 - DASH: Gain extra movement equal to Speed this turn.
 - DISENGAGE: Movement doesn't provoke Opportunity Attacks for the rest of the turn.
 - DODGE: Until start of your next turn — attacks against you have Disadvantage; you have Advantage on Dex saves. Lost if Incapacitated or Speed = 0.
@@ -254,6 +254,19 @@ Controlled mount (trained): Initiative changes to match rider's; can only Dash, 
 UNDERWATER COMBAT
 
 Melee weapons without the Thrown property have Disadvantage unless the attacker has a Swim Speed. Ranged weapon attacks (not crossbows) have Disadvantage and auto-miss at long range. No Swim Speed → water is Difficult Terrain.
+
+WEAPON MASTERY PROPERTIES
+
+Usable only if a class/feature (e.g. Weapon Mastery) unlocks the weapon’s mastery property for a character.
+
+- Cleave: On melee hit, once per turn — melee attack a second creature within 5 ft of the first and in reach; on hit, weapon damage without ability mod.
+- Graze: On miss — deal damage to that creature equal to the ability mod used for the attack.
+- Nick: Light’s extra attack can be part of the Attack action instead of a Bonus Action; once per turn.
+- Push: On hit — push Large-or-smaller target up to 10 ft straight away.
+- Sap: On hit — target has Disadvantage on its next attack roll before the start of attacker's turn.
+- Slow: On hit (with damage) — target’s Speed −10 ft until the start of your next turn (multiple Slow hits don’t stack past −10).
+- Topple: On hit — Con save (DC 8 + attack ability mod + PB) or Prone.
+- Vex: On hit (with damage) — attacker gains Advantage on next attack vs that creature before the end of the attacker's next turn.
 
 RUNNING COMBAT WELL
 
