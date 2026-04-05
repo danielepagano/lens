@@ -222,12 +222,12 @@ When using Lens, at the very minimum the user can do three things:
 
 This is good for development (or developers), but does not scale to, say, using Lens on your phone. To do that we need a more full-featured server that allows a UI to do the file browsing and editing, as well as the git operations. 
 
-## Lens App (Future)
+## Lens App
 
 Ultimately, Lens should have a simple, text-centric UX that's like a "markdown editor with commands". A web UI somewhat similar to Claude Code may work well:
  - Most of the UI is about authoring or previewing markdown files.
  - At the bottom, a command strip that can navigate (replace main UI with results or a tree matching the file system), enter editing mode, or call operators.
-   - For example we are running the simulation, and I can just say `/write "introduce a suspicious vendor" -pin npc.forgery_guy` and it will generate and run that write operator with that extra pin
+   - For example we are running the simulation, and I can just say `/write introduce a suspicious vendor -pin npc.forgery_guy` and it will generate and run that write operator with that extra pin
    - You also need to be able to mark begin/end of text for creating sections, being able to zoom in and out of sections, etc. so something like `/collate my-aside /chapter-1 123 133` (or after `/collate my-aside` the UI lets you pick the node and mark the start and end) 
-   - Lifecycle features like committing a checkpoint, like `/commit went shopping and found a forger`
+   - Lifecycle features like committing a checkpoint, like `/tx-checkpoint went shopping and found a forger`
  - Sufficiently user-friendly, with hints and auto-complete, and works well on a phone... maybe not as much typing if you can just tap on things.
