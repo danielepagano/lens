@@ -96,9 +96,14 @@ class _LLMConfig:
     first_token_timeout_seconds: float
     timeout_seconds: float
     reasoning_effort: str
+    enable_thinking: bool
 
 
-def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bool]:
+def _load_config(
+    project_root: Path,
+    llm_id: str | None,
+    operator_name: str | None = None,
+) -> tuple[_LLMConfig, bool]:
     lens_toml = project_root / "lens.toml"
     if not lens_toml.exists():
         raise LLMError("lens.toml not found; run 'lens init' first")
@@ -107,6 +112,15 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
         config: dict[str, Any] = tomllib.load(f)
 
     verbose_llm: bool = bool(config.get("project", {}).get("verbose_llm", False)) or bool(config.get("dataset", {}).get("verbose_llm", False))
+
+    # Per-operator overrides from [operator.<name>] section.
+    op_cfg: dict[str, Any] = {}
+    if operator_name:
+        op_cfg = config.get("operator", {}).get(operator_name, {})
+
+    # Resolve the effective LLM ID: CLI arg > operator default > first entry.
+    if llm_id is None and "llm" in op_cfg:
+        llm_id = op_cfg["llm"]
 
     llm_list: list[dict[str, Any]] = config.get("llm", [])
     if not llm_list:
@@ -146,15 +160,17 @@ def _load_config(project_root: Path, llm_id: str | None) -> tuple[_LLMConfig, bo
                 f"(configured in [[llm]] api_key_env) is not set"
             )
 
+    # Precedence for each tunable field: op_cfg > [[llm]] entry > hardcoded default.
     return (
         _LLMConfig(
             base_url=base_url,
             model=model,
             api_key=api_key,
-            temperature=float(raw.get("temperature", 0.8)),
-            first_token_timeout_seconds=float(raw.get("first_token_timeout_seconds", 10)),
-            timeout_seconds=float(raw.get("timeout_seconds", 120)),
-            reasoning_effort=str(raw.get("reasoning_effort", _REASONING_EFFORT)),
+            temperature=float(op_cfg.get("temperature", raw.get("temperature", 0.8))),
+            first_token_timeout_seconds=float(op_cfg.get("first_token_timeout_seconds", raw.get("first_token_timeout_seconds", 10))),
+            timeout_seconds=float(op_cfg.get("timeout_seconds", raw.get("timeout_seconds", 120))),
+            reasoning_effort=str(op_cfg.get("reasoning_effort", raw.get("reasoning_effort", _REASONING_EFFORT))),
+            enable_thinking=bool(op_cfg.get("reasoning", raw.get("reasoning", False))),
         ),
         verbose_llm,
     )
@@ -235,7 +251,8 @@ async def generate_text(
     tools: list[dict[str, Any]] | None = None,
     cancel_event: asyncio.Event | None = None,
     command_tool_handlers: dict[str, CommandToolFn] | None = None,
-    enable_thinking: bool = False,
+    enable_thinking: bool | None = None,
+    operator_name: str | None = None,
     on_preview: PreviewHandler | None = None,
     interrupt_policy: InterruptPolicy = "return_empty",
     on_llm_error: Callable[[LLMError], Exception] | None = None,
@@ -251,6 +268,7 @@ async def generate_text(
                 cancel_event=cancel_event,
                 command_tool_handlers=command_tool_handlers,
                 enable_thinking=enable_thinking,
+                operator_name=operator_name,
             ),
             on_preview=on_preview,
         )
@@ -662,7 +680,8 @@ async def generate_stream(
     tools: list[dict[str, Any]] | None = None,
     cancel_event: asyncio.Event | None = None,
     command_tool_handlers: dict[str, CommandToolFn] | None = None,
-    enable_thinking: bool = False,
+    enable_thinking: bool | None = None,
+    operator_name: str | None = None,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Stream LLM output as structured events.
 
@@ -694,7 +713,8 @@ async def generate_stream(
     except (NotImplementedError, ValueError, RuntimeError):
         pass
 
-    cfg, verbose = _load_config(project_root, llm_id)
+    cfg, verbose = _load_config(project_root, llm_id, operator_name)
+    eff_thinking: bool = enable_thinking if enable_thinking is not None else cfg.enable_thinking
 
     host = _llm_api_host(cfg.base_url)
     model_label = cfg.model or "(unspecified)"
@@ -741,7 +761,7 @@ async def generate_stream(
                 stop_sequences=stop_sequences,
                 tools=tools,
                 cancel_event=_cancel,
-                enable_thinking=enable_thinking,
+                enable_thinking=eff_thinking,
                 round_index=iteration,
             ):
                 if event.preview:

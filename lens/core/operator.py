@@ -628,6 +628,8 @@ class Operator(ABC):
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        *,
+        operator_name: str | None = None,
     ) -> str:
         """Stream LLM output and return the full collected text."""
         return await generate_text(
@@ -638,6 +640,7 @@ class Operator(ABC):
             cancel_event=cancel_event,
             on_preview=on_token,
             interrupt_policy="return_empty",
+            operator_name=operator_name,
         )
 
     # ------------------------------------------------------------------
@@ -940,6 +943,7 @@ class Operator(ABC):
                 cancel_event=cancel_event,
                 on_preview=on_token,
                 interrupt_policy="raise",
+                operator_name=cls.name,
             )
         except KeyboardInterrupt:
             interrupted = True
@@ -982,7 +986,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token, cancel_event=cancel_event)
+            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1064,7 +1068,7 @@ class Operator(ABC):
             messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))
 
         try:
-            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token, cancel_event=cancel_event)
+            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1215,7 +1219,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, build_params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1291,7 +1295,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, effective_params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
         except KeyboardInterrupt:
             return
         except LLMError as e:

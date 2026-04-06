@@ -104,6 +104,7 @@ class SectionOperator(Operator):
                 cancel_event=cancel_event,
                 on_preview=on_token,
                 interrupt_policy="raise",
+                operator_name=self.name,
             )
         ).strip()
         if not summary:

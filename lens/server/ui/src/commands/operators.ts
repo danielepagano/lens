@@ -580,7 +580,11 @@ const handler: CommandHandler = async (
     streamingPreview.set(null)
 
     if (err instanceof StreamBusyError) {
-      ctx.setBusyMessage(err.message)
+      cliOutput.set({
+        output: err.message,
+        exitCode: 1,
+        streaming: false,
+      })
       return { clearInput: false }
     }
 

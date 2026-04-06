@@ -109,6 +109,28 @@ lens attach maps/dungeon.png       # looks for "maps/dungeon.png" inside the mou
 
 **`verbose_llm`** — when `true`, each LLM call emits a `[SYSTEM]` / `[USER]` / `[ASSISTANT]` block to the logger at `INFO` level — showing the exact prompt and full response with no raw protocol noise.
 
+### Per-operator LLM configuration
+
+Use `[operator.<name>]` sections to override LLM behaviour for a specific operator. All keys are optional.
+
+```toml
+[operator.write]
+llm              = "fast"   # default LLM ID for this operator (when --llm is not passed)
+temperature      = 0.9      # override temperature
+reasoning        = true     # enable thinking/reasoning mode
+reasoning_effort = "high"   # effort level: "low", "medium" (default), or "high"
+timeout_seconds  = 60       # override stream idle timeout
+first_token_timeout_seconds = 20  # override first-token timeout
+
+[operator.play]
+llm = "creative"
+timeout_seconds = 300
+```
+
+**Precedence:** CLI `--llm` flag (for LLM selection) > `[operator.<name>]` > `[[llm]]` entry values > hardcoded defaults.
+
+Operators: `write`, `edit`, `section`, `collate`, `design`, `play`, `advance`.
+
 ## Dice Rolling
 
 Any prompt sent to an AI operator (`write`, `play`, `edit`, etc.) may include inline dice expressions. These are **evaluated before the prompt reaches the AI** — the AI only ever sees the resolved result, never the `@roll` syntax.

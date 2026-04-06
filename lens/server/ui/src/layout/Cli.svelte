@@ -887,6 +887,7 @@
       }
     } finally {
       busy = false
+      busyMessage = null
       await tick()
       focusCliInput()
     }

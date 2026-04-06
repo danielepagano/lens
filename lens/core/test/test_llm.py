@@ -278,6 +278,93 @@ class TestLoadConfig(unittest.TestCase):
         cfg, _ = _load_config(self.root, None)
         self.assertAlmostEqual(cfg.first_token_timeout_seconds, 90.0)
 
+    # ------------------------------------------------------------------
+    # Per-operator [operator.<name>] overrides
+    # ------------------------------------------------------------------
+
+    def test_operator_section_overrides_temperature(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\ntemperature = 0.8\n\n"
+            "[operator.write]\ntemperature = 0.2\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="write")
+        self.assertAlmostEqual(cfg.temperature, 0.2)
+
+    def test_operator_section_overrides_timeouts(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n\n"
+            "[operator.play]\ntimeout_seconds = 300\nfirst_token_timeout_seconds = 25\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="play")
+        self.assertAlmostEqual(cfg.timeout_seconds, 300.0)
+        self.assertAlmostEqual(cfg.first_token_timeout_seconds, 25.0)
+
+    def test_operator_section_overrides_reasoning_effort(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n\n"
+            "[operator.design]\nreasoning_effort = \"high\"\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="design")
+        self.assertEqual(cfg.reasoning_effort, "high")
+
+    def test_operator_section_enables_thinking(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n\n"
+            "[operator.write]\nreasoning = true\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="write")
+        self.assertTrue(cfg.enable_thinking)
+
+    def test_operator_section_disables_thinking(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\nreasoning = true\n\n"
+            "[operator.play]\nreasoning = false\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="play")
+        self.assertFalse(cfg.enable_thinking)
+
+    def test_operator_section_selects_llm_id(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://default.example.com/v1\"\nmodel = \"default\"\n\n"
+            "[[llm]]\nid = \"fast\"\nbase_url = \"https://fast.example.com/v1\"\nmodel = \"mini\"\n\n"
+            "[operator.write]\nllm = \"fast\"\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="write")
+        self.assertEqual(cfg.base_url, "https://fast.example.com/v1")
+        self.assertEqual(cfg.model, "mini")
+
+    def test_explicit_llm_id_overrides_operator_default(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://default.example.com/v1\"\nmodel = \"default\"\n\n"
+            "[[llm]]\nid = \"fast\"\nbase_url = \"https://fast.example.com/v1\"\nmodel = \"mini\"\n\n"
+            "[[llm]]\nid = \"smart\"\nbase_url = \"https://smart.example.com/v1\"\nmodel = \"big\"\n\n"
+            "[operator.write]\nllm = \"fast\"\n"
+        )
+        # CLI-supplied llm_id="smart" must win over operator default "fast"
+        cfg, _ = _load_config(self.root, "smart", operator_name="write")
+        self.assertEqual(cfg.model, "big")
+
+    def test_operator_override_takes_precedence_over_llm_entry(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\ntemperature = 0.5\n\n"
+            "[operator.write]\ntemperature = 0.1\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="write")
+        self.assertAlmostEqual(cfg.temperature, 0.1)
+
+    def test_no_operator_section_uses_llm_entry_values(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\ntemperature = 0.3\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="write")
+        self.assertAlmostEqual(cfg.temperature, 0.3)
+
+    def test_unknown_operator_name_falls_through_to_defaults(self) -> None:
+        self._write("[[llm]]\nbase_url = \"https://api.example.com/v1\"\n")
+        cfg, _ = _load_config(self.root, None, operator_name="nonexistent")
+        self.assertAlmostEqual(cfg.temperature, 0.8)
+        self.assertFalse(cfg.enable_thinking)
+
 
 # ---------------------------------------------------------------------------
 # generate (streaming) tests

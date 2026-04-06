@@ -126,6 +126,7 @@ class DesignOperator(SessionOperator):
                 cancel_event=cancel_event,
                 on_preview=on_token,
                 interrupt_policy="raise",
+                operator_name=cls.name,
             )
         except KeyboardInterrupt:
             interrupted = True
