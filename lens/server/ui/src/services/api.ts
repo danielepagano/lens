@@ -224,6 +224,7 @@ export interface WriteParams {
   pins?: string[]
   unpins?: string[]
   llm_id?: string
+  reasoning?: string
   retry?: boolean
 }
 
@@ -250,6 +251,7 @@ export interface PlayParams {
   pins?: string[]
   unpins?: string[]
   llm_id?: string
+  reasoning?: string
   retry?: boolean
   end?: boolean
   as_pc?: string
@@ -269,6 +271,7 @@ export interface DesignParams {
   pins?: string[]
   unpins?: string[]
   llm_id?: string
+  reasoning?: string
   retry?: boolean
   end?: boolean
   slug?: string
@@ -285,6 +288,7 @@ export interface AdvanceParams {
   pins?: string[]
   unpins?: string[]
   llm_id?: string
+  reasoning?: string
   retry?: boolean
   feedback?: string
   end?: boolean
@@ -304,6 +308,7 @@ export interface EditParams {
   pins?: string[]
   unpins?: string[]
   llm_id?: string
+  reasoning?: string
   retry?: boolean
   replace?: boolean
   replacement?: string
@@ -334,6 +339,7 @@ export const runSectionStart = withStats((
 
 export interface SectionEndParams {
   llm_id?: string
+  reasoning?: string
 }
 
 export const runSectionEnd = (
@@ -350,6 +356,7 @@ export interface CollateParams {
   pins?: string[]
   unpins?: string[]
   llm_id?: string
+  reasoning?: string
 }
 
 export const runCollate = (

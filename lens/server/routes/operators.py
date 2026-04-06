@@ -33,6 +33,7 @@ class WriteBody(BaseModel):
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
+    reasoning: str | None = None
     retry: bool = False
 
 
@@ -46,6 +47,7 @@ class PlayBody(BaseModel):
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
+    reasoning: str | None = None
     retry: bool = False
     end: bool = False
     as_pc: str | None = None
@@ -59,6 +61,7 @@ class DesignBody(BaseModel):
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
+    reasoning: str | None = None
     retry: bool = False
     end: bool = False
     slug: str | None = None
@@ -72,6 +75,7 @@ class EditBody(BaseModel):
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
+    reasoning: str | None = None
     retry: bool = False
     replace: bool = False
 
@@ -84,6 +88,7 @@ class SectionStartBody(BaseModel):
 
 class SectionEndBody(BaseModel):
     llm_id: str | None = None
+    reasoning: str | None = None
 
 
 class AdvanceBody(BaseModel):
@@ -91,6 +96,7 @@ class AdvanceBody(BaseModel):
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
+    reasoning: str | None = None
     retry: bool = False
     feedback: str | None = None
     end: bool = False
@@ -104,6 +110,7 @@ class CollateBody(BaseModel):
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
+    reasoning: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +286,7 @@ async def operator_write(
             pins=body.pins,
             unpins=body.unpins,
             llm_id=body.llm_id,
+            reasoning=body.reasoning,
             retry=body.retry,
             on_token=on_token,
             cancel_event=lock.cancel_event,
@@ -354,6 +362,7 @@ async def operator_play(
             pins=pins,
             unpins=unpins,
             llm_id=body.llm_id,
+            reasoning=body.reasoning,
             retry=body.retry,
             end=body.end,
             slug=body.slug if not body.end and not body.retry else None,
@@ -398,6 +407,7 @@ async def operator_advance(
             pins=body.pins,
             unpins=body.unpins,
             llm_id=body.llm_id,
+            reasoning=body.reasoning,
             retry=body.retry,
             feedback=body.feedback,
             end=body.end,
@@ -450,6 +460,7 @@ async def operator_design(
             pins=pins,
             unpins=unpins,
             llm_id=body.llm_id,
+            reasoning=body.reasoning,
             retry=body.retry,
             end=body.end,
             slug=body.slug if not body.end and not body.retry else None,
@@ -508,6 +519,7 @@ async def operator_edit(
             pins=body.pins,
             unpins=body.unpins,
             llm_id=body.llm_id,
+            reasoning=body.reasoning,
             retry=body.retry,
             on_token=on_token,
             cancel_event=lock.cancel_event,
@@ -559,6 +571,7 @@ async def operator_section_end(
             session=session,
             narrative=narrative,
             llm_id=body.llm_id,
+            reasoning=body.reasoning,
             on_token=on_token,
             cancel_event=lock.cancel_event,
         )
@@ -593,6 +606,7 @@ async def operator_collate(
             pins=body.pins,
             unpins=body.unpins,
             llm_id=body.llm_id,
+            reasoning=body.reasoning,
             on_token=on_token,
             cancel_event=lock.cancel_event,
         )

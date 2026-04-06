@@ -50,13 +50,18 @@ def section(
         "-l",
         help="LLM ID to use for summary (overrides project default)",
     ),
+    reasoning: str | None = typer.Option(
+        None,
+        "--reasoning",
+        help="Reasoning override: none, low, medium, high",
+    ),
 ) -> None:
     """Create a child node at the cursor and open a section tag."""
     if end and id and id.strip():
         typer.echo("lens section: cannot use --end and section ID together", err=True)
         raise typer.Exit(1)
     if end:
-        _do_end(llm)
+        _do_end(llm, reasoning)
         return
     if id and id.strip():
         _do_start(id.strip(), pin, unpin)
@@ -84,14 +89,14 @@ def _do_start(id: str, pin: list[str], unpin: list[str]) -> None:
     typer.echo(f"Started section '{id}'")
 
 
-def _do_end(llm: str | None) -> None:
+def _do_end(llm: str | None, reasoning: str | None = None) -> None:
     session, narrative = _get_session_and_narrative()
     assert narrative is not None
     key: str = ""
     try:
         key = asyncio.run(SectionOperator.run_end(
             session=session, narrative=narrative,
-            llm_id=llm, on_token=_print_token,
+            llm_id=llm, reasoning=reasoning, on_token=_print_token,
         ))
         print()
     except ValueError as e:

@@ -17,6 +17,7 @@ import time
 import tomllib
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+import dataclasses
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -252,6 +253,7 @@ async def generate_text(
     cancel_event: asyncio.Event | None = None,
     command_tool_handlers: dict[str, CommandToolFn] | None = None,
     enable_thinking: bool | None = None,
+    reasoning: str | None = None,
     operator_name: str | None = None,
     on_preview: PreviewHandler | None = None,
     interrupt_policy: InterruptPolicy = "return_empty",
@@ -268,6 +270,7 @@ async def generate_text(
                 cancel_event=cancel_event,
                 command_tool_handlers=command_tool_handlers,
                 enable_thinking=enable_thinking,
+                reasoning=reasoning,
                 operator_name=operator_name,
             ),
             on_preview=on_preview,
@@ -681,6 +684,7 @@ async def generate_stream(
     cancel_event: asyncio.Event | None = None,
     command_tool_handlers: dict[str, CommandToolFn] | None = None,
     enable_thinking: bool | None = None,
+    reasoning: str | None = None,
     operator_name: str | None = None,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Stream LLM output as structured events.
@@ -714,6 +718,11 @@ async def generate_stream(
         pass
 
     cfg, verbose = _load_config(project_root, llm_id, operator_name)
+    if reasoning is not None:
+        if reasoning == "none":
+            cfg = dataclasses.replace(cfg, enable_thinking=False)
+        else:
+            cfg = dataclasses.replace(cfg, enable_thinking=True, reasoning_effort=reasoning)
     eff_thinking: bool = enable_thinking if enable_thinking is not None else cfg.enable_thinking
 
     host = _llm_api_host(cfg.base_url)

@@ -402,6 +402,7 @@ class AdvanceOperator(Operator):
         existing_ann: ParsedAnnotation | None,
         session: ProjectSession,
         llm_id: str | None,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
         feedback_messages: list[dict[str, str]] | None = None,
@@ -443,6 +444,7 @@ class AdvanceOperator(Operator):
                 tools=bundle.tools,
                 command_tool_handlers=bundle.handlers,
                 enable_thinking=True,
+                reasoning=reasoning,
                 cancel_event=cancel_event,
                 on_preview=on_token,
                 interrupt_policy="raise",
@@ -550,6 +552,7 @@ class AdvanceOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        reasoning: str | None = None,
         feedback: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
@@ -603,6 +606,10 @@ class AdvanceOperator(Operator):
         if feedback and previous_content:
             feedback_messages = build_feedback_messages(previous_content, feedback, session.project_root)
 
+        eff_reasoning: str | None = new_params.get("reasoning")
+        if reasoning:
+            new_params["reasoning"] = reasoning
+            eff_reasoning = reasoning
         await cls._run_generation(
             op=op,
             storage=storage,
@@ -611,6 +618,7 @@ class AdvanceOperator(Operator):
             existing_ann=fresh_ann,
             session=session,
             llm_id=llm_id,
+            reasoning=eff_reasoning,
             on_token=on_token,
             cancel_event=cancel_event,
             feedback_messages=feedback_messages,
@@ -627,6 +635,7 @@ class AdvanceOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
@@ -683,6 +692,8 @@ class AdvanceOperator(Operator):
         inline_storage = session.new_storage(owner=inline_owner)
         inline_op = cls(inline_storage, narrative)
 
+        if reasoning:
+            ann_params["reasoning"] = reasoning
         await cls._run_generation(
             op=inline_op,
             storage=inline_storage,
@@ -691,6 +702,7 @@ class AdvanceOperator(Operator):
             existing_ann=None,
             session=session,
             llm_id=llm_id,
+            reasoning=reasoning,
             on_token=on_token,
             cancel_event=cancel_event,
         )
@@ -706,6 +718,7 @@ class AdvanceOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None = None,
+        reasoning: str | None = None,
         retry: bool = False,
         feedback: str | None = None,
         end: bool = False,
@@ -728,6 +741,7 @@ class AdvanceOperator(Operator):
                 pins=pins,
                 unpins=unpins,
                 llm_id=llm_id,
+                reasoning=reasoning,
                 feedback=feedback,
                 on_token=on_token,
                 on_stream_target=on_stream_target,
@@ -746,6 +760,7 @@ class AdvanceOperator(Operator):
             pins=pins,
             unpins=unpins,
             llm_id=llm_id,
+            reasoning=reasoning,
             on_token=on_token,
             on_stream_target=on_stream_target,
             cancel_event=cancel_event,

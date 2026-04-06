@@ -316,6 +316,7 @@ class SessionOperator(Operator):
         setup_storage: Storage,
         prompt: str | None,
         llm_id: str | None,
+        reasoning: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: Any | None,
@@ -340,6 +341,7 @@ class SessionOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        reasoning: str | None,
         retry: bool,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: Any | None,
@@ -371,6 +373,7 @@ class SessionOperator(Operator):
         session: ProjectSession,
         narrative: NarrativeNode,
         llm_id: str | None = None,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> Any:
@@ -430,6 +433,7 @@ class SessionOperator(Operator):
                         on_preview=on_token,
                         interrupt_policy="raise",
                         operator_name=cls.name,
+                        reasoning=reasoning,
                     )
                 ).strip()
 
@@ -451,6 +455,7 @@ class SessionOperator(Operator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None = None,
+        reasoning: str | None = None,
         retry: bool = False,
         end: bool = False,
         slug: str | None = None,
@@ -467,7 +472,7 @@ class SessionOperator(Operator):
         if end:
             return await cls.run_session_end(
                 session=session, narrative=narrative,
-                llm_id=llm_id, on_token=on_token,
+                llm_id=llm_id, reasoning=reasoning, on_token=on_token,
                 cancel_event=cancel_event,
             )
 
@@ -487,6 +492,7 @@ class SessionOperator(Operator):
                 pins=pins,
                 unpins=unpins,
                 llm_id=llm_id,
+                reasoning=reasoning,
                 retry=retry,
                 on_token=on_token,
                 cancel_event=cancel_event,
@@ -510,6 +516,7 @@ class SessionOperator(Operator):
                 setup_storage=setup_storage,
                 prompt=prompt,
                 llm_id=llm_id,
+                reasoning=reasoning,
                 on_token=on_token,
                 on_stream_target=on_stream_target,
                 cancel_event=cancel_event,

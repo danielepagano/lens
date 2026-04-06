@@ -88,6 +88,7 @@ class DesignOperator(SessionOperator):
         existing_ann: ParsedAnnotation | None,
         session: ProjectSession,
         llm_id: str | None,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
         feedback_messages: list[dict[str, str]] | None = None,
@@ -123,6 +124,7 @@ class DesignOperator(SessionOperator):
                 tools=bundle.tools,
                 command_tool_handlers=bundle.handlers,
                 enable_thinking=True,
+                reasoning=reasoning,
                 cancel_event=cancel_event,
                 on_preview=on_token,
                 interrupt_policy="raise",
@@ -181,6 +183,7 @@ class DesignOperator(SessionOperator):
         setup_storage: Storage,
         prompt: str | None,
         llm_id: str | None,
+        reasoning: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
@@ -192,6 +195,8 @@ class DesignOperator(SessionOperator):
             mention_ids = cls.mention_pins(prompt, session.project_root)
             if mention_ids:
                 ann_params["kb_pin"] = mention_ids
+        if reasoning:
+            ann_params["reasoning"] = reasoning
 
         # Create a new storage whose owner is keyed to the inline annotation.
         child_rel_path = str(node.md_path().relative_to(session.git_root))
@@ -208,6 +213,7 @@ class DesignOperator(SessionOperator):
             existing_ann=None,
             session=session,
             llm_id=llm_id,
+            reasoning=reasoning,
             on_token=on_token,
             cancel_event=cancel_event,
         )
@@ -225,6 +231,7 @@ class DesignOperator(SessionOperator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
+        reasoning: str | None,
         retry: bool,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
@@ -262,6 +269,8 @@ class DesignOperator(SessionOperator):
 
             new_params: dict[str, Any] = dict(existing_ann.params)
             # Do NOT replace the stored prompt — feedback is a message turn.
+            if reasoning:
+                new_params["reasoning"] = reasoning
 
             # Update front matter before discard so context reflects new module.
             if module_id or pins or unpins:
@@ -287,6 +296,7 @@ class DesignOperator(SessionOperator):
                 existing_ann=fresh_ann,
                 session=session,
                 llm_id=llm_id,
+                reasoning=new_params.get("reasoning"),
                 on_token=on_token,
                 cancel_event=cancel_event,
                 feedback_messages=feedback_messages,
@@ -311,6 +321,8 @@ class DesignOperator(SessionOperator):
                 mention_ids = cls.mention_pins(prompt, session.project_root)
                 if mention_ids:
                     ann_params["kb_pin"] = mention_ids
+            if reasoning:
+                ann_params["reasoning"] = reasoning
 
             child_rel_path = str(node.md_path().relative_to(session.git_root))
             ann_line = cls.ann_line_for_append(node.md_path().read_text(encoding="utf-8"))
@@ -326,6 +338,7 @@ class DesignOperator(SessionOperator):
                 existing_ann=None,
                 session=session,
                 llm_id=llm_id,
+                reasoning=reasoning,
                 on_token=on_token,
                 cancel_event=cancel_event,
             )
@@ -343,6 +356,7 @@ class DesignOperator(SessionOperator):
         session: ProjectSession,
         narrative: NarrativeNode,
         llm_id: str | None = None,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> KbExtractResult:
@@ -395,6 +409,7 @@ class DesignOperator(SessionOperator):
         pins: list[str],
         unpins: list[str],
         llm_id: str | None = None,
+        reasoning: str | None = None,
         retry: bool = False,
         end: bool = False,
         slug: str | None = None,
@@ -414,6 +429,7 @@ class DesignOperator(SessionOperator):
             pins=pins,
             unpins=unpins,
             llm_id=llm_id,
+            reasoning=reasoning,
             retry=retry,
             end=end,
             slug=slug,
