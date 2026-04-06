@@ -1,5 +1,21 @@
 # Lens Backlog
 
+- Prompt assembly and retry architecture audit
+- Public Release Readiness  
+   - License
+   - Documentation
+      - Better init tooling/docs
+      - Explicit contribution guidelines?
+   - Main branch protection, CI
+   - Remove hard-coding of usage of gitlab/fly, make modular
+      - Streamline project creation/management
+   - Removing Licensed dataset content like dnd (already technically possible)
+      - Possibly retain what's in the public D&D SRD
+      - Remove ddb and nook tools
+      - Force push to clean up history
+   - Improve maintainability
+      - Clean up of UI in particular: smaller modules, cleaner interfaces 
+
 ## Prompt assembly and retry architecture audit
 
 **Context:** `--retry "feedback"` was implemented using multi-turn messages (assistant: previous output, user: feedback + rewrite directive). This exposed a deeper inconsistency worth fixing properly.
