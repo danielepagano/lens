@@ -299,7 +299,7 @@
       </article>
     {/if}
 
-    {#if metaSummary}
+    {#if metaSummary && !editMode}
       <details class="kb-meta-section" bind:open={metaOpen}>
         <summary class="kb-meta-summary">{metaSummary}</summary>
         <div class="kb-meta-body">

@@ -149,12 +149,47 @@
     updateCommandState()
   }
 
+  /** Keep the bottom bar visible when the iOS virtual keyboard opens.
+   *  Safari shrinks the visual viewport but leaves the layout viewport
+   *  unchanged, so a flex-based bottom bar ends up hidden behind the
+   *  keyboard.  We set a CSS custom property on #app that the layout
+   *  reads as a height override, effectively shrinking the whole shell
+   *  to the visible area. */
+  function handleViewportResize() {
+    const vv = window.visualViewport
+    if (!vv) return
+    const visibleHeight = vv.height
+    const app = document.getElementById('app')
+    if (!app) return
+    // Only override when the keyboard is actually eating space (>50px to
+    // avoid spurious triggers from toolbar show/hide on scroll).
+    // On iOS, offsetTop changes when the user scrolls the page behind the
+    // keyboard.  The usable height is `vv.height`; we also need to offset
+    // by `vv.offsetTop` so the shell starts at the visible top edge.
+    const delta = window.innerHeight - visibleHeight - vv.offsetTop
+    if (delta > 50) {
+      app.style.height = `${visibleHeight}px`
+      app.style.marginTop = `${vv.offsetTop}px`
+      // Prevent iOS from scrolling the page body behind the app shell.
+      window.scrollTo(0, 0)
+    } else {
+      app.style.height = ''
+      app.style.marginTop = ''
+    }
+  }
+
   onMount(() => {
     window.addEventListener('keydown', globalKeydownFocusCli, true)
+    window.visualViewport?.addEventListener('resize', handleViewportResize)
+    window.visualViewport?.addEventListener('scroll', handleViewportResize)
   })
 
   onDestroy(() => {
     window.removeEventListener('keydown', globalKeydownFocusCli, true)
+    window.visualViewport?.removeEventListener('resize', handleViewportResize)
+    window.visualViewport?.removeEventListener('scroll', handleViewportResize)
+    const app = document.getElementById('app')
+    if (app) { app.style.height = ''; app.style.marginTop = '' }
   })
 
   function pushHistory(command: string) {
@@ -999,6 +1034,9 @@
         rows="1"
         disabled={busy}
         autocomplete={cliInputAutocomplete}
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck={false}
         data-testid="cli-input"
       />
       {#if showHint}

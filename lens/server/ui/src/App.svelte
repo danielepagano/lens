@@ -18,7 +18,9 @@
   import { getStats, getNode, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
-  import { kbPanelOpen, selectedKbId, kbFilters, inlineEditMode } from './stores/ui'
+  import { kbPanelOpen, selectedKbId, kbFilters, inlineEditMode, editorFocused } from './stores/ui'
+
+  $: document.body.classList.toggle('editor-focused', $editorFocused)
 
   function hashKbParam(): string | null {
     return get(kbPanelOpen) ? get(selectedKbId) : null

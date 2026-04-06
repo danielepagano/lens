@@ -9,7 +9,7 @@
   import { tags } from '@lezer/highlight'
   import { Decoration, type DecorationSet, ViewPlugin, type ViewUpdate } from '@codemirror/view'
   import { pickLineNumbers, pickRestExtensions, type LinePickRowState } from './cmLinePick'
-  import { scrollCodeMirrorToBottom } from '../../stores/ui'
+  import { scrollCodeMirrorToBottom, editorFocused } from '../../stores/ui'
 
   /** Theme-aware highlighter: defaultHighlightStyle uses fixed dark blues (#219 etc.) whose
    *  StyleMod classes (e.g. …ec) are illegible on Pico dark backgrounds. */
@@ -272,6 +272,9 @@
       EditorView.lineWrapping,
       history(),
       bracketMatching(),
+      EditorView.updateListener.of((update) => {
+        if (update.focusChanged) editorFocused.set(update.view.hasFocus)
+      }),
     )
     if (lang === 'markdown') {
       exts.push(markdown())
@@ -312,6 +315,7 @@
 
   onDestroy(() => {
     view?.destroy()
+    editorFocused.set(false)
   })
 
   $: if (view && content !== _sync.prevContent) {

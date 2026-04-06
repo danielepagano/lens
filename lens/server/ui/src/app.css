@@ -18,6 +18,7 @@ select {
   flex-direction: column;
   height: 100dvh;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* ---- Shell layout ---- */
@@ -465,11 +466,16 @@ details[open]>summary {
   color: var(--pico-muted-color);
   border-top: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
   z-index: 250;
   background: var(--pico-background-color);
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Hide CLI when a CodeMirror editor has focus on mobile — reclaims keyboard-adjacent space */
+@media (max-width: 949px) {
+  body.editor-focused .bottom-bar {
+    display: none;
+  }
 }
 
 .cli-input-row {
@@ -904,6 +910,22 @@ details[open]>summary {
 }
 
 /* ---- TopBar nav: parent link + current title (all widths) ---- */
+
+.inline-edit-label {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inline-edit-ok {
+  background: var(--pico-primary-background) !important;
+  color: var(--pico-primary-inverse) !important;
+  border-color: var(--pico-primary-background) !important;
+}
 
 .parent-link {
   display: flex;
@@ -1614,7 +1636,7 @@ ul.kb-item-list {
 
 .kb-viewer .cm-scroller {
   overflow: auto;
-  padding-bottom: 3rem;
+  padding-bottom: 2rem;
 }
 
 .inline-edit-view .cm-wrapper {
@@ -1879,7 +1901,7 @@ ul.kb-item-list {
 
 @media (max-width: 949px) {
   .kb-meta-section {
-    margin-bottom: 36px;
+    margin-bottom: 4px;
   }
 }
 

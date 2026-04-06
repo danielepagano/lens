@@ -80,6 +80,10 @@ export interface InlineEditState {
 }
 export const inlineEditMode = writable<InlineEditState | null>(null)
 export const inlineEditResult = writable<string | null>(null)
+/** Increment to request InlineEditView to confirm (OK) the current edit. */
+export const inlineEditConfirmTrigger = writable(0)
+/** Increment to request InlineEditView to cancel the current edit. */
+export const inlineEditCancelTrigger = writable(0)
 
 export interface KbDiffRequest {
   kbId: string
@@ -87,3 +91,7 @@ export interface KbDiffRequest {
   current: string
 }
 export const kbDiffRequest = writable<KbDiffRequest | null>(null)
+
+/** True when a CodeMirror editor has focus.  Used on mobile to hide the CLI
+ *  bottom bar so the virtual keyboard doesn't waste screen space. */
+export const editorFocused = writable(false)

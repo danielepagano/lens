@@ -2,9 +2,20 @@
   import { get } from 'svelte/store'
   import CodeMirrorEditor from './CodeMirrorEditor.svelte'
   import { nodeContent } from '../../stores/document'
-  import { inlineEditMode, inlineEditResult } from '../../stores/ui'
+  import { inlineEditMode, inlineEditResult, inlineEditConfirmTrigger, inlineEditCancelTrigger } from '../../stores/ui'
 
   let currentText = ''
+  let lastConfirm = get(inlineEditConfirmTrigger)
+  let lastCancel = get(inlineEditCancelTrigger)
+
+  $: {
+    const t = $inlineEditConfirmTrigger
+    if (t !== lastConfirm) { lastConfirm = t; confirm() }
+  }
+  $: {
+    const t = $inlineEditCancelTrigger
+    if (t !== lastCancel) { lastCancel = t; cancel() }
+  }
 
   function handleChange(e: CustomEvent<string>) {
     currentText = e.detail
@@ -63,14 +74,6 @@
     : $nodeContent}
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="inline-edit-view" data-testid="inline-edit-view" on:keydown={handleKeydown}>
-    <div class="inline-edit-hint">
-      {#if state.appendMode}
-        Append text
-      {:else}
-        Editing lines {state.startLine}–{state.endLine}
-      {/if}
-      <span class="inline-edit-shortcut">Ctrl+Enter to apply · Esc to cancel</span>
-    </div>
     <CodeMirrorEditor
       content={appendContent}
       editableRange={{
@@ -81,10 +84,6 @@
       lang="markdown"
       on:change={handleChange}
     />
-    <div class="inline-edit-toolbar">
-      <button type="button" class="inline-edit-ok" on:click={confirm}>OK</button>
-      <button type="button" class="inline-edit-cancel secondary" on:click={cancel}>Cancel</button>
-    </div>
   </div>
 {/if}
 
@@ -92,7 +91,6 @@
   .inline-edit-view {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
     flex: 1;
     min-height: 0;
     min-width: 0;
@@ -101,27 +99,5 @@
     padding-bottom: 0.35rem;
     overflow: hidden;
     box-sizing: border-box;
-  }
-  .inline-edit-hint {
-    flex-shrink: 0;
-    font-size: 0.8rem;
-    color: var(--pico-muted-color, #73828c);
-    padding: 0 0.25rem;
-  }
-  .inline-edit-shortcut {
-    margin-left: 0.75rem;
-    opacity: 0.7;
-  }
-  .inline-edit-toolbar {
-    flex-shrink: 0;
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.15rem 0 0;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  .inline-edit-toolbar button {
-    padding: 0.35rem 1rem;
-    font-size: 0.85rem;
-    margin: 0;
   }
 </style>
