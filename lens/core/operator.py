@@ -630,6 +630,7 @@ class Operator(ABC):
         cancel_event: asyncio.Event | None = None,
         *,
         operator_name: str | None = None,
+        reasoning: str | None = None,
     ) -> str:
         """Stream LLM output and return the full collected text."""
         return await generate_text(
@@ -641,6 +642,7 @@ class Operator(ABC):
             on_preview=on_token,
             interrupt_policy="return_empty",
             operator_name=operator_name,
+            reasoning=reasoning,
         )
 
     # ------------------------------------------------------------------
@@ -783,6 +785,7 @@ class Operator(ABC):
         unpins: list[str],
         llm_id: str | None,
         retry: bool,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
@@ -832,11 +835,13 @@ class Operator(ABC):
                 await cls._do_retry(
                     session, narrative, cursor, rel_path, existing_ann,
                     prompt=prompt, pins=pins or [], unpins=unpins or [],
-                    llm_id=llm_id, extra_params=extra_params,
+                    llm_id=llm_id, reasoning=reasoning, extra_params=extra_params,
                     on_token=on_token, cancel_event=cancel_event,
                 )
             elif prompt or pins or unpins or (
                 llm_id and llm_id != existing_ann.params.get("llm_id")
+            ) or (
+                reasoning and reasoning != existing_ann.params.get("reasoning")
             ):
                 # New args without --retry → auto-commit previous, start fresh
                 session.new_storage().stage_all()
@@ -844,6 +849,7 @@ class Operator(ABC):
                 await cls._do_fresh_inline(
                     session, narrative, cursor, rel_path,
                     prompt, pins, unpins, llm_id,
+                    reasoning=reasoning,
                     on_token=on_token,
                     extra_params=extra_params,
                     cancel_event=cancel_event,
@@ -857,6 +863,7 @@ class Operator(ABC):
                 await cls._do_fresh_inline(
                     session, narrative, cursor, rel_path,
                     prompt, pins, unpins, llm_id,
+                    reasoning=reasoning,
                     on_token=on_token,
                     extra_params=extra_params,
                     cancel_event=cancel_event,
@@ -867,6 +874,7 @@ class Operator(ABC):
             await cls._do_fresh_inline(
                 session, narrative, cursor, rel_path,
                 prompt, pins, unpins, llm_id,
+                reasoning=reasoning,
                 on_token=on_token,
                 extra_params=extra_params,
                 cancel_event=cancel_event,
@@ -886,6 +894,7 @@ class Operator(ABC):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
+        reasoning: str | None = None,
     ) -> None:
         ann_params: dict[str, Any] = {}
         if prompt:
@@ -896,6 +905,8 @@ class Operator(ABC):
             ann_params["kb_unpin"] = unpins
         if llm_id:
             ann_params["llm_id"] = llm_id
+        if reasoning:
+            ann_params["reasoning"] = reasoning
         if extra_params:
             ann_params.update(extra_params)
 
@@ -944,6 +955,7 @@ class Operator(ABC):
                 on_preview=on_token,
                 interrupt_policy="raise",
                 operator_name=cls.name,
+                reasoning=reasoning,
             )
         except KeyboardInterrupt:
             interrupted = True
@@ -977,6 +989,7 @@ class Operator(ABC):
         ann_pins = cls.extract_list(existing_ann.params, "kb_pin")
         ann_unpins = cls.extract_list(existing_ann.params, "kb_unpin")
         ann_llm_id: str | None = existing_ann.params.get("llm_id")
+        ann_reasoning: str | None = existing_ann.params.get("reasoning")
 
         owner = cls._owner_for_ann(existing_ann, rel_path)
         op = cls(session.new_storage(owner=owner), narrative)
@@ -986,7 +999,7 @@ class Operator(ABC):
         messages = op.build_messages(crawl_result, existing_ann.params)
 
         try:
-            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
+            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name, reasoning=ann_reasoning)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1010,6 +1023,7 @@ class Operator(ABC):
         pins: list[str] | None = None,
         unpins: list[str] | None = None,
         llm_id: str | None = None,
+        reasoning: str | None = None,
         extra_params: dict[str, Any] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
@@ -1034,6 +1048,8 @@ class Operator(ABC):
             new_params["kb_unpin"] = unpins
         if llm_id:
             new_params["llm_id"] = llm_id
+        if reasoning:
+            new_params["reasoning"] = reasoning
         if extra_params:
             new_params.update(extra_params)
 
@@ -1041,6 +1057,7 @@ class Operator(ABC):
         eff_pins = cls.extract_list(new_params, "kb_pin")
         eff_unpins = cls.extract_list(new_params, "kb_unpin")
         eff_llm_id: str | None = new_params.get("llm_id")
+        eff_reasoning: str | None = new_params.get("reasoning")
 
         owner = cls._owner_for_ann(existing_ann, rel_path)
         op = cls(session.new_storage(owner=owner), narrative)
@@ -1068,7 +1085,7 @@ class Operator(ABC):
             messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))
 
         try:
-            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
+            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name, reasoning=eff_reasoning)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1103,6 +1120,7 @@ class Operator(ABC):
         unpins: list[str],
         llm_id: str | None,
         retry: bool,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
@@ -1135,6 +1153,8 @@ class Operator(ABC):
             params["prompt"] = prompt
         if manual:
             params["manual"] = True
+        if reasoning:
+            params["reasoning"] = reasoning
 
         if retry:
             await cls._do_retry_mutation(
@@ -1218,8 +1238,9 @@ class Operator(ABC):
         build_params["target"] = selected_text
         messages = op.build_messages(crawl_result, build_params)
 
+        mut_reasoning: str | None = params.get("reasoning")
         try:
-            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name, reasoning=mut_reasoning)
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1276,10 +1297,12 @@ class Operator(ABC):
             "\n".join(lines[: open_ann.line_start - 1])
         ).strip()
 
-        # Recover stored params from the claim tag; new prompt overrides.
+        # Recover stored params from the claim tag; new prompt/reasoning override.
         effective_params = dict(open_ann.params)
         if params.get("prompt"):
             effective_params["prompt"] = params["prompt"]
+        if params.get("reasoning"):
+            effective_params["reasoning"] = params["reasoning"]
         if not effective_params.get("prompt"):
             raise OperatorError("no prompt found in claim tag and none provided")
         effective_params["target"] = selected_text
@@ -1293,9 +1316,10 @@ class Operator(ABC):
             current_content=passage_before or None,
         )
         messages = op.build_messages(crawl_result, effective_params)
+        retry_reasoning: str | None = effective_params.get("reasoning")
 
         try:
-            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name)
+            content = await cls.stream_output(messages, session.project_root, llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name, reasoning=retry_reasoning)
         except KeyboardInterrupt:
             return
         except LLMError as e:

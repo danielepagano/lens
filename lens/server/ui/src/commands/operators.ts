@@ -74,6 +74,7 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
+      { name: 'reasoning', valueType: 'slug', hint: 'reasoning effort: none, low, medium, high' },
       { name: 'retry' },
       { name: 'manual', hint: 'append text directly without AI' },
     ],
@@ -90,6 +91,7 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
+      { name: 'reasoning', valueType: 'slug', hint: 'reasoning effort: none, low, medium, high' },
       { name: 'retry' },
       { name: 'end' },
       { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
@@ -106,6 +108,7 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
+      { name: 'reasoning', valueType: 'slug', hint: 'reasoning effort: none, low, medium, high' },
       { name: 'retry' },
       { name: 'end' },
       { name: 'pass', hint: 'have the GM respond now' },
@@ -123,6 +126,7 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
+      { name: 'reasoning', valueType: 'slug', hint: 'reasoning effort: none, low, medium, high' },
       { name: 'retry' },
       { name: 'end' },
     ],
@@ -141,6 +145,7 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
+      { name: 'reasoning', valueType: 'slug', hint: 'reasoning effort: none, low, medium, high' },
       { name: 'retry', hint: "retry previous edit in given location" },
       { name: 'replace', hint: "don't use AI, replace text with prompt directly" },
     ],
@@ -155,6 +160,7 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM for summary (when ending)' },
+      { name: 'reasoning', valueType: 'slug', hint: 'reasoning effort: none, low, medium, high' },
     ],
   },
   {
@@ -171,6 +177,7 @@ const commands: CommandDefinition[] = [
       { name: 'pin', valueType: 'kb-id', repeatable: true },
       { name: 'unpin', valueType: 'kb-id', repeatable: true },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
+      { name: 'reasoning', valueType: 'slug', hint: 'reasoning effort: none, low, medium, high' },
     ],
   },
   {
@@ -199,6 +206,7 @@ const handler: CommandHandler = async (
   const pins = (ctx.args.options['pin'] as string[] | undefined) ?? []
   const unpins = (ctx.args.options['unpin'] as string[] | undefined) ?? []
   const llmId = (ctx.args.options['llm'] as string | undefined) || undefined
+  const reasoning = (ctx.args.options['reasoning'] as string | undefined) || undefined
   const as_pc = (ctx.args.options['as'] as string | undefined) || undefined
   const retry = ctx.args.options['retry'] === true
 
@@ -332,7 +340,7 @@ const handler: CommandHandler = async (
 
     if (command === 'write') {
       result = await runWrite(
-        { prompt, pins, unpins, llm_id: llmId, retry },
+        { prompt, pins, unpins, llm_id: llmId, reasoning, retry },
         handleEvent
       )
     } else if (command === 'play') {
@@ -365,6 +373,7 @@ const handler: CommandHandler = async (
           pins,
           unpins,
           llm_id: llmId,
+          reasoning,
           retry,
           end: endPlay,
           as_pc,
@@ -385,7 +394,7 @@ const handler: CommandHandler = async (
         throw new Error('days must be a positive integer')
       }
       result = await runAdvance(
-        { days, pins, unpins, llm_id: llmId, retry: retryAdvance, feedback: retryAdvance ? prompt : undefined, end: endAdvance },
+        { days, pins, unpins, llm_id: llmId, reasoning, retry: retryAdvance, feedback: retryAdvance ? prompt : undefined, end: endAdvance },
         handleEvent
       )
     } else if (command === 'design') {
@@ -406,7 +415,7 @@ const handler: CommandHandler = async (
         ? ((ctx.args.options['slug'] as string | undefined) || undefined)
         : undefined
       result = await runDesign(
-        { prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId, retry, end: endDesign, slug: designSlug },
+        { prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId, reasoning, retry, end: endDesign, slug: designSlug },
         handleEvent
       )
     } else if (command === 'structure-section') {
@@ -416,7 +425,7 @@ const handler: CommandHandler = async (
         throw new Error('Cannot use section ID and --end together')
       }
       if (endSection) {
-        result = await runSectionEnd({ llm_id: llmId }, handleEvent)
+        result = await runSectionEnd({ llm_id: llmId, reasoning }, handleEvent)
       } else if (sectionId) {
         result = await runSectionStart({ id: sectionId, pins, unpins })
       } else {
@@ -451,6 +460,7 @@ const handler: CommandHandler = async (
           pins,
           unpins,
           llm_id: llmId,
+          reasoning,
         },
         handleEvent
       )
@@ -532,6 +542,7 @@ const handler: CommandHandler = async (
             pins,
             unpins,
             llm_id: llmId,
+            reasoning,
             retry,
             replace,
           },

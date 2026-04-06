@@ -52,6 +52,11 @@ def collate(
         "-l",
         help="LLM ID to use (overrides project default)",
     ),
+    reasoning: str | None = typer.Option(
+        None,
+        "--reasoning",
+        help="Reasoning override: none, low, medium, high",
+    ),
 ) -> None:
     """Section a line range at an arbitrary address."""
     session, narrative = _get_session_and_narrative()
@@ -72,6 +77,7 @@ def collate(
             pins=pin,
             unpins=unpin,
             llm_id=llm,
+            reasoning=reasoning,
             on_token=_print_token,
         ))
         print()

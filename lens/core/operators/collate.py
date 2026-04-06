@@ -47,6 +47,7 @@ class CollateOperator(Operator):
         llm_id: str | None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        reasoning: str | None = None,
     ) -> None:
         md_path = target_node.md_path()
         text = md_path.read_text(encoding="utf-8")
@@ -133,6 +134,7 @@ class CollateOperator(Operator):
                 on_preview=on_token,
                 interrupt_policy="raise",
                 operator_name=self.name,
+                reasoning=reasoning,
             )
         ).strip()
         if not summary:
@@ -187,6 +189,7 @@ class CollateOperator(Operator):
         pins: list[str] | None = None,
         unpins: list[str] | None = None,
         llm_id: str | None = None,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
@@ -212,4 +215,5 @@ class CollateOperator(Operator):
             llm_id=llm_id,
             on_token=on_token,
             cancel_event=cancel_event,
+            reasoning=reasoning,
         )

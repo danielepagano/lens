@@ -31,6 +31,11 @@ def write(
         "-l",
         help="LLM ID to use (overrides project default)",
     ),
+    reasoning: str | None = typer.Option(
+        None,
+        "--reasoning",
+        help="Reasoning override: none, low, medium, high",
+    ),
     retry: bool = typer.Option(
         False,
         "--retry",
@@ -81,6 +86,7 @@ def write(
                 pins=list(pin),
                 unpins=list(unpin),
                 llm_id=llm,
+                reasoning=reasoning,
                 retry=retry,
                 on_token=_print_token,
             )

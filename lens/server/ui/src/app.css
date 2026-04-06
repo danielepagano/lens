@@ -241,6 +241,47 @@ ul.tree-list li {
   margin-top: 0.75rem;
 }
 
+.cursor-pins-section {
+  display: inline;
+}
+
+.cursor-pins-summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cursor-pins-summary::-webkit-details-marker {
+  display: none;
+}
+
+.cursor-pins-summary::before {
+  content: '>';
+  color: var(--cursor-indicator-color);
+  font-weight: bolder;
+  margin-left: -4px;
+  display: inline-block;
+  transition: transform 0.1s;
+}
+
+.cursor-pins-section[open] > .cursor-pins-summary::before {
+  transform: rotate(90deg);
+}
+
+.pins-count-label {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+}
+
+.cursor-pins-section .pin-pills.effective-pins {
+  display: flex;
+  margin-left: 0;
+  margin-top: 0.25rem;
+}
+
 /* ---- Content area ---- */
 
 .content {

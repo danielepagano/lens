@@ -252,13 +252,21 @@
       {/if}
       {#if isCursorNode}
         <div class="cursor-indicator-preview">
-          <span class="cursor-indicator">&gt;</span>
           {#if $stats?.effective_pins_at_cursor?.length}
-            <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
-              {#each $stats.effective_pins_at_cursor as id (id)}
-                <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
-              {/each}
-            </div>
+            <details class="cursor-pins-section">
+              <summary class="cursor-pins-summary">
+                <span class="pins-count-label">
+                  {$stats.effective_pins_at_cursor.length} pin{$stats.effective_pins_at_cursor.length === 1 ? '' : 's'}
+                </span>
+              </summary>
+              <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
+                {#each $stats.effective_pins_at_cursor as id (id)}
+                  <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
+                {/each}
+              </div>
+            </details>
+          {:else}
+            <span class="cursor-indicator">&gt;</span>
           {/if}
         </div>
       {/if}

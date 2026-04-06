@@ -72,7 +72,7 @@ class SectionOperator(Operator):
             unpin_at_node(child, unpins, self.storage)
         return child
 
-    async def end(self, session: ProjectSession, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None, cancel_event: asyncio.Event | None = None) -> None:
+    async def end(self, session: ProjectSession, llm_id: str | None = None, on_token: Callable[[str], Awaitable[None]] | None = None, cancel_event: asyncio.Event | None = None, reasoning: str | None = None) -> None:
         """Close the current section by generating an LLM summary and appending it."""
         cursor = self.narrative_root.find_cursor()
         if not cursor.key_path:
@@ -105,6 +105,7 @@ class SectionOperator(Operator):
                 on_preview=on_token,
                 interrupt_policy="raise",
                 operator_name=self.name,
+                reasoning=reasoning,
             )
         ).strip()
         if not summary:
@@ -138,6 +139,7 @@ class SectionOperator(Operator):
         session: ProjectSession,
         narrative: NarrativeNode,
         llm_id: str | None = None,
+        reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> str:
@@ -154,6 +156,6 @@ class SectionOperator(Operator):
         if storage.has_pending() and storage.detect_pending_owner() == owner:
             storage.stage_all()
         op = cls(storage, narrative)
-        await op.end(session, llm_id=llm_id, on_token=on_token, cancel_event=cancel_event)
+        await op.end(session, llm_id=llm_id, on_token=on_token, cancel_event=cancel_event, reasoning=reasoning)
         return key
 
