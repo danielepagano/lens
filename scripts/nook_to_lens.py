@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """
-Migrate a Nook SQLite database to a Lens project.
+Migrate a Nook world to a Lens project.
 
-Reads a Nook world DB, creates a Lens project in the output folder (no git init).
-Preserves all knowledge and books text. Creates sections for chapters and scenes
-with Nook summaries as section content. Ignores media.
+Resolves the SQLite DB and optional media root from a Nook layout:
+  - Nook ``dat/`` directory + ``--world <slug>`` → ``dat/worlds/<slug>/`` (``<slug>.db``, ``<slug>.toml``)
+  - World folder directly: ``.../dat/worlds/<slug>`` (same files inside)
+  - Legacy: path to a ``*.db`` file (optional sibling ``*.toml`` for ``media_path``)
+
+Creates a Lens project in the output folder (no git init). Does not copy media files: when
+the world has ``media_path``, ``[project] mount_point`` is set to that same directory (absolute
+path) and scene embeds use paths relative to it.
 
 Usage:
-    python scripts/nook_to_lens.py <nook_db_path> <lens_output_folder>
+    python scripts/nook_to_lens.py /path/to/nook/dat --world myworld /path/to/lens-out
+    python scripts/nook_to_lens.py /path/to/nook/dat/worlds/myworld /path/to/lens-out
+    python scripts/nook_to_lens.py /path/to/world.db /path/to/lens-out
 """
 
 from __future__ import annotations
@@ -17,15 +24,101 @@ import io
 import re
 import sqlite3
 import sys
+import tomllib
+from dataclasses import dataclass
 from pathlib import Path
 
-# Add project root so we can import tomli_w
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Repo root: import lens + tomli_w
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_REPO_ROOT))
 
-import tomli_w
+import tomli_w  # noqa: E402
+
+from lens.core.commands.attach import SUPPORTED_EXTENSIONS, build_embed  # noqa: E402
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 _VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+@dataclass(frozen=True, slots=True)
+class NookPaths:
+    db_path: Path
+    """World SQLite database."""
+
+    media_root: Path | None
+    """Nook ``media_path`` from world config, if set and existing."""
+
+
+def _read_world_toml_config(toml_path: Path) -> dict[str, object]:
+    if not toml_path.is_file():
+        return {}
+    with toml_path.open("rb") as f:
+        data = tomllib.load(f)
+    raw = data.get("config")
+    return dict(raw) if isinstance(raw, dict) else {}
+
+
+def _resolve_db_from_world_dir(world_dir: Path, slug: str) -> Path:
+    cfg = _read_world_toml_config(world_dir / f"{slug}.toml")
+    raw = cfg.get("db_path")
+    if isinstance(raw, str) and raw.strip():
+        db = Path(raw).expanduser()
+        if not db.is_absolute():
+            db = (world_dir / db).resolve()
+        return db
+    return (world_dir / f"{slug}.db").resolve()
+
+
+def _media_path_from_config(world_dir: Path, slug: str) -> Path | None:
+    cfg = _read_world_toml_config(world_dir / f"{slug}.toml")
+    raw = cfg.get("media_path")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    root = Path(raw).expanduser().resolve()
+    if root.is_dir():
+        return root
+    return None
+
+
+def resolve_nook_paths(nook_input: Path, world: str | None) -> NookPaths:
+    """Resolve DB path and Nook media root from dat dir, world dir, or legacy .db path."""
+    p = nook_input.resolve()
+    if p.is_file():
+        if p.suffix.lower() != ".db":
+            msg = f"Expected a .db file or a directory, got file: {p}"
+            raise ValueError(msg)
+        slug = p.stem
+        world_dir = p.parent
+        cfg_media = _media_path_from_config(world_dir, slug)
+        return NookPaths(db_path=p, media_root=cfg_media)
+
+    if not p.is_dir():
+        msg = f"Not found or not a directory: {p}"
+        raise ValueError(msg)
+
+    if (p / "worlds").is_dir():
+        if not world or not _SLUG_PATTERN.fullmatch(world):
+            msg = "When pointing at Nook dat/, pass --world <slug> (alphanumeric, _ or - only)."
+            raise ValueError(msg)
+        world_dir = (p / "worlds" / world).resolve()
+        if not world_dir.is_dir():
+            msg = f"World directory not found: {world_dir}"
+            raise ValueError(msg)
+        db = _resolve_db_from_world_dir(world_dir, world)
+        media = _media_path_from_config(world_dir, world)
+        return NookPaths(db_path=db, media_root=media)
+
+    # Treat as a single world's folder (e.g. dat/worlds/myworld)
+    slug = p.name
+    if not _SLUG_PATTERN.fullmatch(slug):
+        msg = (
+            f"World folder name must be a valid slug: {slug!r}. "
+            "Or pass the Nook dat/ directory with --world <slug>."
+        )
+        raise ValueError(msg)
+    db = _resolve_db_from_world_dir(p, slug)
+    media = _media_path_from_config(p, slug)
+    return NookPaths(db_path=db, media_root=media)
 
 
 def slugify(s: str, prefix: str = "") -> str:
@@ -125,14 +218,110 @@ def _render_front_matter(kb_pin: list[str]) -> str:
     return "\n".join(lines)
 
 
-def migrate_narrative(conn: sqlite3.Connection, root: Path) -> None:
+def _find_nook_owner_media_dir(media_dir: Path, owner_object_id: str) -> Path | None:
+    if "." in owner_object_id:
+        _type_part, key_part = owner_object_id.split(".", 1)
+        possible_folder_names = [owner_object_id, key_part]
+    else:
+        possible_folder_names = [owner_object_id]
+
+    direct = media_dir / owner_object_id
+    if direct.is_dir():
+        return direct
+
+    for folder_name in possible_folder_names:
+        for actual_folder in media_dir.iterdir():
+            if actual_folder.is_dir() and actual_folder.name.lower() == folder_name.lower():
+                return actual_folder
+    return None
+
+
+def _resolve_nook_asset_file(
+    media_root: Path,
+    owner_object_id: str,
+    sub_folder_path: str,
+    file_name: str,
+) -> Path | None:
+    owner_dir = _find_nook_owner_media_dir(media_root, owner_object_id)
+    if owner_dir is None:
+        return None
+    name = Path(file_name).name
+    if sub_folder_path.strip():
+        sub_path = sub_folder_path.strip().rstrip("/")
+        candidate = (owner_dir / sub_path / name).resolve()
+    else:
+        candidate = (owner_dir / name).resolve()
+    media_resolved = media_root.resolve()
+    if not candidate.is_file():
+        return None
+    if media_resolved not in candidate.parents and candidate != media_resolved:
+        return None
+    return candidate
+
+
+def _set_lens_mount_point(lens_toml: Path, mount_root: Path) -> None:
+    """Point Lens ``mount_point`` at Nook's existing media directory (absolute path)."""
+    resolved = str(mount_root.resolve())
+    if lens_toml.exists():
+        with lens_toml.open("rb") as f:
+            data: dict[str, object] = tomllib.load(f)
+    else:
+        data = {}
+    pr = data.get("project")
+    project = dict(pr) if isinstance(pr, dict) else {}
+    project["mount_point"] = resolved
+    data["project"] = project
+    buf = io.BytesIO()
+    tomli_w.dump(data, buf)
+    lens_toml.write_bytes(buf.getvalue())
+
+
+def _chunk_media_embed(
+    *,
+    media_root: Path,
+    asset_id: int,
+    owner_object_id: str,
+    sub_folder_path: str,
+    file_name: str,
+) -> str | None:
+    src = _resolve_nook_asset_file(media_root, owner_object_id, sub_folder_path, file_name)
+    if src is None:
+        print(
+            f"Warning: media asset {asset_id} ({owner_object_id}/{sub_folder_path}{file_name}) not found on disk",
+            file=sys.stderr,
+        )
+        return None
+
+    root = media_root.resolve()
+    try:
+        rel = src.resolve().relative_to(root)
+    except ValueError:
+        print(f"Warning: media file outside media_path, skipping asset {asset_id}", file=sys.stderr)
+        return None
+
+    mount_rel = rel.as_posix()
+    ext = src.suffix.lower()
+    if ext in SUPPORTED_EXTENSIONS:
+        return build_embed(mount_rel, ext)
+    label = src.name
+    return f"[{label}](/mount/file/{mount_rel})"
+
+
+def migrate_narrative(
+    conn: sqlite3.Connection,
+    root: Path,
+    *,
+    media_root: Path | None,
+) -> None:
     """Migrate books/chapters/scenes to Lens narrative with sections."""
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='pin'"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('pin', 'media_asset', 'chunk')"
     )
-    has_pins = bool(cursor.fetchone())
+    tables = {row[0] for row in cursor.fetchall()}
+    has_pins = "pin" in tables
+    has_chunk_media = "chunk" in tables and "media_asset" in tables
 
     cursor.execute("SELECT id, title FROM book ORDER BY created_at")
     books = cursor.fetchall()
@@ -179,14 +368,52 @@ def migrate_narrative(conn: sqlite3.Connection, root: Path) -> None:
                 scene_dir = ch_dir / scene_slug
                 scene_dir.mkdir(exist_ok=True)
 
-                cursor.execute(
-                    """SELECT c.text FROM chunk c
-                       JOIN request r ON c.request_id = r.id
-                       WHERE r.scene_id = ? ORDER BY r.order_in_scene, c.order_in_request""",
-                    (scene_id,),
-                )
-                chunks = [row[0] for row in cursor.fetchall()]
-                scene_prose = "\n\n".join(chunks).strip() if chunks else ""
+                if has_chunk_media and media_root is not None:
+                    cursor.execute(
+                        """SELECT c.text, c.show_media_asset_id FROM chunk c
+                           JOIN request r ON c.request_id = r.id
+                           WHERE r.scene_id = ? ORDER BY r.order_in_scene, c.order_in_request""",
+                        (scene_id,),
+                    )
+                    chunk_rows = cursor.fetchall()
+                    parts: list[str] = []
+                    for text, media_id in chunk_rows:
+                        t = (text or "").strip()
+                        if t:
+                            parts.append(t)
+                        if media_id is not None:
+                            cursor.execute(
+                                """SELECT id, owner_object_id, file_name, sub_folder_path
+                                   FROM media_asset WHERE id = ?""",
+                                (media_id,),
+                            )
+                            row = cursor.fetchone()
+                            if row is None:
+                                print(
+                                    f"Warning: chunk references missing media_asset id={media_id}",
+                                    file=sys.stderr,
+                                )
+                                continue
+                            _aid, owner_oid, fname, subfolder = row[0], row[1], row[2], row[3]
+                            embed = _chunk_media_embed(
+                                media_root=media_root,
+                                asset_id=int(_aid),
+                                owner_object_id=str(owner_oid),
+                                sub_folder_path=str(subfolder or ""),
+                                file_name=str(fname),
+                            )
+                            if embed:
+                                parts.append(embed)
+                    scene_prose = "\n\n".join(parts).strip() if parts else ""
+                else:
+                    cursor.execute(
+                        """SELECT c.text FROM chunk c
+                           JOIN request r ON c.request_id = r.id
+                           WHERE r.scene_id = ? ORDER BY r.order_in_scene, c.order_in_request""",
+                        (scene_id,),
+                    )
+                    chunks = [row[0] for row in cursor.fetchall()]
+                    scene_prose = "\n\n".join(chunks).strip() if chunks else ""
 
                 scene_pins = _get_pins(conn, "scene", scene_id) if has_pins else []
                 scene_content = _render_front_matter(scene_pins) + (scene_prose or "")
@@ -213,22 +440,35 @@ def migrate_narrative(conn: sqlite3.Connection, root: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Migrate Nook DB to Lens project",
+        description="Migrate a Nook world (dat/ or world folder or .db) to a Lens project",
     )
     parser.add_argument(
-        "nook_db",
+        "nook_input",
         type=Path,
-        help="Path to Nook world SQLite database",
+        help="Nook dat/ directory, or dat/worlds/<slug>/ folder, or path to <slug>.db",
     )
     parser.add_argument(
         "output_dir",
         type=Path,
-        help="Path to create Lens project",
+        help="Path to create or update Lens project",
+    )
+    parser.add_argument(
+        "--world",
+        type=str,
+        default=None,
+        metavar="SLUG",
+        help="World slug (required when nook_input is the Nook dat/ directory)",
     )
     args = parser.parse_args()
 
-    db_path = args.nook_db.resolve()
-    if not db_path.exists():
+    try:
+        nook = resolve_nook_paths(args.nook_input, args.world)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    db_path = nook.db_path
+    if not db_path.is_file():
         print(f"Error: database not found: {db_path}", file=sys.stderr)
         return 1
 
@@ -238,17 +478,32 @@ def main() -> int:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
 
+    media_root = nook.media_root
+    if media_root is None:
+        print(
+            "Note: No usable media_path in world config (or path missing); scene media embeds skipped.",
+            file=sys.stderr,
+        )
+
     try:
         lens_toml = output / "lens.toml"
         if not lens_toml.exists():
-            lens_toml.write_text("[project]\n# narrative selection set by 'lens use <slug>'\n", encoding="utf-8")
+            lens_toml.write_text(
+                "[project]\n# narrative selection set by 'lens use <slug>'\n",
+                encoding="utf-8",
+            )
 
         migrate_knowledge(conn, output)
-        migrate_narrative(conn, output)
+        migrate_narrative(conn, output, media_root=media_root)
+        if media_root is not None:
+            _set_lens_mount_point(lens_toml, media_root)
 
-        print(f"Migrated Nook DB to Lens project at {output}")
+        print(f"Migrated Nook world to Lens project at {output}")
+        print(f"  - database: {db_path}")
         print("  - knowledge/: migrated")
-        print("  - narrative/: one narrative per book")
+        print("  - narrative/: one tree per book")
+        if media_root:
+            print(f"  - mount_point: {media_root} (Nook media_path; embeds are relative to it)")
         print("  - Run 'lens use <book-slug>' to select a narrative")
     finally:
         conn.close()

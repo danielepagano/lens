@@ -125,11 +125,24 @@
     onAfterMutation(() => { void getStats().then(applyStats) })
 
     try {
-      const stats = await getStats()
-      applyStats(stats)
+      const initialStats = await getStats()
+      applyStats(initialStats)
 
       const { path, kb } = parseHash(window.location.hash)
-      await navigate(path || stats.cursor || '')
+      if (path) {
+        try {
+          inlineEditMode.set(null)
+          const data = await getNode(path)
+          currentAddress.set(data.address)
+          nodeContent.set(data.content)
+          window.location.hash = buildHash(data.address, hashKbParam())
+        } catch {
+          window.location.hash = buildHash('', kb)
+          await navigate(initialStats.cursor || '')
+        }
+      } else {
+        await navigate(path || initialStats.cursor || '')
+      }
       applyKbFromUrl(kb)
     } catch (e) {
       console.error('Init failed:', e)
