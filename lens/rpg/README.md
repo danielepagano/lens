@@ -12,10 +12,10 @@ narrative = "my-campaign"
 datasets  = ["rpg"]
 ```
 
-List **`dnd` after `rpg`** when you want D&D 2024 reference content and a full `rules.system` override:
+List a specialized rule system dataset after `rpg` to override `rules.system`. Example:
 
 ```toml
-datasets = ["rpg", "dnd"]
+datasets = ["rpg", "<your-ruleset-dataset>"]
 ```
 
 (Later entries in `datasets` shadow earlier ones.)
@@ -34,4 +34,3 @@ Default: append one or more player lines (blockquotes) without calling the GM / 
 
 **`--pass`**: call the GM / LLM to respond, writing a `[play]...[/play]` block containing only GM output. With no prompt text, it generates a GM response based on the current passage.
 
-With `["rpg", "dnd"]`, `rules.system` resolves to the D&D rules body from the `dnd` dataset.

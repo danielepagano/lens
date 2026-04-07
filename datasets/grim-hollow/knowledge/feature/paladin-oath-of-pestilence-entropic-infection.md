@@ -1,3 +1,0 @@
-# Entropic Infection (Oath of Pestilence)
-
-As a Magic action, you can expend one use of your Channel Divinity and select a creature you can see within 30 feet of yourself. For 1 minute, if you deal damage to the target, the target takes an extra 2d6 Necrotic damage. In addition, the target loses Resistance and Immunity to Necrotic damage. The target can make a Constitution save at the end of each of its turns, ending the effect on itself on a success.

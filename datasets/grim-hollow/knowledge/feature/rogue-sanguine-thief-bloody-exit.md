@@ -1,3 +1,0 @@
-# Bloody Exit (Sanguine Thief)
-
-When a creature hits you with an attack roll, you can take a Reaction and spend 5 Hit Dice or Sangromancy Dice to turn into bloody mist. The attack automatically misses you, you can teleport up to 30 feet to an unoccupied space you can see, and you regain your normal form. As part of this Reaction, you can make an attack with a Melee weapon immediately after you teleport. On a hit, this attack deals an extra 5d8 Necrotic damage to the target. Once you use this feature, you can’t use it again until you finish a Short or Long Rest.

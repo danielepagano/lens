@@ -231,7 +231,7 @@ class TestBalanceEncounter(unittest.TestCase):
 
 class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):
     """Verify balance_encounter is registered as a command tool and is correctly
-    gated on the 'dnd' dataset so it is visible to the design operator."""
+    gated on the 'lens-dnd' dataset so it is visible to the design operator."""
 
     def setUp(self) -> None:
         self._tmp = tempfile.mkdtemp()
@@ -252,12 +252,12 @@ class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):
         )
 
     def test_balance_encounter_limited_to_dnd_dataset(self) -> None:
-        """balance_encounter's limited_to_datasets must be ['dnd']."""
+        """balance_encounter's limited_to_datasets must be ['lens-dnd']."""
         tool_def, _ = _CMD_REGISTRY["balance_encounter"]
         self.assertEqual(
             tool_def.limited_to_datasets,
-            ["dnd"],
-            "balance_encounter should be limited to the 'dnd' dataset",
+            ["lens-dnd"],
+            "balance_encounter should be limited to the 'lens-dnd' dataset",
         )
 
     def test_balance_encounter_excluded_without_dnd_dataset(self) -> None:
@@ -267,7 +267,7 @@ class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):
         self.assertNotIn(
             "balance_encounter",
             registry,
-            "balance_encounter should be hidden when the dnd dataset is not active",
+            "balance_encounter should be hidden when the lens-dnd dataset is not active",
         )
 
     def test_balance_encounter_excluded_with_other_dataset(self) -> None:
@@ -277,18 +277,18 @@ class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):
         self.assertNotIn("balance_encounter", registry)
 
     def test_balance_encounter_included_with_dnd_dataset(self) -> None:
-        """When lens.toml includes 'dnd', balance_encounter must appear in the registry."""
-        (self.root / "lens.toml").write_text('[project]\ndatasets = ["dnd"]\n')
+        """When lens.toml includes 'lens-dnd', balance_encounter must appear in the registry."""
+        (self.root / "lens.toml").write_text('[project]\ndatasets = ["lens-dnd"]\n')
         registry = get_command_registry(self.root)
         self.assertIn(
             "balance_encounter",
             registry,
-            "balance_encounter should be available when the dnd dataset is active",
+            "balance_encounter should be available when the lens-dnd dataset is active",
         )
 
     def test_balance_encounter_included_with_dnd_among_datasets(self) -> None:
-        """balance_encounter appears when 'dnd' is one of multiple datasets."""
-        (self.root / "lens.toml").write_text('[project]\ndatasets = ["rpg", "dnd"]\n')
+        """balance_encounter appears when 'lens-dnd' is one of multiple datasets."""
+        (self.root / "lens.toml").write_text('[project]\ndatasets = ["rpg", "lens-dnd"]\n')
         registry = get_command_registry(self.root)
         self.assertIn("balance_encounter", registry)
 

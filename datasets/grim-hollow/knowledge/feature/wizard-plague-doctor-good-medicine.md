@@ -1,3 +1,0 @@
-# Good Medicine (Plague Doctor)
-
-When you craft a potion, you can choose to expend a spell slot without choosing a spell to craft a dose of Good Medicine. As a Bonus Action, you can drink the dose or administer it to another creature within 5 feet of yourself. When Good Medicine is consumed, roll a number of d8s equal to the level of the spell slot expended, and the target regains Hit Points equal to the roll’s total. If you expend a level 3+ spell slot on this feature, Good Medicine also removes the Poisoned condition.

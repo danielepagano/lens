@@ -36,6 +36,8 @@ else
     echo "Project repo found on volume."
     cd "$REPO_DIR"
     git fetch origin || echo "Warning: git fetch failed"
+    git merge --ff-only origin/$(git rev-parse --abbrev-ref HEAD) \
+        || echo "Warning: could not fast-forward (diverged or detached HEAD)"
 fi
 
 # ---- 4. Validate ----

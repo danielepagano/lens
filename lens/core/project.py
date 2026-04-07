@@ -18,9 +18,9 @@ if TYPE_CHECKING:
 
 _SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 
-# Dataset names that have a dedicated package under lens (sibling to core/cli).
-# Used by CLI and tools discovery to load dataset-specific commands/operators.
-DATASET_PACKAGES: dict[str, str] = {"dnd": "lens.dnd", "rpg": "lens.rpg"}
+# Maps dataset name → Python package for datasets that ship Lens operators.
+# Used by CLI operator discovery to load dataset-specific operator modules.
+DATASET_PACKAGES: dict[str, str] = {"rpg": "lens.rpg"}
 
 
 def datasets_root() -> Path:

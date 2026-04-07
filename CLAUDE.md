@@ -55,7 +55,7 @@ pytest e2e/ -n 0 -v   # same, verbose
 ### Test files
 
 - **`e2e/tests/test_api_smoke.py`** — API tests using plain `urllib.request`. Covers `/health`, `/stats`, `/narrative/tree`, `/narrative/node/<name>`.
-- **`e2e/tests/test_cli.py`** — CLI tests with `rpg` + `dnd` datasets. Runs `lens stats`, `lens kb get/with-tag`, and `lens write` as subprocesses. Module-scoped `dnd_project` fixture uses `setup_test_project(..., datasets=["rpg", "dnd"])`.
+- **`e2e/tests/test_cli.py`** — CLI tests with `rpg` + `dnd` datasets. Runs `lens stats`, `lens kb get/with-tag`, and `lens write` as subprocesses. Module-scoped `dnd_project` fixture uses `setup_test_project(..., datasets=["rpg", "lens-dnd"])`.
 - **`e2e/tests/test_browser.py`** — Playwright placeholder. Auto-skipped when Chromium is not installed. Run `playwright install chromium` to enable.
 
 ### Using `setup_test_project` in new tests
@@ -66,7 +66,7 @@ from lens.testing.project import setup_test_project
 
 with FakeLLMServer() as llm:
     project_dir = Path(tempfile.mkdtemp())
-    session = setup_test_project(project_dir, llm.base_url, datasets=["rpg", "dnd"])
+    session = setup_test_project(project_dir, llm.base_url, datasets=["rpg", "lens-dnd"])
     # project_dir is a real git repo with lens.toml, narrative, KB, written passage
 ```
 
@@ -128,8 +128,6 @@ datasets/
   testing/       # Minimal dataset for integration tests
   rpg/           # Core RPG bundle (rpg, system stub, templates, design modules)
   dnd/           # D&D 2024 reference (rules/system override, spell, stat, equipment)
-tools/
-  ddb-extract/   # TypeScript CLI: extracts D&D Beyond content into KB Markdown files
 ```
 
 Every command/operator has a parallel `cli/` adapter (Typer plumbing) and a `core/` implementation (reusable logic). Always put business logic in `core/`.
@@ -172,11 +170,7 @@ Read-only knowledge stores bundled with the Lens tool, declared in `lens.toml` u
 
 - `datasets/testing/` — minimal test fixtures used by the test suite
 - `datasets/rpg/` — Core RPG bundle: `rules.rpg`, `rules.system` stub, templates, `design/*`. 
-- `datasets/dnd/` — D&D 2024 reference: `rules/system.md` (overrides), `spell/`, `stat/`, `equipment/`, `tags.toml`. Populated via `tools/ddb-extract/` + `lens kb extract`.
-
-### Tools
-
-`tools/ddb-extract/` is a standalone TypeScript CLI (Playwright + CDP) that extracts D&D Beyond content into Lens KB-formatted Markdown files. Run `npm install` inside the directory, then invoke via `tsx src/cli.ts`. See `tools/ddb-extract/README.md`. The `ddb-extract-design.md` in `docs/` describes the original design (may be removed).
+- `datasets/dnd/` — D&D 2024 reference: `rules/system.md` (overrides), `spell/`, `stat/`, `equipment/`, `tags.toml`. Bulk imports of Markdown with fenced `kb` blocks use `lens kb extract`.
 
 ### Server (`lens/server/`)
 

@@ -73,7 +73,7 @@ The `[project]` section in `lens.toml` controls project-level options:
 ```toml
 [project]
 narrative    = "my-campaign"   # active narrative (set by `lens use`)
-datasets     = ["rpg", "dnd"]  # optional dataset bundles (later shadows earlier)
+datasets     = ["rpg", "sys"]  # optional dataset bundles (later shadows earlier)
 mount_point  = "media"         # optional: local dir, absolute path, or s3:// URI
 verbose_llm  = true            # optional: log full LLM prompts/responses at INFO level
 ```
@@ -180,7 +180,7 @@ Typing `@` in any prompt field shows a purple **⚄ roll** chip as the first aut
 - **[Web UI & API server](lens/server/README.md)** — `lens serve`, `lens dev`, project/dataset context, and HTTP routes.
 - **[Deployment](deploy/README.md)** — Deploy to Fly.io: `lens deploy init`, `lens deploy push`, secrets, volumes, and operational reference.
 - **[RPG](lens/rpg/README.md)** — Core RPG dataset (`play`, `advance`, templates, `rules.rpg`).
-- **[D&D](lens/dnd/README.md)** — D&D reference dataset, `lens dnd balance`, and the D&D Beyond extractor.
+- **[D&D](lens/dnd/README.md)** — D&D reference dataset and `lens dnd balance`.
 
 ## Development
 
@@ -215,7 +215,7 @@ with FakeLLMServer() as llm:
 **`setup_test_project()`** (`lens/testing/project.py`)
 Creates a fully-populated throwaway project: git repo, `lens.toml` (pointing
 at the fake LLM), KB objects (`person.amy`, `place.forest`), and an opening
-passage already written by the fake LLM.  Pass `datasets=["rpg", "dnd"]` (keyword)
+passage already written by the fake LLM.  Pass `datasets=["rpg", "lens-dnd"]` (keyword)
 to enable bundled RPG + D&D knowledge instead of the minimal testing fixtures.
 
 ```python
@@ -223,7 +223,7 @@ from lens.testing.fake_llm import FakeLLMServer
 from lens.testing.project import setup_test_project
 
 with FakeLLMServer() as llm:
-    session = setup_test_project(project_dir, llm.base_url, datasets=["rpg", "dnd"])
+    session = setup_test_project(project_dir, llm.base_url, datasets=["rpg", "lens-dnd"])
     # project_dir is a real git repo, ready for CLI or API calls
 ```
 

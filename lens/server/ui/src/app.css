@@ -1319,11 +1319,11 @@ details[open]>summary {
   }
 }
 
-/* 950px+: side panel, 350px at 950 → 550px at 1400 → capped */
+/* 950px+: side panel, 350px at 950 → 600px at 1400 → capped */
 @media (min-width: 950px) {
   .kb-panel {
-    /* Linear interpolation: 350 + (vw - 950) * 200/450 */
-    width: clamp(350px, calc(350px + (100vw - 950px) * 4 / 9), 550px);
+    /* Linear interpolation: 350 + (vw - 950) * 250/450 */
+    width: clamp(350px, calc(350px + (100vw - 950px) * 5 / 9), 600px);
     flex-shrink: 0;
     border-left: 1px solid var(--pico-muted-border-color);
   }

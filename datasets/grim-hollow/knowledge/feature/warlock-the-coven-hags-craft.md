@@ -1,5 +1,0 @@
-# Hag's Craft (The Coven)
-
-The Hag imparts the knowledge to craft two magic items. You can temporarily turn a normal vessel into a Hag's Cauldron by expending a spell slot. This magical cauldron lasts for 10 minutes. During that time, you can pour out three Common, two Uncommon, or one Rare potion. The potions lose efficacy at the end of your next Short or Long Rest. You regain this ability at the end of a Long Rest.
-
-Additionally, when you finish a Long Rest, you can expend a spell slot and imbue a gemstone worth at least 10 GP with magic, turning it into a Minor Heartstone. This magic item grants the bearer Immunity to the Poisoned condition and the ability to cast Blink once without expending a spell slot. The magic within the gemstone fades after 24 hours and the gem crumbles into dust.

@@ -9,10 +9,7 @@
    - Main branch protection, CI
    - Remove hard-coding of usage of gitlab/fly, make modular
       - Streamline project creation/management
-   - Removing Licensed dataset content like dnd (already technically possible)
-      - Possibly retain what's in the public D&D SRD
-      - Remove ddb and nook tools
-      - Force push to clean up history
+   - Force push to clean up history
    - Improve maintainability
       - Clean up of UI in particular: smaller modules, cleaner interfaces 
 

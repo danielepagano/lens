@@ -530,7 +530,7 @@ register_command_tool(
     CommandToolDef(
         description=_BALANCE_ENCOUNTER_DESCRIPTION,
         parameters=balance_encounter_SCHEMA,
-        limited_to_datasets=["dnd"],
+        limited_to_datasets=["lens-dnd"],
     ),
     _balance_encounter_command_tool,
 )

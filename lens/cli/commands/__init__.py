@@ -14,17 +14,18 @@ if TYPE_CHECKING:
     from typer import Typer
 
 
-def _discover_commands() -> Iterator[tuple[str, Typer]]:
+def _discover_commands() -> Iterator[tuple[str, Typer, str | None]]:
     for _importer, modname, _ in pkgutil.iter_modules(__path__, __name__ + "."):
         mod = importlib.import_module(modname)
         app = getattr(mod, "app", None)
         if app is not None and isinstance(app, typer.Typer):
             name = modname.split(".")[-1]
-            yield name, app
+            required_dataset: str | None = getattr(mod, "required_dataset", None)
+            yield name, app, required_dataset
 
 
 def register_commands(main_app: typer.Typer) -> None:
-    from lens.core.project import DATASET_PACKAGES, find_project_root, has_mount_config, get_selected_datasets
+    from lens.core.project import find_project_root, has_mount_config, get_selected_datasets
 
     try:
         project_root = find_project_root()
@@ -33,8 +34,8 @@ def register_commands(main_app: typer.Typer) -> None:
         project_root = None
         selected = []
 
-    for name, app in _discover_commands():
-        if name in DATASET_PACKAGES and name not in selected:
+    for name, app, required_dataset in _discover_commands():
+        if required_dataset is not None and required_dataset not in selected:
             continue
         if name == "attach" and (project_root is None or not has_mount_config(project_root)):
             continue

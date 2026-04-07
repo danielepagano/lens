@@ -1,29 +1,29 @@
-# D&D (reference dataset)
+# lens/dnd — D&D balance encounter tool
 
-The **`dnd`** bundled dataset adds D&D 2024 **reference** content: spells, monsters (stat blocks), equipment, and a **`rules.system`** file that overrides the stub shipped in **`rpg`**. It also unlocks **`lens dnd balance`** and the `balance_encounter` design tool.
+This package (`lens.dnd`) provides the **`lens dnd balance`** command. It is gated on
+the dataset name **`lens-dnd`** — point your project at a D&D reference dataset repo
+(e.g. `lens-dnd`) and add it to `datasets`.
 
-RPG operators (`play`, `advance`) live in the **`rpg`** dataset; use **both** `rpg` and `dnd` for typical D&D campaigns. See [RPG Design Doc](../../docs/rpg-design.md) and [lens/rpg/README.md](../rpg/README.md).
+RPG operators (`play`, `advance`) live in the **`rpg`** package; use **both** `rpg` and
+`lens-dnd` for typical D&D campaigns. See [RPG Design Doc](../../docs/rpg-design.md) and
+[lens/rpg/README.md](../rpg/README.md).
 
 ## Enabling
 
 ```toml
 [project]
 narrative = "my-campaign"
-datasets  = ["rpg", "dnd"]
+datasets  = ["rpg", "lens-dnd"]
 ```
 
-Put `dnd` **after** `rpg` so `rules.system` and reference objects from `dnd` shadow the core bundle.
+Put `lens-dnd` **after** `rpg` so `rules.system` and reference objects shadow the core bundle.
 
-## What’s in `datasets/dnd/`
-
-- **`rules/system.md`** — D&D 2024 rules reference for the AI (id `rules.system`)
-- **`spell/`**, **`stat/`**, **`equipment/`** — KB corpora and `tags.toml` indexes
-
-Project-local knowledge overrides dataset items; mutating a dataset object creates a local copy (copy-on-write).
+The `lens-dnd` dataset repository is separate from this package. Clone it as a sibling of
+the `lens` repo (or configure its path in `lens.local.toml`) so Lens can find it by name.
 
 ## `lens dnd balance`
 
-Balanced combat encounter proposals from PC levels, difficulty, and ranked stat-block candidates. Only when `dnd` is in `datasets`. Uses D&D 2024 DMG-style XP budgets internally.
+Balanced combat encounter proposals from PC levels, difficulty, and ranked stat-block candidates. Only when `lens-dnd` is in `datasets`. Uses D&D 2024 DMG-style XP budgets internally.
 
 ```bash
 echo '{"difficulty": "moderate", "pcs": [3, 3], "required": [{"id": "stat.ghast", "count": 1}], "optional": ["stat.ghoul", "stat.skeleton"], "allies": [{"id": "stat.guard", "count": 2}]}' | lens dnd balance
@@ -49,6 +49,6 @@ lens play -p rules.system -p rules.rpg -p pc.hero
 
 See [CLI reference](../cli/README.md#ai-operators) for `--pin`, `--unpin`, `--llm`, `--retry`, `-as`.
 
-## D&D Beyond extractor (`tools/ddb-extract/`)
+## Importing KB objects from Markdown
 
-Extracts D&D Beyond content into Lens KB Markdown. Output feeds `datasets/dnd/` via `lens kb extract`. See [tools/ddb-extract/README.md](../../tools/ddb-extract/README.md).
+To merge many KB objects from Markdown files that use fenced `kb` code blocks, run `lens kb extract <path>…` from your Lens project root. See the `kb` command in the [CLI reference](../cli/README.md).

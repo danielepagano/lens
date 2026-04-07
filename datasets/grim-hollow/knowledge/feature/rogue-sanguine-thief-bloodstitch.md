@@ -1,3 +1,0 @@
-# Bloodstitch (Sanguine Thief)
-
-As a Magic action, you can spend 3 Hit Dice or Sangromancy Dice to fling a wave of needle-like blood shards. When you do so, each creature of your choice in a 30-foot Emanation originating from you must make a Dexterity saving throw against your spell save DC, taking 3d8 Necrotic damage on a failed save or half as much damage on a successful one. You regain 1 Hit Die or Sangromancy Die (your choice) for each creature reduced to 0 Hit Points by this feature. Once you use this feature, you can’t do so again until you finish a Short or Long Rest.

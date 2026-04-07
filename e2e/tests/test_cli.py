@@ -1,9 +1,9 @@
 """CLI integration tests run against a live test project.
 
 These tests invoke the ``lens`` CLI as a subprocess, exactly as a user (or
-LLM) would, against a temp project with ``rpg`` and ``dnd`` datasets enabled
-and a fake LLM.  They exercise stats output, dataset KB lookups, and the
-write operator end-to-end.
+LLM) would, against a temp project with ``rpg`` and ``testing`` datasets
+enabled and a fake LLM.  They exercise stats output, dataset KB lookups
+(including later-dataset shadowing), and the write operator end-to-end.
 
 Running::
 
@@ -39,12 +39,12 @@ def _lens(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 
 
 # ---------------------------------------------------------------------------
-# Module-scoped fixture: project with rpg + dnd datasets
+# Module-scoped fixture: project with rpg + testing datasets
 # ---------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")
-def dnd_llm() -> Generator[FakeLLMServer, None, None]:
+def cli_llm() -> Generator[FakeLLMServer, None, None]:
     server = FakeLLMServer()
     server.start()
     yield server
@@ -52,12 +52,12 @@ def dnd_llm() -> Generator[FakeLLMServer, None, None]:
 
 
 @pytest.fixture(scope="module")
-def dnd_project(dnd_llm: FakeLLMServer) -> Generator[Path, None, None]:
-    """A Lens project with ``rpg`` and ``dnd`` datasets and a fake LLM."""
+def cli_project(cli_llm: FakeLLMServer) -> Generator[Path, None, None]:
+    """A Lens project with ``rpg`` and ``testing`` datasets and a fake LLM."""
     tmp = tempfile.mkdtemp(prefix="lens_cli_test_")
     project_dir = Path(tmp)
     setup_test_project(
-        project_dir, dnd_llm.base_url, datasets=["rpg", "dnd"]
+        project_dir, cli_llm.base_url, datasets=["rpg", "testing"]
     )
     yield project_dir
     shutil.rmtree(tmp, ignore_errors=True)
@@ -69,62 +69,62 @@ def dnd_project(dnd_llm: FakeLLMServer) -> Generator[Path, None, None]:
 
 
 class TestCliStats:
-    def test_stats_exits_zero(self, dnd_project: Path) -> None:
-        r = _lens("stats", cwd=dnd_project)
+    def test_stats_exits_zero(self, cli_project: Path) -> None:
+        r = _lens("stats", cwd=cli_project)
         assert r.returncode == 0, r.stderr
 
-    def test_stats_shows_narrative(self, dnd_project: Path) -> None:
-        r = _lens("stats", cwd=dnd_project)
+    def test_stats_shows_narrative(self, cli_project: Path) -> None:
+        r = _lens("stats", cwd=cli_project)
         # Active narrative is "story".
         assert "story" in r.stdout
 
-    def test_stats_shows_kb_objects(self, dnd_project: Path) -> None:
-        r = _lens("stats", cwd=dnd_project)
-        # dnd dataset has many objects; project-local ones (person.amy,
-        # place.forest) are also present.  At minimum 2 local objects.
+    def test_stats_shows_kb_objects(self, cli_project: Path) -> None:
+        r = _lens("stats", cwd=cli_project)
+        # Bundled testing dataset plus project-local objects (person.amy,
+        # place.forest).
         assert "Knowledge Store" in r.stdout
         assert "Objects:" in r.stdout
 
-    def test_stats_shows_cursor(self, dnd_project: Path) -> None:
-        r = _lens("stats", cwd=dnd_project)
+    def test_stats_shows_cursor(self, cli_project: Path) -> None:
+        r = _lens("stats", cwd=cli_project)
         assert "Active narrative cursor:" in r.stdout
 
 
 # ---------------------------------------------------------------------------
-# KB lookups against bundled rpg + dnd datasets
+# KB lookups against bundled rpg + testing datasets
 # ---------------------------------------------------------------------------
 
 
-class TestCliKbDnd:
-    def test_kb_get_rules_system(self, dnd_project: Path) -> None:
-        """Lookup rules.system — D&D body comes from the dnd dataset (shadows rpg)."""
-        r = _lens("kb", "get", "rules.system", cwd=dnd_project)
+class TestCliKbBundled:
+    def test_kb_get_rules_system(self, cli_project: Path) -> None:
+        """Lookup rules.system — testing dataset shadows rpg when listed second."""
+        r = _lens("kb", "get", "rules.system", cwd=cli_project)
         assert r.returncode == 0, r.stderr
         assert r.stdout.strip(), "expected non-empty output for rules.system"
-        assert "D&D" in r.stdout or "d20" in r.stdout.lower()
+        assert "TESTING_RULES_SYSTEM_SHADOW" in r.stdout
 
-    def test_kb_get_rules_rpg(self, dnd_project: Path) -> None:
+    def test_kb_get_rules_rpg(self, cli_project: Path) -> None:
         """Lookup rules.rpg from the rpg dataset."""
-        r = _lens("kb", "get", "rules.rpg", cwd=dnd_project)
+        r = _lens("kb", "get", "rules.rpg", cwd=cli_project)
         assert r.returncode == 0, r.stderr
         assert r.stdout.strip(), "expected non-empty output for rules.rpg"
 
-    def test_kb_with_tag_finds_dnd_objects(self, dnd_project: Path) -> None:
-        """kb with-tag against a dnd tag should return results from the dataset."""
-        # "level:0" tags cantrips in the dnd dataset.
-        r = _lens("kb", "with-tag", "level:0", cwd=dnd_project)
+    def test_kb_with_tag_finds_dataset_objects(self, cli_project: Path) -> None:
+        """kb with-tag returns IDs from the testing dataset tag index."""
+        r = _lens("kb", "with-tag", "protagonist", cwd=cli_project)
         assert r.returncode == 0, r.stderr
-        assert r.stdout.strip(), "expected spell objects tagged level:0 from dnd dataset"
+        assert r.stdout.strip(), "expected objects tagged protagonist"
+        assert "person.hero" in r.stdout
 
-    def test_kb_get_local_object(self, dnd_project: Path) -> None:
+    def test_kb_get_local_object(self, cli_project: Path) -> None:
         """person.amy was created during project setup — must still be accessible."""
-        r = _lens("kb", "get", "person.amy", cwd=dnd_project)
+        r = _lens("kb", "get", "person.amy", cwd=cli_project)
         assert r.returncode == 0, r.stderr
         assert "Amy" in r.stdout
 
-    def test_kb_get_missing_object_returns_empty(self, dnd_project: Path) -> None:
+    def test_kb_get_missing_object_returns_empty(self, cli_project: Path) -> None:
         """Fetching a non-existent ID is not an error; it just prints nothing."""
-        r = _lens("kb", "get", "person.nobody", cwd=dnd_project)
+        r = _lens("kb", "get", "person.nobody", cwd=cli_project)
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
@@ -135,22 +135,22 @@ class TestCliKbDnd:
 
 
 class TestCliWrite:
-    def test_write_exits_zero(self, dnd_project: Path) -> None:
+    def test_write_exits_zero(self, cli_project: Path) -> None:
         # Prompt is a positional argument, not --prompt.
-        r = _lens("write", "continue the adventure", "--llm", "mock", cwd=dnd_project)
+        r = _lens("write", "continue the adventure", "--llm", "mock", cwd=cli_project)
         assert r.returncode == 0, r.stderr
 
-    def test_write_adds_content(self, dnd_project: Path) -> None:
+    def test_write_adds_content(self, cli_project: Path) -> None:
         """After write, at least one narrative node file contains Lorem Ipsum."""
-        _lens("write", "describe the scene", "--llm", "mock", cwd=dnd_project)
-        node_files = list((dnd_project / "narrative" / "story").rglob("*.md"))
+        _lens("write", "describe the scene", "--llm", "mock", cwd=cli_project)
+        node_files = list((cli_project / "narrative" / "story").rglob("*.md"))
         assert node_files, "expected narrative node files to exist"
         all_content = "\n".join(f.read_text() for f in node_files)
         assert "Lorem ipsum" in all_content
 
-    def test_write_opens_transaction(self, dnd_project: Path) -> None:
+    def test_write_opens_transaction(self, cli_project: Path) -> None:
         """write leaves an open transaction (unstaged changes)."""
-        _lens("write", "one more beat", "--llm", "mock", cwd=dnd_project)
-        stats = _lens("stats", cwd=dnd_project)
+        _lens("write", "one more beat", "--llm", "mock", cwd=cli_project)
+        stats = _lens("stats", cwd=cli_project)
         # stats prints "Open transaction: yes"
         assert "Open transaction: yes" in stats.stdout

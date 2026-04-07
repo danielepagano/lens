@@ -11,6 +11,7 @@ from lens.core.project import require_lens_context
 from lens.dnd.commands.balance_encounter import compute_encounters
 
 app = typer.Typer(no_args_is_help=True, help="D&D specific tools", add_completion=False)
+required_dataset = "lens-dnd"
 
 
 @app.command("balance")
