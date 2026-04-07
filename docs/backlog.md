@@ -3,15 +3,26 @@
 - Prompt assembly and retry architecture audit
 - Public Release Readiness  
    - License
-   - Documentation
+   - Clean up documentation
+      - Actual user manual for playing RPGs
+   - Remove hard-coding of usage of gitlab/fly, make modular/CI-friendly
+      - Remove reliance on specific env vars
+   - Better "no desktop" usage
       - Better init tooling/docs
-      - Explicit contribution guidelines?
-   - Main branch protection, CI
-   - Remove hard-coding of usage of gitlab/fly, make modular
       - Streamline project creation/management
-   - Force push to clean up history
+      - Streamline campaign bootstrapping
+      - Ensure manual editing is solid
+      - Some way to have a hook in a project to Lens to trigger deploy automatically
    - Improve maintainability
-      - Clean up of UI in particular: smaller modules, cleaner interfaces 
+      - Explicit contribution guidelines?
+      - Git hook/CI/merge rules
+      - Clean up of UI in particular: smaller modules, cleaner interfaces
+   - Use and tweak usability over time
+   - When ready
+      - Force push to clean up history
+      - Make repo public
+      - Immediately add main branch protection
+
 
 ## Prompt assembly and retry architecture audit
 
