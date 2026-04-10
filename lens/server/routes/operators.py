@@ -525,24 +525,64 @@ async def operator_chat(
         if body.with_kb_id is not None:
             extra_params["with_kb_id"] = body.with_kb_id
 
-    def coro_fn() -> Any:
-        return ChatOperator.run_session(
-            session=session,
-            narrative=narrative,
-            prompt=body.prompt,
-            module_id=None,
-            pins=pins,
-            unpins=unpins,
-            llm_id=body.llm_id,
-            reasoning=body.reasoning,
-            retry=body.retry,
-            end=body.end,
-            slug=body.slug if not body.end and not body.retry else None,
-            on_token=on_token,
-            on_stream_target=on_stream_target,
-            cancel_event=lock.cancel_event,
-            extra_params=extra_params,
-        )
+    if body.end or body.with_kb_id is not None:
+        # Session mode: end, start, or continue an explicit session.
+        def coro_fn() -> Any:
+            return ChatOperator.run_session(
+                session=session,
+                narrative=narrative,
+                prompt=body.prompt,
+                module_id=None,
+                pins=pins,
+                unpins=unpins,
+                llm_id=body.llm_id,
+                reasoning=body.reasoning,
+                retry=body.retry,
+                end=body.end,
+                slug=body.slug if not body.end and not body.retry else None,
+                on_token=on_token,
+                on_stream_target=on_stream_target,
+                cancel_event=lock.cancel_event,
+                extra_params=extra_params,
+            )
+    else:
+        # No --with: check whether we are already inside an open session.
+        session_node, _ = ChatOperator.find_active_session(narrative)
+        if session_node is not None:
+            def coro_fn() -> Any:  # type: ignore[misc]
+                return ChatOperator.run_session(
+                    session=session,
+                    narrative=narrative,
+                    prompt=body.prompt,
+                    module_id=None,
+                    pins=pins,
+                    unpins=unpins,
+                    llm_id=body.llm_id,
+                    reasoning=body.reasoning,
+                    retry=body.retry,
+                    end=False,
+                    slug=None,
+                    on_token=on_token,
+                    on_stream_target=on_stream_target,
+                    cancel_event=lock.cancel_event,
+                    extra_params=extra_params,
+                )
+        else:
+            # One-shot inline: AI responds as --as in the current node.
+            def coro_fn() -> Any:  # type: ignore[misc]
+                return ChatOperator.run_inline(
+                    session=session,
+                    narrative=narrative,
+                    prompt=body.prompt,
+                    pins=pins,
+                    unpins=unpins,
+                    llm_id=body.llm_id,
+                    reasoning=body.reasoning,
+                    retry=body.retry,
+                    on_token=on_token,
+                    cancel_event=lock.cancel_event,
+                    extra_params=extra_params,
+                )
 
     return _start_operator_stream(
         lock, event_queue, session, "chat", lambda: target_ref[0], coro_fn

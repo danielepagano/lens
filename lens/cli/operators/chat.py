@@ -23,7 +23,7 @@ async def _print_token(chunk: str) -> None:
 def chat(
     prompt: str = typer.Argument(
         None,
-        help="Stage directions (fresh session) or the character's dialog (inside session)",
+        help="Stage directions (one-shot or fresh session) or the character's dialog (inside session)",
     ),
     as_kb_id: str | None = typer.Option(
         None,
@@ -35,7 +35,7 @@ def chat(
         None,
         "--with",
         "-w",
-        help="KB id of the counterpart character the user plays (e.g. pc.amy)",
+        help="KB id of the counterpart character the user plays (e.g. pc.amy); triggers session mode",
     ),
     pin: list[str] = pin_option("KB ID to pin (repeatable)"),
     unpin: list[str] = unpin_option(),
@@ -49,18 +49,18 @@ def chat(
         None,
         "--slug",
         "-s",
-        help="Sub-node id for a new session (default: auto-generated from prompt)",
+        help="Sub-node id for a new session (default: auto-generated from characters and prompt)",
     ),
 ) -> None:
     """Have the AI speak as a specific character in the current scene.
 
-    Use --as <kb.id> to specify which character the AI voices.  The character's
-    KB object is auto-pinned so it appears in context.
+    Use --as <kb.id> to specify which character the AI voices.  Without --with,
+    this is a one-shot inline response written directly into the current node.
 
     With --with <kb.id>, opens a session sub-node for a back-and-forth
     conversation.  Inside the session, typing text sends it as the --with
-    character and the AI responds as --as.  Omit --as inside a session to
-    reuse the last character.
+    character and the AI responds as --as.  Subsequent calls without --with
+    inside an open session continue that session automatically.
 
     Use --end to close the session with a prose summary.
     """
@@ -104,25 +104,68 @@ def chat(
         extra_params["with_kb_id"] = with_kb_id
 
     try:
-        asyncio.run(
-            ChatOperator.run_session(
-                session=session,
-                narrative=narrative,
-                prompt=prompt,
-                module_id=None,
-                pins=all_pins,
-                unpins=list(unpin),
-                llm_id=llm,
-                reasoning=reasoning,
-                retry=retry,
-                end=end,
-                slug=slug if not end and not retry else None,
-                on_token=_print_token,
-                on_stream_target=None,
-                cancel_event=None,
-                extra_params=extra_params,
+        if end or with_kb_id is not None:
+            # Session mode: end, start, or continue an explicit session.
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=session,
+                    narrative=narrative,
+                    prompt=prompt,
+                    module_id=None,
+                    pins=all_pins,
+                    unpins=list(unpin),
+                    llm_id=llm,
+                    reasoning=reasoning,
+                    retry=retry,
+                    end=end,
+                    slug=slug if not end and not retry else None,
+                    on_token=_print_token,
+                    on_stream_target=None,
+                    cancel_event=None,
+                    extra_params=extra_params,
+                )
             )
-        )
+        else:
+            # No --with: check whether we are already inside an open session.
+            session_node, _ = ChatOperator.find_active_session(narrative)
+            if session_node is not None:
+                # Continue the open session without re-specifying --with.
+                asyncio.run(
+                    ChatOperator.run_session(
+                        session=session,
+                        narrative=narrative,
+                        prompt=prompt,
+                        module_id=None,
+                        pins=all_pins,
+                        unpins=list(unpin),
+                        llm_id=llm,
+                        reasoning=reasoning,
+                        retry=retry,
+                        end=False,
+                        slug=None,
+                        on_token=_print_token,
+                        on_stream_target=None,
+                        cancel_event=None,
+                        extra_params=extra_params,
+                    )
+                )
+            else:
+                # One-shot inline: AI responds as --as in the current node.
+                asyncio.run(
+                    ChatOperator.run_inline(
+                        session=session,
+                        narrative=narrative,
+                        prompt=prompt,
+                        pins=all_pins,
+                        unpins=list(unpin),
+                        llm_id=llm,
+                        reasoning=reasoning,
+                        retry=retry,
+                        on_token=_print_token,
+                        cancel_event=None,
+                        extra_params=extra_params,
+                    )
+                )
         print()  # ensure final newline
     except OperatorError as e:
         typer.echo(f"lens chat: {e}", err=True)
