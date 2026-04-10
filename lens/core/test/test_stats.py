@@ -137,3 +137,35 @@ class TestStatsEffectivePins(unittest.TestCase):
       self.assertEqual(crawl_result.pinned_ids, result.effective_pins_at_cursor)
       self.assertEqual(result.effective_pins_at_cursor, ["place.a", "place.b"])
 
+
+class TestStatsActiveSessionOperator(unittest.TestCase):
+  def test_active_session_operator_chat_when_cursor_in_chat_subnode(self) -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, _ = _make_project(root)
+
+      narrative = session.active_narrative
+      assert narrative is not None
+      root_node = NarrativeNode(
+          narrative_root=narrative.narrative_root,
+          key_path=(),
+      )
+      (root_node.md_path().parent / "chat-bob-amy.md").write_text("# chat\n")
+      md_root = root_node.md_path()
+      md_root.write_text(
+          md_root.read_text(encoding="utf-8").rstrip() + "\n\n[chat:chat-bob-amy]: #\n"
+      )
+
+      import subprocess
+
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "chat session"],
+          cwd=root,
+          capture_output=True,
+          check=True,
+      )
+
+      result = get_stats(session)
+      self.assertEqual(result.active_session_operator, "chat")
+
