@@ -499,9 +499,8 @@ async def operator_chat(
     narrative = _require_narrative(session)
     pins = list(body.pins)
     unpins = list(body.unpins)
-    # Auto-pin the --as and --with characters (mirroring CLI behaviour).
-    if body.as_kb_id and body.as_kb_id not in pins:
-        pins.append(body.as_kb_id)
+    # The --as character's content is embedded directly in the task instruction —
+    # do not pin it. The --with counterpart is pinned for scene context.
     if body.with_kb_id and body.with_kb_id not in pins:
         pins.append(body.with_kb_id)
     _validate_pins(session, pins, unpins)

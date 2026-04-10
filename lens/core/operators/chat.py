@@ -34,6 +34,7 @@ from typing import Any, ClassVar, cast
 
 from lens.core.annotations import parse_annotations
 from lens.core.context import CrawlResult
+from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
@@ -68,29 +69,47 @@ class ChatOperator(SessionOperator):
         as_kb_id: str = params.get("as_kb_id") or ""
         as_name = _titlecase_kb_key(as_kb_id) if as_kb_id else "the character"
         directions: str | None = params.get("prompt") or None
+
+        # Fetch the character's KB text and embed it directly in the task so
+        # the AI knows exactly who it is embodying without searching.
+        char_content = ""
+        if as_kb_id:
+            store = KnowledgeStore.for_project(self.project_root)
+            objects = store.get_objects(ids=[as_kb_id])
+            obj = objects.get(as_kb_id)
+            if obj:
+                char_content = obj.text.strip()
+
         prompts = PromptStore(self.project_root)
         if directions:
             return prompts.format(
                 "chat.instruction_with_directions",
                 as_name=as_name,
+                char_content=char_content,
                 directions=directions,
             )
-        return prompts.format("chat.instruction_continue", as_name=as_name)
+        return prompts.format(
+            "chat.instruction_continue",
+            as_name=as_name,
+            char_content=char_content,
+        )
 
     @classmethod
     def enrich_params(cls, crawl_result: CrawlResult, params: dict[str, Any]) -> None:
-        """Validate that the ``--as`` character is in the effective pin list."""
+        """Validate that the ``--as`` character exists in the knowledge base."""
         as_kb_id = params.get("as_kb_id")
         if not as_kb_id:
             raise OperatorError(
                 "chat requires --as <kb.id> to specify the character the AI will voice"
             )
-        if as_kb_id not in crawl_result.pinned_ids:
-            raise OperatorError(
-                f"--as '{as_kb_id}' must be pinned — "
-                "it is auto-pinned when starting a new session; "
-                "use --pin to add it when continuing"
-            )
+        # Character content is embedded directly in the task instruction, not
+        # pinned, so we validate existence rather than pin presence.
+        if crawl_result.project_root is not None:
+            store = KnowledgeStore.for_project(crawl_result.project_root)
+            if not store.exists(as_kb_id):
+                raise OperatorError(
+                    f"--as '{as_kb_id}' does not exist in the knowledge base"
+                )
 
     # ── Session param helpers ──────────────────────────────────────────────
 

@@ -101,7 +101,7 @@ class TestChatOneShot(unittest.TestCase):
                     session=self.session,
                     narrative=self.narrative,
                     prompt=None,
-                    pins=["npc.bob"],
+                    pins=[],
                     unpins=[],
                     llm_id=None,
                     reasoning=None,
@@ -124,7 +124,7 @@ class TestChatOneShot(unittest.TestCase):
                     session=self.session,
                     narrative=self.narrative,
                     prompt=None,
-                    pins=["npc.bob"],
+                    pins=[],
                     unpins=[],
                     llm_id=None,
                     reasoning=None,
@@ -145,7 +145,7 @@ class TestChatOneShot(unittest.TestCase):
                     session=self.session,
                     narrative=self.narrative,
                     prompt=None,
-                    pins=["npc.bob"],
+                    pins=[],
                     unpins=[],
                     llm_id=None,
                     reasoning=None,
@@ -166,7 +166,7 @@ class TestChatOneShot(unittest.TestCase):
                     session=self.session,
                     narrative=self.narrative,
                     prompt="The inn is quiet at dawn.",
-                    pins=["npc.bob"],
+                    pins=[],
                     unpins=[],
                     llm_id=None,
                     reasoning=None,
@@ -242,7 +242,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt="at the inn",
                     module_id=None,
-                    pins=["npc.bob", "pc.amy"],
+                    pins=["pc.amy"],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -261,7 +261,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["npc.bob", "pc.amy"],
+                    pins=["pc.amy"],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -269,8 +269,9 @@ class TestChatSession(unittest.TestCase):
         keys = [k for k in self.narrative.child_keys() if k.startswith("chat")]
         self.assertEqual(len(keys), 1)
 
-    def test_session_pins_characters_in_front_matter(self) -> None:
-        """Both --as and --with characters are pinned in the sub-node."""
+    def test_session_pins_counterpart_in_front_matter(self) -> None:
+        """The --with counterpart is pinned in the sub-node for scene context.
+        The --as character is NOT pinned (content goes into the task directly)."""
         with patch("lens.core.operator.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
@@ -278,14 +279,14 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["npc.bob", "pc.amy"],
+                    pins=["pc.amy"],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
             )
         text = self._chat_child_md()
-        self.assertIn("npc.bob", text)
         self.assertIn("pc.amy", text)
+        self.assertNotIn("kb_pin:\n- npc.bob", text)
 
     def test_session_ai_response_written(self) -> None:
         """The AI response is written into the chat sub-node."""
@@ -296,7 +297,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["npc.bob", "pc.amy"],
+                    pins=["pc.amy"],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -315,7 +316,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["npc.bob", "pc.amy"],
+                    pins=["pc.amy"],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -333,7 +334,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt="The inn is quiet at dawn.",
                     module_id=None,
-                    pins=["npc.bob", "pc.amy"],
+                    pins=["pc.amy"],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -361,7 +362,7 @@ class TestChatSession(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def _start_session(self) -> None:
-        """Helper: start a fresh session with npc.bob and pc.amy."""
+        """Helper: start a fresh session with npc.bob (as) and pc.amy (with)."""
         with patch("lens.core.operator.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
@@ -369,7 +370,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["npc.bob", "pc.amy"],
+                    pins=["pc.amy"],  # only counterpart is pinned; --as goes into task
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )

@@ -84,10 +84,10 @@ def chat(
         )
         raise typer.Exit(1)
 
-    # Auto-pin --as and --with characters so they appear in RELEVANT KNOWLEDGE.
+    # The --as character's content is embedded directly in the task instruction —
+    # do not pin it (that would put it in RELEVANT KNOWLEDGE a second time).
+    # The --with counterpart is pinned for scene context.
     all_pins = list(pin)
-    if as_kb_id and as_kb_id not in all_pins:
-        all_pins.append(as_kb_id)
     if with_kb_id and with_kb_id not in all_pins:
         all_pins.append(with_kb_id)
 
