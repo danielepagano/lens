@@ -129,7 +129,12 @@ from lens.core.command_tools import CommandToolFn
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.dice import DiceError, substitute_rolls
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import LLMError, build_command_tools_bundle, generate_text
+from lens.core.llm import (
+    LLMError,
+    CommandToolsBundle,
+    build_command_tools_bundle,
+    generate_text,
+)
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.project import ProjectSession, resolve_address
 from lens.core.storage import Storage
@@ -595,6 +600,33 @@ class Operator(ABC):
         return result
 
     @staticmethod
+    def merge_extra_pin_ids(*parts: list[str]) -> list[str]:
+        """Concatenate pin id lists, deduplicating while preserving first-seen order."""
+        out: list[str] = []
+        seen: set[str] = set()
+        for part in parts:
+            for cid in part:
+                if cid in seen:
+                    continue
+                seen.add(cid)
+                out.append(cid)
+        return out
+
+    @classmethod
+    def _inline_command_tools_bundle(
+        cls,
+        project_root: Path,
+        ann_params: dict[str, Any],
+    ) -> CommandToolsBundle | None:
+        """Optional per-operator command tools for inline / retry generation.
+
+        When non-``None``, overrides :attr:`use_command_tools` full registry
+        (e.g. chat exposes only whitelisted ``kb_patch``).
+        """
+        del project_root, ann_params
+        return None
+
+    @staticmethod
     def mention_pins(prompt: str | None, project_root: Path) -> list[str]:
         """Return KB IDs found as ``@type.key`` mentions in *prompt* that exist.
 
@@ -686,13 +718,16 @@ class Operator(ABC):
         *,
         operator_name: str | None = None,
         reasoning: str | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        command_tool_handlers: dict[str, CommandToolFn] | None = None,
     ) -> str:
         """Stream LLM output and return the full collected text."""
         return await generate_text(
             messages,
             project_root,
             llm_id=llm_id,
-            tools=None,
+            tools=tools,
+            command_tool_handlers=command_tool_handlers,
             cancel_event=cancel_event,
             on_preview=on_token,
             interrupt_policy="return_empty",
@@ -973,9 +1008,12 @@ class Operator(ABC):
         if mention_ids:
             existing_pins = cls.extract_list(ann_params, "kb_pin")
             ann_params["kb_pin"] = existing_pins + mention_ids
+        memory_ids = cls.extract_list(ann_params, "memory_kb_ids")
         crawl_result = crawl(
             cursor,
-            extra_pins=pins + mention_ids,
+            extra_pins=cls.merge_extra_pin_ids(
+                list(pins), list(mention_ids), memory_ids
+            ),
             extra_unpins=unpins,
         )
         mention_refs = cls.mention_node_slice_refs(prompt, session.project_root)
@@ -994,10 +1032,17 @@ class Operator(ABC):
 
         # ── Command tools ─────────────────────────────────────────────────
         # Operators that prioritise speed (e.g. play) opt out via
-        # use_command_tools = False.
+        # use_command_tools = False. Subclasses may override
+        # :meth:`_inline_command_tools_bundle` for a custom tool set.
         tools_payload: list[dict[str, Any]] | None = None
         command_handlers: dict[str, CommandToolFn] | None = None
-        if cls.use_command_tools:
+        override = cls._inline_command_tools_bundle(
+            session.project_root, ann_params
+        )
+        if override is not None:
+            tools_payload = override.tools
+            command_handlers = override.handlers
+        elif cls.use_command_tools:
             bundle = build_command_tools_bundle(session.project_root)
             tools_payload = bundle.tools
             command_handlers = bundle.handlers
@@ -1046,18 +1091,41 @@ class Operator(ABC):
     ) -> None:
         ann_pins = cls.extract_list(existing_ann.params, "kb_pin")
         ann_unpins = cls.extract_list(existing_ann.params, "kb_unpin")
+        ann_memory = cls.extract_list(existing_ann.params, "memory_kb_ids")
         ann_llm_id: str | None = existing_ann.params.get("llm_id")
         ann_reasoning: str | None = existing_ann.params.get("reasoning")
 
         owner = cls._owner_for_ann(existing_ann, rel_path)
         op = cls(session.new_storage(owner=owner), narrative)
 
-        crawl_result = crawl(cursor, extra_pins=ann_pins, extra_unpins=ann_unpins)
+        crawl_result = crawl(
+            cursor,
+            extra_pins=cls.merge_extra_pin_ids(ann_pins, ann_memory),
+            extra_unpins=ann_unpins,
+        )
         cls.enrich_params(crawl_result, existing_ann.params)
         messages = op.build_messages(crawl_result, existing_ann.params)
 
+        cont_override = cls._inline_command_tools_bundle(
+            session.project_root, dict(existing_ann.params)
+        )
+        cont_tools = cont_override.tools if cont_override is not None else None
+        cont_handlers = (
+            cont_override.handlers if cont_override is not None else None
+        )
+
         try:
-            content = await cls.stream_output(messages, session.project_root, ann_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name, reasoning=ann_reasoning)
+            content = await cls.stream_output(
+                messages,
+                session.project_root,
+                ann_llm_id,
+                on_token,
+                cancel_event=cancel_event,
+                operator_name=cls.name,
+                reasoning=ann_reasoning,
+                tools=cont_tools,
+                command_tool_handlers=cont_handlers,
+            )
         except KeyboardInterrupt:
             return
         except LLMError as e:
@@ -1128,9 +1196,12 @@ class Operator(ABC):
         if mention_ids:
             existing_pins = cls.extract_list(new_params, "kb_pin")
             new_params["kb_pin"] = existing_pins + mention_ids
+        memory_ids = cls.extract_list(new_params, "memory_kb_ids")
         crawl_result = crawl(
             cursor,
-            extra_pins=eff_pins + mention_ids,
+            extra_pins=cls.merge_extra_pin_ids(
+                eff_pins, list(mention_ids), memory_ids
+            ),
             extra_unpins=eff_unpins,
         )
         mention_refs = cls.mention_node_slice_refs(
@@ -1148,8 +1219,26 @@ class Operator(ABC):
         if feedback and previous_content:
             messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))
 
+        retry_override = cls._inline_command_tools_bundle(
+            session.project_root, new_params
+        )
+        retry_tools = retry_override.tools if retry_override is not None else None
+        retry_handlers = (
+            retry_override.handlers if retry_override is not None else None
+        )
+
         try:
-            content = await cls.stream_output(messages, session.project_root, eff_llm_id, on_token, cancel_event=cancel_event, operator_name=cls.name, reasoning=eff_reasoning)
+            content = await cls.stream_output(
+                messages,
+                session.project_root,
+                eff_llm_id,
+                on_token,
+                cancel_event=cancel_event,
+                operator_name=cls.name,
+                reasoning=eff_reasoning,
+                tools=retry_tools,
+                command_tool_handlers=retry_handlers,
+            )
         except KeyboardInterrupt:
             return
         except LLMError as e:

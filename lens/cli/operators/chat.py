@@ -38,6 +38,16 @@ def chat(
         help="KB id of the counterpart character the user plays (e.g. pc.amy); triggers session mode",
     ),
     pin: list[str] = pin_option("KB ID to pin (repeatable)"),
+    memory: list[str] = typer.Option(
+        [],
+        "--memory",
+        "-m",
+        help=(
+            "KB object for long-term character memory (repeatable). Implies context "
+            "pins; enables scoped kb_patch for these ids only. Default reasoning becomes "
+            "low unless overridden."
+        ),
+    ),
     unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(None, "--llm", "-l", help="LLM ID to use"),
     reasoning: str | None = typer.Option(
@@ -92,7 +102,7 @@ def chat(
         all_pins.append(with_kb_id)
 
     try:
-        validate_ids_exist(session.project_root, all_pins + list(unpin))
+        validate_ids_exist(session.project_root, all_pins + list(memory) + list(unpin))
     except LensException as e:
         typer.echo(f"lens chat: {e}", err=True)
         raise typer.Exit(1)
@@ -102,6 +112,12 @@ def chat(
         extra_params["as_kb_id"] = as_kb_id
     if with_kb_id:
         extra_params["with_kb_id"] = with_kb_id
+    if memory:
+        extra_params["memory_kb_ids"] = list(memory)
+
+    eff_reasoning = reasoning
+    if eff_reasoning is None and memory:
+        eff_reasoning = "low"
 
     try:
         if end or with_kb_id is not None:
@@ -115,7 +131,7 @@ def chat(
                     pins=all_pins,
                     unpins=list(unpin),
                     llm_id=llm,
-                    reasoning=reasoning,
+                    reasoning=eff_reasoning,
                     retry=retry,
                     end=end,
                     slug=slug if not end and not retry else None,
@@ -139,7 +155,7 @@ def chat(
                         pins=all_pins,
                         unpins=list(unpin),
                         llm_id=llm,
-                        reasoning=reasoning,
+                        reasoning=eff_reasoning,
                         retry=retry,
                         end=False,
                         slug=None,
@@ -159,7 +175,7 @@ def chat(
                         pins=all_pins,
                         unpins=list(unpin),
                         llm_id=llm,
-                        reasoning=reasoning,
+                        reasoning=eff_reasoning,
                         retry=retry,
                         on_token=_print_token,
                         cancel_event=None,

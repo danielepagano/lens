@@ -225,6 +225,46 @@ def build_command_tools_bundle(project_root: Path) -> CommandToolsBundle:
     return CommandToolsBundle(tools=tools, handlers=handlers)
 
 
+def build_kb_patch_whitelist_bundle(allowed_ids: frozenset[str]) -> CommandToolsBundle:
+    """Single ``kb_patch`` tool with server-side id whitelist (e.g. chat memory)."""
+    from lens.core.command_tools import KB_PATCH_TOOL, kb_patch_handler
+
+    if not allowed_ids:
+        return CommandToolsBundle(tools=None, handlers=None)
+
+    allowed_sorted = ", ".join(sorted(allowed_ids))
+    extra = (
+        " For this session you may only patch these KB ids (memory objects): "
+        f"{allowed_sorted}. Any other id is rejected."
+    )
+
+    async def _guarded_kb_patch(
+        args: dict[str, Any], project_root: Path
+    ) -> str:
+        raw_id = args.get("id")
+        if not isinstance(raw_id, str) or raw_id not in allowed_ids:
+            return (
+                "(error: kb_patch may only target the chat memory KB objects: "
+                f"{allowed_sorted})"
+            )
+        return await kb_patch_handler(args, project_root)
+
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "kb_patch",
+                "description": KB_PATCH_TOOL.description + extra,
+                "parameters": KB_PATCH_TOOL.parameters,
+            },
+        }
+    ]
+    return CommandToolsBundle(
+        tools=tools,
+        handlers={"kb_patch": _guarded_kb_patch},
+    )
+
+
 async def collect_final_payload(
     stream: AsyncIterator[StreamEvent],
     *,

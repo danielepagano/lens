@@ -1,21 +1,11 @@
 # Lens Backlog
 
 - **Prompt assembly and retry architecture** audit (see below)
-- **Addressing text sections from a tool call without line numbers**. Operators can point to places in a narrative node or a KB item (at a line resolution, not finder) by using a line-numnber-less diff-style selection: 
-   1. Possible targets and result: a narrative node or KB item, result is a line or line range
-   2. Select start: provice **full verbatim line** you want to start your selection from (inclusive), minus the new line symbol
-      - If this line is NOT UNIQUE in the document for any reason, add context lines _before or after_ to uniquely identify it (provide the minimum to make a unique selection... extra doesn't hurt)
-      - This is obviously very handy if the line you are targeting is empty (''), which is totally a valid selection 
-   3. If selecting a range, do the same for the last line; this is also inclusive, so a single-line range does not need a second selection
-   4. Use a notation like `@@@start` or `@@@end` to signify the beginning or end, so if you wanted to select the last line of the doc, which happens to be empty, you would say `''` as the target and `['@@@end']` as the "lines after for context"
-      - If you want to prepend or append, just select `@@@start` or `@@@end` directly... giving both of those as the range is a full content replace, of course
-   5. A resolver then takes target plus selections and resolves them into line numbers, or return an error if things are not found/not unique/out of order. This is used to select a section of document to replace, or a cursor position to add to for start or end (the content is another parameter). A tool call could have multiple selections and content pairs, which are applied in turn.
-- **`kb_patch` tool** allow operators to tool-patch a KB object’s body (different than “emit fenced kb blocks for human review.”) This is a straightfoward application of the above addressing of ranges with content replacement vs kb targets 
-- **`collate` tool** uses a range selection on a node, provides a section slug, and calls collate; it can take a summary, or create one for you; this allows the AI to auto-compress its context as it goes, but in a purposeful way, as in "well, that topic is over, let's just remember the gist"  
-   - This works on a **single** contiguous range on the **current node** only
-   - Section summaries appear as **continuous blockquotes** (`>`); the tool contract should tell the model **not to split a contiguous quoted run** because that run is really matching a sub-node! This way collate targets stay structurally sane even before the operator’s own checks.
-   - The collate tool does NOT colalte! It surfaces the request as a _suggestion_ to the user, which can just click on the UI accept (or change), which then _actually_ calls the operator. Actually calling collate would restructure the context and could be quite error-prone if the LLM keeps going.
-- **Use `kb_patch` to remember**: whitelist objects/types that the AI can just update as it goes!
+- **`collate` tool** uses a range selection on a node (like `kb_patch`), provides a section slug, and calls collate; it can take a summary, or create one for you; this allows the AI to auto-compress its context as it goes, but in a purposeful way, as in "well, that topic is over, let's just remember the gist"  
+   - This works on a **single** contiguous range on the **current node** only (same rules as `collate` operator, obviously)
+   - Section summaries appear as **continuous blockquotes** (`>`); the tool contract should tell the model **not to split a contiguous quoted run** because that run is really matching a sub-node! This way the collate target ranges stay structurally consistent with what collate allows, without the LLM having to see annotations (which it cannot).
+   - The collate tool does NOT perform the collate! It surfaces the request as a _suggestion_ to the user, who can accept it, redact it, or ignore it. Accepting then actually calls the operator (as if it was entered by the user directly). Actually calling collate from the tool is possible, but it would restructure the context and could be quite error-prone.
+   - The prompt to use collate requires clear instructions about compressing context and asks, requires, IMPLORES restraint from the AI to only section on occasion after a full topic is obviously concluded.
 - **Public Release Readiness**
    - License
    - Clean up documentation

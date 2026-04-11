@@ -106,6 +106,7 @@ class ChatBody(BaseModel):
     prompt: str | None = None
     as_kb_id: str | None = None
     with_kb_id: str | None = None
+    memory_kb_ids: list[str] = []
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
@@ -503,7 +504,7 @@ async def operator_chat(
     # do not pin it. The --with counterpart is pinned for scene context.
     if body.with_kb_id and body.with_kb_id not in pins:
         pins.append(body.with_kb_id)
-    _validate_pins(session, pins, unpins)
+    _validate_pins(session, pins + list(body.memory_kb_ids), unpins)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
@@ -517,12 +518,22 @@ async def operator_chat(
     on_token = _make_on_token(event_queue)
 
     extra_params: dict[str, Any] | None = None
-    if body.as_kb_id is not None or body.with_kb_id is not None:
+    if (
+        body.as_kb_id is not None
+        or body.with_kb_id is not None
+        or body.memory_kb_ids
+    ):
         extra_params = {}
         if body.as_kb_id is not None:
             extra_params["as_kb_id"] = body.as_kb_id
         if body.with_kb_id is not None:
             extra_params["with_kb_id"] = body.with_kb_id
+        if body.memory_kb_ids:
+            extra_params["memory_kb_ids"] = list(body.memory_kb_ids)
+
+    eff_reasoning = body.reasoning
+    if eff_reasoning is None and body.memory_kb_ids:
+        eff_reasoning = "low"
 
     if body.end or body.with_kb_id is not None:
         # Session mode: end, start, or continue an explicit session.
@@ -535,7 +546,7 @@ async def operator_chat(
                 pins=pins,
                 unpins=unpins,
                 llm_id=body.llm_id,
-                reasoning=body.reasoning,
+                reasoning=eff_reasoning,
                 retry=body.retry,
                 end=body.end,
                 slug=body.slug if not body.end and not body.retry else None,
@@ -557,7 +568,7 @@ async def operator_chat(
                     pins=pins,
                     unpins=unpins,
                     llm_id=body.llm_id,
-                    reasoning=body.reasoning,
+                    reasoning=eff_reasoning,
                     retry=body.retry,
                     end=False,
                     slug=None,
@@ -576,7 +587,7 @@ async def operator_chat(
                     pins=pins,
                     unpins=unpins,
                     llm_id=body.llm_id,
-                    reasoning=body.reasoning,
+                    reasoning=eff_reasoning,
                     retry=body.retry,
                     on_token=on_token,
                     cancel_event=lock.cancel_event,

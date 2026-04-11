@@ -28,6 +28,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
    lens pin        # pin/unpin knowledge objects to nodes (see lens pin --help)
    lens write      # AI: generate narrative text at the cursor
    lens edit       # AI or manual: rewrite/replace a selected line range in narrative
+   lens chat       # AI: in-character speech (--as / optional --with session)
    lens rewind     # move the cursor back to a node or line, deleting what comes after
    lens rollback   # discard or compensate a pending operator transaction
    lens commit     # stage all changes (git add -A)
@@ -482,6 +483,44 @@ Arguments: `ADDRESS START_LINE END_LINE [PROMPT]`
 - `PROMPT` — editing instruction (LLM mode) or replacement text (`--replace` mode). Required for a fresh edit; optional on retry to reuse the previous instruction in LLM mode.
 
 `edit` wraps the selected lines in a claim annotation (`[edit:eSTART_END]: #`) that is staged, then either streams the proposed replacement as an unstaged diff (LLM mode) or applies the provided replacement text directly (`--replace` mode). Use `lens rollback` to cancel, or `lens commit` to accept.
+
+### `lens chat`
+
+Streams dialogue as a specific knowledge-base character (`--as` / `-as`). The model receives that object’s text in the task (it is not added as a pin, so it does not duplicate “relevant knowledge”). Requires an active narrative (`lens use`).
+
+**Character framing:** `--as` picks the KB character whose sheet is inlined into the task, together with the  chat system prompt (in-character voice and boundaries). After the session is open, when `--as` / `--with` match the pair recorded in the session’s parent annotation, your `PROMPT` is appended as your character’s line and the bundled instructions bias narration toward **first** person and **second** person toward that counterpart (`chat.with_line_instruction`). Change `--as` or `--with` and the same text is read as **third-person** stage direction for a one-off beat (e.g. a waiter interrupting a date), not as the other character speaking.
+
+**One-shot (no `--with`):** With `--as <kb.id>` and optional stage directions, the AI speaks once in the **current** node (inline), like a single in-character beat (descriptions in third person).
+
+**Session (`--with`):** With `--as` and `--with` / `-w` (the KB id of the character **you** play), Lens creates a **chat** sub-node under the cursor. Your prompt is treated as stage directions for the opening exchange. Inside that session, later invocations can omit `--with`; plain text is appended as your character’s line (blockquote), then the AI responds as `--as`. You can pass a new `--as` on a later call to switch which character the AI voices for a one-off beat.
+
+The `--with` id is pinned for scene context on each call if it is not already in your `-p` list.
+
+**Memory (`--memory` / `-m`):** Repeatable KB ids for **long-term character memory** objects. They are included in effective context like pins. When at least one memory id is set, default `--reasoning` becomes `low` (instead of `none`) unless you pass `--reasoning` explicitly. The model then receives the `kb_patch` command tool, but **only** for those ids, so it can update durable memory the character should keep after chat context rolls forward.
+
+```bash
+lens chat --as npc.innkeeper "warn them about the curfew"
+lens chat --as npc.bob --with pc.amy "Amy corners Bob behind the stables"
+lens chat "I never saw the letter."              # inside session: your line, then AI as --as
+lens chat --as npc.guard "freeze!"               # mid-session: switch AI voice to the guard
+lens chat --retry                                # discard last generation and regenerate
+lens chat --end                                  # close session with a short prose summary
+lens chat --as npc.bob --with pc.amy -s alley "opening beat"   # optional sub-node id (--slug / -s)
+```
+
+Arguments: `[PROMPT]`
+
+- `PROMPT` — Stage directions for a new or guided exchange (especially with `--with`), your character’s line inside an open session, or the beat for a one-shot. Can be omitted when using only `--end` or `--retry` (see `lens chat --help`).
+
+Options:
+
+- `--as` / `-as` — KB id the AI embodies (e.g. `npc.bob`, `pc.alice`). Required for new inline or session calls; inside an open session it can override the voiced character.
+- `--with` / `-w` — KB id of your character; starts (or re-enters explicit) session mode when set together with session handling. After the session exists, you may omit it and Lens continues the active chat session.
+- `--slug` / `-s` — Sub-node key for a **new** session (default: auto-generated from characters and prompt). If you pass a bare name, Lens prefixes it with `chat-` when needed. Not used with `--end` or `--retry`.
+- `--memory` / `-m` — Repeatable KB id for a memory object (see **Memory** above). Stored on the session parent annotation; session continues inherit it without re-passing `-m`.
+- `-p` / `--pin`, `-u` / `--unpin`, `-l` / `--llm`, `--reasoning`, `-r` / `--retry` — same ideas as other operators (`--reasoning`: `none`, `low`, `medium`, `high`).
+
+**Flow:** Opening a session writes an unclosed ``[`chat:<id>`]: #`` annotation on the parent and creates the child in one pending transaction (rollback drops the whole session). Inside the child, your lines are stored as Markdown blockquotes with a ``[Name]`` speaker tag (derived from the KB id). One-shot inline uses the chat operator without a sub-node. This command is not dataset-gated.
 
 ### `lens play`
 

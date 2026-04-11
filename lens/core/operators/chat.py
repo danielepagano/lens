@@ -13,7 +13,8 @@ with a different ``--as`` value.
 Session lifecycle
 -----------------
 * First call → creates a sub-node (``chat[-prompt-slug]``), writes ``as_kb_id``
-  / ``with_kb_id`` / ``prompt`` / ``kb_pin`` into the **parent** annotation so
+  / ``with_kb_id`` / ``prompt`` / ``kb_pin`` / optional ``memory_kb_ids`` into
+  the **parent** annotation so
   the whole setup + first AI turn is one atomic unstaged transaction.  A
   rollback removes the sub-node entirely and the user can retry.
 * Subsequent calls inside the session → appends the user's ``--with`` character
@@ -32,12 +33,19 @@ from __future__ import annotations
 
 import re
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any, ClassVar, cast
 
 from lens.core.annotations import parse_annotations
+from lens.core.command_tools import CommandToolFn
 from lens.core.context import CrawlResult, crawl
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import LLMError, generate_text
+from lens.core.llm import (
+    CommandToolsBundle,
+    LLMError,
+    build_kb_patch_whitelist_bundle,
+    generate_text,
+)
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
@@ -63,6 +71,49 @@ class ChatOperator(SessionOperator):
     name: ClassVar[str] = "chat"
     requires_id: ClassVar[bool] = True
     summarize_on_end: ClassVar[bool] = True
+
+    @staticmethod
+    def _memory_kb_ids_param(raw: Any) -> list[str]:
+        """Normalize ``memory_kb_ids`` from annotation YAML or ``extra_params``."""
+        if isinstance(raw, list):
+            raw_l = cast(list[Any], raw)
+            out: list[str] = []
+            for item in raw_l:
+                if isinstance(item, str) and item:
+                    out.append(item)
+            return out
+        if isinstance(raw, str) and raw.strip():
+            return [raw.strip()]
+        return []
+
+    @classmethod
+    def _extract_memory_kb_ids_from_kwargs(cls, kwargs: dict[str, Any]) -> list[str]:
+        raw = kwargs.get("extra_params")
+        if not isinstance(raw, dict):
+            return []
+        raw_map = cast(dict[object, object], raw)
+        ep = {str(k): v for k, v in raw_map.items() if isinstance(k, str)}
+        return cls._memory_kb_ids_param(ep.get("memory_kb_ids"))
+
+    @staticmethod
+    def effective_reasoning_with_memory(
+        reasoning: str | None, memory_kb_ids: list[str]
+    ) -> str | None:
+        if reasoning is not None:
+            return reasoning
+        return "low" if memory_kb_ids else None
+
+    @classmethod
+    def _inline_command_tools_bundle(
+        cls,
+        project_root: Path,
+        ann_params: dict[str, Any],
+    ) -> CommandToolsBundle | None:
+        _ = project_root
+        mem = cls.extract_list(ann_params, "memory_kb_ids")
+        if not mem:
+            return None
+        return build_kb_patch_whitelist_bundle(frozenset(mem))
 
     # ── Prompt interface ───────────────────────────────────────────────────
 
@@ -93,26 +144,43 @@ class ChatOperator(SessionOperator):
             with_name = _titlecase_kb_key(with_kb_id)
             with_line = "\n" + prompts.format("chat.with_line_instruction", with_name=with_name)
 
+        memory_ids = self._memory_kb_ids_param(params.get("memory_kb_ids"))
+        memory_suffix = ""
+        if memory_ids:
+            memory_suffix = "\n\n" + prompts.format(
+                "chat.memory_instruction",
+                memory_ids_comma=", ".join(memory_ids),
+            )
+
         if directions:
             if with_line_mode == _WITH_LINE_MODE_ASIDE:
-                return prompts.format(
-                    "chat.instruction_with_aside_directions",
+                return (
+                    prompts.format(
+                        "chat.instruction_with_aside_directions",
+                        as_name=as_name,
+                        char_content=char_content,
+                        directions=directions,
+                    )
+                    + memory_suffix
+                )
+            return (
+                prompts.format(
+                    "chat.instruction_with_directions",
                     as_name=as_name,
                     char_content=char_content,
                     directions=directions,
+                    with_line=with_line,
                 )
-            return prompts.format(
-                "chat.instruction_with_directions",
+                + memory_suffix
+            )
+        return (
+            prompts.format(
+                "chat.instruction_continue",
                 as_name=as_name,
                 char_content=char_content,
-                directions=directions,
                 with_line=with_line,
             )
-        return prompts.format(
-            "chat.instruction_continue",
-            as_name=as_name,
-            char_content=char_content,
-            with_line=with_line,
+            + memory_suffix
         )
 
     @classmethod
@@ -131,15 +199,19 @@ class ChatOperator(SessionOperator):
                 raise OperatorError(
                     f"--as '{as_kb_id}' does not exist in the knowledge base"
                 )
+            for mid in cls.extract_list(params, "memory_kb_ids"):
+                if not store.exists(mid):
+                    raise OperatorError(
+                        f"--memory '{mid}' does not exist in the knowledge base"
+                    )
 
     # ── Session param helpers ──────────────────────────────────────────────
 
     @classmethod
-    def _derive_session_params(cls, session_node: NarrativeNode) -> dict[str, str]:
-        """Read ``as_kb_id`` and ``with_kb_id`` from the parent's session annotation.
+    def _derive_session_params(cls, session_node: NarrativeNode) -> dict[str, Any]:
+        """Read session fields from the parent's chat annotation.
 
-        The parent annotation captures these at session-creation time, so they
-        are available without inspecting the child's inline annotations.
+        Includes ``as_kb_id``, ``with_kb_id``, and ``memory_kb_ids`` when set.
         """
         if not session_node.key_path:
             return {}
@@ -154,13 +226,15 @@ class ChatOperator(SessionOperator):
             return {}
         for ann in reversed(parse_annotations(text)):
             if ann.operator == cls.name and ann.id == session_id:
-                result: dict[str, str] = {}
+                result: dict[str, Any] = {}
                 if "as_kb_id" in ann.params:
                     result["as_kb_id"] = str(ann.params["as_kb_id"])
                 if "with_kb_id" in ann.params:
                     result["with_kb_id"] = str(ann.params["with_kb_id"])
-                if result:
-                    return result
+                mem = cls._memory_kb_ids_param(ann.params.get("memory_kb_ids"))
+                if mem:
+                    result["memory_kb_ids"] = mem
+                return result
         return {}
 
     @classmethod
@@ -266,6 +340,7 @@ class ChatOperator(SessionOperator):
         with_kb_id: str | None,
         prompt: str | None,
         pins: list[str],
+        memory_kb_ids: list[str],
         llm_id: str | None,
         reasoning: str | None,
         slug: str | None,
@@ -307,6 +382,12 @@ class ChatOperator(SessionOperator):
             ann_params["prompt"] = prompt
         if pins:
             ann_params["kb_pin"] = list(pins)
+        if memory_kb_ids:
+            ann_params["memory_kb_ids"] = list(memory_kb_ids)
+
+        eff_reasoning = cls.effective_reasoning_with_memory(reasoning, memory_kb_ids)
+        if eff_reasoning:
+            ann_params["reasoning"] = eff_reasoning
 
         # Create the child node; the parent annotation gets all the params.
         child_node = op.create_subnode(cursor, session_id, params=ann_params)
@@ -319,7 +400,10 @@ class ChatOperator(SessionOperator):
             await on_stream_target(str(child_node.to_address()))
 
         # Crawl the child to assemble context (inherits ancestor pins).
-        crawl_result = crawl(child_node, extra_pins=pins)
+        crawl_result = crawl(
+            child_node,
+            extra_pins=cls.merge_extra_pin_ids(list(pins), list(memory_kb_ids)),
+        )
 
         # Validate character; build instruction params (prompt = stage directions).
         inst_params: dict[str, Any] = {
@@ -328,11 +412,22 @@ class ChatOperator(SessionOperator):
             "prompt": prompt,
             "with_line_mode": _WITH_LINE_MODE_DIRECT if with_kb_id else None,
         }
+        if memory_kb_ids:
+            inst_params["memory_kb_ids"] = list(memory_kb_ids)
         cls.enrich_params(crawl_result, inst_params)
 
         # Generate the first AI turn using the same storage (no intermediate stage).
         probe_op = cls(storage, narrative)
         messages = probe_op.build_messages(crawl_result, inst_params)
+
+        tools_payload: list[dict[str, Any]] | None = None
+        command_handlers: dict[str, CommandToolFn] | None = None
+        patch_bundle = cls._inline_command_tools_bundle(
+            session.project_root, inst_params
+        )
+        if patch_bundle is not None:
+            tools_payload = patch_bundle.tools
+            command_handlers = patch_bundle.handlers
 
         content = ""
         interrupted = False
@@ -341,12 +436,13 @@ class ChatOperator(SessionOperator):
                 messages,
                 session.project_root,
                 llm_id=llm_id,
-                tools=None,
+                tools=tools_payload,
+                command_tool_handlers=command_handlers,
                 cancel_event=cancel_event,
                 on_preview=on_token,
                 interrupt_policy="raise",
                 operator_name=cls.name,
-                reasoning=reasoning,
+                reasoning=eff_reasoning,
             )
         except KeyboardInterrupt:
             interrupted = True
@@ -438,6 +534,8 @@ class ChatOperator(SessionOperator):
         if not as_kb_id:
             raise OperatorError("--as is required when starting a chat session")
 
+        memory_kb_ids = cls._extract_memory_kb_ids_from_kwargs(kwargs)
+
         cursor = narrative.find_cursor()
         return await cls._start_fresh_session(
             session=session,
@@ -447,6 +545,7 @@ class ChatOperator(SessionOperator):
             with_kb_id=with_kb_id,
             prompt=prompt,
             pins=list(pins),
+            memory_kb_ids=memory_kb_ids,
             llm_id=llm_id,
             reasoning=reasoning,
             slug=slug,
@@ -494,6 +593,15 @@ class ChatOperator(SessionOperator):
         if not with_kb_id:
             with_kb_id = session_with_kb_id
 
+        memory_kb_ids = cls._extract_memory_kb_ids_from_kwargs(kwargs)
+        if not memory_kb_ids:
+            dm = derived.get("memory_kb_ids")
+            if isinstance(dm, list):
+                dm_l = cast(list[Any], dm)
+                memory_kb_ids = [item for item in dm_l if isinstance(item, str)]
+
+        eff_reasoning = cls.effective_reasoning_with_memory(reasoning, memory_kb_ids)
+
         if not as_kb_id:
             raise OperatorError(
                 "no character found in session — specify --as <kb.id> to identify "
@@ -529,6 +637,7 @@ class ChatOperator(SessionOperator):
                         parent_text = parent.md_path().read_text(encoding="utf-8")
                         saved_prompt: str | None = None
                         saved_pins: list[str] = []
+                        saved_memory: list[str] = []
                         for ann in reversed(parse_annotations(parent_text)):
                             if ann.operator == cls.name and ann.id == session_id:
                                 p = ann.params.get("prompt")
@@ -539,6 +648,9 @@ class ChatOperator(SessionOperator):
                                     saved_pins = [str(p) for p in cast(list[object], kb_pin)]
                                 elif isinstance(kb_pin, str):
                                     saved_pins = [kb_pin]
+                                saved_memory = cls._memory_kb_ids_param(
+                                    ann.params.get("memory_kb_ids")
+                                )
                                 break
                         probe_storage.rollback()
                         fresh_cursor = narrative.find_cursor()
@@ -550,6 +662,7 @@ class ChatOperator(SessionOperator):
                             with_kb_id=with_kb_id,
                             prompt=saved_prompt,
                             pins=saved_pins,
+                            memory_kb_ids=saved_memory,
                             llm_id=llm_id,
                             reasoning=reasoning,
                             slug=None,
@@ -571,6 +684,13 @@ class ChatOperator(SessionOperator):
                 cls._update_front_matter_for_call(
                     node, module_id, pins, unpins, fm_storage, session
                 )
+            inline_ep: dict[str, Any] = {
+                "as_kb_id": as_kb_id,
+                "with_kb_id": with_kb_id,
+                "with_line_mode": with_line_mode,
+            }
+            if memory_kb_ids:
+                inline_ep["memory_kb_ids"] = memory_kb_ids
             await cls.run_inline(
                 session=session,
                 narrative=narrative,
@@ -578,15 +698,11 @@ class ChatOperator(SessionOperator):
                 pins=[],
                 unpins=[],
                 llm_id=llm_id,
-                reasoning=reasoning,
+                reasoning=eff_reasoning,
                 retry=True,
                 on_token=on_token,
                 _cursor_override=node,
-                extra_params={
-                    "as_kb_id": as_kb_id,
-                    "with_kb_id": with_kb_id,
-                    "with_line_mode": with_line_mode,
-                },
+                extra_params=inline_ep,
                 cancel_event=cancel_event,
                 empty_prompt_ok=True,
             )
@@ -614,6 +730,13 @@ class ChatOperator(SessionOperator):
 
         # Session speaker turns answer the appended counterpart line. One-off
         # interjections instead treat the prompt as third-person stage directions.
+        inline_ep2: dict[str, Any] = {
+            "as_kb_id": as_kb_id,
+            "with_kb_id": with_kb_id,
+            "with_line_mode": with_line_mode,
+        }
+        if memory_kb_ids:
+            inline_ep2["memory_kb_ids"] = memory_kb_ids
         await cls.run_inline(
             session=session,
             narrative=narrative,
@@ -621,15 +744,11 @@ class ChatOperator(SessionOperator):
             pins=[],
             unpins=[],
             llm_id=llm_id,
-            reasoning=reasoning,
+            reasoning=eff_reasoning,
             retry=False,
             on_token=on_token,
             _cursor_override=node,
-            extra_params={
-                "as_kb_id": as_kb_id,
-                "with_kb_id": with_kb_id,
-                "with_line_mode": with_line_mode,
-            },
+            extra_params=inline_ep2,
             cancel_event=cancel_event,
             empty_prompt_ok=True,
         )

@@ -51,6 +51,10 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "tool.balance_encounter.prompt_snippet": PromptSpec("tool.balance_encounter.prompt_snippet", frozenset()),
     "chat.system": PromptSpec("chat.system", frozenset()),
     "chat.with_line_instruction": PromptSpec("chat.with_line_instruction", frozenset({"with_name"})),
+    "chat.memory_instruction": PromptSpec(
+        "chat.memory_instruction",
+        frozenset({"memory_ids_comma"}),
+    ),
     "chat.instruction_continue": PromptSpec("chat.instruction_continue", frozenset({"as_name", "char_content", "with_line"})),
     "chat.instruction_with_directions": PromptSpec(
         "chat.instruction_with_directions", frozenset({"as_name", "char_content", "directions", "with_line"})

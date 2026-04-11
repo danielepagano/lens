@@ -219,6 +219,10 @@ Use > [{as_name}] only for spoken lines. Everything else — action, sensation, 
 
 chat.with_line_instruction = 'Write non-dialogue prose in first person ("I", "my", "me"). When addressing {with_name} directly, use second person ("you", "your").'
 
+chat.memory_instruction = '''LONG-TERM MEMORY AND CONSISTENCY
+
+You may call the ``kb_patch`` tool **only** for the following id's: {memory_ids_comma}. Those KB bodies appear in context as durable character memory, complementing the chat transcript. Use ``kb_patch`` judiciously: the memory objects themselves may indicate what they should track, but generally this is ONLY for lasting realizations, updates to important character details that emerged during conversation, or facts that the character must keep top-of-mind after the immediate conversation leaves context. Do not patch on every turn; routine chat belongs in the narrative, not in memory objects.'''
+
 chat.instruction_with_directions = '''You are {as_name}.
 
 {char_content}
