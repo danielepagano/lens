@@ -514,6 +514,45 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             self.assertNotIn("Old content", text)
             self.assertNotIn("[/cao]: #", text)
 
+    def test_run_inline_injects_slice_refs_into_prompt_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            scene = root / "narrative" / "test" / "scene.md"
+            scene.write_text("alpha\nbeta\ngamma\n", encoding="utf-8")
+            session = ProjectSession(root, root)
+            captured_messages: list[dict[str, str]] | None = None
+
+            async def _capture_text(
+                messages: list[dict[str, str]], *_args: Any, **_kwargs: Any
+            ) -> str:
+                nonlocal captured_messages
+                captured_messages = messages
+                return "Generated output."
+
+            with patch("lens.core.operator.generate_text", new=_capture_text):
+                asyncio.run(
+                    _NoIdOp.run_inline(
+                        session=session,
+                        narrative=narrative,
+                        prompt="Follow @/scene@1:2",
+                        pins=[],
+                        unpins=[],
+                        llm_id=None,
+                        retry=False,
+                    )
+                )
+
+            self.assertIsNotNone(captured_messages)
+            assert captured_messages is not None
+            user_turn: dict[str, str] | None = next(
+                (m for m in captured_messages if m.get("role") == "user"), None
+            )
+            self.assertIsNotNone(user_turn)
+            assert user_turn is not None
+            content = str(user_turn.get("content", ""))
+            self.assertIn("REF['test/scene@1:2']", content)
+            self.assertIn("alpha\n  beta", content)
+
 
 # ------------------------------------------------------------------
 # @mention KB pin extraction
@@ -645,6 +684,42 @@ class TestMentionPins(unittest.TestCase):
                 "About @person.amy,the merchant.", root
             )
             self.assertEqual(pins, [])
+
+
+class TestNodeSliceRefs(unittest.TestCase):
+    def test_formats_active_narrative_slice_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            scene = root / "narrative" / "test" / "scene.md"
+            scene.write_text("L1\nL2\nL3\n", encoding="utf-8")
+            refs = Operator.mention_node_slice_refs(
+                "As discussed in @/scene@2:3 continue.", root
+            )
+            self.assertEqual(len(refs), 1)
+            self.assertIn("REF['test/scene@2:3']", refs[0])
+            self.assertIn("  L2\n  L3", refs[0])
+
+    def test_formats_explicit_narrative_slice_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            scene = root / "narrative" / "test" / "scene.md"
+            scene.write_text("A\nB\nC\n", encoding="utf-8")
+            refs = Operator.mention_node_slice_refs(
+                "Use @test/scene@1:2 for details.", root
+            )
+            self.assertEqual(len(refs), 1)
+            self.assertIn("REF['test/scene@1:2']", refs[0])
+            self.assertIn("  A\n  B", refs[0])
+
+    def test_ignores_out_of_bounds_or_invalid_slice_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            scene = root / "narrative" / "test" / "scene.md"
+            scene.write_text("X\nY\n", encoding="utf-8")
+            refs = Operator.mention_node_slice_refs(
+                "@/scene@10:11 @/missing@1:1 @/scene@3:2", root
+            )
+            self.assertEqual(refs, [])
 
 
 class TestCrossOperatorAutoStage(unittest.TestCase):

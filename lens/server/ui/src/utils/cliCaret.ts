@@ -1,4 +1,5 @@
 const WS = /\s/
+const NODE_MENTION_ADDR_RE = /^(?:\/[a-zA-Z0-9_/-]*|[a-zA-Z0-9_-]+\/[a-zA-Z0-9_/-]*)$/
 
 /** First index of the whitespace-delimited run that contains `caret` (caret may be at run end). */
 function runStart(text: string, caret: number): number {
@@ -32,4 +33,36 @@ export function promptDiceExpressionHint(text: string, caret: number): boolean {
   const rs = runStart(text, caret)
   const prev = text.slice(0, rs).trimEnd().split(/\s+/).filter(Boolean)
   return (prev.length ? prev[prev.length - 1]! : '') === '@roll'
+}
+
+export function promptNodeMentionLinePickAtCaret(
+  text: string,
+  caret: number,
+): { address: string; startLine?: number; endLine?: number } | null {
+  const c = Math.max(0, Math.min(caret, text.length))
+  const prefix = text.slice(0, c)
+  let at = prefix.lastIndexOf('@')
+  while (at >= 0) {
+    if (at === 0 || WS.test(prefix[at - 1]!)) break
+    at = prefix.lastIndexOf('@', at - 1)
+  }
+  if (at < 0) return null
+  const chunk = prefix.slice(at)
+  if (!/\s/.test(chunk)) return null
+  const endsWithWs = /\s$/.test(chunk)
+  const parts = chunk.trim().split(/\s+/)
+  if (parts.length < 1 || parts.length > 3) return null
+  const addrToken = parts[0]
+  if (!addrToken?.startsWith('@')) return null
+  const address = addrToken.slice(1)
+  if (!NODE_MENTION_ADDR_RE.test(address)) return null
+  if (parts.length === 1) {
+    return endsWithWs ? { address } : null
+  }
+  if (!parts[1] || !/^\d+$/.test(parts[1])) return null
+  if (parts.length === 2) {
+    return { address, startLine: Number(parts[1]) }
+  }
+  if (!/^\d+$/.test(parts[2] ?? '')) return null
+  return { address, startLine: Number(parts[1]), endLine: Number(parts[2]) }
 }

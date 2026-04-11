@@ -135,6 +135,22 @@ Operators: `write`, `edit`, `section`, `collate`, `design`, `play`, `advance`.
 
 Any prompt sent to an AI operator (`write`, `play`, `edit`, etc.) may include inline dice expressions. These are **evaluated before the prompt reaches the AI** — the AI only ever sees the resolved result, never the `@roll` syntax.
 
+### `@` mentions in prompts
+
+Prompts also support `@` mentions for pulling context into the AI call:
+
+- `@type.key` — pin a KB object for this call (same effect as `--pin type.key`)
+- `@/path@start:end` or `@narrative/path@start:end` — quote a node line slice as contextual reference
+
+For node slices, Lens injects a block labeled `REF['<resolved-address>@<start>:<end>']` into relevant knowledge so the model can ground instructions in exact narrative lines.
+
+In the web UI prompt field, node slices can be entered with guided completion and line picking as:
+
+- `@/path start end`
+- `@narrative/path start end`
+
+These UI-friendly forms are normalized to canonical `@...@start:end` syntax before sending the operator request.
+
 ### Syntax
 
 | Form | Example | Use case |

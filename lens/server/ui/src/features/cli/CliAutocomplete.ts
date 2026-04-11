@@ -133,6 +133,19 @@ export interface DataSources {
   fetchMountDir: (path: string) => void
 }
 
+const SLUG_SEGMENT_RE = /^[a-zA-Z0-9_-]+$/
+
+function promptNodeMentionPartial(token: string): string | null {
+  if (!token.startsWith('@')) return null
+  const body = token.slice(1)
+  if (body.startsWith('/')) return body
+  const slashIdx = body.indexOf('/')
+  if (slashIdx <= 0) return null
+  const narrativeSlug = body.slice(0, slashIdx)
+  if (!SLUG_SEGMENT_RE.test(narrativeSlug)) return null
+  return body
+}
+
 const DENSE_GROUP_MIN_LEAVES = 3
 
 interface TrieNode {
@@ -437,6 +450,11 @@ function getPositionalSuggestions(
     case 'prompt': {
       // Only suggest when typing an @mention
       if (!currentToken.startsWith('@')) return []
+      const nodePartial = promptNodeMentionPartial(currentToken)
+      if (nodePartial !== null) {
+        const nodeSuggestions = getAddressSuggestions(nodePartial, group, sources)
+        return nodeSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
+      }
       const kbPart = currentToken.slice(1)
       // Do not show roll when the user has typed a dot (KB mention like @spell.fireball)
       const hasDot = kbPart.includes('.')

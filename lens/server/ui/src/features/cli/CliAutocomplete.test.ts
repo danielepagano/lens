@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import type { CommandDefinition } from '../../commands/common'
+import type { ParseState } from '../../commands/parser'
 import {
   dashedGroupingCompletionSuffix,
   decomposeKbKeyTypingPrefix,
   filterCommandDefinitionsForViewingNode,
+  getSuggestions,
   groupDenseSegmentedPrefixes,
   joinKbStemAndGroupedRest,
   kbKeyRemainderAfterStem,
+  type DataSources,
 } from './CliAutocomplete'
 
 const SAMPLE_DEFS: CommandDefinition[] = [
@@ -221,5 +224,54 @@ describe('groupDenseSegmentedPrefixes', () => {
       'spell.acid-splash',
       'spell.ancient-black',
     ])
+  })
+})
+
+describe('prompt @ node mentions', () => {
+  function makeSources(): DataSources {
+    return {
+      kbTypes: ['spell'],
+      kbKeyCache: new Map([['spell', ['fireball']]]),
+      fetchKbKeys: () => {},
+      nodeTree: [
+        {
+          key: 'story',
+          address: 'story',
+          children: [
+            { key: 'chapter-1', address: 'story/chapter-1', children: [] },
+          ],
+        },
+      ],
+      fetchNodeTree: () => {},
+      stats: null,
+      mountDirCache: new Map(),
+      fetchMountDir: () => {},
+    }
+  }
+
+  function stateWithToken(token: string): ParseState {
+    return {
+      phase: 'positional',
+      activePayload: { name: 'prompt', valueType: 'prompt' },
+      currentToken: token,
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: false,
+    }
+  }
+
+  it('routes @/ prefix to address suggestions', () => {
+    const sugs = getSuggestions(stateWithToken('@/ch'), null, makeSources())
+    expect(sugs.some((s) => s.kind === 'node' && s.value === '@/chapter-1')).toBe(true)
+  })
+
+  it('routes @<narrative>/ prefix to address suggestions', () => {
+    const sugs = getSuggestions(stateWithToken('@story/ch'), null, makeSources())
+    expect(sugs.some((s) => s.kind === 'node' && s.value === '@/chapter-1')).toBe(true)
+  })
+
+  it('keeps KB mention behavior unchanged', () => {
+    const sugs = getSuggestions(stateWithToken('@spell.f'), null, makeSources())
+    expect(sugs.some((s) => s.kind === 'kb-key' && s.value === '@spell.fireball')).toBe(true)
   })
 })

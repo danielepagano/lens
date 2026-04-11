@@ -60,6 +60,9 @@ export interface CommandModule {
   handler: CommandHandler
 }
 
+const FRIENDLY_NODE_SLICE_MENTION_RE =
+  /(^|\s)@((?:\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*|[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*)\s+(\d+)\s+(\d+))(?=\s|$)/g
+
 /**
  * Normalize a narrative address for CLI/API: trim trailing slashes.
  * - Nav form (`story/chapter`) — first segment is the narrative slug — is passed through unchanged.
@@ -89,4 +92,14 @@ export function addressToNavAddress(normalized: string, narrativeRoot: string): 
     return narrativeRoot + normalized
   }
   return narrativeRoot + '/' + normalized
+}
+
+export function normalizePromptNodeSliceMentions(prompt: string | undefined): string | undefined {
+  if (!prompt) return prompt
+  return prompt.replace(FRIENDLY_NODE_SLICE_MENTION_RE, (_match, prefix: string, whole: string, start: string, end: string) => {
+    const segments = whole.trim().split(/\s+/)
+    const address = segments[0]
+    if (!address) return _match
+    return `${prefix}@${address}@${start}:${end}`
+  })
 }

@@ -27,7 +27,7 @@
   import { stats } from '../stores/stats'
   import { getKbItems, getTree, browseMountDir } from '../services/api'
   import type { TreeNode, MountEntry } from '../services/api'
-  import { kbMentionAtCaret, promptDiceExpressionHint } from '../utils/cliCaret'
+  import { kbMentionAtCaret, promptDiceExpressionHint, promptNodeMentionLinePickAtCaret } from '../utils/cliCaret'
 
   const MAX_HISTORY = 50
 
@@ -57,8 +57,14 @@
 
   /** Caret end position, kept fresh so chip clicks can find @-mentions after textarea blurs. */
   let cliCaretHi = 0
+  /** One-cycle caret override for programmatic token replacement before DOM selection catches up. */
+  let pendingCliCaretHi: number | null = null
 
   function captureCliCaret() {
+    if (pendingCliCaretHi !== null) {
+      cliCaretHi = Math.min(Math.max(pendingCliCaretHi, 0), input.length)
+      return
+    }
     if (!cliInputEl) return
     const n = input.length
     cliCaretHi = Math.min(Math.max(cliInputEl.selectionEnd ?? n, cliInputEl.selectionStart ?? n), n)
@@ -367,6 +373,9 @@
     // Parse input against definition
     const state = parseCliInput(input, activeCommandDef)
     currentParseState = state
+    if (isFocused && cliInputEl) {
+      captureCliCaret()
+    }
 
     // Reset address auto-fill flag when command changes
     const currentTrigger = activeCommandDef?.trigger ?? null
@@ -444,13 +453,32 @@
         linePickMode.set(null)
         linePickSelection.set(null)
       }
+    } else if (activeType === 'prompt' || activeType === 'string') {
+      const mentionPick = promptNodeMentionLinePickAtCaret(input, cliCaretHi)
+      if (mentionPick) {
+        if (mentionPick.endLine !== undefined) {
+          linePickMode.set(null)
+          linePickSelection.set(null)
+          return
+        }
+        fetchNodeTree() // ensure cache is available; triggers updateCommandState() on load
+        const navAddr = displayAddrToNavAddr(mentionPick.address)
+        if (navAddr) {
+          linePickMode.set({
+            address: navAddr,
+            startLine: mentionPick.startLine,
+            operatorMode: undefined,
+          })
+          if (navAddr !== $currentAddress) void navigate?.(navAddr)
+        }
+        // else: tree not loaded yet — updateCommandState() will rerun once it loads
+      } else {
+        linePickMode.set(null)
+        linePickSelection.set(null)
+      }
     } else {
       linePickMode.set(null)
       linePickSelection.set(null)
-    }
-
-    if (isFocused && cliInputEl) {
-      captureCliCaret()
     }
 
     if (!isFocused) {
@@ -498,11 +526,7 @@
       cliInputEl &&
       (state.activePayload?.valueType === 'prompt' || state.activePayload?.valueType === 'string')
     ) {
-      const el = cliInputEl
-      const a = el.selectionStart ?? input.length
-      const b = el.selectionEnd ?? input.length
-      const hi = Math.max(a, b)
-      const mention = kbMentionAtCaret(input, hi)
+      const mention = kbMentionAtCaret(input, cliCaretHi)
       suggestionState = {
         ...state,
         currentToken: mention ? mention.token : state.currentToken,
@@ -614,23 +638,34 @@
       const hi = Math.min(Math.max(cliCaretHi, 0), input.length)
       const mention = kbMentionAtCaret(input, hi)
       if (mention) {
-        // Replace @token at caret position
-        input = input.slice(0, mention.at) + replacement + input.slice(hi)
+        // Replace the whole @token run. Using caret-only replacement can duplicate
+        // suffixes when a stale caret snapshot lags behind the latest completion.
+        let mentionEnd = mention.at
+        while (mentionEnd < input.length && !/\s/.test(input[mentionEnd]!)) mentionEnd += 1
+        input = input.slice(0, mention.at) + replacement + input.slice(mentionEnd)
         const pos = mention.at + replacement.length
+        pendingCliCaretHi = pos
+        cliCaretHi = pos
         updateCommandState()
         void tick().then(() => {
           focusCliInput()
           cliInputEl?.setSelectionRange(pos, pos)
+          cliCaretHi = pos
+          pendingCliCaretHi = null
         })
       } else {
         // Non-mention completions always append to end (flags, etc.)
         const sep = input.endsWith(' ') ? '' : ' '
         input = input + sep + replacement
         const pos = input.length
+        pendingCliCaretHi = pos
+        cliCaretHi = pos
         updateCommandState()
         void tick().then(() => {
           focusCliInput()
           cliInputEl?.setSelectionRange(pos, pos)
+          cliCaretHi = pos
+          pendingCliCaretHi = null
         })
       }
       return
@@ -653,6 +688,7 @@
       input = beforeLastToken + replacement
     }
     updateCommandState()
+    pendingCliCaretHi = null
     focusCliInput()
   }
 
@@ -945,19 +981,7 @@
     //   2. The word immediately before currentToken in the input is '@roll' — user
     //      has pressed space and is now typing the expression.
     if (currentParseState?.activePayload?.valueType === 'prompt' && currentParseState.phase === 'positional') {
-      if (cliInputEl) {
-        const a = cliInputEl.selectionStart ?? input.length
-        const b = cliInputEl.selectionEnd ?? input.length
-        if (promptDiceExpressionHint(input, Math.max(a, b))) return 'dice expression'
-      } else {
-        const token = currentParseState.currentToken
-        if (token === '@roll') return 'dice expression'
-        const inputTrimmed = input.trimEnd()
-        const beforeCurrent = token
-          ? inputTrimmed.slice(0, inputTrimmed.length - token.length).trimEnd()
-          : inputTrimmed
-        if ((beforeCurrent.split(/\s+/).pop() ?? '') === '@roll') return 'dice expression'
-      }
+      if (promptDiceExpressionHint(input, cliCaretHi)) return 'dice expression'
     }
     // Show the hint for whichever payload slot is currently active
     const activeHint = currentParseState?.activePayload?.hint

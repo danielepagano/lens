@@ -182,6 +182,38 @@ class TestPlayAppend(unittest.TestCase):
         text = self._play_child_md()
         self.assertEqual(text.count("KB['spell.foo']"), 1)
 
+    def test_node_slice_ref_comments_are_emitted_without_dedup(self) -> None:
+        lore = self.root / "narrative" / "test" / "lore.md"
+        lore.write_text("first clue\nsecond clue\nthird clue\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(["git", "commit", "-m", "lore"], cwd=self.root, capture_output=True, check=True)
+
+        with patch("lens.core.operator.generate_text", _never_generate_text):
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="I reference @/lore@1:2",
+                    pins=[],
+                    unpins=[],
+                    extra_params=None,
+                )
+            )
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="Again @/lore@1:2",
+                    pins=[],
+                    unpins=[],
+                    extra_params=None,
+                )
+            )
+
+        text = self._play_child_md()
+        self.assertEqual(text.count("REF['test/lore@1:2']"), 2)
+        self.assertIn("  first clue\n  second clue", text)
+
     def test_pass_only_after_player_turn_with_prior_gm_block(self) -> None:
         """Regression: pending owner can match the last [play] tag in-file; --pass must still run."""
         with patch("lens.core.operator.generate_text", _mock_gm_reply):

@@ -17,7 +17,7 @@ import type {
   CommandHandler,
   CommandModule,
 } from './common'
-import { normalizeAddress, addressToNavAddress } from './common'
+import { normalizeAddress, addressToNavAddress, normalizePromptNodeSliceMentions } from './common'
 import { stats } from '../stores/stats'
 
 function scrollMarkdownViewElToBottom(): void {
@@ -218,7 +218,9 @@ const handler: CommandHandler = async (
     throw new Error(`Unsupported operator command: ${command}`)
   }
 
-  const prompt = (ctx.args.positional['prompt'] as string | undefined) || undefined
+  const prompt = normalizePromptNodeSliceMentions(
+    (ctx.args.positional['prompt'] as string | undefined) || undefined,
+  )
 
   const pins = (ctx.args.options['pin'] as string[] | undefined) ?? []
   const unpins = (ctx.args.options['unpin'] as string[] | undefined) ?? []

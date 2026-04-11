@@ -196,20 +196,21 @@ class PlayOperator(SessionOperator):
         marker = cls._speaker_marker(crawl_result, as_pc)
 
         block = f"> [{marker}] {prompt}\n"
+        parts: list[str] = []
 
         mention_ids = cls.mention_pins(prompt, session.project_root)
         if mention_ids:
             objs = session.kb.get_objects(mention_ids)
             current_text = cursor.md_path().read_text(encoding="utf-8")
-            parts: list[str] = []
             for mid in mention_ids:
                 if cls._kb_already_in_node(current_text, mid):
                     continue
                 obj = objs.get(mid)
                 if obj is not None:
                     parts.append(obj.format(strip_html_comments=True))
-            if parts:
-                block += "\n<!---\n" + "".join(parts) + "-->\n"
+        parts.extend(cls.mention_node_slice_refs(prompt, session.project_root))
+        if parts:
+            block += "\n<!---\n" + "".join(parts) + "-->\n"
 
         session_id = cursor.key_path[-1]
         parent = NarrativeNode(

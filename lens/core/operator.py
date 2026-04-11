@@ -131,11 +131,15 @@ from lens.core.dice import DiceError, substitute_rolls
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, build_command_tools_bundle, generate_text
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
-from lens.core.project import ProjectSession
+from lens.core.project import ProjectSession, resolve_address
 from lens.core.storage import Storage
 
 _AT_MENTION_RE = re.compile(
     r"@([a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+)(?=\s|$)", re.MULTILINE
+)
+_AT_NODE_SLICE_RE = re.compile(
+    r"@((?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*|[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)@[0-9]+:[0-9]+)(?=\s|$)",
+    re.MULTILINE,
 )
 
 
@@ -611,6 +615,55 @@ class Operator(ABC):
                 found.append(cid)
         return found
 
+    @staticmethod
+    def _format_node_slice_ref(
+        addr: NarrativeAddress, project_root: Path
+    ) -> str | None:
+        if addr.cursor or addr.line is None or addr.line_end is None:
+            return None
+        if addr.line < 1 or addr.line_end < addr.line:
+            return None
+        try:
+            resolved = resolve_address(addr, project_root)
+        except ValueError:
+            return None
+        if (
+            resolved.cursor
+            or resolved.narrative is None
+            or resolved.line is None
+            or resolved.line_end is None
+        ):
+            return None
+        node = resolved.to_node(project_root)
+        if not node.exists():
+            return None
+        lines = node.md_path().read_text(encoding="utf-8").split("\n")
+        if resolved.line_end > len(lines):
+            return None
+        excerpt = "\n".join(lines[resolved.line - 1 : resolved.line_end]).rstrip()
+        if not excerpt:
+            return None
+        return f"REF[{str(resolved)!r}]\n  {excerpt.replace('\n', '\n  ')}\n"
+
+    @classmethod
+    def mention_node_slice_refs(
+        cls, prompt: str | None, project_root: Path
+    ) -> list[str]:
+        """Return formatted node slice refs found as ``@/path@start:end`` mentions."""
+        if not prompt:
+            return []
+        refs: list[str] = []
+        for m in _AT_NODE_SLICE_RE.finditer(prompt):
+            raw = m.group(1)
+            try:
+                addr = NarrativeAddress.parse(raw)
+            except ValueError:
+                continue
+            formatted = cls._format_node_slice_ref(addr, project_root)
+            if formatted is not None:
+                refs.append(formatted)
+        return refs
+
     @classmethod
     def check_requirements(cls, crawl_result: CrawlResult) -> None:
         """Override to raise :class:`OperatorError` if prerequisites are not met.
@@ -923,6 +976,9 @@ class Operator(ABC):
             extra_pins=pins + mention_ids,
             extra_unpins=unpins,
         )
+        mention_refs = cls.mention_node_slice_refs(prompt, session.project_root)
+        if mention_refs:
+            crawl_result.knowledge.extend(mention_refs)
         cls.check_requirements(crawl_result)
         cls.enrich_params(crawl_result, ann_params)
 
@@ -1075,6 +1131,12 @@ class Operator(ABC):
             extra_pins=eff_pins + mention_ids,
             extra_unpins=eff_unpins,
         )
+        mention_refs = cls.mention_node_slice_refs(
+            new_params.get("prompt") if isinstance(new_params.get("prompt"), str) else None,
+            session.project_root,
+        )
+        if mention_refs:
+            crawl_result.knowledge.extend(mention_refs)
         cls.enrich_params(crawl_result, new_params)
         fresh_ann = op.find_open_annotation(cursor)
         if fresh_ann is None:
@@ -1234,6 +1296,11 @@ class Operator(ABC):
             previous_summaries=crawl_result.previous_summaries,
             current_content=passage_before or None,
         )
+        mention_refs = cls.mention_node_slice_refs(
+            prompt if isinstance(prompt, str) else None, session.project_root
+        )
+        if mention_refs:
+            crawl_result.knowledge.extend(mention_refs)
         build_params = dict(params)
         build_params["target"] = selected_text
         messages = op.build_messages(crawl_result, build_params)
@@ -1315,6 +1382,14 @@ class Operator(ABC):
             previous_summaries=crawl_result.previous_summaries,
             current_content=passage_before or None,
         )
+        mention_refs = cls.mention_node_slice_refs(
+            effective_params.get("prompt")
+            if isinstance(effective_params.get("prompt"), str)
+            else None,
+            session.project_root,
+        )
+        if mention_refs:
+            crawl_result.knowledge.extend(mention_refs)
         messages = op.build_messages(crawl_result, effective_params)
         retry_reasoning: str | None = effective_params.get("reasoning")
 
