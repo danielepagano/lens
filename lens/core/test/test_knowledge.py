@@ -982,6 +982,116 @@ class TestKnowledgeObjectFormatStripHtml(unittest.TestCase):
         self.assertIn("<!-- tip -->", out)
 
 
+class TestKnowledgeObjectFormatVerbatim(unittest.TestCase):
+    """format() must not indent, wrap or transform body lines.
+
+    These tests guard the contract that tools like kb_patch rely on:
+    every body line the LLM sees in a prompt must be byte-identical to a
+    line it can quote back as a ``target`` selector.
+    """
+
+    def test_header_is_kb_id_only_when_no_tags(self) -> None:
+        obj = KnowledgeObject(type="person", id="person.amy", text="Amy.\n")
+        out = obj.format()
+        self.assertEqual(out, "KB['person.amy']\nAmy.\n")
+
+    def test_tags_appear_on_header_line(self) -> None:
+        obj = KnowledgeObject(
+            type="person",
+            id="person.amy",
+            text="Amy.\n",
+            tags=["baker", "nyc"],
+        )
+        out = obj.format()
+        first_line = out.split("\n", 1)[0]
+        self.assertTrue(first_line.startswith("KB['person.amy']"))
+        self.assertIn("TAGS=baker, nyc", first_line)
+
+    def test_body_lines_are_flush_left(self) -> None:
+        obj = KnowledgeObject(
+            type="note",
+            id="note.x",
+            text="line one\nline two\nline three\n",
+        )
+        out = obj.format()
+        # Every body line must appear exactly as stored — no leading indent.
+        self.assertIn("\nline one\n", out)
+        self.assertIn("\nline two\n", out)
+        self.assertIn("\nline three\n", out)
+        # And none of them should be prefixed with indentation.
+        for body_line in ("  line one", "  line two", "  line three"):
+            self.assertNotIn(body_line, out)
+
+    def test_leading_whitespace_is_preserved(self) -> None:
+        """A body line that legitimately starts with spaces must round-trip."""
+        obj = KnowledgeObject(
+            type="note",
+            id="note.y",
+            text="  indented body\nflush\n",
+        )
+        out = obj.format()
+        # The user's leading two spaces survive; our formatter adds nothing.
+        self.assertIn("\n  indented body\n", out)
+        # And the flush line is flush — no accidental indent applied.
+        self.assertIn("\nflush\n", out)
+
+    def test_blank_body_line_is_preserved(self) -> None:
+        obj = KnowledgeObject(
+            type="note",
+            id="note.z",
+            text="before\n\nafter\n",
+        )
+        out = obj.format()
+        self.assertIn("before\n\nafter", out)
+
+    def test_empty_body_produces_header_only(self) -> None:
+        obj = KnowledgeObject(type="note", id="note.empty", text="")
+        out = obj.format()
+        self.assertEqual(out, "KB['note.empty']\n")
+
+    def test_body_lines_survive_joined_knowledge_block(self) -> None:
+        """Simulates how multiple KB entries reach the LLM prompt.
+
+        Each body line must still be present verbatim after joining with
+        ``"\\n\\n"`` (the shape used by context assembly).
+        """
+        a = KnowledgeObject(type="person", id="person.amy", text="Amy bakes bread.\n")
+        b = KnowledgeObject(
+            type="place",
+            id="place.nyc",
+            text="Rainy today.\nBusy port.\n",
+            tags=["city"],
+        )
+        joined = "\n\n".join([a.format(), b.format()])
+        self.assertIn("\nAmy bakes bread.\n", joined)
+        self.assertIn("\nRainy today.\n", joined)
+        self.assertIn("\nBusy port.\n", joined)
+
+    def test_body_line_is_kb_patch_echoable(self) -> None:
+        """An LLM reading the formatted output should be able to echo a body
+        line verbatim as a kb_patch selector target and resolve it."""
+        from lens.core.text_select import LineSelector, Patch, Selection, apply_patch
+        obj = KnowledgeObject(
+            type="person",
+            id="person.amy",
+            text="Amy is a baker.\nLives in NYC.\n",
+        )
+        formatted = obj.format()
+        # Pull a body line out of the formatted output exactly as a model would.
+        body_line = "Amy is a baker."
+        self.assertIn(f"\n{body_line}\n", formatted)
+        # And now use that same line (unchanged) as a patch target against the
+        # stored text — it must resolve cleanly.
+        patched = apply_patch(
+            obj.text,
+            Patch(
+                selection=Selection(start=LineSelector(target=body_line)),
+                content="Amy is a novelist.",
+            ),
+        )
+        self.assertEqual(patched, "Amy is a novelist.\nLives in NYC.\n")
+
+
 class TestParseId(unittest.TestCase):
     def test_valid_id(self) -> None:
         t, k = parse_id("place.nyc")

@@ -643,7 +643,9 @@ class Operator(ABC):
         excerpt = "\n".join(lines[resolved.line - 1 : resolved.line_end]).rstrip()
         if not excerpt:
             return None
-        return f"REF[{str(resolved)!r}]\n  {excerpt.replace('\n', '\n  ')}\n"
+        # Emit the excerpt verbatim (no indentation/wrapping) so line-based
+        # content tools can echo back a body line exactly as the LLM sees it.
+        return f"REF[{str(resolved)!r}]\n{excerpt}\n"
 
     @classmethod
     def mention_node_slice_refs(

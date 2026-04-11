@@ -5,7 +5,10 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from lens.core.text_select import Patch
 
 import yaml
 
@@ -114,6 +117,67 @@ def kb_rename(
         kb.rename_object(old_id, new_id)
     except ValueError as e:
         raise LensException(str(e)) from e
+
+def kb_patch(
+    id: str,
+    patches: list[Patch] | list[dict[str, Any]] | None,
+    *,
+    store: KnowledgeStore | None = None,
+) -> KnowledgeObject:
+    """Apply a list of line-content patches to a KB object's body.
+
+    ``patches`` may be either a list of :class:`lens.core.text_select.Patch`
+    objects or a list of dicts in the tool-call shape (``{"start": ...,
+    "end": ..., "content": "..."}``).  Patches are applied in order and
+    each re-resolves against the current (already-patched) text.
+
+    Raises :class:`LensException` on id/validation errors, if the object
+    does not exist, or if any patch fails to resolve.  On success the
+    updated :class:`KnowledgeObject` is returned.
+    """
+    # Lazy import keeps kb.py free of a hard dependency on text_select at module load.
+    from lens.core.text_select import Patch as _Patch
+    from lens.core.text_select import SelectionError, apply_patches, parse_patches
+
+    try:
+        _, key = parse_id(id)
+    except ValueError as e:
+        raise LensException(str(e)) from e
+    if key == "_template":
+        raise LensException(
+            "kb_patch targets object ids, not templates; use 'lens kb template'"
+        )
+
+    kb = store if store is not None else get_store()
+    if not kb.exists(id):
+        raise LensException(f"KB object not found: {id}")
+    existing = kb.get_objects([id]).get(id)
+    if existing is None:
+        raise LensException(f"KB object not found: {id}")
+
+    # Normalise patch list: accept Patch instances or the raw tool-call
+    # dict shape understood by ``parse_patches``.
+    if patches is None:
+        patch_objs: list[_Patch] = []
+    elif all(isinstance(p, _Patch) for p in patches):
+        patch_objs = list(cast(list[_Patch], patches))
+    else:
+        try:
+            patch_objs = parse_patches(patches)
+        except SelectionError as e:
+            raise LensException(f"kb_patch: {e}") from e
+    if not patch_objs:
+        raise LensException("kb_patch: at least one patch is required")
+
+    try:
+        new_text = apply_patches(existing.text, patch_objs)
+    except SelectionError as e:
+        raise LensException(f"kb_patch: {e}") from e
+
+    kb.store_object(id, new_text)
+    refreshed = kb.get_objects([id]).get(id)
+    return refreshed if refreshed is not None else existing
+
 
 def kb_get(ids: list[str]) -> tuple[list[str], dict[str, KnowledgeObject]]:
     kb = get_store()

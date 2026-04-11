@@ -77,16 +77,29 @@ class KnowledgeObject:
     def format(
         self, *, include_comments: bool = False, strip_html_comments: bool = False
     ) -> str:
+        """Format the object as a header line followed by the body text verbatim.
+
+        The header is ``KB['<id>']``, optionally suffixed with ``  TAGS=...``.
+        The body follows on its own lines with **no indentation, no wrapping
+        and no transformation**: every body line is emitted exactly as stored
+        so that tools like ``kb_patch`` can round-trip a line by quoting it.
+
+        Multiple formatted objects are typically joined with ``"\\n\\n"`` which
+        produces a blank-line separator between entries (enough for an LLM
+        reader to tell where one KB body ends and the next header begins).
+        """
         from lens.core.annotations import strip_html_comments as strip_html
         from lens.core.annotations import strip_markdown_comments
         text = self.text if include_comments else strip_markdown_comments(self.text)
         if strip_html_comments:
             text = strip_html(text)
-        lines: list[str] = [f"KB[{self.id!r}]"]
-        lines.append("  " + text.replace("\n", "\n  "))
+        header = f"KB[{self.id!r}]"
         if self.tags:
-            lines.append(f"  TAGS={', '.join(self.tags)}")
-        return "\n".join(lines) + "\n"
+            header += f"  TAGS={', '.join(self.tags)}"
+        body = text.rstrip("\n")
+        if body:
+            return f"{header}\n{body}\n"
+        return f"{header}\n"
 
     def __repr__(self) -> str:
         return self.format()
