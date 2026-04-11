@@ -551,7 +551,7 @@ class TestContextAwareOperatorHelpers(unittest.TestCase):
             assert user_turn is not None
             content = str(user_turn.get("content", ""))
             self.assertIn("REF['test/scene@1:2']", content)
-            self.assertIn("alpha\n  beta", content)
+            self.assertIn("alpha\nbeta", content)
 
 
 # ------------------------------------------------------------------
@@ -697,7 +697,7 @@ class TestNodeSliceRefs(unittest.TestCase):
             )
             self.assertEqual(len(refs), 1)
             self.assertIn("REF['test/scene@2:3']", refs[0])
-            self.assertIn("  L2\n  L3", refs[0])
+            self.assertIn("L2\nL3", refs[0])
 
     def test_formats_explicit_narrative_slice_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -709,7 +709,7 @@ class TestNodeSliceRefs(unittest.TestCase):
             )
             self.assertEqual(len(refs), 1)
             self.assertIn("REF['test/scene@1:2']", refs[0])
-            self.assertIn("  A\n  B", refs[0])
+            self.assertIn("A\nB", refs[0])
 
     def test_ignores_out_of_bounds_or_invalid_slice_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

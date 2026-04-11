@@ -212,7 +212,7 @@ class TestPlayAppend(unittest.TestCase):
 
         text = self._play_child_md()
         self.assertEqual(text.count("REF['test/lore@1:2']"), 2)
-        self.assertIn("  first clue\n  second clue", text)
+        self.assertIn("first clue\nsecond clue", text)
 
     def test_pass_only_after_player_turn_with_prior_gm_block(self) -> None:
         """Regression: pending owner can match the last [play] tag in-file; --pass must still run."""

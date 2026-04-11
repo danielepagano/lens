@@ -379,7 +379,7 @@ class TestAssemblePrompt(unittest.TestCase):
 
     def test_includes_kb_and_current_passage_when_present(self) -> None:
         result = CrawlResult(
-            knowledge=["KB['place.a']\n  content"],
+            knowledge=["KB['place.a']\ncontent"],
             previous_summaries=[],
             current_content="# test\n\nprose",
         )
@@ -530,7 +530,7 @@ class TestAssemblePromptKbEdit(unittest.TestCase):
 
     def test_crawl_sections_preserved(self) -> None:
         result = CrawlResult(
-            knowledge=["KB['x']\n  data"],
+            knowledge=["KB['x']\ndata"],
             previous_summaries=["Summary"],
             current_content="Passage",
         )
@@ -556,7 +556,7 @@ class TestAssemblePromptKbEdit(unittest.TestCase):
 
     def test_decodes_secrets_in_user_content(self) -> None:
         result = CrawlResult(
-            knowledge=["KB['x']\n  <!-- ai:secret:\ngur frperg\n-->"],
+            knowledge=["KB['x']\n<!-- ai:secret:\ngur frperg\n-->"],
             previous_summaries=[],
             current_content=None,
         )
