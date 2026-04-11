@@ -14,6 +14,7 @@ from typing import Any, cast
 from unittest.mock import patch
 
 from lens.core.narrative import NarrativeNode
+from lens.core.operator import OperatorError
 from lens.core.operators.collate import CollateOperator
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
@@ -580,7 +581,7 @@ class TestCollateEdgeCases(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_content(root, narrative, "Some content.\n")
 
-            with self.assertRaises(ValueError):
+            with self.assertRaises(OperatorError):
                 _run_collate(
                     root, narrative, narrative, "empty", 1, 1,
                     generate_mock=_empty,

@@ -1158,6 +1158,11 @@ details[open]>summary {
    Inherit heading color so the link doesn't look like a hyperlink. */
 .annotation-heading {
   margin-top: 1.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 1.4rem;
+  font-weight: bold;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+  color: #c2c7d0;
 }
 
 .annotation-heading a {

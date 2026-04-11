@@ -82,25 +82,26 @@ _SLUG_OPERATOR_PREFIXES = (
     "advance-",
 )
 
+
+class SummaryTitleError(OperatorError):
+    """Raised when raw summary text lacks a valid first-line title (see :func:`format_summary_block`)."""
+
+
+def slug_for_summary_prompt(slug: str) -> str:
+    """Strip a leading session-operator slug prefix for LLM titling instructions only.
+
+    The HTML ``<!-- section:<slug> -->`` comment always uses the full storage
+    slug; prompts pass this shortened value as ``{slug}`` so the model titles
+    the meaningful segment (e.g. ``play-amy-dream`` → ``amy-dream``).
+    """
+    for prefix in _SLUG_OPERATOR_PREFIXES:
+        if slug.startswith(prefix):
+            return slug[len(prefix) :]
+    return slug
+
+
 _TITLE_LEADING_MARKERS = re.compile(r'^[#>\*_\s"\'`]+')
 _TITLE_TRAILING_MARKERS = re.compile(r'[\*_"\'`\s]+$')
-
-
-def slug_to_title(slug: str) -> str:
-    """Convert ``amy-dream`` → ``Amy Dream`` — a deterministic fallback title.
-
-    Strips a leading operator prefix (e.g. ``play-``, ``advance-day-``) so the
-    generated title is just the meaningful part of the slug.
-    """
-    s = slug
-    for prefix in _SLUG_OPERATOR_PREFIXES:
-        if s.startswith(prefix):
-            s = s[len(prefix):]
-            break
-    words = [w for w in re.split(r"[-_\s]+", s) if w]
-    if not words:
-        return slug
-    return " ".join(w[:1].upper() + w[1:] for w in words)
 
 
 def _extract_title_candidate(line: str) -> str:
@@ -111,26 +112,29 @@ def _extract_title_candidate(line: str) -> str:
 
 
 def _blockquote_body(lines: list[str]) -> list[str]:
-    """Blockquote every non-empty line with ``> ``; leave blank lines blank.
+    """Format the summary body as one continuous Markdown blockquote.
 
-    Any existing leading ``> `` is collapsed so a line is quoted exactly once.
+    Every line is written as ``> …``; blank lines use ``> `` so the blockquote
+    does not break. Leading ``>`` runts on each line are stripped first so
+    lines are not double-quoted.
     """
     out: list[str] = []
     for line in lines:
         stripped = line.rstrip()
         if not stripped.strip():
-            out.append("")
+            out.append("> ")
             continue
         s = stripped
         while s.startswith(">"):
             s = s[1:]
             if s.startswith(" "):
                 s = s[1:]
-        out.append(f"> {s}" if s else "")
+        suffix = s
+        out.append(f"> {suffix}" if suffix else "> ")
     return out
 
 
-def format_summary_block(slug: str, raw_summary: str) -> tuple[str, bool]:
+def format_summary_block(slug: str, raw_summary: str) -> str:
     """Format raw summary text into the canonical Lens summary block.
 
     Canonical shape::
@@ -144,23 +148,19 @@ def format_summary_block(slug: str, raw_summary: str) -> tuple[str, bool]:
 
     Algorithmic normalization applied:
 
-    - **Title**: the first non-empty line is taken as the title if, after
-      stripping markdown markers (``#``, ``>``, ``**``, quotes), it has
-      :data:`MAX_SUMMARY_TITLE_WORDS` or fewer words. Otherwise the title
-      is derived algorithmically from *slug* via :func:`slug_to_title` and
-      the entire raw input is kept as body.
-    - **Body**: every non-empty line is prefixed with ``> `` (existing ``> ``
-      prefixes are stripped first so each line is quoted exactly once).
-      Blank lines within the body remain blank (they are not quoted — only
-      summary body text is quoted, not the comment, title, or empty lines).
-      Leading/trailing blank lines in the body are trimmed.
-    - Exactly one blank line sits between the HTML comment and the header,
-      and between the header and the body.
+    - **Title**: the first non-empty line is the title after stripping markdown
+      markers (``#``, ``>``, ``**``, quotes). It must be non-empty and have at
+      most :data:`MAX_SUMMARY_TITLE_WORDS` words; otherwise
+      :exc:`SummaryTitleError` is raised (callers retry the LLM or surface the
+      error).
+    - **Body**: lines after the title, trimmed of leading/trailing blank lines,
+      then passed through :func:`_blockquote_body` so the body is one blockquote
+      run (blank lines are ``> ``).
+    - Exactly one blank line sits between the HTML comment and the ``###``
+      header, and between the header and the body.
 
-    Returns ``(block, title_from_raw)``. ``title_from_raw`` is ``True`` when
-    the first line of *raw_summary* was used as the title (happy path) and
-    ``False`` when we fell back to a slug-derived title (the caller may
-    choose to retry the LLM).
+    The HTML comment always uses the full storage *slug*; LLM prompts may use
+    :func:`slug_for_summary_prompt` for the ``{slug}`` template field only.
     """
     text = (raw_summary or "").strip()
     lines = text.split("\n") if text else []
@@ -169,20 +169,22 @@ def format_summary_block(slug: str, raw_summary: str) -> tuple[str, bool]:
     while first_idx < len(lines) and not lines[first_idx].strip():
         first_idx += 1
 
-    candidate = ""
-    if first_idx < len(lines):
-        candidate = _extract_title_candidate(lines[first_idx])
+    if first_idx >= len(lines):
+        raise SummaryTitleError("summary text is empty")
 
-    title_from_raw = False
-    if candidate and len(candidate.split()) <= MAX_SUMMARY_TITLE_WORDS:
-        title = candidate
-        body_lines = lines[first_idx + 1:]
-        title_from_raw = True
-    else:
-        title = slug_to_title(slug)
-        body_lines = list(lines)
+    candidate = _extract_title_candidate(lines[first_idx])
+    if not candidate:
+        raise SummaryTitleError("summary has no usable first-line title")
+    title_words = candidate.split()
+    if len(title_words) > MAX_SUMMARY_TITLE_WORDS:
+        raise SummaryTitleError(
+            f"summary title exceeds {MAX_SUMMARY_TITLE_WORDS} words "
+            f"({len(title_words)} words)"
+        )
 
-    # Trim leading/trailing blank lines from body
+    title = candidate
+    body_lines = lines[first_idx + 1 :]
+
     while body_lines and not body_lines[0].strip():
         body_lines.pop(0)
     while body_lines and not body_lines[-1].strip():
@@ -197,7 +199,7 @@ def format_summary_block(slug: str, raw_summary: str) -> tuple[str, bool]:
         "",
         *quoted,
     ]
-    return "\n".join(parts), title_from_raw
+    return "\n".join(parts)
 
 
 # ---------------------------------------------------------------------------
@@ -214,14 +216,18 @@ def build_summary_messages(
 ) -> list[dict[str, str]]:
     """Build LLM messages for summarizing section/session content.
 
-    The instruction template receives both ``content`` (the passage to
-    summarize) and ``slug`` (the node slug, used to guide the LLM in
-    producing a short human-friendly title).
+    The instruction template receives ``content`` and ``slug``. The ``slug``
+    value is :func:`slug_for_summary_prompt` output so titling examples match
+    what the model sees; :func:`format_summary_block` still writes the full
+    storage slug in the HTML comment.
     """
     from lens.core.context import assemble_prompt
 
     prompts = PromptStore(crawl_result.project_root)
-    instruction = prompts.format(instruction_key, content=content, slug=slug)
+    prompt_slug = slug_for_summary_prompt(slug)
+    instruction = prompts.format(
+        instruction_key, content=content, slug=prompt_slug
+    )
     return assemble_prompt(
         crawl_result,
         system_prompt=prompts.get(system_key),
@@ -243,19 +249,18 @@ async def generate_summary_block(
     system_key: str = "session.summary_system",
     instruction_key: str = "session.summary_instruction_template",
     max_attempts: int = 2,
-) -> str | None:
+) -> str:
     """Generate an LLM summary and return a fully formatted summary block.
 
-    The helper calls the LLM up to *max_attempts* times. If the LLM's output
-    has a first-line title that passes the word-count check,
-    :func:`format_summary_block` returns the block immediately. Otherwise
-    the LLM is retried. On the final attempt the block is returned with a
-    slug-derived fallback title.
-
-    Returns ``None`` if the LLM produced empty content on the first call.
+    Calls the LLM up to *max_attempts* times until :func:`format_summary_block`
+    accepts the first line as a title. Raises :exc:`SummaryTitleError` if every
+    attempt yields text but the title rule still fails. Raises
+    :exc:`OperatorError` if every attempt returns empty or whitespace-only
+    output.
     """
-    formatted: str | None = None
-    for _ in range(max(1, max_attempts)):
+    attempts = max(1, max_attempts)
+    last_title_error: SummaryTitleError | None = None
+    for _ in range(attempts):
         messages = build_summary_messages(
             crawl_result,
             content,
@@ -276,13 +281,18 @@ async def generate_summary_block(
             )
         ).strip()
         if not raw:
-            if formatted is None:
-                return None
-            return formatted
-        formatted, title_from_raw = format_summary_block(slug, raw)
-        if title_from_raw:
-            return formatted
-    return formatted
+            continue
+        try:
+            return format_summary_block(slug, raw)
+        except SummaryTitleError as exc:
+            last_title_error = exc
+            continue
+    if last_title_error is not None:
+        raise last_title_error
+    raise OperatorError(
+        "summary LLM returned empty or whitespace-only output after "
+        f"{attempts} attempt(s)"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -564,7 +574,8 @@ class SessionOperator(Operator):
 
     summarize_on_end: ClassVar[bool] = False
     """When True, ``run_session_end`` generates an LLM summary of the session
-    content and includes it as a blockquote before the close tag."""
+    content and appends the canonical block (HTML comment, ``###`` title,
+    one blockquoted body) before the close tag."""
 
     # Keys for :func:`build_summary_messages` when ``summarize_on_end`` runs.
     summary_system_prompt_key: ClassVar[str] = "session.summary_system"
@@ -585,8 +596,8 @@ class SessionOperator(Operator):
 
         Verifies the cursor is inside the session sub-node.  When
         :attr:`summarize_on_end` is True, generates an LLM summary of the
-        session content and appends it (blockquoted) before the close tag.
-        Override for fully custom close behaviour (e.g. KB extraction).
+        session content and appends the canonical summary block before the
+        close tag. Override for fully custom close behaviour (e.g. KB extraction).
         """
         cursor = narrative.find_cursor()
         if not cursor.key_path:
@@ -622,7 +633,7 @@ class SessionOperator(Operator):
             child_clean = strip_markdown_comments(child_text).strip()
             if child_clean:
                 crawl_result = crawl(parent)
-                formatted = await generate_summary_block(
+                summary = await generate_summary_block(
                     slug=id,
                     crawl_result=crawl_result,
                     content=child_clean,
@@ -635,7 +646,6 @@ class SessionOperator(Operator):
                     system_key=cls.summary_system_prompt_key,
                     instruction_key=cls.summary_instruction_prompt_key,
                 )
-                summary = formatted or ""
 
         op.close_subnode(parent, id, summary)
         return None

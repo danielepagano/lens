@@ -357,8 +357,30 @@ More content line 5
       removedGroups: [],
     }
     const result = preprocessAnnotations(markdown, 'test', overlay)
+    expect(result).toContain('annotation-heading')
+    expect(result).toContain('href="#test/ch1"')
     expect(result).toContain('<div class="transaction-added">')
     expect(result).toContain('Added line 4')
+  })
+
+  it('prepends linked heading with type pill and hides duplicate ### for canonical summaries', () => {
+    const markdown = `[section:play-scene-one]: #
+<!-- section:play-scene-one -->
+
+### Amy's Dream
+
+> She wakes alone.
+
+[/section:play-scene-one]: #`
+    const result = preprocessAnnotations(markdown, 'campaign', null)
+    expect(result).toContain('annotation-heading')
+    expect(result).toContain('href="#campaign/play-scene-one"')
+    expect(result).toContain("Amy's Dream")
+    expect(result).toContain('pin-pill-inline')
+    expect(result).toContain('play')
+    expect(result).toContain('<!-- section:play-scene-one -->')
+    expect(result).toContain('> She wakes alone.')
+    expect(result).not.toMatch(/\n### Amy's Dream\n/)
   })
 
   it('wraps added fenced code blocks once inside annotation bodies', () => {

@@ -421,7 +421,9 @@ class Operator(ABC):
         :func:`lens.core.operators.session.format_summary_block` (or
         :func:`lens.core.operators.session.generate_summary_block`) so that
         every summary in the tree has the canonical ``<!-- section:<slug> -->``
-        + ``### Title`` + blockquoted-body shape.
+        + ``###`` title + one continuous blockquoted body. Raw text that does
+        not satisfy the title rule raises ``SummaryTitleError`` from
+        ``lens.core.operators.session``.
         """
         close = self.build_close_tag(id)
         if summary:

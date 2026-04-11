@@ -106,8 +106,6 @@ class SectionOperator(Operator):
             cancel_event=cancel_event,
             reasoning=reasoning,
         )
-        if not summary_block:
-            raise ValueError("LLM returned no summary content")
 
         self.close_subnode(parent, key, summary_block)
 

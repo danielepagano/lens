@@ -134,8 +134,6 @@ class CollateOperator(Operator):
             cancel_event=cancel_event,
             reasoning=reasoning,
         )
-        if not summary_block:
-            raise ValueError("LLM returned no summary content")
 
         open_tag = section_open_tag(id)
         close_tag = section_close_tag(id)

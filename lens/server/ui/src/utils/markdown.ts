@@ -135,21 +135,93 @@ export interface NodeTransactionOverlay {
   removedGroups: RemovedGroup[]
 }
 
-const SECTION_TYPE_TOKENS = ["play", "design"]
+/** First segment of a session sub-node slug that maps to an inline type pill. */
+const SECTION_TYPE_TOKENS = ['play', 'design', 'chat', 'collate', 'advance']
 
-function toLabel(id: string): string {
+function toLabelParts(id: string): { html: string; plainTitle: string; pillHtml: string; typePrefix: string | null } {
   const parts = id.split(/[-_]/)
   const first = parts[0]
   const hasTypePrefix =
     first !== undefined && first !== '' && SECTION_TYPE_TOKENS.includes(first)
   const words = hasTypePrefix ? parts.slice(1) : parts
-  const title = words
+  const plainTitle = words
     .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
     .join(' ')
-  if (hasTypePrefix && first !== undefined) {
-    return title ? `${title} <span class="pin-pill pin-pill-inline">${first}</span>` : `[${first}]`
+  const pillHtml =
+    hasTypePrefix && first !== undefined
+      ? ` <span class="pin-pill pin-pill-inline">${escapeHtmlText(first)}</span>`
+      : ''
+  const html =
+    hasTypePrefix && first !== undefined
+      ? plainTitle
+        ? `${plainTitle}${pillHtml}`
+        : escapeHtmlText(`[${first}]`)
+      : plainTitle
+  return {
+    html,
+    plainTitle,
+    pillHtml,
+    typePrefix: hasTypePrefix && first !== undefined ? first : null,
   }
-  return title
+}
+
+function toLabel(id: string): string {
+  return toLabelParts(id).html
+}
+
+const SECTION_SUMMARY_COMMENT_RE = /^\s*<!--\s*section:[a-zA-Z0-9_-]+\s*-->\s*$/
+const SECTION_SUMMARY_MD_TITLE_RE = /^\s*###\s+(.+?)\s*$/
+
+/** Strip duplicate markdown title when body matches canonical Lens summary shape. */
+function parseCanonicalSummaryLinesToOmit(bodyLines: string[]): {
+  omit: Set<number>
+  aiTitle: string | null
+} {
+  const omit = new Set<number>()
+  let i = 0
+  while (i < bodyLines.length && !bodyLines[i].trim()) i++
+  if (i >= bodyLines.length || !SECTION_SUMMARY_COMMENT_RE.test(bodyLines[i])) {
+    return { omit, aiTitle: null }
+  }
+  i++
+  while (i < bodyLines.length && !bodyLines[i].trim()) i++
+  const line = i < bodyLines.length ? bodyLines[i] : ''
+  const m = line.match(SECTION_SUMMARY_MD_TITLE_RE)
+  if (!m?.[1]) return { omit, aiTitle: null }
+  let aiTitle = m[1]
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/^#+\s*/, '')
+    .replace(/<[^>]+>/g, '')
+    .trim()
+  omit.add(i)
+  i++
+  if (i < bodyLines.length && !bodyLines[i].trim()) omit.add(i)
+  return { omit, aiTitle: aiTitle || null }
+}
+
+function annotationHeadingInnerHtml(id: string, aiTitle: string | null): string {
+  const { plainTitle, pillHtml, typePrefix } = toLabelParts(id)
+  const fromFile = aiTitle?.trim()
+  const titleText = fromFile && fromFile.length > 0 ? fromFile : plainTitle
+  if (!titleText) {
+    if (typePrefix !== null) {
+      return escapeHtmlText(`[${typePrefix}]`)
+    }
+    return escapeHtmlText(plainTitle)
+  }
+  return escapeHtmlText(titleText) + pillHtml
+}
+
+function annotationHeadingHtml(childAddr: string, id: string, aiTitle: string | null): string {
+  const inner = annotationHeadingInnerHtml(id, aiTitle)
+  return `<h3 class="annotation-heading"><a href="#${escapeHtmlAttr(childAddr)}">${inner}</a></h3>`
+}
+
+function escapeHtmlAttr(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 function renderDivider(label: string, href: string): string {
@@ -290,15 +362,26 @@ function renderAnnotationWithBody(
   const closingLineNo = j + 1
 
   if (bodyText) {
-    // Summaries carry their own `### Title` header inside the body (written
-    // by the operator via format_summary_block); the UI must not synthesize
-    // an additional heading from the slug.
+    const { omit: omitBodyLine, aiTitle } = parseCanonicalSummaryLinesToOmit(bodyLines)
     const bodyStartLine = bodyStart + 1
     for (let lineNo = openingLineNo; lineNo <= closingLineNo; lineNo++) {
       pushRemovedContent(output, removedByLine, lineNo)
     }
+    output.push('')
+    output.push(annotationHeadingHtml(childAddr, id, aiTitle))
+    output.push('')
     const addedRun: string[] = []
     for (let k = 0; k < bodyLines.length; ) {
+      if (omitBodyLine.has(k)) {
+        const outLine = bodyLines[k]
+        const fileLine = bodyStartLine + k
+        if (overlay?.addedLines.has(fileLine)) {
+          flushAddedTransactionRun(output, addedRun)
+          output.push(outLine)
+        }
+        k += 1
+        continue
+      }
       const outLine = bodyLines[k]
       const info = fenceInfo(outLine)
       if (info) {
@@ -356,7 +439,8 @@ function renderAnnotationWithBody(
  * in the main loop only — annotation lines are never diff-marked, which
  * prevents artifacts from front-matter or operator annotation changes.
  *
- * - Opening annotation with id + non-empty body  → HTML h3 heading link + body + optional ---
+ * - Opening annotation with id + non-empty body  → HTML h3 (link + type pill)
+ *   + body + optional --- (canonical summaries omit duplicate `###` title line)
  * - Opening annotation with id + empty body       → thin divider link bar
  * - Self-closing annotation with id               → thin divider link bar
  * - Closing annotation (consumed or orphan) followed by regular text → ---

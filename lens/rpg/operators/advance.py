@@ -540,7 +540,7 @@ class AdvanceOperator(Operator):
             session.kb, timeline_ids[0], days_elapsed, storage
         )
 
-        summary_block, _ = format_summary_block(session_id, summary)
+        summary_block = format_summary_block(session_id, summary)
         op.close_subnode(parent, session_id, summary_block)
         return result
 
