@@ -12,17 +12,19 @@ with a different ``--as`` value.
 
 Session lifecycle
 -----------------
-* First call → creates a sub-node (``chat[-prompt-slug]``), pins the ``--as``
-  and ``--with`` character KB objects, and runs the first AI response.
+* First call → creates a sub-node (``chat[-prompt-slug]``), writes ``as_kb_id``
+  / ``with_kb_id`` / ``prompt`` / ``kb_pin`` into the **parent** annotation so
+  the whole setup + first AI turn is one atomic unstaged transaction.  A
+  rollback removes the sub-node entirely and the user can retry.
 * Subsequent calls inside the session → appends the user's ``--with`` character
-  line, then AI responds as the ``--as`` character (falling back to the last
-  annotation's stored ``as_kb_id`` when ``--as`` is omitted).
+  line, then AI responds as the ``--as`` character.  ``as_kb_id`` / ``with_kb_id``
+  are derived from the parent annotation and may be overridden per-call.
 * ``--end`` → closes the session with a short prose summary.
 
 Character attribution
 ---------------------
 Character lines use blockquote format: ``> [CharacterName] what they say``.
-Action beats: ``> [CharacterName] *she set down the cup*``.
+Action beats: ``> [CharacterName] *she set the cup down*``.
 Names are derived from the KB key suffix (e.g. ``npc.bob-the-smith`` → ``Bob The Smith``).
 """
 
@@ -33,16 +35,19 @@ from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar, cast
 
 from lens.core.annotations import parse_annotations
-from lens.core.context import CrawlResult
+from lens.core.context import CrawlResult, crawl
 from lens.core.knowledge import KnowledgeStore
+from lens.core.llm import LLMError, generate_text
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
+from lens.core.pinning import pin as pin_node
 from lens.core.prompts import PromptStore
-from lens.core.project import ProjectSession
-from lens.core.storage import Storage
+from lens.core.project import ProjectSession, validate_slug
 
 _NONSLUG_RE = re.compile(r"[^a-z0-9-]+")
+_WITH_LINE_MODE_DIRECT = "direct"
+_WITH_LINE_MODE_ASIDE = "aside"
 
 
 def _titlecase_kb_key(kb_id: str) -> str:
@@ -67,8 +72,10 @@ class ChatOperator(SessionOperator):
 
     def build_instruction(self, params: dict[str, Any]) -> str:
         as_kb_id: str = params.get("as_kb_id") or ""
+        with_kb_id: str | None = params.get("with_kb_id") or None
         as_name = _titlecase_kb_key(as_kb_id) if as_kb_id else "the character"
         directions: str | None = params.get("prompt") or None
+        with_line_mode = params.get("with_line_mode")
 
         # Fetch the character's KB text and embed it directly in the task so
         # the AI knows exactly who it is embodying without searching.
@@ -81,17 +88,31 @@ class ChatOperator(SessionOperator):
                 char_content = obj.text.strip()
 
         prompts = PromptStore(self.project_root)
+        with_line = ""
+        if with_kb_id and with_line_mode == _WITH_LINE_MODE_DIRECT:
+            with_name = _titlecase_kb_key(with_kb_id)
+            with_line = "\n" + prompts.format("chat.with_line_instruction", with_name=with_name)
+
         if directions:
+            if with_line_mode == _WITH_LINE_MODE_ASIDE:
+                return prompts.format(
+                    "chat.instruction_with_aside_directions",
+                    as_name=as_name,
+                    char_content=char_content,
+                    directions=directions,
+                )
             return prompts.format(
                 "chat.instruction_with_directions",
                 as_name=as_name,
                 char_content=char_content,
                 directions=directions,
+                with_line=with_line,
             )
         return prompts.format(
             "chat.instruction_continue",
             as_name=as_name,
             char_content=char_content,
+            with_line=with_line,
         )
 
     @classmethod
@@ -114,19 +135,32 @@ class ChatOperator(SessionOperator):
     # ── Session param helpers ──────────────────────────────────────────────
 
     @classmethod
-    def _derive_session_params(cls, node: NarrativeNode) -> dict[str, str]:
-        """Read ``as_kb_id`` and ``with_kb_id`` from the last chat annotation in *node*."""
-        text = node.md_path().read_text(encoding="utf-8")
-        anns = [a for a in parse_annotations(text) if a.operator == cls.name]
-        for ann in reversed(anns):
-            result: dict[str, str] = {}
-            if "as_kb_id" in ann.params:
-                result["as_kb_id"] = str(ann.params["as_kb_id"])
-            val = ann.params.get("with_kb_id")
-            if val:
-                result["with_kb_id"] = str(val)
-            if result:
-                return result
+    def _derive_session_params(cls, session_node: NarrativeNode) -> dict[str, str]:
+        """Read ``as_kb_id`` and ``with_kb_id`` from the parent's session annotation.
+
+        The parent annotation captures these at session-creation time, so they
+        are available without inspecting the child's inline annotations.
+        """
+        if not session_node.key_path:
+            return {}
+        session_id = session_node.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=session_node.narrative_root,
+            key_path=session_node.key_path[:-1],
+        )
+        try:
+            text = parent.md_path().read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return {}
+        for ann in reversed(parse_annotations(text)):
+            if ann.operator == cls.name and ann.id == session_id:
+                result: dict[str, str] = {}
+                if "as_kb_id" in ann.params:
+                    result["as_kb_id"] = str(ann.params["as_kb_id"])
+                if "with_kb_id" in ann.params:
+                    result["with_kb_id"] = str(ann.params["with_kb_id"])
+                if result:
+                    return result
         return {}
 
     @classmethod
@@ -197,11 +231,6 @@ class ChatOperator(SessionOperator):
         """Build a session slug from character keys and optional stage directions.
 
         Pattern: ``chat-<as-key>[-<with-key>][-<direction-words>][-N]``
-
-        Examples:
-        - ``--as npc.bob --with pc.amy "awkward banter"`` → ``chat-bob-amy-awkward-banter``
-        - ``--as npc.bob`` → ``chat-bob``
-        - Conflict on ``chat-bob`` → ``chat-bob-1``
         """
         parts: list[str] = []
         if as_kb_id:
@@ -224,6 +253,120 @@ class ChatOperator(SessionOperator):
             n += 1
         return f"{base}-{n}"
 
+    # ── Fresh session — atomic one-transaction setup ───────────────────────
+
+    @classmethod
+    async def _start_fresh_session(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        cursor: NarrativeNode,
+        as_kb_id: str,
+        with_kb_id: str | None,
+        prompt: str | None,
+        pins: list[str],
+        llm_id: str | None,
+        reasoning: str | None,
+        slug: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None,
+        cancel_event: Any | None,
+    ) -> None:
+        """Create child sub-node + generate first AI turn in one unstaged transaction.
+
+        All session parameters (``as_kb_id``, ``with_kb_id``, ``prompt``,
+        ``kb_pin``) are stored in the **parent** annotation so a rollback
+        removes the whole session and the user can retry cleanly.
+        """
+        # Validate / compute slug.
+        if slug is not None:
+            if not validate_slug(slug):
+                raise OperatorError(
+                    f"invalid slug '{slug}' (alphanumeric, underscores, hyphens only)"
+                )
+            prefix = f"{cls.name}-"
+            if not slug.startswith(prefix):
+                slug = prefix + slug
+            if slug in set(cursor.child_keys()):
+                raise OperatorError(f"a node named '{slug}' already exists here")
+            session_id = slug
+        else:
+            session_id = cls._make_chat_slug(as_kb_id, with_kb_id, prompt, cursor)
+
+        rel_path = str(cursor.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(session_id, rel_path)
+        storage = session.new_storage(owner=owner)
+        op = cls(storage, narrative)
+
+        # Build parent annotation params — everything the session needs.
+        ann_params: dict[str, Any] = {"as_kb_id": as_kb_id}
+        if with_kb_id:
+            ann_params["with_kb_id"] = with_kb_id
+        if prompt:
+            ann_params["prompt"] = prompt
+        if pins:
+            ann_params["kb_pin"] = list(pins)
+
+        # Create the child node; the parent annotation gets all the params.
+        child_node = op.create_subnode(cursor, session_id, params=ann_params)
+
+        # Pin KB objects into the child's front matter for crawl context.
+        if pins:
+            pin_node(child_node, pins, storage)
+
+        if on_stream_target is not None:
+            await on_stream_target(str(child_node.to_address()))
+
+        # Crawl the child to assemble context (inherits ancestor pins).
+        crawl_result = crawl(child_node, extra_pins=pins)
+
+        # Validate character; build instruction params (prompt = stage directions).
+        inst_params: dict[str, Any] = {
+            "as_kb_id": as_kb_id,
+            "with_kb_id": with_kb_id,
+            "prompt": prompt,
+            "with_line_mode": _WITH_LINE_MODE_DIRECT if with_kb_id else None,
+        }
+        cls.enrich_params(crawl_result, inst_params)
+
+        # Generate the first AI turn using the same storage (no intermediate stage).
+        probe_op = cls(storage, narrative)
+        messages = probe_op.build_messages(crawl_result, inst_params)
+
+        content = ""
+        interrupted = False
+        try:
+            content = await generate_text(
+                messages,
+                session.project_root,
+                llm_id=llm_id,
+                tools=None,
+                cancel_event=cancel_event,
+                on_preview=on_token,
+                interrupt_policy="raise",
+                operator_name=cls.name,
+                reasoning=reasoning,
+            )
+        except KeyboardInterrupt:
+            interrupted = True
+        except LLMError as e:
+            raise OperatorError(f"LLM error: {e}") from e
+
+        if interrupted:
+            return
+
+        if not content.strip():
+            raise OperatorError("no content generated")
+
+        # Write the first AI turn — tag in child carries no redundant params.
+        turn_tag = probe_op.build_open_tag(None, None)
+        probe_op.write_start(child_node, turn_tag, content)
+        # Everything (sub-node creation, parent annotation, first turn) is now
+        # in one unstaged transaction.  Do NOT call storage.stage_all() here.
+
+    # ── run_session override ───────────────────────────────────────────────
+
     @classmethod
     async def run_session(
         cls,
@@ -244,78 +387,83 @@ class ChatOperator(SessionOperator):
         cancel_event: Any | None = None,
         **kwargs: Any,
     ) -> Any:
-        """Override to inject a character-keyed slug for new sessions."""
-        if not end and not retry and slug is None:
-            session_node, _ = cls.find_active_session(narrative)
-            if session_node is None:
-                raw = kwargs.get("extra_params")
-                ep: dict[str, Any] = {}
-                if isinstance(raw, dict):
-                    raw_map = cast(dict[object, object], raw)
-                    for k, v in raw_map.items():
-                        if isinstance(k, str):
-                            ep[k] = v
-                as_kb_id = ep.get("as_kb_id") if isinstance(ep.get("as_kb_id"), str) else None
-                with_kb_id = ep.get("with_kb_id") if isinstance(ep.get("with_kb_id"), str) else None
-                cursor = narrative.find_cursor()
-                slug = cls._make_chat_slug(as_kb_id, with_kb_id, prompt, cursor)
-        return await super().run_session(
+        """Run a chat session (create, continue, or end).
+
+        Fresh sessions are handled here atomically (one transaction).  Existing
+        sessions and ``--end`` delegate to the base-class implementation.
+        """
+        if end:
+            return await super().run_session(
+                session=session,
+                narrative=narrative,
+                prompt=prompt,
+                module_id=module_id,
+                pins=pins,
+                unpins=unpins,
+                llm_id=llm_id,
+                reasoning=reasoning,
+                retry=retry,
+                end=True,
+                slug=slug,
+                on_token=on_token,
+                on_stream_target=on_stream_target,
+                cancel_event=cancel_event,
+                **kwargs,
+            )
+
+        session_node, _ = cls.find_active_session(narrative)
+
+        if session_node is not None:
+            # Continue inside an existing session — delegate to base class.
+            return await super().run_session(
+                session=session,
+                narrative=narrative,
+                prompt=prompt,
+                module_id=module_id,
+                pins=pins,
+                unpins=unpins,
+                llm_id=llm_id,
+                reasoning=reasoning,
+                retry=retry,
+                end=False,
+                slug=slug,
+                on_token=on_token,
+                on_stream_target=on_stream_target,
+                cancel_event=cancel_event,
+                **kwargs,
+            )
+
+        # Fresh session — atomic setup + first generation.
+        as_kb_id, with_kb_id = cls._extract_extra(kwargs)
+        if not as_kb_id:
+            raise OperatorError("--as is required when starting a chat session")
+
+        cursor = narrative.find_cursor()
+        return await cls._start_fresh_session(
             session=session,
             narrative=narrative,
+            cursor=cursor,
+            as_kb_id=as_kb_id,
+            with_kb_id=with_kb_id,
             prompt=prompt,
-            module_id=module_id,
-            pins=pins,
-            unpins=unpins,
+            pins=list(pins),
             llm_id=llm_id,
             reasoning=reasoning,
-            retry=retry,
-            end=end,
             slug=slug,
             on_token=on_token,
             on_stream_target=on_stream_target,
             cancel_event=cancel_event,
-            **kwargs,
         )
 
     # ── SessionOperator hooks ──────────────────────────────────────────────
 
     @classmethod
-    async def _run_fresh(
-        cls,
-        *,
-        session: ProjectSession,
-        narrative: NarrativeNode,
-        node: NarrativeNode,
-        setup_storage: Storage,
-        prompt: str | None,
-        llm_id: str | None,
-        reasoning: str | None,
-        on_token: Callable[[str], Awaitable[None]] | None,
-        on_stream_target: Callable[[str], Awaitable[None]] | None,
-        cancel_event: Any | None,
-        **kwargs: Any,
-    ) -> None:
-        as_kb_id, with_kb_id = cls._extract_extra(kwargs)
-        if not as_kb_id:
-            raise OperatorError("--as is required when starting a chat session")
-
-        # Prompt here carries optional stage directions; stored in annotation
-        # params so build_instruction can include them in the first AI turn.
-        await cls.run_inline(
-            session=session,
-            narrative=narrative,
-            prompt=prompt,
-            pins=[],
-            unpins=[],
-            llm_id=llm_id,
-            reasoning=reasoning,
-            retry=False,
-            on_token=on_token,
-            _cursor_override=node,
-            extra_params={"as_kb_id": as_kb_id, "with_kb_id": with_kb_id},
-            cancel_event=cancel_event,
-            empty_prompt_ok=True,
-        )
+    async def _run_fresh(cls, **kwargs: Any) -> None:  # type: ignore[override]
+        # Never called: run_session handles the fresh path directly.
+        _ = kwargs
+        raise OperatorError(
+            "chat _run_fresh should not be called directly — use run_session"
+        )  # pragma: no cover
 
     @classmethod
     async def _run_inside(
@@ -337,12 +485,14 @@ class ChatOperator(SessionOperator):
     ) -> None:
         as_kb_id, with_kb_id = cls._extract_extra(kwargs)
 
-        # Fall back to the last annotation's stored params when not re-specified.
+        # Fall back to the parent annotation's stored params when not re-specified.
         derived = cls._derive_session_params(node)
+        session_as_kb_id = derived.get("as_kb_id")
+        session_with_kb_id = derived.get("with_kb_id")
         if not as_kb_id:
-            as_kb_id = derived.get("as_kb_id")
+            as_kb_id = session_as_kb_id
         if not with_kb_id:
-            with_kb_id = derived.get("with_kb_id")
+            with_kb_id = session_with_kb_id
 
         if not as_kb_id:
             raise OperatorError(
@@ -350,7 +500,64 @@ class ChatOperator(SessionOperator):
                 "who the AI voices"
             )
 
+        is_direct_turn = (
+            with_kb_id is not None
+            and as_kb_id == session_as_kb_id
+            and with_kb_id == session_with_kb_id
+        )
+        with_line_mode = _WITH_LINE_MODE_DIRECT if is_direct_turn else _WITH_LINE_MODE_ASIDE
+
         if retry:
+            # Check whether the pending transaction is the atomic fresh-session
+            # setup (sub-node creation + parent annotation + first AI turn, all
+            # unstaged in one transaction).  The first turn is written with a
+            # closed annotation, so run_inline's open-annotation scan would find
+            # nothing and raise "no pending chat transaction to retry".  Instead,
+            # roll back the whole transaction and re-run the fresh session.
+            if node.key_path:
+                probe_storage = session.new_storage()
+                if probe_storage.has_pending():
+                    session_id = node.key_path[-1]
+                    parent = NarrativeNode(
+                        narrative_root=node.narrative_root,
+                        key_path=node.key_path[:-1],
+                    )
+                    parent_rel = str(parent.md_path().relative_to(session.git_root))
+                    expected_owner = cls.owner_id(session_id, parent_rel)
+                    if probe_storage.detect_pending_owner() == expected_owner:
+                        # Read session params from parent annotation before rollback.
+                        parent_text = parent.md_path().read_text(encoding="utf-8")
+                        saved_prompt: str | None = None
+                        saved_pins: list[str] = []
+                        for ann in reversed(parse_annotations(parent_text)):
+                            if ann.operator == cls.name and ann.id == session_id:
+                                p = ann.params.get("prompt")
+                                if p:
+                                    saved_prompt = str(p)
+                                kb_pin = ann.params.get("kb_pin")
+                                if isinstance(kb_pin, list):
+                                    saved_pins = [str(p) for p in cast(list[object], kb_pin)]
+                                elif isinstance(kb_pin, str):
+                                    saved_pins = [kb_pin]
+                                break
+                        probe_storage.rollback()
+                        fresh_cursor = narrative.find_cursor()
+                        return await cls._start_fresh_session(
+                            session=session,
+                            narrative=narrative,
+                            cursor=fresh_cursor,
+                            as_kb_id=as_kb_id or "",
+                            with_kb_id=with_kb_id,
+                            prompt=saved_prompt,
+                            pins=saved_pins,
+                            llm_id=llm_id,
+                            reasoning=reasoning,
+                            slug=None,
+                            on_token=on_token,
+                            on_stream_target=None,
+                            cancel_event=cancel_event,
+                        )
+
             if module_id or pins or unpins:
                 probe_storage = session.new_storage()
                 probe_op = cls(probe_storage, narrative)
@@ -375,7 +582,11 @@ class ChatOperator(SessionOperator):
                 retry=True,
                 on_token=on_token,
                 _cursor_override=node,
-                extra_params={"as_kb_id": as_kb_id, "with_kb_id": with_kb_id},
+                extra_params={
+                    "as_kb_id": as_kb_id,
+                    "with_kb_id": with_kb_id,
+                    "with_line_mode": with_line_mode,
+                },
                 cancel_event=cancel_event,
                 empty_prompt_ok=True,
             )
@@ -393,7 +604,7 @@ class ChatOperator(SessionOperator):
             )
             fm_storage.stage_all()
 
-        if prompt:
+        if prompt and is_direct_turn:
             await cls._append_with_line(
                 session=session,
                 node=node,
@@ -401,11 +612,12 @@ class ChatOperator(SessionOperator):
                 with_kb_id=with_kb_id,
             )
 
-        # AI responds as the --as character; user text is already in the passage.
+        # Session speaker turns answer the appended counterpart line. One-off
+        # interjections instead treat the prompt as third-person stage directions.
         await cls.run_inline(
             session=session,
             narrative=narrative,
-            prompt=None,
+            prompt=None if is_direct_turn else prompt,
             pins=[],
             unpins=[],
             llm_id=llm_id,
@@ -413,7 +625,11 @@ class ChatOperator(SessionOperator):
             retry=False,
             on_token=on_token,
             _cursor_override=node,
-            extra_params={"as_kb_id": as_kb_id, "with_kb_id": with_kb_id},
+            extra_params={
+                "as_kb_id": as_kb_id,
+                "with_kb_id": with_kb_id,
+                "with_line_mode": with_line_mode,
+            },
             cancel_event=cancel_event,
             empty_prompt_ok=True,
         )

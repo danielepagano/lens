@@ -51,6 +51,7 @@ def _make_chat_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNo
     npc_dir = kb_root / "npc"
     npc_dir.mkdir()
     (npc_dir / "bob.md").write_text("Bob is a gruff innkeeper with a soft spot for travellers.\n")
+    (npc_dir / "waiter.md").write_text("The waiter is nervous but attentive, always hovering nearby.\n")
     pc_dir = kb_root / "pc"
     pc_dir.mkdir()
     (pc_dir / "amy.md").write_text("Amy is a wandering bard.\n")
@@ -89,10 +90,6 @@ class TestChatOneShot(unittest.TestCase):
     def _narrative_md(self) -> str:
         return self.narrative.md_path().read_text(encoding="utf-8")
 
-    # ------------------------------------------------------------------
-    # One-shot: response written inline, no sub-node created
-    # ------------------------------------------------------------------
-
     def test_oneshot_response_written_inline(self) -> None:
         """One-shot writes AI response to the current narrative node."""
         with patch("lens.core.operator.generate_text", _mock_generate):
@@ -113,7 +110,7 @@ class TestChatOneShot(unittest.TestCase):
             )
         text = self._narrative_md()
         self.assertIn("[Bob] Aye, what can I get for ye?", text)
-        self.assertIn("[chat\n", text)
+        self.assertIn("[chat", text)
         self.assertIn("[/chat]: #", text)
 
     def test_oneshot_no_subnode_created(self) -> None:
@@ -200,6 +197,114 @@ class TestChatOneShot(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# One-shot inside another operator's sub-node (e.g. play node)
+# ---------------------------------------------------------------------------
+
+class TestChatOneShotInPlayContext(unittest.TestCase):
+    """One-shot chat when the cursor lives inside a different operator's sub-node."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        tmp = Path(self._tmp.name)
+        _init_repo(tmp)
+        self.root, self.narrative = _make_chat_project(tmp)
+        self.session = ProjectSession(git_root=self.root, project_root=self.root)
+        KnowledgeStore.clear_registry()
+
+        # Simulate a play sub-node: create a child node and write an unclosed
+        # play annotation in the parent so the cursor points to the child.
+        self._play_child = self._create_play_child()
+
+    def tearDown(self) -> None:
+        KnowledgeStore.clear_registry()
+        self._tmp.cleanup()
+
+    def _create_play_child(self) -> NarrativeNode:
+        """Create a sub-node with an unclosed [play:play-abc] annotation in parent."""
+        narrative_dir = self.narrative.narrative_root
+        # Promote root to folder node if not already
+        root_md = self.narrative.md_path()
+        if root_md.parent == narrative_dir:
+            # Already a folder-node (narrative/_node.md)
+            pass
+
+        # Create child directory structure
+        child_dir = narrative_dir / "play-abc"
+        child_dir.mkdir(exist_ok=True)
+        child_md = child_dir / "_node.md"
+        child_md.write_text("The adventurers enter the dungeon.\n")
+
+        # Promote root node to folder if needed (root _node.md already exists)
+        parent_text = root_md.read_text(encoding="utf-8")
+        root_md.write_text(parent_text + "\n[play:play-abc]: #\n")
+
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "play-session"],
+            cwd=self.root, capture_output=True, check=True,
+        )
+
+        child_node = NarrativeNode(
+            narrative_root=narrative_dir,
+            key_path=("play-abc",),
+        )
+        return child_node
+
+    def test_oneshot_in_play_node_writes_inline(self) -> None:
+        """One-shot chat inside a play sub-node writes inline to that node."""
+        with patch("lens.core.operator.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_inline(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="describe how you feel",
+                    pins=[],
+                    unpins=[],
+                    llm_id=None,
+                    reasoning=None,
+                    retry=False,
+                    on_token=None,
+                    cancel_event=None,
+                    extra_params={"as_kb_id": "npc.bob"},
+                    _cursor_override=self._play_child,
+                )
+            )
+        child_text = self._play_child.md_path().read_text(encoding="utf-8")
+        self.assertIn("[Bob] Aye, what can I get for ye?", child_text)
+        self.assertIn("[chat", child_text)
+        self.assertIn("[/chat]: #", child_text)
+
+    def test_oneshot_in_play_node_no_chat_subnode(self) -> None:
+        """One-shot in a play node must not create a chat sub-node."""
+        with patch("lens.core.operator.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_inline(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="describe how you feel",
+                    pins=[],
+                    unpins=[],
+                    llm_id=None,
+                    reasoning=None,
+                    retry=False,
+                    on_token=None,
+                    cancel_event=None,
+                    extra_params={"as_kb_id": "npc.bob"},
+                    _cursor_override=self._play_child,
+                )
+            )
+        # No chat child should have been created under the play sub-node
+        chat_children = [k for k in self._play_child.child_keys() if k.startswith("chat")]
+        self.assertEqual(chat_children, [])
+
+    def test_find_active_session_returns_none_in_play_node(self) -> None:
+        """find_active_session sees a play annotation, not chat — returns None."""
+        session_node, session_id = ChatOperator.find_active_session(self.narrative)
+        self.assertIsNone(session_node)
+        self.assertIsNone(session_id)
+
+
+# ---------------------------------------------------------------------------
 # Session mode (with --with)
 # ---------------------------------------------------------------------------
 
@@ -218,6 +323,9 @@ class TestChatSession(unittest.TestCase):
         KnowledgeStore.clear_registry()
         self._tmp.cleanup()
 
+    def _narrative_md(self) -> str:
+        return self.narrative.md_path().read_text(encoding="utf-8")
+
     def _chat_child_md(self) -> str:
         keys = [k for k in self.narrative.child_keys() if k.startswith("chat")]
         self.assertEqual(len(keys), 1, f"expected one chat child, got: {keys}")
@@ -235,7 +343,7 @@ class TestChatSession(unittest.TestCase):
 
     def test_session_slug_includes_character_keys(self) -> None:
         """Session ID includes the --as and --with character keys."""
-        with patch("lens.core.operator.generate_text", _mock_generate):
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,
@@ -254,7 +362,7 @@ class TestChatSession(unittest.TestCase):
 
     def test_session_creates_subnode(self) -> None:
         """Starting a session with --with creates a chat sub-node."""
-        with patch("lens.core.operator.generate_text", _mock_generate):
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,
@@ -270,9 +378,8 @@ class TestChatSession(unittest.TestCase):
         self.assertEqual(len(keys), 1)
 
     def test_session_pins_counterpart_in_front_matter(self) -> None:
-        """The --with counterpart is pinned in the sub-node for scene context.
-        The --as character is NOT pinned (content goes into the task directly)."""
-        with patch("lens.core.operator.generate_text", _mock_generate):
+        """The --with counterpart is pinned in the sub-node front matter."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,
@@ -290,7 +397,7 @@ class TestChatSession(unittest.TestCase):
 
     def test_session_ai_response_written(self) -> None:
         """The AI response is written into the chat sub-node."""
-        with patch("lens.core.operator.generate_text", _mock_generate):
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,
@@ -304,12 +411,11 @@ class TestChatSession(unittest.TestCase):
             )
         text = self._chat_child_md()
         self.assertIn("[Bob] Aye, what can I get for ye?", text)
-        self.assertIn("[chat\n", text)
         self.assertIn("[/chat]: #", text)
 
-    def test_session_stores_character_ids_in_annotation(self) -> None:
-        """as_kb_id and with_kb_id are stored in the sub-node annotation."""
-        with patch("lens.core.operator.generate_text", _mock_generate):
+    def test_session_params_in_parent_annotation(self) -> None:
+        """as_kb_id and with_kb_id are stored in the PARENT node's session annotation."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,
@@ -321,13 +427,13 @@ class TestChatSession(unittest.TestCase):
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
             )
-        text = self._chat_child_md()
-        self.assertIn("as_kb_id: npc.bob", text)
-        self.assertIn("with_kb_id: pc.amy", text)
+        parent_text = self._narrative_md()
+        self.assertIn("as_kb_id: npc.bob", parent_text)
+        self.assertIn("with_kb_id: pc.amy", parent_text)
 
-    def test_session_with_stage_directions(self) -> None:
-        """Stage directions in the prompt are stored and included in context."""
-        with patch("lens.core.operator.generate_text", _mock_generate):
+    def test_session_with_stage_directions_in_parent(self) -> None:
+        """Stage directions given at session start appear in the parent annotation."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,
@@ -339,8 +445,8 @@ class TestChatSession(unittest.TestCase):
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
             )
-        text = self._chat_child_md()
-        self.assertIn("The inn is quiet at dawn.", text)
+        parent_text = self._narrative_md()
+        self.assertIn("The inn is quiet at dawn.", parent_text)
 
     def test_session_requires_as(self) -> None:
         """Starting a session without --as raises OperatorError."""
@@ -357,25 +463,96 @@ class TestChatSession(unittest.TestCase):
                 )
             )
 
-    # ------------------------------------------------------------------
-    # Session continuation
-    # ------------------------------------------------------------------
-
-    def _start_session(self) -> None:
-        """Helper: start a fresh session with npc.bob (as) and pc.amy (with)."""
-        with patch("lens.core.operator.generate_text", _mock_generate):
+    def test_session_is_one_atomic_transaction(self) -> None:
+        """Fresh session: sub-node creation + first AI turn are in one unstaged transaction."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],  # only counterpart is pinned; --as goes into task
+                    pins=["pc.amy"],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
             )
-        # stage after first turn so continuation can proceed
+        # Everything should be unstaged (pending) — no intermediate stage_all.
+        storage = Storage(self.root)
+        self.assertTrue(storage.has_pending(), "fresh session must leave an unstaged transaction")
+        self.assertFalse(storage.has_staged(), "nothing should be in the staging area yet")
+
+    def test_session_rollback_removes_subnode(self) -> None:
+        """Rolling back after a fresh session removes the sub-node entirely."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=["pc.amy"],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        Storage(self.root).rollback()
+        keys = [k for k in self.narrative.child_keys() if k.startswith("chat")]
+        self.assertEqual(keys, [], "rollback must remove the chat sub-node entirely")
+
+    def test_retry_first_turn_rolls_back_and_regenerates(self) -> None:
+        """--retry on an unstaged fresh session rolls back and re-runs the first turn."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=["pc.amy"],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        # All still unstaged — retry must not raise and must produce fresh content.
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    retry=True,
+                    extra_params={},
+                )
+            )
+        keys = [k for k in self.narrative.child_keys() if k.startswith("chat")]
+        self.assertEqual(len(keys), 1, "retry must produce exactly one chat sub-node")
+        child = self.narrative.child_node(keys[0])
+        text = child.md_path().read_text(encoding="utf-8")
+        self.assertIn("[Bob] Aye, what can I get for ye?", text)
+
+    # ------------------------------------------------------------------
+    # Session continuation
+    # ------------------------------------------------------------------
+
+    def _start_session(self) -> None:
+        """Helper: start a fresh session with npc.bob (as) and pc.amy (with)."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=["pc.amy"],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        # Stage after first turn so continuation sees a clean working tree.
         Storage(self.root).stage_all()
 
     def test_session_continuation_appends_with_line(self) -> None:
@@ -416,12 +593,11 @@ class TestChatSession(unittest.TestCase):
                 )
             )
         text = self._chat_child_md()
-        # Should have two AI response blocks
-        self.assertGreaterEqual(text.count("[chat\n"), 2)
+        # Two complete AI turns → two close tags.
         self.assertGreaterEqual(text.count("[/chat]: #"), 2)
 
-    def test_session_continuation_derives_as_from_annotation(self) -> None:
-        """Omitting --as in continuation falls back to the last annotation's value."""
+    def test_session_continuation_derives_params_from_parent(self) -> None:
+        """Omitting --as in continuation derives it from the parent annotation."""
         self._start_session()
         KnowledgeStore.clear_registry()
 
@@ -438,15 +614,49 @@ class TestChatSession(unittest.TestCase):
                 )
             )
         text = self._chat_child_md()
-        # Must still produce a response (derived npc.bob from annotation)
+        # Must still produce a second AI turn (npc.bob derived from parent annotation).
         self.assertGreaterEqual(text.count("[/chat]: #"), 2)
 
-    def test_annotation_stores_character_ids(self) -> None:
-        """as_kb_id and with_kb_id survive the annotation roundtrip."""
+    def test_session_butt_in_override(self) -> None:
+        """Passing a different --as in continuation overrides the derived character."""
         self._start_session()
+        KnowledgeStore.clear_registry()
+
+        captured_messages: list[dict[str, str]] = []
+
+        async def _waiter_generate(messages: list[dict[str, str]], *_args: Any, **_kwargs: Any) -> str:
+            captured_messages.extend(messages)
+            return "The waiter edges closer to the table, clutching a notepad.\n> [Waiter] Uh... can I take your order?\n"
+
+        with patch("lens.core.operator.generate_text", _waiter_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="hesitantly interrupt them to take orders",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.waiter"},
+                )
+            )
         text = self._chat_child_md()
-        self.assertIn("as_kb_id: npc.bob", text)
-        self.assertIn("with_kb_id: pc.amy", text)
+        self.assertIn("[Waiter] Uh... can I take your order?", text)
+        self.assertNotIn("> [Amy] hesitantly interrupt them to take orders", text)
+
+        self.assertGreaterEqual(len(captured_messages), 2)
+        user_content = captured_messages[1]["content"]
+        self.assertIn("one-off interruption inside an ongoing exchange", user_content)
+        self.assertIn("neutral third-person scene guidance", user_content)
+        self.assertNotIn('Write non-dialogue prose in first person ("I", "my", "me").', user_content)
+
+    def test_derive_session_params_reads_parent_annotation(self) -> None:
+        """_derive_session_params reads from the parent annotation, not child."""
+        self._start_session()
+        child_node = self._chat_child_node()
+        derived = ChatOperator._derive_session_params(child_node)  # type: ignore[reportPrivateUsage]
+        self.assertEqual(derived.get("as_kb_id"), "npc.bob")
+        self.assertEqual(derived.get("with_kb_id"), "pc.amy")
 
     # ------------------------------------------------------------------
     # Session end
