@@ -1,4 +1,10 @@
-import type { CliCommandCursorTarget, CommandDefinition } from '../../commands/common'
+import type {
+  CliCommandCursorTarget,
+  CliPayload,
+  CommandDefinition,
+  OptionGuard,
+  OptionGuardClause,
+} from '../../commands/common'
 import type { ParseState } from '../../commands/parser'
 import type { TreeNode, Stats, MountEntry } from '../../services/api'
 
@@ -131,6 +137,113 @@ export interface DataSources {
   stats: Stats | null
   mountDirCache: Map<string, MountEntry[]>
   fetchMountDir: (path: string) => void
+}
+
+function optionValueTruthy(
+  options: Record<string, string | boolean | string[]>,
+  name: string,
+): boolean {
+  const v = options[name]
+  if (v === true) return true
+  if (typeof v === 'string' && v.length > 0) return true
+  if (Array.isArray(v) && v.length > 0) return true
+  return false
+}
+
+function evalOptionGuardClause(
+  clause: OptionGuardClause,
+  stats: Stats | null,
+  completedOptions: Record<string, string | boolean | string[]>,
+): boolean {
+  if ('statEq' in clause) {
+    const { key, value } = clause.statEq
+    const raw = stats?.[key]
+    return raw === value
+  }
+  if ('statNeq' in clause) {
+    const { key, value } = clause.statNeq
+    const raw = stats?.[key]
+    return raw !== value
+  }
+  if ('optionTrue' in clause) {
+    return optionValueTruthy(completedOptions, clause.optionTrue)
+  }
+  if ('allOptionsTrue' in clause) {
+    return clause.allOptionsTrue.every((n) => optionValueTruthy(completedOptions, n))
+  }
+  if ('anyOptionsTrue' in clause) {
+    return clause.anyOptionsTrue.some((n) => optionValueTruthy(completedOptions, n))
+  }
+  return false
+}
+
+function evalOptionGuard(
+  guard: OptionGuard | undefined,
+  stats: Stats | null,
+  completedOptions: Record<string, string | boolean | string[]>,
+): boolean {
+  if (!guard) return true
+  const allOk =
+    !guard.allOf?.length || guard.allOf.every((c) => evalOptionGuardClause(c, stats, completedOptions))
+  const anyOk =
+    !guard.anyOf?.length || guard.anyOf.some((c) => evalOptionGuardClause(c, stats, completedOptions))
+  return allOk && anyOk
+}
+
+function optionHiddenByMutualExclusion(
+  optionName: string,
+  def: CommandDefinition | null,
+  completedOptions: Record<string, string | boolean | string[]>,
+): boolean {
+  const groups = def?.mutuallyExclusiveOptions
+  if (!groups?.length) return false
+  for (const group of groups) {
+    const active = group.filter((n) => optionValueTruthy(completedOptions, n))
+    if (active.length >= 2 && group.includes(optionName)) return true
+  }
+  return false
+}
+
+/**
+ * Whether an option should appear in CLI flag suggestions, given parse state and stats.
+ * Caller should still filter repeatability and optionKnownEmpty.
+ */
+export function optionShouldSuggest(
+  o: CliPayload,
+  state: ParseState,
+  def: CommandDefinition | null,
+  stats: Stats | null,
+): boolean {
+  const av = o.availability
+  const vt = state.activePayload?.valueType
+  const inPromptOrStringSlot =
+    state.phase === 'positional' && (vt === 'prompt' || vt === 'string')
+
+  /** Skip only peer-option hideWhen while typing prose so --pin etc. stay reachable; stat `require` still applies. */
+  const skipHideWhenInPromptSlot = av?.skipWhenPromptOrStringSlot === true && inPromptOrStringSlot
+
+  if (
+    def?.deferOptionChipsUntilRequiredMet &&
+    !state.canOfferOptions &&
+    state.activePayload &&
+    vt !== 'prompt' &&
+    vt !== 'string'
+  ) {
+    const t = o.valueType ?? 'flag'
+    if (t !== 'flag') return false
+  }
+
+  if (optionHiddenByMutualExclusion(o.name, def, state.completedOptions)) return false
+
+  if (av?.require && !evalOptionGuard(av.require, stats, state.completedOptions)) return false
+  if (
+    !skipHideWhenInPromptSlot &&
+    av?.hideWhen &&
+    evalOptionGuard(av.hideWhen, stats, state.completedOptions)
+  ) {
+    return false
+  }
+  return true
 }
 
 const SLUG_SEGMENT_RE = /^[a-zA-Z0-9_-]+$/
@@ -377,6 +490,7 @@ export function getSuggestions(
       .filter((o) => {
         if (!o.repeatable && state.completedOptions[o.name] !== undefined) return false
         if (optionKnownEmpty(o, sources)) return false
+        if (!optionShouldSuggest(o, state, def, sources.stats)) return false
         return o.name.startsWith(partial)
       })
       .map((o) => ({
@@ -409,7 +523,9 @@ export function getSuggestions(
       ? def.options
           .filter((o) => {
             if (!o.repeatable && state.completedOptions[o.name] !== undefined) return false
-            return !optionKnownEmpty(o, sources)
+            if (optionKnownEmpty(o, sources)) return false
+            if (!optionShouldSuggest(o, state, def, sources.stats)) return false
+            return true
           })
           .map((o) => ({
             label: '--' + o.name,

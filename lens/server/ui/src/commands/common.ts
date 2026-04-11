@@ -6,6 +6,25 @@ export type CliPayloadType = 'flag' | 'string' | 'slug' | 'kb-id' | 'address' | 
 // Commands like write always append at cursor, edit never does, pin does by default but can be overriden, etc. 
 export type CliCommandCursorTarget = 'always' | 'never' | 'can-override'
 
+export type OptionGuardClause =
+  | { statEq: { key: keyof Stats; value: string | boolean | null } }
+  | { statNeq: { key: keyof Stats; value: string | boolean | null } }
+  | { optionTrue: string }
+  | { allOptionsTrue: string[] }
+  | { anyOptionsTrue: string[] }
+
+export type OptionGuard = {
+  allOf?: OptionGuardClause[]
+  anyOf?: OptionGuardClause[]
+}
+
+export interface CliOptionAvailability {
+  require?: OptionGuard
+  hideWhen?: OptionGuard
+  /** When true and the active slot is prompt/string: skip only `hideWhen` (peer flags), not `require` (stats). */
+  skipWhenPromptOrStringSlot?: boolean
+}
+
 export interface CliPayload {
   name: string
   hint?: string
@@ -15,6 +34,7 @@ export interface CliPayload {
   required?: boolean
   default?: string            // if set, pre-fill the selection with a value
   exclude?: string[]          // kb-id values to exclude from suggestions (e.g. auto-pinned modules)
+  availability?: CliOptionAvailability
 }
 
 // ---- Parsed arguments ----
@@ -34,6 +54,8 @@ export interface CommandDefinition {
   positional?: CliPayload[]
   options?: CliPayload[]
   requiresDataset?: string
+  deferOptionChipsUntilRequiredMet?: boolean
+  mutuallyExclusiveOptions?: string[][]
 }
 
 // ---- Handler types ----

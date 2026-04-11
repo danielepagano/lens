@@ -87,14 +87,39 @@ const commands: CommandDefinition[] = [
       { name: 'prompt', valueType: 'prompt', hint: 'design prompt' },
     ],
     options: [
-      { name: 'module', valueType: 'kb-id', repeatable: false, hint: 'design module to use', default: 'design.' },
+      {
+        name: 'module',
+        valueType: 'kb-id',
+        repeatable: false,
+        hint: 'design module to use',
+        default: 'design.',
+        availability: {
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
       { name: 'retry' },
-      { name: 'end' },
-      { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
+      {
+        name: 'end',
+        availability: {
+          require: { allOf: [{ statEq: { key: 'active_session_operator', value: 'design' } }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
+      {
+        name: 'slug',
+        valueType: 'slug',
+        hint: 'sub-node id (default: auto-generated)',
+        availability: {
+          require: { allOf: [{ statNeq: { key: 'active_session_operator', value: 'design' } }] },
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
     ],
   },
   {
@@ -104,7 +129,16 @@ const commands: CommandDefinition[] = [
     positional: [{ name: 'prompt', valueType: 'prompt', hint: 'dialog or stage directions' }],
     options: [
       { name: 'as', valueType: 'kb-id', hint: 'character the AI voices (e.g. npc.bob)' },
-      { name: 'with', valueType: 'kb-id', hint: 'character you play; opens a back-and-forth session' },
+      {
+        name: 'with',
+        valueType: 'kb-id',
+        hint: 'character you play; opens a back-and-forth session',
+        availability: {
+          require: { allOf: [{ statNeq: { key: 'active_session_operator', value: 'chat' } }] },
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       {
         name: 'memory',
@@ -116,8 +150,24 @@ const commands: CommandDefinition[] = [
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
       { name: 'retry' },
-      { name: 'end', hint: 'close the chat session with a summary' },
-      { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
+      {
+        name: 'end',
+        hint: 'close the chat session with a summary',
+        availability: {
+          require: { allOf: [{ statEq: { key: 'active_session_operator', value: 'chat' } }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
+      {
+        name: 'slug',
+        valueType: 'slug',
+        hint: 'sub-node id (default: auto-generated)',
+        availability: {
+          require: { allOf: [{ statNeq: { key: 'active_session_operator', value: 'chat' } }] },
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
     ],
   },
   {
@@ -126,16 +176,56 @@ const commands: CommandDefinition[] = [
     requiresDataset: 'rpg',
     cursorTargeting: 'always',
     positional: [{ name: 'prompt', valueType: 'prompt', hint: 'what do you do?' }],
+    mutuallyExclusiveOptions: [['pass', 'retry']],
     options: [
-      { name: 'module', valueType: 'kb-id', repeatable: false, hint: 'rules module to use', default: 'rules.', exclude: ['rules.system', 'rules.rpg'] },
+      {
+        name: 'module',
+        valueType: 'kb-id',
+        repeatable: false,
+        hint: 'rules module to use',
+        default: 'rules.',
+        exclude: ['rules.system', 'rules.rpg'],
+        availability: {
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: "LLM to use" },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
-      { name: 'retry' },
-      { name: 'end' },
-      { name: 'pass', hint: 'have the GM respond now' },
-      { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
+      {
+        name: 'retry',
+        availability: {
+          hideWhen: { anyOf: [{ optionTrue: 'pass' }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
+      {
+        name: 'end',
+        availability: {
+          require: { allOf: [{ statEq: { key: 'active_session_operator', value: 'play' } }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
+      {
+        name: 'pass',
+        hint: 'have the GM respond now',
+        availability: {
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
+      {
+        name: 'slug',
+        valueType: 'slug',
+        hint: 'sub-node id (default: auto-generated)',
+        availability: {
+          require: { allOf: [{ statNeq: { key: 'active_session_operator', value: 'play' } }] },
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
     ],
   },
   {
@@ -144,14 +234,29 @@ const commands: CommandDefinition[] = [
     requiresDataset: 'rpg',
     cursorTargeting: 'always',
     positional: [],
+    mutuallyExclusiveOptions: [['end', 'retry']],
     options: [
-      { name: 'days', valueType: 'int', hint: 'days to advance (default: 1)' },
+      {
+        name: 'days',
+        valueType: 'int',
+        hint: 'days to advance (default: 1)',
+        availability: {
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
       { name: 'retry' },
-      { name: 'end' },
+      {
+        name: 'end',
+        availability: {
+          require: { allOf: [{ statEq: { key: 'active_session_operator', value: 'advance' } }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
     ],
   },
   {

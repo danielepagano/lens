@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import type { CommandDefinition } from '../../commands/common'
 import type { ParseState } from '../../commands/parser'
+import type { Stats } from '../../services/api'
+import { operatorModule } from '../../commands/operators'
 import {
   dashedGroupingCompletionSuffix,
   decomposeKbKeyTypingPrefix,
@@ -9,6 +11,7 @@ import {
   groupDenseSegmentedPrefixes,
   joinKbStemAndGroupedRest,
   kbKeyRemainderAfterStem,
+  optionShouldSuggest,
   type DataSources,
 } from './CliAutocomplete'
 
@@ -273,5 +276,167 @@ describe('prompt @ node mentions', () => {
   it('keeps KB mention behavior unchanged', () => {
     const sugs = getSuggestions(stateWithToken('@spell.f'), null, makeSources())
     expect(sugs.some((s) => s.kind === 'kb-key' && s.value === '@spell.fireball')).toBe(true)
+  })
+})
+
+function baseStats(over: Partial<Stats> = {}): Stats {
+  return {
+    active_narrative: 'story',
+    narratives: ['story'],
+    cursor: 'story/play-x',
+    has_pending: false,
+    has_staged: false,
+    pending_owner: null,
+    dataset_name: null,
+    current_datasets: ['rpg'],
+    kb_types: [],
+    kb_count: 0,
+    effective_pins_at_cursor: ['pc.hero'],
+    available_llms: ['fast'],
+    has_mount: false,
+    active_session_operator: null,
+    transaction: null,
+    ...over,
+  }
+}
+
+describe('optionShouldSuggest / availability', () => {
+  const playDef = operatorModule.commands(baseStats()).find((d) => d.trigger === 'play')!
+  const chatDef = operatorModule.commands(baseStats()).find((d) => d.trigger === 'chat')!
+
+  it('play: --pass is allowed when active_session_operator is null (not gated on play)', () => {
+    const passOpt = playDef.options!.find((o) => o.name === 'pass')!
+    const st: ParseState = {
+      phase: 'positional',
+      activePayload: { name: 'prompt', valueType: 'prompt' },
+      currentToken: '',
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: true,
+    }
+    expect(optionShouldSuggest(passOpt, st, playDef, baseStats())).toBe(true)
+  })
+
+  it('play: --end hidden unless active_session_operator is play', () => {
+    const endOpt = playDef.options!.find((o) => o.name === 'end')!
+    const st: ParseState = {
+      phase: 'idle',
+      currentToken: '',
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: true,
+    }
+    expect(optionShouldSuggest(endOpt, st, playDef, baseStats())).toBe(false)
+    expect(optionShouldSuggest(endOpt, st, playDef, baseStats({ active_session_operator: 'play' }))).toBe(
+      true,
+    )
+  })
+
+  it('play: mutual exclusion hides pass when retry is already set', () => {
+    const passOpt = playDef.options!.find((o) => o.name === 'pass')!
+    const st: ParseState = {
+      phase: 'idle',
+      currentToken: '',
+      completedPositional: {},
+      completedOptions: { retry: true, pass: true },
+      canOfferOptions: true,
+    }
+    expect(optionShouldSuggest(passOpt, st, playDef, baseStats({ active_session_operator: 'play' }))).toBe(
+      false,
+    )
+  })
+
+  it('getSuggestions: prompt slot still hides --slug when active_session_operator is play', () => {
+    const sources: DataSources = {
+      kbTypes: [],
+      kbKeyCache: new Map(),
+      fetchKbKeys: () => {},
+      nodeTree: null,
+      fetchNodeTree: () => {},
+      stats: baseStats({ active_session_operator: 'play' }),
+      mountDirCache: new Map(),
+      fetchMountDir: () => {},
+    }
+    const st: ParseState = {
+      phase: 'positional',
+      activePayload: { name: 'prompt', valueType: 'prompt' },
+      currentToken: '',
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: true,
+    }
+    const sugs = getSuggestions(st, playDef, sources)
+    const flags = sugs.filter((s) => s.kind === 'flag').map((s) => s.value)
+    expect(flags).not.toContain('--slug')
+    expect(flags).toContain('--pass')
+  })
+
+  it('getSuggestions: prompt slot still hides --end when not in play session', () => {
+    const sources: DataSources = {
+      kbTypes: [],
+      kbKeyCache: new Map(),
+      fetchKbKeys: () => {},
+      nodeTree: null,
+      fetchNodeTree: () => {},
+      stats: baseStats(),
+      mountDirCache: new Map(),
+      fetchMountDir: () => {},
+    }
+    const st: ParseState = {
+      phase: 'positional',
+      activePayload: { name: 'prompt', valueType: 'prompt' },
+      currentToken: '',
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: true,
+    }
+    const sugs = getSuggestions(st, playDef, sources)
+    const flags = sugs.filter((s) => s.kind === 'flag').map((s) => s.value)
+    expect(flags).not.toContain('--end')
+    expect(flags).toContain('--pass')
+  })
+
+  it('getSuggestions: --end chip for chat when inside chat session', () => {
+    const sources: DataSources = {
+      kbTypes: [],
+      kbKeyCache: new Map(),
+      fetchKbKeys: () => {},
+      nodeTree: null,
+      fetchNodeTree: () => {},
+      stats: baseStats({ active_session_operator: 'chat' }),
+      mountDirCache: new Map(),
+      fetchMountDir: () => {},
+    }
+    const st: ParseState = {
+      phase: 'idle',
+      currentToken: '',
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: true,
+    }
+    const sugs = getSuggestions(st, chatDef, sources)
+    expect(sugs.some((s) => s.kind === 'flag' && s.value === '--end')).toBe(true)
+  })
+
+  it('getSuggestions: typing -- partial respects availability for --end', () => {
+    const sources: DataSources = {
+      kbTypes: [],
+      kbKeyCache: new Map(),
+      fetchKbKeys: () => {},
+      nodeTree: null,
+      fetchNodeTree: () => {},
+      stats: baseStats({ active_session_operator: null }),
+      mountDirCache: new Map(),
+      fetchMountDir: () => {},
+    }
+    const st: ParseState = {
+      phase: 'idle',
+      currentToken: '--en',
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: true,
+    }
+    const sugs = getSuggestions(st, chatDef, sources)
+    expect(sugs.some((s) => s.value === '--end')).toBe(false)
   })
 })
