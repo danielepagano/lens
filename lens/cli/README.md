@@ -496,7 +496,7 @@ Streams dialogue as a specific knowledge-base character (`--as` / `-as`). The mo
 
 The `--with` id is pinned for scene context on each call if it is not already in your `-p` list.
 
-**Memory (`--memory` / `-m`):** Repeatable KB ids for **long-term character memory** objects. They are included in effective context like pins. When at least one memory id is set, default `--reasoning` becomes `low` (instead of `none`) unless you pass `--reasoning` explicitly. The model then receives the `kb_patch` command tool, but **only** for those ids, so it can update durable memory the character should keep after chat context rolls forward.
+**Memory (`--memory` / `-m`):** Repeatable KB ids for **long-term character memory** objects. They are included in effective context like pins. The model then receives the `kb_patch` command tool, but **only** for those ids, so it can update durable memory the character should keep after chat context rolls forward.
 
 ```bash
 lens chat --as npc.innkeeper "warn them about the curfew"

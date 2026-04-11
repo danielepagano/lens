@@ -531,10 +531,6 @@ async def operator_chat(
         if body.memory_kb_ids:
             extra_params["memory_kb_ids"] = list(body.memory_kb_ids)
 
-    eff_reasoning = body.reasoning
-    if eff_reasoning is None and body.memory_kb_ids:
-        eff_reasoning = "low"
-
     if body.end or body.with_kb_id is not None:
         # Session mode: end, start, or continue an explicit session.
         def coro_fn() -> Any:
@@ -546,7 +542,7 @@ async def operator_chat(
                 pins=pins,
                 unpins=unpins,
                 llm_id=body.llm_id,
-                reasoning=eff_reasoning,
+                reasoning=body.reasoning,
                 retry=body.retry,
                 end=body.end,
                 slug=body.slug if not body.end and not body.retry else None,
@@ -568,7 +564,7 @@ async def operator_chat(
                     pins=pins,
                     unpins=unpins,
                     llm_id=body.llm_id,
-                    reasoning=eff_reasoning,
+                    reasoning=body.reasoning,
                     retry=body.retry,
                     end=False,
                     slug=None,
@@ -587,7 +583,7 @@ async def operator_chat(
                     pins=pins,
                     unpins=unpins,
                     llm_id=body.llm_id,
-                    reasoning=eff_reasoning,
+                    reasoning=body.reasoning,
                     retry=body.retry,
                     on_token=on_token,
                     cancel_event=lock.cancel_event,

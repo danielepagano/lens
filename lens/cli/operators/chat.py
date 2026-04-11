@@ -44,8 +44,7 @@ def chat(
         "-m",
         help=(
             "KB object for long-term character memory (repeatable). Implies context "
-            "pins; enables scoped kb_patch for these ids only. Default reasoning becomes "
-            "low unless overridden."
+            "pins; enables scoped kb_patch for these ids only."
         ),
     ),
     unpin: list[str] = unpin_option(),
@@ -115,10 +114,6 @@ def chat(
     if memory:
         extra_params["memory_kb_ids"] = list(memory)
 
-    eff_reasoning = reasoning
-    if eff_reasoning is None and memory:
-        eff_reasoning = "low"
-
     try:
         if end or with_kb_id is not None:
             # Session mode: end, start, or continue an explicit session.
@@ -131,7 +126,7 @@ def chat(
                     pins=all_pins,
                     unpins=list(unpin),
                     llm_id=llm,
-                    reasoning=eff_reasoning,
+                    reasoning=reasoning,
                     retry=retry,
                     end=end,
                     slug=slug if not end and not retry else None,
@@ -155,7 +150,7 @@ def chat(
                         pins=all_pins,
                         unpins=list(unpin),
                         llm_id=llm,
-                        reasoning=eff_reasoning,
+                        reasoning=reasoning,
                         retry=retry,
                         end=False,
                         slug=None,
@@ -175,7 +170,7 @@ def chat(
                         pins=all_pins,
                         unpins=list(unpin),
                         llm_id=llm,
-                        reasoning=eff_reasoning,
+                        reasoning=reasoning,
                         retry=retry,
                         on_token=_print_token,
                         cancel_event=None,

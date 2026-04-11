@@ -87,16 +87,6 @@ class TestChatMemory(unittest.TestCase):
         KnowledgeStore.clear_registry()
         self._tmp.cleanup()
 
-    def test_effective_reasoning_with_memory(self) -> None:
-        self.assertIsNone(ChatOperator.effective_reasoning_with_memory(None, []))
-        self.assertEqual(
-            ChatOperator.effective_reasoning_with_memory(None, ["npc.bob"]), "low"
-        )
-        self.assertEqual(
-            ChatOperator.effective_reasoning_with_memory("none", ["npc.bob"]),
-            "none",
-        )
-
     def test_enrich_rejects_unknown_memory_id(self) -> None:
         crawl = CrawlResult(
             knowledge=[],
@@ -152,6 +142,7 @@ class TestChatMemory(unittest.TestCase):
             self.assertIsInstance(n, str)
             names.append(cast(str, n))
         self.assertEqual(names, ["kb_patch"])
+        self.assertIsNone(captured.get("reasoning"))
 
     def test_oneshot_no_memory_no_tools(self) -> None:
         captured: dict[str, Any] = {}

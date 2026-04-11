@@ -110,7 +110,7 @@ const commands: CommandDefinition[] = [
         name: 'memory',
         valueType: 'kb-id',
         repeatable: true,
-        hint: 'long-term memory KB object (scoped kb_patch; default reasoning low)',
+        hint: 'long-term memory KB object',
       },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },

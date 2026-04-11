@@ -95,14 +95,6 @@ class ChatOperator(SessionOperator):
         ep = {str(k): v for k, v in raw_map.items() if isinstance(k, str)}
         return cls._memory_kb_ids_param(ep.get("memory_kb_ids"))
 
-    @staticmethod
-    def effective_reasoning_with_memory(
-        reasoning: str | None, memory_kb_ids: list[str]
-    ) -> str | None:
-        if reasoning is not None:
-            return reasoning
-        return "low" if memory_kb_ids else None
-
     @classmethod
     def _inline_command_tools_bundle(
         cls,
@@ -385,9 +377,8 @@ class ChatOperator(SessionOperator):
         if memory_kb_ids:
             ann_params["memory_kb_ids"] = list(memory_kb_ids)
 
-        eff_reasoning = cls.effective_reasoning_with_memory(reasoning, memory_kb_ids)
-        if eff_reasoning:
-            ann_params["reasoning"] = eff_reasoning
+        if reasoning:
+            ann_params["reasoning"] = reasoning
 
         # Create the child node; the parent annotation gets all the params.
         child_node = op.create_subnode(cursor, session_id, params=ann_params)
@@ -442,7 +433,7 @@ class ChatOperator(SessionOperator):
                 on_preview=on_token,
                 interrupt_policy="raise",
                 operator_name=cls.name,
-                reasoning=eff_reasoning,
+                reasoning=reasoning,
             )
         except KeyboardInterrupt:
             interrupted = True
@@ -600,8 +591,6 @@ class ChatOperator(SessionOperator):
                 dm_l = cast(list[Any], dm)
                 memory_kb_ids = [item for item in dm_l if isinstance(item, str)]
 
-        eff_reasoning = cls.effective_reasoning_with_memory(reasoning, memory_kb_ids)
-
         if not as_kb_id:
             raise OperatorError(
                 "no character found in session — specify --as <kb.id> to identify "
@@ -698,7 +687,7 @@ class ChatOperator(SessionOperator):
                 pins=[],
                 unpins=[],
                 llm_id=llm_id,
-                reasoning=eff_reasoning,
+                reasoning=reasoning,
                 retry=True,
                 on_token=on_token,
                 _cursor_override=node,
@@ -744,7 +733,7 @@ class ChatOperator(SessionOperator):
             pins=[],
             unpins=[],
             llm_id=llm_id,
-            reasoning=eff_reasoning,
+            reasoning=reasoning,
             retry=False,
             on_token=on_token,
             _cursor_override=node,
