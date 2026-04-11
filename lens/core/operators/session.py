@@ -213,6 +213,7 @@ def build_summary_messages(
     slug: str,
     system_key: str = "session.summary_system",
     instruction_key: str = "session.summary_instruction_template",
+    summary_guidance: str | None = None,
 ) -> list[dict[str, str]]:
     """Build LLM messages for summarizing section/session content.
 
@@ -228,6 +229,12 @@ def build_summary_messages(
     instruction = prompts.format(
         instruction_key, content=content, slug=prompt_slug
     )
+    guidance_stripped = (summary_guidance or "").strip()
+    if guidance_stripped:
+        instruction += prompts.format(
+            "session.summary_guidance_suffix",
+            guidance=guidance_stripped,
+        )
     return assemble_prompt(
         crawl_result,
         system_prompt=prompts.get(system_key),
@@ -249,6 +256,7 @@ async def generate_summary_block(
     system_key: str = "session.summary_system",
     instruction_key: str = "session.summary_instruction_template",
     max_attempts: int = 2,
+    summary_guidance: str | None = None,
 ) -> str:
     """Generate an LLM summary and return a fully formatted summary block.
 
@@ -267,6 +275,7 @@ async def generate_summary_block(
             slug=slug,
             system_key=system_key,
             instruction_key=instruction_key,
+            summary_guidance=summary_guidance,
         )
         raw = (
             await generate_text(
@@ -591,6 +600,7 @@ class SessionOperator(Operator):
         reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        summary_guidance: str | None = None,
     ) -> Any:
         """Close the current session.
 
@@ -645,6 +655,7 @@ class SessionOperator(Operator):
                     reasoning=reasoning,
                     system_key=cls.summary_system_prompt_key,
                     instruction_key=cls.summary_instruction_prompt_key,
+                    summary_guidance=summary_guidance,
                 )
 
         op.close_subnode(parent, id, summary)
@@ -672,6 +683,7 @@ class SessionOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: Any | None = None,
+        summary_guidance: str | None = None,
         **kwargs: Any,
     ) -> Any:
         """Run a session (create, continue, or end).
@@ -680,10 +692,12 @@ class SessionOperator(Operator):
         :meth:`_run_fresh` depending on state.
         """
         if end:
+            merged = (summary_guidance or "").strip() or ((prompt or "").strip() or None)
             return await cls.run_session_end(
                 session=session, narrative=narrative,
                 llm_id=llm_id, reasoning=reasoning, on_token=on_token,
                 cancel_event=cancel_event,
+                summary_guidance=merged,
             )
 
         session_node, _ = cls.find_active_session(narrative)

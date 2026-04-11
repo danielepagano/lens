@@ -57,6 +57,12 @@ def collate(
         "--reasoning",
         help="Reasoning override: none, low, medium, high",
     ),
+    summary_guide: str | None = typer.Option(
+        None,
+        "--summary-guide",
+        "-g",
+        help="Optional extra instructions for the collate summary LLM",
+    ),
 ) -> None:
     """Section a line range at an arbitrary address."""
     session, narrative = _get_session_and_narrative()
@@ -79,6 +85,7 @@ def collate(
             llm_id=llm,
             reasoning=reasoning,
             on_token=_print_token,
+            summary_guidance=summary_guide.strip() if summary_guide and summary_guide.strip() else None,
         ))
         print()
     except ValueError as e:

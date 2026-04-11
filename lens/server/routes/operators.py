@@ -89,6 +89,7 @@ class SectionStartBody(BaseModel):
 class SectionEndBody(BaseModel):
     llm_id: str | None = None
     reasoning: str | None = None
+    summary_guide: str | None = None
 
 
 class AdvanceBody(BaseModel):
@@ -125,6 +126,7 @@ class CollateBody(BaseModel):
     unpins: list[str] = []
     llm_id: str | None = None
     reasoning: str | None = None
+    summary_guide: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -694,6 +696,7 @@ async def operator_section_end(
             reasoning=body.reasoning,
             on_token=on_token,
             cancel_event=lock.cancel_event,
+            summary_guidance=(body.summary_guide or "").strip() or None,
         )
 
     return _start_operator_stream(lock, event_queue, session, "section", node_addr, coro_fn)
@@ -729,6 +732,7 @@ async def operator_collate(
             reasoning=body.reasoning,
             on_token=on_token,
             cancel_event=lock.cancel_event,
+            summary_guidance=(body.summary_guide or "").strip() or None,
         )
 
     return _start_operator_stream(lock, event_queue, session, "collate", node_addr, coro_fn)

@@ -359,6 +359,7 @@ class DesignOperator(SessionOperator):
         reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        summary_guidance: str | None = None,
     ) -> KbExtractResult:
         """Close the current design session.
 

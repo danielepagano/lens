@@ -36,6 +36,10 @@ LOREM = (
     "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
 )
 
+# Must match the task footer used in ``session.summary_instruction_template`` and
+# ``play.summary_instruction_template`` in ``lens/prompts/default.toml``.
+_SUMMARY_REQUEST_MARKER = "TEXT TO SUMMARIZE:"
+
 # Secret-encoding test support.
 FAKE_SECRET_TRIGGER = "EMIT_FAKE_SECRET"
 FAKE_SECRET_PLAINTEXT = "the king betrayed everyone"
@@ -58,6 +62,10 @@ class _FakeLLMHandler(BaseHTTPRequestHandler):
                 response_text = (
                     f"{LOREM}\n\n<!-- ai:secret:\n{FAKE_SECRET_PLAINTEXT}\n-->"
                 )
+            elif _SUMMARY_REQUEST_MARKER in msg_text:
+                response_text = (
+                    f"Integration Summary\n\n{LOREM} [input:{total_chars}]"
+                )
             else:
                 response_text = f"{LOREM} [input:{total_chars}]"
 
@@ -66,12 +74,13 @@ class _FakeLLMHandler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-cache")
             self.end_headers()
 
-            for word in response_text.split():
-                chunk = json.dumps({
-                    "choices": [{"delta": {"content": word + " "}, "finish_reason": None}]
-                })
-                self.wfile.write(f"data: {chunk}\n\n".encode())
-                self.wfile.flush()
+            chunk = json.dumps({
+                "choices": [
+                    {"delta": {"content": response_text}, "finish_reason": None}
+                ]
+            })
+            self.wfile.write(f"data: {chunk}\n\n".encode())
+            self.wfile.flush()
 
             self.wfile.write(b"data: [DONE]\n\n")
             self.wfile.flush()

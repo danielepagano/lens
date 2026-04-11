@@ -40,7 +40,13 @@ def _get_session_and_narrative() -> tuple[ProjectSession, NarrativeNode | None]:
 @app.callback(invoke_without_command=True)
 def section(
     ctx: typer.Context,
-    id: str | None = typer.Argument(None, help="Section ID (start a section at cursor)"),
+    id: str | None = typer.Argument(
+        None,
+        help=(
+            "Section ID when starting a section. With --end, optional extra "
+            "instructions for the summary LLM (not a section id)."
+        ),
+    ),
     end: bool = typer.Option(False, "--end", help="Close the current section"),
     pin: list[str] = pin_option("KB ID to pin in the new section's front matter (repeatable)"),
     unpin: list[str] = unpin_option("KB ID to unpin in the new section's front matter (repeatable)"),
@@ -57,11 +63,9 @@ def section(
     ),
 ) -> None:
     """Create a child node at the cursor and open a section tag."""
-    if end and id and id.strip():
-        typer.echo("lens section: cannot use --end and section ID together", err=True)
-        raise typer.Exit(1)
     if end:
-        _do_end(llm, reasoning)
+        guidance = id.strip() if id and id.strip() else None
+        _do_end(llm, reasoning, guidance)
         return
     if id and id.strip():
         _do_start(id.strip(), pin, unpin)
@@ -89,7 +93,11 @@ def _do_start(id: str, pin: list[str], unpin: list[str]) -> None:
     typer.echo(f"Started section '{id}'")
 
 
-def _do_end(llm: str | None, reasoning: str | None = None) -> None:
+def _do_end(
+    llm: str | None,
+    reasoning: str | None = None,
+    summary_guidance: str | None = None,
+) -> None:
     session, narrative = _get_session_and_narrative()
     assert narrative is not None
     key: str = ""
@@ -97,6 +105,7 @@ def _do_end(llm: str | None, reasoning: str | None = None) -> None:
         key = asyncio.run(SectionOperator.run_end(
             session=session, narrative=narrative,
             llm_id=llm, reasoning=reasoning, on_token=_print_token,
+            summary_guidance=summary_guidance,
         ))
         print()
     except ValueError as e:

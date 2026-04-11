@@ -177,7 +177,14 @@ const commands: CommandDefinition[] = [
     trigger: 'structure-section',
     group: 'structure',
     cursorTargeting: 'always',
-    positional: [{ name: 'id', valueType: 'slug', required: false, hint: 'section ID to start (or use --end to close)' }],
+    positional: [
+      {
+        name: 'id',
+        valueType: 'slug',
+        required: false,
+        hint: 'section ID to start; with --end only, optional summary guidance text',
+      },
+    ],
     options: [
       { name: 'end', hint: 'close the current section' },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
@@ -201,6 +208,11 @@ const commands: CommandDefinition[] = [
       { name: 'unpin', valueType: 'kb-id', repeatable: true },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
+      {
+        name: 'summary-guide',
+        valueType: 'prompt',
+        hint: 'optional extra instructions for the collate summary LLM',
+      },
     ],
   },
   {
@@ -475,11 +487,13 @@ const handler: CommandHandler = async (
     } else if (command === 'structure-section') {
       const endSection = ctx.args.options['end'] === true
       const sectionId = ctx.args.positional['id'] as string | undefined
-      if (endSection && sectionId) {
-        throw new Error('Cannot use section ID and --end together')
-      }
+      const sectionSummaryGuide =
+        endSection && sectionId?.trim() ? sectionId.trim() : undefined
       if (endSection) {
-        result = await runSectionEnd({ llm_id: llmId, reasoning }, handleEvent)
+        result = await runSectionEnd(
+          { llm_id: llmId, reasoning, summary_guide: sectionSummaryGuide },
+          handleEvent
+        )
       } else if (sectionId) {
         result = await runSectionStart({ id: sectionId, pins, unpins })
       } else {
@@ -505,6 +519,8 @@ const handler: CommandHandler = async (
       const startLine = parseInt(ctx.args.positional['start'] as string, 10)
       const endLine = parseInt(ctx.args.positional['end'] as string, 10)
       const collateId = ctx.args.positional['id'] as string
+      const collateSummaryGuide =
+        (ctx.args.options['summary-guide'] as string | undefined)?.trim() || undefined
       result = await runCollate(
         {
           id: collateId,
@@ -515,6 +531,7 @@ const handler: CommandHandler = async (
           unpins,
           llm_id: llmId,
           reasoning,
+          summary_guide: collateSummaryGuide,
         },
         handleEvent
       )

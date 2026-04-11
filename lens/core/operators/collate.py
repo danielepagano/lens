@@ -47,6 +47,7 @@ class CollateOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
         reasoning: str | None = None,
+        summary_guidance: str | None = None,
     ) -> None:
         md_path = target_node.md_path()
         text = md_path.read_text(encoding="utf-8")
@@ -133,6 +134,7 @@ class CollateOperator(Operator):
             on_token=on_token,
             cancel_event=cancel_event,
             reasoning=reasoning,
+            summary_guidance=summary_guidance,
         )
 
         open_tag = section_open_tag(id)
@@ -187,6 +189,7 @@ class CollateOperator(Operator):
         reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
+        summary_guidance: str | None = None,
     ) -> None:
         if not validate_slug(id):
             raise ValueError(f"invalid section ID '{id}' (alphanumeric, underscores, hyphens only)")
@@ -211,4 +214,5 @@ class CollateOperator(Operator):
             on_token=on_token,
             cancel_event=cancel_event,
             reasoning=reasoning,
+            summary_guidance=summary_guidance,
         )

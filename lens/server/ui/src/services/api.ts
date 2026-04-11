@@ -360,6 +360,7 @@ export const runSectionStart = withStats((
 export interface SectionEndParams {
   llm_id?: string
   reasoning?: string
+  summary_guide?: string
 }
 
 export const runSectionEnd = (
@@ -377,6 +378,7 @@ export interface CollateParams {
   unpins?: string[]
   llm_id?: string
   reasoning?: string
+  summary_guide?: string
 }
 
 export const runCollate = (

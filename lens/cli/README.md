@@ -409,12 +409,13 @@ lens section intro          # create child node "intro" and open section tag at 
 lens section intro -p location.tavern
 lens section --end         # close the current section (appends summary to parent)
 lens section --end -l fast
+lens section --end "call out the clue on the napkin"   # optional text: extra instructions for the summary LLM
 ```
 
 A section creates a `[section:id]: #` annotation in the parent node and moves the cursor into the new child. `lens section --end` appends a summary and the closing tag, then moves the cursor back up.
 
 - **Start:** `lens section <id>` — optional `-p` / `--pin`, `-u` / `--unpin` (repeatable). Add `+` to pin IDs to include linked objects, or `++` for full traversal.
-- **End:** `lens section --end` — optional `-l` / `--llm` for the summary LLM.
+- **End:** `lens section --end` — optional `-l` / `--llm` for the summary LLM. With `--end`, the optional positional argument (same slot as `<id>` when starting) is **not** a section id; it is optional free-text guidance merged into the summary request.
 
 ## Collate (`lens collate`)
 
@@ -423,6 +424,7 @@ Carve a section out of already-written prose at an arbitrary node by specifying 
 ```bash
 lens collate intro /chapter-1 10 30
 lens collate intro /chapter-1 10 30 -p place.tavern -l fast
+lens collate intro /chapter-1 10 30 --summary-guide "emphasize the foreshadowing in dialogue"
 ```
 
 Arguments: `ID ADDRESS START_LINE END_LINE`
@@ -431,7 +433,7 @@ Arguments: `ID ADDRESS START_LINE END_LINE`
 - `ADDRESS` — narrative node address (e.g. `/chapter-1`, `my-story/chapter-1`).
 - `START_LINE` / `END_LINE` — 1-based, inclusive line range to extract.
 
-Options: `-p` / `--pin`, `-u` / `--unpin` (for summary context), `-l` / `--llm`.
+Options: `-p` / `--pin`, `-u` / `--unpin` (for summary context), `-l` / `--llm`, `--summary-guide` / `-g` (optional extra instructions for the collate summary LLM).
 
 The selected lines are moved into a new child node, an LLM summary is generated, and the range in the parent is replaced with the section annotation block. Any sub-nodes whose annotations fall entirely within the range are moved into the new section as its own children. The operation is one-shot and fully reversible with `lens rollback`.
 
@@ -519,6 +521,7 @@ Options:
 - `--slug` / `-s` — Sub-node key for a **new** session (default: auto-generated from characters and prompt). If you pass a bare name, Lens prefixes it with `chat-` when needed. Not used with `--end` or `--retry`.
 - `--memory` / `-m` — Repeatable KB id for a memory object (see **Memory** above). Stored on the session parent annotation; session continues inherit it without re-passing `-m`.
 - `-p` / `--pin`, `-u` / `--unpin`, `-l` / `--llm`, `--reasoning`, `-r` / `--retry` — same ideas as other operators (`--reasoning`: `none`, `low`, `medium`, `high`).
+- With `--end`, an optional `PROMPT` is treated as extra instructions for the session summary LLM (same narrative templates as usual, plus your guidance).
 
 **Flow:** Opening a session writes an unclosed ``[`chat:<id>`]: #`` annotation on the parent and creates the child in one pending transaction (rollback drops the whole session). Inside the child, your lines are stored as Markdown blockquotes with a ``[Name]`` speaker tag (derived from the KB id). One-shot inline uses the chat operator without a sub-node. This command is not dataset-gated.
 
@@ -539,7 +542,7 @@ lens play "I attack" --pass                 # append player line, then GM respon
 
 Arguments: `[PROMPT]`
 
-- `PROMPT` — what the player says or does. Required unless using `--end`, `--retry`, or `--pass`.
+- `PROMPT` — what the player says or does. Required unless using `--end`, `--retry`, or `--pass`. With `--end` only, an optional `PROMPT` is extra instructions for the play-session summary LLM.
 
 Options:
 

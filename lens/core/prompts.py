@@ -48,6 +48,9 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "advance.instruction_template": PromptSpec("advance.instruction_template", frozenset({"days", "current_day", "rolls_text"})),
     "session.summary_system": PromptSpec("session.summary_system", frozenset()),
     "session.summary_instruction_template": PromptSpec("session.summary_instruction_template", frozenset({"content", "slug"})),
+    "session.summary_guidance_suffix": PromptSpec(
+        "session.summary_guidance_suffix", frozenset({"guidance"})
+    ),
     "tool.balance_encounter.prompt_snippet": PromptSpec("tool.balance_encounter.prompt_snippet", frozenset()),
     "chat.system": PromptSpec("chat.system", frozenset()),
     "chat.with_line_instruction": PromptSpec("chat.with_line_instruction", frozenset({"with_name"})),

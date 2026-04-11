@@ -188,7 +188,7 @@ function parseCanonicalSummaryLinesToOmit(bodyLines: string[]): {
   const line = i < bodyLines.length ? bodyLines[i] : ''
   const m = line.match(SECTION_SUMMARY_MD_TITLE_RE)
   if (!m?.[1]) return { omit, aiTitle: null }
-  let aiTitle = m[1]
+  const aiTitle = m[1]
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/^#+\s*/, '')
     .replace(/<[^>]+>/g, '')
