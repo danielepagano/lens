@@ -496,7 +496,7 @@ Streams dialogue as a specific knowledge-base character (`--as` / `-as`). The mo
 
 **Session (`--with`):** With `--as` and `--with` / `-w` (the KB id of the character **you** play), Lens creates a **chat** sub-node under the cursor. Your prompt is treated as stage directions for the opening exchange. Inside that session, later invocations can omit `--with`; plain text is appended as your character’s line (blockquote), then the AI responds as `--as`. You can pass a new `--as` on a later call to switch which character the AI voices for a one-off beat.
 
-The `--with` id is pinned for scene context on each call if it is not already in your `-p` list.
+The `--with` id is merged into crawl context like `--as` and `--memory` (not written to `kb_pin` unless you add it with `-p`).
 
 **Memory (`--memory` / `-m`):** Repeatable KB ids for **long-term character memory** objects. They are included in effective context like pins. The model then receives the `kb_patch` command tool, but **only** for those ids, so it can update durable memory the character should keep after chat context rolls forward.
 

@@ -365,6 +365,22 @@ class SessionOperator(Operator):
             return cursor, open_ann.id
         return None, None
 
+    @classmethod
+    def node_inside_active_session(cls, node: NarrativeNode) -> bool:
+        """True when *node* sits under an unclosed ``[<cls.name>:id]`` on its parent."""
+        if not node.key_path:
+            return False
+        parent = NarrativeNode(
+            narrative_root=node.narrative_root,
+            key_path=node.key_path[:-1],
+        )
+        try:
+            parent_text = parent.md_path().read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return False
+        open_ann = find_unclosed_cursor_annotation(parent_text)
+        return open_ann is not None and open_ann.operator == cls.name
+
     # ------------------------------------------------------------------
     # ID generation
     # ------------------------------------------------------------------

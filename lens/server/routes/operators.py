@@ -502,11 +502,20 @@ async def operator_chat(
     narrative = _require_narrative(session)
     pins = list(body.pins)
     unpins = list(body.unpins)
-    # The --as character's content is embedded directly in the task instruction —
-    # do not pin it. The --with counterpart is pinned for scene context.
-    if body.with_kb_id and body.with_kb_id not in pins:
-        pins.append(body.with_kb_id)
-    _validate_pins(session, pins + list(body.memory_kb_ids), unpins)
+    session_node, _ = ChatOperator.find_active_session(narrative)
+    one_shot = not body.end and body.with_kb_id is None and session_node is None
+    if one_shot and body.memory_kb_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="memory_kb_ids are only allowed inside a chat session "
+            "(use with_kb_id to start one, or open the session node)",
+        )
+    validate_kb_ids = pins + list(body.memory_kb_ids)
+    if body.as_kb_id is not None:
+        validate_kb_ids.append(body.as_kb_id)
+    if body.with_kb_id is not None:
+        validate_kb_ids.append(body.with_kb_id)
+    _validate_pins(session, validate_kb_ids, unpins)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
@@ -555,7 +564,6 @@ async def operator_chat(
             )
     else:
         # No --with: check whether we are already inside an open session.
-        session_node, _ = ChatOperator.find_active_session(narrative)
         if session_node is not None:
             def coro_fn() -> Any:  # type: ignore[misc]
                 return ChatOperator.run_session(

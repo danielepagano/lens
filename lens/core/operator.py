@@ -1018,10 +1018,16 @@ class Operator(ABC):
             existing_pins = cls.extract_list(ann_params, "kb_pin")
             ann_params["kb_pin"] = existing_pins + mention_ids
         memory_ids = cls.extract_list(ann_params, "memory_kb_ids")
+        with_id = ann_params.get("with_kb_id")
+        with_extra = (
+            [str(with_id).strip()]
+            if isinstance(with_id, str) and str(with_id).strip()
+            else []
+        )
         crawl_result = crawl(
             cursor,
             extra_pins=cls.merge_extra_pin_ids(
-                list(pins), list(mention_ids), memory_ids
+                list(pins), list(mention_ids), memory_ids, with_extra
             ),
             extra_unpins=unpins,
         )
@@ -1107,9 +1113,15 @@ class Operator(ABC):
         owner = cls._owner_for_ann(existing_ann, rel_path)
         op = cls(session.new_storage(owner=owner), narrative)
 
+        with_id = existing_ann.params.get("with_kb_id")
+        with_extra = (
+            [str(with_id).strip()]
+            if isinstance(with_id, str) and str(with_id).strip()
+            else []
+        )
         crawl_result = crawl(
             cursor,
-            extra_pins=cls.merge_extra_pin_ids(ann_pins, ann_memory),
+            extra_pins=cls.merge_extra_pin_ids(ann_pins, ann_memory, with_extra),
             extra_unpins=ann_unpins,
         )
         cls.enrich_params(crawl_result, existing_ann.params)
@@ -1206,10 +1218,16 @@ class Operator(ABC):
             existing_pins = cls.extract_list(new_params, "kb_pin")
             new_params["kb_pin"] = existing_pins + mention_ids
         memory_ids = cls.extract_list(new_params, "memory_kb_ids")
+        with_id = new_params.get("with_kb_id")
+        with_extra = (
+            [str(with_id).strip()]
+            if isinstance(with_id, str) and str(with_id).strip()
+            else []
+        )
         crawl_result = crawl(
             cursor,
             extra_pins=cls.merge_extra_pin_ids(
-                eff_pins, list(mention_ids), memory_ids
+                eff_pins, list(mention_ids), memory_ids, with_extra
             ),
             extra_unpins=eff_unpins,
         )

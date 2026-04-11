@@ -145,6 +145,16 @@ const commands: CommandDefinition[] = [
         valueType: 'kb-id',
         repeatable: true,
         hint: 'long-term memory KB object',
+        availability: {
+          require: {
+            anyOf: [
+              { statEq: { key: 'active_session_operator', value: 'chat' } },
+              { optionTrue: 'with' },
+            ],
+          },
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
       },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },

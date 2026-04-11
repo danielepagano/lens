@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from unittest.mock import patch
 
 from lens.core.command_tools import CommandToolFn
@@ -101,16 +101,8 @@ class TestChatMemory(unittest.TestCase):
             )
         self.assertIn("memory", str(ctx.exception).lower())
 
-    def test_oneshot_memory_passes_kb_patch_tool(self) -> None:
-        captured: dict[str, Any] = {}
-
-        async def _capture_gen(
-            _messages: list[dict[str, Any]], _pr: Path, **kwargs: Any
-        ) -> str:
-            captured.update(kwargs)
-            return "> [Bob] Hi.\n"
-
-        with patch("lens.core.operator.generate_text", _capture_gen):
+    def test_run_inline_memory_outside_chat_session_raises(self) -> None:
+        with self.assertRaises(OperatorError) as ctx:
             asyncio.run(
                 ChatOperator.run_inline(
                     session=self.session,
@@ -129,20 +121,8 @@ class TestChatMemory(unittest.TestCase):
                     },
                 )
             )
-        self.assertIsNotNone(captured.get("tools"))
-        self.assertIsNotNone(captured.get("command_tool_handlers"))
-        tools_raw = captured["tools"]
-        self.assertIsInstance(tools_raw, list)
-        tools_list = cast(list[dict[str, Any]], tools_raw)
-        names: list[str] = []
-        for entry in tools_list:
-            fn = entry.get("function")
-            self.assertIsInstance(fn, dict)
-            n = cast(dict[str, Any], fn).get("name")
-            self.assertIsInstance(n, str)
-            names.append(cast(str, n))
-        self.assertEqual(names, ["kb_patch"])
-        self.assertIsNone(captured.get("reasoning"))
+        self.assertIn("memory", str(ctx.exception).lower())
+        self.assertIn("session", str(ctx.exception).lower())
 
     def test_oneshot_no_memory_no_tools(self) -> None:
         captured: dict[str, Any] = {}

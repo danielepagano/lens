@@ -169,6 +169,119 @@ function toLabel(id: string): string {
   return toLabelParts(id).html
 }
 
+/** Title text for annotation dividers when operator pills follow — no duplicate type pill. */
+function dividerTitleOnlyHtml(id: string): string {
+  const { plainTitle, typePrefix } = toLabelParts(id)
+  if (plainTitle.trim()) return escapeHtmlText(plainTitle)
+  if (typePrefix !== null) return escapeHtmlText(`[${typePrefix}]`)
+  return escapeHtmlText(plainTitle)
+}
+
+export interface ParsedChatDividerParams {
+  asKbId?: string
+  withKbId?: string
+  memoryKbIds: string[]
+}
+
+/** Parse chat annotation YAML lines between `[chat:id` and `]: #` (as_kb_id, with_kb_id, memory_kb_ids). */
+export function parseChatDividerParams(paramBlock: string): ParsedChatDividerParams {
+  const out: ParsedChatDividerParams = { memoryKbIds: [] }
+  let memoryList = false
+
+  for (const raw of paramBlock.split('\n')) {
+    const t = raw.trim()
+    if (!t) continue
+
+    const listItem = t.match(/^-\s+(.+)$/)
+    if (listItem && memoryList) {
+      const id = listItem[1].trim().replace(/\s+#.*$/, '')
+      if (id) out.memoryKbIds.push(id)
+      continue
+    }
+
+    const scalar = t.match(/^([a-zA-Z0-9_]+):\s*(.*)$/)
+    if (!scalar) continue
+    const key = scalar[1]
+    const val = scalar[2].trim()
+    memoryList = false
+
+    if (key === 'memory_kb_ids') {
+      memoryList = true
+      const inline = val.match(/^\[(.*)\]\s*$/)
+      if (inline) {
+        const inner = inline[1].trim()
+        if (inner) {
+          for (const part of inner.split(',')) {
+            const s = part.trim().replace(/^['"]|['"]$/g, '')
+            if (s) out.memoryKbIds.push(s)
+          }
+        }
+        memoryList = false
+      }
+    } else if (key === 'as_kb_id') {
+      out.asKbId = val
+    } else if (key === 'with_kb_id') {
+      out.withKbId = val
+    }
+  }
+
+  return out
+}
+
+function kbIdToSlugKey(kbId: string): string {
+  const tail = kbId.includes('.') ? kbId.slice(kbId.indexOf('.') + 1) : kbId
+  return tail
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function chatDividerKeysFromSlugId(id: string): string | null {
+  const parts = id.split('-')
+  if (parts.length < 2 || parts[0] !== 'chat') return null
+  if (parts.length >= 3) return `${parts[1]}-${parts[2]}`
+  return parts[1] ?? null
+}
+
+/**
+ * HTML inside the annotation divider link. When `operator` is `chat`, adds
+ * `chat:as-with` and memory pills after the title (no duplicate inline type pill);
+ * all other operators use {@link toLabel} only.
+ */
+export function buildAnnotationDividerLabelHtml(
+  operator: string,
+  id: string,
+  paramBlock: string | null,
+): string {
+  if (operator !== 'chat') return toLabel(id)
+
+  const meta = paramBlock ? parseChatDividerParams(paramBlock) : null
+  const extras: string[] = []
+
+  let keys: string | null = null
+  if (meta?.asKbId) {
+    const a = kbIdToSlugKey(meta.asKbId)
+    const w = meta.withKbId ? kbIdToSlugKey(meta.withKbId) : ''
+    keys = w ? `${a}-${w}` : a
+  } else {
+    keys = chatDividerKeysFromSlugId(id)
+  }
+  if (keys) {
+    const main = escapeHtmlText(`chat:${keys}`)
+    extras.push(`<span class="pin-pill pin-pill-annotation-divider">${main}</span>`)
+    for (const mid of meta?.memoryKbIds ?? []) {
+      extras.push(`<span class="pin-pill pin-pill-unpin">${escapeHtmlText(mid)}</span>`)
+    }
+  }
+
+  if (extras.length === 0) return toLabel(id)
+  return `<span class="annotation-divider-title">${dividerTitleOnlyHtml(id)}</span>${extras.join('')}`
+}
+
+function renderDivider(innerHtml: string, href: string): string {
+  return `<div class="annotation-divider"><a href="#${href}">${innerHtml}</a></div>`
+}
+
 const SECTION_SUMMARY_COMMENT_RE = /^\s*<!--\s*section:[a-zA-Z0-9_-]+\s*-->\s*$/
 const SECTION_SUMMARY_MD_TITLE_RE = /^\s*###\s+(.+?)\s*$/
 
@@ -222,10 +335,6 @@ function escapeHtmlAttr(s: string): string {
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
-}
-
-function renderDivider(label: string, href: string): string {
-  return `<div class="annotation-divider"><a href="#${href}">${label}</a></div>`
 }
 
 /** Return true if a line is some kind of annotation (single, multi-line open, or front-matter open). */
@@ -336,7 +445,7 @@ function renderAnnotationWithBody(
   operator: string,
   id: string,
   childAddr: string,
-  label: string,
+  paramBlock: string | null,
   overlay: NodeTransactionOverlay | null,
   removedByLine: Map<number, RemovedGroup[]>,
 ): { output: string[]; nextI: number } {
@@ -427,7 +536,9 @@ function renderAnnotationWithBody(
     }
     return { output, nextI: hasClose ? j + 1 : j }
   } else {
-    output.push(renderDivider(label, childAddr))
+    output.push(
+      renderDivider(buildAnnotationDividerLabelHtml(operator, id, paramBlock), childAddr),
+    )
     return { output, nextI: hasClose ? j + 1 : j }
   }
 }
@@ -493,19 +604,29 @@ export function preprocessAnnotations(
       const openMatch = line.match(ANNOTATION_OPEN_RE)
       const og = openMatch?.groups
       const multiLineOpeningLineNo = lineNo
-      // Advance past the parameter lines to the `]: #` closing line
       i++
-      while (i < lines.length && !ANNOTATION_END_RE.test(lines[i])) {
+      const paramLines: string[] = []
+      while (i < lines.length && !ANNOTATION_END_RE.test(lines[i]!)) {
+        paramLines.push(lines[i]!)
         i++
       }
-      i++ // skip `]: #`; i now points to line after the block
+      const paramBlock = paramLines.join('\n')
+      if (i < lines.length) {
+        i++ // skip `]: #`; i now points to line after the block
+      }
 
       if (og?.id && !og.close && !og.self_close && og.operator) {
         const childAddr = baseAddress ? `${baseAddress}/${og.id}` : og.id
-        const label =
-          toLabel(og.id)
         const { output, nextI } = renderAnnotationWithBody(
-          lines, i, multiLineOpeningLineNo, og.operator, og.id, childAddr, label, overlay, removedByLine,
+          lines,
+          i,
+          multiLineOpeningLineNo,
+          og.operator,
+          og.id,
+          childAddr,
+          paramBlock,
+          overlay,
+          removedByLine,
         )
         result.push(...output)
         i = nextI
@@ -537,16 +658,25 @@ export function preprocessAnnotations(
       }
 
       const childAddr = baseAddress ? `${baseAddress}/${id}` : id
-      const label = toLabel(id)
 
       if (self_close) {
-        result.push(renderDivider(label, childAddr))
+        result.push(
+          renderDivider(buildAnnotationDividerLabelHtml(operator, id, null), childAddr),
+        )
         i++
         continue
       }
 
       const { output, nextI } = renderAnnotationWithBody(
-        lines, i + 1, lineNo, operator, id, childAddr, label, overlay, removedByLine,
+        lines,
+        i + 1,
+        lineNo,
+        operator,
+        id,
+        childAddr,
+        null,
+        overlay,
+        removedByLine,
       )
       result.push(...output)
       i = nextI

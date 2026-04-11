@@ -43,8 +43,8 @@ def chat(
         "--memory",
         "-m",
         help=(
-            "KB object for long-term character memory (repeatable). Implies context "
-            "pins; enables scoped kb_patch for these ids only."
+            "Session only: KB object for long-term character memory (repeatable). "
+            "Implies context pins; enables scoped kb_patch for these ids only."
         ),
     ),
     unpin: list[str] = unpin_option(),
@@ -93,15 +93,27 @@ def chat(
         )
         raise typer.Exit(1)
 
-    # The --as character's content is embedded directly in the task instruction —
-    # do not pin it (that would put it in RELEVANT KNOWLEDGE a second time).
-    # The --with counterpart is pinned for scene context.
+    if memory:
+        sess_node, _ = ChatOperator.find_active_session(narrative)
+        if (not end and not retry) and with_kb_id is None and sess_node is None:
+            typer.echo(
+                "lens chat: --memory is only for session chat (use --with or work "
+                "from inside the open session node)",
+                err=True,
+            )
+            raise typer.Exit(1)
+
+    # --as / --with / --memory are passed as session params; crawl adds their KB
+    # objects to context without duplicating them in kb_pin (same idea as --as).
     all_pins = list(pin)
-    if with_kb_id and with_kb_id not in all_pins:
-        all_pins.append(with_kb_id)
 
     try:
-        validate_ids_exist(session.project_root, all_pins + list(memory) + list(unpin))
+        ids_check = list(all_pins) + list(memory) + list(unpin)
+        if as_kb_id:
+            ids_check.append(as_kb_id)
+        if with_kb_id:
+            ids_check.append(with_kb_id)
+        validate_ids_exist(session.project_root, ids_check)
     except LensException as e:
         typer.echo(f"lens chat: {e}", err=True)
         raise typer.Exit(1)

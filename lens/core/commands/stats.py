@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any, cast
 
 from lens.core.address import NarrativeAddress
+from lens.core.annotations import parse_annotations
 from lens.core.context import crawl_pins
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.project import ProjectSession, has_mount_config, get_selected_datasets, is_dataset_root, list_available_llms
@@ -11,6 +13,48 @@ from lens.core.knowledge import KnowledgeStore
 SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
     {"advance", "chat", "design", "play"}
 )
+
+
+def _chat_parent_session_extra_pins(node: NarrativeNode) -> list[str]:
+    """KB ids from the parent ``[chat:…]`` annotation (as / with / memory).
+
+    These are merged into crawl ``extra_pins`` so ``effective_pins_at_cursor``
+    matches what the chat operator treats as effective context, not only
+    ``kb_pin`` front matter.
+    """
+    if not node.key_path:
+        return []
+    session_id = node.key_path[-1]
+    parent = NarrativeNode(
+        narrative_root=node.narrative_root,
+        key_path=node.key_path[:-1],
+    )
+    if not parent.exists():
+        return []
+    try:
+        text = parent.md_path().read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return []
+    for ann in reversed(parse_annotations(text)):
+        if (
+            ann.operator == "chat"
+            and ann.id == session_id
+            and not ann.closing
+            and not ann.self_closing
+        ):
+            out: list[str] = []
+            p = ann.params
+            for key in ("as_kb_id", "with_kb_id"):
+                v = p.get(key)
+                if isinstance(v, str) and v.strip():
+                    out.append(v.strip())
+            mem = p.get("memory_kb_ids")
+            if isinstance(mem, list):
+                for item in cast(list[Any], mem):
+                    if isinstance(item, str) and item.strip():
+                        out.append(item.strip())
+            return out
+    return []
 
 
 @dataclass
@@ -80,7 +124,11 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         except ValueError:
             node = None  # type: ignore[assignment]
         if node is not None:
-            effective_pins_at_cursor = crawl_pins(node)
+            chat_extras = _chat_parent_session_extra_pins(node)
+            effective_pins_at_cursor = crawl_pins(
+                node,
+                extra_pins=chat_extras if chat_extras else None,
+            )
             if node.key_path:
                 parent = NarrativeNode(
                     narrative_root=node.narrative_root,

@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest'
 import {
   buildAnnotationBlocks,
   buildAnnotationLineSet,
+  buildAnnotationDividerLabelHtml,
   buildAttachLinePickStates,
   buildNodeTransactionOverlay,
   collectAttachForbiddenLines,
   computeValidEndLines,
   computeValidStartLines,
   createMarkdownRenderer,
+  parseChatDividerParams,
   preprocessAnnotations,
   preprocessThinkingTags,
   type NodeTransactionOverlay,
@@ -910,5 +912,55 @@ Body
     const valid = computeValidStartLines(content, 'collate')
     expect(valid.has(1)).toBe(true)
     expect(valid.has(2)).toBe(true)
+  })
+})
+
+describe('annotation divider pills (chat)', () => {
+  it('parses chat params including memory_kb_ids after kb_pin list', () => {
+    const block = `    as_kb_id: person.amy
+    kb_pin:
+    - person.carlos
+    memory_kb_ids:
+    - lore.amy
+    prompt: cute morning banter
+    with_kb_id: person.carlos`
+    const p = parseChatDividerParams(block)
+    expect(p.asKbId).toBe('person.amy')
+    expect(p.withKbId).toBe('person.carlos')
+    expect(p.memoryKbIds).toEqual(['lore.amy'])
+  })
+
+  it('buildAnnotationDividerLabelHtml keeps toLabel before chat + memory pills', () => {
+    const param = `    as_kb_id: person.amy
+    memory_kb_ids:
+    - lore.amy
+    with_kb_id: person.carlos`
+    const html = buildAnnotationDividerLabelHtml('chat', 'chat-amy-carlos-cute-morning-banter', param)
+    expect(html).toContain('annotation-divider-title')
+    expect(html).toContain('Amy Carlos Cute Morning Banter')
+    expect(html).toContain('chat:amy-carlos')
+    expect(html).toContain('pin-pill-annotation-divider')
+    expect(html).toContain('pin-pill-unpin')
+    expect(html).toContain('lore.amy')
+    expect(html.indexOf('annotation-divider-title')).toBeLessThan(html.indexOf('chat:amy-carlos'))
+    expect(html).not.toContain('pin-pill-inline')
+  })
+
+  it('preprocessAnnotations emits title then chat divider pills from multiline params', () => {
+    const markdown = `[chat:chat-amy-carlos-cute-morning-banter
+    as_kb_id: person.amy
+    memory_kb_ids:
+    - lore.amy
+    with_kb_id: person.carlos
+]: #
+
+`
+    const result = preprocessAnnotations(markdown, 'story', null)
+    expect(result).toContain('annotation-divider')
+    expect(result).toContain('Amy Carlos Cute Morning Banter')
+    expect(result).toContain('chat:amy-carlos')
+    expect(result).toContain('lore.amy')
+    expect(result).toContain('pin-pill-unpin')
+    expect(result).not.toContain('pin-pill-inline')
   })
 })

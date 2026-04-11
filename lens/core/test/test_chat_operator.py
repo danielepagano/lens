@@ -7,9 +7,10 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
+from lens.core.annotations import parse_annotations
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
@@ -350,7 +351,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt="at the inn",
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -369,7 +370,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -377,8 +378,26 @@ class TestChatSession(unittest.TestCase):
         keys = [k for k in self.narrative.child_keys() if k.startswith("chat")]
         self.assertEqual(len(keys), 1)
 
-    def test_session_pins_counterpart_in_front_matter(self) -> None:
-        """The --with counterpart is pinned in the sub-node front matter."""
+    def test_session_does_not_kb_pin_with_counterpart(self) -> None:
+        """--with is crawl context only; counterpart is not duplicated in kb_pin."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        text = self._chat_child_md()
+        self.assertNotIn("kb_pin:\n- pc.amy", text)
+        self.assertNotIn("kb_pin:\n- npc.bob", text)
+
+    def test_session_explicit_pins_still_in_child_front_matter(self) -> None:
+        """User --pin ids are still written to the session sub-node front matter."""
         with patch("lens.core.operators.chat.generate_text", _mock_generate):
             asyncio.run(
                 ChatOperator.run_session(
@@ -393,7 +412,6 @@ class TestChatSession(unittest.TestCase):
             )
         text = self._chat_child_md()
         self.assertIn("pc.amy", text)
-        self.assertNotIn("kb_pin:\n- npc.bob", text)
 
     def test_session_ai_response_written(self) -> None:
         """The AI response is written into the chat sub-node."""
@@ -404,7 +422,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -422,7 +440,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -440,13 +458,32 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt="The inn is quiet at dawn.",
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
             )
         parent_text = self._narrative_md()
         self.assertIn("The inn is quiet at dawn.", parent_text)
+
+    def test_fresh_session_rejects_memory_without_with(self) -> None:
+        """Starting a session with --memory but no --with is not supported."""
+        with self.assertRaises(OperatorError) as ctx:
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={
+                        "as_kb_id": "npc.bob",
+                        "memory_kb_ids": ["npc.waiter"],
+                    },
+                )
+            )
+        self.assertIn("memory", str(ctx.exception).lower())
 
     def test_session_requires_as(self) -> None:
         """Starting a session without --as raises OperatorError."""
@@ -457,7 +494,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"with_kb_id": "pc.amy"},
                 )
@@ -472,7 +509,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -491,7 +528,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -509,7 +546,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -547,7 +584,7 @@ class TestChatSession(unittest.TestCase):
                     narrative=self.narrative,
                     prompt=None,
                     module_id=None,
-                    pins=["pc.amy"],
+                    pins=[],
                     unpins=[],
                     extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
                 )
@@ -657,6 +694,165 @@ class TestChatSession(unittest.TestCase):
         derived = ChatOperator._derive_session_params(child_node)  # type: ignore[reportPrivateUsage]
         self.assertEqual(derived.get("as_kb_id"), "npc.bob")
         self.assertEqual(derived.get("with_kb_id"), "pc.amy")
+
+    def test_session_memory_merges_into_parent_annotation(self) -> None:
+        """Continuation --memory appends to parent [chat:] memory_kb_ids (deduped)."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={
+                        "as_kb_id": "npc.bob",
+                        "with_kb_id": "pc.amy",
+                        "memory_kb_ids": ["npc.waiter"],
+                    },
+                )
+            )
+        Storage(self.root).stage_all()
+        KnowledgeStore.clear_registry()
+
+        with patch("lens.core.operator.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="Another round, please.",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={
+                        "as_kb_id": "npc.bob",
+                        "with_kb_id": "pc.amy",
+                        "memory_kb_ids": ["npc.waiter", "npc.bob"],
+                    },
+                )
+            )
+
+        keys = [k for k in self.narrative.child_keys() if k.startswith("chat")]
+        self.assertEqual(len(keys), 1)
+        session_id = keys[0]
+        merged: list[str] | None = None
+        for ann in reversed(parse_annotations(self._narrative_md())):
+            if (
+                ann.operator == ChatOperator.name
+                and ann.id == session_id
+                and not ann.closing
+                and not ann.self_closing
+            ):
+                merged = ChatOperator._memory_kb_ids_param(ann.params.get("memory_kb_ids"))  # type: ignore[reportPrivateUsage]
+                break
+        self.assertIsNotNone(merged)
+        assert merged is not None
+        self.assertEqual(merged, ["npc.waiter", "npc.bob"])
+
+    def test_session_run_inline_memory_enables_kb_patch(self) -> None:
+        """run_inline with memory_kb_ids enables kb_patch when the cursor is in a session."""
+        self._start_session()
+        KnowledgeStore.clear_registry()
+
+        captured: dict[str, Any] = {}
+
+        async def _capture_gen(
+            _messages: list[dict[str, Any]], _pr: Path, **kwargs: Any
+        ) -> str:
+            captured.update(kwargs)
+            return "> [Bob] Aye.\n"
+
+        with patch("lens.core.operator.generate_text", _capture_gen):
+            asyncio.run(
+                ChatOperator.run_inline(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    pins=[],
+                    unpins=[],
+                    llm_id=None,
+                    reasoning=None,
+                    retry=False,
+                    on_token=None,
+                    cancel_event=None,
+                    extra_params={
+                        "as_kb_id": "npc.bob",
+                        "with_kb_id": "pc.amy",
+                        "memory_kb_ids": ["npc.waiter"],
+                    },
+                )
+            )
+        self.assertIsNotNone(captured.get("tools"))
+        tools_raw = captured["tools"]
+        self.assertIsInstance(tools_raw, list)
+        tools_list = cast(list[dict[str, Any]], tools_raw)
+        names: list[str] = []
+        for entry in tools_list:
+            fn = entry.get("function")
+            self.assertIsInstance(fn, dict)
+            n = cast(dict[str, Any], fn).get("name")
+            self.assertIsInstance(n, str)
+            names.append(cast(str, n))
+        self.assertEqual(names, ["kb_patch"])
+
+    def test_session_memory_persisted_derived_on_next_turn(self) -> None:
+        """After --memory on continuation, the next call picks memory from the parent."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        Storage(self.root).stage_all()
+        KnowledgeStore.clear_registry()
+
+        with patch("lens.core.operator.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="first",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={
+                        "as_kb_id": "npc.bob",
+                        "with_kb_id": "pc.amy",
+                        "memory_kb_ids": ["npc.waiter"],
+                    },
+                )
+            )
+        Storage(self.root).stage_all()
+        KnowledgeStore.clear_registry()
+
+        captured: dict[str, Any] = {}
+
+        async def _capture_gen(
+            _messages: list[dict[str, Any]], _pr: Path, **kwargs: Any
+        ) -> str:
+            captured.update(kwargs)
+            return "> [Bob] Still here.\n"
+
+        with patch("lens.core.operator.generate_text", _capture_gen):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="second",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        self.assertIsNotNone(captured.get("tools"))
 
     # ------------------------------------------------------------------
     # Session end
