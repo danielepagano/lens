@@ -20,11 +20,13 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from lens.core.commands.kb import kb_get as _cmd_kb_get
 from lens.core.commands.kb import kb_list_tags as _cmd_kb_list_tags
+from lens.core.commands.kb import kb_patch as _cmd_kb_patch
 from lens.core.commands.kb import kb_with_tag as _cmd_kb_with_tag
+from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 
 CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
@@ -211,6 +213,116 @@ register_command_tool(
     ),
     _kb_list_tags,
 )
+
+# ---------------------------------------------------------------------------
+# kb_patch handler — delegates to commands/kb.py, applies line-content patches.
+# Intentionally *not* registered in the global tool registry: the task is to
+# ship the implementation and tests only; no operator exposes it yet.
+# Enable by uncommenting the ``register_command_tool('kb_patch', ...)`` call
+# at the bottom of this file once an operator is ready to use it.
+# ---------------------------------------------------------------------------
+
+
+async def kb_patch_handler(args: dict[str, Any], project_root: Path) -> str:
+    raw_id = args.get("id")
+    patches = args.get("patches")
+    if not raw_id or not isinstance(raw_id, str):
+        return "(error: missing or invalid 'id')"
+    if not isinstance(patches, list) or not patches:
+        return "(error: 'patches' must be a non-empty array)"
+    store = KnowledgeStore.for_project(project_root)
+    patches_list: list[dict[str, Any]] = cast(list[dict[str, Any]], patches)
+    try:
+        obj = _cmd_kb_patch(raw_id, patches_list, store=store)
+    except LensException as e:
+        return f"(error: {e})"
+    return f"OK: patched {obj.id}\n\n{obj.format()}"
+
+
+KB_PATCH_TOOL = CommandToolDef(
+    description=(
+        "Patch a KB object's body by replacing one or more line ranges without "
+        "using line numbers. Each patch names the start (and optionally end) "
+        "line by its verbatim content (minus the newline) and optionally a few "
+        "context lines before/after to uniquely identify it. Sentinels "
+        "'@@@start' and '@@@end' represent the beginning and end of the "
+        "document (usable as a target for prepend/append, or as a context "
+        "anchor). Patches are applied in order and each re-resolves against "
+        "the current text."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "Canonical KB id (e.g. 'person.amy').",
+            },
+            "patches": {
+                "type": "array",
+                "description": (
+                    "List of patches. Each patch replaces the selected line "
+                    "range with 'content'. Use an empty content string for "
+                    "deletion. Omit 'end' for a single-line target."
+                ),
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "start": {
+                            "type": "object",
+                            "description": (
+                                "Start of the selection. 'target' is the exact "
+                                "line to match (minus newline), '@@@start', or "
+                                "'@@@end'. Use 'before'/'after' to supply "
+                                "context lines when 'target' is not unique."
+                            ),
+                            "properties": {
+                                "target": {"type": "string"},
+                                "before": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "after": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                            "required": ["target"],
+                        },
+                        "end": {
+                            "type": "object",
+                            "description": (
+                                "Optional end of an inclusive range selection."
+                            ),
+                            "properties": {
+                                "target": {"type": "string"},
+                                "before": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "after": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                            "required": ["target"],
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": (
+                                "Replacement text. Split into lines with "
+                                "splitlines(); a trailing newline is ignored. "
+                                "Empty string = pure deletion."
+                            ),
+                        },
+                    },
+                    "required": ["start", "content"],
+                },
+            },
+        },
+        "required": ["id", "patches"],
+    },
+)
+
 
 register_command_tool(
     "kb_with_tag",
