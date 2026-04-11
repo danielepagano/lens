@@ -300,6 +300,25 @@ export const runAdvance = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/advance', params, onEvent)
 
+export interface ChatParams {
+  prompt?: string
+  as_kb_id?: string
+  with_kb_id?: string
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+  reasoning?: string
+  retry?: boolean
+  end?: boolean
+  slug?: string
+}
+
+export const runChat = (
+  params: ChatParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/chat', params, onEvent)
+
 export interface EditParams {
   address: string
   start_line: number

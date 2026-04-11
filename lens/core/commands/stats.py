@@ -8,7 +8,9 @@ from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.project import ProjectSession, has_mount_config, get_selected_datasets, is_dataset_root, list_available_llms
 from lens.core.knowledge import KnowledgeStore
 
-SESSION_OPERATOR_NAMES: frozenset[str] = frozenset({"design", "play", "advance"})
+SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
+    {"advance", "chat", "design", "play"}
+)
 
 
 @dataclass

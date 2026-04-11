@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runSectionStart, runSectionEnd, runCollate, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
+import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runChat, runSectionStart, runSectionEnd, runCollate, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
 import {
   cliOutput,
   treeRefreshTrigger,
@@ -94,6 +94,23 @@ const commands: CommandDefinition[] = [
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
       { name: 'retry' },
       { name: 'end' },
+      { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
+    ],
+  },
+  {
+    trigger: 'chat',
+    group: 'narrative',
+    cursorTargeting: 'always',
+    positional: [{ name: 'prompt', valueType: 'prompt', hint: 'dialog or stage directions' }],
+    options: [
+      { name: 'as', valueType: 'kb-id', hint: 'character the AI voices (e.g. npc.bob)' },
+      { name: 'with', valueType: 'kb-id', hint: 'character you play; opens a back-and-forth session' },
+      { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
+      { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
+      { name: 'retry' },
+      { name: 'end', hint: 'close the chat session with a summary' },
       { name: 'slug', valueType: 'slug', hint: 'sub-node id (default: auto-generated)' },
     ],
   },
@@ -416,6 +433,32 @@ const handler: CommandHandler = async (
         : undefined
       result = await runDesign(
         { prompt: designPrompt, module_id: moduleId, pins, unpins, llm_id: llmId, reasoning, retry, end: endDesign, slug: designSlug },
+        handleEvent
+      )
+    } else if (command === 'chat') {
+      const endChat = ctx.args.options['end'] === true
+      const asKbId = (ctx.args.options['as'] as string | undefined) || undefined
+      const withKbId = (ctx.args.options['with'] as string | undefined) || undefined
+      const chatPromptPresent = prompt !== undefined && String(prompt).trim() !== ''
+      if (!endChat && !retry && !asKbId && !chatPromptPresent) {
+        throw new Error('Chat requires a prompt, --as, --end, or --retry')
+      }
+      const chatSlug = (!endChat && !retry)
+        ? ((ctx.args.options['slug'] as string | undefined) || undefined)
+        : undefined
+      result = await runChat(
+        {
+          prompt,
+          as_kb_id: asKbId,
+          with_kb_id: withKbId,
+          pins,
+          unpins,
+          llm_id: llmId,
+          reasoning,
+          retry,
+          end: endChat,
+          slug: chatSlug,
+        },
         handleEvent
       )
     } else if (command === 'structure-section') {

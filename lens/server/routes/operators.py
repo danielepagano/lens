@@ -102,6 +102,19 @@ class AdvanceBody(BaseModel):
     end: bool = False
 
 
+class ChatBody(BaseModel):
+    prompt: str | None = None
+    as_kb_id: str | None = None
+    with_kb_id: str | None = None
+    pins: list[str] = []
+    unpins: list[str] = []
+    llm_id: str | None = None
+    reasoning: str | None = None
+    retry: bool = False
+    end: bool = False
+    slug: str | None = None
+
+
 class CollateBody(BaseModel):
     id: str
     address: str
@@ -473,6 +486,106 @@ async def operator_design(
         lock, event_queue, session, "design", lambda: target_ref[0], coro_fn
     )
 
+
+
+@router.post("/operator/chat")
+async def operator_chat(
+    body: ChatBody,
+    request: Request,
+    session: ProjectSession = Depends(get_session),
+) -> StreamingResponse:
+    from lens.core.operators.chat import ChatOperator
+
+    narrative = _require_narrative(session)
+    pins = list(body.pins)
+    unpins = list(body.unpins)
+    # The --as character's content is embedded directly in the task instruction —
+    # do not pin it. The --with counterpart is pinned for scene context.
+    if body.with_kb_id and body.with_kb_id not in pins:
+        pins.append(body.with_kb_id)
+    _validate_pins(session, pins, unpins)
+    cursor = narrative.find_cursor()
+    target_ref: list[str] = [str(cursor.to_address())]
+
+    lock: StreamLock = request.app.state.stream_lock
+    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+
+    async def on_stream_target(addr: str) -> None:
+        target_ref[0] = addr
+        await event_queue.put({"type": "target", "node": addr})
+
+    on_token = _make_on_token(event_queue)
+
+    extra_params: dict[str, Any] | None = None
+    if body.as_kb_id is not None or body.with_kb_id is not None:
+        extra_params = {}
+        if body.as_kb_id is not None:
+            extra_params["as_kb_id"] = body.as_kb_id
+        if body.with_kb_id is not None:
+            extra_params["with_kb_id"] = body.with_kb_id
+
+    if body.end or body.with_kb_id is not None:
+        # Session mode: end, start, or continue an explicit session.
+        def coro_fn() -> Any:
+            return ChatOperator.run_session(
+                session=session,
+                narrative=narrative,
+                prompt=body.prompt,
+                module_id=None,
+                pins=pins,
+                unpins=unpins,
+                llm_id=body.llm_id,
+                reasoning=body.reasoning,
+                retry=body.retry,
+                end=body.end,
+                slug=body.slug if not body.end and not body.retry else None,
+                on_token=on_token,
+                on_stream_target=on_stream_target,
+                cancel_event=lock.cancel_event,
+                extra_params=extra_params,
+            )
+    else:
+        # No --with: check whether we are already inside an open session.
+        session_node, _ = ChatOperator.find_active_session(narrative)
+        if session_node is not None:
+            def coro_fn() -> Any:  # type: ignore[misc]
+                return ChatOperator.run_session(
+                    session=session,
+                    narrative=narrative,
+                    prompt=body.prompt,
+                    module_id=None,
+                    pins=pins,
+                    unpins=unpins,
+                    llm_id=body.llm_id,
+                    reasoning=body.reasoning,
+                    retry=body.retry,
+                    end=False,
+                    slug=None,
+                    on_token=on_token,
+                    on_stream_target=on_stream_target,
+                    cancel_event=lock.cancel_event,
+                    extra_params=extra_params,
+                )
+        else:
+            # One-shot inline: AI responds as --as in the current node.
+            def coro_fn() -> Any:  # type: ignore[misc]
+                return ChatOperator.run_inline(
+                    session=session,
+                    narrative=narrative,
+                    prompt=body.prompt,
+                    pins=pins,
+                    unpins=unpins,
+                    llm_id=body.llm_id,
+                    reasoning=body.reasoning,
+                    retry=body.retry,
+                    on_token=on_token,
+                    cancel_event=lock.cancel_event,
+                    extra_params=extra_params,
+                )
+
+    return _start_operator_stream(
+        lock, event_queue, session, "chat", lambda: target_ref[0], coro_fn
+    )
 
 
 @router.post("/operator/edit")
