@@ -32,6 +32,7 @@ from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, build_command_tools_bundle, generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator, OperatorError, extract_annotation_content, build_feedback_messages
+from lens.core.operators.session import format_summary_block
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import unpin as unpin_node
 from lens.core.prompts import PromptStore
@@ -539,8 +540,8 @@ class AdvanceOperator(Operator):
             session.kb, timeline_ids[0], days_elapsed, storage
         )
 
-        op.append_to_node(parent, summary + "\n\n")
-        op.append_to_node(parent, op.build_close_tag(session_id) + "\n")
+        summary_block, _ = format_summary_block(session_id, summary)
+        op.close_subnode(parent, session_id, summary_block)
         return result
 
     @classmethod

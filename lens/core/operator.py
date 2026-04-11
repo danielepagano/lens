@@ -414,11 +414,18 @@ class Operator(ABC):
         id: str,
         summary: str = "",
     ) -> None:
-        """Close a sub-node by appending *summary* and a close tag to *parent*."""
+        """Close a sub-node by appending *summary* and a close tag to *parent*.
+
+        *summary* is appended **as-is** — callers that produce an LLM summary
+        must pre-format it using
+        :func:`lens.core.operators.session.format_summary_block` (or
+        :func:`lens.core.operators.session.generate_summary_block`) so that
+        every summary in the tree has the canonical ``<!-- section:<slug> -->``
+        + ``### Title`` + blockquoted-body shape.
+        """
         close = self.build_close_tag(id)
         if summary:
-            quoted_summary = "\n".join(f"> {line}" for line in summary.splitlines())
-            suffix = quoted_summary + "\n\n" + close + "\n"
+            suffix = summary.rstrip("\n") + "\n\n" + close + "\n"
         else:
             suffix = close + "\n"
         self.append_to_node(parent, suffix)

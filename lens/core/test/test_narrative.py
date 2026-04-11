@@ -681,7 +681,7 @@ class TestSectionOperator(unittest.TestCase):
                     await cb(" summary.")
                 return "Section summary."
 
-            with patch("lens.core.operators.section.generate_text", new=_fake_generate_text):
+            with patch("lens.core.operators.session.generate_text", new=_fake_generate_text):
                 with contextlib.redirect_stdout(io.StringIO()):
                     asyncio.run(op.end(ProjectSession(p, p)))
             node_md = p / "narrative" / "test" / "_node.md"

@@ -156,10 +156,6 @@ function renderDivider(label: string, href: string): string {
   return `<div class="annotation-divider"><a href="#${href}">${label}</a></div>`
 }
 
-function renderHeading(label: string, href: string): string {
-  return `<h3 class="annotation-heading"><a href="#${href}">${label}</a></h3>`
-}
-
 /** Return true if a line is some kind of annotation (single, multi-line open, or front-matter open). */
 function isAnnotationLine(line: string): boolean {
   return ANNOTATION_RE.test(line) || ANNOTATION_OPEN_RE.test(line) || FRONT_MATTER_OPEN_RE.test(line)
@@ -294,7 +290,9 @@ function renderAnnotationWithBody(
   const closingLineNo = j + 1
 
   if (bodyText) {
-    output.push(renderHeading(label, childAddr))
+    // Summaries carry their own `### Title` header inside the body (written
+    // by the operator via format_summary_block); the UI must not synthesize
+    // an additional heading from the slug.
     const bodyStartLine = bodyStart + 1
     for (let lineNo = openingLineNo; lineNo <= closingLineNo; lineNo++) {
       pushRemovedContent(output, removedByLine, lineNo)

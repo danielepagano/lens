@@ -104,13 +104,17 @@ play.summary_system = '''You distill finished tabletop play into narrative prose
 
 play.summary_instruction_template = '''Summarize this play session for a reader who will use it as context to write what comes next.
 
-Focus on **what endures beyond this session**: relationships shifted, alliances formed or broken, secrets revealed or still hidden, promises and debts incurred, places reached or left behind, emotional stakes that will color future scenes, and threads left open.
+**First line — TITLE.** Begin your response with a single-line title of **no more than ten words**. The session is identified by the slug `{slug}`; your title should be a natural, readable version of that slug (for example, `amy-dream` → `Amy's Dream`; `play-battle-of-glenhaven` → `The Battle of Glenhaven`). Keep it short and evocative. Do not prefix the title with `#`, `>`, or any other markdown marker — plain text only.
+
+**Then a blank line, then the summary body.**
+
+Focus the body on **what endures beyond this session**: relationships shifted, alliances formed or broken, secrets revealed or still hidden, promises and debts incurred, places reached or left behind, emotional stakes that will color future scenes, and threads left open.
 
 **Omit entirely** (even when the transcript is full of them): dice, rolls, modifiers, DCs, checks, saves, HP, damage, initiative, turns, action economy, spell slots, rules citations, or any blow-by-blow of how a moment was resolved mechanically. Collapse combat and skill challenges into what ended up true in the fiction — who won, what was lost, what changed — not how it was played at the table.
 
 Write in the voice of the surrounding narrative — not telegraphic notes, not a bulleted debrief, but fluid prose a future scene can lean against without a quality drop. Shorter is better, but never at the cost of sounding like a synopsis.
 
-Output only the summary — no preamble or meta-commentary.
+Output only the title, a blank line, and the summary body — no preamble, no meta-commentary, no markdown fencing, no blockquotes (they are added automatically).
 
 TEXT TO SUMMARIZE:
 {content}'''
@@ -184,13 +188,17 @@ shared.retry_feedback_template = 'Feedback: {feedback}\n\nRewrite from scratch. 
 session.summary_system = '''You condense finished narrative passages for an ongoing story. Your summaries will be read by a writing AI as context for future scenes — they must carry forward everything that endures while reading as natural prose, not notes.'''
 session.summary_instruction_template = '''Summarize this passage for a reader who will use it as context to write what comes next.
 
-Focus on **what endures beyond this passage**: relationships shifted, promises made, secrets revealed or still hidden, places reached, emotional states that will color future scenes, and threads left open.
+**First line — TITLE.** Begin your response with a single-line title of **no more than ten words**. The passage is identified by the slug `{slug}`; your title should be a natural, readable version of that slug (for example, `amy-dream` → `Amy's Dream`; `battle-of-glenhaven` → `The Battle of Glenhaven`). Keep it short and evocative. Do not prefix the title with `#`, `>`, or any other markdown marker — plain text only.
+
+**Then a blank line, then the summary body.**
+
+Focus the body on **what endures beyond this passage**: relationships shifted, promises made, secrets revealed or still hidden, places reached, emotional states that will color future scenes, and threads left open.
 
 **Omit** anything whose relevance ends with the passage itself: moment-to-moment action sequences, transitional beats, scenic description that won't recur, internal deliberation that resolved into a decision (keep the decision, drop the deliberation).
 
 Write in the same voice and at the same reading level as the source text — not telegraphic notes, not a list of events, but fluid prose a future scene can lean against without a quality drop. Shorter is better, but never at the cost of sounding like a synopsis.
 
-Output only the summary — no preamble or meta-commentary.
+Output only the title, a blank line, and the summary body — no preamble, no meta-commentary, no markdown fencing, no blockquotes (they are added automatically).
 
 TEXT TO SUMMARIZE:
 {content}'''

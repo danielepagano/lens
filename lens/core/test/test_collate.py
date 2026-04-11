@@ -88,7 +88,7 @@ def _run_collate(
         else target_node.narrative_root.name
     )
 
-    with patch("lens.core.operators.collate.generate_text", new=mock):
+    with patch("lens.core.operators.session.generate_text", new=mock):
         with contextlib.redirect_stdout(io.StringIO()):
             asyncio.run(
                 CollateOperator.run_collate(

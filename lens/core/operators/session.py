@@ -31,6 +31,7 @@ from __future__ import annotations
 import asyncio
 import re
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any, ClassVar
 
 from lens.core.annotations import parse_front_matter, strip_markdown_comments
@@ -59,6 +60,147 @@ def prompt_to_slug(prompt: str, max_words: int = 5) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Shared summary block formatting
+# ---------------------------------------------------------------------------
+
+MAX_SUMMARY_TITLE_WORDS = 10
+"""Maximum number of words allowed in a summary title."""
+
+SUMMARY_COMMENT_TAG = "section"
+"""HTML comment tag prefix written above every summary block.
+
+All operators that summarize use the same tag so the LLM can deterministically
+recognize a summary block in context (annotations are stripped from LLM
+context, but HTML comments are preserved)."""
+
+_SLUG_OPERATOR_PREFIXES = (
+    "section-",
+    "play-",
+    "design-",
+    "collate-",
+    "advance-day-",
+    "advance-",
+)
+
+_TITLE_LEADING_MARKERS = re.compile(r'^[#>\*_\s"\'`]+')
+_TITLE_TRAILING_MARKERS = re.compile(r'[\*_"\'`\s]+$')
+
+
+def slug_to_title(slug: str) -> str:
+    """Convert ``amy-dream`` → ``Amy Dream`` — a deterministic fallback title.
+
+    Strips a leading operator prefix (e.g. ``play-``, ``advance-day-``) so the
+    generated title is just the meaningful part of the slug.
+    """
+    s = slug
+    for prefix in _SLUG_OPERATOR_PREFIXES:
+        if s.startswith(prefix):
+            s = s[len(prefix):]
+            break
+    words = [w for w in re.split(r"[-_\s]+", s) if w]
+    if not words:
+        return slug
+    return " ".join(w[:1].upper() + w[1:] for w in words)
+
+
+def _extract_title_candidate(line: str) -> str:
+    """Strip markdown/quote/bold markers from a candidate title line."""
+    s = _TITLE_LEADING_MARKERS.sub("", line.strip())
+    s = _TITLE_TRAILING_MARKERS.sub("", s)
+    return s.rstrip(":").strip()
+
+
+def _blockquote_body(lines: list[str]) -> list[str]:
+    """Blockquote every non-empty line with ``> ``; leave blank lines blank.
+
+    Any existing leading ``> `` is collapsed so a line is quoted exactly once.
+    """
+    out: list[str] = []
+    for line in lines:
+        stripped = line.rstrip()
+        if not stripped.strip():
+            out.append("")
+            continue
+        s = stripped
+        while s.startswith(">"):
+            s = s[1:]
+            if s.startswith(" "):
+                s = s[1:]
+        out.append(f"> {s}" if s else "")
+    return out
+
+
+def format_summary_block(slug: str, raw_summary: str) -> tuple[str, bool]:
+    """Format raw summary text into the canonical Lens summary block.
+
+    Canonical shape::
+
+        <!-- section:<slug> -->
+
+        ### <Title>
+
+        > body line 1
+        > body line 2
+
+    Algorithmic normalization applied:
+
+    - **Title**: the first non-empty line is taken as the title if, after
+      stripping markdown markers (``#``, ``>``, ``**``, quotes), it has
+      :data:`MAX_SUMMARY_TITLE_WORDS` or fewer words. Otherwise the title
+      is derived algorithmically from *slug* via :func:`slug_to_title` and
+      the entire raw input is kept as body.
+    - **Body**: every non-empty line is prefixed with ``> `` (existing ``> ``
+      prefixes are stripped first so each line is quoted exactly once).
+      Blank lines within the body remain blank (they are not quoted — only
+      summary body text is quoted, not the comment, title, or empty lines).
+      Leading/trailing blank lines in the body are trimmed.
+    - Exactly one blank line sits between the HTML comment and the header,
+      and between the header and the body.
+
+    Returns ``(block, title_from_raw)``. ``title_from_raw`` is ``True`` when
+    the first line of *raw_summary* was used as the title (happy path) and
+    ``False`` when we fell back to a slug-derived title (the caller may
+    choose to retry the LLM).
+    """
+    text = (raw_summary or "").strip()
+    lines = text.split("\n") if text else []
+
+    first_idx = 0
+    while first_idx < len(lines) and not lines[first_idx].strip():
+        first_idx += 1
+
+    candidate = ""
+    if first_idx < len(lines):
+        candidate = _extract_title_candidate(lines[first_idx])
+
+    title_from_raw = False
+    if candidate and len(candidate.split()) <= MAX_SUMMARY_TITLE_WORDS:
+        title = candidate
+        body_lines = lines[first_idx + 1:]
+        title_from_raw = True
+    else:
+        title = slug_to_title(slug)
+        body_lines = list(lines)
+
+    # Trim leading/trailing blank lines from body
+    while body_lines and not body_lines[0].strip():
+        body_lines.pop(0)
+    while body_lines and not body_lines[-1].strip():
+        body_lines.pop()
+
+    quoted = _blockquote_body(body_lines)
+
+    parts = [
+        f"<!-- {SUMMARY_COMMENT_TAG}:{slug} -->",
+        "",
+        f"### {title}",
+        "",
+        *quoted,
+    ]
+    return "\n".join(parts), title_from_raw
+
+
+# ---------------------------------------------------------------------------
 # Shared summary generation
 # ---------------------------------------------------------------------------
 
@@ -66,19 +208,81 @@ def build_summary_messages(
     crawl_result: CrawlResult,
     content: str,
     *,
+    slug: str,
     system_key: str = "session.summary_system",
     instruction_key: str = "session.summary_instruction_template",
 ) -> list[dict[str, str]]:
-    """Build LLM messages for summarizing section/session content."""
+    """Build LLM messages for summarizing section/session content.
+
+    The instruction template receives both ``content`` (the passage to
+    summarize) and ``slug`` (the node slug, used to guide the LLM in
+    producing a short human-friendly title).
+    """
     from lens.core.context import assemble_prompt
 
     prompts = PromptStore(crawl_result.project_root)
-    instruction = prompts.format(instruction_key, content=content)
+    instruction = prompts.format(instruction_key, content=content, slug=slug)
     return assemble_prompt(
         crawl_result,
         system_prompt=prompts.get(system_key),
         instruction=instruction,
     )
+
+
+async def generate_summary_block(
+    *,
+    slug: str,
+    crawl_result: CrawlResult,
+    content: str,
+    project_root: Path,
+    operator_name: str,
+    llm_id: str | None = None,
+    on_token: Callable[[str], Awaitable[None]] | None = None,
+    cancel_event: Any | None = None,
+    reasoning: str | None = None,
+    system_key: str = "session.summary_system",
+    instruction_key: str = "session.summary_instruction_template",
+    max_attempts: int = 2,
+) -> str | None:
+    """Generate an LLM summary and return a fully formatted summary block.
+
+    The helper calls the LLM up to *max_attempts* times. If the LLM's output
+    has a first-line title that passes the word-count check,
+    :func:`format_summary_block` returns the block immediately. Otherwise
+    the LLM is retried. On the final attempt the block is returned with a
+    slug-derived fallback title.
+
+    Returns ``None`` if the LLM produced empty content on the first call.
+    """
+    formatted: str | None = None
+    for _ in range(max(1, max_attempts)):
+        messages = build_summary_messages(
+            crawl_result,
+            content,
+            slug=slug,
+            system_key=system_key,
+            instruction_key=instruction_key,
+        )
+        raw = (
+            await generate_text(
+                messages,
+                project_root,
+                llm_id=llm_id,
+                cancel_event=cancel_event,
+                on_preview=on_token,
+                interrupt_policy="raise",
+                operator_name=operator_name,
+                reasoning=reasoning,
+            )
+        ).strip()
+        if not raw:
+            if formatted is None:
+                return None
+            return formatted
+        formatted, title_from_raw = format_summary_block(slug, raw)
+        if title_from_raw:
+            return formatted
+    return formatted
 
 
 # ---------------------------------------------------------------------------
@@ -418,24 +622,20 @@ class SessionOperator(Operator):
             child_clean = strip_markdown_comments(child_text).strip()
             if child_clean:
                 crawl_result = crawl(parent)
-                messages = build_summary_messages(
-                    crawl_result,
-                    child_clean,
+                formatted = await generate_summary_block(
+                    slug=id,
+                    crawl_result=crawl_result,
+                    content=child_clean,
+                    project_root=session.project_root,
+                    operator_name=cls.name,
+                    llm_id=llm_id,
+                    on_token=on_token,
+                    cancel_event=cancel_event,
+                    reasoning=reasoning,
                     system_key=cls.summary_system_prompt_key,
                     instruction_key=cls.summary_instruction_prompt_key,
                 )
-                summary = (
-                    await generate_text(
-                        messages,
-                        session.project_root,
-                        llm_id=llm_id,
-                        cancel_event=cancel_event,
-                        on_preview=on_token,
-                        interrupt_policy="raise",
-                        operator_name=cls.name,
-                        reasoning=reasoning,
-                    )
-                ).strip()
+                summary = formatted or ""
 
         op.close_subnode(parent, id, summary)
         return None
