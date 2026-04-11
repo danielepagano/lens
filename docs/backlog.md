@@ -1,10 +1,11 @@
 # Lens Backlog
 
 - **Prompt assembly and retry architecture** audit (see below)
-- **`collate` tool** uses a range selection on a node (like `kb_patch`), provides a section slug, and calls collate; it can take a summary, or create one for you; this allows the AI to auto-compress its context as it goes, but in a purposeful way, as in "well, that topic is over, let's just remember the gist"  
-   - This works on a **single** contiguous range on the **current node** only (same rules as `collate` operator, obviously)
-   - Section summaries appear as **continuous blockquotes** (`>`); the tool contract should tell the model **not to split a contiguous quoted run** because that run is really matching a sub-node! This way the collate target ranges stay structurally consistent with what collate allows, without the LLM having to see annotations (which it cannot).
+- **`collate` tool** uses a range selection on current (cirsor) node (like `kb_patch`), provides a section slug, and proposes a call to collate; this allows the AI to auto-compress its own context as it goes, but in a purposeful way, as in "well, that topic is over, let's just remember the gist"  
+   - This works on a single contiguous range on the current node only because that's where the model has visibility, and obviously bas to follow the same rules as `collate` operator selection boundaries, which means don't break apart summaries (it can already not see annotations since it targets text lines)
+   - Section/node operator summaries appear as headers followed by **continuous blockquotes** (`>`) in the parent node; the tool contract should tell the model **not to split a contiguous quoted run** because that run is really summarizing a sub-node! This way the collate target ranges stay structurally consistent with what collate allows, without the LLM having to see annotations (which it cannot). It also shows rhe AI how summaries have been used. 
    - The collate tool does NOT perform the collate! It surfaces the request as a _suggestion_ to the user, who can accept it, redact it, or ignore it. Accepting then actually calls the operator (as if it was entered by the user directly). Actually calling collate from the tool is possible, but it would restructure the context and could be quite error-prone.
+   - The AI can propose a summary for the collate: this should be given to the real summary prompt as an opinion of what matters, but the summary can still do its job. 
    - The prompt to use collate requires clear instructions about compressing context and asks, requires, IMPLORES restraint from the AI to only section on occasion after a full topic is obviously concluded.
 - **Public Release Readiness**
    - License
