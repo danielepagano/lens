@@ -10,13 +10,12 @@ from typing import ClassVar
 from lens.core.address import NarrativeAddress
 from lens.core.annotations import find_front_matter_span, strip_markdown_comments
 from lens.core.context import CrawlResult, crawl
-from lens.core.llm import generate_text
 from lens.core.narrative import NarrativeNode, parse_segments
 from lens.core.operator import Operator
 from lens.core.project import ProjectSession, resolve_address, validate_slug
 
 from lens.core.operators.section import section_close_tag, section_open_tag
-from lens.core.operators.session import build_summary_messages as build_section_summary_messages
+from lens.core.operators.session import generate_summary_block
 
 
 class CollateOperator(Operator):
@@ -25,9 +24,9 @@ class CollateOperator(Operator):
     name: ClassVar[str] = "collate"
     requires_id: ClassVar[bool] = True
 
-    # Collate does not use the Operator prompt flow. It reuses the section summary
-    # prompt via build_section_summary_messages() from section.py (same system prompt
-    # and instruction template as section end). These stubs only satisfy the Operator ABC.
+    # Collate does not use the Operator prompt flow. It reuses the shared
+    # generate_summary_block() helper (same system prompt and instruction
+    # template as section end). These stubs only satisfy the Operator ABC.
     @property
     def system_prompt(self) -> str:
         return ""
@@ -123,26 +122,22 @@ class CollateOperator(Operator):
             previous_summaries=crawl_result.previous_summaries,
             current_content=passage_before or None,
         )
-        messages = build_section_summary_messages(adjusted_crawl, child_clean)  # section.py: same prompt as section end
 
-        summary = (
-            await generate_text(
-                messages,
-                session.project_root,
-                llm_id=llm_id,
-                cancel_event=cancel_event,
-                on_preview=on_token,
-                interrupt_policy="raise",
-                operator_name=self.name,
-                reasoning=reasoning,
-            )
-        ).strip()
-        if not summary:
-            raise ValueError("LLM returned no summary content")
+        summary_block = await generate_summary_block(
+            slug=id,
+            crawl_result=adjusted_crawl,
+            content=child_clean,
+            project_root=session.project_root,
+            operator_name=self.name,
+            llm_id=llm_id,
+            on_token=on_token,
+            cancel_event=cancel_event,
+            reasoning=reasoning,
+        )
 
         open_tag = section_open_tag(id)
         close_tag = section_close_tag(id)
-        section_block = f"{open_tag}\n\n{summary}\n\n{close_tag}"
+        section_block = f"{open_tag}\n\n{summary_block}\n\n{close_tag}"
 
         before_lines = lines[: start_line - 1]
         after_lines = lines[end_line:]

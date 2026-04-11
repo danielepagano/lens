@@ -31,6 +31,7 @@ from __future__ import annotations
 import asyncio
 import re
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any, ClassVar
 
 from lens.core.annotations import parse_front_matter, strip_markdown_comments
@@ -59,6 +60,149 @@ def prompt_to_slug(prompt: str, max_words: int = 5) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Shared summary block formatting
+# ---------------------------------------------------------------------------
+
+MAX_SUMMARY_TITLE_WORDS = 10
+"""Maximum number of words allowed in a summary title."""
+
+SUMMARY_COMMENT_TAG = "section"
+"""HTML comment tag prefix written above every summary block.
+
+All operators that summarize use the same tag so the LLM can deterministically
+recognize a summary block in context (annotations are stripped from LLM
+context, but HTML comments are preserved)."""
+
+_SLUG_OPERATOR_PREFIXES = (
+    "section-",
+    "play-",
+    "design-",
+    "collate-",
+    "advance-day-",
+    "advance-",
+)
+
+
+class SummaryTitleError(OperatorError):
+    """Raised when raw summary text lacks a valid first-line title (see :func:`format_summary_block`)."""
+
+
+def slug_for_summary_prompt(slug: str) -> str:
+    """Strip a leading session-operator slug prefix for LLM titling instructions only.
+
+    The HTML ``<!-- section:<slug> -->`` comment always uses the full storage
+    slug; prompts pass this shortened value as ``{slug}`` so the model titles
+    the meaningful segment (e.g. ``play-amy-dream`` → ``amy-dream``).
+    """
+    for prefix in _SLUG_OPERATOR_PREFIXES:
+        if slug.startswith(prefix):
+            return slug[len(prefix) :]
+    return slug
+
+
+_TITLE_LEADING_MARKERS = re.compile(r'^[#>\*_\s"\'`]+')
+_TITLE_TRAILING_MARKERS = re.compile(r'[\*_"\'`\s]+$')
+
+
+def _extract_title_candidate(line: str) -> str:
+    """Strip markdown/quote/bold markers from a candidate title line."""
+    s = _TITLE_LEADING_MARKERS.sub("", line.strip())
+    s = _TITLE_TRAILING_MARKERS.sub("", s)
+    return s.rstrip(":").strip()
+
+
+def _blockquote_body(lines: list[str]) -> list[str]:
+    """Format the summary body as one continuous Markdown blockquote.
+
+    Every line is written as ``> …``; blank lines use ``> `` so the blockquote
+    does not break. Leading ``>`` runts on each line are stripped first so
+    lines are not double-quoted.
+    """
+    out: list[str] = []
+    for line in lines:
+        stripped = line.rstrip()
+        if not stripped.strip():
+            out.append("> ")
+            continue
+        s = stripped
+        while s.startswith(">"):
+            s = s[1:]
+            if s.startswith(" "):
+                s = s[1:]
+        suffix = s
+        out.append(f"> {suffix}" if suffix else "> ")
+    return out
+
+
+def format_summary_block(slug: str, raw_summary: str) -> str:
+    """Format raw summary text into the canonical Lens summary block.
+
+    Canonical shape::
+
+        <!-- section:<slug> -->
+
+        ### <Title>
+
+        > body line 1
+        > body line 2
+
+    Algorithmic normalization applied:
+
+    - **Title**: the first non-empty line is the title after stripping markdown
+      markers (``#``, ``>``, ``**``, quotes). It must be non-empty and have at
+      most :data:`MAX_SUMMARY_TITLE_WORDS` words; otherwise
+      :exc:`SummaryTitleError` is raised (callers retry the LLM or surface the
+      error).
+    - **Body**: lines after the title, trimmed of leading/trailing blank lines,
+      then passed through :func:`_blockquote_body` so the body is one blockquote
+      run (blank lines are ``> ``).
+    - Exactly one blank line sits between the HTML comment and the ``###``
+      header, and between the header and the body.
+
+    The HTML comment always uses the full storage *slug*; LLM prompts may use
+    :func:`slug_for_summary_prompt` for the ``{slug}`` template field only.
+    """
+    text = (raw_summary or "").strip()
+    lines = text.split("\n") if text else []
+
+    first_idx = 0
+    while first_idx < len(lines) and not lines[first_idx].strip():
+        first_idx += 1
+
+    if first_idx >= len(lines):
+        raise SummaryTitleError("summary text is empty")
+
+    candidate = _extract_title_candidate(lines[first_idx])
+    if not candidate:
+        raise SummaryTitleError("summary has no usable first-line title")
+    title_words = candidate.split()
+    if len(title_words) > MAX_SUMMARY_TITLE_WORDS:
+        raise SummaryTitleError(
+            f"summary title exceeds {MAX_SUMMARY_TITLE_WORDS} words "
+            f"({len(title_words)} words)"
+        )
+
+    title = candidate
+    body_lines = lines[first_idx + 1 :]
+
+    while body_lines and not body_lines[0].strip():
+        body_lines.pop(0)
+    while body_lines and not body_lines[-1].strip():
+        body_lines.pop()
+
+    quoted = _blockquote_body(body_lines)
+
+    parts = [
+        f"<!-- {SUMMARY_COMMENT_TAG}:{slug} -->",
+        "",
+        f"### {title}",
+        "",
+        *quoted,
+    ]
+    return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
 # Shared summary generation
 # ---------------------------------------------------------------------------
 
@@ -66,18 +210,88 @@ def build_summary_messages(
     crawl_result: CrawlResult,
     content: str,
     *,
+    slug: str,
     system_key: str = "session.summary_system",
     instruction_key: str = "session.summary_instruction_template",
 ) -> list[dict[str, str]]:
-    """Build LLM messages for summarizing section/session content."""
+    """Build LLM messages for summarizing section/session content.
+
+    The instruction template receives ``content`` and ``slug``. The ``slug``
+    value is :func:`slug_for_summary_prompt` output so titling examples match
+    what the model sees; :func:`format_summary_block` still writes the full
+    storage slug in the HTML comment.
+    """
     from lens.core.context import assemble_prompt
 
     prompts = PromptStore(crawl_result.project_root)
-    instruction = prompts.format(instruction_key, content=content)
+    prompt_slug = slug_for_summary_prompt(slug)
+    instruction = prompts.format(
+        instruction_key, content=content, slug=prompt_slug
+    )
     return assemble_prompt(
         crawl_result,
         system_prompt=prompts.get(system_key),
         instruction=instruction,
+    )
+
+
+async def generate_summary_block(
+    *,
+    slug: str,
+    crawl_result: CrawlResult,
+    content: str,
+    project_root: Path,
+    operator_name: str,
+    llm_id: str | None = None,
+    on_token: Callable[[str], Awaitable[None]] | None = None,
+    cancel_event: Any | None = None,
+    reasoning: str | None = None,
+    system_key: str = "session.summary_system",
+    instruction_key: str = "session.summary_instruction_template",
+    max_attempts: int = 2,
+) -> str:
+    """Generate an LLM summary and return a fully formatted summary block.
+
+    Calls the LLM up to *max_attempts* times until :func:`format_summary_block`
+    accepts the first line as a title. Raises :exc:`SummaryTitleError` if every
+    attempt yields text but the title rule still fails. Raises
+    :exc:`OperatorError` if every attempt returns empty or whitespace-only
+    output.
+    """
+    attempts = max(1, max_attempts)
+    last_title_error: SummaryTitleError | None = None
+    for _ in range(attempts):
+        messages = build_summary_messages(
+            crawl_result,
+            content,
+            slug=slug,
+            system_key=system_key,
+            instruction_key=instruction_key,
+        )
+        raw = (
+            await generate_text(
+                messages,
+                project_root,
+                llm_id=llm_id,
+                cancel_event=cancel_event,
+                on_preview=on_token,
+                interrupt_policy="raise",
+                operator_name=operator_name,
+                reasoning=reasoning,
+            )
+        ).strip()
+        if not raw:
+            continue
+        try:
+            return format_summary_block(slug, raw)
+        except SummaryTitleError as exc:
+            last_title_error = exc
+            continue
+    if last_title_error is not None:
+        raise last_title_error
+    raise OperatorError(
+        "summary LLM returned empty or whitespace-only output after "
+        f"{attempts} attempt(s)"
     )
 
 
@@ -360,7 +574,8 @@ class SessionOperator(Operator):
 
     summarize_on_end: ClassVar[bool] = False
     """When True, ``run_session_end`` generates an LLM summary of the session
-    content and includes it as a blockquote before the close tag."""
+    content and appends the canonical block (HTML comment, ``###`` title,
+    one blockquoted body) before the close tag."""
 
     # Keys for :func:`build_summary_messages` when ``summarize_on_end`` runs.
     summary_system_prompt_key: ClassVar[str] = "session.summary_system"
@@ -381,8 +596,8 @@ class SessionOperator(Operator):
 
         Verifies the cursor is inside the session sub-node.  When
         :attr:`summarize_on_end` is True, generates an LLM summary of the
-        session content and appends it (blockquoted) before the close tag.
-        Override for fully custom close behaviour (e.g. KB extraction).
+        session content and appends the canonical summary block before the
+        close tag. Override for fully custom close behaviour (e.g. KB extraction).
         """
         cursor = narrative.find_cursor()
         if not cursor.key_path:
@@ -418,24 +633,19 @@ class SessionOperator(Operator):
             child_clean = strip_markdown_comments(child_text).strip()
             if child_clean:
                 crawl_result = crawl(parent)
-                messages = build_summary_messages(
-                    crawl_result,
-                    child_clean,
+                summary = await generate_summary_block(
+                    slug=id,
+                    crawl_result=crawl_result,
+                    content=child_clean,
+                    project_root=session.project_root,
+                    operator_name=cls.name,
+                    llm_id=llm_id,
+                    on_token=on_token,
+                    cancel_event=cancel_event,
+                    reasoning=reasoning,
                     system_key=cls.summary_system_prompt_key,
                     instruction_key=cls.summary_instruction_prompt_key,
                 )
-                summary = (
-                    await generate_text(
-                        messages,
-                        session.project_root,
-                        llm_id=llm_id,
-                        cancel_event=cancel_event,
-                        on_preview=on_token,
-                        interrupt_policy="raise",
-                        operator_name=cls.name,
-                        reasoning=reasoning,
-                    )
-                ).strip()
 
         op.close_subnode(parent, id, summary)
         return None

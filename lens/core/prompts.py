@@ -42,12 +42,12 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "play.instruction_continue": PromptSpec("play.instruction_continue", frozenset()),
     "play.summary_system": PromptSpec("play.summary_system", frozenset()),
     "play.summary_instruction_template": PromptSpec(
-        "play.summary_instruction_template", frozenset({"content"})
+        "play.summary_instruction_template", frozenset({"content", "slug"})
     ),
     "advance.system": PromptSpec("advance.system", frozenset()),
     "advance.instruction_template": PromptSpec("advance.instruction_template", frozenset({"days", "current_day", "rolls_text"})),
     "session.summary_system": PromptSpec("session.summary_system", frozenset()),
-    "session.summary_instruction_template": PromptSpec("session.summary_instruction_template", frozenset({"content"})),
+    "session.summary_instruction_template": PromptSpec("session.summary_instruction_template", frozenset({"content", "slug"})),
     "tool.balance_encounter.prompt_snippet": PromptSpec("tool.balance_encounter.prompt_snippet", frozenset()),
     "chat.system": PromptSpec("chat.system", frozenset()),
     "chat.with_line_instruction": PromptSpec("chat.with_line_instruction", frozenset({"with_name"})),

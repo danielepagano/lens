@@ -18,9 +18,9 @@ from typing import Any, ClassVar
 
 from lens.core.annotations import strip_markdown_comments
 from lens.core.context import crawl
-from lens.core.llm import generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator
+from lens.core.operators.session import generate_summary_block
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, validate_slug
 from lens.core.prompts import PromptStore
@@ -48,6 +48,7 @@ class SectionOperator(Operator):
         return PromptStore(self.project_root).format(
             "session.summary_instruction_template",
             content=params.get("content", ""),
+            slug=params.get("slug", ""),
         )
 
     def start(
@@ -94,24 +95,19 @@ class SectionOperator(Operator):
         child_clean = strip_markdown_comments(child_text).strip()
 
         crawl_result = crawl(parent)
-        messages = self.build_messages(crawl_result, {"content": child_clean})
+        summary_block = await generate_summary_block(
+            slug=key,
+            crawl_result=crawl_result,
+            content=child_clean,
+            project_root=session.project_root,
+            operator_name=self.name,
+            llm_id=llm_id,
+            on_token=on_token,
+            cancel_event=cancel_event,
+            reasoning=reasoning,
+        )
 
-        summary = (
-            await generate_text(
-                messages,
-                session.project_root,
-                llm_id=llm_id,
-                cancel_event=cancel_event,
-                on_preview=on_token,
-                interrupt_policy="raise",
-                operator_name=self.name,
-                reasoning=reasoning,
-            )
-        ).strip()
-        if not summary:
-            raise ValueError("LLM returned no summary content")
-
-        self.close_subnode(parent, key, summary)
+        self.close_subnode(parent, key, summary_block)
 
     @classmethod
     async def run_start(
