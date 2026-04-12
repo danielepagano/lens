@@ -83,7 +83,7 @@ To develop these objects, we just need to extract the text from the rulebooks an
 
 #### Using tags
 
-So, you cast `@spell.fly` and you fly, but later the AI forgets you are flying or who is flying and not flying (maybe it's a different scene and this fact may literally be lost in the summaries), so now you have to rollback and add to your prompt that "remember I was are flying" and the AI doesn't even see your past prompts, so this may become endemic and not fun. We don't want to manage state nor micro-manage editing objects all the time for that, but what if we used tags for "micro-state", things like conditions or roughly single-word mechanical rules applied to a character? This like putting condition rings on your mini, and would be mostly on the user to track (when things actually do apply and get removed is quite complicated... we have counter-spells, saving throws, concentration checks, durations...) but even then saying `kb tag pc.alice -a speed:flying -a concentrating` is not super-hard, and because these are all rules, the words are limited and easy to auto-complete in a UI. Now the AI and the user can both know you are flying and concentrating (tricky to remember at the table!). 
+So, you cast `@spell.fly` and you fly, but later the AI forgets you are flying or who is flying and not flying (maybe it's a different scene and this fact may literally be lost in the summaries), so now you have to rollback and add to your prompt that "remember I was flying" and the AI doesn't even see your past prompts, so this may become endemic and not fun. We don't want to manage state nor micro-manage editing objects all the time for that, but what if we used tags for "micro-state", things like conditions or roughly single-word mechanical rules applied to a character? This like putting condition rings on your mini, and would be mostly on the user to track (when things actually do apply and get removed is quite complicated... we have counter-spells, saving throws, concentration checks, durations...) but even then saying `kb tag pc.alice -a speed:flying -a concentrating` is not super-hard, and because these are all rules, the words are limited and easy to auto-complete in a UI. Now the AI and the user can both know you are flying and concentrating (tricky to remember at the table!). 
    - Note that we definitely will NOT have instances of objects for all the stuff we encounter! Recurring NPCs sure, but definitely not the hundreds of monsters players will slay over time, and certainly we have no interest in tracking conditions on them: that has to be done fully by the player, and they can just say "goblin 3 is restrained" and now the local narrative says that... but it's very temporary. The tags are more useful out of combat for narrative purpose, it's absolutely not necessary to say we're concentrating every time to cast Guidance etc. Again, Lens is NOT a simulation, it's a structured narrative aid.
 
 ### About Campaign State
@@ -293,7 +293,7 @@ The operator _does not_ author static high-level objects like `lore.world` that 
 
 Other Considerations:
   - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `location.springfield` by the rules of `location` there will be an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
-  - It would be pretty easy to create a `map` operator that uses the `location` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering. This goes back to maybe needing a non-advance way to remember things.
+  - It would be pretty easy to create a `map` operator that uses the `location` graph to tell the AI what's around, so exploration can lead towards known places. Of course it's ideal to just come up with places as needed by the story, we then just need to decide if they are worth remembering, which can do with the `remember.*` system.
 
 #### Design Modules
 
@@ -419,15 +419,6 @@ The world takes its turn. Like `play` being an RPG `write`, this is an RPG-speci
     - Append a narrative summary of time passed to the parent; normally we just say that time has passed, but sometimes fronts have visible outcomes (like weather changes etc.). If there is a consequence, this is also narrated, so the user can react with a `play` operator call.
 
 While the above looks somewhat involved, it need not be slow: resolving pins and the slice, then prompting, is still bounded work; in most cases, nothing interesting will happen and it should only take a few seconds.
-
-### The "remember" mechanism for updating arbitrary KB objects
-
-The `advance` operator baseline operation is very specific to fronts and timelines, but what if we wanted to use KB objects for general faceted context compression? The model can run over recently committed narrative and update opted-in KB objects using per-type extraction instructions.
-
-- **Mechanism**: just add more KB entries to update to the same sub-node, but an object is eligible for remembering only:  
-  1. It carries a `remember.*` dot-tag (e.g. `remember.person` on `person.alice`). The `remember.person` KB object contains the extraction instructions and template hints for that type. One tag solves both the locking problem (only explicitly opted-in objects are touched) and the hint delivery problem (instructions live in the linked object, not in the object being updated). The system can auto-add `person._template` if present (like we do for design objects) so that we don't have to replicate it and the remember object can focus on WHAT to do remember.  
-  2. The object is relevant. We're not going to look at ALL objects and try to remember them, we will consider only pinned/mentioned objects we encounter.
-    - The AI could also emit something like `<!-- ai:remember:type.key -->` in narrative output to flag that a specific object that is not directly mentioned should be updated... but how does the AI know that such an object exists? By definition only pinned things are visible; we could ALSO look at all the dot-tags of everything pinned (like the baddies references in but not loaded in a front), as that's the horizon of what the AI knows at play-time; that would obviate the need to have this extra comment. 
 
 ### How `advance` finds its anchor
 
