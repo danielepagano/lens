@@ -1,4 +1,4 @@
-"""Front matter pin/unpin manipulation for narrative nodes."""
+"""Front matter pin/unpin manipulation and bookkeeping for narrative nodes."""
 
 from __future__ import annotations
 
@@ -121,3 +121,16 @@ def remove_unpin(node: NarrativeNode, kb_ids: list[str], storage: Storage) -> No
         return out
 
     _mutate_front_matter(node, storage, remove)
+
+
+def set_last_compress_size(node: NarrativeNode, new_size: int, storage: Storage) -> None:
+    """Write ``compress.last_size`` to *node*'s front matter through *storage*."""
+
+    def _update(d: dict[str, Any]) -> dict[str, Any]:
+        out = dict(d)
+        compress_fm = dict(cast(dict[str, Any], out.get("compress") or {}))
+        compress_fm["last_size"] = new_size
+        out["compress"] = compress_fm
+        return out
+
+    _mutate_front_matter(node, storage, _update)

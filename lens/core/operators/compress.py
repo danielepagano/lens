@@ -1,4 +1,4 @@
-"""Manual compress: LLM picks a line range (text_select) and delegates to collate."""
+"""Manual and automated compress: LLM picks a line range (text_select) and delegates to collate."""
 
 from __future__ import annotations
 
@@ -9,6 +9,13 @@ from collections.abc import Awaitable, Callable
 from typing import Any, Final
 
 from lens.core.commands.pin import resolve_node
+from lens.core.compression import (
+    Aggressiveness,
+    build_auto_directive,
+    get_visible_text,
+    measure_visible_bytes,
+)
+from lens.core.pinning import set_last_compress_size
 from lens.core.exceptions import LensException
 from lens.core.llm import ToolCall, collect_final_payload, generate_stream
 from lens.core.operator import OperatorError
@@ -127,7 +134,8 @@ async def run_compress(
     *,
     session: ProjectSession,
     narrative: NarrativeNode,
-    prompt: str,
+    prompt: str | None = None,
+    aggressiveness: Aggressiveness | None = None,
     address: str | None = None,
     pins: list[str] | None = None,
     unpins: list[str] | None = None,
@@ -139,13 +147,25 @@ async def run_compress(
 ) -> Storage | None:
     """One LLM round with ``compress_collate`` tool, then :class:`CollateOperator` on success.
 
+    Supply exactly one of:
+
+    - A non-empty *prompt* — tells the model what prose span to collate (manual prompts).
+    - *aggressiveness* — automated directives (low / medium / high); used when there is
+      no user prompt (CLI/UI manual ``--aggressiveness``, or internal auto-compress).
+
     Returns the :class:`~lens.core.storage.Storage` used for collate (and any follow-up
     writes that must stay in the same pending transaction), or ``None`` when the LLM
     stream was interrupted before collate ran.
     """
-    stripped = prompt.strip()
-    if not stripped:
-        raise OperatorError("compress: prompt is required")
+    stripped_prompt = prompt.strip() if prompt else ""
+    has_prompt = bool(stripped_prompt)
+    has_aggr = aggressiveness is not None
+    if has_prompt and has_aggr:
+        raise OperatorError("compress: pass a prompt or aggressiveness, not both")
+    if not has_prompt and not has_aggr:
+        raise OperatorError(
+            "compress: provide a non-empty prompt or aggressiveness (low | medium | high)"
+        )
 
     node_arg = address.strip() if address and address.strip() else None
     try:
@@ -159,12 +179,30 @@ async def run_compress(
     ).llm_view
 
     store = PromptStore(session.project_root)
-    system = store.get("compress.system")
-    user = store.format(
-        "compress.instruction_template",
-        prompt=stripped,
-        node_body=llm_view.visible_for_llm,
-    )
+
+    if has_prompt:
+        system = store.get("compress.system")
+        user = store.format(
+            "compress.instruction_template",
+            prompt=stripped_prompt,
+            node_body=llm_view.visible_for_llm,
+        )
+    else:
+        from lens.core.compression import CompressConfig  # noqa: PLC0415 — avoid circular at module level
+
+        assert aggressiveness is not None
+        config = CompressConfig.from_project(session.project_root)
+        directive = build_auto_directive(store, aggressiveness, config)
+        system = store.get("compress.auto_system")
+        user = store.format(
+            "compress.auto_instruction_template",
+            directive=directive,
+            node_body=llm_view.visible_for_llm,
+            sm=config.sm,
+            m=config.m,
+            l=config.lg,
+        )
+
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": system},
         {"role": "user", "content": user},
@@ -215,7 +253,7 @@ async def run_compress(
         end_line,
     )
 
-    return await CollateOperator.run_collate(
+    collate_storage = await CollateOperator.run_collate(
         session=session,
         narrative=narrative,
         id=slug,
@@ -230,3 +268,13 @@ async def run_compress(
         cancel_event=cancel_event,
         summary_guidance=summary_guide.strip() if summary_guide and summary_guide.strip() else None,
     )
+
+    # Record node size after collate for delta tracking (non-fatal if it fails).
+    try:
+        new_text = target.md_path().read_text(encoding="utf-8")
+        new_size = measure_visible_bytes(get_visible_text(new_text))
+        set_last_compress_size(target, new_size, collate_storage)
+    except Exception:
+        _log.debug("compress: failed to record last_size in front matter", exc_info=True)
+
+    return collate_storage

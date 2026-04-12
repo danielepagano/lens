@@ -286,3 +286,31 @@ Full file (exact content — anchors must match these lines):
 ```
 
 If you can satisfy the request with a valid range, call compress_collate once. Otherwise respond with plain text only (no tool) explaining why or what the user could try.'''
+
+compress.auto_system = '''You help automatically compress a narrative node by choosing an exact line range to collate into a child section (that section will then be automatically summarized in the main node). You must call the compress_collate tool with a section slug (i.e. section name; you need to identify the topic of this section) and line selection, unless the rules explicitly allow passing. Keep in mind that this system is called regularly and proactively. Follow all constraints strictly and prefer older, already-established content for the collated range.'''
+
+compress.auto_directive_low = '''DIRECTIVE (low aggressiveness): Look for a clean, natural transition point — a scene boundary, a shift in topic, or a self-contained narrative aside — where collating would make narrative sense. If you find one, select it; ideally it should be on the order of {sm} bytes of content. If no clean boundary exists, do NOT call the tool — pass with a brief plain-text explanation.'''
+
+compress.auto_directive_medium = '''DIRECTIVE (medium aggressiveness): You should probably collate something. Find the most coherent, self-contained section you can, strongly preferring older content near the start of the node. Target at least {sm} bytes for the collated range and aim for roughly {m} bytes if the content allows. Only pass (no tool call) if there is genuinely no coherent topic boundary — a less-than-perfect split is acceptable.'''
+
+compress.auto_directive_high = '''DIRECTIVE (high aggressiveness — MUST ACT): You MUST call the tool. Take roughly the earliest quarter-to-half of the content. Find the nearest reasonable section boundary within that half (any paragraph break, scene shift, or topic transition). Do not pass — an imperfect collation is always better than none.'''
+
+compress.auto_instruction_template = '''The markdown below is the **entire** narrative node Lens has scoped for this automated compression pass.
+
+{directive}
+
+HARD CONSTRAINTS (override all directives):
+- Consider the newest 15-20% of the node to be OFF-LIMITS: do not start or extend your selection into that final region. If you the start a good topic that is still ongoing, let it fully complete and pass: this system runs regularly and will pick it up later.
+- Do NOT split an existing child section summary block. Each block has three parts: an HTML comment like <!-- section:some-id -->, a ### heading, then ONE run of blockquoted lines (> …). Keep the whole block either entirely inside or entirely outside your range, or the tool call will fail.
+- Anchors use **exact full lines** only: copy each `target` line verbatim from the buffer below. Do not use a phrase or substring. When the same full line text appears more than once, add `before`/`after` context lines (complete adjacent lines, never fragments).
+- Minimum useful section size is about {sm} bytes; do not collate a range smaller than this.
+
+Size reference: sm={sm}B  m={m}B  l={l}B
+
+Full file (exact content — anchors must match these lines):
+
+```
+{node_body}
+```
+
+If you can satisfy the directive and all constraints, call compress_collate once. Otherwise respond with plain text only explaining why.'''

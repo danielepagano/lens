@@ -72,6 +72,18 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
         "compress.instruction_template",
         frozenset({"prompt", "node_body"}),
     ),
+    "compress.auto_system": PromptSpec("compress.auto_system", frozenset()),
+    "compress.auto_directive_low": PromptSpec(
+        "compress.auto_directive_low", frozenset({"sm", "m"})
+    ),
+    "compress.auto_directive_medium": PromptSpec(
+        "compress.auto_directive_medium", frozenset({"sm", "m"})
+    ),
+    "compress.auto_directive_high": PromptSpec("compress.auto_directive_high", frozenset()),
+    "compress.auto_instruction_template": PromptSpec(
+        "compress.auto_instruction_template",
+        frozenset({"node_body", "directive", "sm", "m", "l"}),
+    ),
 }
 
 

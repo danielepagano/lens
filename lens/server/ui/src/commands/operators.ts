@@ -323,11 +323,17 @@ const commands: CommandDefinition[] = [
       {
         name: 'prompt',
         valueType: 'prompt',
-        required: true,
-        hint: 'describe which part of the node to collate',
+        required: false,
+        hint: 'what to collate (or use --aggressiveness instead)',
       },
     ],
     options: [
+      {
+        name: 'aggressiveness',
+        valueType: 'slug',
+        slugSource: 'low,medium,high',
+        hint: 'without a prompt: automated range selection strength',
+      },
       { name: 'node', valueType: 'address', hint: 'narrative node (default: cursor)' },
       { name: 'pin', valueType: 'kb-id', repeatable: true },
       { name: 'unpin', valueType: 'kb-id', repeatable: true },
@@ -658,16 +664,26 @@ const handler: CommandHandler = async (
         handleEvent
       )
     } else if (command === 'structure-compress') {
-      const compressPrompt = (ctx.args.positional['prompt'] as string | undefined)?.trim()
-      if (!compressPrompt) {
-        throw new Error('structure-compress requires a prompt describing what to collate')
+      const compressPrompt = normalizePromptNodeSliceMentions(
+        (ctx.args.positional['prompt'] as string | undefined) || undefined,
+      )?.trim()
+      const rawAggr = (ctx.args.options['aggressiveness'] as string | undefined)?.trim().toLowerCase()
+      const compressAggr =
+        rawAggr === 'low' || rawAggr === 'medium' || rawAggr === 'high' ? rawAggr : undefined
+      if (compressPrompt && compressAggr) {
+        throw new Error('structure-compress: pass a prompt or --aggressiveness, not both')
+      }
+      if (!compressPrompt && !compressAggr) {
+        throw new Error(
+          'structure-compress: provide a prompt or --aggressiveness (low|medium|high)',
+        )
       }
       const compressSummaryGuide =
         (ctx.args.options['summary-guide'] as string | undefined)?.trim() || undefined
       const compressNode = normalizeAddress(ctx.args.options['node'] as string | undefined)
       result = await runCompress(
         {
-          prompt: compressPrompt,
+          ...(compressPrompt ? { prompt: compressPrompt } : { aggressiveness: compressAggr }),
           ...(compressNode ? { address: compressNode } : {}),
           pins,
           unpins,

@@ -1,4 +1,4 @@
-"""Tests for manual compress (LLM tool + collate delegation)."""
+"""Tests for manual and automated compress (LLM tool + collate delegation)."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+from lens.core.compression import Aggressiveness
 from lens.core.llm import FinalPayload, ToolCall
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
@@ -175,7 +176,9 @@ class TestRunCompress(unittest.TestCase):
                     prompt="   ",
                 )
             )
-        self.assertIn("required", str(ctx.exception).lower())
+        msg = str(ctx.exception).lower()
+        self.assertIn("prompt", msg)
+        self.assertIn("aggressiveness", msg)
 
     def test_delegates_to_collate_on_tool(self) -> None:
         final = FinalPayload(
@@ -206,6 +209,7 @@ class TestRunCompress(unittest.TestCase):
                 "run_collate",
                 new_callable=AsyncMock,
             ) as mock_collate:
+                mock_collate.return_value = Storage(self.root)
                 asyncio.run(
                     run_compress(
                         session=self.session,
@@ -264,6 +268,7 @@ class TestRunCompress(unittest.TestCase):
                 "run_collate",
                 new_callable=AsyncMock,
             ) as mock_collate:
+                mock_collate.return_value = Storage(self.root)
                 asyncio.run(
                     run_compress(
                         session=self.session,
@@ -369,3 +374,139 @@ class TestRunCompress(unittest.TestCase):
         assert st is not None
         self.assertTrue(st.has_pending())
         self.assertFalse(st.has_staged())
+
+
+class TestRunCompressAutoMode(unittest.TestCase):
+    """Tests for the aggressiveness-based (auto) path of run_compress."""
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp())
+        _init_repo(self.tmp)
+        self.root, self.narrative = _make_project(self.tmp)
+        _commit_content(self.root, self.narrative, "line1\nline2\nline3\n")
+        self.session = ProjectSession(self.root, self.root)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_no_prompt_no_aggressiveness_raises(self) -> None:
+        with self.assertRaises(OperatorError) as ctx:
+            asyncio.run(
+                run_compress(
+                    session=self.session,
+                    narrative=self.narrative,
+                )
+            )
+        msg = str(ctx.exception).lower()
+        self.assertIn("prompt", msg)
+        self.assertIn("aggressiveness", msg)
+
+    def test_both_prompt_and_aggressiveness_raises(self) -> None:
+        with self.assertRaises(OperatorError) as ctx:
+            asyncio.run(
+                run_compress(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="the tavern scene",
+                    aggressiveness=Aggressiveness.LOW,
+                )
+            )
+        self.assertIn("not both", str(ctx.exception).lower())
+
+    def test_auto_path_uses_auto_system_prompt(self) -> None:
+        """When aggressiveness is set (no prompt), messages use compress.auto_system."""
+        final = FinalPayload(
+            text="No valid range.",
+            tool_calls=[],
+            usage=None,
+            interrupted=False,
+        )
+        captured: list[list[dict[str, object]]] = []
+
+        # Capture the messages by wrapping collect_final_payload: it receives the
+        # async generator as its first argument.  We spy on generate_stream via a
+        # synchronous side_effect that records messages before returning an async gen.
+        async def _empty_gen():  # type: ignore[return-value]
+            return
+            yield  # pragma: no cover
+
+        def _spy_generate(messages: list[dict[str, object]], *args: object, **kwargs: object) -> object:
+            captured.append(list(messages))
+            return _empty_gen()
+
+        with patch(
+            "lens.core.operators.compress.collect_final_payload",
+            new_callable=AsyncMock,
+            return_value=final,
+        ):
+            with patch(
+                "lens.core.operators.compress.generate_stream",
+                side_effect=_spy_generate,
+            ):
+                with self.assertRaises(OperatorError):
+                    asyncio.run(
+                        run_compress(
+                            session=self.session,
+                            narrative=self.narrative,
+                            aggressiveness=Aggressiveness.HIGH,
+                        )
+                    )
+        # The system message should come from compress.auto_system, not compress.system
+        self.assertTrue(len(captured) > 0, "generate_stream was not called")
+        system_msg = captured[0][0]
+        self.assertEqual(system_msg["role"], "system")
+        # auto_system prompt contains "automatically compress"
+        self.assertIn("automatically compress", str(system_msg["content"]).lower())
+
+    def test_auto_path_fm_last_size_written_same_transaction(self) -> None:
+        """After a successful auto collate, compress.last_size lands in the front matter
+        and the FM write is part of the same pending transaction (not a second one)."""
+        final = FinalPayload(
+            text="",
+            tool_calls=[
+                ToolCall(
+                    id="c1",
+                    name="compress_collate",
+                    arguments={
+                        "id": "chunk",
+                        "selection": {
+                            "start": {"target": "line1"},
+                            "end": {"target": "line2"},
+                        },
+                    },
+                )
+            ],
+            usage=None,
+            interrupted=False,
+        )
+
+        async def _fake_summary(*args: object, **kwargs: object) -> str:
+            if kwargs.get("operator_name") == "remember":
+                return ""
+            return "Summary."
+
+        with patch(
+            "lens.core.operators.compress.collect_final_payload",
+            new_callable=AsyncMock,
+            return_value=final,
+        ):
+            with patch(
+                "lens.core.operators.session.generate_text",
+                new=_fake_summary,
+            ):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    st = asyncio.run(
+                        run_compress(
+                            session=self.session,
+                            narrative=self.narrative,
+                            aggressiveness=Aggressiveness.LOW,
+                        )
+                    )
+
+        assert isinstance(st, Storage)
+        self.assertTrue(st.has_pending())
+        self.assertFalse(st.has_staged())
+
+        # last_size must appear in the node's front matter
+        node_text = self.narrative.md_path().read_text(encoding="utf-8")
+        self.assertIn("last_size", node_text)
