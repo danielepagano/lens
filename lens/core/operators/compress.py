@@ -8,13 +8,12 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, Final
 
-_log = logging.getLogger(__name__)
-
 from lens.core.commands.pin import resolve_node
 from lens.core.exceptions import LensException
 from lens.core.llm import ToolCall, collect_final_payload, generate_stream
 from lens.core.operator import OperatorError
 from lens.core.narrative import NarrativeNode
+from lens.core.operators.collate import CollateOperator
 from lens.core.project import ProjectSession, validate_slug
 from lens.core.prompts import PromptStore
 from lens.core.text_select import (
@@ -24,7 +23,7 @@ from lens.core.text_select import (
     storage_text_llm_view,
 )
 
-from lens.core.operators.collate import CollateOperator
+_log = logging.getLogger(__name__)
 
 COMPRESS_COLLATE_TOOL_NAME: Final = "compress_collate"
 

@@ -8,7 +8,11 @@ from collections.abc import Callable, Awaitable
 from typing import ClassVar
 
 from lens.core.address import NarrativeAddress
-from lens.core.annotations import find_front_matter_span, strip_markdown_comments
+from lens.core.annotations import (
+    ParsedAnnotation,
+    find_front_matter_span,
+    strip_markdown_comments,
+)
 from lens.core.context import CrawlResult, crawl
 from lens.core.narrative import NarrativeNode, parse_segments
 from lens.core.operator import Operator
@@ -16,6 +20,41 @@ from lens.core.project import ProjectSession, resolve_address, validate_slug
 
 from lens.core.operators.section import section_close_tag, section_open_tag
 from lens.core.operators.session import apply_remember_patches, generate_summary_block
+
+# After the fact, ``write`` / ``edit`` wrappers are session metadata (see
+# :mod:`lens.core.commands.rewind`); they are not narrative sub-nodes like
+# ``section`` / ``design`` and may be cut through when collating.
+_COLLATE_SPLITTABLE_BODY_OPERATORS: frozenset[str] = frozenset({"write", "edit"})
+
+
+def _collate_fence_stripping_annotation(
+    ann: ParsedAnnotation, target_node: NarrativeNode
+) -> bool:
+    """True when *ann* may be cut through and its open/close tag lines dropped."""
+    if ann.closing or ann.self_closing:
+        return False
+    if ann.operator not in _COLLATE_SPLITTABLE_BODY_OPERATORS:
+        return False
+    if ann.id is not None and target_node.child_node(ann.id).exists():
+        return False
+    return True
+
+
+def _collate_lines_without_fence_drops(
+    lines: list[str],
+    start_line: int,
+    end_line: int,
+    drop_line_nums: set[int],
+) -> tuple[list[str], list[str], list[str]]:
+    """Split *lines* into before / selected / after, omitting dropped 1-based indices."""
+    before = [lines[i - 1] for i in range(1, start_line) if i not in drop_line_nums]
+    selected = [
+        lines[i - 1] for i in range(start_line, end_line + 1) if i not in drop_line_nums
+    ]
+    after = [
+        lines[i - 1] for i in range(end_line + 1, len(lines) + 1) if i not in drop_line_nums
+    ]
+    return before, selected, after
 
 
 class CollateOperator(Operator):
@@ -65,6 +104,7 @@ class CollateOperator(Operator):
 
         segments = parse_segments(text)
         subnodes_to_move: list[str] = []
+        drop_fence_lines: set[int] = set()
 
         for seg in segments:
             ann = seg.annotation
@@ -89,10 +129,15 @@ class CollateOperator(Operator):
             fully_inside = seg_first >= start_line and seg_last <= end_line
 
             if overlaps and not fully_inside:
-                raise ValueError(
-                    f"line range would split [{ann.operator}"
-                    + (f":{ann.id}" if ann.id else "")
-                    + f"] block (lines {seg_first}–{seg_last})"
+                if not _collate_fence_stripping_annotation(ann, target_node):
+                    raise ValueError(
+                        f"line range would split [{ann.operator}"
+                        + (f":{ann.id}" if ann.id else "")
+                        + f"] block (lines {seg_first}–{seg_last})"
+                    )
+                drop_fence_lines.update(range(ann.line_start, ann.line_end + 1))
+                drop_fence_lines.update(
+                    range(seg.close.line_start, seg.close.line_end + 1)
                 )
 
             if fully_inside and ann.id is not None:
@@ -109,12 +154,14 @@ class CollateOperator(Operator):
             if overlaps and not fully_inside:
                 raise ValueError("line range would split the front matter block")
 
-        selected_text = "\n".join(lines[start_line - 1 : end_line]).strip()
+        before_lines, selected_lines, after_lines = _collate_lines_without_fence_drops(
+            lines, start_line, end_line, drop_fence_lines
+        )
+
+        selected_text = "\n".join(selected_lines).strip()
 
         child_clean = strip_markdown_comments(selected_text).strip()
-        passage_before = strip_markdown_comments(
-            "\n".join(lines[: start_line - 1])
-        ).strip()
+        passage_before = strip_markdown_comments("\n".join(before_lines)).strip()
 
         crawl_result = crawl(target_node, extra_pins=pins, extra_unpins=unpins)
         adjusted_crawl = CrawlResult(
@@ -149,9 +196,6 @@ class CollateOperator(Operator):
         open_tag = section_open_tag(id)
         close_tag = section_close_tag(id)
         section_block = f"{open_tag}\n\n{summary_block}\n\n{close_tag}"
-
-        before_lines = lines[: start_line - 1]
-        after_lines = lines[end_line:]
 
         if before_lines and before_lines[-1].strip():
             before_lines = before_lines + [""]

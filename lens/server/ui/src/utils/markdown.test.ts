@@ -385,6 +385,29 @@ More content line 5
     expect(result).not.toMatch(/\n### Amy's Dream\n/)
   })
 
+  it('does not duplicate ### when canonical summary title line is transaction-added', () => {
+    const markdown = `[section:undressing]: #
+
+<!-- section:undressing -->
+
+### A Doll's Surrender
+
+> Cecily speaks.
+
+[/section:undressing]: #`
+    const overlay: NodeTransactionOverlay = {
+      addedLines: new Set([5]),
+      removedGroups: [],
+    }
+    const result = preprocessAnnotations(markdown, 'Act-1/Walstein/a-dolls-company', overlay)
+    const h3Matches = result.match(/<h3\b/g) ?? []
+    expect(h3Matches).toHaveLength(1)
+    expect(result).toContain('annotation-heading')
+    expect(result).toContain('href="#Act-1/Walstein/a-dolls-company/undressing"')
+    expect(result).toContain("A Doll's Surrender")
+    expect(result).not.toMatch(/\n### A Doll's Surrender\n/)
+  })
+
   it('wraps added fenced code blocks once inside annotation bodies', () => {
     const markdown = `[design:d1]: #
 

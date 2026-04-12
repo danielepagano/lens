@@ -476,12 +476,9 @@ function renderAnnotationWithBody(
     const addedRun: string[] = []
     for (let k = 0; k < bodyLines.length; ) {
       if (omitBodyLine.has(k)) {
-        const outLine = bodyLines[k]
-        const fileLine = bodyStartLine + k
-        if (overlay?.addedLines.has(fileLine)) {
-          flushAddedTransactionRun(output, addedRun)
-          output.push(outLine)
-        }
+        // Title is already rendered in `annotationHeadingHtml` above; never
+        // re-emit the omitted `###` line — even when the diff marks it as
+        // added, that would duplicate the heading (raw md h3 has no link).
         k += 1
         continue
       }

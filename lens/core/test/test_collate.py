@@ -408,7 +408,7 @@ class TestCollateValidation(unittest.TestCase):
             with self.assertRaises(ValueError):
                 _run_collate(root, narrative, narrative, "aside", 1, 2)
 
-    def test_split_open_tag_raises(self) -> None:
+    def test_split_write_block_strips_fences_from_parent_and_child(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             content = (
@@ -422,8 +422,44 @@ class TestCollateValidation(unittest.TestCase):
             )
             _commit_content(root, narrative, content)
 
-            with self.assertRaises(ValueError):
-                _run_collate(root, narrative, narrative, "bad", 2, 7)
+            _run_collate(root, narrative, narrative, "chunk", 2, 7)
+
+            parent_text = narrative.md_path().read_text()
+            self.assertNotIn("[write", parent_text)
+            self.assertNotIn("[/write]", parent_text)
+            child_text = narrative.child_node("chunk").md_path().read_text()
+            self.assertIn("Content here.", child_text)
+            self.assertNotIn("[write", child_text)
+            self.assertNotIn("[/write]", child_text)
+            self.assertNotIn("prompt: hello", child_text)
+
+    def test_split_write_body_only_strips_opener_and_closer_from_parent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            content = (
+                "[write\n"
+                "  prompt: hello\n"
+                "]: #\n"
+                "\n"
+                "Keep before.\n"
+                "Take this line.\n"
+                "Keep after.\n"
+                "\n"
+                "[/write]: #\n"
+            )
+            _commit_content(root, narrative, content)
+
+            _run_collate(root, narrative, narrative, "mid", 6, 6)
+
+            parent_text = narrative.md_path().read_text()
+            self.assertNotIn("[write", parent_text)
+            self.assertNotIn("[/write]", parent_text)
+            self.assertIn("Keep before.", parent_text)
+            self.assertIn("Keep after.", parent_text)
+            self.assertNotIn("Take this line.", parent_text)
+            child_text = narrative.child_node("mid").md_path().read_text()
+            self.assertIn("Take this line.", child_text)
+            self.assertNotIn("[write", child_text)
 
     def test_split_close_tag_not_included_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
