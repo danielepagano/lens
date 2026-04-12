@@ -8,6 +8,7 @@ from lens.core.annotations import (
     decode_ai_secrets,
     encode_ai_secrets,
     find_front_matter_span,
+    iter_kept_storage_lines,
     parse_annotations,
     parse_front_matter,
     parse_tail_cursor_annotation,
@@ -32,6 +33,18 @@ class TestStripHtmlComments(unittest.TestCase):
     def test_sequential_comments(self) -> None:
         text = "a <!-- x --> b <!-- y --> c"
         self.assertEqual(strip_html_comments(text), "a  b  c")
+
+
+class TestIterKeptStorageLines(unittest.TestCase):
+    def test_plain_text_disk_indices(self) -> None:
+        raw = "A\nB\nC\n"
+        kept = iter_kept_storage_lines(raw)
+        self.assertEqual(kept, [("A", 1), ("B", 2), ("C", 3), ("", 4)])
+
+    def test_skipped_block_advances_disk(self) -> None:
+        raw = "A\n[ x ]: #\nB\n"
+        kept = iter_kept_storage_lines(raw)
+        self.assertEqual(kept, [("A", 1), ("B", 3), ("", 4)])
 
 
 class TestStripMarkdownComments(unittest.TestCase):

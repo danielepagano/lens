@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runChat, runSectionStart, runSectionEnd, runCollate, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
+import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runChat, runSectionStart, runSectionEnd, runCollate, runCompress, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type Stats } from '../services/api'
 import {
   cliOutput,
   treeRefreshTrigger,
@@ -7,6 +7,7 @@ import {
   inlineEditResult,
   scrollContentToBottom,
   scrollCodeMirrorToBottom,
+  transactionResult,
   type InlineEditState,
 } from '../stores/ui'
 import { streamingPreview, currentAddress, nodeContent } from '../stores/document'
@@ -303,6 +304,31 @@ const commands: CommandDefinition[] = [
       { name: 'end', valueType: 'line', required: true, hint: 'end line' },
     ],
     options: [
+      { name: 'pin', valueType: 'kb-id', repeatable: true },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
+      { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
+      {
+        name: 'summary-guide',
+        valueType: 'prompt',
+        hint: 'optional extra instructions for the collate summary LLM',
+      },
+    ],
+  },
+  {
+    trigger: 'structure-compress',
+    group: 'structure',
+    cursorTargeting: 'can-override',
+    positional: [
+      {
+        name: 'prompt',
+        valueType: 'prompt',
+        required: true,
+        hint: 'describe which part of the node to collate',
+      },
+    ],
+    options: [
+      { name: 'node', valueType: 'address', hint: 'narrative node (default: cursor)' },
       { name: 'pin', valueType: 'kb-id', repeatable: true },
       { name: 'unpin', valueType: 'kb-id', repeatable: true },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]' },
@@ -631,6 +657,26 @@ const handler: CommandHandler = async (
         },
         handleEvent
       )
+    } else if (command === 'structure-compress') {
+      const compressPrompt = (ctx.args.positional['prompt'] as string | undefined)?.trim()
+      if (!compressPrompt) {
+        throw new Error('structure-compress requires a prompt describing what to collate')
+      }
+      const compressSummaryGuide =
+        (ctx.args.options['summary-guide'] as string | undefined)?.trim() || undefined
+      const compressNode = normalizeAddress(ctx.args.options['node'] as string | undefined)
+      result = await runCompress(
+        {
+          prompt: compressPrompt,
+          ...(compressNode ? { address: compressNode } : {}),
+          pins,
+          unpins,
+          llm_id: llmId,
+          reasoning,
+          summary_guide: compressSummaryGuide,
+        },
+        handleEvent
+      )
     } else {
       const address = normalizeAddress(ctx.args.positional['address'] as string)
       const startLine = parseInt(ctx.args.positional['start'] as string, 10)
@@ -726,11 +772,21 @@ const handler: CommandHandler = async (
 
     const isError = 'type' in result && result.type === 'error'
     if (isError || errorOutput) {
-      cliOutput.set({
-        output: errorOutput || (isError ? (result as { message?: string }).message ?? '' : ''),
-        exitCode: 1,
-        streaming: false,
-      })
+      const errText = errorOutput || (isError ? (result as { message?: string }).message ?? '' : '')
+      if (command === 'structure-compress' && errText) {
+        transactionResult.set({
+          title: 'Compress',
+          message: errText,
+          theme: 'error',
+        })
+        cliOutput.set(null)
+      } else {
+        cliOutput.set({
+          output: errText,
+          exitCode: 1,
+          streaming: false,
+        })
+      }
       return { clearInput: false }
     }
 
@@ -758,19 +814,39 @@ const handler: CommandHandler = async (
     streamingPreview.set(null)
 
     if (err instanceof StreamBusyError) {
-      cliOutput.set({
-        output: err.message,
-        exitCode: 1,
-        streaming: false,
-      })
+      if (command === 'structure-compress') {
+        transactionResult.set({
+          title: 'Compress',
+          message: err.message,
+          theme: 'error',
+        })
+        cliOutput.set(null)
+      } else {
+        cliOutput.set({
+          output: err.message,
+          exitCode: 1,
+          streaming: false,
+        })
+      }
+      if (ctx.onDone) await ctx.onDone()
       return { clearInput: false }
     }
 
-    cliOutput.set({
-      output: err instanceof Error ? err.message : String(err),
-      exitCode: 1,
-      streaming: false,
-    })
+    const msg = err instanceof Error ? err.message : String(err)
+    if (command === 'structure-compress' && msg) {
+      transactionResult.set({
+        title: 'Compress',
+        message: msg,
+        theme: 'error',
+      })
+      cliOutput.set(null)
+    } else {
+      cliOutput.set({
+        output: msg,
+        exitCode: 1,
+        streaming: false,
+      })
+    }
     if (ctx.onDone) await ctx.onDone()
     return { clearInput: false }
   }

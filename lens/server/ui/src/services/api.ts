@@ -388,6 +388,23 @@ export const runCollate = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/collate', params, onEvent)
 
+export interface CompressParams {
+  prompt: string
+  /** Narrative node (nav or display form); omit for cursor node. */
+  address?: string
+  pins?: string[]
+  unpins?: string[]
+  llm_id?: string
+  reasoning?: string
+  summary_guide?: string
+}
+
+export const runCompress = (
+  params: CompressParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp('/operator/compress', params, onEvent)
+
 // ---- KB API ----
 
 export interface KbItem {

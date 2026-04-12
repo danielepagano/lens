@@ -15,14 +15,13 @@ Terminology
   or one of the sentinels :data:`START_ANCHOR` (``"@@@start"``) /
   :data:`END_ANCHOR` (``"@@@end"``) which represent the cursor position at
   the very beginning / very end of the document.
-- ``before``  – ordered context lines that must appear immediately before
-  the target line (the last element is the line directly above ``target``).
-  May be empty. May contain :data:`START_ANCHOR` **only as the first
-  element**, meaning "the document starts here".
-- ``after``   – ordered context lines that must appear immediately after
-  the target line (the first element is the line directly below
-  ``target``). May contain :data:`END_ANCHOR` **only as the last element**,
-  meaning "the document ends here".
+- ``before``  – ordered **full** adjacent lines (verbatim, same rules as
+  ``target`` — never a substring of a line). The last element is the line
+  directly above ``target``. May be empty. May contain :data:`START_ANCHOR`
+  **only as the first element**, meaning "the document starts here".
+- ``after``   – ordered **full** adjacent lines below ``target`` (first
+  element is directly under ``target``). May contain :data:`END_ANCHOR`
+  **only as the last element**, meaning "the document ends here".
 
 A ``Selection`` is either a single ``LineSelector`` (which addresses that
 one line) or a ``start`` + ``end`` pair (inclusive range). When ``start``
@@ -37,8 +36,15 @@ Resolution
 :func:`resolve_selection` locates the selection in the document.  It
 returns a half-open Python slice ``(slice_start, slice_end)`` over the
 document's logical line list — suitable for `lines[slice_start:slice_end]
-= new_lines`-style replacement.  Failures raise :class:`SelectionError`
-with a descriptive message covering the three common problems:
+= new_lines`-style replacement.  The **contract** for tool callers is:
+``target`` is the exact full logical line (or a cursor sentinel);
+``before``/``after`` are optional full adjacent lines to disambiguate
+repeated lines.  The resolver still applies exact-line matching first, then
+a narrow resilience path (globally unique single substring occurrence,
+no ``\\n`` in ``target``), then contextual full-line matching — callers
+should follow the strict contract and not rely on the resilience path.
+Failures raise :class:`SelectionError` with a descriptive message covering
+the common problems:
 
 1. ``target`` not found at all
 2. ``target`` not uniquely identified — caller must add more context
@@ -75,16 +81,15 @@ class SelectionError(LensException):
 class LineSelector:
     """One end of a :class:`Selection`.
 
-    ``target`` is the verbatim content of the line we want to select,
-    without its trailing newline.  The sentinels :data:`START_ANCHOR` and
-    :data:`END_ANCHOR` may be used instead to denote the document-start
-    or document-end cursor positions.
+    ``target`` is the verbatim full line to select (no trailing newline),
+    or the sentinels :data:`START_ANCHOR` / :data:`END_ANCHOR` for document
+    edges.
 
-    ``before`` / ``after`` hold optional context lines used to
-    disambiguate ``target`` when it appears more than once.  The elements
-    are stored in document order: the last element of ``before`` is the
-    line directly above ``target``; the first element of ``after`` is the
-    line directly below.  :data:`START_ANCHOR` may appear only as the
+    ``before`` / ``after`` hold optional **whole-line** context (verbatim
+    full lines, never fragments) used to disambiguate ``target`` when it
+    appears more than once.  The elements are stored in document order: the
+    last element of ``before`` is the line directly above ``target``; the
+    first element of ``after`` is the line directly below.  :data:`START_ANCHOR` may appear only as the
     first element of ``before`` (meaning "document starts here");
     :data:`END_ANCHOR` may appear only as the last element of ``after``
     (meaning "document ends here").
@@ -292,6 +297,21 @@ def _find_matches(lines: list[str], selector: LineSelector, role: str) -> list[i
     return matches
 
 
+def _substring_unique_occurrence_line_index(lines: list[str], target: str) -> int | None:
+    """If *target* occurs exactly once in the whole document as a substring (no ``\\n`` in *target*), return that line index; else ``None``."""
+    if not target or "\n" in target:
+        return None
+    total = 0
+    last_i: int | None = None
+    for i, ln in enumerate(lines):
+        total += ln.count(target)
+        if total > 1:
+            return None
+        if target in ln:
+            last_i = i
+    return last_i if total == 1 else None
+
+
 @dataclass(frozen=True)
 class _Endpoint:
     """Resolved endpoint: either a concrete line or a document-edge anchor."""
@@ -315,23 +335,54 @@ def _resolve_endpoint(
             )
         return _Endpoint(kind="end", index=len(lines))
 
-    matches = _find_matches(lines, selector, role)
-    if not matches:
-        raise SelectionError(
-            f"{role}: no match for target {selector.target!r}"
-            + (
-                f" with before={list(selector.before)!r} after={list(selector.after)!r}"
-                if (selector.before or selector.after)
-                else ""
+    target = selector.target
+    _validate_context(selector, role)
+    has_ctx = bool(selector.before or selector.after)
+    solo_sel = LineSelector(target=target, before=(), after=())
+    solo_matches = _find_matches(lines, solo_sel, role)
+
+    if len(solo_matches) == 1:
+        return _Endpoint(kind="line", index=solo_matches[0])
+
+    if len(solo_matches) == 0:
+        sub_i = _substring_unique_occurrence_line_index(lines, target)
+        if sub_i is not None:
+            return _Endpoint(kind="line", index=sub_i)
+        if has_ctx:
+            ctx_matches = _find_matches(lines, selector, role)
+            if len(ctx_matches) == 1:
+                return _Endpoint(kind="line", index=ctx_matches[0])
+            if not ctx_matches:
+                raise SelectionError(
+                    f"{role}: no match for target {target!r}"
+                    f" with before={list(selector.before)!r} after={list(selector.after)!r}"
+                )
+            raise SelectionError(
+                f"{role}: target {target!r} is ambiguous — "
+                f"matches {len(ctx_matches)} lines ({[m + 1 for m in ctx_matches]}); "
+                "tighten before/after context"
             )
-        )
-    if len(matches) > 1:
+        raise SelectionError(f"{role}: no match for target {target!r}")
+
+    if not has_ctx:
         raise SelectionError(
-            f"{role}: target {selector.target!r} is ambiguous — "
-            f"matches {len(matches)} lines ({[m + 1 for m in matches]}); "
-            f"add context lines (before/after) to uniquely identify the intended line"
+            f"{role}: target {target!r} is ambiguous — "
+            f"matches {len(solo_matches)} lines ({[m + 1 for m in solo_matches]}); "
+            "add context lines (before/after) to uniquely identify the intended line"
         )
-    return _Endpoint(kind="line", index=matches[0])
+    ctx_matches = _find_matches(lines, selector, role)
+    if len(ctx_matches) == 1:
+        return _Endpoint(kind="line", index=ctx_matches[0])
+    if not ctx_matches:
+        raise SelectionError(
+            f"{role}: no match for target {target!r}"
+            f" with before={list(selector.before)!r} after={list(selector.after)!r}"
+        )
+    raise SelectionError(
+        f"{role}: target {target!r} is ambiguous — "
+        f"matches {len(ctx_matches)} lines ({[m + 1 for m in ctx_matches]}); "
+        "tighten before/after context"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -400,6 +451,207 @@ def resolve_selection(text: str, selection: Selection) -> ResolvedSelection:
         lines=tuple(lines),
         had_trailing_newline=had_trailing,
     )
+
+
+@dataclass(frozen=True)
+class StorageLlmView:
+    """Storage text as the LLM sees it for anchors, plus 1-based disk line spans.
+
+    Rows align with :func:`resolve_selection` / :func:`_split_lines` over
+    ``visible_for_llm`` (same row count and order).
+    """
+
+    visible_for_llm: str
+    disk_line_start_1based: tuple[int, ...]
+    disk_line_end_1based: tuple[int, ...]
+
+
+def _kept_char_intervals(kept: list[str]) -> list[tuple[int, int]]:
+    """Half-open character intervals ``[a, b)`` for each kept line in ``"\\n".join(kept)``."""
+    acc = 0
+    out: list[tuple[int, int]] = []
+    for k, ln in enumerate(kept):
+        start = acc
+        end_excl = acc + len(ln)
+        out.append((start, end_excl))
+        acc = end_excl
+        if k < len(kept) - 1:
+            acc += 1
+    return out
+
+
+def _char_pos_to_disk(intervals: list[tuple[int, int]], disk: list[int], pos: int) -> int:
+    for k, (a, b) in enumerate(intervals):
+        if a == b == pos:
+            return disk[k]
+        if a <= pos < b:
+            return disk[k]
+        if pos == b and k + 1 < len(intervals):
+            return disk[k + 1]
+    raise SelectionError(
+        f"internal: character offset {pos} is not inside any kept storage line span"
+    )
+
+
+def _char_starts_from_splitlines_rows(
+    decoded: str, rows: list[str], had_trailing: bool
+) -> list[int]:
+    if not rows:
+        if decoded:
+            raise SelectionError("internal: non-empty decoded with empty rows")
+        return []
+    starts: list[int] = []
+    pos = 0
+    for i, rl in enumerate(rows):
+        starts.append(pos)
+        pos += len(rl)
+        if i < len(rows) - 1:
+            if pos >= len(decoded):
+                raise SelectionError("internal: missing newline between decoded rows")
+            if decoded.startswith("\r\n", pos):
+                pos += 2
+            elif decoded[pos] in "\n\r":
+                pos += 1
+            else:
+                raise SelectionError(
+                    f"internal: expected newline after row {i} in decoded buffer"
+                )
+    if had_trailing and pos < len(decoded):
+        if decoded.startswith("\r\n", pos):
+            pos += 2
+        elif decoded[pos] in "\n\r":
+            pos += 1
+    if pos != len(decoded):
+        raise SelectionError(
+            "internal: decoded row offsets do not cover full string "
+            f"(left {len(decoded) - pos} bytes)"
+        )
+    return starts
+
+
+def storage_text_llm_view(raw_storage_text: str) -> StorageLlmView:
+    """Strip markdown comments like crawl, then ``decode_ai_secrets`` (assemble parity)."""
+    from lens.core.annotations import decode_ai_secrets, iter_kept_storage_lines
+
+    kept_pairs = iter_kept_storage_lines(raw_storage_text)
+    if not kept_pairs:
+        return StorageLlmView("", (), ())
+    kept = [t for t, _ in kept_pairs]
+    disk = [n for _, n in kept_pairs]
+    joined = "\n".join(kept)
+    decoded = decode_ai_secrets(joined)
+    if len(joined) != len(decoded):
+        raise SelectionError(
+            "decode_ai_secrets changed byte length; cannot map anchors to storage lines"
+        )
+    res_lines, had_tr = _split_lines(decoded)
+    starts = _char_starts_from_splitlines_rows(decoded, res_lines, had_tr)
+    intervals = _kept_char_intervals(kept)
+    disk_starts: list[int] = []
+    disk_ends: list[int] = []
+    for i, rl in enumerate(res_lines):
+        c0 = starts[i]
+        c1 = c0 + (len(rl) - 1) if rl else c0
+        lo = _char_pos_to_disk(intervals, disk, c0)
+        hi = _char_pos_to_disk(intervals, disk, c1)
+        disk_starts.append(min(lo, hi))
+        disk_ends.append(max(lo, hi))
+    return StorageLlmView(
+        visible_for_llm=decoded,
+        disk_line_start_1based=tuple(disk_starts),
+        disk_line_end_1based=tuple(disk_ends),
+    )
+
+
+def resolve_storage_selection_to_disk_inclusive_lines(
+    raw_storage_text: str, selection: Selection
+) -> tuple[int, int]:
+    """Resolve *selection* on the LLM-visible storage buffer; return 1-based inclusive disk lines."""
+    view = storage_text_llm_view(raw_storage_text)
+    if not view.visible_for_llm.strip():
+        raise SelectionError("storage text has no visible lines after stripping comments")
+    resolved = resolve_selection(view.visible_for_llm, selection)
+    if resolved.is_cursor:
+        raise SelectionError("selection resolved to an empty range (use cursor splice helpers)")
+    n = len(view.disk_line_start_1based)
+    if resolved.slice_end <= resolved.slice_start or resolved.slice_start >= n:
+        raise SelectionError("resolved selection is out of range for storage view")
+    last = resolved.slice_end - 1
+    start_disk = view.disk_line_start_1based[resolved.slice_start]
+    end_disk = view.disk_line_end_1based[last]
+    return start_disk, end_disk
+
+
+def _splice_insert_before_disk_line(
+    raw_storage_text: str, before_disk_1: int, replacement_lines: list[str]
+) -> str:
+    """Insert *replacement_lines* immediately before physical line ``before_disk_1`` (1-based)."""
+    lines = raw_storage_text.split("\n")
+    a = before_disk_1 - 1
+    if a < 0 or a > len(lines):
+        raise SelectionError(
+            f"insert-before line {before_disk_1} is out of bounds (file has {len(lines)} lines)"
+        )
+    return "\n".join(lines[:a] + replacement_lines + lines[a:])
+
+
+def splice_storage_text_by_inclusive_disk_lines(
+    raw_storage_text: str,
+    start_disk_1: int,
+    end_disk_1_inclusive: int,
+    replacement_lines: list[str],
+) -> str:
+    """Replace inclusive disk line range ``start_disk_1``..``end_disk_1_inclusive`` with *replacement_lines*."""
+    lines = raw_storage_text.split("\n")
+    a = start_disk_1 - 1
+    b = end_disk_1_inclusive
+    if a < 0 or b > len(lines) or a > b:
+        raise SelectionError(
+            f"disk line range {start_disk_1}–{end_disk_1_inclusive} is out of bounds "
+            f"(file has {len(lines)} lines)"
+        )
+    before = lines[:a]
+    after = lines[b:]
+    return "\n".join(before + replacement_lines + after)
+
+
+def apply_patches_to_storage_llm_view(raw_storage_text: str, patches: list[Patch]) -> str:
+    """Like :func:`apply_patches` but resolve each patch on the LLM-visible buffer."""
+    current = raw_storage_text
+    for index, patch in enumerate(patches, start=1):
+        try:
+            view = storage_text_llm_view(current)
+            if not view.visible_for_llm.strip():
+                raise SelectionError("storage text has no visible lines after stripping comments")
+            resolved = resolve_selection(view.visible_for_llm, patch.selection)
+            new_lines = patch.content.splitlines() if patch.content else []
+            n = len(view.disk_line_start_1based)
+            if resolved.is_cursor:
+                if resolved.slice_start == 0 and resolved.slice_end == 0:
+                    before_1 = view.disk_line_start_1based[0] if n else 1
+                    current = _splice_insert_before_disk_line(current, before_1, new_lines)
+                elif resolved.slice_start == n and resolved.slice_end == n and n > 0:
+                    after_last = view.disk_line_end_1based[n - 1]
+                    current = _splice_insert_before_disk_line(
+                        current, after_last + 1, new_lines
+                    )
+                else:
+                    raise SelectionError(
+                        "unsupported zero-width selection for storage patch "
+                        f"(slice {resolved.slice_start}:{resolved.slice_end}, n={n})"
+                    )
+            else:
+                if resolved.slice_end <= resolved.slice_start or resolved.slice_start >= n:
+                    raise SelectionError("resolved selection is out of range for storage view")
+                last = resolved.slice_end - 1
+                start_disk = view.disk_line_start_1based[resolved.slice_start]
+                end_disk = view.disk_line_end_1based[last]
+                current = splice_storage_text_by_inclusive_disk_lines(
+                    current, start_disk, end_disk, new_lines
+                )
+        except SelectionError as e:
+            raise SelectionError(f"patch #{index}: {e}") from e
+    return current
 
 
 def apply_patch(text: str, patch: Patch) -> str:

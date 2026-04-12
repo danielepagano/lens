@@ -241,14 +241,13 @@ async def kb_patch_handler(args: dict[str, Any], project_root: Path) -> str:
 
 KB_PATCH_TOOL = CommandToolDef(
     description=(
-        "Patch a KB object's body by replacing one or more line ranges without "
-        "using line numbers. Each patch names the start (and optionally end) "
-        "line by its verbatim content (minus the newline) and optionally a few "
-        "context lines before/after to uniquely identify it. Sentinels "
-        "'@@@start' and '@@@end' represent the beginning and end of the "
-        "document (usable as a target for prepend/append, or as a context "
-        "anchor). Patches are applied in order and each re-resolves against "
-        "the current text."
+        "Patch a KB object's body by replacing line ranges without line numbers. "
+        "Each end of a range is identified by the exact full text of one line "
+        "(minus its newline), optionally plus full adjacent lines in "
+        "'before'/'after' to disambiguate when the same line repeats. Each "
+        "'before'/'after' entry must be a complete line, never a fragment. "
+        "Sentinels '@@@start' and '@@@end' mark document boundaries. Patches "
+        "apply in order and re-resolve against the current text."
     ),
     parameters={
         "type": "object",
@@ -270,10 +269,11 @@ KB_PATCH_TOOL = CommandToolDef(
                         "start": {
                             "type": "object",
                             "description": (
-                                "Start of the selection. 'target' is the exact "
-                                "line to match (minus newline), '@@@start', or "
-                                "'@@@end'. Use 'before'/'after' to supply "
-                                "context lines when 'target' is not unique."
+                                "Start of the selection. 'target' is the exact full line to match "
+                                "(minus newline), '@@@start', or '@@@end'. Do not use a substring or "
+                                "partial line as 'target'. If that line is unique, omit 'before' and "
+                                "'after'. Otherwise 'before'/'after' are full adjacent lines only "
+                                "(verbatim, never fragments)."
                             ),
                             "properties": {
                                 "target": {"type": "string"},
@@ -291,7 +291,9 @@ KB_PATCH_TOOL = CommandToolDef(
                         "end": {
                             "type": "object",
                             "description": (
-                                "Optional end of an inclusive range selection."
+                                "Optional end of an inclusive range. Same rules as 'start': "
+                                "exact full line as 'target' (or sentinels); omit 'before'/'after' "
+                                "when unique; otherwise full adjacent lines only."
                             ),
                             "properties": {
                                 "target": {"type": "string"},

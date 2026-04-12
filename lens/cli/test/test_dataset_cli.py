@@ -157,6 +157,16 @@ class TestDatasetCLI(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("collate is not available in dataset mode", result.stderr)
 
+    def test_compress_blocked(self) -> None:
+        result = subprocess.run(
+            _LENS_CMD + ["compress", "anything"],
+            cwd=self.dataset_dir,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("compress is not available in dataset mode", result.stderr)
+
     def test_write_blocked(self) -> None:
         result = subprocess.run(
             _LENS_CMD + ["write", "continue"],

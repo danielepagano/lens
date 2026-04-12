@@ -77,16 +77,21 @@ class KnowledgeObject:
     def format(
         self, *, include_comments: bool = False, strip_html_comments: bool = False
     ) -> str:
-        """Format the object as a header line followed by the body text verbatim.
+        """Format the object as a header line followed by the body.
 
         The header is ``KB['<id>']``, optionally suffixed with ``  TAGS=...``.
-        The body follows on its own lines with **no indentation, no wrapping
-        and no transformation**: every body line is emitted exactly as stored
-        so that tools like ``kb_patch`` can round-trip a line by quoting it.
 
-        Multiple formatted objects are typically joined with ``"\\n\\n"`` which
-        produces a blank-line separator between entries (enough for an LLM
-        reader to tell where one KB body ends and the next header begins).
+        When ``include_comments`` is true, the body is ``self.text`` unchanged
+        (aside from ``rstrip("\\n")`` on the body segment). When false, the body
+        is :func:`strip_markdown_comments` applied to ``self.text`` — the same
+        prose the crawl shows after stripping markdown comment blocks, not a
+        byte-for-byte copy of storage. Optional ``strip_html_comments`` removes
+        ``<!-- ... -->`` from that body string. Crawl may still run
+        ``decode_ai_secrets`` on assembled prompts; that step is not applied
+        here.
+
+        Multiple formatted objects are typically joined with ``"\\n\\n"`` so
+        readers can tell where one KB body ends and the next header begins.
         """
         from lens.core.annotations import strip_html_comments as strip_html
         from lens.core.annotations import strip_markdown_comments

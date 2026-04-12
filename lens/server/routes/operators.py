@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from lens.core.commands.pin import resolve_node
 from lens.core.commands.rollback import execute_rollback
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -121,6 +122,16 @@ class CollateBody(BaseModel):
     address: str
     start_line: int
     end_line: int
+    pins: list[str] = []
+    unpins: list[str] = []
+    llm_id: str | None = None
+    reasoning: str | None = None
+    summary_guide: str | None = None
+
+
+class CompressBody(BaseModel):
+    prompt: str
+    address: str | None = None  # narrative node (display form); default cursor
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
@@ -730,6 +741,44 @@ async def operator_collate(
         )
 
     return _start_operator_stream(lock, event_queue, session, "collate", node_addr, coro_fn)
+
+
+@router.post("/operator/compress")
+async def operator_compress(
+    body: CompressBody,
+    request: Request,
+    session: ProjectSession = Depends(get_session),
+) -> StreamingResponse:
+    from lens.core.operators.compress import run_compress
+
+    narrative = _require_narrative(session)
+    _validate_pins(session, body.pins, body.unpins)
+    try:
+        target = resolve_node(session, (body.address or "").strip() or None)
+    except LensException as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    node_addr = str(target.to_address())
+
+    lock: StreamLock = request.app.state.stream_lock
+    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+    on_token = _make_on_token(event_queue)
+
+    def coro_fn() -> Any:
+        return run_compress(
+            session=session,
+            narrative=narrative,
+            prompt=body.prompt,
+            address=body.address,
+            pins=body.pins,
+            unpins=body.unpins,
+            llm_id=body.llm_id,
+            reasoning=body.reasoning,
+            summary_guide=body.summary_guide,
+            on_token=on_token,
+            cancel_event=lock.cancel_event,
+        )
+
+    return _start_operator_stream(lock, event_queue, session, "compress", node_addr, coro_fn)
 
 
 # ---------------------------------------------------------------------------

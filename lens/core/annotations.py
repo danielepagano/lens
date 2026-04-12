@@ -160,19 +160,30 @@ def parse_front_matter(text: str) -> dict[str, Any]:
     return _parse_yaml_params(yaml_lines)
 
 
-def strip_markdown_comments(text: str) -> str:
-    """Remove markdown reference-style comments `[ ... ]: #` (single-line and multi-line)."""
-    lines = text.split("\n")
-    result: list[str] = []
+def iter_kept_storage_lines(raw: str) -> list[tuple[str, int]]:
+    """Lines kept by :func:`strip_markdown_comments` with 1-based physical line numbers.
+
+    Each tuple is ``(line_text, disk_line_1based)`` for one logical row in the
+    storage file after skipping markdown comment / annotation blocks — same
+    walk as :func:`strip_markdown_comments`, without joining.
+    """
+    lines = raw.split("\n")
+    result: list[tuple[str, int]] = []
     i = 0
     while i < len(lines):
         block = _is_comment_block(lines, i)
         if block is not None:
             i = block[1]
             continue
-        result.append(lines[i])
+        result.append((lines[i], i + 1))
         i += 1
-    return "\n".join(result)
+    return result
+
+
+def strip_markdown_comments(text: str) -> str:
+    """Remove markdown reference-style comments `[ ... ]: #` (single-line and multi-line)."""
+    kept = iter_kept_storage_lines(text)
+    return "\n".join(t for t, _ in kept)
 
 
 _HTML_COMMENT_RE = re.compile(r"<!--[\s\S]*?-->")

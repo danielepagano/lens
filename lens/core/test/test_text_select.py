@@ -13,8 +13,11 @@ from lens.core.text_select import (
     SelectionError,
     apply_patch,
     apply_patches,
+    apply_patches_to_storage_llm_view,
     parse_patches,
     resolve_selection,
+    resolve_storage_selection_to_disk_inclusive_lines,
+    storage_text_llm_view,
 )
 
 
@@ -33,6 +36,54 @@ def _sel(
 
 def _range(start: LineSelector, end: LineSelector | None = None) -> Selection:
     return Selection(start=start, end=end)
+
+
+# ---------------------------------------------------------------------------
+# Storage LLM view (strip comments + decode secrets) and disk line mapping
+# ---------------------------------------------------------------------------
+
+
+class TestStorageTextLlmView(unittest.TestCase):
+    def test_comment_rows_dropped_visible_matches_strip(self) -> None:
+        raw = "one\n[ aside ]: #\ntwo\n"
+        view = storage_text_llm_view(raw)
+        self.assertEqual(view.visible_for_llm, "one\ntwo\n")
+        self.assertEqual(view.disk_line_start_1based, (1, 3))
+        self.assertEqual(view.disk_line_end_1based, (1, 3))
+
+    def test_resolve_maps_visible_line_to_disk_skipping_comment(self) -> None:
+        raw = "visible1\n[ noise ]: #\nvisible2\nvisible3\n"
+        lo, hi = resolve_storage_selection_to_disk_inclusive_lines(
+            raw, _range(_sel("visible2"), _sel("visible3"))
+        )
+        self.assertEqual((lo, hi), (3, 4))
+
+    def test_apply_patches_resolves_on_visible_then_splices_raw(self) -> None:
+        raw = "keep\n[ c ]: #\nold\n"
+        patches = [Patch(selection=_range(_sel("old")), content="new")]
+        out = apply_patches_to_storage_llm_view(raw, patches)
+        self.assertEqual(out, "keep\n[ c ]: #\nnew\n")
+
+    def test_apply_patches_cursor_prepend_append(self) -> None:
+        raw = "mid\n"
+        patches = [
+            Patch(selection=_range(_sel(START_ANCHOR)), content="HEAD"),
+            Patch(selection=_range(_sel(END_ANCHOR)), content="TAIL"),
+        ]
+        out = apply_patches_to_storage_llm_view(raw, patches)
+        self.assertEqual(out, "HEAD\nmid\nTAIL\n")
+
+    def test_decode_secret_anchor_maps_to_storage_line(self) -> None:
+        raw = "x\n<!-- ai:secret: uryyb -->\ny\n"
+        lo, hi = resolve_storage_selection_to_disk_inclusive_lines(
+            raw, _range(_sel("hello"))
+        )
+        self.assertEqual((lo, hi), (2, 2))
+        out = apply_patches_to_storage_llm_view(
+            raw, [Patch(selection=_range(_sel("hello")), content="there")]
+        )
+        self.assertIn("there", out)
+        self.assertNotIn("uryyb", out)
 
 
 # ---------------------------------------------------------------------------
@@ -111,12 +162,42 @@ class TestResolveAmbiguity(unittest.TestCase):
         )
         self.assertEqual((resolved.slice_start, resolved.slice_end), (2, 3))
 
-    def test_before_context_with_wrong_content_fails(self) -> None:
+    def test_wrong_before_ignored_when_target_line_is_unique(self) -> None:
         text = "a\nfoo\nb\n"
+        resolved = resolve_selection(text, _range(_sel("foo", before=("b",))))
+        self.assertEqual((resolved.slice_start, resolved.slice_end), (1, 2))
+
+    def test_wrong_before_ignored_for_unique_target_long_line(self) -> None:
+        text = "a\nfoo\nb\nunique line\n"
+        resolved = resolve_selection(
+            text, _range(_sel("unique line", before=("this is not the line above",)))
+        )
+        self.assertEqual((resolved.slice_start, resolved.slice_end), (3, 4))
+
+    def test_wrong_before_no_fallback_when_target_repeats(self) -> None:
+        text = "x\na\ny\na\n"
         with self.assertRaises(SelectionError) as ctx:
-            resolve_selection(
-                text, _range(_sel("foo", before=("b",)))
-            )
+            resolve_selection(text, _range(_sel("a", before=("wrong",))))
+        self.assertIn("no match", str(ctx.exception))
+
+    def test_unique_substring_selects_containing_line(self) -> None:
+        text = "intro\nHe startled—then he nodded, terse and wordless.\nfooter\n"
+        resolved = resolve_selection(
+            text,
+            _range(_sel("he nodded, terse and wordless.")),
+        )
+        self.assertEqual((resolved.slice_start, resolved.slice_end), (1, 2))
+
+    def test_substring_not_unique_across_lines_raises(self) -> None:
+        text = "say hello\nlater hello world\n"
+        with self.assertRaises(SelectionError) as ctx:
+            resolve_selection(text, _range(_sel("hello")))
+        self.assertIn("no match", str(ctx.exception))
+
+    def test_substring_twice_same_line_not_unique(self) -> None:
+        text = "ping ping\n"
+        with self.assertRaises(SelectionError) as ctx:
+            resolve_selection(text, _range(_sel("ping")))
         self.assertIn("no match", str(ctx.exception))
 
     def test_empty_line_in_context(self) -> None:
@@ -131,9 +212,11 @@ class TestResolveAmbiguity(unittest.TestCase):
         text = "a\nfoo\nb\n"
         with self.assertRaises(SelectionError) as ctx:
             resolve_selection(
-                text, _range(_sel("foo", before=("missing",)))
+                text, _range(_sel("not_in_file", before=("a",)))
             )
-        self.assertIn("before=", str(ctx.exception))
+        msg = str(ctx.exception)
+        self.assertIn("before=", msg)
+        self.assertIn("not_in_file", msg)
 
 
 # ---------------------------------------------------------------------------

@@ -137,7 +137,11 @@ def kb_patch(
     """
     # Lazy import keeps kb.py free of a hard dependency on text_select at module load.
     from lens.core.text_select import Patch as _Patch
-    from lens.core.text_select import SelectionError, apply_patches, parse_patches
+    from lens.core.text_select import (
+        SelectionError,
+        apply_patches_to_storage_llm_view,
+        parse_patches,
+    )
 
     try:
         _, key = parse_id(id)
@@ -170,7 +174,7 @@ def kb_patch(
         raise LensException("kb_patch: at least one patch is required")
 
     try:
-        new_text = apply_patches(existing.text, patch_objs)
+        new_text = apply_patches_to_storage_llm_view(existing.text, patch_objs)
     except SelectionError as e:
         raise LensException(f"kb_patch: {e}") from e
 

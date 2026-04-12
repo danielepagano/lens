@@ -67,6 +67,11 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
         "chat.instruction_with_aside_directions",
         frozenset({"as_name", "char_content", "directions"}),
     ),
+    "compress.system": PromptSpec("compress.system", frozenset()),
+    "compress.instruction_template": PromptSpec(
+        "compress.instruction_template",
+        frozenset({"prompt", "node_body"}),
+    ),
 }
 
 

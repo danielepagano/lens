@@ -226,8 +226,8 @@ def _collect_spine_narrative(
             # line_end is 1-based; convert to 0-based index for slicing.
             text = "\n".join(lines[anchor.line_end - 1 :])
 
-        stripped = strip_markdown_comments(text).strip()
-        if not stripped:
+        stripped = strip_markdown_comments(text)
+        if not stripped.strip():
             continue
 
         if node.key_path == cursor_node.key_path:
@@ -272,13 +272,13 @@ def crawl(
                 text = anc.md_path().read_text(encoding="utf-8")
                 stripped = strip_markdown_comments(text)
                 if stripped.strip():
-                    previous_summaries.append(stripped.strip())
+                    previous_summaries.append(stripped)
             current_node = ancestors[-1]
             if current_node.exists():
                 text = current_node.md_path().read_text(encoding="utf-8")
                 stripped = strip_markdown_comments(text)
                 if stripped.strip():
-                    current_content = stripped.strip()
+                    current_content = stripped
 
     return CrawlResult(
         project_root=project_root,

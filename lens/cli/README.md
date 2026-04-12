@@ -25,6 +25,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, AI operat
    lens kb         # knowledge store (see lens kb --help)
    lens section    # start or end a section at cursor
    lens collate    # crete a section after the fact from completed prose
+   lens compress   # AI: collate a range at the cursor from a natural-language prompt
    lens pin        # pin/unpin knowledge objects to nodes (see lens pin --help)
    lens write      # AI: generate narrative text at the cursor
    lens edit       # AI or manual: rewrite/replace a selected line range in narrative
@@ -440,6 +441,23 @@ The selected lines are moved into a new child node, an LLM summary is generated,
 The range may include complete annotation blocks, but cannot split one — selecting only the opening or closing tag of an annotation (or only part of its content) is an error.
 
 If any **pinned** KB object in the collate summary crawl carries a `remember.*` tag, the same **Remember** pass described under `lens chat` may run after the summary (see pins on that command).
+
+## Compress (`lens compress`)
+
+The LLM reads the **target** node (the narrative **cursor** by default, or the node given with `--node` / `-n`, same addressing rules as `lens pin`), decides whether your description matches a contiguous range, and either calls an internal `compress_collate` tool (verbatim line anchors on the AI-visible body, same idea as `kb_patch`) or answers in plain text without collating. On success it runs the same structural work as `lens collate` at that node’s address (summary, optional Remember pass with pins — see **Collate** above).
+
+```bash
+lens compress "the dinner conversation before they leave"
+lens compress "opening skirmish" -p place.cave -l fast
+lens compress "aside with the merchant" --summary-guide "keep the joke about the scales"
+lens compress "tighten this beat" --node /chapter-3/scene-two
+```
+
+Arguments: a single **PROMPT** string (required) — what to pull into its own child section.
+
+Options: `-n` / `--node` (narrative address; default cursor), `-p` / `--pin`, `-u` / `--unpin`, `-l` / `--llm`, `--reasoning`, `--summary-guide` / `-g` (passed through to the collate summary step when a range is chosen).
+
+If the model does not call the tool, the CLI prints its explanation (e.g. nothing matched or the span would split a section summary block). Use `lens collate` with explicit line numbers when you need full control.
 
 ## AI Operators
 

@@ -264,3 +264,25 @@ Stage directions: {directions}
 This is a one-off interruption inside an ongoing exchange, not a direct reply turn. Treat the directions as neutral third-person scene guidance. Do not render the directions as dialogue from another speaker, and do not default to addressing anyone as "you" unless {as_name} explicitly speaks to them in quoted dialogue.
 
 Write {as_name}'s response to the scene. Use > [{as_name}] only for spoken lines. Everything else is plain prose.'''
+
+compress.system = '''You help collapse part of a narrative node into a child section by choosing an exact line range and a slug (valid filename minus extension). After you select it, your range will be summarized (a different agent does this) and your section will be stored as the original. It is thereofre important that you select a coherent section of text that makes for a cogently summarized section.
+
+You may either call the tool compress_collate with a new section slug and a text-based line selection, or answer in plain text without calling the tool if the user request does not match any clear range in the document (wrong scene, nothing to merge, ambiguous span, etc.).'''
+
+compress.instruction_template = '''The markdown below is the **entire** narrative file Lens has scoped for this request (usually the user's cursor node). There is nothing else to open or address — work only inside this buffer.
+
+User request (what to compress into its own section): {prompt}
+
+Rules for selecting a range:
+
+- Each existing child section appears as a summary block: an HTML comment like <!-- section:some-id -->, a ### heading, then one run of blockquoted lines (> …). Do NOT split such a block: keep comment + heading + blockquote summary together inside or outside your range, never cut through the middle.
+- Anchors use **exact full lines** only: copy each `target` line verbatim from the buffer (no trailing newline on the line text). Do not use a phrase, clause, or substring of a line as `target`. When the line is unique in the file, use only `target` for that end — do **not** add `before` or `after` (wrong or partial lines break matching). When the same full line text appears more than once, add `before` and/or `after`; every entry must be the **complete** adjacent line above or below, never a fragment.
+- Pick a single contiguous span of narrative the user asked for. The tool replaces that span with a section marker and moves the text into a new child file.
+
+Full file (exact content — anchors must match these lines):
+
+```
+{node_body}
+```
+
+If you can satisfy the request with a valid range, call compress_collate once. Otherwise respond with plain text only (no tool) explaining why or what the user could try.'''
