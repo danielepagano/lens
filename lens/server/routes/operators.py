@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from lens.core.auto_compress import maybe_post_main_auto_compress
 from lens.core.compression import Aggressiveness
 from lens.core.commands.pin import resolve_node
 from lens.core.commands.rollback import execute_rollback
@@ -309,8 +310,11 @@ async def operator_write(
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
     on_token = _make_on_token(event_queue)
 
-    def coro_fn() -> Any:
-        return WriteOperator.run_inline(
+    async def on_auto_info(payload: dict[str, Any]) -> None:
+        await event_queue.put(payload)
+
+    async def _write_then_maybe_auto_compress() -> Any:
+        result = await WriteOperator.run_inline(
             session=session,
             narrative=narrative,
             prompt=body.prompt,
@@ -322,6 +326,17 @@ async def operator_write(
             on_token=on_token,
             cancel_event=lock.cancel_event,
         )
+        await maybe_post_main_auto_compress(
+            session,
+            narrative,
+            on_token=on_token,
+            cancel_event=lock.cancel_event,
+            on_info_event=on_auto_info,
+        )
+        return result
+
+    def coro_fn() -> Any:
+        return _write_then_maybe_auto_compress()
 
     return _start_operator_stream(lock, event_queue, session, "write", node_addr, coro_fn)
 
@@ -376,6 +391,9 @@ async def operator_play(
 
     on_token = _make_on_token(event_queue)
 
+    async def on_auto_info(payload: dict[str, Any]) -> None:
+        await event_queue.put(payload)
+
     extra_params: dict[str, Any] | None = None
     if body.as_pc is not None or body.do_pass:
         extra_params = {}
@@ -384,8 +402,8 @@ async def operator_play(
         if body.do_pass:
             extra_params["pass"] = True
 
-    def coro_fn() -> Any:
-        return PlayOperator.run_session(
+    async def _play_then_maybe_auto_compress() -> Any:
+        result = await PlayOperator.run_session(
             session=session,
             narrative=narrative,
             prompt=body.prompt,
@@ -402,6 +420,18 @@ async def operator_play(
             cancel_event=lock.cancel_event,
             extra_params=extra_params,
         )
+        if not body.end:
+            await maybe_post_main_auto_compress(
+                session,
+                narrative,
+                on_token=on_token,
+                cancel_event=lock.cancel_event,
+                on_info_event=on_auto_info,
+            )
+        return result
+
+    def coro_fn() -> Any:
+        return _play_then_maybe_auto_compress()
 
     return _start_operator_stream(
         lock, event_queue, session, "play", lambda: target_ref[0], coro_fn
@@ -536,6 +566,9 @@ async def operator_chat(
 
     on_token = _make_on_token(event_queue)
 
+    async def on_auto_info(payload: dict[str, Any]) -> None:
+        await event_queue.put(payload)
+
     extra_params: dict[str, Any] | None = None
     if body.as_kb_id is not None or body.with_kb_id is not None:
         extra_params = {}
@@ -544,10 +577,21 @@ async def operator_chat(
         if body.with_kb_id is not None:
             extra_params["with_kb_id"] = body.with_kb_id
 
+    async def _post_chat_auto_if_needed(result: Any) -> Any:
+        if not body.end:
+            await maybe_post_main_auto_compress(
+                session,
+                narrative,
+                on_token=on_token,
+                cancel_event=lock.cancel_event,
+                on_info_event=on_auto_info,
+            )
+        return result
+
     if body.end or body.with_kb_id is not None:
-        # Session mode: end, start, or continue an explicit session.
-        def coro_fn() -> Any:
-            return ChatOperator.run_session(
+
+        async def _chat_session_explicit() -> Any:
+            r = await ChatOperator.run_session(
                 session=session,
                 narrative=narrative,
                 prompt=body.prompt,
@@ -564,43 +608,56 @@ async def operator_chat(
                 cancel_event=lock.cancel_event,
                 extra_params=extra_params,
             )
+            return await _post_chat_auto_if_needed(r)
+
+        def coro_fn() -> Any:
+            return _chat_session_explicit()
+
+    elif session_node is not None:
+
+        async def _chat_session_continue() -> Any:
+            r = await ChatOperator.run_session(
+                session=session,
+                narrative=narrative,
+                prompt=body.prompt,
+                module_id=None,
+                pins=pins,
+                unpins=unpins,
+                llm_id=body.llm_id,
+                reasoning=body.reasoning,
+                retry=body.retry,
+                end=False,
+                slug=None,
+                on_token=on_token,
+                on_stream_target=on_stream_target,
+                cancel_event=lock.cancel_event,
+                extra_params=extra_params,
+            )
+            return await _post_chat_auto_if_needed(r)
+
+        def coro_fn() -> Any:
+            return _chat_session_continue()
+
     else:
-        # No --with: check whether we are already inside an open session.
-        if session_node is not None:
-            def coro_fn() -> Any:  # type: ignore[misc]
-                return ChatOperator.run_session(
-                    session=session,
-                    narrative=narrative,
-                    prompt=body.prompt,
-                    module_id=None,
-                    pins=pins,
-                    unpins=unpins,
-                    llm_id=body.llm_id,
-                    reasoning=body.reasoning,
-                    retry=body.retry,
-                    end=False,
-                    slug=None,
-                    on_token=on_token,
-                    on_stream_target=on_stream_target,
-                    cancel_event=lock.cancel_event,
-                    extra_params=extra_params,
-                )
-        else:
-            # One-shot inline: AI responds as --as in the current node.
-            def coro_fn() -> Any:  # type: ignore[misc]
-                return ChatOperator.run_inline(
-                    session=session,
-                    narrative=narrative,
-                    prompt=body.prompt,
-                    pins=pins,
-                    unpins=unpins,
-                    llm_id=body.llm_id,
-                    reasoning=body.reasoning,
-                    retry=body.retry,
-                    on_token=on_token,
-                    cancel_event=lock.cancel_event,
-                    extra_params=extra_params,
-                )
+
+        async def _chat_inline() -> Any:
+            r = await ChatOperator.run_inline(
+                session=session,
+                narrative=narrative,
+                prompt=body.prompt,
+                pins=pins,
+                unpins=unpins,
+                llm_id=body.llm_id,
+                reasoning=body.reasoning,
+                retry=body.retry,
+                on_token=on_token,
+                cancel_event=lock.cancel_event,
+                extra_params=extra_params,
+            )
+            return await _post_chat_auto_if_needed(r)
+
+        def coro_fn() -> Any:
+            return _chat_inline()
 
     return _start_operator_stream(
         lock, event_queue, session, "chat", lambda: target_ref[0], coro_fn
@@ -754,7 +811,7 @@ async def operator_compress(
     request: Request,
     session: ProjectSession = Depends(get_session),
 ) -> StreamingResponse:
-    from lens.core.operators.compress import run_compress
+    from lens.core.operators.compress import CompressNoCollate, run_compress
 
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
@@ -768,8 +825,8 @@ async def operator_compress(
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
     on_token = _make_on_token(event_queue)
 
-    def coro_fn() -> Any:
-        return run_compress(
+    async def _compress_coro() -> Any:
+        r = await run_compress(
             session=session,
             narrative=narrative,
             prompt=body.prompt,
@@ -783,6 +840,12 @@ async def operator_compress(
             on_token=on_token,
             cancel_event=lock.cancel_event,
         )
+        if isinstance(r, CompressNoCollate):
+            raise OperatorError(r.explanation or "compress: model did not select a range to collate")
+        return r
+
+    def coro_fn() -> Any:
+        return _compress_coro()
 
     return _start_operator_stream(lock, event_queue, session, "compress", node_addr, coro_fn)
 

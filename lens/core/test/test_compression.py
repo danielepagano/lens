@@ -7,10 +7,9 @@ import unittest
 from pathlib import Path
 
 from lens.core.compression import (
-    AutoCompressMode,
     Aggressiveness,
     CompressConfig,
-    get_effective_mode,
+    auto_compress_enabled,
     get_last_compress_size,
     get_visible_text,
     measure_visible_bytes,
@@ -25,7 +24,7 @@ class TestCompressConfig(unittest.TestCase):
         self.assertEqual(cfg.m, 40_000)
         self.assertEqual(cfg.lg, 80_000)
         self.assertEqual(cfg.xl, 150_000)
-        self.assertEqual(cfg.mode, AutoCompressMode.REVIEW)
+        self.assertTrue(cfg.auto_compress)
 
     def test_from_project_no_toml(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -41,26 +40,34 @@ class TestCompressConfig(unittest.TestCase):
     def test_from_project_partial_overrides(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "lens.toml").write_text(
-                '[project]\nnarrative = "x"\n[compress]\nm = 20000\nmode = "auto"\n'
+                '[project]\nnarrative = "x"\n[compress]\nm = 20000\nauto_compress = true\n'
             )
             cfg = CompressConfig.from_project(Path(tmp))
         self.assertEqual(cfg.m, 20_000)
-        self.assertEqual(cfg.mode, AutoCompressMode.AUTO)
+        self.assertTrue(cfg.auto_compress)
         self.assertEqual(cfg.sm, 15_000)  # default
 
-    def test_from_project_invalid_mode_ignored(self) -> None:
+    def test_from_project_non_bool_auto_compress_ignored(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "lens.toml").write_text(
-                '[project]\nnarrative = "x"\n[compress]\nmode = "banana"\n'
+                '[project]\nnarrative = "x"\n[compress]\nauto_compress = "false"\n'
             )
             cfg = CompressConfig.from_project(Path(tmp))
-        self.assertEqual(cfg.mode, AutoCompressMode.REVIEW)  # falls back to default
+        self.assertTrue(cfg.auto_compress)
+
+    def test_from_project_mode_string_not_read(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "lens.toml").write_text(
+                '[project]\nnarrative = "x"\n[compress]\nmode = "off"\n'
+            )
+            cfg = CompressConfig.from_project(Path(tmp))
+        self.assertTrue(cfg.auto_compress)
 
     def test_from_project_all_fields(self) -> None:
         toml = (
             '[project]\nnarrative = "x"\n'
             "[compress]\n"
-            "sm = 1000\nm = 5000\nl = 10000\nxl = 20000\nmode = \"off\"\nunit = \"bytes\"\n"
+            "sm = 1000\nm = 5000\nl = 10000\nxl = 20000\nauto_compress = false\nunit = \"bytes\"\n"
         )
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "lens.toml").write_text(toml)
@@ -69,7 +76,7 @@ class TestCompressConfig(unittest.TestCase):
         self.assertEqual(cfg.m, 5000)
         self.assertEqual(cfg.lg, 10000)  # TOML "l" maps to Python "lg"
         self.assertEqual(cfg.xl, 20000)
-        self.assertEqual(cfg.mode, AutoCompressMode.OFF)
+        self.assertFalse(cfg.auto_compress)
 
 
 class TestGetLastCompressSize(unittest.TestCase):
@@ -89,23 +96,29 @@ class TestGetLastCompressSize(unittest.TestCase):
         self.assertIsNone(get_last_compress_size({"compress": {"last_size": "big"}}))
 
 
-class TestGetEffectiveMode(unittest.TestCase):
-    cfg = CompressConfig(mode=AutoCompressMode.AUTO)
+class TestAutoCompressEnabled(unittest.TestCase):
+    cfg = CompressConfig(auto_compress=True)
 
     def test_no_override(self) -> None:
-        self.assertEqual(get_effective_mode(self.cfg, {}), AutoCompressMode.AUTO)
+        self.assertTrue(auto_compress_enabled(self.cfg, {}))
 
-    def test_per_node_override(self) -> None:
+    def test_per_node_override_off(self) -> None:
+        fm = {"compress": {"auto_compress": False}}
+        self.assertFalse(auto_compress_enabled(self.cfg, fm))
+
+    def test_per_node_non_bool_ignored(self) -> None:
+        fm = {"compress": {"auto_compress": "no"}}
+        self.assertTrue(auto_compress_enabled(self.cfg, fm))
+
+    def test_per_node_unknown_keys_use_project(self) -> None:
         fm = {"compress": {"mode": "off"}}
-        self.assertEqual(get_effective_mode(self.cfg, fm), AutoCompressMode.OFF)
-
-    def test_per_node_invalid_ignored(self) -> None:
-        fm = {"compress": {"mode": "bogus"}}
-        self.assertEqual(get_effective_mode(self.cfg, fm), AutoCompressMode.AUTO)
+        self.assertFalse(
+            auto_compress_enabled(CompressConfig(auto_compress=False), fm)
+        )
 
     def test_compress_not_dict(self) -> None:
         fm = {"compress": "something"}
-        self.assertEqual(get_effective_mode(self.cfg, fm), AutoCompressMode.AUTO)
+        self.assertTrue(auto_compress_enabled(self.cfg, fm))
 
 
 class TestShouldTrigger(unittest.TestCase):

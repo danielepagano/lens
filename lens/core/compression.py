@@ -12,12 +12,6 @@ import tomllib
 from lens.core.annotations import strip_markdown_comments
 
 
-class AutoCompressMode(str, Enum):
-    OFF = "off"
-    REVIEW = "review"
-    AUTO = "auto"
-
-
 class Aggressiveness(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
@@ -31,7 +25,7 @@ class CompressConfig:
     m: int = 40_000    # ~8k tokens — low aggressiveness begins
     lg: int = 80_000   # ~16k tokens — medium aggressiveness begins (TOML key: "l")
     xl: int = 150_000  # ~30k tokens — high aggressiveness (must act)
-    mode: AutoCompressMode = AutoCompressMode.REVIEW
+    auto_compress: bool = True
 
     @classmethod
     def from_project(cls, project_root: Path) -> "CompressConfig":
@@ -54,11 +48,8 @@ class CompressConfig:
             kwargs["lg"] = section["l"]
         if "unit" in section and isinstance(section["unit"], str):
             kwargs["unit"] = section["unit"]
-        if "mode" in section and isinstance(section["mode"], str):
-            try:
-                kwargs["mode"] = AutoCompressMode(section["mode"])
-            except ValueError:
-                pass  # unknown value → keep default
+        if "auto_compress" in section and isinstance(section["auto_compress"], bool):
+            kwargs["auto_compress"] = section["auto_compress"]
         return cls(**kwargs)
 
 
@@ -84,20 +75,15 @@ def get_last_compress_size(fm: dict[str, Any]) -> int | None:
     return None
 
 
-def get_effective_mode(
-    config: CompressConfig, node_fm: dict[str, Any]
-) -> AutoCompressMode:
-    """Return the compress mode: per-node FM overrides project config."""
+def auto_compress_enabled(config: CompressConfig, node_fm: dict[str, Any]) -> bool:
+    """Whether auto-compress may run after write/play/chat: per-node FM overrides project."""
     compress_fm = node_fm.get("compress")
     if isinstance(compress_fm, dict):
         inner = cast(dict[str, Any], compress_fm)
-        raw = inner.get("mode")
-        if isinstance(raw, str):
-            try:
-                return AutoCompressMode(raw)
-            except ValueError:
-                pass
-    return config.mode
+        raw = inner.get("auto_compress")
+        if isinstance(raw, bool):
+            return raw
+    return config.auto_compress
 
 
 def should_trigger(

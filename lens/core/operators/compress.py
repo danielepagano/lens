@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any, Final
 
 from lens.core.commands.pin import resolve_node
@@ -31,6 +32,14 @@ from lens.core.text_select import (
 )
 
 _log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class CompressNoCollate:
+    """Model finished without ``compress_collate``; narrative files unchanged."""
+
+    explanation: str
+
 
 COMPRESS_COLLATE_TOOL_NAME: Final = "compress_collate"
 
@@ -144,7 +153,8 @@ async def run_compress(
     summary_guide: str | None = None,
     on_token: Callable[[str], Awaitable[None]] | None = None,
     cancel_event: asyncio.Event | None = None,
-) -> Storage | None:
+    no_tool_call_ok: bool = False,
+) -> Storage | CompressNoCollate | None:
     """One LLM round with ``compress_collate`` tool, then :class:`CollateOperator` on success.
 
     Supply exactly one of:
@@ -154,8 +164,9 @@ async def run_compress(
       no user prompt (CLI/UI manual ``--aggressiveness``, or internal auto-compress).
 
     Returns the :class:`~lens.core.storage.Storage` used for collate (and any follow-up
-    writes that must stay in the same pending transaction), or ``None`` when the LLM
-    stream was interrupted before collate ran.
+    writes that must stay in the same pending transaction), :class:`CompressNoCollate`
+    when *no_tool_call_ok* is true and the model omitted the tool, or ``None`` when the
+    LLM stream was interrupted before collate ran.
     """
     stripped_prompt = prompt.strip() if prompt else ""
     has_prompt = bool(stripped_prompt)
@@ -229,6 +240,9 @@ async def run_compress(
 
     tc = _pick_compress_tool_call(final.tool_calls)
     if tc is None:
+        if no_tool_call_ok:
+            body = (final.text or "").strip()
+            return CompressNoCollate(explanation=body or "(model sent no tool call and no text)")
         raise OperatorError(_no_tool_message(final.text))
 
     _log.info(

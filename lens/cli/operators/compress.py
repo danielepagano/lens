@@ -12,7 +12,7 @@ from lens.core.llm import LLMError
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession
-from lens.core.operators.compress import run_compress
+from lens.core.operators.compress import CompressNoCollate, run_compress
 
 
 app = typer.Typer(
@@ -102,7 +102,7 @@ def compress(
         typer.echo(f"lens compress: {e}", err=True)
         raise typer.Exit(1)
     try:
-        asyncio.run(
+        rc = asyncio.run(
             run_compress(
                 session=session,
                 narrative=narrative,
@@ -118,6 +118,12 @@ def compress(
             )
         )
         print()
+        if rc is None:
+            typer.echo("lens compress: interrupted before collate", err=True)
+            raise typer.Exit(1)
+        if isinstance(rc, CompressNoCollate):
+            typer.echo(rc.explanation or "compress: model did not collate", err=True)
+            raise typer.Exit(1)
     except OperatorError as e:
         typer.echo(f"lens compress: {e}", err=True)
         raise typer.Exit(1)

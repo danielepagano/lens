@@ -370,8 +370,7 @@ class TestRunCompress(unittest.TestCase):
                             prompt="first two lines",
                         )
                     )
-        self.assertIsInstance(st, Storage)
-        assert st is not None
+        assert isinstance(st, Storage)
         self.assertTrue(st.has_pending())
         self.assertFalse(st.has_staged())
 

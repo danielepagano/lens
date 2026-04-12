@@ -137,20 +137,20 @@ As you write, narrative nodes can grow too large for the AI to hold in context e
 
 ### How it works
 
-Lens measures the **visible byte size** of the cursor node (markdown comment annotations are stripped; only prose counts). When the node exceeds the `m` threshold and has grown by at least `sm` bytes since the last compress, automatic compression fires at **low aggressiveness**. Larger nodes trigger **medium** or **high** aggressiveness, which apply progressively more pressure on the LLM to act.
+Lens measures the **visible byte size** of the cursor node (markdown comment annotations are stripped; only prose counts). After each successful **`write`**, **`play`**, or **`chat`** (CLI or HTTP), that check is **always run** (same code path); the `compress` **LLM round** runs **only** when `auto_compress` is on and the size rules say a pass is warranted (aggressiveness from the rules). The narrative text from the main operator stays in an **unstaged** transaction until anything else touches the tree with a different storage owner; if collate actually runs, the prior pending work is **staged** automatically and the new collate becomes the pending transaction.
 
-### Modes
+When the model **does** call `compress_collate`, you get a normal collate pending state (`lens rollback` can drop just that collate; the earlier write remains staged). When the model **does not** collate, nothing is committed beyond what the main op already wrote: same outcome as if auto-compress had not run, except you may see a short notice (stderr on the CLI, or an `info` SSE event in the desktop UI) with the model’s plain-text explanation.
 
-| Mode | Behaviour |
+### Enable / disable
+
+| `auto_compress` in `[compress]` or per-node FM | Behaviour |
 |---|---|
-| `review` (default) | Before `write`, `play`, or `chat`: if the node needs compression, Lens asks you first. If you confirm, compress runs and you re-run your command. |
-| `auto` | After `write`, `play`, or `chat` finishes: compress runs silently in the background. The write is auto-staged; compress (collate + front-matter bookmark) is the new pending transaction and can be fully rolled back with `lens rollback`. |
-| `off` | No automatic triggering. Use `lens compress` manually. |
+| `true` (default) | After `write` / `play` / `chat`, run auto-compress when rules fire. |
+| `false` | No automatic compress pass; use `lens compress` / structure-compress manually. |
 
 ### Rollback behaviour
 
-- **`review` mode**: compress runs before the main op, so there is no write pending. `lens rollback` discards the compress in one step.
-- **`auto` mode**: the main write is auto-staged (its own checkpoint); compress becomes the pending transaction. `lens rollback` discards just the compress. The write is already staged — trivially recoverable.
+After a collating auto-compress, **`lens rollback`** (or the server equivalent) typically discards the **collate** pending work first; the main op’s output was staged when collate started, so it is no longer in the same rollback step as a single pending write. When auto-compress runs but the model passes without collating, rollback behaviour is unchanged from “main op only”: you still have one pending transaction with the written text.
 
 ### Configuration
 
@@ -158,7 +158,7 @@ Add a `[compress]` section to `lens.toml`:
 
 ```toml
 [compress]
-mode = "review"   # off | review | auto  (default: review)
+auto_compress = true   # default: true
 sm   = 15000      # ~3k tokens — minimum section size / minimum growth delta to trigger
 m    = 40000      # ~8k tokens — low aggressiveness begins above this
 l    = 80000      # ~16k tokens — medium aggressiveness begins above this
@@ -166,16 +166,16 @@ xl   = 150000     # ~30k tokens — high aggressiveness (must act); no delta che
 unit = "bytes"    # only valid value; future-proofing
 ```
 
-You can also override the mode per-node in its front matter:
+You can also override enabled status per-node in its front matter:
 
 ```markdown
 [
     compress:
-        mode: auto
+        auto_compress: false
 ]: #
 ```
 
-The `compress.last_size` key is written automatically by Lens after each compress run — do not edit it manually.
+The `compress.last_size` key is written automatically by Lens after a run that **actually collates** — do not edit it manually.
 
 ## Dice Rolling
 

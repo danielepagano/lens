@@ -1,27 +1,5 @@
 # Lens Backlog
 
-- **Automated Compression.** Because `compress` actually needs no parameters, we can use a heuristic to call it automatically. To do this, we need state and rules. 
-   - **Node Size** is important here, so we need to work out if we want to count bytes (cheap+fast), words (simple+slower), estimated tokens (words+math), actual tokens (LLM-dependent, can be slow/tricky/unknown). Let's gloss this over for now and just refer to "size".
-   - **State** tracks when we last called `compress`, so we don't do it too often. So when we call `compress` on a node (manually or otherwise), its front matter records `compress.last_size` which is the size of the node after our last compress (minus the annotation itself, if it was added after). This is the baseline of the change in size we may want to compress. Rewinds and manual collates naturally shrink the node, so current size could be smaller than last, which is good to know!
-   - **Size Rules** tell us when to trigger automated compression. We want to compress so that the current node can be appended to indefinitely while increasingly compressing the past, so nodes need _size thresholds_; we can just use t-shirt sizes (`sm,m,l,xl`) with the values depending on our size unit, model context window, and user preferences about cost etc. The sizes should mean:
-      - `sm`: the smallest sub-node we should try to make when collating; we wouldn't collate something this small further
-      - `m`: average sub-node size, lean current node size
-      - `l`: max size we'd normally like for a node, but we can live with it
-      - `xl`: we need to do something about making this smaller
-   - **Auto-selection of range.** The LLM needs to decide what to select for collation. The main idea is to find cohesive chunks that make a cogent summary, and heavily favor older content; in fact, we can probably make a rule that the newest 15-20% of a node is off-limits, the selection could even fail if we try. We should give it min and ideal ranges for sections we want, and also give an `aggressiveness` level (control the prompt used):
-      - `low`: only collate if we have have a fairly clean target to collate, like a clean transition or an aside in the narrative; keep new node around `sm` size; higher change of doing nothing than something
-      - `medium`: we should try to collate something if possible; still aim for a clean topic of `sm-m` size; more likely to act than not, but can still pass
-      - `high`: we MUST collate something: take roughly the earliest half of the node, find a somewhat reasonable spot, and collate it
-   - **Triggering.** We must be in a `section`, `play`, or `chat` node, then we look at node size and size delta. 
-      - `<m` size node: compression not helpful, don't bother
-      - `m-l`: we can compress down with `low` aggressiveness, but only if we never done it, or delta between current and last size is at larger than `sm`.
-      - `l-xl`: we can compress down with `medium` aggressiveness, but with same delta check as above
-      - `>xl`: how did we get here? Compress down with `high` aggressiveness right now!
-   - **Semi-auto.** Having the above, we can now make the `prompt` parameter of `compress` optional: if not provided, our system can just go through the automatic flow of range and aggressiveneness auto-selection.
-   - **Enabling.** We can configure `[auto-compress] = off | review | auto` in `lens.toml` (per-narrative override allowed).
-      - `off`: manual only.
-      - `review`: the main operator is **not** run. Instead the user is prompted *"compression due, run compress instead?"*. If yes, compress runs and the main op is abandoned (user re-runs it next turn, now against the compressed node). If no, the main op proceeds.
-      - `auto`: compress is run after the main op (we don't want to change context from under the user).
 - **Public Release Readiness**
    - License
    - Clean up documentation

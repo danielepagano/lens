@@ -464,6 +464,7 @@ const handler: CommandHandler = async (
   }
 
   let errorOutput = ''
+  let postOpInfoMessage = ''
 
   const handleEvent = (event: OperatorEvent): void => {
     if (event.type === 'error') {
@@ -494,6 +495,9 @@ const handler: CommandHandler = async (
         if (prev) return { ...prev, statusLine: label }
         return { targetNode: '', text: '', statusLine: label }
       })
+    } else if (event.type === 'info') {
+      const msg = typeof event.message === 'string' ? event.message.trim() : ''
+      if (msg) postOpInfoMessage = msg
     }
   }
 
@@ -817,11 +821,17 @@ const handler: CommandHandler = async (
         cliOutput.set({ output: `KB: inserted ${done.inserted.join(', ')}`, exitCode: 0, streaming: false })
       } else if (done.updated?.length) {
         cliOutput.set({ output: `KB: updated ${done.updated.join(', ')}`, exitCode: 0, streaming: false })
+      } else if (postOpInfoMessage) {
+        cliOutput.set({ output: postOpInfoMessage, exitCode: 0, streaming: false })
       } else {
         cliOutput.set(null)
       }
     } else {
-      cliOutput.set(null)
+      if (postOpInfoMessage) {
+        cliOutput.set({ output: postOpInfoMessage, exitCode: 0, streaming: false })
+      } else {
+        cliOutput.set(null)
+      }
     }
     const interrupted = 'interrupted' in result && result.interrupted
     return { clearInput: !interrupted }

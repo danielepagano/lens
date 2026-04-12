@@ -173,12 +173,20 @@ export interface OperatorProgressEvent {
   interrupted?: boolean
 }
 
+/** Post-operator notice (e.g. auto-compress ran but model did not collate). */
+export interface OperatorInfoEvent {
+  type: 'info'
+  code?: string
+  message?: string
+}
+
 export type OperatorEvent =
   | OperatorTargetEvent
   | OperatorTokenEvent
   | OperatorDoneEvent
   | OperatorErrorEvent
   | OperatorProgressEvent
+  | OperatorInfoEvent
 
 export class StreamBusyError extends Error {
   constructor(
