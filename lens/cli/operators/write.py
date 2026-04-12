@@ -4,6 +4,7 @@ import asyncio
 
 import typer
 
+from lens.cli.operators._auto_compress import check_review_mode, run_post_auto_compress
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -77,6 +78,9 @@ def write(
         typer.echo(f"lens write: {e}", err=True)
         raise typer.Exit(1)
 
+    if check_review_mode(session, narrative):
+        return
+
     try:
         asyncio.run(
             WriteOperator.run_inline(
@@ -101,3 +105,5 @@ def write(
     except KeyboardInterrupt:
         print()
         raise typer.Exit(1)
+
+    run_post_auto_compress(session, narrative)

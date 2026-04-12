@@ -131,6 +131,52 @@ timeout_seconds = 300
 
 Operators: `write`, `edit`, `section`, `collate`, `design`, `play`, `advance`.
 
+## Automated Compression
+
+As you write, narrative nodes can grow too large for the AI to hold in context effectively. Lens can automatically trigger `compress` — which uses an LLM to pick a coherent range and collate it into a child section — when a node's visible text exceeds a configured size.
+
+### How it works
+
+Lens measures the **visible byte size** of the cursor node (markdown comment annotations are stripped; only prose counts). When the node exceeds the `m` threshold and has grown by at least `sm` bytes since the last compress, automatic compression fires at **low aggressiveness**. Larger nodes trigger **medium** or **high** aggressiveness, which apply progressively more pressure on the LLM to act.
+
+### Modes
+
+| Mode | Behaviour |
+|---|---|
+| `review` (default) | Before `write`, `play`, or `chat`: if the node needs compression, Lens asks you first. If you confirm, compress runs and you re-run your command. |
+| `auto` | After `write`, `play`, or `chat` finishes: compress runs silently in the background. The write is auto-staged; compress (collate + front-matter bookmark) is the new pending transaction and can be fully rolled back with `lens rollback`. |
+| `off` | No automatic triggering. Use `lens compress` manually. |
+
+### Rollback behaviour
+
+- **`review` mode**: compress runs before the main op, so there is no write pending. `lens rollback` discards the compress in one step.
+- **`auto` mode**: the main write is auto-staged (its own checkpoint); compress becomes the pending transaction. `lens rollback` discards just the compress. The write is already staged — trivially recoverable.
+
+### Configuration
+
+Add a `[compress]` section to `lens.toml`:
+
+```toml
+[compress]
+mode = "review"   # off | review | auto  (default: review)
+sm   = 15000      # ~3k tokens — minimum section size / minimum growth delta to trigger
+m    = 40000      # ~8k tokens — low aggressiveness begins above this
+l    = 80000      # ~16k tokens — medium aggressiveness begins above this
+xl   = 150000     # ~30k tokens — high aggressiveness (must act); no delta check
+unit = "bytes"    # only valid value; future-proofing
+```
+
+You can also override the mode per-node in its front matter:
+
+```markdown
+[
+    compress:
+        mode: auto
+]: #
+```
+
+The `compress.last_size` key is written automatically by Lens after each compress run — do not edit it manually.
+
 ## Dice Rolling
 
 Any prompt sent to an AI operator (`write`, `play`, `edit`, etc.) may include inline dice expressions. These are **evaluated before the prompt reaches the AI** — the AI only ever sees the resolved result, never the `@roll` syntax.

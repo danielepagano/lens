@@ -5,6 +5,7 @@ from typing import Any
 
 import typer
 
+from lens.cli.operators._auto_compress import check_review_mode, run_post_auto_compress
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -105,6 +106,9 @@ def chat(
     if with_kb_id:
         extra_params["with_kb_id"] = with_kb_id
 
+    if not end and not retry and check_review_mode(session, narrative):
+        return
+
     try:
         if end or with_kb_id is not None:
             # Session mode: end, start, or continue an explicit session.
@@ -178,3 +182,6 @@ def chat(
     except KeyboardInterrupt:
         print()
         raise typer.Exit(1)
+
+    if not end:
+        run_post_auto_compress(session, narrative)

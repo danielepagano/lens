@@ -41,10 +41,10 @@ def _get_session_and_narrative() -> tuple[ProjectSession, NarrativeNode | None]:
 @app.callback(invoke_without_command=True)
 def compress(
     ctx: typer.Context,
-    prompt: str = typer.Argument(
-        ...,
+    prompt: str | None = typer.Argument(
+        None,
         metavar="PROMPT",
-        help="Describe which part of the target node to move into a new section",
+        help="Describe which part of the target node to move into a new section (required for manual use)",
     ),
     node: str | None = typer.Option(
         None,

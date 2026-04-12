@@ -131,7 +131,7 @@ class CollateBody(BaseModel):
 
 
 class CompressBody(BaseModel):
-    prompt: str
+    prompt: str | None = None
     address: str | None = None  # narrative node (display form); default cursor
     pins: list[str] = []
     unpins: list[str] = []

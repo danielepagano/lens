@@ -5,6 +5,7 @@ from typing import Any
 
 import typer
 
+from lens.cli.operators._auto_compress import check_review_mode, run_post_auto_compress
 from lens.cli.options import pin_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -142,6 +143,9 @@ def play(
         typer.echo(f"lens play: {e}", err=True)
         raise typer.Exit(1)
 
+    if not end and not retry and check_review_mode(session, narrative):
+        return
+
     try:
         pins = _pins_with_encounter_expand(list(pin))
         asyncio.run(
@@ -173,3 +177,6 @@ def play(
     except KeyboardInterrupt:
         print()
         raise typer.Exit(1)
+
+    if not end:
+        run_post_auto_compress(session, narrative)
