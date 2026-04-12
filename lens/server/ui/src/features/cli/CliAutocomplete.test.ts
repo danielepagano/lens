@@ -292,6 +292,7 @@ function baseStats(over: Partial<Stats> = {}): Stats {
     kb_types: [],
     kb_count: 0,
     effective_pins_at_cursor: ['pc.hero'],
+    remember_pins_at_cursor: {},
     available_llms: ['fast'],
     has_mount: false,
     active_session_operator: null,

@@ -53,6 +53,8 @@ export interface Stats {
   kb_types: string[]
   kb_count: number
   effective_pins_at_cursor: string[] | null
+  /** KB ids in the effective pin crawl that carry `remember.*` tags → those tags. */
+  remember_pins_at_cursor: Record<string, string[]>
   available_llms: string[]
   has_mount: boolean
   active_session_operator: string | null

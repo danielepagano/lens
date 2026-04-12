@@ -12,6 +12,8 @@ SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
     {"advance", "chat", "design", "play"}
 )
 
+_REMEMBER_TAG_PREFIX = "remember."
+
 
 def _chat_parent_session_extra_pins(node: NarrativeNode) -> list[str]:
     """KB ids from the parent ``[chat:…]`` annotation (as / with).
@@ -50,6 +52,10 @@ def _chat_parent_session_extra_pins(node: NarrativeNode) -> list[str]:
     return []
 
 
+def _empty_remember_pins() -> dict[str, list[str]]:
+    return {}
+
+
 @dataclass
 class StatsResult:
     kb_types: list[str]
@@ -64,6 +70,7 @@ class StatsResult:
     pending_diff: str = field(default="")
     staged_diff: str = field(default="")
     effective_pins_at_cursor: list[str] = field(default_factory=list[str])
+    remember_pins_at_cursor: dict[str, list[str]] = field(default_factory=_empty_remember_pins)
     available_llms: list[str] = field(default_factory=list[str])
     has_mount: bool = False
     active_session_operator: str | None = None
@@ -109,6 +116,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         staged_diff = storage.staged_diff()
 
     effective_pins_at_cursor: list[str] = []
+    remember_pins_at_cursor: dict[str, list[str]] = {}
     active_session_operator: str | None = None
     if not is_dataset and cursor_addr is not None:
         node_addr = cursor_addr.node_only()
@@ -122,6 +130,14 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
                 node,
                 extra_pins=chat_extras if chat_extras else None,
             )
+            for pin_id in effective_pins_at_cursor:
+                remember_tags = [
+                    t
+                    for t in kb_store.get_tags(pin_id)
+                    if t.startswith(_REMEMBER_TAG_PREFIX)
+                ]
+                if remember_tags:
+                    remember_pins_at_cursor[pin_id] = remember_tags
             if node.key_path:
                 parent = NarrativeNode(
                     narrative_root=node.narrative_root,
@@ -148,6 +164,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         pending_diff=pending_diff,
         staged_diff=staged_diff,
         effective_pins_at_cursor=effective_pins_at_cursor,
+        remember_pins_at_cursor=remember_pins_at_cursor,
         available_llms=list_available_llms(root),
         has_mount=has_mount_config(root),
         active_session_operator=active_session_operator,

@@ -71,6 +71,24 @@ def _add_kb(root: Path, type_name: str, key: str, content: str) -> None:
   )
 
 
+def _write_kb_tags_toml(root: Path, objects: dict[str, list[str]]) -> None:
+  import json
+  import subprocess
+
+  lines = ["[objects]"]
+  for oid, tags in sorted(objects.items()):
+    tag_repr = ", ".join(json.dumps(t) for t in tags)
+    lines.append(f"{json.dumps(oid)} = [{tag_repr}]")
+  (root / "knowledge" / "tags.toml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+  subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+  subprocess.run(
+      ["git", "commit", "-m", "tags"],
+      cwd=root,
+      capture_output=True,
+      check=True,
+  )
+
+
 class TestStatsEffectivePins(unittest.TestCase):
   def test_effective_pins_at_cursor_matches_crawl(self) -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -136,6 +154,69 @@ class TestStatsEffectivePins(unittest.TestCase):
       crawl_result = crawl(cursor_node)
       self.assertEqual(crawl_result.pinned_ids, result.effective_pins_at_cursor)
       self.assertEqual(result.effective_pins_at_cursor, ["place.a", "place.b"])
+
+  def test_remember_pins_at_cursor_maps_remember_dot_tags(self) -> None:
+    from lens.core.knowledge import KnowledgeStore
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, node = _make_project(root)
+      _add_kb(root, "place", "a", "Place A")
+      _add_kb(root, "place", "b", "Place B")
+
+      md = node.md_path()
+      md.write_text(
+          "[\n"
+          "  kb_pin:\n"
+          "    - place.a\n"
+          "]: #\n\n"
+          "# test\n"
+      )
+      (node.narrative_root / "ch1").mkdir()
+      (node.narrative_root / "ch1" / "_node.md").write_text(
+          "[\n"
+          "  kb_pin:\n"
+          "    - place.b\n"
+          "]: #\n\n"
+          "# ch1\n"
+      )
+
+      import subprocess
+
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "pins"],
+          cwd=root,
+          capture_output=True,
+          check=True,
+      )
+
+      narrative = session.active_narrative
+      assert narrative is not None
+      root_only = NarrativeNode(
+          narrative_root=narrative.narrative_root,
+          key_path=(),
+      )
+      md_root = root_only.md_path()
+      md_root.write_text(
+          md_root.read_text(encoding="utf-8") + "\n[section:ch1]: #\n"
+      )
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "cursor"],
+          cwd=root,
+          capture_output=True,
+          check=True,
+      )
+
+      _write_kb_tags_toml(
+          root,
+          {"place.b": ["remember.session-notes", "featured"]},
+      )
+      KnowledgeStore.clear_registry()
+
+      result = get_stats(session)
+      self.assertEqual(result.remember_pins_at_cursor, {"place.b": ["remember.session-notes"]})
 
 
 class TestStatsActiveSessionOperator(unittest.TestCase):

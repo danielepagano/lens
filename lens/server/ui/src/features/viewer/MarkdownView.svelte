@@ -39,11 +39,25 @@
       .map((id) => id.slice(3).toLowerCase()),
   )
 
+  $: rememberPins = $stats?.remember_pins_at_cursor ?? {}
+
+  function pinHasRememberTargets(id: string): boolean {
+    return Boolean(rememberPins[id]?.length)
+  }
+
+  function pinRememberTitle(id: string): string | undefined {
+    const tags = rememberPins[id]
+    return tags && tags.length > 0 ? tags.join('\n') : undefined
+  }
+
   $: rendered = $nodeContent
     ? md.render(
         preprocessThinkingTags(
           preprocessAnnotations(
-            preprocessKbReferencePills(preprocessBlockquotePills($nodeContent)),
+            preprocessKbReferencePills(
+              preprocessBlockquotePills($nodeContent),
+              rememberPins,
+            ),
             $currentAddress,
             overlay,
           ),
@@ -221,10 +235,20 @@
     {#if frontMatterPins.pins.length || frontMatterPins.unpins.length}
       <div class="pin-pills pin-pills-front-matter" data-testid="front-matter-pins">
         {#each frontMatterPins.pins as id (id)}
-          <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
+          <button
+            class="pin-pill"
+            class:pin-pill--remember={pinHasRememberTargets(id)}
+            title={pinRememberTitle(id)}
+            on:click={() => openKbItem(id)}
+          >{id}</button>
         {/each}
         {#each frontMatterPins.unpins as id (id)}
-          <button class="pin-pill pin-pill-unpin" on:click={() => openKbItem(id)}>-{id}</button>
+          <button
+            class="pin-pill pin-pill-unpin"
+            class:pin-pill--remember={pinHasRememberTargets(id)}
+            title={pinRememberTitle(id)}
+            on:click={() => openKbItem(id)}
+          >-{id}</button>
         {/each}
       </div>
     {/if}
@@ -261,7 +285,12 @@
               </summary>
               <div class="pin-pills effective-pins" data-testid="effective-pins-at-cursor">
                 {#each $stats.effective_pins_at_cursor as id (id)}
-                  <button class="pin-pill" on:click={() => openKbItem(id)}>{id}</button>
+                  <button
+                    class="pin-pill"
+                    class:pin-pill--remember={pinHasRememberTargets(id)}
+                    title={pinRememberTitle(id)}
+                    on:click={() => openKbItem(id)}
+                  >{id}</button>
                 {/each}
               </div>
             </details>

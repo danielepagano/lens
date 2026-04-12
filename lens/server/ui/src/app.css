@@ -499,6 +499,14 @@ details[open]>summary {
   border-color: rgba(248, 113, 113, 0.8);
 }
 
+.pin-pill.pin-pill--remember {
+  border-color: #dc2626;
+}
+
+.pin-pill.pin-pill--remember:hover {
+  border-color: #dc2626;
+}
+
 /* ---- CLI ---- */
 
 .bottom-bar {

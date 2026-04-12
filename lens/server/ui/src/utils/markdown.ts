@@ -29,6 +29,11 @@ function escapeHtmlText(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/** Double-quoted HTML attribute value: newlines → `&#10;` for multi-line `title`. */
+function escapeHtmlTitleAttr(s: string): string {
+  return escapeHtmlText(s).replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, '&#10;')
+}
+
 /** FNV-1a 32-bit — stable, distinct hues per speaker label. */
 function fnv1aLabelSeed(label: string): number {
   const t = label.trim().toLowerCase()
@@ -79,13 +84,21 @@ const KB_PIN_RE = new RegExp(
   'g',
 )
 
-function replaceKbReferencesInPlainLine(line: string): string {
+function replaceKbReferencesInPlainLine(
+  line: string,
+  rememberPins: Readonly<Record<string, string[]>> | undefined,
+): string {
   return line.replace(KB_PIN_RE, (full, kbQuoted: string | undefined, atForm: string | undefined, offset) => {
     const id = kbQuoted ?? atForm
     if (!id) return full
     const before = line.slice(0, offset)
     if ((before.match(/`/g) ?? []).length % 2 === 1) return full
-    return `<button type="button" class="pin-pill markdown-kb-ref" data-kb-open-id="${escapeHtmlText(id)}">${escapeHtmlText(id)}</button>`
+    const rememberTags = rememberPins?.[id]
+    const rememberClass = rememberTags?.length ? ' pin-pill--remember' : ''
+    const titleAttr = rememberTags?.length
+      ? ` title="${escapeHtmlTitleAttr(rememberTags.join('\n'))}"`
+      : ''
+    return `<button type="button" class="pin-pill markdown-kb-ref${rememberClass}" data-kb-open-id="${escapeHtmlText(id)}"${titleAttr}>${escapeHtmlText(id)}</button>`
   })
 }
 
@@ -95,8 +108,15 @@ function replaceKbReferencesInPlainLine(line: string): string {
  * period (no `a.b.c`). `@` is not matched after alphanumerics (avoids `user@host`).
  * Skips fenced code blocks and inline `` `...` `` spans.
  * Run after `preprocessBlockquotePills`, before `preprocessAnnotations`.
+ *
+ * @param rememberPins — optional map from KB id to `remember.*` tags (from stats);
+ *   used to mark inline reference pills that the remember mechanism may update.
  */
-export function preprocessKbReferencePills(markdown: string): string {
+export function preprocessKbReferencePills(
+  markdown: string,
+  rememberPins?: Readonly<Record<string, string[]>> | null,
+): string {
+  const remember = rememberPins ?? undefined
   const lines = markdown.split('\n')
   const out: string[] = []
   let inFence = false
@@ -119,7 +139,7 @@ export function preprocessKbReferencePills(markdown: string): string {
       continue
     }
 
-    out.push(replaceKbReferencesInPlainLine(line))
+    out.push(replaceKbReferencesInPlainLine(line, remember))
   }
 
   return out.join('\n')

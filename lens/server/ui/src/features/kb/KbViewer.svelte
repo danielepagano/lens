@@ -1,6 +1,7 @@
 <script lang="ts">
   import { selectedKbId, treeRefreshTrigger } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
+  import { stats } from '../../stores/stats'
   import {
     getKbItem,
     saveKbItem,
@@ -189,7 +190,12 @@
   }
 
   $: rendered = item
-    ? md.render(preprocessKbReferencePills(preprocessBlockquotePills(item.content)))
+    ? md.render(
+        preprocessKbReferencePills(
+          preprocessBlockquotePills(item.content),
+          $stats?.remember_pins_at_cursor ?? undefined,
+        ),
+      )
     : ''
 
   function isDotTag(tag: string): boolean {
@@ -211,7 +217,11 @@
   $: metaSummary = (() => {
     if (!item) return ''
     const parts: string[] = []
-    if (item.tags.length > 0) parts.push(`${item.tags.length} tag${item.tags.length === 1 ? '' : 's'}`)
+    parts.push(
+      item.tags.length > 0
+        ? `${item.tags.length} tag${item.tags.length === 1 ? '' : 's'}`
+        : 'No tags',
+    )
     if (linkedFrom.length > 0) parts.push(`linked from ${linkedFrom.length} ${linkedFrom.length === 1 ? 'item' : 'items'}`)
     return parts.join(' · ')
   })()
@@ -299,7 +309,7 @@
       </article>
     {/if}
 
-    {#if metaSummary && !editMode}
+    {#if !editMode}
       <details class="kb-meta-section" bind:open={metaOpen}>
         <summary class="kb-meta-summary">{metaSummary}</summary>
         <div class="kb-meta-body">
@@ -324,9 +334,9 @@
               <p class="error-state kb-save-error">{actionError}</p>
             {/if}
           {:else}
-            {#if item.tags.length > 0}
-              <div class="kb-meta-tags-row">
-                <span class="kb-meta-tags-list">
+            <div class="kb-meta-tags-row">
+              <span class="kb-meta-tags-list">
+                {#if item.tags.length > 0}
                   {#each item.tags as tag, i (tag)}
                     {#if i > 0}<span class="kb-viewer-tag-sep"> · </span>{/if}
                     {#if isDotTag(tag)}
@@ -335,12 +345,12 @@
                       <span class="kb-viewer-tag">{tag}</span>
                     {/if}
                   {/each}
-                </span>
-                {#if !editMode}
-                  <button type="button" class="kb-meta-small-btn" on:click={enterTagsEdit}>Edit tags</button>
+                {:else}
+                  No tags
                 {/if}
-              </div>
-            {/if}
+              </span>
+              <button type="button" class="kb-meta-small-btn" on:click={enterTagsEdit}>Edit tags</button>
+            </div>
             {#if linkedFrom.length > 0}
               <div class="kb-meta-linked-row">
                 <span class="kb-linked-from-label">Linked from:</span>
