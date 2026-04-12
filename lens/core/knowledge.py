@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, ClassVar, cast
 from lens.core.exceptions import LensException
 from lens.core.project import get_selected_datasets, resolve_dataset_path
+from lens.core.storage_text import format_kb_prompt_block
 
 import tomli_w
 
@@ -93,18 +94,13 @@ class KnowledgeObject:
         Multiple formatted objects are typically joined with ``"\\n\\n"`` so
         readers can tell where one KB body ends and the next header begins.
         """
-        from lens.core.annotations import strip_html_comments as strip_html
-        from lens.core.annotations import strip_markdown_comments
-        text = self.text if include_comments else strip_markdown_comments(self.text)
-        if strip_html_comments:
-            text = strip_html(text)
-        header = f"KB[{self.id!r}]"
-        if self.tags:
-            header += f"  TAGS={', '.join(self.tags)}"
-        body = text.rstrip("\n")
-        if body:
-            return f"{header}\n{body}\n"
-        return f"{header}\n"
+        return format_kb_prompt_block(
+            canonical_id=self.id,
+            text=self.text,
+            tags=self.tags,
+            include_comments=include_comments,
+            strip_html=strip_html_comments,
+        )
 
     def __repr__(self) -> str:
         return self.format()

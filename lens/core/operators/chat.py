@@ -17,8 +17,10 @@ Session lifecycle
   **parent** annotation so the whole setup + first AI turn is one atomic unstaged
   transaction.  A rollback removes the sub-node entirely and the user can retry.
 * Subsequent calls inside the session → appends the user's ``--with`` character
-  line, then AI responds as the ``--as`` character.  ``as_kb_id`` / ``with_kb_id``
-  are derived from the parent annotation and may be overridden per-call.
+  line, then AI responds as the ``--as`` character — both in one unstaged
+  transaction (rollback drops the line and the reply together).  ``as_kb_id``
+  / ``with_kb_id`` are derived from the parent annotation and may be overridden
+  per-call.
 * ``--end`` → closes the session with a short prose summary.
 
 Character attribution
@@ -35,16 +37,23 @@ import re
 from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar, cast
 
+import lens.core.operator as operator_module
 from lens.core.annotations import parse_annotations
+from lens.core.command_tools import CommandToolFn
 from lens.core.context import CrawlResult, crawl
 from lens.core.knowledge import KnowledgeStore
-from lens.core.llm import LLMError, generate_text
+from lens.core.llm import LLMError, build_command_tools_bundle
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
 from lens.core.pinning import pin as pin_node
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession, validate_slug
+
+
+async def generate_text(*args: Any, **kwargs: Any) -> str:
+    return await operator_module.generate_text(*args, **kwargs)
+
 
 _NONSLUG_RE = re.compile(r"[^a-z0-9-]+")
 _WITH_LINE_MODE_DIRECT = "direct"
@@ -189,39 +198,129 @@ class ChatOperator(SessionOperator):
         return _titlecase_kb_key(with_kb_id) if with_kb_id else "User"
 
     @classmethod
-    async def _append_with_line(
+    async def _run_direct_with_turn(
         cls,
         *,
         session: ProjectSession,
+        narrative: NarrativeNode,
         node: NarrativeNode,
-        prompt: str,
+        user_prompt: str,
         with_kb_id: str | None,
+        as_kb_id: str,
+        with_line_mode: str,
+        llm_id: str | None,
+        reasoning: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        cancel_event: Any | None,
     ) -> None:
-        """Append the user's character blockquote to the session *node*.
+        """Append the ``--with`` blockquote and closed ``[chat]`` turn in one transaction.
 
-        The storage owner is keyed to the parent's session annotation so that
-        the subsequent ``run_inline`` call sees it as "not my owner" and stages
-        it automatically before generating the AI response.
+        Reuses a single :class:`~lens.core.storage.Storage` so the storage layer
+        does not auto-stage the user line before ``write_start`` (which would
+        split rollback semantics from ``run_inline``).
         """
-        marker = cls._with_display_name(with_kb_id)
-        block = f"> [{marker}] {prompt}\n"
         md = node.md_path()
-        current = md.read_text(encoding="utf-8")
-        sep = "\n" if current.strip() and current.endswith("\n") else (
-            "\n\n" if current.strip() else ""
+        original = md.read_text(encoding="utf-8")
+        marker = cls._with_display_name(with_kb_id)
+        block = f"> [{marker}] {user_prompt}\n"
+        sep = "\n" if original.strip() and original.endswith("\n") else (
+            "\n\n" if original.strip() else ""
         )
-        if node.key_path:
-            session_id = node.key_path[-1]
-            parent = NarrativeNode(
-                narrative_root=node.narrative_root,
-                key_path=node.key_path[:-1],
+        text_with_user = original + sep + block
+        rel_path = str(md.relative_to(session.git_root))
+        ann_line = cls.ann_line_for_append(text_with_user)
+        owner = cls.owner_id(None, rel_path, line=ann_line)
+        storage = session.new_storage(owner=owner)
+
+        ann_params: dict[str, Any] = {
+            "as_kb_id": as_kb_id,
+            "with_kb_id": with_kb_id,
+            "with_line_mode": with_line_mode,
+        }
+        pins: list[str] = []
+        unpins: list[str] = []
+        mention_ids = cls.mention_pins(None, session.project_root)
+        if mention_ids:
+            ann_params["kb_pin"] = list(mention_ids)
+        with_id = ann_params.get("with_kb_id")
+        with_extra = (
+            [str(with_id).strip()]
+            if isinstance(with_id, str) and str(with_id).strip()
+            else []
+        )
+
+        storage.write_file(md, text_with_user)
+
+        content: str = ""
+        interrupted = False
+        tag = ""
+        try:
+            crawl_storage = session.new_storage()
+            crawl_result = crawl(
+                node,
+                extra_pins=cls.merge_extra_pin_ids(
+                    list(pins), list(mention_ids), with_extra
+                ),
+                extra_unpins=unpins,
+                storage=crawl_storage,
             )
-            parent_rel = str(parent.md_path().relative_to(session.git_root))
-            owner = cls.owner_id(session_id, parent_rel)
-            storage = session.new_storage(owner=owner)
-        else:
-            storage = session.new_storage()
-        storage.write_file(md, current + sep + block)
+            mention_refs = cls.mention_node_slice_refs(None, session.project_root)
+            if mention_refs:
+                crawl_result.knowledge.extend(mention_refs)
+            cls.check_requirements(crawl_result)
+            cls.enrich_params(crawl_result, ann_params)
+
+            probe_op = cls(crawl_storage, narrative)
+            tag = probe_op.build_open_tag(None, ann_params)
+            messages = probe_op.build_messages(crawl_result, ann_params)
+
+            tools_payload: list[dict[str, Any]] | None = None
+            command_handlers: dict[str, CommandToolFn] | None = None
+            override = cls._inline_command_tools_bundle(
+                session.project_root, ann_params
+            )
+            if override is not None:
+                tools_payload = override.tools
+                command_handlers = override.handlers
+            elif cls.use_command_tools:
+                bundle = build_command_tools_bundle(session.project_root)
+                tools_payload = bundle.tools
+                command_handlers = bundle.handlers
+
+            content = await generate_text(
+                messages,
+                session.project_root,
+                llm_id=llm_id,
+                tools=tools_payload,
+                command_tool_handlers=command_handlers,
+                cancel_event=cancel_event,
+                on_preview=on_token,
+                interrupt_policy="raise",
+                operator_name=cls.name,
+                reasoning=reasoning,
+            )
+        except KeyboardInterrupt:
+            interrupted = True
+        except LLMError as e:
+            storage.write_file(md, original)
+            raise OperatorError(f"LLM error: {e}") from e
+        except Exception:
+            storage.write_file(md, original)
+            raise
+
+        if interrupted:
+            storage.write_file(md, original)
+            return
+
+        if not content.strip():
+            storage.write_file(md, original)
+            raise OperatorError("no content generated")
+
+        op = cls(storage, narrative)
+        content_prefix = op.content_prefix_for_fresh(ann_params)
+        if content_prefix:
+            content = content_prefix + content
+        op.write_start(node, tag, content)
 
     # ── Session ID generation ──────────────────────────────────────────────
 
@@ -333,6 +432,7 @@ class ChatOperator(SessionOperator):
                 list(pins),
                 [with_kb_id] if with_kb_id else [],
             ),
+            storage=storage,
         )
 
         # Validate character; build instruction params (prompt = stage directions).
@@ -652,33 +752,40 @@ class ChatOperator(SessionOperator):
             )
             fm_storage.stage_all()
 
-        if prompt and is_direct_turn:
-            await cls._append_with_line(
-                session=session,
-                node=node,
-                prompt=prompt,
-                with_kb_id=with_kb_id,
-            )
-
-        # Session speaker turns answer the appended counterpart line. One-off
+        # Session speaker turns answer the counterpart line. One-off
         # interjections instead treat the prompt as third-person stage directions.
         inline_ep2: dict[str, Any] = {
             "as_kb_id": as_kb_id,
             "with_kb_id": with_kb_id,
             "with_line_mode": with_line_mode,
         }
-        await cls.run_inline(
-            session=session,
-            narrative=narrative,
-            prompt=None if is_direct_turn else prompt,
-            pins=[],
-            unpins=[],
-            llm_id=llm_id,
-            reasoning=reasoning,
-            retry=False,
-            on_token=on_token,
-            _cursor_override=node,
-            extra_params=inline_ep2,
-            cancel_event=cancel_event,
-            empty_prompt_ok=True,
-        )
+        if prompt and is_direct_turn:
+            await cls._run_direct_with_turn(
+                session=session,
+                narrative=narrative,
+                node=node,
+                user_prompt=prompt,
+                with_kb_id=with_kb_id,
+                as_kb_id=as_kb_id,
+                with_line_mode=with_line_mode,
+                llm_id=llm_id,
+                reasoning=reasoning,
+                on_token=on_token,
+                cancel_event=cancel_event,
+            )
+        else:
+            await cls.run_inline(
+                session=session,
+                narrative=narrative,
+                prompt=prompt,
+                pins=[],
+                unpins=[],
+                llm_id=llm_id,
+                reasoning=reasoning,
+                retry=False,
+                on_token=on_token,
+                _cursor_override=node,
+                extra_params=inline_ep2,
+                cancel_event=cancel_event,
+                empty_prompt_ok=True,
+            )

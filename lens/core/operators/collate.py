@@ -171,7 +171,12 @@ class CollateOperator(Operator):
         child_clean = strip_markdown_comments(selected_text).strip()
         passage_before = strip_markdown_comments("\n".join(before_lines)).strip()
 
-        crawl_result = crawl(target_node, extra_pins=pins, extra_unpins=unpins)
+        crawl_result = crawl(
+            target_node,
+            extra_pins=pins,
+            extra_unpins=unpins,
+            storage=self.storage,
+        )
         adjusted_crawl = CrawlResult(
             project_root=session.project_root,
             knowledge=crawl_result.knowledge,
@@ -199,6 +204,7 @@ class CollateOperator(Operator):
             llm_id=llm_id,
             reasoning=reasoning,
             cancel_event=cancel_event,
+            storage=self.storage,
         )
 
         open_tag = section_open_tag(id)

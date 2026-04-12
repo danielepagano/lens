@@ -13,10 +13,10 @@ from lens.core.text_select import (
     SelectionError,
     apply_patch,
     apply_patches,
-    apply_patches_to_storage_llm_view,
+    apply_patches_to_storage_text_via_llm_view,
     parse_patches,
     resolve_selection,
-    resolve_storage_selection_to_disk_inclusive_lines,
+    resolve_storage_selection_to_disk_inclusive_lines_via_llm_view,
     storage_text_llm_view,
 )
 
@@ -53,7 +53,7 @@ class TestStorageTextLlmView(unittest.TestCase):
 
     def test_resolve_maps_visible_line_to_disk_skipping_comment(self) -> None:
         raw = "visible1\n[ noise ]: #\nvisible2\nvisible3\n"
-        lo, hi = resolve_storage_selection_to_disk_inclusive_lines(
+        lo, hi = resolve_storage_selection_to_disk_inclusive_lines_via_llm_view(
             raw, _range(_sel("visible2"), _sel("visible3"))
         )
         self.assertEqual((lo, hi), (3, 4))
@@ -61,7 +61,7 @@ class TestStorageTextLlmView(unittest.TestCase):
     def test_apply_patches_resolves_on_visible_then_splices_raw(self) -> None:
         raw = "keep\n[ c ]: #\nold\n"
         patches = [Patch(selection=_range(_sel("old")), content="new")]
-        out = apply_patches_to_storage_llm_view(raw, patches)
+        out = apply_patches_to_storage_text_via_llm_view(raw, patches)
         self.assertEqual(out, "keep\n[ c ]: #\nnew\n")
 
     def test_apply_patches_cursor_prepend_append(self) -> None:
@@ -70,16 +70,16 @@ class TestStorageTextLlmView(unittest.TestCase):
             Patch(selection=_range(_sel(START_ANCHOR)), content="HEAD"),
             Patch(selection=_range(_sel(END_ANCHOR)), content="TAIL"),
         ]
-        out = apply_patches_to_storage_llm_view(raw, patches)
+        out = apply_patches_to_storage_text_via_llm_view(raw, patches)
         self.assertEqual(out, "HEAD\nmid\nTAIL\n")
 
     def test_decode_secret_anchor_maps_to_storage_line(self) -> None:
         raw = "x\n<!-- ai:secret: uryyb -->\ny\n"
-        lo, hi = resolve_storage_selection_to_disk_inclusive_lines(
+        lo, hi = resolve_storage_selection_to_disk_inclusive_lines_via_llm_view(
             raw, _range(_sel("hello"))
         )
         self.assertEqual((lo, hi), (2, 2))
-        out = apply_patches_to_storage_llm_view(
+        out = apply_patches_to_storage_text_via_llm_view(
             raw, [Patch(selection=_range(_sel("hello")), content="there")]
         )
         self.assertIn("there", out)

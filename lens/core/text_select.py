@@ -65,12 +65,20 @@ most editors treat "replace this span with this text").  Pass an empty
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from lens.core.exceptions import LensException
+from lens.core.storage_text import (
+    StorageLlmView,
+    StorageNormalizationError,
+    normalize_storage_text,
+)
 
 START_ANCHOR = "@@@start"
 END_ANCHOR = "@@@end"
+
+if TYPE_CHECKING:
+    from lens.core.storage import Storage
 
 
 class SelectionError(LensException):
@@ -453,117 +461,15 @@ def resolve_selection(text: str, selection: Selection) -> ResolvedSelection:
     )
 
 
-@dataclass(frozen=True)
-class StorageLlmView:
-    """Storage text as the LLM sees it for anchors, plus 1-based disk line spans.
-
-    Rows align with :func:`resolve_selection` / :func:`_split_lines` over
-    ``visible_for_llm`` (same row count and order).
-    """
-
-    visible_for_llm: str
-    disk_line_start_1based: tuple[int, ...]
-    disk_line_end_1based: tuple[int, ...]
-
-
-def _kept_char_intervals(kept: list[str]) -> list[tuple[int, int]]:
-    """Half-open character intervals ``[a, b)`` for each kept line in ``"\\n".join(kept)``."""
-    acc = 0
-    out: list[tuple[int, int]] = []
-    for k, ln in enumerate(kept):
-        start = acc
-        end_excl = acc + len(ln)
-        out.append((start, end_excl))
-        acc = end_excl
-        if k < len(kept) - 1:
-            acc += 1
-    return out
-
-
-def _char_pos_to_disk(intervals: list[tuple[int, int]], disk: list[int], pos: int) -> int:
-    for k, (a, b) in enumerate(intervals):
-        if a == b == pos:
-            return disk[k]
-        if a <= pos < b:
-            return disk[k]
-        if pos == b and k + 1 < len(intervals):
-            return disk[k + 1]
-    raise SelectionError(
-        f"internal: character offset {pos} is not inside any kept storage line span"
-    )
-
-
-def _char_starts_from_splitlines_rows(
-    decoded: str, rows: list[str], had_trailing: bool
-) -> list[int]:
-    if not rows:
-        if decoded:
-            raise SelectionError("internal: non-empty decoded with empty rows")
-        return []
-    starts: list[int] = []
-    pos = 0
-    for i, rl in enumerate(rows):
-        starts.append(pos)
-        pos += len(rl)
-        if i < len(rows) - 1:
-            if pos >= len(decoded):
-                raise SelectionError("internal: missing newline between decoded rows")
-            if decoded.startswith("\r\n", pos):
-                pos += 2
-            elif decoded[pos] in "\n\r":
-                pos += 1
-            else:
-                raise SelectionError(
-                    f"internal: expected newline after row {i} in decoded buffer"
-                )
-    if had_trailing and pos < len(decoded):
-        if decoded.startswith("\r\n", pos):
-            pos += 2
-        elif decoded[pos] in "\n\r":
-            pos += 1
-    if pos != len(decoded):
-        raise SelectionError(
-            "internal: decoded row offsets do not cover full string "
-            f"(left {len(decoded) - pos} bytes)"
-        )
-    return starts
-
-
 def storage_text_llm_view(raw_storage_text: str) -> StorageLlmView:
     """Strip markdown comments like crawl, then ``decode_ai_secrets`` (assemble parity)."""
-    from lens.core.annotations import decode_ai_secrets, iter_kept_storage_lines
-
-    kept_pairs = iter_kept_storage_lines(raw_storage_text)
-    if not kept_pairs:
-        return StorageLlmView("", (), ())
-    kept = [t for t, _ in kept_pairs]
-    disk = [n for _, n in kept_pairs]
-    joined = "\n".join(kept)
-    decoded = decode_ai_secrets(joined)
-    if len(joined) != len(decoded):
-        raise SelectionError(
-            "decode_ai_secrets changed byte length; cannot map anchors to storage lines"
-        )
-    res_lines, had_tr = _split_lines(decoded)
-    starts = _char_starts_from_splitlines_rows(decoded, res_lines, had_tr)
-    intervals = _kept_char_intervals(kept)
-    disk_starts: list[int] = []
-    disk_ends: list[int] = []
-    for i, rl in enumerate(res_lines):
-        c0 = starts[i]
-        c1 = c0 + (len(rl) - 1) if rl else c0
-        lo = _char_pos_to_disk(intervals, disk, c0)
-        hi = _char_pos_to_disk(intervals, disk, c1)
-        disk_starts.append(min(lo, hi))
-        disk_ends.append(max(lo, hi))
-    return StorageLlmView(
-        visible_for_llm=decoded,
-        disk_line_start_1based=tuple(disk_starts),
-        disk_line_end_1based=tuple(disk_ends),
-    )
+    try:
+        return normalize_storage_text(raw_storage_text).llm_view
+    except StorageNormalizationError as e:
+        raise SelectionError(str(e)) from e
 
 
-def resolve_storage_selection_to_disk_inclusive_lines(
+def resolve_storage_selection_to_disk_inclusive_lines_via_llm_view(
     raw_storage_text: str, selection: Selection
 ) -> tuple[int, int]:
     """Resolve *selection* on the LLM-visible storage buffer; return 1-based inclusive disk lines."""
@@ -615,12 +521,23 @@ def splice_storage_text_by_inclusive_disk_lines(
     return "\n".join(before + replacement_lines + after)
 
 
-def apply_patches_to_storage_llm_view(raw_storage_text: str, patches: list[Patch]) -> str:
+def apply_patches_to_storage_text_via_llm_view(
+    raw_storage_text: str,
+    patches: list[Patch],
+    *,
+    storage: Storage | None = None,
+    source_id: str | None = None,
+) -> str:
     """Like :func:`apply_patches` but resolve each patch on the LLM-visible buffer."""
     current = raw_storage_text
     for index, patch in enumerate(patches, start=1):
         try:
-            view = storage_text_llm_view(current)
+            if storage is None:
+                view = storage_text_llm_view(current)
+            else:
+                view = storage.normalize_raw_text(
+                    current, source_id=source_id
+                ).llm_view
             if not view.visible_for_llm.strip():
                 raise SelectionError("storage text has no visible lines after stripping comments")
             resolved = resolve_selection(view.visible_for_llm, patch.selection)

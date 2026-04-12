@@ -139,7 +139,7 @@ def kb_patch(
     from lens.core.text_select import Patch as _Patch
     from lens.core.text_select import (
         SelectionError,
-        apply_patches_to_storage_llm_view,
+        apply_patches_to_storage_text_via_llm_view,
         parse_patches,
     )
 
@@ -152,7 +152,21 @@ def kb_patch(
             "kb_patch targets object ids, not templates; use 'lens kb template'"
         )
 
-    kb = store if store is not None else get_store()
+    local_storage: Storage | None = None
+    if store is None:
+        project_root = find_project_root()
+        local_storage = (
+            None
+            if is_dataset_root(project_root)
+            else Storage(find_git_root_from(project_root))
+        )
+        kb = (
+            KnowledgeStore.for_project(project_root, storage=local_storage)
+            if local_storage is not None
+            else KnowledgeStore.for_project(project_root)
+        )
+    else:
+        kb = store
     if not kb.exists(id):
         raise LensException(f"KB object not found: {id}")
     existing = kb.get_objects([id]).get(id)
@@ -174,7 +188,12 @@ def kb_patch(
         raise LensException("kb_patch: at least one patch is required")
 
     try:
-        new_text = apply_patches_to_storage_llm_view(existing.text, patch_objs)
+        new_text = apply_patches_to_storage_text_via_llm_view(
+            existing.text,
+            patch_objs,
+            storage=local_storage,
+            source_id=f"kb_patch:{id}",
+        )
     except SelectionError as e:
         raise LensException(f"kb_patch: {e}") from e
 
@@ -345,7 +364,16 @@ def kb_edit(
     if is_dataset_root(project_root) and context_address is not None:
         raise LensException("--context is not available in dataset mode")
 
-    kb_store = KnowledgeStore.for_project(project_root)
+    local_storage = (
+        None
+        if is_dataset_root(project_root)
+        else Storage(find_git_root_from(project_root))
+    )
+    kb_store = (
+        KnowledgeStore.for_project(project_root, storage=local_storage)
+        if local_storage is not None
+        else KnowledgeStore.for_project(project_root)
+    )
     pins_list = pins or []
     unpins_list = unpins or []
 
@@ -355,9 +383,19 @@ def kb_edit(
         node = resolved.to_node(project_root)
         if not node.exists():
             raise LensException(f"context node does not exist: {context_address}")
-        crawl_result = crawl(node, extra_pins=pins_list, extra_unpins=unpins_list)
+        crawl_result = crawl(
+            node,
+            extra_pins=pins_list,
+            extra_unpins=unpins_list,
+            storage=local_storage,
+        )
     else:
-        crawl_result = crawl_result_from_pins(project_root, pins_list, unpins_list)
+        crawl_result = crawl_result_from_pins(
+            project_root,
+            pins_list,
+            unpins_list,
+            storage=local_storage,
+        )
 
     objs = kb_store.get_objects([id])
     existing_obj = objs.get(id)

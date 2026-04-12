@@ -102,7 +102,12 @@ class DesignOperator(SessionOperator):
         """
         ann_pins = op.extract_list(ann_params, "kb_pin")
         ann_unpins = op.extract_list(ann_params, "kb_unpin")
-        crawl_result = crawl(design_child, extra_pins=ann_pins, extra_unpins=ann_unpins)
+        crawl_result = crawl(
+            design_child,
+            extra_pins=ann_pins,
+            extra_unpins=ann_unpins,
+            storage=storage,
+        )
         instruction = op.build_instruction(ann_params)
         messages = assemble_prompt(
             crawl_result,

@@ -1022,12 +1022,14 @@ class Operator(ABC):
             if isinstance(with_id, str) and str(with_id).strip()
             else []
         )
+        crawl_storage = session.new_storage()
         crawl_result = crawl(
             cursor,
             extra_pins=cls.merge_extra_pin_ids(
                 list(pins), list(mention_ids), with_extra
             ),
             extra_unpins=unpins,
+            storage=crawl_storage,
         )
         mention_refs = cls.mention_node_slice_refs(prompt, session.project_root)
         if mention_refs:
@@ -1035,7 +1037,7 @@ class Operator(ABC):
         cls.check_requirements(crawl_result)
         cls.enrich_params(crawl_result, ann_params)
 
-        probe_op = cls(session.new_storage(), narrative)
+        probe_op = cls(crawl_storage, narrative)
         tag = probe_op.build_open_tag(None, ann_params)
 
         content: str = ""
@@ -1120,6 +1122,7 @@ class Operator(ABC):
             cursor,
             extra_pins=cls.merge_extra_pin_ids(ann_pins, with_extra),
             extra_unpins=ann_unpins,
+            storage=op.storage,
         )
         cls.enrich_params(crawl_result, existing_ann.params)
         messages = op.build_messages(crawl_result, existing_ann.params)
@@ -1226,6 +1229,7 @@ class Operator(ABC):
                 eff_pins, list(mention_ids), with_extra
             ),
             extra_unpins=eff_unpins,
+            storage=op.storage,
         )
         mention_refs = cls.mention_node_slice_refs(
             new_params.get("prompt") if isinstance(new_params.get("prompt"), str) else None,
@@ -1403,7 +1407,9 @@ class Operator(ABC):
             )
             return
 
-        crawl_result = crawl(node, extra_pins=pins, extra_unpins=unpins)
+        crawl_result = crawl(
+            node, extra_pins=pins, extra_unpins=unpins, storage=op.storage
+        )
         crawl_result = CrawlResult(
             project_root=session.project_root,
             knowledge=crawl_result.knowledge,
@@ -1489,7 +1495,9 @@ class Operator(ABC):
         effective_params["target"] = selected_text
 
         op = cls(session.new_storage(owner=owner), narrative_root)
-        crawl_result = crawl(node, extra_pins=pins, extra_unpins=unpins)
+        crawl_result = crawl(
+            node, extra_pins=pins, extra_unpins=unpins, storage=op.storage
+        )
         crawl_result = CrawlResult(
             project_root=session.project_root,
             knowledge=crawl_result.knowledge,
