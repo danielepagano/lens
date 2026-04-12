@@ -317,58 +317,6 @@ describe('optionShouldSuggest / availability', () => {
     expect(optionShouldSuggest(passOpt, st, playDef, baseStats())).toBe(true)
   })
 
-  it('chat: --memory hidden when not in session and --with not set', () => {
-    const memOpt = chatDef.options!.find((o) => o.name === 'memory')!
-    const st: ParseState = {
-      phase: 'idle',
-      currentToken: '',
-      completedPositional: {},
-      completedOptions: {},
-      canOfferOptions: true,
-    }
-    expect(optionShouldSuggest(memOpt, st, chatDef, baseStats())).toBe(false)
-  })
-
-  it('chat: --memory shown when active_session_operator is chat', () => {
-    const memOpt = chatDef.options!.find((o) => o.name === 'memory')!
-    const st: ParseState = {
-      phase: 'idle',
-      currentToken: '',
-      completedPositional: {},
-      completedOptions: {},
-      canOfferOptions: true,
-    }
-    expect(optionShouldSuggest(memOpt, st, chatDef, baseStats({ active_session_operator: 'chat' }))).toBe(
-      true,
-    )
-  })
-
-  it('chat: --memory shown when --with chip is set', () => {
-    const memOpt = chatDef.options!.find((o) => o.name === 'memory')!
-    const st: ParseState = {
-      phase: 'idle',
-      currentToken: '',
-      completedPositional: {},
-      completedOptions: { with: 'pc.amy' },
-      canOfferOptions: true,
-    }
-    expect(optionShouldSuggest(memOpt, st, chatDef, baseStats())).toBe(true)
-  })
-
-  it('chat: --memory hidden when --end is set', () => {
-    const memOpt = chatDef.options!.find((o) => o.name === 'memory')!
-    const st: ParseState = {
-      phase: 'idle',
-      currentToken: '',
-      completedPositional: {},
-      completedOptions: { end: true },
-      canOfferOptions: true,
-    }
-    expect(optionShouldSuggest(memOpt, st, chatDef, baseStats({ active_session_operator: 'chat' }))).toBe(
-      false,
-    )
-  })
-
   it('play: --end hidden unless active_session_operator is play', () => {
     const endOpt = playDef.options!.find((o) => o.name === 'end')!
     const st: ParseState = {

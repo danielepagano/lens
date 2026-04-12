@@ -140,22 +140,6 @@ const commands: CommandDefinition[] = [
         },
       },
       { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
-      {
-        name: 'memory',
-        valueType: 'kb-id',
-        repeatable: true,
-        hint: 'long-term memory KB object',
-        availability: {
-          require: {
-            anyOf: [
-              { statEq: { key: 'active_session_operator', value: 'chat' } },
-              { optionTrue: 'with' },
-            ],
-          },
-          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
-          skipWhenPromptOrStringSlot: true,
-        },
-      },
       { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
@@ -574,8 +558,6 @@ const handler: CommandHandler = async (
       const endChat = ctx.args.options['end'] === true
       const asKbId = (ctx.args.options['as'] as string | undefined) || undefined
       const withKbId = (ctx.args.options['with'] as string | undefined) || undefined
-      const memoryKbIds =
-        (ctx.args.options['memory'] as string[] | undefined) ?? []
       const chatPromptPresent = prompt !== undefined && String(prompt).trim() !== ''
       if (!endChat && !retry && !asKbId && !chatPromptPresent) {
         throw new Error('Chat requires a prompt, --as, --end, or --retry')
@@ -588,7 +570,6 @@ const handler: CommandHandler = async (
           prompt,
           as_kb_id: asKbId,
           with_kb_id: withKbId,
-          memory_kb_ids: memoryKbIds.length ? memoryKbIds : undefined,
           pins,
           unpins,
           llm_id: llmId,

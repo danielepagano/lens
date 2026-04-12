@@ -674,6 +674,8 @@ class TestSectionOperator(unittest.TestCase):
                 from collections.abc import Awaitable, Callable
                 from typing import cast
 
+                if kwargs.get("operator_name") == "remember":
+                    return ""
                 on_preview = kwargs.get("on_preview")
                 if on_preview is not None:
                     cb = cast(Callable[[str], Awaitable[None]], on_preview)

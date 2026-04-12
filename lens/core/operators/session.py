@@ -29,14 +29,16 @@ Only one module is active at a time: switching ``--module`` removes all
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any, ClassVar
 
 from lens.core.annotations import parse_front_matter, strip_markdown_comments
-from lens.core.context import CrawlResult, crawl
-from lens.core.llm import generate_text
+from lens.core.context import CrawlResult, assemble_prompt, crawl
+from lens.core.knowledge import KnowledgeStore
+from lens.core.llm import LLMError, build_kb_patch_whitelist_bundle, generate_text
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator, OperatorError
 from lens.core.prompts import PromptStore
@@ -302,6 +304,180 @@ async def generate_summary_block(
         "summary LLM returned empty or whitespace-only output after "
         f"{attempts} attempt(s)"
     )
+
+
+logger = logging.getLogger(__name__)
+
+_TOOL_CALL_FENCE_RE = re.compile(
+    r"```tool-call\n.*?^```\s*",
+    re.MULTILINE | re.DOTALL,
+)
+
+
+def _remember_prose_comment(text: str) -> str:
+    safe = text.replace("-->", "→").replace("<!--", "⟨")
+    return f"<!-- remember:\n{safe}\n-->"
+
+
+def format_remember_llm_output_for_child(raw: str) -> str:
+    """Format remember ``generate_text`` output for appending to the summarized child.
+
+    `` ```tool-call`` … `` ``` `` blocks are kept verbatim (tool visibility).
+    Any other non-empty segments are wrapped in ``<!-- remember: … -->`` so
+    stray model prose does not become narrative body.
+    """
+    s = raw.strip()
+    if not s:
+        return ""
+    if "```tool-call" not in s:
+        return f"\n\n{_remember_prose_comment(s)}\n"
+    parts: list[str] = []
+    pos = 0
+    for m in _TOOL_CALL_FENCE_RE.finditer(s):
+        before = s[pos : m.start()].strip()
+        if before:
+            parts.append(_remember_prose_comment(before))
+        parts.append(m.group(0).rstrip())
+        pos = m.end()
+    tail = s[pos:].strip()
+    if tail:
+        parts.append(_remember_prose_comment(tail))
+    out = "\n\n".join(parts).strip()
+    return f"\n\n{out}\n" if out else ""
+
+
+def _remember_outline_block(title: str, body: str) -> str:
+    body_stripped = body.strip()
+    if not body_stripped:
+        return ""
+    return f"--- begin {title} ---\n{body_stripped}\n--- end {title} ---"
+
+
+async def apply_remember_patches(
+    *,
+    crawl_result: CrawlResult,
+    content: str,
+    project_root: Path,
+    llm_id: str | None = None,
+    reasoning: str | None = None,
+    cancel_event: Any | None = None,
+) -> str:
+    """Detect pinned objects with remember.* tags and apply kb_patch updates.
+
+    Pinned objects TAGGED with remember.* are the patch TARGETS (e.g. lore.alice
+    tagged 'remember.core-memories'). The remember.X KB objects provide INSTRUCTIONS.
+    X._template provides format hints.
+
+    Returns text to append to the **child** node after the summarized body:
+    normal output from ``generate_text`` (tool-call fences plus any model
+    prose, the latter wrapped in ``<!-- remember: … -->``). Empty string when
+    there is nothing to run. On ``LLMError``, returns a visible HTML comment
+    suffix and logs a warning (summary / parent close should still proceed).
+    """
+    if not crawl_result.pinned_ids:
+        return ""
+
+    store = KnowledgeStore.for_project(project_root)
+
+    pinned_objects = store.get_objects(crawl_result.pinned_ids)
+    target_to_rem_tags: dict[str, list[str]] = {}
+    for obj_id, obj in pinned_objects.items():
+        rem_tags = [t for t in obj.tags if t.startswith("remember.")]
+        if rem_tags:
+            target_to_rem_tags[obj_id] = rem_tags
+
+    if not target_to_rem_tags:
+        return ""
+
+    unique_rem_tags: set[str] = set()
+    for tags in target_to_rem_tags.values():
+        unique_rem_tags.update(tags)
+
+    pinned_set = frozenset(crawl_result.pinned_ids)
+    remember_ref_lines: list[str] = []
+    missing_instruction_ids: list[str] = []
+    seen_missing: set[str] = set()
+
+    for rem_tag in sorted(unique_rem_tags):
+        rem_key = rem_tag.split(".", 1)[1]
+        template_id = f"{rem_key}._template"
+        pair = store.get_objects([rem_tag, template_id])
+        has_rem = rem_tag in pair
+        has_tpl = template_id in pair
+        if has_rem and has_tpl:
+            remember_ref_lines.append(f"- `{rem_tag}` and `{template_id}`")
+        elif has_rem:
+            remember_ref_lines.append(f"- `{rem_tag}` (no `{template_id}`)")
+        elif has_tpl:
+            remember_ref_lines.append(
+                f"- `{template_id}` only — `{rem_tag}` missing"
+            )
+        else:
+            remember_ref_lines.append(
+                f"- Neither `{rem_tag}` nor `{template_id}` exists; "
+                f"use tag segment `{rem_key}` as a loose guideline."
+            )
+        for nid, present in ((rem_tag, has_rem), (template_id, has_tpl)):
+            if not present or nid in pinned_set or nid in seen_missing:
+                continue
+            seen_missing.add(nid)
+            missing_instruction_ids.append(nid)
+
+    remember_refs = "\n".join(remember_ref_lines)
+
+    target_listing = "\n".join(
+        f"- {oid} (remember via: {', '.join(tags)})"
+        for oid, tags in target_to_rem_tags.items()
+    )
+
+    extra_sections: list[str] | None = None
+    if missing_instruction_ids:
+        fetched = store.get_objects(missing_instruction_ids)
+        bodies = [fetched[i].format() for i in missing_instruction_ids if i in fetched]
+        if bodies:
+            extra_sections = [
+                _remember_outline_block(
+                    "REMEMBER OBJECTS",
+                    "\n\n".join(bodies),
+                )
+            ]
+
+    prompts = PromptStore(project_root)
+    instruction = prompts.format(
+        "remember.instruction_template",
+        content=content,
+        remember_refs=remember_refs,
+        target_listing=target_listing,
+    )
+
+    messages = assemble_prompt(
+        crawl_result,
+        system_prompt=prompts.get("remember.system"),
+        instruction=instruction,
+        extra_sections=extra_sections,
+    )
+
+    allowed = frozenset(target_to_rem_tags.keys())
+    bundle = build_kb_patch_whitelist_bundle(allowed)
+
+    try:
+        raw = await generate_text(
+            messages,
+            project_root,
+            llm_id=llm_id,
+            tools=bundle.tools,
+            command_tool_handlers=bundle.handlers,
+            cancel_event=cancel_event,
+            interrupt_policy="raise",
+            operator_name="remember",
+            reasoning=reasoning or "low",
+        )
+    except LLMError as exc:
+        logger.warning("remember: LLM error: %s", exc)
+        safe = str(exc).replace("-->", "→").replace("<!--", "⟨")
+        return f"\n\n<!-- remember: error: {safe} -->\n"
+
+    return format_remember_llm_output_for_child(raw)
 
 
 # ---------------------------------------------------------------------------
@@ -654,6 +830,7 @@ class SessionOperator(Operator):
         op = cls(storage, narrative)
 
         summary = ""
+        remember_suffix = ""
         if cls.summarize_on_end:
             child_text = cursor.md_path().read_text(encoding="utf-8")
             child_clean = strip_markdown_comments(child_text).strip()
@@ -673,8 +850,24 @@ class SessionOperator(Operator):
                     instruction_key=cls.summary_instruction_prompt_key,
                     summary_guidance=summary_guidance,
                 )
+                remember_suffix = await apply_remember_patches(
+                    crawl_result=crawl_result,
+                    content=child_clean,
+                    project_root=session.project_root,
+                    llm_id=llm_id,
+                    reasoning=reasoning,
+                    cancel_event=cancel_event,
+                )
 
         op.close_subnode(parent, id, summary)
+
+        if remember_suffix:
+            child_md = cursor.md_path()
+            existing_child = child_md.read_text(encoding="utf-8")
+            storage.write_file(
+                child_md, existing_child.rstrip("\n") + remember_suffix
+            )
+
         return None
 
     # ------------------------------------------------------------------

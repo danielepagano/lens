@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, cast
-
 from lens.core.address import NarrativeAddress
 from lens.core.annotations import parse_annotations
 from lens.core.context import crawl_pins
@@ -16,7 +14,7 @@ SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
 
 
 def _chat_parent_session_extra_pins(node: NarrativeNode) -> list[str]:
-    """KB ids from the parent ``[chat:…]`` annotation (as / with / memory).
+    """KB ids from the parent ``[chat:…]`` annotation (as / with).
 
     These are merged into crawl ``extra_pins`` so ``effective_pins_at_cursor``
     matches what the chat operator treats as effective context, not only
@@ -48,11 +46,6 @@ def _chat_parent_session_extra_pins(node: NarrativeNode) -> list[str]:
                 v = p.get(key)
                 if isinstance(v, str) and v.strip():
                     out.append(v.strip())
-            mem = p.get("memory_kb_ids")
-            if isinstance(mem, list):
-                for item in cast(list[Any], mem):
-                    if isinstance(item, str) and item.strip():
-                        out.append(item.strip())
             return out
     return []
 

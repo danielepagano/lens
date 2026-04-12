@@ -64,6 +64,8 @@ def _commit_content(root: Path, node: NarrativeNode, content: str) -> None:
 
 
 async def _fake_summary_text(*args: Any, **kwargs: Any) -> str:
+    if kwargs.get("operator_name") == "remember":
+        return ""
     on_preview = kwargs.get("on_preview")
     if on_preview is not None:
         cb = cast(Callable[[str], Awaitable[None]], on_preview)

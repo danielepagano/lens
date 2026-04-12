@@ -20,7 +20,7 @@ from lens.core.annotations import strip_markdown_comments
 from lens.core.context import crawl
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator
-from lens.core.operators.session import generate_summary_block
+from lens.core.operators.session import apply_remember_patches, generate_summary_block
 from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, validate_slug
 from lens.core.prompts import PromptStore
@@ -115,8 +115,25 @@ class SectionOperator(Operator):
             reasoning=reasoning,
             summary_guidance=summary_guidance,
         )
+        remember_suffix = ""
+        if child_clean:
+            remember_suffix = await apply_remember_patches(
+                crawl_result=crawl_result,
+                content=child_clean,
+                project_root=session.project_root,
+                llm_id=llm_id,
+                reasoning=reasoning,
+                cancel_event=cancel_event,
+            )
 
         self.close_subnode(parent, key, summary_block)
+
+        if remember_suffix:
+            child_md = cursor.md_path()
+            existing_child = child_md.read_text(encoding="utf-8")
+            self.storage.write_file(
+                child_md, existing_child.rstrip("\n") + remember_suffix
+            )
 
     @classmethod
     async def run_start(

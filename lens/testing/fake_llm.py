@@ -40,6 +40,9 @@ LOREM = (
 # ``play.summary_instruction_template`` in ``lens/prompts/default.toml``.
 _SUMMARY_REQUEST_MARKER = "TEXT TO SUMMARIZE:"
 
+# Distinctive line from ``remember.instruction_template`` in ``lens/prompts/default.toml``.
+_REMEMBER_TASK_MARKER = "You may call kb_patch only for these targets"
+
 # Secret-encoding test support.
 FAKE_SECRET_TRIGGER = "EMIT_FAKE_SECRET"
 FAKE_SECRET_PLAINTEXT = "the king betrayed everyone"
@@ -66,6 +69,8 @@ class _FakeLLMHandler(BaseHTTPRequestHandler):
                 response_text = (
                     f"Integration Summary\n\n{LOREM} [input:{total_chars}]"
                 )
+            elif _REMEMBER_TASK_MARKER in msg_text:
+                response_text = ""
             else:
                 response_text = f"{LOREM} [input:{total_chars}]"
 

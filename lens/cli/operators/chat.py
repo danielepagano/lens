@@ -38,15 +38,6 @@ def chat(
         help="KB id of the counterpart character the user plays (e.g. pc.amy); triggers session mode",
     ),
     pin: list[str] = pin_option("KB ID to pin (repeatable)"),
-    memory: list[str] = typer.Option(
-        [],
-        "--memory",
-        "-m",
-        help=(
-            "Session only: KB object for long-term character memory (repeatable). "
-            "Implies context pins; enables scoped kb_patch for these ids only."
-        ),
-    ),
     unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(None, "--llm", "-l", help="LLM ID to use"),
     reasoning: str | None = typer.Option(
@@ -93,22 +84,12 @@ def chat(
         )
         raise typer.Exit(1)
 
-    if memory:
-        sess_node, _ = ChatOperator.find_active_session(narrative)
-        if (not end and not retry) and with_kb_id is None and sess_node is None:
-            typer.echo(
-                "lens chat: --memory is only for session chat (use --with or work "
-                "from inside the open session node)",
-                err=True,
-            )
-            raise typer.Exit(1)
-
-    # --as / --with / --memory are passed as session params; crawl adds their KB
-    # objects to context without duplicating them in kb_pin (same idea as --as).
+    # --as / --with are passed as session params; crawl adds their KB objects to
+    # context without duplicating them in kb_pin (same idea as --as).
     all_pins = list(pin)
 
     try:
-        ids_check = list(all_pins) + list(memory) + list(unpin)
+        ids_check = list(all_pins) + list(unpin)
         if as_kb_id:
             ids_check.append(as_kb_id)
         if with_kb_id:
@@ -123,8 +104,6 @@ def chat(
         extra_params["as_kb_id"] = as_kb_id
     if with_kb_id:
         extra_params["with_kb_id"] = with_kb_id
-    if memory:
-        extra_params["memory_kb_ids"] = list(memory)
 
     try:
         if end or with_kb_id is not None:

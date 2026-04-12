@@ -629,8 +629,7 @@ class Operator(ABC):
     ) -> CommandToolsBundle | None:
         """Optional per-operator command tools for inline / retry generation.
 
-        When non-``None``, overrides :attr:`use_command_tools` full registry
-        (e.g. chat exposes only whitelisted ``kb_patch``).
+        When non-``None``, overrides :attr:`use_command_tools` full registry.
         """
         del project_root, ann_params
         return None
@@ -1017,7 +1016,6 @@ class Operator(ABC):
         if mention_ids:
             existing_pins = cls.extract_list(ann_params, "kb_pin")
             ann_params["kb_pin"] = existing_pins + mention_ids
-        memory_ids = cls.extract_list(ann_params, "memory_kb_ids")
         with_id = ann_params.get("with_kb_id")
         with_extra = (
             [str(with_id).strip()]
@@ -1027,7 +1025,7 @@ class Operator(ABC):
         crawl_result = crawl(
             cursor,
             extra_pins=cls.merge_extra_pin_ids(
-                list(pins), list(mention_ids), memory_ids, with_extra
+                list(pins), list(mention_ids), with_extra
             ),
             extra_unpins=unpins,
         )
@@ -1106,7 +1104,6 @@ class Operator(ABC):
     ) -> None:
         ann_pins = cls.extract_list(existing_ann.params, "kb_pin")
         ann_unpins = cls.extract_list(existing_ann.params, "kb_unpin")
-        ann_memory = cls.extract_list(existing_ann.params, "memory_kb_ids")
         ann_llm_id: str | None = existing_ann.params.get("llm_id")
         ann_reasoning: str | None = existing_ann.params.get("reasoning")
 
@@ -1121,7 +1118,7 @@ class Operator(ABC):
         )
         crawl_result = crawl(
             cursor,
-            extra_pins=cls.merge_extra_pin_ids(ann_pins, ann_memory, with_extra),
+            extra_pins=cls.merge_extra_pin_ids(ann_pins, with_extra),
             extra_unpins=ann_unpins,
         )
         cls.enrich_params(crawl_result, existing_ann.params)
@@ -1217,7 +1214,6 @@ class Operator(ABC):
         if mention_ids:
             existing_pins = cls.extract_list(new_params, "kb_pin")
             new_params["kb_pin"] = existing_pins + mention_ids
-        memory_ids = cls.extract_list(new_params, "memory_kb_ids")
         with_id = new_params.get("with_kb_id")
         with_extra = (
             [str(with_id).strip()]
@@ -1227,7 +1223,7 @@ class Operator(ABC):
         crawl_result = crawl(
             cursor,
             extra_pins=cls.merge_extra_pin_ids(
-                eff_pins, list(mention_ids), memory_ids, with_extra
+                eff_pins, list(mention_ids), with_extra
             ),
             extra_unpins=eff_unpins,
         )

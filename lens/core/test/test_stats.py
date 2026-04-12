@@ -169,14 +169,13 @@ class TestStatsActiveSessionOperator(unittest.TestCase):
       result = get_stats(session)
       self.assertEqual(result.active_session_operator, "chat")
 
-  def test_effective_pins_include_chat_as_with_memory(self) -> None:
-    """Cursor in a chat sub-node: stats list as/with/memory from parent annotation."""
+  def test_effective_pins_include_chat_as_with(self) -> None:
+    """Cursor in a chat sub-node: stats list as/with from parent annotation."""
     with tempfile.TemporaryDirectory() as tmpdir:
       root = _init_repo(Path(tmpdir))
       session, node = _make_project(root)
       _add_kb(root, "npc", "bob", "Bob")
       _add_kb(root, "pc", "amy", "Amy")
-      _add_kb(root, "lore", "tome", "Old book")
 
       slug = "chat-sess"
       root_md = node.md_path()
@@ -184,8 +183,6 @@ class TestStatsActiveSessionOperator(unittest.TestCase):
           f"# test\n\n[chat:{slug}\n"
           "    as_kb_id: npc.bob\n"
           "    with_kb_id: pc.amy\n"
-          "    memory_kb_ids:\n"
-          "    - lore.tome\n"
           "]: #\n"
       )
       sess_dir = node.narrative_root / slug
@@ -206,5 +203,4 @@ class TestStatsActiveSessionOperator(unittest.TestCase):
       pins = result.effective_pins_at_cursor
       self.assertIn("npc.bob", pins)
       self.assertIn("pc.amy", pins)
-      self.assertIn("lore.tome", pins)
 

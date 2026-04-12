@@ -107,7 +107,6 @@ class ChatBody(BaseModel):
     prompt: str | None = None
     as_kb_id: str | None = None
     with_kb_id: str | None = None
-    memory_kb_ids: list[str] = []
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
@@ -503,14 +502,7 @@ async def operator_chat(
     pins = list(body.pins)
     unpins = list(body.unpins)
     session_node, _ = ChatOperator.find_active_session(narrative)
-    one_shot = not body.end and body.with_kb_id is None and session_node is None
-    if one_shot and body.memory_kb_ids:
-        raise HTTPException(
-            status_code=400,
-            detail="memory_kb_ids are only allowed inside a chat session "
-            "(use with_kb_id to start one, or open the session node)",
-        )
-    validate_kb_ids = pins + list(body.memory_kb_ids)
+    validate_kb_ids = list(pins)
     if body.as_kb_id is not None:
         validate_kb_ids.append(body.as_kb_id)
     if body.with_kb_id is not None:
@@ -529,18 +521,12 @@ async def operator_chat(
     on_token = _make_on_token(event_queue)
 
     extra_params: dict[str, Any] | None = None
-    if (
-        body.as_kb_id is not None
-        or body.with_kb_id is not None
-        or body.memory_kb_ids
-    ):
+    if body.as_kb_id is not None or body.with_kb_id is not None:
         extra_params = {}
         if body.as_kb_id is not None:
             extra_params["as_kb_id"] = body.as_kb_id
         if body.with_kb_id is not None:
             extra_params["with_kb_id"] = body.with_kb_id
-        if body.memory_kb_ids:
-            extra_params["memory_kb_ids"] = list(body.memory_kb_ids)
 
     if body.end or body.with_kb_id is not None:
         # Session mode: end, start, or continue an explicit session.

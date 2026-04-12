@@ -439,6 +439,8 @@ The selected lines are moved into a new child node, an LLM summary is generated,
 
 The range may include complete annotation blocks, but cannot split one — selecting only the opening or closing tag of an annotation (or only part of its content) is an error.
 
+If any **pinned** KB object in the collate summary crawl carries a `remember.*` tag, the same **Remember** pass described under `lens chat` may run after the summary (see pins on that command).
+
 ## AI Operators
 
 AI operators call the configured LLM and write the output into narrative nodes. All operators share these options:
@@ -497,9 +499,19 @@ Streams dialogue as a specific knowledge-base character (`--as` / `-as`). The mo
 
 **Session (`--with`):** With `--as` and `--with` / `-w` (the KB id of the character **you** play), Lens creates a **chat** sub-node under the cursor. Your prompt is treated as stage directions for the opening exchange. Inside that session, later invocations can omit `--with`; plain text is appended as your character’s line (blockquote), then the AI responds as `--as`. You can pass a new `--as` on a later call to switch which character the AI voices for a one-off beat.
 
-The `--with` id is merged into crawl context like `--as` and `--memory` (not written to `kb_pin` unless you add it with `-p`).
+The `--with` id is merged into crawl context the same way as `--as` (not written to `kb_pin` unless you add it with `-p`).
 
-**Memory (`--memory` / `-m`):** Repeatable KB ids for **long-term character memory** objects. They are included in effective context like pins. The model then receives the `kb_patch` command tool, but **only** for those ids, so it can update durable memory the character should keep after chat context rolls forward.
+**Remember (durable KB updates when prose is summarized):** When Lens summarizes a block of prose, it can run a short **remember** pass that may call `kb_patch` on specific KB objects you designate.
+
+What you do:
+
+1. **Mark patch targets** — On any KB object you want the remember step to be allowed to edit, add a dot-tag `remember.<name>` (for example `remember.core-memories` on `lore.alice`). Only objects that are **pinned** into the crawl at summarize time count (same pin rules as elsewhere).
+
+2. **Provide optional instructions** — Create a KB object whose id is exactly that tag, e.g. `remember.core-memories`, with the guidance the remember model should follow. If you are trying to update a specific/structured object, stay `remember.<type>` and the system will also give the AI its template.For example to update `location.home` tag it with `remember.location` and the template will be used, plus you can actually create `remember.location` to specific when and what to remember inside a location.
+
+3. **Trigger** — The remember step runs when Lens summarizes session content on close (**`lens chat --end`**, **`lens play --end`**) or when you summarize a section using **`lens section --end`** or  **`lens collate`**. It reads the passage that is about to be compressed, not the whole node. If nothing needs changing, the model leaves objects alone. (operators that use `kb extract` like `design` and `advance` does not use this path since they already manipulate KB items another way)
+
+Only ids that carry a `remember.*` tag are patch targets; `kb_patch` is restricted to that set for that call.
 
 ```bash
 lens chat --as npc.innkeeper "warn them about the curfew"
@@ -520,7 +532,6 @@ Options:
 - `--as` / `-as` — KB id the AI embodies (e.g. `npc.bob`, `pc.alice`). Required for new inline or session calls; inside an open session it can override the voiced character.
 - `--with` / `-w` — KB id of your character; starts (or re-enters explicit) session mode when set together with session handling. After the session exists, you may omit it and Lens continues the active chat session.
 - `--slug` / `-s` — Sub-node key for a **new** session (default: auto-generated from characters and prompt). If you pass a bare name, Lens prefixes it with `chat-` when needed. Not used with `--end` or `--retry`.
-- `--memory` / `-m` — Repeatable KB id for a memory object (see **Memory** above). Stored on the session parent annotation; session continues inherit it without re-passing `-m`.
 - `-p` / `--pin`, `-u` / `--unpin`, `-l` / `--llm`, `--reasoning`, `-r` / `--retry` — same ideas as other AI operators.
 - With `--end`, an optional `PROMPT` is treated as extra instructions for the session summary LLM (same narrative templates as usual, plus your guidance).
 

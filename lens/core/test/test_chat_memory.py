@@ -1,4 +1,4 @@
-"""Tests for chat --memory and scoped kb_patch."""
+"""Tests for chat inline tools behavior and kb_patch whitelist bundle."""
 
 from __future__ import annotations
 
@@ -11,10 +11,8 @@ from typing import Any
 from unittest.mock import patch
 
 from lens.core.command_tools import CommandToolFn
-from lens.core.context import CrawlResult
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
 from lens.core.operators.chat import ChatOperator
 from lens.core.project import ProjectSession
 
@@ -86,43 +84,6 @@ class TestChatMemory(unittest.TestCase):
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
         self._tmp.cleanup()
-
-    def test_enrich_rejects_unknown_memory_id(self) -> None:
-        crawl = CrawlResult(
-            knowledge=[],
-            previous_summaries=[],
-            current_content="",
-            project_root=self.root,
-        )
-        with self.assertRaises(OperatorError) as ctx:
-            ChatOperator.enrich_params(
-                crawl,
-                {"as_kb_id": "npc.bob", "memory_kb_ids": ["npc.ghost"]},
-            )
-        self.assertIn("memory", str(ctx.exception).lower())
-
-    def test_run_inline_memory_outside_chat_session_raises(self) -> None:
-        with self.assertRaises(OperatorError) as ctx:
-            asyncio.run(
-                ChatOperator.run_inline(
-                    session=self.session,
-                    narrative=self.narrative,
-                    prompt=None,
-                    pins=[],
-                    unpins=[],
-                    llm_id=None,
-                    reasoning=None,
-                    retry=False,
-                    on_token=None,
-                    cancel_event=None,
-                    extra_params={
-                        "as_kb_id": "npc.bob",
-                        "memory_kb_ids": ["npc.waiter"],
-                    },
-                )
-            )
-        self.assertIn("memory", str(ctx.exception).lower())
-        self.assertIn("session", str(ctx.exception).lower())
 
     def test_oneshot_no_memory_no_tools(self) -> None:
         captured: dict[str, Any] = {}

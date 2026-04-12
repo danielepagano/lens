@@ -15,7 +15,7 @@ from lens.core.operator import Operator
 from lens.core.project import ProjectSession, resolve_address, validate_slug
 
 from lens.core.operators.section import section_close_tag, section_open_tag
-from lens.core.operators.session import generate_summary_block
+from lens.core.operators.session import apply_remember_patches, generate_summary_block
 
 
 class CollateOperator(Operator):
@@ -137,6 +137,15 @@ class CollateOperator(Operator):
             summary_guidance=summary_guidance,
         )
 
+        remember_suffix = await apply_remember_patches(
+            crawl_result=crawl_result,
+            content=child_clean,
+            project_root=session.project_root,
+            llm_id=llm_id,
+            reasoning=reasoning,
+            cancel_event=cancel_event,
+        )
+
         open_tag = section_open_tag(id)
         close_tag = section_close_tag(id)
         section_block = f"{open_tag}\n\n{summary_block}\n\n{close_tag}"
@@ -156,6 +165,8 @@ class CollateOperator(Operator):
 
         parent_md_dir = target_node.md_path().parent
         child_content = selected_text + "\n"
+        if remember_suffix:
+            child_content = child_content.rstrip("\n") + remember_suffix
 
         if subnodes_to_move:
             child_dir = parent_md_dir / id

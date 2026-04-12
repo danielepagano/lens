@@ -226,7 +226,7 @@ def build_command_tools_bundle(project_root: Path) -> CommandToolsBundle:
 
 
 def build_kb_patch_whitelist_bundle(allowed_ids: frozenset[str]) -> CommandToolsBundle:
-    """Single ``kb_patch`` tool with server-side id whitelist (e.g. chat memory)."""
+    """Single ``kb_patch`` tool with server-side id whitelist (e.g. remember patches)."""
     from lens.core.command_tools import KB_PATCH_TOOL, kb_patch_handler
 
     if not allowed_ids:
@@ -234,7 +234,7 @@ def build_kb_patch_whitelist_bundle(allowed_ids: frozenset[str]) -> CommandTools
 
     allowed_sorted = ", ".join(sorted(allowed_ids))
     extra = (
-        " For this session you may only patch these KB ids (memory objects): "
+        " You may only patch these KB ids: "
         f"{allowed_sorted}. Any other id is rejected."
     )
 
@@ -244,7 +244,7 @@ def build_kb_patch_whitelist_bundle(allowed_ids: frozenset[str]) -> CommandTools
         raw_id = args.get("id")
         if not isinstance(raw_id, str) or raw_id not in allowed_ids:
             return (
-                "(error: kb_patch may only target the chat memory KB objects: "
+                "(error: kb_patch may only target these KB objects: "
                 f"{allowed_sorted})"
             )
         return await kb_patch_handler(args, project_root)

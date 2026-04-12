@@ -304,7 +304,6 @@ export interface ChatParams {
   prompt?: string
   as_kb_id?: string
   with_kb_id?: string
-  memory_kb_ids?: string[]
   pins?: string[]
   unpins?: string[]
   llm_id?: string

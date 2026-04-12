@@ -180,45 +180,22 @@ function dividerTitleOnlyHtml(id: string): string {
 export interface ParsedChatDividerParams {
   asKbId?: string
   withKbId?: string
-  memoryKbIds: string[]
 }
 
-/** Parse chat annotation YAML lines between `[chat:id` and `]: #` (as_kb_id, with_kb_id, memory_kb_ids). */
+/** Parse chat annotation YAML lines between `[chat:id` and `]: #` (as_kb_id, with_kb_id). */
 export function parseChatDividerParams(paramBlock: string): ParsedChatDividerParams {
-  const out: ParsedChatDividerParams = { memoryKbIds: [] }
-  let memoryList = false
+  const out: ParsedChatDividerParams = {}
 
   for (const raw of paramBlock.split('\n')) {
     const t = raw.trim()
     if (!t) continue
 
-    const listItem = t.match(/^-\s+(.+)$/)
-    if (listItem && memoryList) {
-      const id = listItem[1].trim().replace(/\s+#.*$/, '')
-      if (id) out.memoryKbIds.push(id)
-      continue
-    }
-
     const scalar = t.match(/^([a-zA-Z0-9_]+):\s*(.*)$/)
     if (!scalar) continue
     const key = scalar[1]
     const val = scalar[2].trim()
-    memoryList = false
 
-    if (key === 'memory_kb_ids') {
-      memoryList = true
-      const inline = val.match(/^\[(.*)\]\s*$/)
-      if (inline) {
-        const inner = inline[1].trim()
-        if (inner) {
-          for (const part of inner.split(',')) {
-            const s = part.trim().replace(/^['"]|['"]$/g, '')
-            if (s) out.memoryKbIds.push(s)
-          }
-        }
-        memoryList = false
-      }
-    } else if (key === 'as_kb_id') {
+    if (key === 'as_kb_id') {
       out.asKbId = val
     } else if (key === 'with_kb_id') {
       out.withKbId = val
@@ -245,7 +222,7 @@ function chatDividerKeysFromSlugId(id: string): string | null {
 
 /**
  * HTML inside the annotation divider link. When `operator` is `chat`, adds
- * `chat:as-with` and memory pills after the title (no duplicate inline type pill);
+ * `chat:as-with` after the title (no duplicate inline type pill);
  * all other operators use {@link toLabel} only.
  */
 export function buildAnnotationDividerLabelHtml(
@@ -269,9 +246,6 @@ export function buildAnnotationDividerLabelHtml(
   if (keys) {
     const main = escapeHtmlText(`chat:${keys}`)
     extras.push(`<span class="pin-pill pin-pill-annotation-divider">${main}</span>`)
-    for (const mid of meta?.memoryKbIds ?? []) {
-      extras.push(`<span class="pin-pill pin-pill-unpin">${escapeHtmlText(mid)}</span>`)
-    }
   }
 
   if (extras.length === 0) return toLabel(id)
