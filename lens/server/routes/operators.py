@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from lens.core.compression import Aggressiveness
 from lens.core.commands.pin import resolve_node
 from lens.core.commands.rollback import execute_rollback
 from lens.core.exceptions import LensException
@@ -132,6 +133,7 @@ class CollateBody(BaseModel):
 
 class CompressBody(BaseModel):
     prompt: str | None = None
+    aggressiveness: Aggressiveness | None = None
     address: str | None = None  # narrative node (display form); default cursor
     pins: list[str] = []
     unpins: list[str] = []
@@ -771,6 +773,7 @@ async def operator_compress(
             session=session,
             narrative=narrative,
             prompt=body.prompt,
+            aggressiveness=body.aggressiveness,
             address=body.address,
             pins=body.pins,
             unpins=body.unpins,

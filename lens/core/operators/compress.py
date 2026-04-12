@@ -147,14 +147,25 @@ async def run_compress(
 ) -> Storage | None:
     """One LLM round with ``compress_collate`` tool, then :class:`CollateOperator` on success.
 
-    Either *prompt* (manual path) or *aggressiveness* (auto path) must be provided.
+    Supply exactly one of:
+
+    - A non-empty *prompt* — tells the model what prose span to collate (manual prompts).
+    - *aggressiveness* — automated directives (low / medium / high); used when there is
+      no user prompt (CLI/UI manual ``--aggressiveness``, or internal auto-compress).
 
     Returns the :class:`~lens.core.storage.Storage` used for collate (and any follow-up
     writes that must stay in the same pending transaction), or ``None`` when the LLM
     stream was interrupted before collate ran.
     """
-    if prompt is None and aggressiveness is None:
-        raise OperatorError("compress: prompt is required when aggressiveness is not set")
+    stripped_prompt = prompt.strip() if prompt else ""
+    has_prompt = bool(stripped_prompt)
+    has_aggr = aggressiveness is not None
+    if has_prompt and has_aggr:
+        raise OperatorError("compress: pass a prompt or aggressiveness, not both")
+    if not has_prompt and not has_aggr:
+        raise OperatorError(
+            "compress: provide a non-empty prompt or aggressiveness (low | medium | high)"
+        )
 
     node_arg = address.strip() if address and address.strip() else None
     try:
@@ -169,21 +180,19 @@ async def run_compress(
 
     store = PromptStore(session.project_root)
 
-    if prompt is not None:
-        stripped = prompt.strip()
-        if not stripped:
-            raise OperatorError("compress: prompt is required")
+    if has_prompt:
         system = store.get("compress.system")
         user = store.format(
             "compress.instruction_template",
-            prompt=stripped,
+            prompt=stripped_prompt,
             node_body=llm_view.visible_for_llm,
         )
     else:
         from lens.core.compression import CompressConfig  # noqa: PLC0415 — avoid circular at module level
 
+        assert aggressiveness is not None
         config = CompressConfig.from_project(session.project_root)
-        directive = build_auto_directive(store, aggressiveness, config)  # type: ignore[arg-type]
+        directive = build_auto_directive(store, aggressiveness, config)
         system = store.get("compress.auto_system")
         user = store.format(
             "compress.auto_instruction_template",

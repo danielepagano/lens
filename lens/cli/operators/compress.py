@@ -5,6 +5,7 @@ import asyncio
 import typer
 
 from lens.cli.options import pin_option, unpin_option
+from lens.core.compression import Aggressiveness
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.llm import LLMError
@@ -16,7 +17,10 @@ from lens.core.operators.compress import run_compress
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Use AI to pick a range on the cursor node and collate it into a child section (prompt required).",
+    help=(
+        "Use AI to pick a range on the cursor node and collate it into a child section "
+        "(provide a PROMPT or --aggressiveness)."
+    ),
     add_completion=False,
 )
 
@@ -44,7 +48,7 @@ def compress(
     prompt: str | None = typer.Argument(
         None,
         metavar="PROMPT",
-        help="Describe which part of the target node to move into a new section (required for manual use)",
+        help="What to collate (omit if using --aggressiveness)",
     ),
     node: str | None = typer.Option(
         None,
@@ -71,10 +75,27 @@ def compress(
         "-g",
         help="Optional extra instructions for the collate summary LLM",
     ),
+    aggressiveness: Aggressiveness | None = typer.Option(
+        None,
+        "--aggressiveness",
+        "-a",
+        help="Without a prompt: low | medium | high (automated range selection)",
+    ),
 ) -> None:
     """Pick a range via AI (compress_collate tool) then collate at the cursor or --node."""
     session, narrative = _get_session_and_narrative()
     assert narrative is not None
+    stripped_arg = (prompt or "").strip()
+    has_prompt = bool(stripped_arg)
+    if has_prompt and aggressiveness is not None:
+        typer.echo("lens compress: pass a PROMPT or --aggressiveness, not both", err=True)
+        raise typer.Exit(1)
+    if not has_prompt and aggressiveness is None:
+        typer.echo(
+            "lens compress: provide a PROMPT or --aggressiveness (low|medium|high)",
+            err=True,
+        )
+        raise typer.Exit(1)
     try:
         validate_ids_exist(session.project_root, pin + unpin)
     except LensException as e:
@@ -85,7 +106,8 @@ def compress(
             run_compress(
                 session=session,
                 narrative=narrative,
-                prompt=prompt,
+                prompt=stripped_arg if has_prompt else None,
+                aggressiveness=aggressiveness if not has_prompt else None,
                 address=node,
                 pins=pin,
                 unpins=unpin,

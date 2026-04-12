@@ -388,8 +388,12 @@ export const runCollate = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp('/operator/collate', params, onEvent)
 
+export type CompressAggressiveness = 'low' | 'medium' | 'high'
+
 export interface CompressParams {
-  prompt: string
+  /** What to collate; omit when using `aggressiveness`. */
+  prompt?: string
+  aggressiveness?: CompressAggressiveness
   /** Narrative node (nav or display form); omit for cursor node. */
   address?: string
   pins?: string[]

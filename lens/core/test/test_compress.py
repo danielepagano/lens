@@ -176,7 +176,9 @@ class TestRunCompress(unittest.TestCase):
                     prompt="   ",
                 )
             )
-        self.assertIn("required", str(ctx.exception).lower())
+        msg = str(ctx.exception).lower()
+        self.assertIn("prompt", msg)
+        self.assertIn("aggressiveness", msg)
 
     def test_delegates_to_collate_on_tool(self) -> None:
         final = FinalPayload(
@@ -395,7 +397,21 @@ class TestRunCompressAutoMode(unittest.TestCase):
                     narrative=self.narrative,
                 )
             )
-        self.assertIn("prompt", str(ctx.exception).lower())
+        msg = str(ctx.exception).lower()
+        self.assertIn("prompt", msg)
+        self.assertIn("aggressiveness", msg)
+
+    def test_both_prompt_and_aggressiveness_raises(self) -> None:
+        with self.assertRaises(OperatorError) as ctx:
+            asyncio.run(
+                run_compress(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="the tavern scene",
+                    aggressiveness=Aggressiveness.LOW,
+                )
+            )
+        self.assertIn("not both", str(ctx.exception).lower())
 
     def test_auto_path_uses_auto_system_prompt(self) -> None:
         """When aggressiveness is set (no prompt), messages use compress.auto_system."""
