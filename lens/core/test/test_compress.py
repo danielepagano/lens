@@ -207,6 +207,7 @@ class TestRunCompress(unittest.TestCase):
                 "run_collate",
                 new_callable=AsyncMock,
             ) as mock_collate:
+                mock_collate.return_value = Storage(self.root)
                 asyncio.run(
                     run_compress(
                         session=self.session,
@@ -265,6 +266,7 @@ class TestRunCompress(unittest.TestCase):
                 "run_collate",
                 new_callable=AsyncMock,
             ) as mock_collate:
+                mock_collate.return_value = Storage(self.root)
                 asyncio.run(
                     run_compress(
                         session=self.session,
@@ -367,6 +369,7 @@ class TestRunCompress(unittest.TestCase):
                         )
                     )
         self.assertIsInstance(st, Storage)
+        assert isinstance(st, Storage)
         self.assertTrue(st.has_pending())
         self.assertFalse(st.has_staged())
 
