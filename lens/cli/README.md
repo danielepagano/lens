@@ -449,6 +449,7 @@ AI operators call the configured LLM and write the output into narrative nodes. 
 | `--unpin ID` | `-u` | Suppress an inherited pin for this call (repeatable) |
 | `--llm ID` | `-l` | Override the default LLM |
 | `--retry` | `-r` | Discard current output and regenerate |
+| `--reasoning` | - | `none`,`low`,`medium`,`high` overrides reasoning amount |
 
 You can also pin KB objects inline by mentioning them as `@type.key` in your prompt — `lens write "describe @person.amy arriving at @place.market"` is equivalent to passing `-p person.amy -p place.market`. Only IDs that exist in the knowledge store are resolved; unknown mentions are ignored.
 
@@ -520,7 +521,7 @@ Options:
 - `--with` / `-w` — KB id of your character; starts (or re-enters explicit) session mode when set together with session handling. After the session exists, you may omit it and Lens continues the active chat session.
 - `--slug` / `-s` — Sub-node key for a **new** session (default: auto-generated from characters and prompt). If you pass a bare name, Lens prefixes it with `chat-` when needed. Not used with `--end` or `--retry`.
 - `--memory` / `-m` — Repeatable KB id for a memory object (see **Memory** above). Stored on the session parent annotation; session continues inherit it without re-passing `-m`.
-- `-p` / `--pin`, `-u` / `--unpin`, `-l` / `--llm`, `--reasoning`, `-r` / `--retry` — same ideas as other operators (`--reasoning`: `none`, `low`, `medium`, `high`).
+- `-p` / `--pin`, `-u` / `--unpin`, `-l` / `--llm`, `--reasoning`, `-r` / `--retry` — same ideas as other AI operators.
 - With `--end`, an optional `PROMPT` is treated as extra instructions for the session summary LLM (same narrative templates as usual, plus your guidance).
 
 **Flow:** Opening a session writes an unclosed ``[`chat:<id>`]: #`` annotation on the parent and creates the child in one pending transaction (rollback drops the whole session). Inside the child, your lines are stored as Markdown blockquotes with a ``[Name]`` speaker tag (derived from the KB id). One-shot inline uses the chat operator without a sub-node. This command is not dataset-gated.
