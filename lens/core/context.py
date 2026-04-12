@@ -6,11 +6,13 @@ from pathlib import Path
 
 from dataclasses import dataclass, field
 
-from lens.core.annotations import decode_ai_secrets, strip_markdown_comments
+from lens.core.annotations import decode_ai_secrets
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import KB_PIN, KB_UNPIN
 from lens.core.prompts import PromptStore
+from lens.core.project import find_git_root_from
+from lens.core.storage import Storage
 
 @dataclass
 class SliceAnchor:
@@ -60,6 +62,7 @@ def _ancestor_chain(node: NarrativeNode) -> list[NarrativeNode]:
 def _resolve_pins_for_ancestors(
     project_root: Path,
     ancestors: list[NarrativeNode],
+    storage: Storage,
     *,
     extra_pins: list[str] | None = None,
     extra_unpins: list[str] | None = None,
@@ -148,7 +151,16 @@ def _resolve_pins_for_ancestors(
     for cid in effective_ids:
         obj = all_objects.get(cid)
         if obj is not None:
-            knowledge_formatted.append(obj.format(include_comments=False))
+            normalized = storage.normalize_raw_text(obj.text, source_id=f"kb:{cid}")
+            knowledge_formatted.append(
+                storage.format_kb_prompt_block(
+                    canonical_id=cid,
+                    text=normalized.raw_storage_text,
+                    tags=obj.tags,
+                    include_comments=False,
+                    source_id=f"kb:{cid}",
+                )
+            )
             pinned_ids.append(cid)
 
     return knowledge_formatted, pinned_ids
@@ -196,7 +208,7 @@ def spine_path(
 
 
 def _collect_spine_narrative(
-    anchor: SliceAnchor, cursor_node: NarrativeNode
+    anchor: SliceAnchor, cursor_node: NarrativeNode, *, storage: Storage
 ) -> tuple[list[str], str | None]:
     """Collect narrative text along the spine from *anchor* to *cursor_node*.
 
@@ -218,7 +230,7 @@ def _collect_spine_narrative(
     for node in path:
         if not node.exists():
             continue
-        text = node.md_path().read_text(encoding="utf-8")
+        text = storage.normalize_path_text(node.md_path()).raw_storage_text
 
         # On the anchor node, skip everything before the anchor boundary.
         if node.key_path == anchor.node.key_path:
@@ -226,7 +238,7 @@ def _collect_spine_narrative(
             # line_end is 1-based; convert to 0-based index for slicing.
             text = "\n".join(lines[anchor.line_end - 1 :])
 
-        stripped = strip_markdown_comments(text)
+        stripped = storage.normalize_raw_text(text).strip_comments_text
         if not stripped.strip():
             continue
 
@@ -246,13 +258,16 @@ def crawl(
     include_kb: bool = True,
     include_narrative: bool = True,
     anchor: SliceAnchor | None = None,
+    storage: Storage | None = None,
 ) -> CrawlResult:
     project_root = node.narrative_root.parent.parent
+    local_storage = storage or Storage(find_git_root_from(project_root))
     ancestors = _ancestor_chain(node)
 
     knowledge_formatted, pinned_ids = _resolve_pins_for_ancestors(
         project_root,
         ancestors,
+        local_storage,
         extra_pins=extra_pins,
         extra_unpins=extra_unpins,
         include_kb=include_kb,
@@ -263,20 +278,22 @@ def crawl(
     if include_narrative:
         if anchor is not None:
             previous_summaries, current_content = _collect_spine_narrative(
-                anchor, node
+                anchor, node, storage=local_storage
             )
         else:
             for anc in ancestors[:-1]:
                 if not anc.exists():
                     continue
-                text = anc.md_path().read_text(encoding="utf-8")
-                stripped = strip_markdown_comments(text)
+                stripped = local_storage.normalize_path_text(
+                    anc.md_path()
+                ).strip_comments_text
                 if stripped.strip():
                     previous_summaries.append(stripped)
             current_node = ancestors[-1]
             if current_node.exists():
-                text = current_node.md_path().read_text(encoding="utf-8")
-                stripped = strip_markdown_comments(text)
+                stripped = local_storage.normalize_path_text(
+                    current_node.md_path()
+                ).strip_comments_text
                 if stripped.strip():
                     current_content = stripped
 
@@ -303,9 +320,11 @@ def crawl_pins(
     """
     project_root = node.narrative_root.parent.parent
     ancestors = _ancestor_chain(node)
+    local_storage = Storage(find_git_root_from(project_root))
     _knowledge, pinned_ids = _resolve_pins_for_ancestors(
         project_root,
         ancestors,
+        local_storage,
         extra_pins=extra_pins,
         extra_unpins=extra_unpins,
         include_kb=True,
@@ -342,7 +361,10 @@ def crawl_result_from_pins(
     project_root: Path,
     pins: list[str],
     unpins: list[str],
+    *,
+    storage: Storage | None = None,
 ) -> CrawlResult:
+    local_storage = storage or Storage(find_git_root_from(project_root))
     unpinned_bases = {u.rstrip("+").lower() for u in unpins}
     surviving_raw: list[str] = []
     seen_base: set[str] = set()
@@ -363,7 +385,16 @@ def crawl_result_from_pins(
     for cid in effective_ids:
         obj = objects.get(cid) or kb_store.get_objects([cid]).get(cid)
         if obj is not None:
-            knowledge_formatted.append(obj.format(include_comments=False))
+            normalized = local_storage.normalize_raw_text(obj.text, source_id=f"kb:{cid}")
+            knowledge_formatted.append(
+                local_storage.format_kb_prompt_block(
+                    canonical_id=cid,
+                    text=normalized.raw_storage_text,
+                    tags=obj.tags,
+                    include_comments=False,
+                    source_id=f"kb:{cid}",
+                )
+            )
             result_pinned_ids.append(cid)
 
     return CrawlResult(

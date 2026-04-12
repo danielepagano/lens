@@ -116,8 +116,15 @@ class PlayOperator(SessionOperator):
             for cid in companion_ids:
                 obj = objs.get(cid)
                 if obj is not None:
+                    formatted: Any = self.storage.format_kb_prompt_block(
+                        canonical_id=obj.id,
+                        text=obj.text,
+                        tags=obj.tags,
+                        include_comments=False,
+                        source_id=f"play-companion:{obj.id}",
+                    )
                     crawl_result.knowledge.append(
-                        obj.format(include_comments=False)
+                        formatted if isinstance(formatted, str) else obj.format(include_comments=False)
                     )
                     crawl_result.pinned_ids.append(cid)
 
@@ -191,7 +198,21 @@ class PlayOperator(SessionOperator):
         if not cursor.key_path:
             raise OperatorError("play requires a cursor inside a play session sub-node")
 
-        crawl_result = crawl(cursor, extra_pins=pins, extra_unpins=unpins)
+        session_id = cursor.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        parent_rel = str(parent.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(session_id, parent_rel)
+        storage = session.new_storage(owner=owner)
+
+        crawl_result = crawl(
+            cursor,
+            extra_pins=pins,
+            extra_unpins=unpins,
+            storage=storage,
+        )
         cls.check_requirements(crawl_result)
         marker = cls._speaker_marker(crawl_result, as_pc)
 
@@ -207,19 +228,20 @@ class PlayOperator(SessionOperator):
                     continue
                 obj = objs.get(mid)
                 if obj is not None:
-                    parts.append(obj.format(strip_html_comments=True))
+                    formatted: Any = storage.format_kb_prompt_block(
+                        canonical_id=obj.id,
+                        text=obj.text,
+                        tags=obj.tags,
+                        include_comments=False,
+                        strip_html=True,
+                        source_id=f"play-mention:{obj.id}",
+                    )
+                    parts.append(
+                        formatted if isinstance(formatted, str) else obj.format(strip_html_comments=True)
+                    )
         parts.extend(cls.mention_node_slice_refs(prompt, session.project_root))
         if parts:
             block += "\n<!---\n" + "".join(parts) + "-->\n"
-
-        session_id = cursor.key_path[-1]
-        parent = NarrativeNode(
-            narrative_root=cursor.narrative_root,
-            key_path=cursor.key_path[:-1],
-        )
-        parent_rel = str(parent.md_path().relative_to(session.git_root))
-        owner = cls.owner_id(session_id, parent_rel)
-        storage = session.new_storage(owner=owner)
         md = cursor.md_path()
         current = md.read_text(encoding="utf-8")
         if current.strip():

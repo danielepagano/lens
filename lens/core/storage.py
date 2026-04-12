@@ -26,6 +26,11 @@ from typing import ClassVar
 from lens.core.address import NarrativeAddress
 from lens.core.exceptions import LensException
 from lens.core.annotations import ANNOTATION_OPEN_RE, ANNOTATION_RE
+from lens.core.storage_text import (
+    NormalizedStorageText,
+    StorageTextNormalizer,
+    format_kb_prompt_block_from_normalized,
+)
 
 _HUNK_HEADER_RE = re.compile(
     r"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@"
@@ -125,10 +130,85 @@ class Storage:
         self._root = git_root
         self._owner = owner
         self._ownership_checked = False
+        self._text_normalizer = StorageTextNormalizer()
 
     @property
     def root(self) -> Path:
         return self._root
+
+    def normalize_path_text(self, path: Path) -> NormalizedStorageText:
+        """Return cached normalized storage text projections for *path*."""
+        return self._text_normalizer.normalize_path(path)
+
+    def normalize_raw_text(
+        self, raw_storage_text: str, *, source_id: str | None = None
+    ) -> NormalizedStorageText:
+        """Return normalized projections for raw text, optionally cache-keyed."""
+        return self._text_normalizer.normalize_raw(raw_storage_text, source_id=source_id)
+
+    def llm_view_from_raw_text(
+        self, raw_storage_text: str, *, source_id: str | None = None
+    ) -> tuple[str, tuple[int, ...], tuple[int, ...]]:
+        """Return ``(visible_text, disk_start_lines, disk_end_lines)`` for raw text."""
+        view = self.normalize_raw_text(raw_storage_text, source_id=source_id).llm_view
+        return (
+            view.visible_for_llm,
+            view.disk_line_start_1based,
+            view.disk_line_end_1based,
+        )
+
+    def resolve_selection_to_disk_lines(
+        self,
+        raw_storage_text: str,
+        selection: object,
+        *,
+        source_id: str | None = None,
+    ) -> tuple[int, int]:
+        """Resolve a line-content selection on LLM-visible text to disk lines."""
+        from lens.core.text_select import resolve_selection
+
+        norm = self.normalize_raw_text(raw_storage_text, source_id=source_id).llm_view
+        resolved = resolve_selection(norm.visible_for_llm, selection)  # type: ignore[arg-type]
+        if resolved.is_cursor:
+            raise LensException(
+                "selection resolved to an empty range (use cursor splice helpers)"
+            )
+        n = len(norm.disk_line_start_1based)
+        if resolved.slice_end <= resolved.slice_start or resolved.slice_start >= n:
+            raise LensException("resolved selection is out of range for storage view")
+        last = resolved.slice_end - 1
+        return (
+            norm.disk_line_start_1based[resolved.slice_start],
+            norm.disk_line_end_1based[last],
+        )
+
+    def invalidate_normalized_path(self, path: Path) -> None:
+        """Evict cached normalization for a file path."""
+        self._text_normalizer.invalidate_path(path)
+
+    def invalidate_normalized_source(self, source_id: str) -> None:
+        """Evict cached normalization for an in-memory source id."""
+        self._text_normalizer.invalidate_source(source_id)
+
+    def format_kb_prompt_block(
+        self,
+        *,
+        canonical_id: str,
+        text: str,
+        tags: list[str],
+        include_comments: bool = False,
+        strip_html: bool = False,
+        source_id: str | None = None,
+    ) -> str:
+        """Format KB text via storage-backed normalized cache."""
+        normalized = self.normalize_raw_text(text, source_id=source_id)
+        return format_kb_prompt_block_from_normalized(
+            canonical_id=canonical_id,
+            normalized=normalized,
+            tags=tags,
+            include_comments=include_comments,
+            strip_html=strip_html,
+        )
 
     # ------------------------------------------------------------------
     # Git state queries
@@ -539,16 +619,19 @@ class Storage:
         self._ensure_ownership()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
+        self.invalidate_normalized_path(path)
 
     def write_file_bytes(self, path: Path, data: bytes) -> None:
         self._ensure_ownership()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
+        self.invalidate_normalized_path(path)
 
     def delete_file(self, path: Path) -> None:
         self._ensure_ownership()
         if path.exists():
             path.unlink()
+        self.invalidate_normalized_path(path)
 
     def mkdir(self, path: Path) -> None:
         self._ensure_ownership()
@@ -563,12 +646,15 @@ class Storage:
         self._ensure_ownership()
         dst.parent.mkdir(parents=True, exist_ok=True)
         src.rename(dst)
+        self.invalidate_normalized_path(src)
+        self.invalidate_normalized_path(dst)
 
     def copy_file(self, src: Path, dst: Path) -> None:
         """Copy file content from src to dst. Creates parent dirs if needed."""
         self._ensure_ownership()
         content = src.read_text(encoding="utf-8")
         self.write_file(dst, content)
+        self.invalidate_normalized_path(dst)
 
     # ------------------------------------------------------------------
     # Internal helpers

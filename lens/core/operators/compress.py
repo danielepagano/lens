@@ -20,8 +20,7 @@ from lens.core.prompts import PromptStore
 from lens.core.text_select import (
     Selection,
     SelectionError,
-    resolve_storage_selection_to_disk_inclusive_lines,
-    storage_text_llm_view,
+    resolve_storage_selection_to_disk_inclusive_lines_via_llm_view,
 )
 
 _log = logging.getLogger(__name__)
@@ -99,7 +98,7 @@ def compress_arguments_to_line_range(
     if not isinstance(sel_raw, dict):
         raise ValueError("compress_collate: 'selection' must be an object")
     selection = Selection.from_dict(sel_raw)
-    start_line, end_line = resolve_storage_selection_to_disk_inclusive_lines(
+    start_line, end_line = resolve_storage_selection_to_disk_inclusive_lines_via_llm_view(
         node_text, selection
     )
     return slug, start_line, end_line
@@ -155,7 +154,9 @@ async def run_compress(
         raise OperatorError(f"compress: {e}") from e
     address_str = str(target.to_address())
     node_text = target.md_path().read_text(encoding="utf-8")
-    llm_view = storage_text_llm_view(node_text)
+    llm_view = session.new_storage().normalize_raw_text(
+        node_text, source_id=f"compress:{address_str}"
+    ).llm_view
 
     store = PromptStore(session.project_root)
     system = store.get("compress.system")

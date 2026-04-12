@@ -333,6 +333,7 @@ class ChatOperator(SessionOperator):
                 list(pins),
                 [with_kb_id] if with_kb_id else [],
             ),
+            storage=storage,
         )
 
         # Validate character; build instruction params (prompt = stage directions).

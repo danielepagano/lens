@@ -361,6 +361,7 @@ async def apply_remember_patches(
     llm_id: str | None = None,
     reasoning: str | None = None,
     cancel_event: Any | None = None,
+    storage: Storage | None = None,
 ) -> str:
     """Detect pinned objects with remember.* tags and apply kb_patch updates.
 
@@ -433,7 +434,23 @@ async def apply_remember_patches(
     extra_sections: list[str] | None = None
     if missing_instruction_ids:
         fetched = store.get_objects(missing_instruction_ids)
-        bodies = [fetched[i].format() for i in missing_instruction_ids if i in fetched]
+        bodies: list[str] = []
+        for kid in missing_instruction_ids:
+            obj = fetched.get(kid)
+            if obj is None:
+                continue
+            if storage is not None:
+                bodies.append(
+                    storage.format_kb_prompt_block(
+                        canonical_id=obj.id,
+                        text=obj.text,
+                        tags=obj.tags,
+                        include_comments=False,
+                        source_id=f"remember:{obj.id}",
+                    )
+                )
+            else:
+                bodies.append(obj.format())
         if bodies:
             extra_sections = [
                 _remember_outline_block(
@@ -835,7 +852,7 @@ class SessionOperator(Operator):
             child_text = cursor.md_path().read_text(encoding="utf-8")
             child_clean = strip_markdown_comments(child_text).strip()
             if child_clean:
-                crawl_result = crawl(parent)
+                crawl_result = crawl(parent, storage=storage)
                 summary = await generate_summary_block(
                     slug=id,
                     crawl_result=crawl_result,
@@ -857,6 +874,7 @@ class SessionOperator(Operator):
                     llm_id=llm_id,
                     reasoning=reasoning,
                     cancel_event=cancel_event,
+                    storage=storage,
                 )
 
         op.close_subnode(parent, id, summary)
