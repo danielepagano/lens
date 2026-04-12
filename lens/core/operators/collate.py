@@ -17,14 +17,22 @@ from lens.core.context import CrawlResult, crawl
 from lens.core.narrative import NarrativeNode, parse_segments
 from lens.core.operator import Operator
 from lens.core.project import ProjectSession, resolve_address, validate_slug
+from lens.core.storage import Storage
 
-from lens.core.operators.section import section_close_tag, section_open_tag
+from lens.core.operators.section import (
+    SectionOperator,
+    section_close_tag,
+    section_open_tag,
+)
 from lens.core.operators.session import apply_remember_patches, generate_summary_block
 
-# After the fact, ``write`` / ``edit`` wrappers are session metadata (see
-# :mod:`lens.core.commands.rewind`); they are not narrative sub-nodes like
-# ``section`` / ``design`` and may be cut through when collating.
-_COLLATE_SPLITTABLE_BODY_OPERATORS: frozenset[str] = frozenset({"write", "edit"})
+# After the fact, session-style operators (see :mod:`lens.core.commands.rewind`)
+# are not narrative sub-nodes like ``section`` / ``design`` and may be cut
+# through when collating. ``edit`` blocks are review artifacts — do not split
+# them; accept or roll back the edit instead.
+_COLLATE_SPLITTABLE_BODY_OPERATORS: frozenset[str] = frozenset(
+    {"write", "play", "chat"}
+)
 
 
 def _collate_fence_stripping_annotation(
@@ -245,7 +253,7 @@ class CollateOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
         summary_guidance: str | None = None,
-    ) -> None:
+    ) -> Storage:
         if not validate_slug(id):
             raise ValueError(f"invalid section ID '{id}' (alphanumeric, underscores, hyphens only)")
         addr = NarrativeAddress.parse(address_str)
@@ -254,7 +262,10 @@ class CollateOperator(Operator):
         if not target_node.exists():
             raise ValueError(f"node does not exist: {address_str}")
         rel_path = str(target_node.md_path().relative_to(session.git_root))
-        owner = cls.owner_id(id, rel_path)
+        # Collate emits ``[section:id]`` / ``[/section:id]`` on the parent; pending
+        # owner detection reads those as operator ``section``. Match that owner so
+        # ``Storage._ensure_ownership`` does not auto-stage mid-operation.
+        owner = SectionOperator.owner_id(id, rel_path)
         storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
         await op._collate_range(
@@ -271,3 +282,4 @@ class CollateOperator(Operator):
             reasoning=reasoning,
             summary_guidance=summary_guidance,
         )
+        return storage

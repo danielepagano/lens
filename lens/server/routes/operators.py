@@ -16,6 +16,7 @@ from lens.core.commands.rollback import execute_rollback
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
+from lens.core.storage import Storage
 from lens.core.llm import llm_progress_scope
 from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
@@ -207,8 +208,10 @@ async def _run_operator_task(
                 if extra_done_fields:
                     done_payload.update(extra_done_fields)
                 if result is not None:
+                    if isinstance(result, Storage):
+                        pass
                     # Design returns KbExtractResult
-                    if hasattr(result, "inserted"):
+                    elif hasattr(result, "inserted"):
                         done_payload["inserted"] = result.inserted
                         done_payload["updated"] = result.updated
                         done_payload["errors"] = result.errors

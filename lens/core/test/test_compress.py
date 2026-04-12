@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import io
 import shutil
 import subprocess
 import tempfile
@@ -19,6 +21,7 @@ from lens.core.operators.compress import (
     run_compress,
 )
 from lens.core.project import ProjectSession
+from lens.core.storage import Storage
 from lens.core.text_select import SelectionError
 
 
@@ -274,3 +277,94 @@ class TestRunCompress(unittest.TestCase):
         self.assertEqual(kwargs["address_str"], scene_addr)
         self.assertEqual(kwargs["start_line"], 1)
         self.assertEqual(kwargs["end_line"], 2)
+
+    def test_no_tool_leaves_working_tree_clean(self) -> None:
+        final = FinalPayload(
+            text="No matching span.",
+            tool_calls=[],
+            usage=None,
+            interrupted=False,
+        )
+        with patch(
+            "lens.core.operators.compress.collect_final_payload",
+            new_callable=AsyncMock,
+            return_value=final,
+        ):
+            with self.assertRaises(OperatorError):
+                asyncio.run(
+                    run_compress(
+                        session=self.session,
+                        narrative=self.narrative,
+                        prompt="compress something",
+                    )
+                )
+        self.assertFalse(Storage(self.root).has_pending())
+        self.assertFalse(Storage(self.root).has_staged())
+
+    def test_interrupted_returns_none_and_no_pending(self) -> None:
+        final = FinalPayload(
+            text="",
+            tool_calls=[],
+            usage=None,
+            interrupted=True,
+        )
+        with patch(
+            "lens.core.operators.compress.collect_final_payload",
+            new_callable=AsyncMock,
+            return_value=final,
+        ):
+            with contextlib.redirect_stdout(io.StringIO()):
+                out = asyncio.run(
+                    run_compress(
+                        session=self.session,
+                        narrative=self.narrative,
+                        prompt="compress",
+                    )
+                )
+        self.assertIsNone(out)
+        self.assertFalse(Storage(self.root).has_pending())
+
+    def test_success_returns_collate_storage_single_unstaged_tx(self) -> None:
+        final = FinalPayload(
+            text="",
+            tool_calls=[
+                ToolCall(
+                    id="c1",
+                    name="compress_collate",
+                    arguments={
+                        "id": "chunk",
+                        "selection": {
+                            "start": {"target": "line1"},
+                            "end": {"target": "line2"},
+                        },
+                    },
+                )
+            ],
+            usage=None,
+            interrupted=False,
+        )
+        async def _fake_summary(*args: object, **kwargs: object) -> str:
+            if kwargs.get("operator_name") == "remember":
+                return ""
+            return "Summary."
+
+        with patch(
+            "lens.core.operators.compress.collect_final_payload",
+            new_callable=AsyncMock,
+            return_value=final,
+        ):
+            with patch(
+                "lens.core.operators.session.generate_text",
+                new=_fake_summary,
+            ):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    st = asyncio.run(
+                        run_compress(
+                            session=self.session,
+                            narrative=self.narrative,
+                            prompt="first two lines",
+                        )
+                    )
+        self.assertIsInstance(st, Storage)
+        self.assertTrue(st.has_pending())
+        self.assertFalse(st.has_staged())

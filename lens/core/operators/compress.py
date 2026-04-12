@@ -15,6 +15,7 @@ from lens.core.operator import OperatorError
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.collate import CollateOperator
 from lens.core.project import ProjectSession, validate_slug
+from lens.core.storage import Storage
 from lens.core.prompts import PromptStore
 from lens.core.text_select import (
     Selection,
@@ -136,8 +137,13 @@ async def run_compress(
     summary_guide: str | None = None,
     on_token: Callable[[str], Awaitable[None]] | None = None,
     cancel_event: asyncio.Event | None = None,
-) -> None:
-    """One LLM round with ``compress_collate`` tool, then :class:`CollateOperator` on success."""
+) -> Storage | None:
+    """One LLM round with ``compress_collate`` tool, then :class:`CollateOperator` on success.
+
+    Returns the :class:`~lens.core.storage.Storage` used for collate (and any follow-up
+    writes that must stay in the same pending transaction), or ``None`` when the LLM
+    stream was interrupted before collate ran.
+    """
     stripped = prompt.strip()
     if not stripped:
         raise OperatorError("compress: prompt is required")
@@ -180,7 +186,7 @@ async def run_compress(
         raise OperatorError("compress: LLM stream ended without a completion")
 
     if final.interrupted:
-        return
+        return None
 
     tc = _pick_compress_tool_call(final.tool_calls)
     if tc is None:
@@ -208,7 +214,7 @@ async def run_compress(
         end_line,
     )
 
-    await CollateOperator.run_collate(
+    return await CollateOperator.run_collate(
         session=session,
         narrative=narrative,
         id=slug,

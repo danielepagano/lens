@@ -201,8 +201,8 @@
     if (mode.operatorMode === 'attach') {
       return buildAttachLinePickStates($nodeContent)
     }
-    if (mode.startLine != null && mode.operatorMode) {
-      const validEnds = computeValidEndLines($nodeContent, mode.startLine, mode.operatorMode)
+    if (mode.startLine != null && mode.operatorMode === 'edit') {
+      const validEnds = computeValidEndLines($nodeContent, mode.startLine)
       $nodeContent.split('\n').forEach((_, i) => {
         const lineNo = i + 1
         m.set(
@@ -212,9 +212,7 @@
       })
       return m
     }
-    const validStarts = mode.operatorMode
-      ? computeValidStartLines($nodeContent, mode.operatorMode)
-      : null
+    const validStarts = mode.operatorMode === 'edit' ? computeValidStartLines($nodeContent) : null
     $nodeContent.split('\n').forEach((_, i) => {
       const lineNo = i + 1
       const isAnno = annoSet.has(lineNo)

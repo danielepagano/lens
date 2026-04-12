@@ -16,6 +16,7 @@ from unittest.mock import patch
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.collate import CollateOperator
+from lens.core.operators.section import SectionOperator
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
@@ -735,3 +736,87 @@ class TestCollateEdgeCases(unittest.TestCase):
             self.assertTrue(combined.child_node("beta").exists())
             self.assertFalse((parent_dir / "alpha").exists())
             self.assertFalse((parent_dir / "beta").exists())
+
+
+class TestCollateTransactionSemantics(unittest.TestCase):
+    """Collate must leave one unstaged pending tx; returned Storage continues that owner."""
+
+    def test_run_collate_returns_storage_unstaged_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_content(root, narrative, "A.\nB.\nC.\n")
+            with patch("lens.core.operators.session.generate_text", new=_fake_summary_text):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    st = asyncio.run(
+                        CollateOperator.run_collate(
+                            session=ProjectSession(root, root),
+                            narrative=narrative,
+                            id="mid",
+                            address_str=narrative.narrative_root.name,
+                            start_line=2,
+                            end_line=2,
+                            pins=[],
+                            unpins=[],
+                            llm_id=None,
+                        )
+                    )
+            self.assertIsInstance(st, Storage)
+            self.assertTrue(st.has_pending())
+            self.assertFalse(st.has_staged())
+            rel = str(narrative.md_path().relative_to(root))
+            self.assertEqual(
+                st.detect_pending_owner(),
+                SectionOperator.owner_id("mid", rel),
+            )
+
+    def test_follow_up_write_via_returned_storage_stays_unstaged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_content(root, narrative, "A.\nB.\nC.\n")
+            with patch("lens.core.operators.session.generate_text", new=_fake_summary_text):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    st = asyncio.run(
+                        CollateOperator.run_collate(
+                            session=ProjectSession(root, root),
+                            narrative=narrative,
+                            id="mid",
+                            address_str=narrative.narrative_root.name,
+                            start_line=2,
+                            end_line=2,
+                            pins=[],
+                            unpins=[],
+                            llm_id=None,
+                        )
+                    )
+            child_md = narrative.child_node("mid").md_path()
+            existing = child_md.read_text(encoding="utf-8")
+            st.write_file(child_md, existing.rstrip("\n") + "\n\npost-collate marker.\n")
+            self.assertFalse(st.has_staged())
+            self.assertTrue(st.has_pending())
+
+    def test_new_system_storage_after_collate_stages_collate(self) -> None:
+        """Regression: a fresh Storage(owner=None) auto-stages another owner's pending work."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_content(root, narrative, "A.\nB.\nC.\n")
+            session = ProjectSession(root, root)
+            with patch("lens.core.operators.session.generate_text", new=_fake_summary_text):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    asyncio.run(
+                        CollateOperator.run_collate(
+                            session=session,
+                            narrative=narrative,
+                            id="mid",
+                            address_str=narrative.narrative_root.name,
+                            start_line=2,
+                            end_line=2,
+                            pins=[],
+                            unpins=[],
+                            llm_id=None,
+                        )
+                    )
+            self.assertTrue(Storage(root).has_pending())
+            self.assertFalse(Storage(root).has_staged())
+            sys_st = session.new_storage()
+            sys_st.write_file(root / "_compress_sidecar.txt", "x\n")
+            self.assertTrue(Storage(root).has_staged())

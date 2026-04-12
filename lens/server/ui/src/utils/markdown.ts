@@ -276,7 +276,7 @@ function renderDivider(innerHtml: string, href: string): string {
   return `<div class="annotation-divider"><a href="#${href}">${innerHtml}</a></div>`
 }
 
-const SECTION_SUMMARY_COMMENT_RE = /^\s*<!--\s*section:[a-zA-Z0-9_-]+\s*-->\s*$/
+const SECTION_SUMMARY_COMMENT_RE = /^\s*<!--\s*section:[a-zA-Z0-9_-]+\s*-->\s*$/i
 const SECTION_SUMMARY_MD_TITLE_RE = /^\s*###\s+(.+?)\s*$/
 
 /** Strip duplicate markdown title when body matches canonical Lens summary shape. */
@@ -331,6 +331,11 @@ function escapeHtmlAttr(s: string): string {
     .replace(/'/g, '&#39;')
 }
 
+/** Markdown-it passes `html: true` through; raw `<!--` inside our diff divs becomes a real HTML comment and swallows the rest of the removal. */
+function neutralizeHtmlCommentOpensForDiffMarkdown(text: string): string {
+  return text.replace(/<!--/g, '&lt;!--')
+}
+
 /** Return true if a line is some kind of annotation (single, multi-line open, or front-matter open). */
 function isAnnotationLine(line: string): boolean {
   return ANNOTATION_RE.test(line) || ANNOTATION_OPEN_RE.test(line) || FRONT_MATTER_OPEN_RE.test(line)
@@ -375,14 +380,17 @@ function filterAnnotationLines(lines: string[]): string[] {
  */
 function flushAddedTransactionRun(into: string[], run: string[]): void {
   if (run.length === 0) return
-  const hasVisible = run.some((l) => l.trim() !== '')
+  const withoutSectionMarkers = run.filter((l) => !SECTION_SUMMARY_COMMENT_RE.test(l))
+  const hasVisible = withoutSectionMarkers.some((l) => l.trim() !== '')
   if (!hasVisible) {
     for (const l of run) into.push(l)
   } else {
     into.push('')
     into.push('<div class="transaction-added">')
     into.push('')
-    for (const l of run) into.push(l)
+    for (const l of withoutSectionMarkers) {
+      into.push(neutralizeHtmlCommentOpensForDiffMarkdown(l))
+    }
     into.push('')
     into.push('</div>')
     into.push('')
@@ -403,7 +411,7 @@ function pushRemovedContent(
     into.push('')
     into.push('<div class="transaction-removed">')
     into.push('')
-    into.push(content)
+    into.push(neutralizeHtmlCommentOpensForDiffMarkdown(content))
     into.push('')
     into.push('</div>')
     into.push('')
@@ -498,7 +506,9 @@ function renderAnnotationWithBody(
           output.push('')
           output.push('<div class="transaction-added">')
           output.push('')
-          for (let p = k; p <= end; p++) output.push(bodyLines[p])
+          for (let p = k; p <= end; p++) {
+            output.push(neutralizeHtmlCommentOpensForDiffMarkdown(bodyLines[p]))
+          }
           output.push('')
           output.push('</div>')
           output.push('')
@@ -693,7 +703,9 @@ export function preprocessAnnotations(
         result.push('')
         result.push('<div class="transaction-added">')
         result.push('')
-        for (let p = i; p <= end; p++) result.push(lines[p])
+        for (let p = i; p <= end; p++) {
+          result.push(neutralizeHtmlCommentOpensForDiffMarkdown(lines[p]))
+        }
         result.push('')
         result.push('</div>')
         result.push('')
@@ -723,7 +735,7 @@ export function preprocessAnnotations(
       result.push('')
       result.push('<div class="transaction-removed">')
       result.push('')
-      result.push(content)
+      result.push(neutralizeHtmlCommentOpensForDiffMarkdown(content))
       result.push('')
       result.push('</div>')
       result.push('')
@@ -1003,148 +1015,34 @@ export function buildAnnotationBlocks(content: string): AnnotationBlock[] {
 }
 
 /**
- * Compute valid end lines for a line-pick operation given a start line.
- *
- * For **edit** mode: mirrors `operator.py:1395-1402` — rejects ranges where
- * any annotation's opening line falls within [startLine, endLine].
- *
- * For **collate** mode: mirrors `collate.py:54-109` — rejects ranges that
- * split closed blocks, overlap unclosed annotations, or split front matter.
+ * Valid end lines for **edit** line-pick (second pick), given a start line.
+ * Mirrors `operator.py` — the range must not contain any annotation opening line.
  */
-export function computeValidEndLines(
-  content: string,
-  startLine: number,
-  mode: 'edit' | 'collate',
-): Set<number> {
+export function computeValidEndLines(content: string, startLine: number): Set<number> {
   const totalLines = content.split('\n').length
   const annoSet = buildAnnotationLineSet(content)
   const blocks = buildAnnotationBlocks(content)
 
   const result = new Set<number>()
-
-  if (mode === 'edit') {
-    // Edit rule: range [startLine, L] must not contain any annotation's lineStart.
-    // Find the first annotation lineStart > startLine — that's the ceiling.
-    // (startLine itself is already a non-annotation line since the user picked it)
-    let ceiling = totalLines
-    for (const block of blocks) {
-      // Only care about opening annotations (not standalone close tags, not front matter)
-      // The Python check is: for a in anns: if start_line <= a.line_start <= end_line
-      // So any annotation start within the range invalidates it.
-      if (block.lineStart > startLine && block.lineStart <= totalLines) {
-        ceiling = Math.min(ceiling, block.lineStart - 1)
-      }
-    }
-    // Valid end lines: non-annotation lines in [startLine, ceiling]
-    for (let l = startLine; l <= ceiling; l++) {
-      if (!annoSet.has(l)) result.add(l)
-    }
-  } else {
-    // Collate mode: more complex validation
-    // For each candidate end line L >= startLine, check all blocks
-    for (let l = startLine; l <= totalLines; l++) {
-      if (annoSet.has(l)) continue  // annotation lines are not pickable
-
-      let valid = true
-      for (const block of blocks) {
-        if (block.isClosing) continue  // standalone close tags handled via their paired open
-
-        if (block.isFrontMatter) {
-          // Front matter: cannot split
-          const fmFirst = block.lineStart
-          const fmLast = block.lineEnd
-          const overlaps = fmFirst <= l && fmLast >= startLine
-          const fullyInside = fmFirst >= startLine && fmLast <= l
-          if (overlaps && !fullyInside) { valid = false; break }
-          continue
-        }
-
-        if (block.isSelfClosing) continue  // self-closing: single line, already filtered by annoSet
-
-        if (!block.isClosed) {
-          // Unclosed annotation: any overlap is invalid
-          // The unclosed annotation extends to end of file conceptually
-          const segFirst = block.lineStart
-          const segLast = totalLines
-          const overlaps = segFirst <= l && segLast >= startLine
-          if (overlaps) { valid = false; break }
-          continue
-        }
-
-        // Closed annotation: cannot partially overlap
-        const segFirst = block.lineStart
-        const segLast = block.lineEnd  // includes close tag
-        const overlaps = segFirst <= l && segLast >= startLine
-        const fullyInside = segFirst >= startLine && segLast <= l
-        if (overlaps && !fullyInside) { valid = false; break }
-      }
-      if (valid) result.add(l)
+  let ceiling = totalLines
+  for (const block of blocks) {
+    if (block.lineStart > startLine && block.lineStart <= totalLines) {
+      ceiling = Math.min(ceiling, block.lineStart - 1)
     }
   }
-
+  for (let l = startLine; l <= ceiling; l++) {
+    if (!annoSet.has(l)) result.add(l)
+  }
   return result
 }
 
-/**
- * Compute valid start lines for a line-pick operation.
- *
- * For **edit** mode: any non-annotation line (same as before — every
- * non-annotation start line has at least itself as a valid end).
- *
- * For **collate** mode: a start line is only valid if at least one end line
- * exists for it. Lines inside the body of a closed annotation block or after
- * an unclosed annotation are never valid starts because the range would always
- * partially overlap that block.
- */
-export function computeValidStartLines(
-  content: string,
-  mode: 'edit' | 'collate',
-): Set<number> {
+/** Valid start lines for **edit** line-pick: any non-annotation line. */
+export function computeValidStartLines(content: string): Set<number> {
   const annoSet = buildAnnotationLineSet(content)
-
-  if (mode === 'edit') {
-    // For edit, any non-annotation line is a valid start
-    const totalLines = content.split('\n').length
-    const result = new Set<number>()
-    for (let l = 1; l <= totalLines; l++) {
-      if (!annoSet.has(l)) result.add(l)
-    }
-    return result
-  }
-
-  // Collate mode: a start line is invalid if it's inside a block body
-  // (between open and close tags of a closed block, or after an unclosed open tag)
-  // because the range would always partially overlap that block.
   const totalLines = content.split('\n').length
-  const blocks = buildAnnotationBlocks(content)
-
-  // Build a set of lines that are "trapped" inside block bodies
-  const trappedLines = new Set<number>()
-  for (const block of blocks) {
-    if (block.isClosing || block.isSelfClosing) continue
-
-    if (block.isFrontMatter) {
-      // Lines inside front matter body are annotation lines (already filtered)
-      continue
-    }
-
-    if (block.isClosed) {
-      // Any start line inside a closed block (after its open tag) can never
-      // fully contain the block, so the range always partially overlaps → trapped.
-      for (let l = block.lineStart + 1; l <= block.lineEnd; l++) {
-        trappedLines.add(l)
-      }
-    } else {
-      // Unclosed: everything from this annotation to end of file is trapped
-      for (let l = block.lineStart; l <= totalLines; l++) {
-        trappedLines.add(l)
-      }
-    }
-  }
-
   const result = new Set<number>()
   for (let l = 1; l <= totalLines; l++) {
-    if (!annoSet.has(l) && !trappedLines.has(l)) result.add(l)
+    if (!annoSet.has(l)) result.add(l)
   }
   return result
 }

@@ -30,7 +30,7 @@ export interface LinePickState {
   /** Set when picking the end line (second pick) — the already-picked start line. */
   startLine?: number
   /** Which operator's validation rules to apply for end-line filtering. */
-  operatorMode?: 'edit' | 'collate' | 'attach'
+  operatorMode?: 'edit' | 'attach'
 }
 export const linePickMode = writable<LinePickState | null>(null)
 export const linePickSelection = writable<number | null>(null)

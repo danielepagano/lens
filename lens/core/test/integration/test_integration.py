@@ -26,12 +26,14 @@ import unittest
 from collections.abc import Coroutine
 from pathlib import Path
 from typing import Any, TypeVar
+from unittest.mock import patch
 
 from lens.core.commands.kb import kb_edit
 from lens.core.commands.rollback import execute_rollback
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
+from lens.core.operators.collate import CollateOperator
 from lens.core.operators.edit import EditOperator
 from lens.core.operators.section import SectionOperator
 from lens.core.operators.write import WriteOperator
@@ -380,3 +382,93 @@ class TestHappyPath(unittest.TestCase):
         self.assertFalse(local_path.exists())
         self._assert_pending()
         self._checkpoint("dataset: delete local copy")
+
+
+class TestCollateSinglePendingTransaction(unittest.TestCase):
+    """Collate is one unstaged pending tx; ``execute_rollback`` restores HEAD."""
+
+    def test_collate_returns_storage_and_rollback_restores(self) -> None:
+        tmp = Path(tempfile.mkdtemp(prefix="lens_itest_collate_"))
+        try:
+            subprocess.run(
+                ["git", "init"], cwd=tmp, capture_output=True, check=True
+            )
+            subprocess.run(
+                ["git", "config", "user.email", "t@t.com"],
+                cwd=tmp,
+                capture_output=True,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "T"],
+                cwd=tmp,
+                capture_output=True,
+                check=True,
+            )
+            (tmp / ".gitkeep").write_text("", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", "-A"], cwd=tmp, capture_output=True, check=True
+            )
+            subprocess.run(
+                ["git", "commit", "-m", "init"],
+                cwd=tmp,
+                capture_output=True,
+                check=True,
+            )
+            (tmp / "lens.toml").write_text('[project]\nnarrative = "story"\n', encoding="utf-8")
+            narrative_dir = tmp / "narrative" / "story"
+            narrative_dir.mkdir(parents=True)
+            original = "One.\nTwo.\nThree.\n"
+            (narrative_dir / "_node.md").write_text(original, encoding="utf-8")
+            (tmp / "knowledge").mkdir(exist_ok=True)
+            subprocess.run(
+                ["git", "add", "-A"], cwd=tmp, capture_output=True, check=True
+            )
+            subprocess.run(
+                ["git", "commit", "-m", "content"],
+                cwd=tmp,
+                capture_output=True,
+                check=True,
+            )
+
+            session = ProjectSession(tmp, tmp)
+            narrative = NarrativeNode(narrative_root=narrative_dir, key_path=())
+
+            async def _fake_summary(*args: object, **kwargs: object) -> str:
+                if kwargs.get("operator_name") == "remember":
+                    return ""
+                return "Summary block."
+
+            with patch(
+                "lens.core.operators.session.generate_text",
+                new=_fake_summary,
+            ):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    st = _run_async(
+                        CollateOperator.run_collate(
+                            session=session,
+                            narrative=narrative,
+                            id="boxed",
+                            address_str="story",
+                            start_line=2,
+                            end_line=2,
+                            pins=[],
+                            unpins=[],
+                            llm_id=None,
+                        )
+                    )
+
+            self.assertIsInstance(st, Storage)
+            self.assertTrue(st.has_pending())
+            self.assertFalse(st.has_staged())
+
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+                io.StringIO()
+            ):
+                execute_rollback(session)
+
+            self.assertFalse(Storage(tmp).has_pending())
+            self.assertEqual(narrative.md_path().read_text(encoding="utf-8"), original)
+            self.assertFalse(narrative.child_node("boxed").exists())
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)

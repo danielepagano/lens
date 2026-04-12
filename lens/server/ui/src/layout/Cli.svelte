@@ -432,14 +432,8 @@
           const mediaAttach =
             trigger === 'media' &&
             (state.completedPositional['action'] as string | undefined) === 'attach'
-          const operatorMode: 'edit' | 'collate' | 'attach' | undefined =
-            trigger === 'edit'
-              ? 'edit'
-              : trigger === 'structure-collate'
-                ? 'collate'
-                : mediaAttach
-                  ? 'attach'
-                  : undefined
+          const operatorMode: 'edit' | 'attach' | undefined =
+            trigger === 'edit' ? 'edit' : mediaAttach ? 'attach' : undefined
 
           linePickMode.set({
             address: navAddr,
