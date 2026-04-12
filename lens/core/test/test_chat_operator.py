@@ -613,6 +613,75 @@ class TestChatSession(unittest.TestCase):
         # Two complete AI turns → two close tags.
         self.assertGreaterEqual(text.count("[/chat]: #"), 2)
 
+    def test_session_continuation_user_line_rolls_back_with_ai_turn(self) -> None:
+        """Rollback drops the user's line and the new AI block in one transaction."""
+        self._start_session()
+        KnowledgeStore.clear_registry()
+
+        with patch("lens.core.operator.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="A pint with a typo.",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        storage = Storage(self.root)
+        self.assertTrue(storage.has_pending(), "continuation must leave one unstaged transaction")
+        storage.rollback()
+        text = self._chat_child_md()
+        self.assertNotIn("A pint with a typo.", text)
+        self.assertEqual(text.count("[/chat]: #"), 1)
+
+    def test_session_continuation_retry_regenerates_last_turn(self) -> None:
+        """--retry after a direct continuation re-runs the last AI block."""
+        self._start_session()
+        KnowledgeStore.clear_registry()
+
+        seq = {"n": 0}
+
+        async def _sequential(*_a: Any, **_kw: Any) -> str:
+            seq["n"] += 1
+            return f"> [Bob] turn-{seq['n']}\n"
+
+        with patch("lens.core.operator.generate_text", _sequential):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="Order up.",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        mid = self._chat_child_md()
+        self.assertIn("> [Amy] Order up.", mid)
+        self.assertIn("turn-1", mid)
+
+        with patch("lens.core.operator.generate_text", _sequential):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    retry=True,
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        final = self._chat_child_md()
+        self.assertIn("> [Amy] Order up.", final)
+        self.assertIn("turn-2", final)
+        self.assertNotIn("turn-1", final)
+
     def test_session_continuation_derives_params_from_parent(self) -> None:
         """Omitting --as in continuation derives it from the parent annotation."""
         self._start_session()
