@@ -27,8 +27,15 @@ def collect_ids(id: str | None, extra_ids: list[str]) -> list[str]:
 def validate_ids(ids: list[str]) -> None:
     invalid: list[str] = []
     for kid in ids:
+        # Allow knowledge IDs to be suffixed with '+' / '++' to request linked expansion
+        # later during crawl (the front matter preserves the suffix).
+        base = kid[:-2] if kid.endswith("++") else (kid[:-1] if kid.endswith("+") else kid)
+        # Reject any other trailing '+' patterns like 'id+++'.
+        if base.endswith("+"):
+            invalid.append(kid)
+            continue
         try:
-            parse_id(kid)
+            parse_id(base)
         except ValueError:
             invalid.append(kid)
     if invalid:

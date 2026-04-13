@@ -1,0 +1,51 @@
+[tags]
+"psych.attachment" = [
+    "meta.companion",
+]
+"psych.bigfive" = [
+    "meta.companion",
+]
+"psych.sdt" = [
+    "meta.companion",
+]
+"remember.attachment" = [
+    "psych.attachment",
+]
+"remember.bigfive" = [
+    "psych.bigfive",
+]
+"remember.sdt" = [
+    "psych.sdt",
+]
+"meta.lens" = [
+    "meta.companion",
+]
+"remember.self" = [
+    "id.companion",
+]
+"remember.human" = [
+    "id.human",
+]
+
+[objects]
+"psych.bigfive" = [
+    "remember.bigfive",
+]
+"psych.attachment" = [
+    "remember.attachment",
+]
+"psych.sdt" = [
+    "remember.sdt",
+]
+"meta.companion" = [
+    "meta.lens",
+    "psych.attachment",
+    "psych.bigfive",
+    "psych.sdt",
+]
+"id.companion" = [
+    "remember.self",
+]
+"id.human" = [
+    "remember.human",
+]
