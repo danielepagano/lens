@@ -3,15 +3,17 @@
 - **Public Release Readiness**
    - License
    - Clean up documentation
-      - Actual user manual for playing RPGs
+      - Focused main readme
+      - Refreshed main design doc
+      - Actual user manual for playing RPGs (dataset readme) with simpler bootstrap
    - Remove hard-coding of usage of gitlab/fly, make modular/CI-friendly
       - Remove reliance on specific env vars
    - Better "no desktop" usage
       - Better init tooling/docs
-      - Streamline project creation/management
-      - Streamline campaign bootstrapping
+      - Run server one level above projects and support project switching in app
+      - Streamline project creation/management (from app if above?)
       - Ensure manual editing is solid
-      - Some way to have a hook in a project to Lens to trigger deploy automatically
+      - Some way to have a hook in a repo toto trigger deploy automatically, maybe even on lens releases
    - Improve maintainability
       - Explicit contribution guidelines?
       - Git hook/CI/merge rules
