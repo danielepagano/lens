@@ -331,9 +331,53 @@ function escapeHtmlAttr(s: string): string {
     .replace(/'/g, '&#39;')
 }
 
-/** Markdown-it passes `html: true` through; raw `<!--` inside our diff divs becomes a real HTML comment and swallows the rest of the removal. */
-function neutralizeHtmlCommentOpensForDiffMarkdown(text: string): string {
-  return text.replace(/<!--/g, '&lt;!--')
+function isCommentDashChar(c: string): boolean {
+  return c === '-' || c === '\u2013' || c === '\u2014'
+}
+
+/** Index after first `-->`-like close after `start` (two dash-like chars, optional space, `>`). */
+function findHtmlCommentClose(text: string, start: number): number {
+  for (let p = start; p < text.length; p++) {
+    if (p + 1 < text.length && isCommentDashChar(text[p]!) && isCommentDashChar(text[p + 1]!)) {
+      let q = p + 2
+      while (q < text.length && /\s/.test(text[q]!)) q++
+      if (q < text.length && text[q] === '>') return q + 1
+    }
+    const c = text[p]!
+    if (c === '\u2013' || c === '\u2014') {
+      let q = p + 1
+      while (q < text.length && /\s/.test(text[q]!)) q++
+      if (q < text.length && text[q] === '>') return q + 1
+    }
+  }
+  return -1
+}
+
+/** Drop HTML comments so markdown-it never sees them (multiline-safe; tolerates unicode dash closers). */
+function stripHtmlCommentsForDiffMarkdown(text: string): string {
+  let out = ''
+  let i = 0
+  while (i < text.length) {
+    const open = text.indexOf('<!--', i)
+    if (open === -1) {
+      out += text.slice(i)
+      break
+    }
+    out += text.slice(i, open)
+    const afterOpen = open + 4
+    const closeEnd = findHtmlCommentClose(text, afterOpen)
+    if (closeEnd === -1) {
+      break
+    }
+    i = closeEnd
+  }
+  return out
+}
+
+function pushLinesStrippedOfHtmlComments(into: string[], blockLines: readonly string[]): void {
+  if (blockLines.length === 0) return
+  const stripped = stripHtmlCommentsForDiffMarkdown(blockLines.join('\n'))
+  for (const line of stripped.split('\n')) into.push(line)
 }
 
 /** Return true if a line is some kind of annotation (single, multi-line open, or front-matter open). */
@@ -375,22 +419,20 @@ function filterAnnotationLines(lines: string[]): string[] {
 
 /**
  * Flush a contiguous run of added lines into `into` as a single transaction-added
- * wrapper so markdown-it sees one document fragment (blockquotes, HTML comments,
- * lists, etc. stay structurally intact).
+ * wrapper so markdown-it sees one document fragment (blockquotes, lists, etc.
+ * stay structurally intact).
  */
 function flushAddedTransactionRun(into: string[], run: string[]): void {
   if (run.length === 0) return
   const withoutSectionMarkers = run.filter((l) => !SECTION_SUMMARY_COMMENT_RE.test(l))
   const hasVisible = withoutSectionMarkers.some((l) => l.trim() !== '')
   if (!hasVisible) {
-    for (const l of run) into.push(l)
+    pushLinesStrippedOfHtmlComments(into, run)
   } else {
     into.push('')
     into.push('<div class="transaction-added">')
     into.push('')
-    for (const l of withoutSectionMarkers) {
-      into.push(neutralizeHtmlCommentOpensForDiffMarkdown(l))
-    }
+    pushLinesStrippedOfHtmlComments(into, withoutSectionMarkers)
     into.push('')
     into.push('</div>')
     into.push('')
@@ -411,7 +453,7 @@ function pushRemovedContent(
     into.push('')
     into.push('<div class="transaction-removed">')
     into.push('')
-    into.push(neutralizeHtmlCommentOpensForDiffMarkdown(content))
+    into.push(stripHtmlCommentsForDiffMarkdown(content))
     into.push('')
     into.push('</div>')
     into.push('')
@@ -506,9 +548,7 @@ function renderAnnotationWithBody(
           output.push('')
           output.push('<div class="transaction-added">')
           output.push('')
-          for (let p = k; p <= end; p++) {
-            output.push(neutralizeHtmlCommentOpensForDiffMarkdown(bodyLines[p]))
-          }
+          pushLinesStrippedOfHtmlComments(output, bodyLines.slice(k, end + 1))
           output.push('')
           output.push('</div>')
           output.push('')
@@ -703,9 +743,7 @@ export function preprocessAnnotations(
         result.push('')
         result.push('<div class="transaction-added">')
         result.push('')
-        for (let p = i; p <= end; p++) {
-          result.push(neutralizeHtmlCommentOpensForDiffMarkdown(lines[p]))
-        }
+        pushLinesStrippedOfHtmlComments(result, lines.slice(i, end + 1))
         result.push('')
         result.push('</div>')
         result.push('')
@@ -735,7 +773,7 @@ export function preprocessAnnotations(
       result.push('')
       result.push('<div class="transaction-removed">')
       result.push('')
-      result.push(neutralizeHtmlCommentOpensForDiffMarkdown(content))
+      result.push(stripHtmlCommentsForDiffMarkdown(content))
       result.push('')
       result.push('</div>')
       result.push('')

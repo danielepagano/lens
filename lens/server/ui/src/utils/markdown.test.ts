@@ -607,7 +607,7 @@ Replacement line two.
     expect(removedIdx).toBeLessThan(addedIdx)
   })
 
-  it('escapes <!-- in transaction-removed so HTML comments do not swallow diff text', () => {
+  it('strips HTML comments in transaction-removed so markdown never sees them', () => {
     const markdown = `A
 B
 C`
@@ -621,9 +621,61 @@ C`
       ],
     }
     const result = preprocessAnnotations(markdown, 'test', overlay)
-    expect(result).toContain('&lt;!-- ai:secret:')
-    expect(result).toContain('rot13 line')
+    expect(result).not.toMatch(/<!--/)
+    expect(result).not.toMatch(/-->/)
+    expect(result).not.toContain('rot13 line')
     expect(result).toContain('After comment prose.')
+  })
+
+  it('strips multi-line HTML comments inside transaction-added (join lines before strip)', () => {
+    const markdown = `Header
+<!-- open
+middle
+-->
+Kept line.`
+    const overlay: NodeTransactionOverlay = {
+      addedLines: new Set([2, 3, 4, 5]),
+      removedGroups: [],
+    }
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    expect(result).toContain('Kept line.')
+    expect(result).toContain('<div class="transaction-added">')
+    expect(result).not.toMatch(/<!--/)
+    expect(result).not.toMatch(/-->/)
+    expect(result).not.toContain('middle')
+  })
+
+  it('strips HTML comments closed with unicode dashes (hyphen + en dash before >)', () => {
+    const en = '\u2013'
+    const markdown = `X
+<!-- hush
+done-${en}>`
+    const overlay: NodeTransactionOverlay = {
+      addedLines: new Set([2, 3]),
+      removedGroups: [],
+    }
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    expect(result).toContain('X')
+    expect(result).not.toContain('hush')
+    expect(result).not.toMatch(/<!--/)
+    expect(result).not.toContain(`-${en}>`)
+  })
+
+  it('strips comments closed with only en dash before > (typographic corrupt close)', () => {
+    const en = '\u2013'
+    const markdown = `Z
+<!-- remark
+comment. ${en}>
+After.`
+    const overlay: NodeTransactionOverlay = {
+      addedLines: new Set([2, 3, 4, 5]),
+      removedGroups: [],
+    }
+    const result = preprocessAnnotations(markdown, 'test', overlay)
+    expect(result).toContain('After.')
+    expect(result).not.toContain('remark')
+    expect(result).not.toMatch(/<!--/)
+    expect(result).not.toContain(`comment. ${en}>`)
   })
 
   it('drops canonical section marker lines from transaction-added (keeps blockquote highlight)', () => {
