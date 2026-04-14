@@ -857,10 +857,22 @@ class Operator(ABC):
         crawl_result: CrawlResult,
         params: dict[str, Any],
     ) -> list[dict[str, str]]:
+        from lens.core.turns import parse_passage_turns
+
+        instruction = self.build_instruction(params)
+        turns: list[tuple[str, str]] | None = None
+        node = crawl_result.current_node
+        if node is not None:
+            # Cache hit: crawl() already normalised this path through the same
+            # storage instance, so normalize_path_text returns immediately.
+            result = parse_passage_turns(self.storage.normalize_path_text(node.md_path()))
+            if result:
+                turns = result
         return assemble_prompt(
             crawl_result,
             system_prompt=self.system_prompt,
-            instruction=self.build_instruction(params),
+            instruction=instruction,
+            turns=turns,
         )
 
     @classmethod
@@ -1244,7 +1256,22 @@ class Operator(ABC):
 
         messages = op.build_messages(crawl_result, new_params)
         if feedback and previous_content:
-            messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))
+            if (
+                len(messages) >= 3
+                and messages[-1]["role"] == "user"
+                and messages[-2]["role"] == "assistant"
+            ):
+                # Multi-turn: the last assistant turn is already in the message
+                # history (from build_messages).  Replace the trailing task-
+                # instruction user message with the feedback turn instead of
+                # appending a duplicate assistant + user pair.
+                from lens.core.prompts import PromptStore as _PS
+                feedback_text = _PS(session.project_root).format(
+                    "shared.retry_feedback_template", feedback=feedback
+                )
+                messages[-1] = {"role": "user", "content": feedback_text}
+            else:
+                messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))
 
         retry_override = cls._inline_command_tools_bundle(
             session.project_root, new_params
@@ -1460,6 +1487,15 @@ class Operator(ABC):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> None:
+        # When a prompt is supplied on --retry, treat it as feedback rather than
+        # a replacement for the stored instruction.  Capture the previously
+        # proposed content before rolling back so we can append it as an
+        # assistant turn alongside the feedback.
+        feedback: str | None = params.get("prompt") or None
+        pre_rollback_text: str | None = None
+        if feedback and file_path.exists():
+            pre_rollback_text = file_path.read_text(encoding="utf-8")
+
         probe_storage.rollback()
 
         text = file_path.read_text(encoding="utf-8")
@@ -1484,10 +1520,20 @@ class Operator(ABC):
             "\n".join(lines[: open_ann.line_start - 1])
         ).strip()
 
-        # Recover stored params from the claim tag; new prompt/reasoning override.
+        # Extract previous proposal from the pre-rollback file.  propose_mutation
+        # writes: before_prefix + new_content + "\n" + after_suffix, so we can
+        # recover new_content by stripping the known prefix and suffix lengths.
+        previous_proposal: str | None = None
+        if feedback and pre_rollback_text is not None:
+            before_prefix = _lines_prefix(lines[: open_ann.line_start - 1])
+            after_suffix = "\n".join(lines[close_ann.line_end :])
+            start = len(before_prefix)
+            end = len(pre_rollback_text) - len(after_suffix) if after_suffix else len(pre_rollback_text)
+            previous_proposal = pre_rollback_text[start:end].rstrip("\n") or None
+
+        # Recover stored params from the claim tag.  Do NOT overwrite the stored
+        # prompt — feedback is a separate message turn, not a new annotation param.
         effective_params = dict(open_ann.params)
-        if params.get("prompt"):
-            effective_params["prompt"] = params["prompt"]
         if params.get("reasoning"):
             effective_params["reasoning"] = params["reasoning"]
         if not effective_params.get("prompt"):
@@ -1513,6 +1559,8 @@ class Operator(ABC):
         if mention_refs:
             crawl_result.knowledge.extend(mention_refs)
         messages = op.build_messages(crawl_result, effective_params)
+        if feedback and previous_proposal:
+            messages.extend(build_feedback_messages(previous_proposal, feedback, session.project_root))
         retry_reasoning: str | None = effective_params.get("reasoning")
 
         try:

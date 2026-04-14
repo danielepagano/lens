@@ -231,15 +231,24 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             self.assertNotIn("Generated content", text)
             self.assertTrue(Storage(root).has_pending())
 
-    def test_run_mutation_retry_with_new_prompt(self) -> None:
-        """Retry with a new prompt overrides the stored one."""
+    def test_run_mutation_retry_with_feedback_appends_turns(self) -> None:
+        """Retry with a prompt treats it as feedback, not a new instruction.
+
+        The messages sent to the LLM must contain:
+          - an assistant turn with the previous proposal
+          - a user turn with the feedback text
+        The original stored instruction must be preserved.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
 
             _run_mutation(root, narrative, self._REL_PATH, "e1_1", 1, 1, prompt="be poetic")
 
+            captured_messages: list[dict[str, Any]] = []
+
             async def _retry(*args: Any, **kwargs: Any) -> Any:
+                captured_messages.extend(args[0] if args else kwargs.get("messages", []))
                 for chunk in ["Updated", " content"]:
                     yield StreamEvent(preview=chunk)
                 yield StreamEvent(
@@ -258,6 +267,18 @@ class TestEditOperatorRunMutation(unittest.TestCase):
 
             text = narrative.md_path().read_text()
             self.assertIn("Updated content", text)
+
+            # Original instruction must be preserved (not overwritten by feedback)
+            all_content = " ".join(m["content"] for m in captured_messages if isinstance(m.get("content"), str))
+            self.assertIn("be poetic", all_content)
+
+            # Feedback turn structure: assistant (previous proposal) + user (feedback)
+            roles = [m["role"] for m in captured_messages]
+            self.assertIn("assistant", roles)
+            last_assistant_idx = max(i for i, m in enumerate(captured_messages) if m["role"] == "assistant")
+            self.assertIn("Generated content", captured_messages[last_assistant_idx]["content"])
+            self.assertEqual(captured_messages[-1]["role"], "user")
+            self.assertIn("be dramatic", captured_messages[-1]["content"])
 
     def test_run_mutation_range_has_annotation_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

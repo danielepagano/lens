@@ -61,11 +61,12 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "chat.with_line_instruction": PromptSpec("chat.with_line_instruction", frozenset({"with_name"})),
     "chat.instruction_continue": PromptSpec("chat.instruction_continue", frozenset({"as_name", "char_content", "with_line"})),
     "chat.instruction_with_directions": PromptSpec(
-        "chat.instruction_with_directions", frozenset({"as_name", "char_content", "directions", "with_line"})
+        "chat.instruction_with_directions",
+        frozenset({"as_name", "char_content", "directions", "with_line", "with_name"}),
     ),
     "chat.instruction_with_aside_directions": PromptSpec(
         "chat.instruction_with_aside_directions",
-        frozenset({"as_name", "char_content", "directions"}),
+        frozenset({"as_name", "char_content", "directions", "with_name"}),
     ),
     "compress.system": PromptSpec("compress.system", frozenset()),
     "compress.instruction_template": PromptSpec(

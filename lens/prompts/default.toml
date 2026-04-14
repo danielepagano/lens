@@ -235,7 +235,9 @@ THE CHARACTER CONTRACT:
 FORMAT:
 Write action, description, and internal state as regular prose. Use attributed blockquotes ONLY for spoken dialogue:
 > [CharacterName] What they say.
-Do not speak for the other character. Vary length to match the moment.'''
+Do not speak for the other character. Vary length to match the moment.
+
+In session transcripts, blockquoted lines that are not yours are always the counterpart's material: `> [TheirName] …` is their speech; a plain `> …` line (no name in brackets) is still their turn — non-verbal action, gesture, or beat they committed — not omniscient narration. Infer who did what from those lines; do not treat plain `>` as author voice describing the room.'''
 
 chat.instruction_continue = '''You are {as_name}.
 
@@ -245,13 +247,17 @@ Read the CURRENT PASSAGE for the full exchange so far, then write {as_name}'s ne
 
 Use > [{as_name}] only for spoken lines. Everything else — action, sensation, thought — is plain prose.'''
 
-chat.with_line_instruction = 'Write non-dialogue prose in first person ("I", "my", "me"). When addressing {with_name} directly, use second person ("you", "your").'
+chat.with_line_instruction = '''Write non-dialogue prose in first person ("I", "my", "me"). When addressing {with_name} directly, use second person ("you", "your").
+
+In the passage, blockquoted lines are {with_name}'s side of the exchange: `> [{with_name}] …` is their speech; a plain `> …` line (no name in brackets) in the same blockquote run is still them — action, gesture, or non-verbal beat — not neutral narrator description, and you should not be emitting those.'''
 
 chat.instruction_with_directions = '''You are {as_name}.
 
 {char_content}
 
 Stage directions: {directions}{with_line}
+
+Blockquotes from {with_name} in the passage are their material — attributed lines are speech; plain `> …` in that run is still their action or beat, not author voice.
 
 Write {as_name}'s response to the scene. Use > [{as_name}] only for spoken lines. Everything else is plain prose.'''
 
@@ -262,6 +268,8 @@ chat.instruction_with_aside_directions = '''You are {as_name}.
 Stage directions: {directions}
 
 This is a one-off interruption inside an ongoing exchange, not a direct reply turn. Treat the directions as neutral third-person scene guidance. Do not render the directions as dialogue from another speaker, and do not default to addressing anyone as "you" unless {as_name} explicitly speaks to them in quoted dialogue.
+
+Blockquotes from {with_name} in the passage (including plain `> …` beats without a name tag) are still their contributions, not neutral narration.
 
 Write {as_name}'s response to the scene. Use > [{as_name}] only for spoken lines. Everything else is plain prose.'''
 

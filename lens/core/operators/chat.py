@@ -6,9 +6,9 @@ directions (``--with`` mode) or is the opening beat of the exchange.
 
 ``lens chat --as npc.bob --with pc.amy [STAGE DIRECTIONS]`` opens a ``chat``
 session sub-node for a two-character conversation.  Inside the session,
-``lens chat [TEXT]`` appends TEXT attributed to the ``--with`` character and
-the AI responds as ``--as``.  A new interlocutor can be introduced mid-session
-with a different ``--as`` value.
+``lens chat [TEXT]`` appends TEXT as the ``--with`` character (attributed dialogue
+by default) and the AI responds as ``--as``, unless ``--wait`` skips the model.
+A new interlocutor can be introduced mid-session with a different ``--as`` value.
 
 Session lifecycle
 -----------------
@@ -17,17 +17,27 @@ Session lifecycle
   **parent** annotation so the whole setup + first AI turn is one atomic unstaged
   transaction.  A rollback removes the sub-node entirely and the user can retry.
 * Subsequent calls inside the session → appends the user's ``--with`` character
-  line, then AI responds as the ``--as`` character — both in one unstaged
-  transaction (rollback drops the line and the reply together).  ``as_kb_id``
-  / ``with_kb_id`` are derived from the parent annotation and may be overridden
-  per-call.
+  line (see session flags below), then unless ``--wait`` the AI responds as
+  ``--as`` — in one unstaged transaction (rollback drops the new line and, when
+  applicable, the reply together).  ``as_kb_id`` / ``with_kb_id`` are derived
+  from the parent annotation and may be overridden per-call.
 * ``--end`` → closes the session with a short prose summary.
+
+Session flags (direct ``--with`` turns only)
+--------------------------------------------
+* ``--narrate`` — append the line as blockquote text only (``> …``), without the
+  ``[CharacterName]`` prefix used for spoken dialogue.
+* ``--wait`` — append the line(s) only; do not call the LLM and do not write a
+  ``[chat]``…``[/chat]`` pair for that call.  Several user lines in a row stay one
+  Markdown blockquote by inserting a line with only ``>`` between entries (so
+  renderers do not collapse adjacent ``>`` lines into one paragraph).
 
 Character attribution
 ---------------------
 Character lines use blockquote format: ``> [CharacterName] what they say``.
 Action beats: ``> [CharacterName] *she set the cup down*``.
-Names are derived from the KB key suffix (e.g. ``npc.bob-the-smith`` → ``Bob The Smith``).
+With ``--narrate``, the same beat is written as ``> *she set the cup down*`` (no
+name prefix).  Names are derived from the KB key suffix (e.g. ``npc.bob-the-smith`` → ``Bob The Smith``).
 """
 
 from __future__ import annotations
@@ -98,9 +108,9 @@ class ChatOperator(SessionOperator):
                 char_content = obj.text.strip()
 
         prompts = PromptStore(self.project_root)
+        with_name = _titlecase_kb_key(with_kb_id) if with_kb_id else "the counterpart"
         with_line = ""
         if with_kb_id and with_line_mode == _WITH_LINE_MODE_DIRECT:
-            with_name = _titlecase_kb_key(with_kb_id)
             with_line = "\n" + prompts.format("chat.with_line_instruction", with_name=with_name)
 
         if directions:
@@ -110,6 +120,7 @@ class ChatOperator(SessionOperator):
                     as_name=as_name,
                     char_content=char_content,
                     directions=directions,
+                    with_name=with_name,
                 )
             return prompts.format(
                 "chat.instruction_with_directions",
@@ -117,6 +128,7 @@ class ChatOperator(SessionOperator):
                 char_content=char_content,
                 directions=directions,
                 with_line=with_line,
+                with_name=with_name,
             )
         return prompts.format(
             "chat.instruction_continue",
@@ -178,8 +190,8 @@ class ChatOperator(SessionOperator):
         return {}
 
     @classmethod
-    def _extract_extra(cls, kwargs: dict[str, Any]) -> tuple[str | None, str | None]:
-        """Pull ``as_kb_id`` and ``with_kb_id`` from ``extra_params`` in *kwargs*."""
+    def _extract_extra(cls, kwargs: dict[str, Any]) -> tuple[str | None, str | None, bool, bool]:
+        """Pull session flags and ``as_kb_id`` / ``with_kb_id`` from ``extra_params``."""
         raw = kwargs.get("extra_params")
         ep: dict[str, Any] = {}
         if isinstance(raw, dict):
@@ -189,7 +201,62 @@ class ChatOperator(SessionOperator):
                     ep[k] = v
         as_kb_id = ep.get("as_kb_id") if isinstance(ep.get("as_kb_id"), str) else None
         with_kb_id = ep.get("with_kb_id") if isinstance(ep.get("with_kb_id"), str) else None
-        return as_kb_id, with_kb_id
+        narrate = bool(ep.get("narrate"))
+        wait = bool(ep.get("wait"))
+        return as_kb_id, with_kb_id, narrate, wait
+
+    @staticmethod
+    def _sep_before_blockquote_user_line(original: str) -> str:
+        """Newlines before appending the next user ``> …`` block.
+
+        If the last non-empty line is already a blockquote, insert a **spacer**
+        line that is only ``>`` (CommonMark: continues the quote; avoids renderers
+        gluing ``> a`` + ``> b`` into one run-on line).  When the file already ends
+        with ``\\n`` after the previous quote line, use ``>\\n`` — not ``\\n>\\n``,
+        which would add an extra blank row.
+
+        Otherwise return one or two newlines so the new block is not concatenated
+        onto non-quote text on the same line.
+        """
+        if not original.strip():
+            return ""
+        last_nonempty = ""
+        for line in original.rstrip("\n").split("\n")[::-1]:
+            if line.strip():
+                last_nonempty = line
+                break
+        if last_nonempty.lstrip().startswith(">"):
+            return ">\n" if original.endswith("\n") else "\n>\n"
+        if original.endswith("\n"):
+            return "\n"
+        return "\n\n"
+
+    @classmethod
+    def _format_direct_user_block(
+        cls,
+        *,
+        with_kb_id: str | None,
+        user_prompt: str,
+        narrate: bool,
+    ) -> str:
+        raw = user_prompt.strip()
+        if not raw:
+            raise OperatorError("a non-empty prompt is required for this chat turn")
+        lines_list = raw.splitlines()
+        out: list[str] = []
+        if narrate:
+            for line in lines_list:
+                out.append(">" if not line.strip() else f"> {line}")
+            return "\n".join(out) + "\n"
+        marker = cls._with_display_name(with_kb_id)
+        first = True
+        for line in lines_list:
+            if first:
+                out.append(f"> [{marker}] {line}")
+                first = False
+            else:
+                out.append(f"> {line}")
+        return "\n".join(out) + "\n"
 
     # ── User-character line helper ─────────────────────────────────────────
 
@@ -208,24 +275,30 @@ class ChatOperator(SessionOperator):
         with_kb_id: str | None,
         as_kb_id: str,
         with_line_mode: str,
+        narrate: bool,
+        wait: bool,
         llm_id: str | None,
         reasoning: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: Any | None,
     ) -> None:
-        """Append the ``--with`` blockquote and closed ``[chat]`` turn in one transaction.
+        """Append the ``--with`` blockquote; optionally run the LLM and ``write_start``.
 
-        Reuses a single :class:`~lens.core.storage.Storage` so the storage layer
-        does not auto-stage the user line before ``write_start`` (which would
+        With ``wait``, only the blockquote lines are appended (no ``[chat]`` pair),
+        preserving one Markdown blockquote run across consecutive waits.
+
+        Otherwise reuses a single :class:`~lens.core.storage.Storage` so the storage
+        layer does not auto-stage the user line before ``write_start`` (which would
         split rollback semantics from ``run_inline``).
         """
         md = node.md_path()
         original = md.read_text(encoding="utf-8")
-        marker = cls._with_display_name(with_kb_id)
-        block = f"> [{marker}] {user_prompt}\n"
-        sep = "\n" if original.strip() and original.endswith("\n") else (
-            "\n\n" if original.strip() else ""
+        block = cls._format_direct_user_block(
+            with_kb_id=with_kb_id,
+            user_prompt=user_prompt,
+            narrate=narrate,
         )
+        sep = cls._sep_before_blockquote_user_line(original)
         text_with_user = original + sep + block
         rel_path = str(md.relative_to(session.git_root))
         ann_line = cls.ann_line_for_append(text_with_user)
@@ -250,6 +323,9 @@ class ChatOperator(SessionOperator):
         )
 
         storage.write_file(md, text_with_user)
+
+        if wait:
+            return
 
         content: str = ""
         interrupted = False
@@ -496,6 +572,12 @@ class ChatOperator(SessionOperator):
         _cursor_override: NarrativeNode | None = None,
         empty_prompt_ok: bool = False,
     ) -> None:
+        filtered: dict[str, Any] | None = None
+        if extra_params:
+            ep = dict(extra_params)
+            ep.pop("narrate", None)
+            ep.pop("wait", None)
+            filtered = ep if ep else None
         await super().run_inline(
             session=session,
             narrative=narrative,
@@ -506,7 +588,7 @@ class ChatOperator(SessionOperator):
             retry=retry,
             reasoning=reasoning,
             on_token=on_token,
-            extra_params=extra_params,
+            extra_params=filtered,
             cancel_event=cancel_event,
             _cursor_override=_cursor_override,
             empty_prompt_ok=empty_prompt_ok,
@@ -581,7 +663,7 @@ class ChatOperator(SessionOperator):
             )
 
         # Fresh session — atomic setup + first generation.
-        as_kb_id, with_kb_id = cls._extract_extra(kwargs)
+        as_kb_id, with_kb_id, _narrate, _wait = cls._extract_extra(kwargs)
         if not as_kb_id:
             raise OperatorError("--as is required when starting a chat session")
 
@@ -630,7 +712,7 @@ class ChatOperator(SessionOperator):
         cancel_event: Any | None,
         **kwargs: Any,
     ) -> None:
-        as_kb_id, with_kb_id = cls._extract_extra(kwargs)
+        as_kb_id, with_kb_id, narrate, wait = cls._extract_extra(kwargs)
 
         # Fall back to the parent annotation's stored params when not re-specified.
         derived = cls._derive_session_params(node)
@@ -768,6 +850,8 @@ class ChatOperator(SessionOperator):
                 with_kb_id=with_kb_id,
                 as_kb_id=as_kb_id,
                 with_line_mode=with_line_mode,
+                narrate=narrate,
+                wait=wait,
                 llm_id=llm_id,
                 reasoning=reasoning,
                 on_token=on_token,

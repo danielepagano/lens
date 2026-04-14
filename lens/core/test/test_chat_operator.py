@@ -68,6 +68,14 @@ async def _mock_generate(*_args: Any, **_kwargs: Any) -> str:
     return "> [Bob] Aye, what can I get for ye?\n"
 
 
+def _text_after_first_chat_close(text: str) -> str:
+    marker = "[/chat]: #"
+    idx = text.find(marker)
+    if idx == -1:
+        raise AssertionError("expected at least one [/chat]: # in transcript")
+    return text[idx + len(marker) :]
+
+
 # ---------------------------------------------------------------------------
 # One-shot inline mode (no --with)
 # ---------------------------------------------------------------------------
@@ -592,6 +600,175 @@ class TestChatSession(unittest.TestCase):
         text = self._chat_child_md()
         self.assertIn("> [Amy] A pint of your best, please.", text)
 
+    def test_session_narrate_wait_plain_blockquote(self) -> None:
+        """--narrate --wait appends one blockquote run (no [Name]) and no new [chat] pair."""
+        self._start_session()
+        KnowledgeStore.clear_registry()
+
+        asyncio.run(
+            ChatOperator.run_session(
+                session=self.session,
+                narrative=self.narrative,
+                prompt="Amy grips her sword.",
+                module_id=None,
+                pins=[],
+                unpins=[],
+                extra_params={
+                    "as_kb_id": "npc.bob",
+                    "with_kb_id": "pc.amy",
+                    "narrate": True,
+                    "wait": True,
+                },
+            )
+        )
+        text = self._chat_child_md()
+        self.assertEqual(text.count("[/chat]: #"), 1)
+        self.assertNotIn("narrate:", text)
+        self.assertEqual(
+            _text_after_first_chat_close(text),
+            "\n\n> Amy grips her sword.\n",
+        )
+
+    def test_session_two_waits_blockquote_continuation(self) -> None:
+        """Two --wait turns: bare ``>`` line between user quote lines (whole tail)."""
+        self._start_session()
+        KnowledgeStore.clear_registry()
+
+        asyncio.run(
+            ChatOperator.run_session(
+                session=self.session,
+                narrative=self.narrative,
+                prompt="She steadies her breath.",
+                module_id=None,
+                pins=[],
+                unpins=[],
+                extra_params={
+                    "as_kb_id": "npc.bob",
+                    "with_kb_id": "pc.amy",
+                    "narrate": True,
+                    "wait": True,
+                },
+            )
+        )
+        asyncio.run(
+            ChatOperator.run_session(
+                session=self.session,
+                narrative=self.narrative,
+                prompt="What now?",
+                module_id=None,
+                pins=[],
+                unpins=[],
+                extra_params={
+                    "as_kb_id": "npc.bob",
+                    "with_kb_id": "pc.amy",
+                    "wait": True,
+                },
+            )
+        )
+        text = self._chat_child_md()
+        self.assertEqual(text.count("[/chat]: #"), 1)
+        self.assertNotIn("narrate:", text)
+        self.assertEqual(
+            _text_after_first_chat_close(text),
+            "\n\n> She steadies her breath.\n>\n> [Amy] What now?\n",
+        )
+
+    def test_session_three_waits_blockquote_spacers(self) -> None:
+        """Dialogue / narrate / dialogue: full blockquote tail with ``>`` between each."""
+        self._start_session()
+        KnowledgeStore.clear_registry()
+
+        asyncio.run(
+            ChatOperator.run_session(
+                session=self.session,
+                narrative=self.narrative,
+                prompt="We can multi-task.",
+                module_id=None,
+                pins=[],
+                unpins=[],
+                extra_params={
+                    "as_kb_id": "npc.bob",
+                    "with_kb_id": "pc.amy",
+                    "wait": True,
+                },
+            )
+        )
+        asyncio.run(
+            ChatOperator.run_session(
+                session=self.session,
+                narrative=self.narrative,
+                prompt="I take a sip of coffee.",
+                module_id=None,
+                pins=[],
+                unpins=[],
+                extra_params={
+                    "as_kb_id": "npc.bob",
+                    "with_kb_id": "pc.amy",
+                    "narrate": True,
+                    "wait": True,
+                },
+            )
+        )
+        asyncio.run(
+            ChatOperator.run_session(
+                session=self.session,
+                narrative=self.narrative,
+                prompt="Delicious.",
+                module_id=None,
+                pins=[],
+                unpins=[],
+                extra_params={
+                    "as_kb_id": "npc.bob",
+                    "with_kb_id": "pc.amy",
+                    "wait": True,
+                },
+            )
+        )
+        text = self._chat_child_md()
+        self.assertEqual(text.count("[/chat]: #"), 1)
+        self.assertEqual(
+            _text_after_first_chat_close(text),
+            "\n\n> [Amy] We can multi-task.\n"
+            ">\n"
+            "> I take a sip of coffee.\n"
+            ">\n"
+            "> [Amy] Delicious.\n",
+        )
+
+    def test_session_narrate_then_llm_full_tail(self) -> None:
+        """--narrate without --wait: one plain blockquote user run then a full [chat] turn."""
+        self._start_session()
+        KnowledgeStore.clear_registry()
+
+        with patch("lens.core.operator.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="The torch flickers.",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={
+                        "as_kb_id": "npc.bob",
+                        "with_kb_id": "pc.amy",
+                        "narrate": True,
+                    },
+                )
+            )
+        text = self._chat_child_md()
+        self.assertNotIn("narrate:", text)
+        self.assertEqual(
+            _text_after_first_chat_close(text),
+            "\n\n> The torch flickers.\n\n"
+            "[chat\n"
+            "    as_kb_id: npc.bob\n"
+            "    with_kb_id: pc.amy\n"
+            "    with_line_mode: direct\n"
+            "]: #\n\n"
+            "> [Bob] Aye, what can I get for ye?\n\n[/chat]: #\n",
+        )
+
     def test_session_continuation_triggers_ai_response(self) -> None:
         """After appending the user line, the AI generates a new response."""
         self._start_session()
@@ -731,10 +908,14 @@ class TestChatSession(unittest.TestCase):
         self.assertNotIn("> [Amy] hesitantly interrupt them to take orders", text)
 
         self.assertGreaterEqual(len(captured_messages), 2)
-        user_content = captured_messages[1]["content"]
-        self.assertIn("one-off interruption inside an ongoing exchange", user_content)
-        self.assertIn("neutral third-person scene guidance", user_content)
-        self.assertNotIn('Write non-dialogue prose in first person ("I", "my", "me").', user_content)
+        # The task instruction is in the last user message (may not be messages[1]
+        # with multi-turn assembly).
+        last_user_content = next(
+            m["content"] for m in reversed(captured_messages) if m["role"] == "user"
+        )
+        self.assertIn("one-off interruption inside an ongoing exchange", last_user_content)
+        self.assertIn("neutral third-person scene guidance", last_user_content)
+        self.assertNotIn('Write non-dialogue prose in first person ("I", "my", "me").', last_user_content)
 
     def test_derive_session_params_reads_parent_annotation(self) -> None:
         """_derive_session_params reads from the parent annotation, not child."""

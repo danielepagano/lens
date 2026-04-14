@@ -146,6 +146,24 @@ const commands: CommandDefinition[] = [
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
       { name: 'retry' },
       {
+        name: 'narrate',
+        hint: 'in session: blockquote only, no [Name] prefix',
+        availability: {
+          require: { allOf: [{ statEq: { key: 'active_session_operator', value: 'chat' } }] },
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
+      {
+        name: 'wait',
+        hint: 'in session: append text only, no AI reply',
+        availability: {
+          require: { allOf: [{ statEq: { key: 'active_session_operator', value: 'chat' } }] },
+          hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
+          skipWhenPromptOrStringSlot: true,
+        },
+      },
+      {
         name: 'end',
         hint: 'close the chat session with a summary',
         availability: {
@@ -601,11 +619,15 @@ const handler: CommandHandler = async (
       const chatSlug = (!endChat && !retry)
         ? ((ctx.args.options['slug'] as string | undefined) || undefined)
         : undefined
+      const narrateChat = ctx.args.options['narrate'] === true
+      const waitChat = ctx.args.options['wait'] === true
       result = await runChat(
         {
           prompt,
           as_kb_id: asKbId,
           with_kb_id: withKbId,
+          ...(narrateChat ? { narrate: true } : {}),
+          ...(waitChat ? { wait: true } : {}),
           pins,
           unpins,
           llm_id: llmId,

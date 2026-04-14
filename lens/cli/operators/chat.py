@@ -52,6 +52,16 @@ def chat(
         "-s",
         help="Sub-node id for a new session (default: auto-generated from characters and prompt)",
     ),
+    narrate: bool = typer.Option(
+        False,
+        "--narrate",
+        help="In a session: append as blockquote prose only (no [Name] prefix)",
+    ),
+    wait: bool = typer.Option(
+        False,
+        "--wait",
+        help="In a session: append the line only, do not request an AI reply",
+    ),
 ) -> None:
     """Have the AI speak as a specific character in the current scene.
 
@@ -62,6 +72,10 @@ def chat(
     conversation.  Inside the session, typing text sends it as the --with
     character and the AI responds as --as.  Subsequent calls without --with
     inside an open session continue that session automatically.
+
+    In-session only: --narrate formats the line as a plain blockquote (no
+    [Character] prefix).  --wait appends without calling the LLM (several waits
+    stay one blockquote run in the transcript).
 
     Use --end to close the session with a prose summary.
     """
@@ -105,6 +119,10 @@ def chat(
         extra_params["as_kb_id"] = as_kb_id
     if with_kb_id:
         extra_params["with_kb_id"] = with_kb_id
+    if narrate:
+        extra_params["narrate"] = True
+    if wait:
+        extra_params["wait"] = True
 
     try:
         if end or with_kb_id is not None:

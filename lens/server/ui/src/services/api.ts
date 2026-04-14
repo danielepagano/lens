@@ -314,6 +314,8 @@ export interface ChatParams {
   prompt?: string
   as_kb_id?: string
   with_kb_id?: string
+  narrate?: boolean
+  wait?: boolean
   pins?: string[]
   unpins?: string[]
   llm_id?: string

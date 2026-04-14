@@ -38,6 +38,7 @@ class CrawlResult:
     current_content: str | None
     pinned_ids: list[str] = field(default_factory=list[str])
     project_root: Path | None = None
+    current_node: NarrativeNode | None = None
 
 
 def _block(title: str, body: str) -> str:
@@ -297,12 +298,14 @@ def crawl(
                 if stripped.strip():
                     current_content = stripped
 
+    current_node = ancestors[-1] if ancestors[-1].exists() else None
     return CrawlResult(
         project_root=project_root,
         knowledge=knowledge_formatted,
         previous_summaries=previous_summaries,
         current_content=current_content,
         pinned_ids=pinned_ids,
+        current_node=current_node,
     )
 
 
@@ -464,16 +467,76 @@ def assemble_prompt(
     system_prompt: str,
     instruction: str,
     extra_sections: list[str] | None = None,
+    turns: list[tuple[str, str]] | None = None,
 ) -> list[dict[str, str]]:
     prompts = PromptStore(result.project_root)
-    sections = _sections_from_crawl_result(result)
-    if extra_sections:
-        sections.extend(extra_sections)
-    task_block = _block(prompts.get("shared.block.task"), instruction)
-    sections.append(task_block or instruction)
-    user_content = decode_ai_secrets("\n\n".join(sections))
+    system_msg = {"role": "system", "content": system_prompt + prompts.get("shared.formatting_addendum")}
+    task_block = _block(prompts.get("shared.block.task"), instruction) or instruction
 
-    return [
-        {"role": "system", "content": system_prompt + prompts.get("shared.formatting_addendum")},
-        {"role": "user", "content": user_content},
-    ]
+    if not turns:
+        # Single-turn: existing behaviour unchanged.
+        sections = _sections_from_crawl_result(result)
+        if extra_sections:
+            sections.extend(extra_sections)
+        sections.append(task_block)
+        user_content = decode_ai_secrets("\n\n".join(sections))
+        return [system_msg, {"role": "user", "content": user_content}]
+
+    # Multi-turn: KB + summaries in a prefix user message; turns as alternating messages.
+    # current_content is in `turns` via parse_passage_turns — skip it here.
+    prefix_parts: list[str] = []
+    if result.knowledge:
+        kb_block = _block(prompts.get("shared.block.relevant_knowledge"), "\n\n".join(result.knowledge))
+        if kb_block:
+            prefix_parts.append(kb_block)
+    if result.previous_summaries:
+        prev_block = _block(
+            prompts.get("shared.block.previous_events_summary"),
+            "\n\n".join(result.previous_summaries),
+        )
+        if prev_block:
+            prefix_parts.append(prev_block)
+    if extra_sections:
+        prefix_parts.extend(s for s in extra_sections if s)
+
+    # Absorb the first turn into the prefix when it is a user turn, so the
+    # first message in the list is always a non-empty user message.
+    turn_start = 0
+    if turns[0][0] == "user":
+        prefix_parts.append(turns[0][1])
+        turn_start = 1
+
+    prefix_content = decode_ai_secrets("\n\n".join(p for p in prefix_parts if p))
+    if not prefix_content.strip():
+        # Fallback: nothing to put in the first user message; use the task as anchor.
+        prefix_content = task_block
+        task_in_prefix = True
+    else:
+        task_in_prefix = False
+
+    messages: list[dict[str, str]] = [system_msg, {"role": "user", "content": prefix_content}]
+
+    remaining = turns[turn_start:]
+    if not remaining:
+        # All turn content was absorbed into the prefix; append task there.
+        if not task_in_prefix:
+            messages[-1]["content"] += "\n\n" + task_block
+        return messages
+
+    # Emit all but the last remaining turn.
+    for role, content in remaining[:-1]:
+        messages.append({"role": role, "content": content})
+
+    # Append the last turn, with the task joined to the last user message.
+    last_role, last_content = remaining[-1]
+    if last_role == "user":
+        if not task_in_prefix:
+            messages.append({"role": "user", "content": last_content + "\n\n" + task_block})
+        else:
+            messages.append({"role": "user", "content": last_content})
+    else:
+        messages.append({"role": "assistant", "content": last_content})
+        if not task_in_prefix:
+            messages.append({"role": "user", "content": task_block})
+
+    return messages

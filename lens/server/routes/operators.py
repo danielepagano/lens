@@ -111,6 +111,8 @@ class ChatBody(BaseModel):
     prompt: str | None = None
     as_kb_id: str | None = None
     with_kb_id: str | None = None
+    narrate: bool = False
+    wait: bool = False
     pins: list[str] = []
     unpins: list[str] = []
     llm_id: str | None = None
@@ -569,13 +571,16 @@ async def operator_chat(
     async def on_auto_info(payload: dict[str, Any]) -> None:
         await event_queue.put(payload)
 
-    extra_params: dict[str, Any] | None = None
-    if body.as_kb_id is not None or body.with_kb_id is not None:
-        extra_params = {}
-        if body.as_kb_id is not None:
-            extra_params["as_kb_id"] = body.as_kb_id
-        if body.with_kb_id is not None:
-            extra_params["with_kb_id"] = body.with_kb_id
+    extra_params: dict[str, Any] = {}
+    if body.as_kb_id is not None:
+        extra_params["as_kb_id"] = body.as_kb_id
+    if body.with_kb_id is not None:
+        extra_params["with_kb_id"] = body.with_kb_id
+    if body.narrate:
+        extra_params["narrate"] = True
+    if body.wait:
+        extra_params["wait"] = True
+    extra_params_arg: dict[str, Any] | None = extra_params if extra_params else None
 
     async def _post_chat_auto_if_needed(result: Any) -> Any:
         if not body.end:
@@ -606,7 +611,7 @@ async def operator_chat(
                 on_token=on_token,
                 on_stream_target=on_stream_target,
                 cancel_event=lock.cancel_event,
-                extra_params=extra_params,
+                extra_params=extra_params_arg,
             )
             return await _post_chat_auto_if_needed(r)
 
@@ -631,7 +636,7 @@ async def operator_chat(
                 on_token=on_token,
                 on_stream_target=on_stream_target,
                 cancel_event=lock.cancel_event,
-                extra_params=extra_params,
+                extra_params=extra_params_arg,
             )
             return await _post_chat_auto_if_needed(r)
 
@@ -652,7 +657,7 @@ async def operator_chat(
                 retry=body.retry,
                 on_token=on_token,
                 cancel_event=lock.cancel_event,
-                extra_params=extra_params,
+                extra_params=extra_params_arg,
             )
             return await _post_chat_auto_if_needed(r)
 
