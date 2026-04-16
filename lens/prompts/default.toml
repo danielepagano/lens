@@ -277,7 +277,7 @@ chat.instruction_with_directions = '''You are {as_name}.
 
 Scene: {directions}
 
-Let this setting and moment inform how the scene opens — do not quote or paraphrase it directly.{with_line}
+The same Scene line will be written into the transcript before your reply; open in character without restating that header verbatim. Let this setting and moment inform how the scene opens — do not quote or paraphrase it directly.{with_line}
 
 Blockquotes from {with_name} in the passage are their material — attributed lines are speech; plain `> …` in that run is still their action or beat, not author voice.
 

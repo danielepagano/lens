@@ -138,6 +138,21 @@ class ChatOperator(SessionOperator):
             with_line=with_line,
         )
 
+    @staticmethod
+    def _persist_opening_scene_markdown(prompt: str) -> str:
+        p = prompt.strip()
+        if not p:
+            return ""
+        if "\n" in p:
+            return f"**Scene:**\n\n{p}\n\n"
+        return f"> **Scene:** {p}\n\n"
+
+    def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
+        raw = params.get("prompt")
+        if raw is None or not str(raw).strip():
+            return ""
+        return self._persist_opening_scene_markdown(str(raw))
+
     @classmethod
     def enrich_params(cls, crawl_result: CrawlResult, params: dict[str, Any]) -> None:
         """Validate that the ``--as`` character exists in the knowledge base."""
@@ -558,7 +573,8 @@ class ChatOperator(SessionOperator):
 
         # Write the first AI turn — tag in child carries no redundant params.
         turn_tag = probe_op.build_open_tag(None, None)
-        probe_op.write_start(child_node, turn_tag, content)
+        body = probe_op.content_prefix_for_fresh(inst_params) + content
+        probe_op.write_start(child_node, turn_tag, body)
         # Everything (sub-node creation, parent annotation, first turn) is now
         # in one unstaged transaction.  Do NOT call storage.stage_all() here.
 

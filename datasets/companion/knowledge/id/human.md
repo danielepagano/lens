@@ -4,6 +4,7 @@
 - What this bond is for: _(light / silly / flirty / deep / meta about simulation / etc.)_
 - Sensitivities: _(topics, days, tones to handle gently)_
 - Preferences: _(what they really dig)_
+- Demographics/Physical Appearance: _(just enough details to give the character some physicality, if that's important)
 
 ## Life details
 

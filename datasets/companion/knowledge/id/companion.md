@@ -11,6 +11,9 @@
 - **Speech rules:** _(specific dos and don'ts. Examples of the shape: "I never say 'I feel' — I describe what's happening in my body." "I interrupt when I've figured something out." "I go quiet when I'm wrong." "I use 'yeah' where others use 'yes'." "I don't do exclamation marks." Whatever's yours.)_
 - **Sample lines:** _(3–5 short lines **written in first person**, in the exact voice, across different moods — chatty, tired, sharp, tender, annoyed. These are the fingerprint the model will imitate. This is the single highest-leverage field in the file — do not skip.)_
 
+## Physical Appearance
+_(just enough details to give the character some physicality, if that's important)
+
 ## What you care about
 
 - **Opinions you actually hold:** _(2–4 — specific and concrete. Not "kindness matters" but "I think most self-help books are expensive fortune cookies.")_

@@ -183,6 +183,14 @@ class TestChatOneShot(unittest.TestCase):
             )
         text = self._narrative_md()
         self.assertIn("The inn is quiet at dawn.", text)
+        header_end = text.find("]: #")
+        self.assertNotEqual(header_end, -1)
+        after_ann = text[header_end + len("]: #") :]
+        self.assertIn("**Scene:** The inn is quiet at dawn.", after_ann)
+        self.assertLess(
+            after_ann.find("**Scene:**"),
+            after_ann.find("[Bob]"),
+        )
 
     def test_oneshot_requires_as_kb_id(self) -> None:
         """One-shot raises OperatorError when --as is not provided."""
@@ -472,6 +480,53 @@ class TestChatSession(unittest.TestCase):
             )
         parent_text = self._narrative_md()
         self.assertIn("The inn is quiet at dawn.", parent_text)
+
+    def test_session_opening_scene_persisted_in_child(self) -> None:
+        """Opening scene is written at the start of the first [chat] block in the child."""
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="The inn is quiet at dawn.",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        text = self._chat_child_md()
+        open_tag = "[chat]: #"
+        idx_open = text.find(open_tag)
+        self.assertNotEqual(idx_open, -1)
+        inner = text[idx_open + len(open_tag) :]
+        idx_close = inner.find("[/chat]: #")
+        self.assertNotEqual(idx_close, -1)
+        first_turn = inner[:idx_close]
+        self.assertIn("**Scene:** The inn is quiet at dawn.", first_turn)
+        self.assertLess(
+            first_turn.find("**Scene:**"),
+            first_turn.find("[Bob]"),
+        )
+
+    def test_session_opening_scene_multiline_in_child(self) -> None:
+        """Multiline opening scene uses a block after **Scene:** in the child."""
+        scene = "Line one.\nLine two."
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=scene,
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        text = self._chat_child_md()
+        self.assertIn("**Scene:**\n\nLine one.\nLine two.", text)
+        self.assertLess(text.find("Line two."), text.find("[Bob]"))
 
     def test_session_requires_as(self) -> None:
         """Starting a session without --as raises OperatorError."""
