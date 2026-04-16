@@ -13,7 +13,6 @@ from fastapi.staticfiles import StaticFiles
 
 from lens.core.project import ProjectSession
 from lens.server import routes as routes_pkg
-from lens.server.streaming import StreamLock
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
@@ -42,10 +41,10 @@ def _configure_lens_server_logging() -> None:
 _configure_lens_server_logging()
 
 
-def create_app(session: ProjectSession) -> FastAPI:
+def create_app(sessions: dict[str, ProjectSession]) -> FastAPI:
     app = FastAPI(title="Lens API")
-    app.state.session = session
-    app.state.stream_lock = StreamLock()
+    app.state.projects = sessions       # dict[str, ProjectSession]
+    app.state.stream_locks = {}         # dict[str, StreamLock] — lazily created per project
     for _importer, modname, _ispkg in sorted(
         pkgutil.iter_modules(routes_pkg.__path__), key=lambda m: m[1]
     ):
@@ -68,10 +67,11 @@ def create_app(session: ProjectSession) -> FastAPI:
 
 
 def _create_app_from_cwd() -> FastAPI:
-    from lens.core.project import require_lens_context
+    from lens.core.project import discover_projects
 
-    git_root, project_root = require_lens_context(Path.cwd())
-    return create_app(ProjectSession(git_root, project_root))
+    projects = discover_projects(Path.cwd())
+    sessions = {slug: ProjectSession(git_root, proj) for slug, git_root, proj in projects}
+    return create_app(sessions)
 
 
 class _LazyApp:

@@ -1,3 +1,16 @@
+import { get as storeGet } from 'svelte/store'
+import { currentProject } from '../stores/project'
+
+function projectPath(path: string): string {
+  const slug = storeGet(currentProject)
+  if (!slug) throw new Error('No project selected')
+  return `/${slug}${path}`
+}
+
+export function getMountFilePath(path: string): string {
+  return projectPath(`/mount/file/${path}`)
+}
+
 async function get(path: string): Promise<unknown> {
   const r = await fetch(path)
   if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`)
@@ -41,6 +54,13 @@ async function del(path: string): Promise<unknown> {
   return text ? JSON.parse(text) : undefined
 }
 
+export interface ProjectInfo {
+  slug: string
+}
+
+export const getProjects = (): Promise<ProjectInfo[]> =>
+  get('/projects') as Promise<ProjectInfo[]>
+
 export interface Stats {
   active_narrative: string | null
   narratives: string[]
@@ -80,13 +100,14 @@ export interface NodeData {
   children: string[]
 }
 
-export const getStats = (): Promise<Stats> => get('/stats') as Promise<Stats>
+export const getStats = (): Promise<Stats> =>
+  get(projectPath('/stats')) as Promise<Stats>
 export const getTree = (): Promise<TreeNode[]> =>
-  get('/narrative/tree') as Promise<TreeNode[]>
+  get(projectPath('/narrative/tree')) as Promise<TreeNode[]>
 export const getNode = (addr: string): Promise<NodeData> =>
-  get(`/narrative/node/${addr}`) as Promise<NodeData>
+  get(projectPath(`/narrative/node/${addr}`)) as Promise<NodeData>
 export const setActiveNarrative = withStats((slug: string): Promise<{ active: string }> =>
-  post('/narrative/narratives/active', { narrative: slug }) as Promise<{
+  post(projectPath('/narrative/narratives/active'), { narrative: slug }) as Promise<{
     active: string
   }>
 )
@@ -124,7 +145,7 @@ async function errorDetail(r: Response): Promise<string> {
 // ---- Unified stream cancel ----
 
 export async function cancelStream(): Promise<void> {
-  const r = await fetch('/stream/cancel', { method: 'POST' })
+  const r = await fetch(projectPath('/stream/cancel'), { method: 'POST' })
   if (!r.ok) throw new Error(`HTTP ${r.status}: /stream/cancel`)
 }
 
@@ -243,7 +264,7 @@ export const runWrite = (
   params: WriteParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/write', params, onEvent)
+  runStreamingOp(projectPath('/operator/write'), params, onEvent)
 
 export interface WriteManualResult {
   status: string
@@ -253,7 +274,7 @@ export interface WriteManualResult {
 export const runWriteManual = withStats((
   params: { text: string }
 ): Promise<WriteManualResult> =>
-  post('/operator/write/manual', params) as Promise<WriteManualResult>
+  post(projectPath('/operator/write/manual'), params) as Promise<WriteManualResult>
 )
 
 export interface PlayParams {
@@ -274,7 +295,7 @@ export const runPlay = (
   params: PlayParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/play', params, onEvent)
+  runStreamingOp(projectPath('/operator/play'), params, onEvent)
 
 export interface DesignParams {
   prompt?: string
@@ -292,7 +313,7 @@ export const runDesign = (
   params: DesignParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/design', params, onEvent)
+  runStreamingOp(projectPath('/operator/design'), params, onEvent)
 
 export interface AdvanceParams {
   days?: number
@@ -309,7 +330,7 @@ export const runAdvance = (
   params: AdvanceParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/advance', params, onEvent)
+  runStreamingOp(projectPath('/operator/advance'), params, onEvent)
 
 export interface ChatParams {
   prompt?: string
@@ -330,7 +351,7 @@ export const runChat = (
   params: ChatParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/chat', params, onEvent)
+  runStreamingOp(projectPath('/operator/chat'), params, onEvent)
 
 export interface EditParams {
   address: string
@@ -350,7 +371,7 @@ export const runEdit = (
   params: EditParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/edit', params, onEvent)
+  runStreamingOp(projectPath('/operator/edit'), params, onEvent)
 
 export interface SectionStartParams {
   id: string
@@ -366,7 +387,7 @@ export interface SectionStartResult {
 export const runSectionStart = withStats((
   params: SectionStartParams
 ): Promise<SectionStartResult> =>
-  post('/operator/section/start', params) as Promise<SectionStartResult>
+  post(projectPath('/operator/section/start'), params) as Promise<SectionStartResult>
 )
 
 export interface SectionEndParams {
@@ -379,7 +400,7 @@ export const runSectionEnd = (
   params: SectionEndParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/section/end', params, onEvent)
+  runStreamingOp(projectPath('/operator/section/end'), params, onEvent)
 
 export interface CollateParams {
   id: string
@@ -397,7 +418,7 @@ export const runCollate = (
   params: CollateParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/collate', params, onEvent)
+  runStreamingOp(projectPath('/operator/collate'), params, onEvent)
 
 export type CompressAggressiveness = 'low' | 'medium' | 'high'
 
@@ -418,7 +439,7 @@ export const runCompress = (
   params: CompressParams,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
-  runStreamingOp('/operator/compress', params, onEvent)
+  runStreamingOp(projectPath('/operator/compress'), params, onEvent)
 
 // ---- KB API ----
 
@@ -439,7 +460,7 @@ export const getKbTags = (params?: { type?: string; prefix?: string }): Promise<
   if (params?.type) qs.set('type', params.type)
   if (params?.prefix) qs.set('prefix', params.prefix)
   const query = qs.toString()
-  return get(`/kb/tags${query ? '?' + query : ''}`) as Promise<string[]>
+  return get(projectPath(`/kb/tags${query ? '?' + query : ''}`)) as Promise<string[]>
 }
 
 export const getKbItems = (params?: { type?: string; tags?: string }): Promise<KbItem[]> => {
@@ -447,14 +468,14 @@ export const getKbItems = (params?: { type?: string; tags?: string }): Promise<K
   if (params?.type) qs.set('type', params.type)
   if (params?.tags) qs.set('tags', params.tags)
   const query = qs.toString()
-  return get(`/kb/items${query ? '?' + query : ''}`) as Promise<KbItem[]>
+  return get(projectPath(`/kb/items${query ? '?' + query : ''}`)) as Promise<KbItem[]>
 }
 
 export const getKbItem = (id: string): Promise<KbItemDetail> =>
-  get(`/kb/item/${id}`) as Promise<KbItemDetail>
+  get(projectPath(`/kb/item/${id}`)) as Promise<KbItemDetail>
 
 export const saveKbItem = withStats((id: string, content: string): Promise<{ id: string }> =>
-  put(`/kb/item/${id}`, { content }) as Promise<{ id: string }>
+  put(projectPath(`/kb/item/${id}`), { content }) as Promise<{ id: string }>
 )
 
 export const createKbItem = withStats((
@@ -462,7 +483,7 @@ export const createKbItem = withStats((
   content?: string,
   useTemplate?: boolean
 ): Promise<{ id: string; content: string }> =>
-  post('/kb/items', { id, content, use_template: useTemplate ?? false }) as Promise<{
+  post(projectPath('/kb/items'), { id, content, use_template: useTemplate ?? false }) as Promise<{
     id: string
     content: string
   }>
@@ -488,19 +509,19 @@ export const patchKbItemTags = withStats((
   id: string,
   body: { add: string[]; remove: string[] }
 ): Promise<KbTagResponse> =>
-  patch(`/kb/item/${encodeURIComponent(id)}/tags`, body) as Promise<KbTagResponse>
+  patch(projectPath(`/kb/item/${encodeURIComponent(id)}/tags`), body) as Promise<KbTagResponse>
 )
 
 export const deleteKbItem = withStats((id: string): Promise<{ id: string }> =>
-  del(`/kb/item/${encodeURIComponent(id)}`) as Promise<{ id: string }>
+  del(projectPath(`/kb/item/${encodeURIComponent(id)}`)) as Promise<{ id: string }>
 )
 
 export const renameKbItem = withStats((oldId: string, newId: string): Promise<KbRenameResponse> =>
-  post('/kb/rename', { old_id: oldId, new_id: newId }) as Promise<KbRenameResponse>
+  post(projectPath('/kb/rename'), { old_id: oldId, new_id: newId }) as Promise<KbRenameResponse>
 )
 
 export const copyKbItem = withStats((sourceId: string, targetId: string): Promise<KbCopyResponse> =>
-  post('/kb/copy', { source_id: sourceId, target_id: targetId }) as Promise<KbCopyResponse>
+  post(projectPath('/kb/copy'), { source_id: sourceId, target_id: targetId }) as Promise<KbCopyResponse>
 )
 
 export interface KbWithTagResponse {
@@ -514,7 +535,7 @@ export const getKbWithTag = (
   tags: string[],
   options?: { expand?: boolean; recurse?: number | null; same_type_only?: boolean; type_filter?: string | null }
 ): Promise<KbWithTagResponse> =>
-  post('/kb/with-tag', { tags, ...options }) as Promise<KbWithTagResponse>
+  post(projectPath('/kb/with-tag'), { tags, ...options }) as Promise<KbWithTagResponse>
 
 // ---- Transaction API ----
 
@@ -526,24 +547,24 @@ export interface TransactionActionResponse {
 }
 
 export const rollbackTransaction = withStats((): Promise<TransactionActionResponse> =>
-  post('/rollback', {}) as Promise<TransactionActionResponse>
+  post(projectPath('/rollback'), {}) as Promise<TransactionActionResponse>
 )
 
 export const commitTransaction = withStats((): Promise<TransactionActionResponse> =>
-  post('/commit', {}) as Promise<TransactionActionResponse>
+  post(projectPath('/commit'), {}) as Promise<TransactionActionResponse>
 )
 
 export const checkpointTransaction = withStats((opts?: {
   message?: string
   push?: boolean
 }): Promise<TransactionActionResponse> =>
-  post('/checkpoint', opts ?? {}) as Promise<TransactionActionResponse>
+  post(projectPath('/checkpoint'), opts ?? {}) as Promise<TransactionActionResponse>
 )
 
 export const refreshTransaction = withStats((opts?: {
   reset?: boolean
 }): Promise<TransactionActionResponse> =>
-  post('/refresh', opts ?? {}) as Promise<TransactionActionResponse>
+  post(projectPath('/refresh'), opts ?? {}) as Promise<TransactionActionResponse>
 )
 
 export interface TxStatusCommit {
@@ -563,7 +584,7 @@ export interface TxStatusResponse {
 }
 
 export const getTxStatus = (): Promise<TxStatusResponse> =>
-  get('/tx/status') as Promise<TxStatusResponse>
+  get(projectPath('/tx/status')) as Promise<TxStatusResponse>
 
 // ---- Narrative API ----
 
@@ -581,7 +602,7 @@ export const narrativePin = withStats((
   ids: string[],
   node?: string
 ): Promise<PinResponse> =>
-  post('/narrative/pin', { operation, ids, node }) as Promise<PinResponse>
+  post(projectPath('/narrative/pin'), { operation, ids, node }) as Promise<PinResponse>
 )
 
 export interface RewindParams {
@@ -597,7 +618,7 @@ export interface RewindResponse {
 }
 
 export const narrativeRewind = withStats((params: RewindParams): Promise<RewindResponse> =>
-  post('/narrative/rewind', params) as Promise<RewindResponse>
+  post(projectPath('/narrative/rewind'), params) as Promise<RewindResponse>
 )
 
 export interface RenameNodeParams {
@@ -613,7 +634,7 @@ export interface RenameNodeResponse {
 }
 
 export const renameNode = withStats((params: RenameNodeParams): Promise<RenameNodeResponse> =>
-  post('/narrative/rename', params) as Promise<RenameNodeResponse>
+  post(projectPath('/narrative/rename'), params) as Promise<RenameNodeResponse>
 )
 
 export interface MountEntry {
@@ -634,13 +655,13 @@ export interface AttachParams {
 }
 
 export const browseMountDir = (path = ''): Promise<MountEntry[]> =>
-  get(`/mount/browse?path=${encodeURIComponent(path)}`) as Promise<MountEntry[]>
+  get(projectPath(`/mount/browse?path=${encodeURIComponent(path)}`)) as Promise<MountEntry[]>
 
 export const attachFile = withStats((path: string, params?: AttachParams): Promise<AttachResponse> => {
   const body: { path: string; address?: string; line?: number } = { path }
   if (params?.address !== undefined) body.address = params.address
   if (params?.line !== undefined) body.line = params.line
-  return post('/attach', body) as Promise<AttachResponse>
+  return post(projectPath('/attach'), body) as Promise<AttachResponse>
 })
 
 async function postFormData(path: string, body: FormData): Promise<unknown> {
@@ -659,7 +680,7 @@ export const uploadMountFile = withStats((dir: string, file: File): Promise<Uplo
   const form = new FormData()
   form.append('dir', dir)
   form.append('file', file)
-  return postFormData('/mount/upload', form) as Promise<UploadMountFileResponse>
+  return postFormData(projectPath('/mount/upload'), form) as Promise<UploadMountFileResponse>
 })
 
 export interface DeleteMountPathResponse {
@@ -669,7 +690,7 @@ export interface DeleteMountPathResponse {
 }
 
 export const deleteMountPath = withStats((path: string): Promise<DeleteMountPathResponse> =>
-  del(`/mount/file/${path}`) as Promise<DeleteMountPathResponse>
+  del(projectPath(`/mount/file/${path}`)) as Promise<DeleteMountPathResponse>
 )
 
 export const getNodeAddresses = async (): Promise<string[]> => {

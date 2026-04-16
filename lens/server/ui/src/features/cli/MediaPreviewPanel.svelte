@@ -1,5 +1,6 @@
 <script lang="ts">
   import { mediaPreviewRequest } from '../../stores/ui'
+  import { currentProject } from '../../stores/project'
 
   const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
   const VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.avi']
@@ -16,10 +17,11 @@
       : PREVIEW_EXTS.includes(ext)
         ? 'preview'
         : 'file'
+  $: prefix = $currentProject ? `/${$currentProject}` : ''
   $: src =
     mediaKind === 'preview'
-      ? `/mount/preview/${path.replace(/^\//, '')}`
-      : `/mount/file/${path.replace(/^\//, '')}`
+      ? `${prefix}/mount/preview/${path.replace(/^\//, '')}`
+      : `${prefix}/mount/file/${path.replace(/^\//, '')}`
 
   $: if ($mediaPreviewRequest) {
     dialog?.showModal()

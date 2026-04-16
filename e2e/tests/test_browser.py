@@ -98,9 +98,9 @@ class TestBrowser:
         )  # type: ignore[union-attr]
         assert page.is_visible('[data-testid="tree-browser"]')  # type: ignore[union-attr]
 
-    def test_node_navigation(self, page: "Page", live_server_url: str) -> None:
+    def test_node_navigation(self, page: "Page", live_server_url: str, project_slug: str) -> None:
         """Navigating to #story loads Lorem ipsum content in MarkdownView."""
-        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
         page.locator('[data-testid="markdown-view"]').get_by_text("Lorem").wait_for(
             timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
@@ -112,6 +112,7 @@ class TestBrowser:
         page: "Page",
         live_server_url: str,
         lens_project_dir: Path | None,
+        project_slug: str,
     ) -> None:
         """Pending edit transaction for #story is rendered as green additions and red removals."""
         if lens_project_dir is None:
@@ -168,7 +169,7 @@ class TestBrowser:
         t.start()
         t.join()
 
-        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
         page.wait_for_selector(
             '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
@@ -196,6 +197,7 @@ class TestBrowser:
         self,
         page: "Page",
         live_server_url: str,
+        project_slug: str,
     ) -> None:
         """Typing `/edit / ` leaves the `start` line slot active: line-picker UI, no rendered MD.
 
@@ -205,7 +207,7 @@ class TestBrowser:
         The ``edit --replace`` narrative UX is tracked separately (see
         ``test_edit_replace_after_line_pick_shows_inline_codemirror``).
         """
-        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
         page.wait_for_selector(
             '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
@@ -228,9 +230,10 @@ class TestBrowser:
         self,
         page: "Page",
         live_server_url: str,
+        project_slug: str,
     ) -> None:
         """After `/edit / `, two line picks, ``--replace``, **Space** (not Enter), inline CodeMirror must mount."""
-        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
         page.wait_for_selector(
             '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
@@ -267,9 +270,10 @@ class TestBrowser:
         self,
         page: "Page",
         live_server_url: str,
+        project_slug: str,
     ) -> None:
         """``/edit / <start> <end> --replace`` as one string, then **Space** (not Enter)."""
-        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
         page.wait_for_selector(
             '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
@@ -291,6 +295,7 @@ class TestBrowser:
         self,
         page: "Page",
         live_server_url: str,
+        project_slug: str,
     ) -> None:
         """KB viewer: open an item, Edit, change body text, Save — change must appear after save.
 
@@ -303,7 +308,7 @@ class TestBrowser:
         marker = " [[e2e-kb-editor-append]]"
         page.set_viewport_size({"width": 1280, "height": 720})  # type: ignore[union-attr]
         # Full reload to clear stale client state from earlier tests.
-        page.goto(f"{live_server_url}#story", wait_until="networkidle")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story", wait_until="networkidle")  # type: ignore[union-attr]
         page.wait_for_selector(
             '[data-testid="top-bar"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
@@ -365,9 +370,10 @@ class TestBrowser:
         self,
         page: "Page",
         live_server_url: str,
+        project_slug: str,
     ) -> None:
         """`/write --manual` with no text opens the inline CodeMirror append editor."""
-        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
         page.wait_for_selector(
             '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
@@ -389,6 +395,7 @@ class TestBrowser:
         self,
         page: "Page",
         live_server_url: str,
+        project_slug: str,
         lens_project_dir: "Path | None",
     ) -> None:
         """`/write --manual`, type text, Ctrl+Enter → text appended to node, no annotations."""
@@ -397,7 +404,7 @@ class TestBrowser:
 
         marker = "[[e2e-write-manual-append]]"
 
-        page.goto(f"{live_server_url}#story")  # type: ignore[union-attr]
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
         page.wait_for_selector(
             '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]

@@ -22,21 +22,29 @@ import urllib.request
 class TestApiSmoke:
     """Verify that core API routes respond correctly against the test project."""
 
-    def test_health(self, live_server_url: str) -> None:
+    def test_projects_list(self, live_server_url: str, project_slug: str) -> None:
+        with urllib.request.urlopen(f"{live_server_url}/projects") as resp:
+            data = json.loads(resp.read())
+        assert isinstance(data, list)
+        slugs = [p["slug"] for p in data]
+        assert project_slug in slugs
+
+    def test_health(self, live_server_url: str, project_slug: str) -> None:
         with urllib.request.urlopen(f"{live_server_url}/health") as resp:
             data = json.loads(resp.read())
-        assert data == {"status": "ok"}
+        assert data["status"] == "ok"
+        assert project_slug in data["projects"]
 
-    def test_stats_has_narrative(self, live_server_url: str) -> None:
-        with urllib.request.urlopen(f"{live_server_url}/stats") as resp:
+    def test_stats_has_narrative(self, live_server_url: str, project_slug: str) -> None:
+        with urllib.request.urlopen(f"{live_server_url}/{project_slug}/stats") as resp:
             data = json.loads(resp.read())
         assert data["active_narrative"] == "story"
         assert data["kb_count"] >= 2
         assert "effective_pins_at_cursor" in data
         assert "remember_pins_at_cursor" in data
 
-    def test_tree_returns_list(self, live_server_url: str) -> None:
-        with urllib.request.urlopen(f"{live_server_url}/narrative/tree") as resp:
+    def test_tree_returns_list(self, live_server_url: str, project_slug: str) -> None:
+        with urllib.request.urlopen(f"{live_server_url}/{project_slug}/narrative/tree") as resp:
             data = json.loads(resp.read())
         assert isinstance(data, list)
         # /narrative/tree returns the children of the active narrative (not the root level);
@@ -46,7 +54,7 @@ class TestApiSmoke:
             assert "key" in node
             assert "children" in node
 
-    def test_node_content(self, live_server_url: str) -> None:
-        with urllib.request.urlopen(f"{live_server_url}/narrative/node/story") as resp:
+    def test_node_content(self, live_server_url: str, project_slug: str) -> None:
+        with urllib.request.urlopen(f"{live_server_url}/{project_slug}/narrative/node/story") as resp:
             data = json.loads(resp.read())
         assert "Lorem ipsum" in data["content"]

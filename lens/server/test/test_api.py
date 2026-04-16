@@ -24,56 +24,58 @@ class TestHealth:
     def test_ok(self, test_client: TestClient) -> None:
         r = test_client.get("/health")
         assert r.status_code == 200
-        assert r.json() == {"status": "ok"}
+        data = r.json()
+        assert data["status"] == "ok"
+        assert "test" in data["projects"]
 
 
 class TestStats:
     def test_returns_200(self, test_client: TestClient) -> None:
-        r = test_client.get("/stats")
+        r = test_client.get("/test/stats")
         assert r.status_code == 200
 
     def test_active_narrative(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         assert data["active_narrative"] == "story"
 
     def test_narratives_list_included(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         assert "narratives" in data
         assert isinstance(data["narratives"], list)
         assert "story" in data["narratives"]
 
     def test_kb_count_positive(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         # person.amy and place.forest were added during setup.
         assert data["kb_count"] >= 2
 
     def test_cursor_present(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         # After setup_test_project the cursor must be somewhere inside "story".
         assert data["cursor"] is not None
         assert "story" in data["cursor"]
 
     def test_includes_transaction(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         assert "transaction" in data
         assert data["has_pending"] is False
         assert data["transaction"] is None
 
     def test_includes_effective_pins_at_cursor(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         assert "effective_pins_at_cursor" in data
         value = data["effective_pins_at_cursor"]
         assert isinstance(value, list)
 
     def test_includes_remember_pins_at_cursor(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         assert "remember_pins_at_cursor" in data
         assert isinstance(data["remember_pins_at_cursor"], dict)
 
 
 class TestTree:
     def test_returns_list(self, test_client: TestClient) -> None:
-        r = test_client.get("/narrative/tree")
+        r = test_client.get("/test/narrative/tree")
         assert r.status_code == 200
         data = r.json()
         assert isinstance(data, list)
@@ -82,7 +84,7 @@ class TestTree:
         # Tree returns children of the active narrative, not all roots.
         # The test project's root node may have no children, so the list
         # may be empty — we just verify shape of any items that are present.
-        data = test_client.get("/narrative/tree").json()
+        data = test_client.get("/test/narrative/tree").json()
         for item in data:
             assert "address" in item
             assert "key" in item
@@ -91,43 +93,43 @@ class TestTree:
 
 class TestNode:
     def test_root_node_by_narrative(self, test_client: TestClient) -> None:
-        r = test_client.get("/narrative/node/story")
+        r = test_client.get("/test/narrative/node/story")
         assert r.status_code == 200
         data = r.json()
         assert "content" in data
         assert "address" in data
 
     def test_root_node_has_content(self, test_client: TestClient) -> None:
-        data = test_client.get("/narrative/node/story").json()
+        data = test_client.get("/test/narrative/node/story").json()
         # setup_test_project ran the write operator → Lorem Ipsum should be there.
         assert "Lorem ipsum" in data["content"]
 
     def test_missing_node_returns_404(self, test_client: TestClient) -> None:
-        r = test_client.get("/narrative/node/story/nonexistent-chapter")
+        r = test_client.get("/test/narrative/node/story/nonexistent-chapter")
         assert r.status_code == 404
 
     def test_children_is_list(self, test_client: TestClient) -> None:
-        data = test_client.get("/narrative/node/story").json()
+        data = test_client.get("/test/narrative/node/story").json()
         assert isinstance(data["children"], list)
 
 
 class TestNarratives:
     def test_set_active_and_verify_via_stats(self, test_client: TestClient) -> None:
         r = test_client.post(
-            "/narrative/narratives/active", json={"narrative": "api-test-narrative"}
+            "/test/narrative/narratives/active", json={"narrative": "api-test-narrative"}
         )
         assert r.status_code == 200
         assert r.json()["active"] == "api-test-narrative"
-        assert test_client.get("/stats").json()["active_narrative"] == "api-test-narrative"
+        assert test_client.get("/test/stats").json()["active_narrative"] == "api-test-narrative"
 
-        r2 = test_client.post("/narrative/narratives/active", json={"narrative": "story"})
+        r2 = test_client.post("/test/narrative/narratives/active", json={"narrative": "story"})
         assert r2.status_code == 200
         assert r2.json()["active"] == "story"
-        assert test_client.get("/stats").json()["active_narrative"] == "story"
+        assert test_client.get("/test/stats").json()["active_narrative"] == "story"
 
     def test_invalid_slug_returns_422(self, test_client: TestClient) -> None:
         r = test_client.post(
-            "/narrative/narratives/active", json={"narrative": "bad slug!"}
+            "/test/narrative/narratives/active", json={"narrative": "bad slug!"}
         )
         assert r.status_code == 422
 
@@ -172,7 +174,7 @@ def attach_client(tmp_path: Path) -> Generator[TestClient, None, None]:
     _init_repo_for_attach(tmp_path)
 
     session = ProjectSession(tmp_path, tmp_path)
-    app = create_app(session)
+    app = create_app({"test": session})
     with TestClient(app) as client:
         yield client
 
@@ -180,12 +182,12 @@ def attach_client(tmp_path: Path) -> Generator[TestClient, None, None]:
 class TestMountBrowse:
     def test_no_mount_returns_empty(self, test_client: TestClient) -> None:
         # The shared test project has no mount_point
-        r = test_client.get("/mount/browse")
+        r = test_client.get("/test/mount/browse")
         assert r.status_code == 200
         assert r.json() == []
 
     def test_root_lists_entries(self, attach_client: TestClient) -> None:
-        r = attach_client.get("/mount/browse")
+        r = attach_client.get("/test/mount/browse")
         assert r.status_code == 200
         data = r.json()
         names = [e["name"] for e in data]
@@ -193,35 +195,35 @@ class TestMountBrowse:
         assert "sub" in names
 
     def test_entries_have_is_dir_flag(self, attach_client: TestClient) -> None:
-        data = attach_client.get("/mount/browse").json()
+        data = attach_client.get("/test/mount/browse").json()
         dirs = [e for e in data if e["is_dir"]]
         files = [e for e in data if not e["is_dir"]]
         assert any(d["name"] == "sub" for d in dirs)
         assert any(f["name"] == "hero.jpg" for f in files)
 
     def test_hidden_files_excluded(self, attach_client: TestClient) -> None:
-        data = attach_client.get("/mount/browse").json()
+        data = attach_client.get("/test/mount/browse").json()
         names = [e["name"] for e in data]
         assert ".hidden" not in names
 
     def test_unsupported_extension_files_excluded(self, attach_client: TestClient) -> None:
-        data = attach_client.get("/mount/browse").json()
+        data = attach_client.get("/test/mount/browse").json()
         names = [e["name"] for e in data]
         assert "script.sh" not in names
 
     def test_txt_file_included(self, attach_client: TestClient) -> None:
-        data = attach_client.get("/mount/browse").json()
+        data = attach_client.get("/test/mount/browse").json()
         names = [e["name"] for e in data]
         assert "notes.txt" in names
 
     def test_subdirectory_listing(self, attach_client: TestClient) -> None:
-        r = attach_client.get("/mount/browse?path=sub")
+        r = attach_client.get("/test/mount/browse?path=sub")
         assert r.status_code == 200
         data = r.json()
         assert any(e["name"] == "photo.png" for e in data)
 
     def test_dirs_sorted_before_files(self, attach_client: TestClient) -> None:
-        data = attach_client.get("/mount/browse").json()
+        data = attach_client.get("/test/mount/browse").json()
         # All dirs should appear before all files
         kinds = ["dir" if e["is_dir"] else "file" for e in data]
         dir_indices = [i for i, k in enumerate(kinds) if k == "dir"]
@@ -232,38 +234,38 @@ class TestMountBrowse:
 
 class TestMountProxyFile:
     def test_no_mount_returns_404(self, test_client: TestClient) -> None:
-        r = test_client.get("/mount/file/hero.jpg")
+        r = test_client.get("/test/mount/file/hero.jpg")
         assert r.status_code == 404
 
     def test_existing_file_returns_200(self, attach_client: TestClient) -> None:
-        r = attach_client.get("/mount/file/hero.jpg")
+        r = attach_client.get("/test/mount/file/hero.jpg")
         assert r.status_code == 200
 
     def test_missing_file_returns_404(self, attach_client: TestClient) -> None:
-        r = attach_client.get("/mount/file/nonexistent.jpg")
+        r = attach_client.get("/test/mount/file/nonexistent.jpg")
         assert r.status_code == 404
 
     def test_path_traversal_blocked(self, attach_client: TestClient) -> None:
         # ASGI normalizes `..` segments in URLs before routing, so the path
         # `/mount/file/../../etc/passwd` becomes `/etc/passwd` and returns 404
         # (no route match).  Either 400 or 404 confirms the traversal is blocked.
-        r = attach_client.get("/mount/file/../../etc/passwd")
+        r = attach_client.get("/test/mount/file/../../etc/passwd")
         assert r.status_code in (400, 404)
 
     def test_file_in_subdir(self, attach_client: TestClient) -> None:
-        r = attach_client.get("/mount/file/sub/photo.png")
+        r = attach_client.get("/test/mount/file/sub/photo.png")
         assert r.status_code == 200
 
 
 class TestAttachEndpoint:
     def test_no_mount_returns_error(self, test_client: TestClient) -> None:
-        r = test_client.post("/attach", json={"path": "hero.jpg"})
+        r = test_client.post("/test/attach", json={"path": "hero.jpg"})
         assert r.status_code == 200
         assert r.json()["status"] == "error"
         assert "mount_point" in r.json()["detail"]
 
     def test_valid_image_returns_ok(self, attach_client: TestClient) -> None:
-        r = attach_client.post("/attach", json={"path": "hero.jpg"})
+        r = attach_client.post("/test/attach", json={"path": "hero.jpg"})
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "ok"
@@ -271,26 +273,26 @@ class TestAttachEndpoint:
         assert "hero.jpg" in data["embed"]
 
     def test_video_attach_returns_ok(self, attach_client: TestClient) -> None:
-        r = attach_client.post("/attach", json={"path": "clip.mp4"})
+        r = attach_client.post("/test/attach", json={"path": "clip.mp4"})
         assert r.status_code == 200
         assert r.json()["status"] == "ok"
         assert r.json()["type"] == "video"
 
     def test_unsupported_extension_returns_error(self, attach_client: TestClient) -> None:
-        r = attach_client.post("/attach", json={"path": "file.xyz"})
+        r = attach_client.post("/test/attach", json={"path": "file.xyz"})
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "error"
         assert "unsupported" in data["detail"]
 
     def test_missing_file_returns_error(self, attach_client: TestClient) -> None:
-        r = attach_client.post("/attach", json={"path": "ghost.png"})
+        r = attach_client.post("/test/attach", json={"path": "ghost.png"})
         assert r.status_code == 200
         assert r.json()["status"] == "error"
 
     def test_attach_with_address_and_line_returns_ok(self, attach_client: TestClient) -> None:
         r = attach_client.post(
-            "/attach",
+            "/test/attach",
             json={"path": "hero.jpg", "address": "/", "line": 1},
         )
         assert r.status_code == 200
@@ -300,7 +302,7 @@ class TestAttachEndpoint:
 
     def test_attach_invalid_line_returns_error(self, attach_client: TestClient) -> None:
         r = attach_client.post(
-            "/attach",
+            "/test/attach",
             json={"path": "hero.jpg", "address": "/", "line": 999},
         )
         assert r.status_code == 200
@@ -310,9 +312,9 @@ class TestAttachEndpoint:
 
 class TestStatsHasMount:
     def test_has_mount_false_without_config(self, test_client: TestClient) -> None:
-        data = test_client.get("/stats").json()
+        data = test_client.get("/test/stats").json()
         assert data["has_mount"] is False
 
     def test_has_mount_true_with_config(self, attach_client: TestClient) -> None:
-        data = attach_client.get("/stats").json()
+        data = attach_client.get("/test/stats").json()
         assert data["has_mount"] is True

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { selectedKbId, treeRefreshTrigger } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
+  import { currentProject } from '../../stores/project'
   import { stats } from '../../stores/stats'
   import {
     getKbItem,
@@ -147,7 +148,7 @@
     try {
       await deleteKbItem(item.id)
       selectedKbId.set(null)
-      window.location.hash = $currentAddress || ''
+      window.location.hash = [$currentProject, $currentAddress || ''].filter(Boolean).join('/')
       treeRefreshTrigger.update((n) => n + 1)
       closeActions()
     } catch (e) {
@@ -165,8 +166,7 @@
     try {
       await renameKbItem(item.id, newId)
       selectedKbId.set(newId)
-      const path = $currentAddress || ''
-      window.location.hash = `${path}?kb=${encodeURIComponent(newId)}`
+      window.location.hash = `${[$currentProject, $currentAddress || ''].filter(Boolean).join('/')}?kb=${encodeURIComponent(newId)}`
       treeRefreshTrigger.update((n) => n + 1)
       closeActions()
     } catch (e) {
@@ -180,8 +180,7 @@
     try {
       await copyKbItem(item.id, targetId)
       selectedKbId.set(targetId)
-      const path = $currentAddress || ''
-      window.location.hash = `${path}?kb=${encodeURIComponent(targetId)}`
+      window.location.hash = `${[$currentProject, $currentAddress || ''].filter(Boolean).join('/')}?kb=${encodeURIComponent(targetId)}`
       treeRefreshTrigger.update((n) => n + 1)
       closeActions()
     } catch (e) {
@@ -203,8 +202,7 @@
   }
 
   function openKbItem(id: string) {
-    const path = $currentAddress || ''
-    window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
+    window.location.hash = `${[$currentProject, $currentAddress || ''].filter(Boolean).join('/')}?kb=${encodeURIComponent(id)}`
   }
 
   function handleKbMarkdownClick(e: MouseEvent) {

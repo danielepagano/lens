@@ -22,10 +22,10 @@ from lens.core.operator import OperatorError
 from lens.core.storage import Storage
 from lens.core.llm import llm_progress_scope
 from lens.core.project import ProjectSession
-from lens.server.dependencies import get_session
+from lens.server.dependencies import get_session, get_stream_lock
 from lens.server.streaming import StreamLock, operator_stream_response
 
-router = APIRouter()
+router = APIRouter(prefix="/{project_slug}")
 _log = logging.getLogger(__name__)
 
 
@@ -267,11 +267,11 @@ def _make_on_token(
 def _init_stream(
     request: Request,
     session: ProjectSession,
+    lock: StreamLock,
 ) -> tuple[Any, StreamLock, asyncio.Queue[dict[str, Any] | None], Any]:
     """Set timezone context, validate narrative exists, return (narrative, lock, event_queue, on_token)."""
     set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
-    lock: StreamLock = request.app.state.stream_lock
     event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
     on_token = _make_on_token(event_queue)
     return narrative, lock, event_queue, on_token
@@ -312,12 +312,14 @@ def _start_operator_stream(
 @router.post("/operator/write")
 async def operator_write(
     body: WriteBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.core.operators.write import WriteOperator
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     _validate_pins(session, body.pins, body.unpins)
     cursor = narrative.find_cursor()
     node_addr = str(cursor.to_address())
@@ -356,6 +358,7 @@ async def operator_write(
 @router.post("/operator/write/manual")
 async def operator_write_manual(
     body: WriteManualBody,
+    project_slug: str,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
     from lens.core.operators.write import WriteOperator
@@ -375,12 +378,14 @@ async def operator_write_manual(
 @router.post("/operator/play")
 async def operator_play(
     body: PlayBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.rpg.operators.play import PlayOperator
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     pins = list(body.pins)
     unpins = list(body.unpins)
     if body.module_id is not None and body.module_id.strip():
@@ -448,12 +453,14 @@ async def operator_play(
 @router.post("/operator/advance")
 async def operator_advance(
     body: AdvanceBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.rpg.operators.advance import AdvanceOperator
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     _validate_pins(session, body.pins, body.unpins)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
@@ -487,12 +494,14 @@ async def operator_advance(
 @router.post("/operator/design")
 async def operator_design(
     body: DesignBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.core.operators.design import DesignOperator
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     pins = list(body.pins)
     unpins = list(body.unpins)
     if body.module_id is not None and body.module_id.strip():
@@ -536,12 +545,14 @@ async def operator_design(
 @router.post("/operator/chat")
 async def operator_chat(
     body: ChatBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.core.operators.chat import ChatOperator
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     pins = list(body.pins)
     unpins = list(body.unpins)
     session_node, _ = ChatOperator.find_active_session(narrative)
@@ -662,14 +673,16 @@ async def operator_chat(
 @router.post("/operator/edit")
 async def operator_edit(
     body: EditBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.core.address import NarrativeAddress
     from lens.core.operators.edit import EditOperator
     from lens.core.project import resolve_address
 
-    _, lock, event_queue, on_token = _init_stream(request, session)
+    _, lock, event_queue, on_token = _init_stream(request, session, lock)
     _validate_pins(session, body.pins, body.unpins)
 
     try:
@@ -711,6 +724,7 @@ async def operator_edit(
 @router.post("/operator/section/start")
 async def operator_section_start(
     body: SectionStartBody,
+    project_slug: str,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
     from lens.core.operators.section import SectionOperator
@@ -733,12 +747,14 @@ async def operator_section_start(
 @router.post("/operator/section/end")
 async def operator_section_end(
     body: SectionEndBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.core.operators.section import SectionOperator
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     cursor = narrative.find_cursor()
     node_addr = str(cursor.to_address())
 
@@ -759,12 +775,14 @@ async def operator_section_end(
 @router.post("/operator/collate")
 async def operator_collate(
     body: CollateBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.core.operators.collate import CollateOperator
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     _validate_pins(session, body.pins, body.unpins)
     node_addr = body.address
 
@@ -791,12 +809,14 @@ async def operator_collate(
 @router.post("/operator/compress")
 async def operator_compress(
     body: CompressBody,
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> StreamingResponse:
     from lens.core.operators.compress import CompressNoCollate, run_compress
 
-    narrative, lock, event_queue, on_token = _init_stream(request, session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session, lock)
     _validate_pins(session, body.pins, body.unpins)
     try:
         target = resolve_node(session, (body.address or "").strip() or None)
@@ -835,12 +855,13 @@ async def operator_compress(
 
 @router.post("/stream/cancel")
 async def stream_cancel(
+    project_slug: str,
     request: Request,
     session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
 ) -> dict[str, str]:
     from lens.core.commands.rollback import execute_rollback
 
-    lock: StreamLock = request.app.state.stream_lock
     if lock.kind is None:
         return {"status": "ok", "detail": "no stream in progress"}
     kind = lock.kind

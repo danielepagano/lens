@@ -1,4 +1,4 @@
-import { attachFile } from '../services/api'
+import { attachFile, getMountFilePath } from '../services/api'
 import { treeRefreshTrigger, transactionResult, mediaUploadRequest, mediaRemoveRequest, mediaPreviewRequest } from '../stores/ui'
 import type { CommandContext, CommandModule } from './common'
 import { normalizeAddress } from './common'
@@ -38,7 +38,7 @@ const mediaHandler = async (
   if (action === 'download') {
     const filename = path.split('/').pop() ?? path
     const a = document.createElement('a')
-    a.href = `/mount/file/${path}`
+    a.href = getMountFilePath(path)
     a.download = filename
     document.body.appendChild(a)
     a.click()

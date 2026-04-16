@@ -14,7 +14,7 @@ from lens.core.project import ProjectSession
 from lens.core.exceptions import LensException
 from lens.server.dependencies import get_session
 
-router = APIRouter()
+router = APIRouter(prefix="/{project_slug}")
 
 
 class CheckpointRequest(BaseModel):

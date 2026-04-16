@@ -67,8 +67,10 @@ def _run() -> int:
         shutil.rmtree(tmp, ignore_errors=True)
         raise
 
-    session = ProjectSession(Path(tmp), Path(tmp))
-    app = create_app(session)
+    project_dir = Path(tmp)
+    slug = project_dir.name
+    session = ProjectSession(project_dir, project_dir)
+    app = create_app({slug: session})
 
     with socket.socket() as s:
         s.bind((args.host, args.port))
@@ -94,7 +96,7 @@ def _run() -> int:
 
     origin = f"http://{host}:{port}".replace("0.0.0.0", "127.0.0.1")
     print(f"Project (temp): {tmp}", flush=True)
-    print(f"Open in browser: {origin}/#story", flush=True)
+    print(f"Open in browser: {origin}/#{slug}/story", flush=True)
     print("Root narrative slug is `story`; content includes Lorem ipsum from the fake LLM.", flush=True)
     print("Ctrl+C to stop.", flush=True)
 

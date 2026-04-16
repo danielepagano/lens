@@ -61,7 +61,7 @@ def test_client(test_project_dir: Path) -> Generator[TestClient, None, None]:
     from lens.server.main import create_app
 
     session = ProjectSession(test_project_dir, test_project_dir)
-    app = create_app(session)
+    app = create_app({"test": session})
     with TestClient(app) as client:
         yield client
 
@@ -84,7 +84,7 @@ def live_server_url(test_project_dir: Path) -> Generator[str, None, None]:
     from lens.server.main import create_app
 
     session = ProjectSession(test_project_dir, test_project_dir)
-    app = create_app(session)
+    app = create_app({"test": session})
 
     # Pick a free port.
     with socket.socket() as s:

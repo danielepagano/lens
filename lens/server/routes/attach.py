@@ -14,13 +14,13 @@ from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession, get_mount_backend
 from lens.server.dependencies import get_session
 
-router = APIRouter()
+router = APIRouter(prefix="/{project_slug}")
 
 _PREVIEW_HTML = Path(__file__).parent.parent / "static" / "preview.html"
 
 
 @router.get("/mount/preview/{path:path}")
-def preview_mount_file(path: str) -> StreamingResponse:  # noqa: ARG001
+def preview_mount_file(project_slug: str, path: str) -> StreamingResponse:  # noqa: ARG001
     """Serve the markdown preview SPA for a mount-relative file."""
     if not _PREVIEW_HTML.exists():
         raise HTTPException(status_code=503, detail="preview app not built — run `lens dev` or `lens serve`")

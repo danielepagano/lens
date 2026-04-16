@@ -9,7 +9,7 @@ from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession, is_dataset_root
 from lens.server.dependencies import get_session
 
-router = APIRouter()
+router = APIRouter(prefix="/{project_slug}")
 
 
 def _node_to_dict(node: NarrativeNode) -> dict[str, Any]:
@@ -22,7 +22,7 @@ def _node_to_dict(node: NarrativeNode) -> dict[str, Any]:
 
 
 @router.get("/narrative/tree")
-def tree(session: ProjectSession = Depends(get_session)) -> list[dict[str, Any]]:
+def tree(project_slug: str, session: ProjectSession = Depends(get_session)) -> list[dict[str, Any]]:
     if is_dataset_root(session.project_root):
         return []
     if session.active_narrative is None:
@@ -33,7 +33,7 @@ def tree(session: ProjectSession = Depends(get_session)) -> list[dict[str, Any]]
 
 @router.get("/narrative/node/{address:path}")
 def node(
-    address: str, session: ProjectSession = Depends(get_session)
+    project_slug: str, address: str, session: ProjectSession = Depends(get_session)
 ) -> dict[str, Any]:
     if is_dataset_root(session.project_root):
         raise HTTPException(status_code=404, detail="no narrative nodes in dataset mode")

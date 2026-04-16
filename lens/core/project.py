@@ -255,6 +255,42 @@ def validate_slug(slug: str) -> bool:
     return bool(_SLUG_PATTERN.fullmatch(slug))
 
 
+def discover_projects(start: Path) -> list[tuple[str, Path, Path]]:
+    """Return [(slug, git_root, project_root), ...].
+
+    If start/ is itself a project, returns [(start.name, git_root, start)].
+    Otherwise scans one level deep for lens.toml in subdirectories, skipping
+    dataset roots and dirs not inside a git repo.
+    Raises RuntimeError if no projects found.
+    """
+    start = start.resolve()
+    if (start / "lens.toml").exists() and not is_dataset_root(start):
+        try:
+            git_root = find_git_root_from(start)
+            return [(start.name, git_root, start)]
+        except RuntimeError:
+            pass  # Not in a git repo — fall through to subdirectory scan
+
+    results: list[tuple[str, Path, Path]] = []
+    for child in sorted(start.iterdir()):
+        if not child.is_dir() or not (child / "lens.toml").exists():
+            continue
+        if is_dataset_root(child):
+            continue
+        try:
+            git_root = find_git_root_from(child)
+        except RuntimeError:
+            continue
+        results.append((child.name, git_root, child))
+
+    if not results:
+        raise RuntimeError(
+            f"No Lens projects found at '{start}'. "
+            "Run from a project folder or a parent containing project subfolders."
+        )
+    return results
+
+
 def require_lens_context(start: Path) -> tuple[Path, Path]:
     """Return ``(git_root, project_root)`` for the Lens project containing *start*.
 

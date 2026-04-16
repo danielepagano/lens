@@ -5,6 +5,7 @@
   import { kbFilters, selectedKbId, treeRefreshTrigger } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
   import { stats } from '../../stores/stats'
+  import { currentProject } from '../../stores/project'
   let allTags: string[] = []
   let items: KbItem[] = []
   let visibleItems: KbItem[] = []
@@ -138,8 +139,8 @@
   }
 
   function onItemClick(id: string) {
-    const path = $currentAddress || ''
-    window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
+    const base = [$currentProject, $currentAddress || ''].filter(Boolean).join('/')
+    window.location.hash = `${base}?kb=${encodeURIComponent(id)}`
     if (onSelect) onSelect(id)
   }
 
@@ -157,8 +158,8 @@
     newError = ''
     try {
       const result = await createKbItem(newId.trim(), undefined, newUseTemplate)
-      const path = $currentAddress || ''
-      window.location.hash = `${path}?kb=${encodeURIComponent(result.id)}`
+      const base = [$currentProject, $currentAddress || ''].filter(Boolean).join('/')
+      window.location.hash = `${base}?kb=${encodeURIComponent(result.id)}`
       if (onSelect) onSelect(result.id)
       await loadItems()
       treeRefreshTrigger.update((n) => n + 1)

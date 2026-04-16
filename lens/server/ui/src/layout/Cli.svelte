@@ -25,6 +25,7 @@
   } from '../stores/ui'
   import { currentAddress } from '../stores/document'
   import { stats } from '../stores/stats'
+  import { currentProject } from '../stores/project'
   import { getKbItems, getTree, browseMountDir } from '../services/api'
   import type { TreeNode, MountEntry } from '../services/api'
   import { kbMentionAtCaret, promptDiceExpressionHint, promptNodeMentionLinePickAtCaret } from '../utils/cliCaret'
@@ -126,6 +127,16 @@
       sessionFillSuppressed = false
       updateCommandState()
     }
+  }
+
+  let _lastProject: string | null = null
+  $: if ($currentProject !== _lastProject) {
+    if (_lastProject !== null) {
+      input = ''
+      sessionFillSuppressed = false
+      lastAutoFilledCommand = null
+    }
+    _lastProject = $currentProject
   }
 
   function focusCliInput() {

@@ -22,7 +22,7 @@ def serve(
     """Build the frontend and serve the bundle from FastAPI (no hot-reload)."""
     import uvicorn
 
-    from lens.core.project import ProjectSession, require_lens_context
+    from lens.core.project import ProjectSession, discover_projects
     from lens.server.main import create_app
 
     if not _STATIC_INDEX.exists():
@@ -39,8 +39,14 @@ def serve(
             typer.echo("lens: build produced no index.html", err=True)
             raise typer.Exit(1)
 
-    git_root, project_root = require_lens_context(Path.cwd())
-    session = ProjectSession(git_root, project_root)
-    typer.echo(f"Serving project: {project_root}")
+    try:
+        projects = discover_projects(Path.cwd())
+    except RuntimeError as e:
+        typer.echo(f"lens: {e}", err=True)
+        raise typer.Exit(1)
+
+    sessions = {slug: ProjectSession(git_root, proj) for slug, git_root, proj in projects}
+    for slug, _, proj in projects:
+        typer.echo(f"Serving project: {slug} ({proj})")
     typer.echo(f"  http://{host}:{port}")
-    uvicorn.run(create_app(session), host=host, port=port)
+    uvicorn.run(create_app(sessions), host=host, port=port)

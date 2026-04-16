@@ -39,10 +39,11 @@ export default defineConfig({
           const upgrade = req.headers?.upgrade ?? ''
 
           // Preview sub-app: serve preview.html from the Vite dev server.
-          if (url.startsWith('/mount/preview/')) return '/preview.html'
+          // Matches both legacy /mount/preview/ and multi-project /{slug}/mount/preview/.
+          if (url.includes('/mount/preview/')) return '/preview.html'
 
           // All other mount requests proxy to the backend (file downloads send Accept: text/html).
-          if (url.startsWith('/mount/')) return null
+          if (url.includes('/mount/')) return null
 
           // Let Vite serve the UI shell + HMR/internal assets.
           if (

@@ -15,10 +15,11 @@
   import KbDiffModal from './features/kb/KbDiffModal.svelte'
   import KbPanel from './features/kb/KbPanel.svelte'
   import InlineEditView from './features/editor/InlineEditView.svelte'
-  import { getStats, getNode, onAfterMutation } from './services/api'
+  import { getStats, getNode, getProjects, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
-  import { kbPanelOpen, selectedKbId, kbFilters, inlineEditMode, editorFocused } from './stores/ui'
+  import { kbPanelOpen, selectedKbId, kbFilters, inlineEditMode, editorFocused, treeRefreshTrigger } from './stores/ui'
+  import { currentProject, availableProjects } from './stores/project'
 
   $: document.body.classList.toggle('editor-focused', $editorFocused)
 
@@ -27,25 +28,27 @@
   }
 
   interface ParsedHash {
+    project: string | null
     path: string
     kb: string | null
   }
 
   function parseHash(hash: string): ParsedHash {
+    if (!hash || hash === '#') return { project: null, path: '', kb: null }
     const raw = decodeURIComponent(hash.slice(1))
     const qIndex = raw.indexOf('?')
-    if (qIndex === -1) {
-      return { path: raw, kb: null }
-    }
-    const path = raw.slice(0, qIndex)
-    const query = raw.slice(qIndex + 1)
-    const params = new URLSearchParams(query)
-    return { path, kb: params.get('kb') }
+    const fullPath = qIndex === -1 ? raw : raw.slice(0, qIndex)
+    const kb = qIndex === -1 ? null : new URLSearchParams(raw.slice(qIndex + 1)).get('kb')
+    const stripped = fullPath.startsWith('/') ? fullPath.slice(1) : fullPath
+    const slashIdx = stripped.indexOf('/')
+    if (slashIdx === -1) return { project: stripped || null, path: '', kb }
+    return { project: stripped.slice(0, slashIdx), path: stripped.slice(slashIdx + 1), kb }
   }
 
   function buildHash(path: string, kb: string | null): string {
-    if (!kb) return path
-    return `${path}?kb=${encodeURIComponent(kb)}`
+    const slug = get(currentProject) ?? ''
+    const base = path ? `${slug}/${path}` : slug
+    return kb ? `${base}?kb=${encodeURIComponent(kb)}` : base
   }
 
   function _updateUrlKb(kb: string | null) {
@@ -67,6 +70,18 @@
     } catch (e) {
       console.error('Navigation failed:', e)
     }
+  }
+
+  async function switchProject(slug: string): Promise<void> {
+    currentProject.set(slug)
+    currentAddress.set(null)
+    nodeContent.set('')
+    kbPanelOpen.set(false)
+    selectedKbId.set(null)
+    treeRefreshTrigger.update(n => n + 1)
+    const newStats = await getStats()
+    applyStats(newStats)
+    await navigate(newStats.cursor || '')
   }
 
   async function handleCliDone(): Promise<void> {
@@ -111,12 +126,16 @@
     }
   }
 
-  function handleHashChange() {
-    const { path, kb } = parseHash(window.location.hash)
-    const addr = get(currentAddress)
-    if (path && path !== addr) {
-      navigate(path)
+  async function handleHashChange() {
+    const { project, path, kb } = parseHash(window.location.hash)
+    const currentSlug = get(currentProject)
+    if (project && project !== currentSlug) {
+      await switchProject(project)
+      applyKbFromUrl(kb)
+      return
     }
+    const addr = get(currentAddress)
+    if (path && path !== addr) navigate(path)
     applyKbFromUrl(kb)
   }
 
@@ -125,10 +144,23 @@
     onAfterMutation(() => { void getStats().then(applyStats) })
 
     try {
+      // 1. Load project list
+      const projectList = await getProjects()
+      const slugs = projectList.map(p => p.slug)
+      availableProjects.set(slugs)
+
+      // 2. Pick project from hash or default to first
+      const { project: hashProject, path, kb } = parseHash(window.location.hash)
+      const selectedSlug = (hashProject && slugs.includes(hashProject))
+        ? hashProject : (slugs[0] ?? null)
+      if (!selectedSlug) { console.error('No projects available'); return }
+      currentProject.set(selectedSlug)
+
+      // 3. Fetch stats (now uses projectPath() via currentProject store)
       const initialStats = await getStats()
       applyStats(initialStats)
 
-      const { path, kb } = parseHash(window.location.hash)
+      // 4. Navigate
       if (path) {
         try {
           inlineEditMode.set(null)
@@ -141,12 +173,10 @@
           await navigate(initialStats.cursor || '')
         }
       } else {
-        await navigate(path || initialStats.cursor || '')
+        await navigate(initialStats.cursor || '')
       }
       applyKbFromUrl(kb)
-    } catch (e) {
-      console.error('Init failed:', e)
-    }
+    } catch (e) { console.error('Init failed:', e) }
   })
 
   onDestroy(() => {
@@ -159,15 +189,17 @@
     <TopBar />
   </svelte:fragment>
 
-  {#if $inlineEditMode !== null}
-    <InlineEditView />
-  {:else}
-    <div class="narrative-content" class:kb-open={$kbPanelOpen}>
-      <TreeBrowser {navigate} />
-      <MarkdownView />
-    </div>
-    {#if $kbPanelOpen}
-      <KbPanel />
+  {#if $currentProject}
+    {#if $inlineEditMode !== null}
+      <InlineEditView />
+    {:else}
+      <div class="narrative-content" class:kb-open={$kbPanelOpen}>
+        <TreeBrowser {navigate} onProjectSwitch={switchProject} />
+        <MarkdownView />
+      </div>
+      {#if $kbPanelOpen}
+        <KbPanel />
+      {/if}
     {/if}
   {/if}
   <CliOutputPanel />

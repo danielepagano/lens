@@ -8,11 +8,11 @@ from lens.core.commands.stats import get_stats
 from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
 
-router = APIRouter()
+router = APIRouter(prefix="/{project_slug}")
 
 
 @router.get("/stats")
-def stats(session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
+def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> dict[str, Any]:
     result = get_stats(session)
     transaction: dict[str, Any] | None = None
     if result.has_pending:

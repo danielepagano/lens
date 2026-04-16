@@ -2,11 +2,13 @@
   import { currentAddress } from '../stores/document'
   import { stats } from '../stores/stats'
   import { treeOpen, kbPanelOpen, selectedKbId, inlineEditMode, inlineEditConfirmTrigger, inlineEditCancelTrigger } from '../stores/ui'
+  import { currentProject } from '../stores/project'
   import { get } from 'svelte/store'
   import HamburgerIcon from '../components/icons/HamburgerIcon.svelte'
 
   $: parts = $currentAddress ? $currentAddress.split('/') : []
   $: parentAddr = parts.length > 1 ? parts.slice(0, -1).join('/') : null
+  $: parentHash = parentAddr ? `${$currentProject ?? ''}/${parentAddr}` : null
   $: currentTitle = parts.length > 0 ? parts[parts.length - 1] : null
   $: isCursor = $stats?.cursor !== null && $stats?.cursor === $currentAddress
   $: has_pending = $stats?.has_pending
@@ -16,8 +18,9 @@
     if (get(kbPanelOpen)) {
       kbPanelOpen.set(false)
       treeOpen.set(false)
+      const slug = get(currentProject) ?? ''
       const addr = get(currentAddress) || ''
-      window.location.hash = addr
+      window.location.hash = slug && addr ? `${slug}/${addr}` : addr
     } else {
       kbPanelOpen.set(true)
       // Auto-open browser if no item is selected yet
@@ -46,8 +49,8 @@
       <HamburgerIcon size={20} />
     </button>
     <span class="title">Lens</span>
-    {#if parentAddr}
-      <a href="#{parentAddr}" class="parent-link" aria-label="Go up to {parentAddr}">↑ {parts[parts.length - 2]}</a>
+    {#if parentHash}
+      <a href="#{parentHash}" class="parent-link" aria-label="Go up to {parentAddr}">↑ {parts[parts.length - 2]}</a>
     {/if}
     {#if currentTitle}
       <span class="node-title">{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}{currentTitle}</span>

@@ -34,12 +34,14 @@ resolves to the URL of the running API server regardless of mode.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import socket
 import tempfile
 import threading
 import time
+import urllib.request
 from pathlib import Path
 from typing import Generator
 
@@ -105,7 +107,7 @@ def live_server_url(
 
     assert lens_project_dir is not None
     session = ProjectSession(lens_project_dir, lens_project_dir)
-    app = create_app(session)
+    app = create_app({lens_project_dir.name: session})
 
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -127,6 +129,19 @@ def live_server_url(
 
     server.should_exit = True
     thread.join(timeout=5)
+
+
+@pytest.fixture(scope="session")
+def project_slug(lens_project_dir: Path | None, live_server_url: str) -> str:
+    """Return the project slug for use in API paths.
+
+    In auto mode, uses the temp project directory name.
+    In external-server mode, fetches the first slug from GET /projects.
+    """
+    if lens_project_dir is not None:
+        return lens_project_dir.name
+    raw = urllib.request.urlopen(f"{live_server_url}/projects").read()
+    return str(json.loads(raw)[0]["slug"])
 
 
 # Make live_server_url available as the Playwright base_url.

@@ -1,9 +1,20 @@
 from __future__ import annotations
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 
 from lens.core.project import ProjectSession
+from lens.server.streaming import StreamLock
 
 
-def get_session(request: Request) -> ProjectSession:
-    return request.app.state.session  # type: ignore[no-any-return]
+def get_session(project_slug: str, request: Request) -> ProjectSession:
+    projects: dict[str, ProjectSession] = request.app.state.projects
+    if project_slug not in projects:
+        raise HTTPException(404, detail=f"Project '{project_slug}' not found")
+    return projects[project_slug]
+
+
+def get_stream_lock(project_slug: str, request: Request) -> StreamLock:
+    locks: dict[str, StreamLock] = request.app.state.stream_locks
+    if project_slug not in locks:
+        locks[project_slug] = StreamLock()
+    return locks[project_slug]

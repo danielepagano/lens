@@ -1136,7 +1136,7 @@ export function createMarkdownRenderer(): MarkdownIt {
   const defaultLinkOpen = md.renderer.rules.link_open ?? fallback
   md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
     const href = tokens[idx].attrGet('href')
-    if (href?.startsWith('/mount/file/') || href?.startsWith('/mount/preview/')) {
+    if (href?.includes('/mount/file/') || href?.includes('/mount/preview/')) {
       tokens[idx].attrSet('target', '_blank')
       tokens[idx].attrSet('rel', 'noopener')
     }

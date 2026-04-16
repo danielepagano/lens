@@ -1,6 +1,9 @@
 import MarkdownIt from 'markdown-it'
 
-const filePath = window.location.pathname.replace(/^\/mount\/preview\//, '')
+const slugMatch = window.location.pathname.match(/^\/([^/]+)\/mount\//)
+const slug = slugMatch ? slugMatch[1] : ''
+const pathMatch = window.location.pathname.match(/\/mount\/preview\/(.+)$/)
+const filePath = pathMatch ? pathMatch[1] : ''
 const container = document.getElementById('content')!
 
 if (!filePath) {
@@ -8,7 +11,7 @@ if (!filePath) {
 } else {
   document.title = filePath.split('/').pop() ?? filePath
 
-  fetch(`/mount/file/${filePath}`)
+  fetch(`/${slug}/mount/file/${filePath}`)
     .then((r) => {
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
       return r.text()

@@ -26,7 +26,7 @@ def dev(
     """Start the Vite dev server (HMR) and Lens API for the current project."""
     import uvicorn
 
-    from lens.core.project import require_lens_context
+    from lens.core.project import discover_projects
 
     if not shutil.which("npm"):
         typer.echo(
@@ -41,7 +41,11 @@ def dev(
         )
         raise typer.Exit(1)
 
-    require_lens_context(Path.cwd())
+    try:
+        discover_projects(Path.cwd())
+    except RuntimeError as e:
+        typer.echo(f"lens: {e}", err=True)
+        raise typer.Exit(1)
 
     env = {**os.environ, "VITE_API_HOST": host, "VITE_API_PORT": str(port)}
     vite_proc = subprocess.Popen(
@@ -57,7 +61,7 @@ def dev(
         except subprocess.TimeoutExpired:
             vite_proc.kill()
 
-    typer.echo("Serving project (API hot-reload enabled):")
+    typer.echo("Serving Lens App (API hot-reload enabled):")
     typer.echo("  Open: http://localhost:5173")
     typer.echo("  Press Ctrl+C to stop.")
     typer.echo("")

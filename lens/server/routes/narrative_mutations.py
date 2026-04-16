@@ -19,7 +19,7 @@ from lens.core.project import (
 )
 from lens.server.dependencies import get_session
 
-router = APIRouter()
+router = APIRouter(prefix="/{project_slug}")
 
 PinOperation = Literal["add", "remove", "block", "unblock"]
 
@@ -32,6 +32,7 @@ class PinRequest(BaseModel):
 
 @router.post("/narrative/pin")
 def narrative_pin(
+    project_slug: str,
     body: PinRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
@@ -54,6 +55,7 @@ class UseNarrativeRequest(BaseModel):
 
 @router.post("/narrative/narratives/active")
 def set_active_narrative(
+    project_slug: str,
     body: UseNarrativeRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
@@ -77,6 +79,7 @@ class RewindRequest(BaseModel):
 
 @router.post("/narrative/rewind")
 def narrative_rewind(
+    project_slug: str,
     body: RewindRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
@@ -121,6 +124,7 @@ class RenameNodeRequest(BaseModel):
 
 @router.post("/narrative/rename")
 def narrative_rename(
+    project_slug: str,
     body: RenameNodeRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:

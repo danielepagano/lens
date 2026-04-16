@@ -16,7 +16,7 @@ from lens.core.knowledge import KnowledgeStore, parse_id
 from lens.core.project import ProjectSession
 from lens.server.dependencies import get_session
 
-router = APIRouter()
+router = APIRouter(prefix="/{project_slug}")
 
 
 class KbItemOut(BaseModel):

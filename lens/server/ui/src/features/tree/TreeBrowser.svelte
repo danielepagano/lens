@@ -4,10 +4,17 @@
   import type { TreeNode } from '../../services/api'
   import { treeOpen, treeRefreshTrigger, scrollContentToBottom } from '../../stores/ui'
   import { applyStats, stats } from '../../stores/stats'
+  import { currentProject, availableProjects } from '../../stores/project'
   import TreeNodeComp from './TreeNode.svelte'
   import CloseIcon from '../../components/icons/CloseIcon.svelte'
 
   export let navigate: (addr: string) => Promise<void>
+  export let onProjectSwitch: ((slug: string) => Promise<void>) | undefined = undefined
+
+  function handleProjectChange(e: Event) {
+    const slug = (e.target as HTMLSelectElement).value
+    if (slug && slug !== $currentProject) onProjectSwitch?.(slug)
+  }
 
   let tree: TreeNode[] = []
   let error = ''
@@ -102,7 +109,16 @@
 
 <div class="sidebar" class:open={$treeOpen} data-testid="tree-browser">
   <div class="sidebar-header">
-    <strong>Navigation</strong>
+    {#if $availableProjects.length > 1}
+      <select class="project-select" value={$currentProject ?? ''} on:change={handleProjectChange}
+              aria-label="Select project">
+        {#each $availableProjects as slug (slug)}
+          <option value={slug}>{slug}</option>
+        {/each}
+      </select>
+    {:else}
+      <strong>Navigation</strong>
+    {/if}
     <button class="sidebar-close" on:click={() => treeOpen.set(false)} aria-label="Close">
       <CloseIcon size={18} />
     </button>

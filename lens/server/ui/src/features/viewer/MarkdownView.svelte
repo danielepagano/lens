@@ -1,5 +1,6 @@
 <script lang="ts">
   import { nodeContent, currentAddress, streamingPreview } from '../../stores/document'
+  import { currentProject } from '../../stores/project'
   import { stats } from '../../stores/stats'
   import {
     preprocessAnnotations,
@@ -50,7 +51,7 @@
     return tags && tags.length > 0 ? tags.join('\n') : undefined
   }
 
-  $: rendered = $nodeContent
+  $: _rawRendered = $nodeContent
     ? md.render(
         preprocessThinkingTags(
           preprocessAnnotations(
@@ -64,6 +65,10 @@
         ),
       )
     : ''
+  // Inject project slug into /mount/ URLs written by the attach command.
+  $: rendered = $currentProject
+    ? _rawRendered.replace(/="(\/mount\/(file|preview)\/)/g, (_, p1) => `="/${$currentProject}${p1}`)
+    : _rawRendered
 
   type FrontMatterPins = {
     pins: string[]
@@ -139,8 +144,8 @@
   $: frontMatterPins = $nodeContent ? extractFrontMatterPins($nodeContent) : { pins: [], unpins: [] }
 
   function openKbItem(id: string) {
-    const path = $currentAddress || ''
-    window.location.hash = `${path}?kb=${encodeURIComponent(id)}`
+    const base = [$currentProject, $currentAddress || ''].filter(Boolean).join('/')
+    window.location.hash = `${base}?kb=${encodeURIComponent(id)}`
   }
 
   $: isLinePicking = $linePickMode !== null && $linePickMode.address === $currentAddress
@@ -162,6 +167,21 @@
       const id = pinEl.getAttribute('data-kb-open-id')
       if (id) openKbItem(id)
       return
+    }
+    // Intercept hash-only anchor links (narrative navigation) and prepend project slug.
+    const anchor = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null
+    if (anchor) {
+      const href = anchor.getAttribute('href') ?? ''
+      if (href.startsWith('#')) {
+        const target = href.slice(1)
+        // If target already starts with the project slug, let browser handle it.
+        const slug = $currentProject ?? ''
+        if (slug && !target.startsWith(slug + '/') && target !== slug) {
+          e.preventDefault()
+          window.location.hash = target ? `${slug}/${target}` : slug
+        }
+        return
+      }
     }
     const btn = (e.target as HTMLElement).closest('[data-kb-id]') as HTMLButtonElement | null
     if (!btn) return
