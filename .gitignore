@@ -208,6 +208,7 @@ __marimo__/
 
 # Lens
 .DS_Store
+.playwright-mcp
 
 # Lens dev/test project (created by scripts/dev_project.py and local testing)
 .dev-project/
