@@ -11,7 +11,7 @@ import unittest
 import warnings
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from lens.core.narrative import (
     NarrativeNode,
@@ -690,6 +690,91 @@ class TestSectionOperator(unittest.TestCase):
             text = node_md.read_text()
             self.assertIn("[/section:event_1]: #", text)
             self.assertIn("Section summary.", text)
+
+    def test_section_end_remember_crawl_includes_child_kb_pins(self) -> None:
+        """Remember pass crawls at section child so kb_pin on child is visible."""
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp)
+            self._make_project(p)
+            lore = p / "knowledge" / "lore"
+            lore.mkdir(parents=True)
+            (lore / "alice.md").write_text("Alice.\n", encoding="utf-8")
+            subprocess.run(["git", "add", "-A"], cwd=p, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "kb"],
+                cwd=p,
+                capture_output=True,
+                check=True,
+            )
+            from lens.core.knowledge import KnowledgeStore
+
+            KnowledgeStore.clear_registry()
+            store = KnowledgeStore.for_project(p)
+            self.assertIsNone(store.add_tags("lore.alice", ["remember.note"]))
+
+            subprocess.run(
+                ["lens", "section", "sec1", "--pin", "lore.alice"],
+                cwd=p,
+                capture_output=True,
+                check=True,
+            )
+            sec_md = p / "narrative" / "test" / "sec1.md"
+            sec_md.write_text(
+                sec_md.read_text(encoding="utf-8") + "\n# Beat\n\nDialogue here.\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "-A"], cwd=p, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "section body"],
+                cwd=p,
+                capture_output=True,
+                check=True,
+            )
+
+            narrative = get_active_narrative(p)
+            assert narrative is not None
+            from lens.core.operators.section import SectionOperator
+            from lens.core.project import ProjectSession
+            from lens.core.storage import Storage
+
+            cursor = narrative.find_cursor()
+            key = cursor.key_path[-1]
+            parent = NarrativeNode(
+                narrative_root=narrative.narrative_root,
+                key_path=cursor.key_path[:-1],
+            )
+            rel = str(parent.md_path().relative_to(p))
+            owner = SectionOperator.owner_id(key, rel)
+            op = SectionOperator(Storage(p, owner=owner), narrative)
+
+            captured: dict[str, list[str]] = {}
+
+            async def _remember_cap(*, crawl_result: Any, **kw: Any) -> str:
+                captured["pinned_ids"] = list(crawl_result.pinned_ids)
+                return ""
+
+            async def _fake_generate_text(*args: Any, **kwargs: Any) -> str:
+                from collections.abc import Awaitable, Callable
+                from typing import cast
+
+                if kwargs.get("operator_name") == "remember":
+                    return ""
+                on_preview = kwargs.get("on_preview")
+                if on_preview is not None:
+                    cb = cast(Callable[[str], Awaitable[None]], on_preview)
+                    await cb("Section")
+                    await cb(" summary.")
+                return "Section summary."
+
+            with patch("lens.core.operators.session.generate_text", new=_fake_generate_text):
+                with patch(
+                    "lens.core.operators.section.apply_remember_patches",
+                    AsyncMock(side_effect=_remember_cap),
+                ):
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        asyncio.run(op.end(ProjectSession(p, p)))
+
+            self.assertIn("lore.alice", captured["pinned_ids"])
 
     def test_section_end_at_root_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -6,13 +6,69 @@ from pathlib import Path
 
 from dataclasses import dataclass, field
 
-from lens.core.annotations import decode_ai_secrets
+from lens.core.annotations import decode_ai_secrets, parse_annotations
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import KB_PIN, KB_UNPIN
 from lens.core.prompts import PromptStore
 from lens.core.project import find_git_root_from
 from lens.core.storage import Storage
+
+REMEMBER_TAG_PREFIX = "remember."
+
+
+def _empty_remember_pins_dict() -> dict[str, list[str]]:
+    return {}
+
+
+def chat_session_extra_pins(node: NarrativeNode) -> list[str]:
+    """KB ids from the parent ``[chat:…]`` open annotation (``as_kb_id`` / ``with_kb_id``).
+
+    Merged into :func:`crawl` ``extra_pins`` so effective pins match chat context,
+    not only ``kb_pin`` front matter.
+    """
+    if not node.key_path:
+        return []
+    session_id = node.key_path[-1]
+    parent = NarrativeNode(
+        narrative_root=node.narrative_root,
+        key_path=node.key_path[:-1],
+    )
+    if not parent.exists():
+        return []
+    try:
+        text = parent.md_path().read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return []
+    for ann in reversed(parse_annotations(text)):
+        if (
+            ann.operator == "chat"
+            and ann.id == session_id
+            and not ann.closing
+            and not ann.self_closing
+        ):
+            out: list[str] = []
+            p = ann.params
+            for key in ("as_kb_id", "with_kb_id"):
+                v = p.get(key)
+                if isinstance(v, str) and v.strip():
+                    out.append(v.strip())
+            return out
+    return []
+
+
+def _remember_pins_subset(project_root: Path, pinned_ids: list[str]) -> dict[str, list[str]]:
+    if not pinned_ids:
+        return {}
+    kb_store = KnowledgeStore.for_project(project_root)
+    remember_pins: dict[str, list[str]] = {}
+    prefix = REMEMBER_TAG_PREFIX
+    for pid in pinned_ids:
+        tags = [t for t in kb_store.get_tags(pid) if t.startswith(prefix)]
+        if tags:
+            remember_pins[pid] = tags
+    return remember_pins
+
 
 @dataclass
 class SliceAnchor:
@@ -37,6 +93,7 @@ class CrawlResult:
     previous_summaries: list[str]
     current_content: str | None
     pinned_ids: list[str] = field(default_factory=list[str])
+    remember_pins: dict[str, list[str]] = field(default_factory=_empty_remember_pins_dict)
     project_root: Path | None = None
     current_node: NarrativeNode | None = None
 
@@ -260,18 +317,30 @@ def crawl(
     include_narrative: bool = True,
     anchor: SliceAnchor | None = None,
     storage: Storage | None = None,
+    merge_chat_session_pins: bool = True,
 ) -> CrawlResult:
     project_root = node.narrative_root.parent.parent
     local_storage = storage or Storage(find_git_root_from(project_root))
     ancestors = _ancestor_chain(node)
 
+    merged_extra: list[str] | None = extra_pins
+    if merge_chat_session_pins:
+        chat_extras = chat_session_extra_pins(node)
+        if chat_extras or extra_pins:
+            merged_extra = [*chat_extras, *(extra_pins or [])]
+        else:
+            merged_extra = None
+
     knowledge_formatted, pinned_ids = _resolve_pins_for_ancestors(
         project_root,
         ancestors,
         local_storage,
-        extra_pins=extra_pins,
+        extra_pins=merged_extra,
         extra_unpins=extra_unpins,
         include_kb=include_kb,
+    )
+    remember_pins = (
+        _remember_pins_subset(project_root, pinned_ids) if include_kb else {}
     )
 
     previous_summaries: list[str] = []
@@ -305,34 +374,9 @@ def crawl(
         previous_summaries=previous_summaries,
         current_content=current_content,
         pinned_ids=pinned_ids,
+        remember_pins=remember_pins,
         current_node=current_node,
     )
-
-
-def crawl_pins(
-    node: NarrativeNode,
-    *,
-    extra_pins: list[str] | None = None,
-    extra_unpins: list[str] | None = None,
-) -> list[str]:
-    """Return the effective pinned KB IDs at *node*.
-
-    Resolution rules (ancestor aggregation, unpins, ``+`` expansion, and
-    deduplication) exactly match :func:`crawl`. Only KB items that actually
-    exist in the store are returned.
-    """
-    project_root = node.narrative_root.parent.parent
-    ancestors = _ancestor_chain(node)
-    local_storage = Storage(find_git_root_from(project_root))
-    _knowledge, pinned_ids = _resolve_pins_for_ancestors(
-        project_root,
-        ancestors,
-        local_storage,
-        extra_pins=extra_pins,
-        extra_unpins=extra_unpins,
-        include_kb=True,
-    )
-    return pinned_ids
 
 
 def _sections_from_crawl_result(result: CrawlResult) -> list[str]:
@@ -406,6 +450,7 @@ def crawl_result_from_pins(
         previous_summaries=[],
         current_content=None,
         pinned_ids=result_pinned_ids,
+        remember_pins=_remember_pins_subset(project_root, result_pinned_ids),
     )
 
 

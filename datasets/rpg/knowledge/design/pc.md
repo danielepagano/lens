@@ -1,6 +1,6 @@
 # [DESIGN MODULE]: PLAYER CHARACTER
 
-Help the user create TWO objects from their character: `pc.<name>` for play and `lore.<name>` for planning depth. These serve completely different purposes and must be kept separate. The `p.` object may be already provided, in which case just work on the `lore` object.
+Help the user split one character into two useful kinds of truth: `pc.<name>` for play at the table, and `lore.<name>` for the deeper pressures story design will lean on later. These serve different jobs and must stay separate. The `pc.` object may already be provided, in which case just work on the `lore` object.
 
 The `pc._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Lore objects don't have any specific template.
 
@@ -28,7 +28,7 @@ TAGGING: Tag `pc.<name>` with a level or tier indicator if such a concept is pre
 THE DEPTH (`lore.<name>`)
 The lore object contains everything about the character that informs how the STORY evolves — the material that other design modules use to create content that resonates with this character. It is not referenced during normal play.
 
-Probe conversationally for:
+Probe conversationally for pressure points:
 - Full backstory: origin, formative events, key relationships from the past
 - Emotional wounds: what has hurt them, what they haven't processed
 - Flaws: not quirks, but genuine weaknesses of character — pride, cowardice, self-deception, cruelty they justify
@@ -55,8 +55,7 @@ Examples (but they depend heavily on the specific character):
 
 Propose questions to the user and iterate. They should feel true to the character — the user should think "yes, that IS what this character is about." The user may not want to see the final wording (to preserve surprise during play), or they may want to refine it. Either way is fine.
 
-FINAL OUTPUT: ASSEMBLE AND REVIEW
-Produce objects:
+Assemble and review:
 
 `pc.<name>`: lean, play-optimized. Tag with `level:N` and faction links. (only if not already provided)
 
@@ -74,3 +73,8 @@ GUIDELINES:
 - Voice is the most important thing in `pc.<name>`. If the AI can't speak AS this character distinctively, the object needs more personality details and fewer facts.
 - Goals in `pc.<name>` should be actionable: not "wants peace" but "is trying to negotiate a ceasefire with the hill clans before the duke sends the army."
 - The `lore.<name>` object is the user's partner in storytelling — it helps the AI challenge the character in ways that feel earned and personal. Treat it with care.
+
+What this is not:
+- Not one blended object trying to do both jobs.
+- Not a character sheet copied verbatim into KB.
+- Not a therapy monologue in `pc.<name>` just because the backstory is interesting.

@@ -852,7 +852,7 @@ class SessionOperator(Operator):
             child_text = cursor.md_path().read_text(encoding="utf-8")
             child_clean = strip_markdown_comments(child_text).strip()
             if child_clean:
-                crawl_result = crawl(parent, storage=storage)
+                crawl_result = crawl(cursor, storage=storage)
                 summary = await generate_summary_block(
                     slug=id,
                     crawl_result=crawl_result,

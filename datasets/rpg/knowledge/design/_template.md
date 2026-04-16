@@ -1,14 +1,14 @@
 <!-- Design module. Usage: given to the design operator to guide a specific task. Contains instructions for the AI on how to approach a specific build-out task. These are NOT objects the player creates — they are tools for the design operator. -->
 # [DESIGN MODULE]: {TITLE}
 
-Instructions for the design operator on how to approach a specific build-out task.
+This is a steering note for the design operator: how to expand one part of the setting so it becomes more playable, more writable, and more connected to the live story.
 
-Each design object describes:
+A good design module makes five things clear:
 - What the task produces (which KB object types)
 - What to ask the user before starting
 - What to look up in existing KB
-- How to structure the output
-- Common pitfalls to avoid
+- How to shape the output
+- Which failure modes to avoid
 
 Core principles all modules share:
 - Story service: all content must connect to PCs and active fronts. No content in a vacuum.

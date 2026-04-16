@@ -102,7 +102,7 @@ class SectionOperator(Operator):
         child_text = cursor.md_path().read_text(encoding="utf-8")
         child_clean = strip_markdown_comments(child_text).strip()
 
-        crawl_result = crawl(parent, storage=self.storage)
+        crawl_result = crawl(cursor, storage=self.storage)
         summary_block = await generate_summary_block(
             slug=key,
             crawl_result=crawl_result,

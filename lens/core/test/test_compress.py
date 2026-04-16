@@ -21,6 +21,7 @@ from lens.core.operators.compress import (
     compress_arguments_to_line_range,
     run_compress,
 )
+from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.core.text_select import SelectionError
@@ -454,8 +455,10 @@ class TestRunCompressAutoMode(unittest.TestCase):
         self.assertTrue(len(captured) > 0, "generate_stream was not called")
         system_msg = captured[0][0]
         self.assertEqual(system_msg["role"], "system")
-        # auto_system prompt contains "automatically compress"
-        self.assertIn("automatically compress", str(system_msg["content"]).lower())
+        self.assertEqual(
+            system_msg["content"],
+            PromptStore(self.root).get("compress.auto_system"),
+        )
 
     def test_auto_path_fm_last_size_written_same_transaction(self) -> None:
         """After a successful auto collate, compress.last_size lands in the front matter

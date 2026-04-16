@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
@@ -953,3 +953,64 @@ class TestChatSession(unittest.TestCase):
             )
         root_text = self.narrative.md_path().read_text(encoding="utf-8")
         self.assertIn("[/chat:", root_text)
+
+    def test_session_end_remember_crawl_includes_child_kb_pins(self) -> None:
+        """Remember pass uses crawl at session child so kb_pin on child is visible."""
+        lore_dir = self.root / "knowledge" / "lore"
+        lore_dir.mkdir(exist_ok=True)
+        (lore_dir / "alice.md").write_text("Alice.\n", encoding="utf-8")
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "lore"],
+            cwd=self.root,
+            capture_output=True,
+            check=True,
+        )
+        KnowledgeStore.clear_registry()
+        store = KnowledgeStore.for_project(self.root)
+        self.assertIsNone(store.add_tags("lore.alice", ["remember.note"]))
+
+        with patch("lens.core.operators.chat.generate_text", _mock_generate):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt=None,
+                    module_id=None,
+                    pins=["lore.alice"],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+        Storage(self.root).stage_all()
+
+        captured: dict[str, list[str]] = {}
+
+        async def _remember_cap(*, crawl_result: Any, **kw: Any) -> str:
+            captured["pinned_ids"] = list(crawl_result.pinned_ids)
+            return ""
+
+        async def _summary(*_a: Any, **_k: Any) -> str:
+            return "The title\nSome body line."
+
+        with patch("lens.core.operators.session.generate_text", _summary):
+            with patch(
+                "lens.core.operators.session.apply_remember_patches",
+                AsyncMock(side_effect=_remember_cap),
+            ):
+                asyncio.run(
+                    ChatOperator.run_session(
+                        session=self.session,
+                        narrative=self.narrative,
+                        prompt=None,
+                        module_id=None,
+                        pins=[],
+                        unpins=[],
+                        end=True,
+                        extra_params={},
+                    )
+                )
+
+        self.assertIn("lore.alice", captured["pinned_ids"])
+        self.assertIn("npc.bob", captured["pinned_ids"])
+        self.assertIn("pc.amy", captured["pinned_ids"])

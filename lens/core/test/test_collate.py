@@ -11,8 +11,9 @@ import unittest
 from pathlib import Path
 from collections.abc import Awaitable, Callable
 from typing import Any, cast
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
+from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.collate import CollateOperator
@@ -820,3 +821,85 @@ class TestCollateTransactionSemantics(unittest.TestCase):
             sys_st = session.new_storage()
             sys_st.write_file(root / "_compress_sidecar.txt", "x\n")
             self.assertTrue(Storage(root).has_staged())
+
+
+class TestCollateRememberAtChatChild(unittest.TestCase):
+    def test_collate_remember_sees_child_pins_and_chat_as_with(self) -> None:
+        """Collate on a chat session file merges chat extras into remember crawl."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            kb = root / "knowledge"
+            (kb / "npc").mkdir(parents=True)
+            (kb / "npc" / "bob.md").write_text("Bob.\n", encoding="utf-8")
+            (kb / "pc").mkdir(parents=True)
+            (kb / "pc" / "amy.md").write_text("Amy.\n", encoding="utf-8")
+            (kb / "lore").mkdir(parents=True)
+            (kb / "lore" / "alice.md").write_text("Alice.\n", encoding="utf-8")
+
+            root_md = narrative.md_path()
+            root_md.write_text(
+                "# test\n\n"
+                "[chat:chat-sess\n"
+                "    as_kb_id: npc.bob\n"
+                "    with_kb_id: pc.amy\n"
+                "]: #\n",
+                encoding="utf-8",
+            )
+            sess_dir = narrative.narrative_root / "chat-sess"
+            sess_dir.mkdir()
+            (sess_dir / "_node.md").write_text(
+                "[\n"
+                "  kb_pin:\n"
+                "    - lore.alice\n"
+                "]: #\n"
+                "\n"
+                "Alpha.\n"
+                "Beta.\n"
+                "Gamma.\n",
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "chat scene"],
+                cwd=root,
+                capture_output=True,
+                check=True,
+            )
+
+            KnowledgeStore.clear_registry()
+            store = KnowledgeStore.for_project(root)
+            self.assertIsNone(store.add_tags("lore.alice", ["remember.note"]))
+
+            chat_node = narrative.child_node("chat-sess")
+            address_str = "/".join([narrative.narrative_root.name] + list(chat_node.key_path))
+
+            captured: dict[str, list[str]] = {}
+
+            async def _remember_cap(*, crawl_result: Any, **kw: Any) -> str:
+                captured["pinned_ids"] = list(crawl_result.pinned_ids)
+                return ""
+
+            with patch("lens.core.operators.session.generate_text", new=_fake_summary_text):
+                with patch(
+                    "lens.core.operators.collate.apply_remember_patches",
+                    AsyncMock(side_effect=_remember_cap),
+                ):
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        asyncio.run(
+                            CollateOperator.run_collate(
+                                session=ProjectSession(root, root),
+                                narrative=narrative,
+                                id="chunk",
+                                address_str=address_str,
+                                start_line=6,
+                                end_line=7,
+                                pins=[],
+                                unpins=[],
+                                llm_id=None,
+                            )
+                        )
+
+            ids = captured["pinned_ids"]
+            self.assertIn("lore.alice", ids)
+            self.assertIn("npc.bob", ids)
+            self.assertIn("pc.amy", ids)

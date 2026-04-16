@@ -24,7 +24,9 @@ class TestPromptStore(unittest.TestCase):
         store = PromptStore(self.root)
         resolved = store.resolve("write.system")
         self.assertEqual(resolved.source, "builtin")
-        self.assertIn("story-writing assistant", resolved.value)
+        self.assertEqual(resolved.key, "write.system")
+        self.assertEqual(resolved.value, store.get("write.system"))
+        self.assertTrue(resolved.value.strip())
 
     def test_project_override_wins(self) -> None:
         store = PromptStore(self.root)

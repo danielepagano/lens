@@ -92,6 +92,36 @@ class TestCrawlPinOrder(unittest.TestCase):
             self.assertIn("place.a", r.knowledge[0])
             self.assertIn("place.b", r.knowledge[1])
             self.assertEqual(r.pinned_ids, ["place.a", "place.b"])
+            self.assertEqual(r.remember_pins, {})
+
+    def test_remember_pins_populated_on_crawl(self) -> None:
+        """Crawl attaches remember_pins for pinned ids that have remember.* tags."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "lore", "alice", "Alice")
+            from lens.core.knowledge import KnowledgeStore
+
+            KnowledgeStore.clear_registry()
+            kb = KnowledgeStore.for_project(root)
+            self.assertIsNone(kb.add_tags("lore.alice", ["remember.session-notes", "other"]))
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - lore.alice\n]: #\n\n# test\n"
+            )
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "fm"],
+                cwd=root,
+                capture_output=True,
+                check=True,
+            )
+            KnowledgeStore.clear_registry()
+            r = crawl(node, include_narrative=False)
+            self.assertEqual(r.pinned_ids, ["lore.alice"])
+            self.assertEqual(
+                r.remember_pins,
+                {"lore.alice": ["remember.session-notes"]},
+            )
 
     def test_linked_expansion_preserves_pinning_order(self) -> None:
         """Crawl with + pin: explicit id before linked, and pinning order across levels."""

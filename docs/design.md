@@ -231,3 +231,37 @@ Ultimately, Lens should have a simple, text-centric UX that's like a "markdown e
    - You also need to be able to mark begin/end of text for creating sections, being able to zoom in and out of sections, etc. so something like `/collate my-aside /chapter-1 123 133` (or after `/collate my-aside` the UI lets you pick the node and mark the start and end) 
    - Lifecycle features like committing a checkpoint, like `/tx-checkpoint went shopping and found a forger`
  - Sufficiently user-friendly, with hints and auto-complete, and works well on a phone... maybe not as much typing if you can just tap on things.
+
+## Appendix: Prompt Editing Heuristics
+
+These are general prompt-writing heuristics for Lens system prompts, design modules, and dataset guidance. They are meant to preserve useful lessons from prompt work without tying future edits to one specific research round or use case.
+
+### Core framing
+
+- Prompts are steering, not code. A prompt does not control a model the way a program controls a machine; it pushes the model toward a region of behavior. Favor dense conceptual cues over long procedural scaffolding.
+- The prompt's own prose is part of the instruction. The opening paragraph should already sound like the kind of output we want back. Flat policy-copy tends to induce flat output.
+- Specificity beats generic virtue words. "Be vivid" or "be supportive" is weak unless the prompt also shows what that means in this context.
+
+### Practical editing rules
+
+- Prefer latent-space steering over rule lists. If a prompt has a long "how to work" section, compress it until only the load-bearing constraints remain.
+- Audit for format-locking. Repeating numbered templates, rigid section sequences, and strongly repeated output shapes can make the model pick a form first and cram content into it. Keep required formats only where they are structurally necessary.
+- Name the failure mode directly. A short "what this is not" section is often cheaper and more effective than another paragraph of positive exhortation.
+- Let detail do work. Description should change pressure, reveal intent, clarify action, or open an option. Avoid filler beats that merely decorate the sentence.
+- Use examples sparingly but deliberately. A short negative/positive pair is high-leverage when a prompt has a known recurring failure mode. Do not add examples just to bulk up the prompt.
+- Favor goal-shaped user instructions over topic-shaped ones. "Help me figure out why this scene falls flat" is usually better than "write about this scene." This matters both in prompt templates and in user-facing docs.
+- Guard the token budget. Any prompt over roughly a few hundred words should be treated as suspect. Remove restatements, obvious boilerplate, and guidance that no longer matches the surrounding architecture.
+
+### Lens-specific guidance
+
+- Keep structural constraints explicit when the toolchain depends on them. Required output formats, tag conventions, exact-anchor rules, and similar machine-sensitive instructions should stay concrete even when the rest of the prompt is compressed.
+- Prefer behavioral guidance over narrated workflows. If a prompt contains an internal decision process, write it as thinking guidance, not as headings the model will be tempted to print back out.
+- Distinguish transferable prompt craft from domain-specific vibe. Companion-style lessons about flirtation, asymmetry, or provocation are not automatically appropriate for writing, summarization, or RPG prompts. Carry over the structural lesson, not the emotional register.
+- When editing prompt-backed datasets, preserve the domain's voice. Improve shape, density, and failure-mode handling without sanding away what makes that dataset useful.
+
+### Good outcomes to aim for
+
+- The model sounds like it understood the job, not like it followed a checklist.
+- Output varies with the scene while staying within the intended behavioral boundaries.
+- Important constraints are obeyed without the response feeling template-locked.
+- Shorter prompts still feel stronger because the remaining tokens are doing more work.

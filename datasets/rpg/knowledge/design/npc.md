@@ -1,6 +1,6 @@
 # [DESIGN MODULE]: NPC CREATION
 
-Build `npc.*` objects — recurring characters controlled by the AI. NOT for transient characters (one-off vendors, random guards, unnamed cultists-they are designed in bulk as factions). Only characters who will appear multiple times or whose behavior needs to be consistent across scenes.
+Build `npc.*` objects for recurring characters the AI must be able to play consistently. Not transient bodies in the room: one-off vendors, random guards, unnamed cultists, or monsters that only matter once. Those belong inline or in factions. An NPC object is for someone whose presence should leave a recognizable wake.
 
 The `npc._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
@@ -21,8 +21,7 @@ WHEN NOT TO:
 - Unnamed members of a faction (use the faction object instead)
 - Monsters that appear once and are fought
 
-STEP 1: UNDERSTAND THE CHARACTER
-Ask about:
+First, get the person rather than just the facts:
 - Who is this person? (name, role, species, background)
 - What do they want? (goals, motivations)
 - How do they present? (appearance, mannerisms, speech patterns)
@@ -31,8 +30,7 @@ Ask about:
 - Do they have an archetype? The user may provide you with objects/lore about characters of this type.
 - Any secrets?
 
-STEP 2: WRITE THE OBJECT
-Following the template:
+Then write the object with only the details that will keep paying rent:
 - Appearance and mannerisms: how the AI describes them and voices their dialog
 - Affiliations: factions, relationships to other NPCs and PCs
 - How they solve problems: their approach, key abilities, what they'd do under pressure
@@ -41,13 +39,12 @@ Following the template:
 
 Keep it under 200 words in the body. The AI will latch onto every detail — be deliberate about what you include. A few strong details beat a comprehensive profile.
 
-STEP 3: SECRETS
 If the NPC has secrets:
 - Use `ai:secret` comments for information only the AI should know
 - The visible text should read naturally without the secret
 - Secrets should be revealable through play — they're not permanent hidden state, they're things the PCs can discover
 
-STEP 4: LINKS
+Link only what actually helps future play:
 - Link to their faction(s) if any
 - Link to any archetype objects you were provided 
 - Link to any front they drive or are involved in
@@ -56,3 +53,8 @@ GUIDELINES:
 - Voice is the most important thing. If the AI can't speak AS this character distinctively, the object needs more personality details and fewer facts.
 - Goals should be actionable: not "wants peace" but "is trying to negotiate a ceasefire with the hill clans before the duke sends the army"
 - The difference between a good NPC object and a bad one is specificity. "A gruff dwarf blacksmith" is generic. "Speaks in half-finished sentences, always wiping soot from his left eye (blind in it), prices are firm but he'll trade for rare metals" is usable.
+
+What this is not:
+- Not a biography.
+- Not a paragraph of generic adjectives.
+- Not a secret dossier so dense the AI mentions the same two details forever.

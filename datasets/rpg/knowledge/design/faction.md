@@ -1,6 +1,6 @@
 # [DESIGN MODULE]: FACTION BUILD-OUT
 
-Build `faction.*` objects — any group with story-relevant collective stakes. A faction is NOT just "an organization in the setting." It is any group whose shared goals, methods, or resources matter to the story: a thieves' guild, a regiment of soldiers, a religious order, a merchant cartel, a pack of wolves with territory to defend, a neighbourhood watch, a cult of three. If the PC party acquires collective goals, assets, methods, or allies, they become a faction too.
+Build `faction.*` objects for groups whose collective behavior matters in play. A faction is not just "an organization in the setting." It is any group whose shared goals, methods, or resources create pressure: a thieves' guild, a regiment, a merchant cartel, a wolf pack defending territory, a neighborhood watch, a cult of three. If the PC party acquires collective goals, assets, methods, or allies, they become a faction too.
 
 Factions serve two practical purposes during play:
 1. **Contextualizing fronts**: a front often has a faction driving it or opposing it. The faction object tells the AI *how* that group pursues its goals — methods, resources, attitude — so the front's escalation feels grounded.
@@ -10,14 +10,12 @@ A faction can be very brief. If all you need is "these goblins are territorial a
 
 The `faction._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
-STEP 1: STORY SERVICE CHECK
-Before creating a faction, establish why it matters:
+Before creating a faction, establish why this group needs persistence:
 - Which front does this faction drive, oppose, or complicate? Use `kb_get` to check active fronts.
 - Which PCs interact with this faction? Are any members? Do any have history with it?
 - If the faction isn't connected to a front or PC story, push back: will this group recur? Will encounters involve its members? If it won't appear again, just describe the group inline in the encounter or narrative — no object needed.
 
-STEP 2: UNDERSTAND THE GROUP
-Ask about:
+Understand the group as a group:
 - Who are they? (name, type of group, size and reach)
 - What do they want? (collective goals — not individual member goals)
 - How do they operate? (methods, code of conduct, tactics, brutality or subtlety)
@@ -28,8 +26,7 @@ Ask about:
 
 Not all of these need answers. A pack of dire wolves needs territory, tactics, and maybe a leader — not a recruitment policy. Scale the object to the faction's narrative weight.
 
-STEP 3: WRITE THE OBJECT
-Following the template, keep it compact. A faction object should be **under 200 words** in the body. The AI will use every detail you give it to control group behavior, so be deliberate:
+Write the object so unnamed members become easy to run. Keep it compact. A faction object should be **under 200 words** in the body. The AI will use every detail you give it to control group behavior, so be deliberate:
 - Identity and beliefs: one or two sentences on who they are and what drives them
 - Methods: how they solve problems — this is the most important section, because it directly controls how the AI plays unnamed members in encounters
 - Reach and recruitment: where they operate, who joins, hard constraints
@@ -38,19 +35,17 @@ Following the template, keep it compact. A faction object should be **under 200 
 
 If the faction is minimal (a type of creature, a loose gang), you can skip sections that don't apply. A wolf pack doesn't need "beliefs" — it needs territory, pack tactics, and what provokes or deters them.
 
-STEP 4: SECRETS
 If the faction has hidden agendas, internal conflicts, or information the players shouldn't know:
 - Use `ai:secret` comments for information only the AI should see
 - The visible text should read naturally without the secret — faction names may appear in pin lists the player can see
 - Secrets should be discoverable through play (infiltration, interrogation, observation)
 
-STEP 5: LINKS
+Link with restraint:
 - Tag the faction with its headquarters `location.*` if one exists
 - Tag with the faction leader's `npc.*` or `pc.*` if they have an object
 - Do NOT tag fronts from the faction — fronts tag back to the faction instead
 - If the faction has named members with `npc.*` objects, those NPCs tag back to the faction — not the other way around
 
-STEP 6: THE PC PARTY AS A FACTION
 If the party has evolved to have collective goals, shared assets, a reputation, or methods:
 - Create `faction.party` (or a more specific name if they've named themselves)
 - Tag each `pc.*` to this faction
@@ -66,3 +61,8 @@ GUIDELINES:
 - If a faction needs a headquarters or territory location, suggest loading the location design module. Do not create location objects yourself.
 - Check existing objects before creating. Use `kb_get` and `kb_with_tag` to find factions that might already cover this group or overlap with it.
 - Remember, if you are in `advance` mode you should work more quickly, focusing on incremental changes only, and be done in one shot; do not ask for follow-up tasks or questions unless absolutely necessary.
+
+What this is not:
+- Not an organizational chart.
+- Not founding history unless it changes present behavior.
+- Not a named-NPC substitute when what you really need is a person.

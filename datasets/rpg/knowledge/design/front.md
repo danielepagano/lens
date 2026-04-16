@@ -1,18 +1,16 @@
 # [DESIGN MODULE]: FRONT GROOMING
 
-The primary module for creating, developing, and retiring fronts. Use this whenever the story needs new hooks, existing fronts need updating, or between-session prep is needed.
+This is the module for keeping pressure alive in the campaign. Use it when the story needs new hooks, when existing fronts need to react to what the PCs did, or when between-session prep needs to turn vague possibility into playable tension.
 
 The `front._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Assess the current state before creating or changing anything.
 
-STEP 1: ASSESS
-Before proposing anything, understand where things stand:
-- Unless fronts where already pinned for you, fetch them. If a timeline is pinned, always use `kb_with_tag` with the tag as that timeline id and object type front.
+Start by getting your footing:
+- Unless fronts were already pinned for you, fetch them. If a timeline is pinned, always use `kb_with_tag` with the tag as that timeline id and object type front.
 - Fetch PC lore: use `kb_get` for each PC's `lore.<name>` object: you need their depth (wounds, flaws, desires, core questions) to make fronts that matter
 - Read the narrative context: what has happened recently? What loose threads exist? Ensure fronts are updated based on what already happened.
 - If this is an on-demand session (not an `advance`), ask the user if goal unclear: what do they need? New content? Updates? Something specific?
 
-STEP 2: GROOM EXISTING FRONTS
-For each active front, evaluate:
+Then groom what already exists before inventing more:
 - Has the situation changed? Update phases, reflect PC actions, note what's resolved
 - Should it spawn a DERIVED front? A derived front inherits the original's secret seed (see CREATING FRONTS below) and represents escalation or complication — the same underlying tension manifesting in a new form
 - Is it resolved or stale? Retire it: note the outcome and archive. You can't delete KB items: use `remove-tags` in a KB front-matter only item (works like `tags` but in reverse) to detach it from the timeline.
@@ -20,8 +18,7 @@ For each active front, evaluate:
 
 Aim for 2-4 active fronts at any time. Fewer means the story lacks tension; more fragments attention.
 
-STEP 3: CREATE NEW FRONTS
-When new fronts are needed — whether because existing ones resolved, the PCs moved to a new area, or the user wants fresh hooks — build them with care.
+When new fronts are needed — because others resolved, the PCs moved into fresh territory, or the user wants new hooks — build them with care.
 
 Every front you create MUST have three layers. This is not optional.
 
@@ -53,16 +50,14 @@ The twist is a ONE-SENTENCE idea tucked into the secret layer. It doesn't need t
 
 **Fresh vs. derived**: when creating a new front, decide whether it's a fresh arc seed (new question, new twist) or a derived front (inheriting from an existing one). Base this on story context — if an existing arc is developing, derive from it. If the story needs a completely new thread, seed a fresh one. The player doesn't need to know which is which.
 
-STEP 4: SUPPORTING OBJECTS
-Fronts may need objects that don't exist yet:
+Fronts may need objects that do not exist yet:
 - Named NPCs (recurring non-player characters) have `npc.*` objects
 - Factions use `faction.*` objects
 - Locations: if the front relates to specific, sufficiently complex, and recurring locations, they will have a `location.*` object.
 
-IMPORTANT: if you think you are missing objects, DO NOT just creat them! There are specialized Design Modules for each of these. Suggest to the user that you want to introduce an NPC, faction, or location, and have them decide whether to accept and load the appropriate module for the task . If they decline, just add necessary character and location details in the encounter itself, not other objects.  
+IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest to the user that you want to introduce an NPC, faction, or location, and have them decide whether to accept and load the appropriate module for the task. If they decline, just add necessary character and location details in the encounter itself, not other objects.  
 
-STEP 5: REVIEW
-Before closing:
+Before closing, do a quick pressure check:
 - List all fronts created/updated/retired with their IDs
 - Are 2-4 fronts active?
 - Do active fronts collectively challenge multiple PCs? (Check against their core questions)
@@ -77,4 +72,9 @@ GUIDELINES:
 - When the user asks for "something to do" or "new hooks," that's your cue to create fronts. Always seed them properly.
 - Fronts are compact. The surface should be 2-4 sentences. The secret layers are one sentence each. If a front needs detailed plans, link to a `lore.*` object.
 - Check existing objects before creating new ones. Use `kb_get` and `kb_with_tag` liberally.
-- Remember, if you are in `advance` mode you should work more quickly, focusing on incremetnal changes only, and be done in one shot; do not ask for follow-up tasks or questions unless absolutely necessary.
+- Remember, if you are in `advance` mode you should work more quickly, focusing on incremental changes only, and be done in one shot; do not ask for follow-up tasks or questions unless absolutely necessary.
+
+What this is not:
+- Not a pile of disconnected quest hooks.
+- Not a plot outline the PCs are meant to obey.
+- Not theme recited as slogans; the deep layer should pressure play, not explain itself.

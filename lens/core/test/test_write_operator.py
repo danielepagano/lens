@@ -20,6 +20,7 @@ from lens.core.llm import FinalPayload, StreamEvent
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import OperatorError
 from lens.core.operators.write import WriteOperator
+from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 
@@ -143,7 +144,11 @@ class TestWriteOperatorBuildMessages(unittest.TestCase):
             messages = op.build_messages(cr, {"prompt": "keep going"})
             self.assertEqual(len(messages), 2)
             self.assertEqual(messages[0]["role"], "system")
-            self.assertIn("story-writing", messages[0]["content"])
+            prompts = PromptStore(root)
+            self.assertEqual(
+                messages[0]["content"],
+                prompts.get("write.system") + prompts.get("shared.formatting_addendum"),
+            )
             user_content = messages[1]["content"]
             self.assertIn("CURRENT PASSAGE", user_content)
             self.assertIn("TASK", user_content)
