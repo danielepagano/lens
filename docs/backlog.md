@@ -10,7 +10,7 @@
       - Remove reliance on specific env vars
    - Better "no desktop" usage
       - Better init tooling/docs
-      - Run server one level above projects and support project switching in app
+      - Run server one level above projects and support project switching in app — [plan](multi-project-support.md)
       - Streamline project creation/management (from app if above?)
       - Ensure manual editing is solid
       - Some way to have a hook in a repo toto trigger deploy automatically, maybe even on lens releases
