@@ -17,6 +17,7 @@ from lens.core.commands.pin import resolve_node
 from lens.core.commands.rollback import execute_rollback
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
+from lens.core.now import set_request_timezone
 from lens.core.operator import OperatorError
 from lens.core.storage import Storage
 from lens.core.llm import llm_progress_scope
@@ -303,6 +304,7 @@ async def operator_write(
 ) -> StreamingResponse:
     from lens.core.operators.write import WriteOperator
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
     cursor = narrative.find_cursor()
@@ -370,6 +372,7 @@ async def operator_play(
 ) -> StreamingResponse:
     from lens.rpg.operators.play import PlayOperator
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     pins = list(body.pins)
     unpins = list(body.unpins)
@@ -448,6 +451,7 @@ async def operator_advance(
 ) -> StreamingResponse:
     from lens.rpg.operators.advance import AdvanceOperator
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
     cursor = narrative.find_cursor()
@@ -492,6 +496,7 @@ async def operator_design(
 ) -> StreamingResponse:
     from lens.core.operators.design import DesignOperator
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     pins = list(body.pins)
     unpins = list(body.unpins)
@@ -546,6 +551,7 @@ async def operator_chat(
 ) -> StreamingResponse:
     from lens.core.operators.chat import ChatOperator
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     pins = list(body.pins)
     unpins = list(body.unpins)
@@ -679,6 +685,7 @@ async def operator_edit(
     from lens.core.operators.edit import EditOperator
     from lens.core.project import resolve_address
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
 
@@ -752,6 +759,7 @@ async def operator_section_end(
 ) -> StreamingResponse:
     from lens.core.operators.section import SectionOperator
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     cursor = narrative.find_cursor()
     node_addr = str(cursor.to_address())
@@ -782,6 +790,7 @@ async def operator_collate(
 ) -> StreamingResponse:
     from lens.core.operators.collate import CollateOperator
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
     node_addr = body.address
@@ -818,6 +827,7 @@ async def operator_compress(
 ) -> StreamingResponse:
     from lens.core.operators.compress import CompressNoCollate, run_compress
 
+    set_request_timezone(request.headers.get("Time-Zone"))
     narrative = _require_narrative(session)
     _validate_pins(session, body.pins, body.unpins)
     try:

@@ -255,11 +255,13 @@ chat.instruction_with_directions = '''You are {as_name}.
 
 {char_content}
 
-Stage directions: {directions}{with_line}
+Scene: {directions}
+
+Let this setting and moment inform how the scene opens — do not quote or paraphrase it directly.{with_line}
 
 Blockquotes from {with_name} in the passage are their material — attributed lines are speech; plain `> …` in that run is still their action or beat, not author voice.
 
-Write {as_name}'s response to the scene. Use > [{as_name}] only for spoken lines. Everything else is plain prose.'''
+Write {as_name}'s opening response for this scene. Use > [{as_name}] only for spoken lines. Everything else is plain prose.'''
 
 chat.instruction_with_aside_directions = '''You are {as_name}.
 

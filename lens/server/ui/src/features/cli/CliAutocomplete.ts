@@ -11,7 +11,7 @@ import type { TreeNode, Stats, MountEntry } from '../../services/api'
 export interface Suggestion {
   label: string
   value: string
-  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node' | 'dice-roll' | 'go-cursor'
+  kind: 'command' | 'slug' | 'kb-type' | 'kb-key' | 'flag' | 'node' | 'dice-roll' | 'time-now' | 'go-cursor'
   group: string
   nodeHasChildren?: boolean
   /** Mount browse only: directory row (yellow dashed chip like prefix groups) */
@@ -501,13 +501,15 @@ export function getSuggestions(
       }))
   }
 
+  const commandTrigger = def?.trigger ?? null
+
   // @mention autocomplete in prompt positionals: when typing @word, show KB type/key suggestions
   if (
     state.phase === 'positional' &&
     state.activePayload?.valueType === 'prompt' &&
     state.currentToken.startsWith('@')
   ) {
-    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources)
+    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources, commandTrigger)
   }
 
   // Empty token, or typing in a string/prompt positional: show option chips + positional suggestions
@@ -536,7 +538,7 @@ export function getSuggestions(
       : []
 
     const positionalSugs = state.activePayload
-      ? getPositionalSuggestions(state.activePayload, '', group, sources)
+      ? getPositionalSuggestions(state.activePayload, '', group, sources, commandTrigger)
       : []
 
     return [...optionChips, ...positionalSugs]
@@ -544,7 +546,7 @@ export function getSuggestions(
 
   // Non-empty non-flag token: positional suggestions only
   if (state.activePayload) {
-    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources)
+    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources, commandTrigger)
   }
 
   return []
@@ -555,6 +557,7 @@ function getPositionalSuggestions(
   currentToken: string,
   group: string,
   sources: DataSources,
+  commandTrigger: string | null = null,
 ): Suggestion[] {
   switch (payload.valueType ?? 'flag') {
     case 'slug':
@@ -572,22 +575,37 @@ function getPositionalSuggestions(
         return nodeSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
       }
       const kbPart = currentToken.slice(1)
-      // Do not show roll when the user has typed a dot (KB mention like @spell.fireball)
+      // Do not show roll/now when the user has typed a dot (KB mention like @spell.fireball)
       const hasDot = kbPart.includes('.')
       const rawSuggestions = getKbIdSuggestions(kbPart, group, sources, payload.exclude)
       const kbSuggestions = rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
+
+      const inChatContext =
+        commandTrigger === 'chat' ||
+        sources.stats?.active_session_operator === 'chat'
+
+      const atSuggestions: Suggestion[] = []
       // Inject 'roll' as the first option whenever it matches the typed prefix and no dot yet
       if (!hasDot && 'roll'.startsWith(kbPart.toLowerCase())) {
-        const rollSuggestion: Suggestion = {
+        atSuggestions.push({
           label: 'roll',
           value: '@roll',
           kind: 'dice-roll' as const,
           group,
           completionSuffix: ' ',
-        }
-        return [rollSuggestion, ...kbSuggestions]
+        })
       }
-      return kbSuggestions
+      // Inject '@now' only when in a chat context
+      if (inChatContext && !hasDot && 'now'.startsWith(kbPart.toLowerCase())) {
+        atSuggestions.push({
+          label: 'now',
+          value: '@now',
+          kind: 'time-now' as const,
+          group,
+          completionSuffix: ' ',
+        })
+      }
+      return [...atSuggestions, ...kbSuggestions]
     }
     case 'file-path':
       return getFileSuggestions(currentToken, group, sources)

@@ -54,11 +54,12 @@ from lens.core.context import CrawlResult, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, build_command_tools_bundle
 from lens.core.narrative import NarrativeNode
+from lens.core.now import substitute_now
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
 from lens.core.pinning import pin as pin_node
 from lens.core.prompts import PromptStore
-from lens.core.project import ProjectSession, validate_slug
+from lens.core.project import ProjectSession, get_project_locale, validate_slug
 
 
 async def generate_text(*args: Any, **kwargs: Any) -> str:
@@ -293,6 +294,8 @@ class ChatOperator(SessionOperator):
         """
         md = node.md_path()
         original = md.read_text(encoding="utf-8")
+        locale = get_project_locale(session.project_root)
+        user_prompt = substitute_now(user_prompt, locale=locale)
         block = cls._format_direct_user_block(
             with_kb_id=with_kb_id,
             user_prompt=user_prompt,
@@ -479,6 +482,11 @@ class ChatOperator(SessionOperator):
         storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
 
+        # Expand @now in the scene context before storing and sending to LLM.
+        if prompt:
+            locale = get_project_locale(session.project_root)
+            prompt = substitute_now(prompt, locale=locale)
+
         # Build parent annotation params — everything the session needs.
         ann_params: dict[str, Any] = {"as_kb_id": as_kb_id}
         if with_kb_id:
@@ -592,6 +600,70 @@ class ChatOperator(SessionOperator):
             cancel_event=cancel_event,
             _cursor_override=_cursor_override,
             empty_prompt_ok=empty_prompt_ok,
+        )
+
+    # ── Session-end override: inject scene context into summary ──────────────
+
+    @classmethod
+    def _read_scene_context(cls, cursor: NarrativeNode) -> str | None:
+        """Read the scene context (initial prompt) stored in the parent annotation.
+
+        Returns the ``prompt`` field from the parent's opening ``[chat:<id>]``
+        annotation, or ``None`` if absent.
+        """
+        if not cursor.key_path:
+            return None
+        session_id = cursor.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        try:
+            text = parent.md_path().read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return None
+        for ann in reversed(parse_annotations(text)):
+            if ann.operator == cls.name and ann.id == session_id:
+                p = ann.params.get("prompt")
+                if isinstance(p, str) and p.strip():
+                    return p.strip()
+                return None
+        return None
+
+    @classmethod
+    async def run_session_end(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        llm_id: str | None = None,
+        reasoning: str | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: Any | None = None,
+        summary_guidance: str | None = None,
+    ) -> None:
+        """Close the chat session, injecting the opening scene context into
+        the summary guidance so the summarization AI knows where the scene took place.
+        """
+        cursor = narrative.find_cursor()
+        scene_context = cls._read_scene_context(cursor)
+        if scene_context:
+            scene_note = f"This conversation took place in the following scene: {scene_context}"
+            combined = (
+                f"{scene_note}\n\n{summary_guidance}"
+                if summary_guidance
+                else scene_note
+            )
+        else:
+            combined = summary_guidance
+        await super().run_session_end(
+            session=session,
+            narrative=narrative,
+            llm_id=llm_id,
+            reasoning=reasoning,
+            on_token=on_token,
+            cancel_event=cancel_event,
+            summary_guidance=combined,
         )
 
     # ── run_session override ───────────────────────────────────────────────
