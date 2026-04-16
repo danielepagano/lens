@@ -501,15 +501,13 @@ export function getSuggestions(
       }))
   }
 
-  const commandTrigger = def?.trigger ?? null
-
   // @mention autocomplete in prompt positionals: when typing @word, show KB type/key suggestions
   if (
     state.phase === 'positional' &&
     state.activePayload?.valueType === 'prompt' &&
     state.currentToken.startsWith('@')
   ) {
-    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources, commandTrigger)
+    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources)
   }
 
   // Empty token, or typing in a string/prompt positional: show option chips + positional suggestions
@@ -538,7 +536,7 @@ export function getSuggestions(
       : []
 
     const positionalSugs = state.activePayload
-      ? getPositionalSuggestions(state.activePayload, '', group, sources, commandTrigger)
+      ? getPositionalSuggestions(state.activePayload, '', group, sources)
       : []
 
     return [...optionChips, ...positionalSugs]
@@ -546,7 +544,7 @@ export function getSuggestions(
 
   // Non-empty non-flag token: positional suggestions only
   if (state.activePayload) {
-    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources, commandTrigger)
+    return getPositionalSuggestions(state.activePayload, state.currentToken, group, sources)
   }
 
   return []
@@ -557,7 +555,6 @@ function getPositionalSuggestions(
   currentToken: string,
   group: string,
   sources: DataSources,
-  commandTrigger: string | null = null,
 ): Suggestion[] {
   switch (payload.valueType ?? 'flag') {
     case 'slug':
@@ -580,10 +577,6 @@ function getPositionalSuggestions(
       const rawSuggestions = getKbIdSuggestions(kbPart, group, sources, payload.exclude)
       const kbSuggestions = rawSuggestions.map((s) => ({ ...s, value: '@' + s.value }))
 
-      const inChatContext =
-        commandTrigger === 'chat' ||
-        sources.stats?.active_session_operator === 'chat'
-
       const atSuggestions: Suggestion[] = []
       // Inject 'roll' as the first option whenever it matches the typed prefix and no dot yet
       if (!hasDot && 'roll'.startsWith(kbPart.toLowerCase())) {
@@ -595,8 +588,8 @@ function getPositionalSuggestions(
           completionSuffix: ' ',
         })
       }
-      // Inject '@now' only when in a chat context
-      if (inChatContext && !hasDot && 'now'.startsWith(kbPart.toLowerCase())) {
+      // Inject '@now' whenever it matches the typed prefix and no dot yet
+      if (!hasDot && 'now'.startsWith(kbPart.toLowerCase())) {
         atSuggestions.push({
           label: 'now',
           value: '@now',

@@ -2,7 +2,7 @@
 
 The formatted result looks like::
 
-    Wednesday, April 15th, around 7pm
+    Wednesday, April 15, around 7pm
 
 Rounding rule: 6:31–7:30 all map to "around 7", 7:31–8:30 map to "around 8", etc.
 
@@ -14,8 +14,8 @@ Timezone resolution (in priority order):
 3. The process's local timezone (``datetime.now().astimezone()``).
 
 Locale is read from the project's ``lens.toml`` ``[project] locale`` field
-(default ``en-US``).  Only the language tag prefix is examined: any ``en-*``
-locale uses the English format; others fall back to a numeric ``~HH:00`` style.
+(default ``en-US``).  The locale tag is passed to ``strftime`` for weekday and
+month names so they match the configured language where the platform supports it.
 """
 
 from __future__ import annotations
@@ -35,39 +35,31 @@ def set_request_timezone(tz_name: str | None) -> None:
     """Set the timezone for ``@now`` expansion in the current async context.
 
     Call this from HTTP route handlers after reading the ``Time-Zone`` request
-    header.  The value is propagated to any tasks spawned by
+    header.  The value is propagated to tasks spawned by
     ``asyncio.ensure_future`` / ``asyncio.create_task`` because they inherit a
     copy of the calling context.
     """
     _request_timezone.set(tz_name)
 
 
-def _ordinal_suffix(n: int) -> str:
-    """Return "st"/"nd"/"rd"/"th" for integer *n*."""
-    if 11 <= (n % 100) <= 13:
-        return "th"
-    return {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
-
-
-_EN_DAY_NAMES = [
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
-]
-_EN_MONTH_NAMES = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-]
-
-
-def _format_now(tz_name: str | None, locale: str) -> str:
+def _format_now(tz_name: str | None, _dt: datetime | None = None) -> str:
     """Return the current date/time as a human-readable string.
 
-    Examples (locale ``en-US``)::
+    Uses ``strftime`` for weekday and month names.  The time portion uses
+    "around X am/pm" with nearest-hour rounding.
 
-        Wednesday, April 15th, around 7pm
-        Monday, January 1st, around midnight
-        Friday, June 21st, around noon
+    Examples::
+
+        Wednesday, April 15, around 7pm
+        Monday, January 1, around midnight
+        Friday, June 21, around noon
+
+    *_dt* is a test-only injection point; production callers should leave it
+    as ``None`` so the real wall clock is used.
     """
-    if tz_name:
+    if _dt is not None:
+        dt = _dt
+    elif tz_name:
         try:
             tz = zoneinfo.ZoneInfo(tz_name)
             dt = datetime.now(tz)
@@ -84,29 +76,18 @@ def _format_now(tz_name: str | None, locale: str) -> str:
 
     hour = rounded_dt.hour  # 0-23
 
-    if locale.lower().startswith("en"):
-        day_name = _EN_DAY_NAMES[dt.weekday()]
-        month_name = _EN_MONTH_NAMES[dt.month - 1]
-        day = dt.day
-        ordinal = _ordinal_suffix(day)
-
-        if hour == 0:
-            time_str = "around midnight"
-        elif hour == 12:
-            time_str = "around noon"
-        elif hour < 12:
-            time_str = f"around {hour}am"
-        else:
-            time_str = f"around {hour - 12}pm"
-
-        return f"{day_name}, {month_name} {day}{ordinal}, {time_str}"
-
-    # Non-English fallback: ISO-date style with approximate hour
-    if hour < 12:
-        time_str = f"~{hour:02d}:00"
+    if hour == 0:
+        time_str = "around midnight"
+    elif hour == 12:
+        time_str = "around noon"
+    elif hour < 12:
+        time_str = f"around {hour}am"
     else:
-        time_str = f"~{hour:02d}:00"
-    return dt.strftime(f"%A %d %B, {time_str}")
+        time_str = f"around {hour - 12}pm"
+
+    # strftime gives locale-aware weekday (%A) and month (%B) names
+    date_str = dt.strftime("%A, %B ") + str(dt.day)
+    return f"{date_str}, {time_str}"
 
 
 def substitute_now(
@@ -114,16 +95,22 @@ def substitute_now(
     *,
     tz_name: str | None = None,
     locale: str = "en-US",
+    _dt: datetime | None = None,
 ) -> str:
     """Replace all ``@now`` tokens in *prompt* with the formatted date/time.
 
     *tz_name* overrides any context-variable timezone.  When neither is set,
-    the process's local timezone is used.  Locale controls formatting style.
+    the process's local timezone is used.  The *locale* parameter is accepted
+    for forward-compatibility but formatting currently relies on the platform
+    strftime locale.
+
+    *_dt* is a test-only injection point that pins the clock to a specific
+    datetime; production callers should leave it as ``None``.
 
     Returns *prompt* unchanged when it contains no ``@now`` tokens (fast path).
     """
     if "@now" not in prompt:
         return prompt
     resolved_tz = tz_name if tz_name is not None else _request_timezone.get()
-    formatted = _format_now(resolved_tz, locale)
+    formatted = _format_now(resolved_tz, _dt)
     return _NOW_RE.sub(formatted, prompt)

@@ -264,6 +264,19 @@ def _make_on_token(
     return on_token
 
 
+def _init_stream(
+    request: Request,
+    session: ProjectSession,
+) -> tuple[Any, StreamLock, asyncio.Queue[dict[str, Any] | None], Any]:
+    """Set timezone context, validate narrative exists, return (narrative, lock, event_queue, on_token)."""
+    set_request_timezone(request.headers.get("Time-Zone"))
+    narrative = _require_narrative(session)
+    lock: StreamLock = request.app.state.stream_lock
+    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+    on_token = _make_on_token(event_queue)
+    return narrative, lock, event_queue, on_token
+
+
 def _start_operator_stream(
     lock: StreamLock,
     event_queue: asyncio.Queue[dict[str, Any] | None],
@@ -304,15 +317,10 @@ async def operator_write(
 ) -> StreamingResponse:
     from lens.core.operators.write import WriteOperator
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     _validate_pins(session, body.pins, body.unpins)
     cursor = narrative.find_cursor()
     node_addr = str(cursor.to_address())
-
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue)
 
     async def on_auto_info(payload: dict[str, Any]) -> None:
         await event_queue.put(payload)
@@ -372,8 +380,7 @@ async def operator_play(
 ) -> StreamingResponse:
     from lens.rpg.operators.play import PlayOperator
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     pins = list(body.pins)
     unpins = list(body.unpins)
     if body.module_id is not None and body.module_id.strip():
@@ -387,14 +394,9 @@ async def operator_play(
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-
     async def on_stream_target(addr: str) -> None:
         target_ref[0] = addr
         await event_queue.put({"type": "target", "node": addr})
-
-    on_token = _make_on_token(event_queue)
 
     async def on_auto_info(payload: dict[str, Any]) -> None:
         await event_queue.put(payload)
@@ -451,20 +453,14 @@ async def operator_advance(
 ) -> StreamingResponse:
     from lens.rpg.operators.advance import AdvanceOperator
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     _validate_pins(session, body.pins, body.unpins)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-
     async def on_stream_target(addr: str) -> None:
         target_ref[0] = addr
         await event_queue.put({"type": "target", "node": addr})
-
-    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return AdvanceOperator.run_advance(
@@ -496,8 +492,7 @@ async def operator_design(
 ) -> StreamingResponse:
     from lens.core.operators.design import DesignOperator
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     pins = list(body.pins)
     unpins = list(body.unpins)
     if body.module_id is not None and body.module_id.strip():
@@ -510,14 +505,9 @@ async def operator_design(
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-
     async def on_stream_target(addr: str) -> None:
         target_ref[0] = addr
         await event_queue.put({"type": "target", "node": addr})
-
-    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return DesignOperator.run_design(
@@ -551,8 +541,7 @@ async def operator_chat(
 ) -> StreamingResponse:
     from lens.core.operators.chat import ChatOperator
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     pins = list(body.pins)
     unpins = list(body.unpins)
     session_node, _ = ChatOperator.find_active_session(narrative)
@@ -565,14 +554,9 @@ async def operator_chat(
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-
     async def on_stream_target(addr: str) -> None:
         target_ref[0] = addr
         await event_queue.put({"type": "target", "node": addr})
-
-    on_token = _make_on_token(event_queue)
 
     async def on_auto_info(payload: dict[str, Any]) -> None:
         await event_queue.put(payload)
@@ -685,8 +669,7 @@ async def operator_edit(
     from lens.core.operators.edit import EditOperator
     from lens.core.project import resolve_address
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    _require_narrative(session)
+    _, lock, event_queue, on_token = _init_stream(request, session)
     _validate_pins(session, body.pins, body.unpins)
 
     try:
@@ -702,10 +685,6 @@ async def operator_edit(
     node_addr = str(resolved)
     rel_path = str(target_node.md_path().relative_to(session.git_root))
     ann_id = EditOperator.ann_id(body.start_line, body.end_line)
-
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return EditOperator.run_mutation(
@@ -759,14 +738,9 @@ async def operator_section_end(
 ) -> StreamingResponse:
     from lens.core.operators.section import SectionOperator
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     cursor = narrative.find_cursor()
     node_addr = str(cursor.to_address())
-
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return SectionOperator.run_end(
@@ -790,14 +764,9 @@ async def operator_collate(
 ) -> StreamingResponse:
     from lens.core.operators.collate import CollateOperator
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     _validate_pins(session, body.pins, body.unpins)
     node_addr = body.address
-
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue)
 
     def coro_fn() -> Any:
         return CollateOperator.run_collate(
@@ -827,18 +796,13 @@ async def operator_compress(
 ) -> StreamingResponse:
     from lens.core.operators.compress import CompressNoCollate, run_compress
 
-    set_request_timezone(request.headers.get("Time-Zone"))
-    narrative = _require_narrative(session)
+    narrative, lock, event_queue, on_token = _init_stream(request, session)
     _validate_pins(session, body.pins, body.unpins)
     try:
         target = resolve_node(session, (body.address or "").strip() or None)
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     node_addr = str(target.to_address())
-
-    lock: StreamLock = request.app.state.stream_lock
-    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
-    on_token = _make_on_token(event_queue)
 
     async def _compress_coro() -> Any:
         r = await run_compress(

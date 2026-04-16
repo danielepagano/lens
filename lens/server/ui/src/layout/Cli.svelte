@@ -618,6 +618,7 @@
         return
       }
       case 'dice-roll':
+      case 'time-now':
         replaceCurrentToken(sug.value + (sug.completionSuffix ?? ''))
         return
     }
