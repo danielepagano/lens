@@ -20,6 +20,9 @@
 "meta.lens" = [
     "meta.companion",
 ]
+"meta.vibe" = [
+    "meta.companion",
+]
 "remember.self" = [
     "id.companion",
 ]
@@ -39,6 +42,7 @@
 ]
 "meta.companion" = [
     "meta.lens",
+    "meta.vibe",
     "psych.attachment",
     "psych.bigfive",
     "psych.sdt",
