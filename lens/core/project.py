@@ -110,6 +110,24 @@ def get_selected_datasets(project_root: Path) -> list[str]:
     return result
 
 
+def get_project_locale(project_root: Path) -> str:
+    """Return the BCP-47 locale tag from ``[project] locale`` in lens.toml.
+
+    Defaults to ``"en-US"`` when the field is absent or the file does not exist.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return "en-US"
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project", {})
+    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    raw_locale = project.get("locale")
+    if isinstance(raw_locale, str) and raw_locale.strip():
+        return raw_locale.strip()
+    return "en-US"
+
+
 def get_selected_prompt_pack(project_root: Path) -> str | None:
     """Return prompt pack name from ``[project] prompt_pack``, or ``None``."""
     lens_toml = project_root / "lens.toml"

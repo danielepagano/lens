@@ -203,9 +203,10 @@ async function runStreamingOp(
   body: unknown,
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
   const r = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Time-Zone': tz },
     body: JSON.stringify(body),
   })
   if (r.status === 409 || r.status === 423) {

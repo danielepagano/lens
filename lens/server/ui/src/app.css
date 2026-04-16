@@ -687,6 +687,18 @@ details[open]>summary {
   background: rgba(168, 85, 247, 0.2);
 }
 
+.cli-suggestion.cli-suggestion--time-now {
+  border-color: rgba(20, 184, 166, 0.7);
+  background: rgba(20, 184, 166, 0.12);
+  color: #5eead4;
+}
+
+.cli-suggestion.cli-suggestion--time-now:hover,
+.cli-suggestion.cli-suggestion--time-now:focus-visible {
+  border-color: rgba(20, 184, 166, 0.95);
+  background: rgba(20, 184, 166, 0.2);
+}
+
 .cli-suggestion.cli-suggestion--prefix-group,
 .cli-suggestion.cli-suggestion--media-dir {
   border-width: 2px;

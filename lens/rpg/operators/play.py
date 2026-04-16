@@ -41,6 +41,8 @@ from typing import Any, ClassVar, cast
 
 from lens.core.context import CrawlResult, crawl
 from lens.core.dice import DiceError, substitute_rolls
+from lens.core.now import substitute_now
+from lens.core.project import get_project_locale
 from lens.core.knowledge import KnowledgeStore
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
@@ -388,6 +390,8 @@ class PlayOperator(SessionOperator):
                 resolved = substitute_rolls(prompt)
             except DiceError as e:
                 raise OperatorError(str(e)) from e
+            locale = get_project_locale(session.project_root)
+            resolved = substitute_now(resolved, locale=locale)
             await cls._append_player_line(
                 session=session,
                 narrative=narrative,
@@ -493,6 +497,8 @@ class PlayOperator(SessionOperator):
                 resolved = substitute_rolls(prompt)
             except DiceError as e:
                 raise OperatorError(str(e)) from e
+            locale = get_project_locale(session.project_root)
+            resolved = substitute_now(resolved, locale=locale)
             await cls._append_player_line(
                 session=session,
                 narrative=narrative,

@@ -128,6 +128,8 @@ from lens.core.annotations import (
 from lens.core.command_tools import CommandToolFn
 from lens.core.context import CrawlResult, assemble_prompt, crawl
 from lens.core.dice import DiceError, substitute_rolls
+from lens.core.now import substitute_now
+from lens.core.project import get_project_locale
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import (
     LLMError,
@@ -915,6 +917,8 @@ class Operator(ABC):
                 prompt = substitute_rolls(prompt)
             except DiceError as e:
                 raise OperatorError(str(e)) from e
+            locale = get_project_locale(session.project_root)
+            prompt = substitute_now(prompt, locale=locale)
 
         mention_pins = cls.mention_pins(prompt, session.project_root)
         if mention_pins:

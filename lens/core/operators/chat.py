@@ -54,11 +54,12 @@ from lens.core.context import CrawlResult, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, build_command_tools_bundle
 from lens.core.narrative import NarrativeNode
+from lens.core.now import substitute_now
 from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
 from lens.core.pinning import pin as pin_node
 from lens.core.prompts import PromptStore
-from lens.core.project import ProjectSession, validate_slug
+from lens.core.project import ProjectSession, get_project_locale, validate_slug
 
 
 async def generate_text(*args: Any, **kwargs: Any) -> str:
@@ -293,6 +294,8 @@ class ChatOperator(SessionOperator):
         """
         md = node.md_path()
         original = md.read_text(encoding="utf-8")
+        locale = get_project_locale(session.project_root)
+        user_prompt = substitute_now(user_prompt, locale=locale)
         block = cls._format_direct_user_block(
             with_kb_id=with_kb_id,
             user_prompt=user_prompt,
@@ -478,6 +481,11 @@ class ChatOperator(SessionOperator):
         owner = cls.owner_id(session_id, rel_path)
         storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
+
+        # Expand @now in the scene context before storing and sending to LLM.
+        if prompt:
+            locale = get_project_locale(session.project_root)
+            prompt = substitute_now(prompt, locale=locale)
 
         # Build parent annotation params — everything the session needs.
         ann_params: dict[str, Any] = {"as_kb_id": as_kb_id}

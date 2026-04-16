@@ -22,6 +22,7 @@
         class:cli-suggestion--prefix-group={sug.completionSuffix === '-'}
         class:cli-suggestion--media-dir={sug.isMountDirectory === true}
         class:cli-suggestion--dice-roll={sug.kind === 'dice-roll'}
+        class:cli-suggestion--time-now={sug.kind === 'time-now'}
         class:cli-suggestion--go-cursor={sug.kind === 'go-cursor'}
         class:cli-suggestion--cursor-target-always={sug.cursorTargeting === 'always'}
         class:cli-suggestion--cursor-target-override={sug.cursorTargeting === 'can-override'}
@@ -31,7 +32,7 @@
         }}
         on:click={() => onSelect(sug)}
       >
-        {#if sug.kind === 'dice-roll'}⚄ roll{:else}{sug.label}{/if}
+        {#if sug.kind === 'dice-roll'}⚄ roll{:else if sug.kind === 'time-now'}⏱ now{:else}{sug.label}{/if}
       </button>
     {/each}
   </div>
