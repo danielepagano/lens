@@ -17,6 +17,7 @@
     createMarkdownRenderer,
     preprocessBlockquotePills,
     preprocessKbReferencePills,
+    prefixMountUrlsInRenderedHtml,
   } from '../../utils/markdown'
   import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
 
@@ -188,7 +189,7 @@
     }
   }
 
-  $: rendered = item
+  $: _rawKbRendered = item
     ? md.render(
         preprocessKbReferencePills(
           preprocessBlockquotePills(item.content),
@@ -196,6 +197,7 @@
         ),
       )
     : ''
+  $: rendered = prefixMountUrlsInRenderedHtml(_rawKbRendered, $currentProject)
 
   function isDotTag(tag: string): boolean {
     return tag.includes('.')

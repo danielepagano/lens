@@ -1128,6 +1128,15 @@ export function preprocessThinkingTags(markdown: string): string {
   })
 }
 
+/**
+ * Inject project slug into `/mount/file/` and `/mount/preview/` URLs in rendered HTML
+ * (e.g. from the attach command). Matches double-quoted `href` / `src` only.
+ */
+export function prefixMountUrlsInRenderedHtml(html: string, projectSlug: string | null): string {
+  if (!projectSlug) return html
+  return html.replace(/="(\/mount\/(file|preview)\/)/g, (_, p1: string) => `="/${projectSlug}${p1}`)
+}
+
 /** Shared markdown-it instance with settings matching the app's rendering needs. */
 export function createMarkdownRenderer(): MarkdownIt {
   const md = new MarkdownIt({ html: true, linkify: true, typographer: true })

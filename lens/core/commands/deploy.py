@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -19,22 +20,26 @@ from lens.core.storage import Storage
 
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
+# Single and multi-project deployments share one fly.toml format.
+# Single-project is just the multi-project case with one slug; the fly.toml
+# lives inside the project directory, and LENS_PROJECT_SLUGS contains that
+# one slug.
 _FLY_TOML_TEMPLATE = """\
 app = "{app_name}"
 primary_region = "{region}"
 
 [env]
-  LENS_PROJECT_DIR = "/data/repo"
+  LENS_PROJECT_DIR = "/data/repos"
+  LENS_PROJECT_SLUGS = "{slugs}"
   LENS_PORT = "8000"
   CADDY_PORT = "8080"
-  PROJECT_REPO_URL = "{remote_url}"
 
 [http_service]
   internal_port = 8080
   force_https = true
   auto_stop_machines = "suspend"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
 [[mounts]]
   source = "lens_data"
@@ -42,7 +47,7 @@ primary_region = "{region}"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "512mb"
 """
 
 _AWS_ENV_VARS = [
@@ -53,6 +58,14 @@ _AWS_ENV_VARS = [
 ]
 
 
+def _slug_to_env_key(slug: str) -> str:
+    """Convert a project slug to a valid env var suffix.
+
+    Example: ``my-project`` → ``MY_PROJECT``
+    """
+    return slug.upper().replace("-", "_")
+
+
 def _read_lens_toml(project_root: Path) -> dict[str, Any]:
     lens_toml = project_root / "lens.toml"
     if not lens_toml.exists():
@@ -61,49 +74,171 @@ def _read_lens_toml(project_root: Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
-def _collect_required_secrets(
-    project_root: Path,
-    username: str,
-    password: str,
-    deploy_key_path: Path,
-) -> dict[str, str]:
-    """Collect all secrets needed for Fly deployment."""
-    config = _read_lens_toml(project_root)
+def _read_fly_toml(fly_toml: Path) -> dict[str, Any]:
+    if not fly_toml.exists():
+        raise LensException("fly.toml not found — run 'lens deploy init' first")
+    with fly_toml.open("rb") as f:
+        return tomllib.load(f)
+
+
+def _get_fly_app_name(fly_toml: Path) -> str:
+    config = _read_fly_toml(fly_toml)
+    app = config.get("app")
+    if not isinstance(app, str) or not app:
+        raise LensException("fly.toml is missing the 'app' field")
+    return app
+
+
+def _get_slugs(fly_toml: Path) -> list[str]:
+    """Return the current project slugs from fly.toml."""
+    config = _read_fly_toml(fly_toml)
+    env_section = config.get("env", {})
+    raw = env_section.get("LENS_PROJECT_SLUGS", "")
+    return [s for s in raw.split(",") if s]
+
+
+def _update_slugs_in_fly_toml(fly_toml: Path, new_slugs: list[str]) -> None:
+    """Update the LENS_PROJECT_SLUGS line in fly.toml in place."""
+    content = fly_toml.read_text()
+    updated = re.sub(
+        r'(LENS_PROJECT_SLUGS\s*=\s*")[^"]*(")',
+        f'\\g<1>{",".join(new_slugs)}\\g<2>',
+        content,
+    )
+    fly_toml.write_text(updated)
+
+
+def _get_s3_bucket(uri: str) -> str:
+    """Extract the bucket name from an ``s3://bucket/path`` URI."""
+    without_scheme = uri[len("s3://"):]
+    return without_scheme.split("/")[0]
+
+
+def _collect_llm_secrets(config: dict[str, Any], seen: set[str]) -> dict[str, str]:
+    """Return LLM API key secrets from a lens.toml config dict.
+
+    *seen* is updated in place to avoid duplicates across multiple projects.
+    """
     secrets: dict[str, str] = {}
-
-    # Caddy auth — hash password for Caddy bcrypt format
-    hashed: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()  # type: ignore[no-untyped-call]
-    secrets["CADDY_BASIC_AUTH_USER"] = username
-    secrets["CADDY_BASIC_AUTH_HASH"] = hashed
-
-    # Deploy key
-    if not deploy_key_path.exists():
-        raise LensException(f"deploy key not found: {deploy_key_path}")
-    secrets["GIT_REPO_DEPLOY_KEY"] = deploy_key_path.read_text()
-
-    # LLM API keys from lens.toml [[llm]] entries
     raw_llm_list = config.get("llm", [])
     llm_list: list[Any] = cast(list[Any], raw_llm_list) if isinstance(raw_llm_list, list) else []
-    seen_env_vars: set[str] = set()
     for raw_entry in llm_list:
         if not isinstance(raw_entry, dict):
             continue
         entry = cast(dict[str, Any], raw_entry)
         env_name = entry.get("api_key_env")
-        if isinstance(env_name, str) and env_name not in seen_env_vars:
-            seen_env_vars.add(env_name)
+        if isinstance(env_name, str) and env_name not in seen:
+            seen.add(env_name)
             value = os.environ.get(env_name)
             if not value:
                 raise LensException(
                     f"lens.toml requires {env_name} but it is not set in your environment"
                 )
             secrets[env_name] = value
+    return secrets
 
-    # S3 credentials if mount_point is an S3 URI
+
+def _validate_project_for_deploy(slug: str, project_root: Path, git_root: Path) -> str:
+    """Validate a project is deployable.
+
+    Checks:
+    - git remote ``origin`` is an SSH URL
+    - ``mount_point`` (if set) is an S3 URI, not a local path
+
+    Returns the SSH remote URL.
+    Raises :class:`LensException` if any check fails.
+    """
+    storage = Storage(git_root)
+    try:
+        remote_url = storage.get_remote_url()
+    except Exception as exc:
+        raise LensException(f"project '{slug}': cannot read git remote 'origin': {exc}") from exc
+
+    try:
+        parse_git_ssh_remote(remote_url)
+    except ValueError as exc:
+        raise LensException(f"project '{slug}': {exc}") from exc
+
+    config = _read_lens_toml(project_root)
     raw_project = config.get("project", {})
-    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
-    mount_point = project.get("mount_point", "")
-    if isinstance(mount_point, str) and mount_point.startswith("s3://"):
+    proj: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    mount_point = proj.get("mount_point", "")
+    if isinstance(mount_point, str) and mount_point.strip():
+        mp = mount_point.strip()
+        if not mp.startswith("s3://"):
+            raise LensException(
+                f"project '{slug}': mount_point must be an S3 URI (s3://...) for "
+                f"deploy, got: {mp!r}"
+            )
+
+    return remote_url
+
+
+def _build_projects(deploy_dir: Path, slugs: list[str]) -> list[tuple[str, Path, Path]]:
+    """Return ``[(slug, git_root, project_root), ...]`` for the given slugs.
+
+    When ``deploy_dir`` itself contains ``lens.toml`` (single-project: fly.toml
+    lives inside the project directory), the project root is ``deploy_dir``
+    regardless of the slug.  Otherwise (multi-project: fly.toml in a parent
+    directory) each project root is ``deploy_dir / slug``.
+    """
+    from lens.core.project import find_git_root_from
+
+    is_single = (deploy_dir / "lens.toml").exists()
+    projects: list[tuple[str, Path, Path]] = []
+    for slug in slugs:
+        project_root = deploy_dir if is_single else deploy_dir / slug
+        if not (project_root / "lens.toml").exists():
+            raise LensException(f"project '{slug}': no lens.toml found at {project_root}")
+        try:
+            git_root = find_git_root_from(project_root)
+        except RuntimeError as exc:
+            raise LensException(f"project '{slug}': {exc}") from exc
+        projects.append((slug, git_root, project_root))
+    return projects
+
+
+def _collect_secrets(
+    projects: list[tuple[str, Path, Path]],
+    deploy_keys: dict[str, Path],
+    username: str,
+    password: str,
+    remote_urls: dict[str, str],
+) -> dict[str, str]:
+    """Collect all secrets for a Fly deployment (single or multi-project).
+
+    *projects* is [(slug, git_root, project_root), ...].
+    *deploy_keys* maps slug → path to SSH deploy key.
+    *remote_urls* maps slug → SSH remote URL.
+    """
+    secrets: dict[str, str] = {}
+
+    hashed: str = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()  # type: ignore[no-untyped-call]
+    secrets["CADDY_BASIC_AUTH_USER"] = username
+    secrets["CADDY_BASIC_AUTH_HASH"] = hashed
+
+    seen_llm_env: set[str] = set()
+    s3_needed = False
+
+    for slug, _git_root, project_root in projects:
+        env_key = _slug_to_env_key(slug)
+
+        key_path = deploy_keys[slug]
+        if not key_path.exists():
+            raise LensException(f"project '{slug}': deploy key not found: {key_path}")
+        secrets[f"GIT_REPO_DEPLOY_KEY_{env_key}"] = key_path.read_text()
+        secrets[f"PROJECT_REPO_URL_{env_key}"] = remote_urls[slug]
+
+        config = _read_lens_toml(project_root)
+        secrets.update(_collect_llm_secrets(config, seen_llm_env))
+
+        raw_project = config.get("project", {})
+        proj: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+        mount_point = proj.get("mount_point", "")
+        if isinstance(mount_point, str) and mount_point.strip().startswith("s3://"):
+            s3_needed = True
+
+    if s3_needed:
         for var in _AWS_ENV_VARS:
             value = os.environ.get(var)
             if not value:
@@ -124,12 +259,7 @@ def _run(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[
 
 
 def _resolve_external_datasets(project_root: Path) -> list[tuple[str, Path]]:
-    """Return ``[(name, path)]`` for datasets not bundled with Lens.
-
-    Resolves every dataset declared in lens.toml and filters to those
-    whose resolved path is outside the bundled ``datasets/`` directory.
-    Raises :class:`LensException` if any dataset cannot be found.
-    """
+    """Return ``[(name, path)]`` for datasets not bundled with Lens."""
     ds_root = datasets_root().resolve()
     external: list[tuple[str, Path]] = []
     for name in get_selected_datasets(project_root):
@@ -142,55 +272,6 @@ def _resolve_external_datasets(project_root: Path) -> list[tuple[str, Path]]:
         if not path.resolve().is_relative_to(ds_root):
             external.append((name, path))
     return external
-
-
-def init_deploy(
-    project_root: Path,
-    git_root: Path,
-    app_name: str,
-    region: str,
-    username: str,
-    password: str,
-    deploy_key_path: Path,
-) -> None:
-    """Create Fly app, volume, set secrets, and generate fly.toml in the project dir."""
-    storage = Storage(git_root)
-
-    # Get remote URL
-    remote_url = storage.get_remote_url()
-    try:
-        parse_git_ssh_remote(remote_url)
-    except ValueError as exc:
-        raise LensException(str(exc)) from exc
-
-    # Collect all secrets
-    secrets = _collect_required_secrets(project_root, username, password, deploy_key_path)
-
-    # Generate fly.toml
-    fly_toml = project_root / "fly.toml"
-    fly_toml.write_text(
-        _FLY_TOML_TEMPLATE.format(
-            app_name=app_name,
-            region=region,
-            remote_url=remote_url,
-        )
-    )
-
-    # Create Fly app
-    _run(["fly", "apps", "create", app_name, "--machines"])
-
-    # Create volume
-    _run([
-        "fly", "volumes", "create", "lens_data",
-        "--region", region,
-        "--size", "1",
-        "--app", app_name,
-        "--yes",
-    ])
-
-    # Set secrets
-    secret_args = [f"{k}={v}" for k, v in secrets.items()]
-    _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
 
 
 def _fly_deploy(build_context: Path, fly_toml: Path) -> None:
@@ -208,29 +289,166 @@ def _fly_deploy(build_context: Path, fly_toml: Path) -> None:
         raise LensException("fly deploy failed")
 
 
-def push_deploy(project_root: Path) -> None:
+def init_deploy(
+    deploy_dir: Path,
+    app_name: str,
+    region: str,
+    username: str,
+    password: str,
+    deploy_keys: dict[str, Path],
+) -> None:
+    """Create Fly app, volume, set secrets, and generate fly.toml.
+
+    Works for both single-project (one slug, ``deploy_dir`` is the project dir)
+    and multi-project (multiple slugs, ``deploy_dir`` is the parent dir).
+    *deploy_keys* maps slug → path to SSH deploy key.
+    """
+    slugs = list(deploy_keys.keys())
+    projects = _build_projects(deploy_dir, slugs)
+
+    remote_urls: dict[str, str] = {}
+    s3_buckets: list[str] = []
+    for slug, git_root, project_root in projects:
+        remote_url = _validate_project_for_deploy(slug, project_root, git_root)
+        remote_urls[slug] = remote_url
+
+        config = _read_lens_toml(project_root)
+        raw_project = config.get("project", {})
+        proj: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+        mount_point = proj.get("mount_point", "")
+        if isinstance(mount_point, str) and mount_point.strip().startswith("s3://"):
+            s3_buckets.append(_get_s3_bucket(mount_point.strip()))
+
+    if len(set(s3_buckets)) > 1:
+        raise LensException(
+            f"all projects must use the same S3 bucket, "
+            f"found: {', '.join(sorted(set(s3_buckets)))}"
+        )
+
+    secrets = _collect_secrets(projects, deploy_keys, username, password, remote_urls)
+
+    fly_toml = deploy_dir / "fly.toml"
+    fly_toml.write_text(
+        _FLY_TOML_TEMPLATE.format(
+            app_name=app_name,
+            region=region,
+            slugs=",".join(slugs),
+        )
+    )
+
+    _run(["fly", "apps", "create", app_name, "--machines"])
+    _run([
+        "fly", "volumes", "create", "lens_data",
+        "--region", region,
+        "--size", "1",
+        "--app", app_name,
+        "--yes",
+    ])
+    secret_args = [f"{k}={v}" for k, v in secrets.items()]
+    _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
+
+
+def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
+    """Add a project to an existing deployment.
+
+    Updates ``fly.toml`` (adds slug to ``LENS_PROJECT_SLUGS``) and sets
+    the per-project secrets on the Fly app.  Run ``lens deploy push``
+    afterwards to apply.
+    """
+    fly_toml = deploy_dir / "fly.toml"
+    app_name = _get_fly_app_name(fly_toml)
+    current_slugs = _get_slugs(fly_toml)
+
+    if slug in current_slugs:
+        raise LensException(f"project '{slug}' is already in this deployment")
+
+    from lens.core.project import find_git_root_from
+
+    project_root = deploy_dir / slug
+    if not (project_root / "lens.toml").exists():
+        raise LensException(f"project '{slug}': no lens.toml found at {project_root}")
+    try:
+        git_root = find_git_root_from(project_root)
+    except RuntimeError as exc:
+        raise LensException(f"project '{slug}': {exc}") from exc
+
+    remote_url = _validate_project_for_deploy(slug, project_root, git_root)
+
+    env_key = _slug_to_env_key(slug)
+    if not deploy_key_path.exists():
+        raise LensException(f"deploy key not found: {deploy_key_path}")
+    secrets: dict[str, str] = {
+        f"GIT_REPO_DEPLOY_KEY_{env_key}": deploy_key_path.read_text(),
+        f"PROJECT_REPO_URL_{env_key}": remote_url,
+    }
+    config = _read_lens_toml(project_root)
+    secrets.update(_collect_llm_secrets(config, set()))
+
+    secret_args = [f"{k}={v}" for k, v in secrets.items()]
+    _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
+    _update_slugs_in_fly_toml(fly_toml, current_slugs + [slug])
+
+
+def remove_project(deploy_dir: Path, slug: str) -> None:
+    """Remove a project from an existing deployment.
+
+    Updates ``fly.toml`` (removes slug from ``LENS_PROJECT_SLUGS``) and
+    unsets the per-project secrets on the Fly app.  Run ``lens deploy push``
+    afterwards to apply.
+    """
+    fly_toml = deploy_dir / "fly.toml"
+    app_name = _get_fly_app_name(fly_toml)
+    current_slugs = _get_slugs(fly_toml)
+
+    if slug not in current_slugs:
+        raise LensException(f"project '{slug}' is not in this deployment")
+
+    new_slugs = [s for s in current_slugs if s != slug]
+    if not new_slugs:
+        raise LensException(
+            f"cannot remove '{slug}': it is the only project. "
+            "Delete the Fly app instead, or add another project first."
+        )
+
+    _update_slugs_in_fly_toml(fly_toml, new_slugs)
+
+    env_key = _slug_to_env_key(slug)
+    _run([
+        "fly", "secrets", "unset", "--app", app_name,
+        f"GIT_REPO_DEPLOY_KEY_{env_key}",
+        f"PROJECT_REPO_URL_{env_key}",
+    ])
+
+
+def push_deploy(deploy_dir: Path) -> None:
     """Deploy (or redeploy) the Lens application to Fly.io.
 
-    If the project uses external datasets (resolved outside the bundled
-    ``datasets/`` directory), a temporary build context is created that
-    copies them into ``datasets/`` so the Docker image contains everything.
+    *deploy_dir* is the directory containing ``fly.toml`` — either the
+    project directory itself (single-project) or the parent directory
+    (multi-project).  External datasets from all projects are bundled
+    into the Docker build context if needed.
     """
-    fly_toml = project_root / "fly.toml"
-    if not fly_toml.exists():
-        raise LensException("fly.toml not found — run 'lens deploy init' first")
+    fly_toml = deploy_dir / "fly.toml"
+    slugs = _get_slugs(fly_toml)  # also validates fly.toml exists
+    is_single = (deploy_dir / "lens.toml").exists()
 
-    external = _resolve_external_datasets(project_root)
+    seen_names: set[str] = set()
+    all_external: list[tuple[str, Path]] = []
+    for slug in slugs:
+        project_root = deploy_dir if is_single else deploy_dir / slug
+        for name, path in _resolve_external_datasets(project_root):
+            if name not in seen_names:
+                seen_names.add(name)
+                all_external.append((name, path))
 
-    if not external:
+    if not all_external:
         _fly_deploy(_LENS_ROOT, fly_toml)
         return
 
-    # Build a temporary context with external datasets placed alongside bundled ones.
-    # Uses hard links where possible (fast, no extra disk) with copy fallback.
     with tempfile.TemporaryDirectory(prefix="lens-deploy-") as tmp:
         ctx = Path(tmp) / "context"
         _IGNORE = shutil.ignore_patterns(".git", ".venv", "node_modules", "__pycache__", ".DS_Store")
         shutil.copytree(_LENS_ROOT, ctx, ignore=_IGNORE, copy_function=os.link)
-        for name, path in external:
+        for name, path in all_external:
             shutil.copytree(path, ctx / "datasets" / name, ignore=_IGNORE, copy_function=os.link)
         _fly_deploy(ctx, fly_toml)

@@ -8,6 +8,7 @@
     preprocessKbReferencePills,
     preprocessThinkingTags,
     createMarkdownRenderer,
+    prefixMountUrlsInRenderedHtml,
     buildNodeTransactionOverlay,
     buildAnnotationLineSet,
     buildAttachLinePickStates,
@@ -65,10 +66,7 @@
         ),
       )
     : ''
-  // Inject project slug into /mount/ URLs written by the attach command.
-  $: rendered = $currentProject
-    ? _rawRendered.replace(/="(\/mount\/(file|preview)\/)/g, (_, p1) => `="/${$currentProject}${p1}`)
-    : _rawRendered
+  $: rendered = prefixMountUrlsInRenderedHtml(_rawRendered, $currentProject)
 
   type FrontMatterPins = {
     pins: string[]

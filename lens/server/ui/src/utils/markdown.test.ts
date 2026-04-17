@@ -9,6 +9,7 @@ import {
   computeValidEndLines,
   computeValidStartLines,
   createMarkdownRenderer,
+  prefixMountUrlsInRenderedHtml,
   parseChatDividerParams,
   preprocessAnnotations,
   preprocessThinkingTags,
@@ -208,6 +209,21 @@ After`
     expect(rendered).toContain('<ol>')
     expect(rendered).toContain('<li>first</li>')
     expect(rendered).not.toContain('<thinking>')
+  })
+})
+
+describe('prefixMountUrlsInRenderedHtml', () => {
+  it('leaves HTML unchanged when project slug is null', () => {
+    const html = '<img alt="x" src="/mount/file/foo.png">'
+    expect(prefixMountUrlsInRenderedHtml(html, null)).toBe(html)
+  })
+
+  it('prefixes mount file and preview URLs in attributes', () => {
+    const html =
+      '<a href="/mount/file/a">x</a><img src="/mount/preview/b" alt="p">'
+    expect(prefixMountUrlsInRenderedHtml(html, 'my-proj')).toBe(
+      '<a href="/my-proj/mount/file/a">x</a><img src="/my-proj/mount/preview/b" alt="p">',
+    )
   })
 })
 

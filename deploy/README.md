@@ -1,139 +1,166 @@
 # Deployment
 
-Lens deploys to [Fly.io](https://fly.io) as a single-machine app with a persistent volume for the project repo. The `lens deploy` CLI command handles setup and deployment.
+Lens deploys to [Fly.io](https://fly.io) as a single-machine app with a persistent volume. The `lens deploy` CLI command handles setup and deployment.
 
 ## Architecture
 
 ```
 Internet → Fly Edge (TLS) → Caddy (Basic Auth, :8080) → Lens Server (localhost:8000)
                                                               ↓
-                                                     /data/repo (Fly volume)
+                                                     /data/repos/ (Fly volume)
                                                          ↕ git pull/push
-                                                      Git remote (SSH)
+                                                      Git remotes (SSH)
 ```
 
 - **Caddy** is the only listener — enforces Basic Auth and reverse-proxies to Lens.
 - **Lens** binds to `127.0.0.1` only; never exposed directly.
 - **Fly** terminates TLS at the edge; Caddy handles auth, not certificates.
-- The **project repo** lives on a persistent Fly volume at `/data/repo`.
-- The **Lens application** (Python code, datasets, built UI) is baked into the Docker image.
+- Project repos live on a persistent Fly volume at `/data/repos/<slug>/`.
+- The Lens application (Python code, datasets, built UI) is baked into the Docker image.
+
+One Fly app can serve one project or several — the setup is the same either way.
 
 ## Prerequisites
 
 - [flyctl](https://fly.io/docs/flyctl/install/) installed and authenticated (`fly auth login`)
-- `origin` set to an **SSH** remote URL (for example `git@github.com:org/repo.git`). HTTPS remotes are not supported for Fly deploy; the machine authenticates with an SSH deploy key only.
-- An SSH deploy key (key pair) registered on your Git host with read/write access to the repo behind `origin`
-- LLM API key(s) set in your environment (matching `api_key_env` in `lens.toml`)
-- If using S3 mount: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION` set in your environment
+- Each project's `origin` set to an **SSH** remote URL (e.g. `git@github.com:org/repo.git`) — HTTPS is not supported; the machine authenticates with deploy keys only
+- An SSH deploy key per project, registered on its Git host with read/write access
+- LLM API key(s) in your environment (matching `api_key_env` in each `lens.toml`)
+- If any project uses an S3 mount: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION` in your environment; all projects must share the same S3 bucket
 
 ## Initial Setup
 
-From your project directory (the one with `lens.toml`):
+Run `lens deploy init` from the directory that will contain `fly.toml`:
+
+**Single project** — run from inside the project directory (alongside `lens.toml`):
 
 ```bash
 lens deploy init \
-  --app my-project \
+  --app my-campaign \
   --region lax \
   --user myname \
-  --deploy-key ~/.ssh/my-project-deploy
+  --deploy-key ~/.ssh/my-campaign-deploy
 ```
 
-You will be prompted for the Basic Auth password. This command:
+**Multiple projects** — run from a parent directory containing project subdirectories:
 
-1. Reads the `origin` URL from your project repo and checks it is SSH (not HTTPS)
-2. Hashes the password (bcrypt, Caddy-compatible)
-3. Reads the deploy key file
-4. Collects LLM API keys and S3 credentials from your current environment
-5. Generates `fly.toml` in your project directory
-6. Creates the Fly app and a 1 GB persistent volume
-7. Sets all secrets on the Fly app
+```
+projects/
+  campaign-a/    ← lens.toml, origin = git@github.com:…/campaign-a.git
+  campaign-b/    ← lens.toml, origin = git@gitlab.com:…/campaign-b.git
+```
 
-### Secrets
+```bash
+cd projects/
+lens deploy init \
+  --app my-campaigns \
+  --region lax \
+  --user myname \
+  --deploy-key campaign-a=~/.ssh/key_a \
+  --deploy-key campaign-b=~/.ssh/key_b
+```
 
-Secrets are split into two categories:
+The `slug=path` pairs in `--deploy-key` select which projects to include — no directory scanning. You will be prompted for the Basic Auth password in both cases.
 
-| Category | Secrets | Source |
-|----------|---------|--------|
-| **Project-specific** | `CADDY_BASIC_AUTH_USER`, `CADDY_BASIC_AUTH_HASH`, `GIT_REPO_DEPLOY_KEY` | From `--user`, `--password`, `--deploy-key` flags |
-| **Reusable** | LLM API keys (e.g. `OPEN_ROUTER_API_KEY`), `AWS_*` credentials | Pulled from your current shell environment |
-
-Reusable secrets are read from whatever is set in your env at init time. If you use the same LLM key or S3 bucket across projects, they carry over automatically.
+`init` will:
+1. Validate each project: SSH remote, S3-only mount (if any), same S3 bucket across all
+2. Collect LLM API keys and S3 credentials from your current environment
+3. Generate `fly.toml` in the current directory
+4. Create the Fly app and a 1 GB persistent volume
+5. Set all secrets on the Fly app
 
 ### Fly regions
 
 Pick the region closest to you. Common choices: `lax` (Los Angeles), `ams` (Amsterdam), `lhr` (London), `fra` (Frankfurt), `iad` (Virginia). Full list: `fly platform regions`.
 
+### Secrets
+
+| Secret | Value |
+|--------|-------|
+| `CADDY_BASIC_AUTH_USER` / `CADDY_BASIC_AUTH_HASH` | Basic Auth credential |
+| `GIT_REPO_DEPLOY_KEY_<SLUG>` | SSH deploy key per project (slug uppercased, hyphens→underscores) |
+| `PROJECT_REPO_URL_<SLUG>` | Git remote URL per project |
+| LLM keys (e.g. `OPEN_ROUTER_API_KEY`) | Collected from each project's `lens.toml`; deduplicated |
+| `AWS_*` | S3 credentials, if any project uses an S3 mount |
+
 ## Deploying
+
+Make sure all project repos are pushed to their remotes, then:
 
 ```bash
 lens deploy push
 ```
 
-This runs `fly deploy` with the Lens repo as the Docker build context and your project's `fly.toml` as config. It builds a fresh image with the latest Lens code, datasets, and UI, then replaces the running machine. The volume (project repo) is untouched.
+Run this from the same directory as `fly.toml`. On first boot, `start.sh` clones each repo onto the volume. On subsequent boots it fast-forwards from `origin`. The volume is never touched by a redeploy.
 
-### First deploy
+## Managing Projects
 
-On the first boot, `start.sh` clones the project repo from `origin` onto the empty volume (over SSH, using the deploy key). **Make sure your project is pushed to the remote before the first deploy.**
+To add a project to an existing deployment (run from the `fly.toml` directory):
 
-### Subsequent deploys
+```bash
+lens deploy add campaign-c --deploy-key ~/.ssh/key_c
+lens deploy push
+```
 
-On subsequent boots the existing repo on the volume is reused (only a `git fetch` is attempted). No data is lost.
+To remove one:
 
-## Updating
+```bash
+lens deploy remove campaign-b
+lens deploy push
+```
+
+`add` sets the new project's secrets and updates `fly.toml`. `remove` clears them. `push` redeploys with the new configuration. LLM keys are not cleared on remove — they may be shared with remaining projects.
+
+## Operational Reference
 
 ### Updating Lens (code, datasets, UI)
 
-Pull the latest Lens code locally, then re-run:
+Pull the latest Lens code locally, then:
 
 ```bash
 lens deploy push
 ```
 
-This rebuilds the Docker image. The project repo on the volume is not touched.
+This rebuilds the Docker image. Project repos on the volume are untouched.
 
-### Updating project content on the server
+### Updating project content
 
-Push your local changes to your Git remote, then use the **Refresh** button in the web UI (or call `POST /refresh` on the API). The server does a `git fetch` + fast-forward merge. If there are uncommitted changes on the server, refresh will fail — checkpoint first.
-
-## Operational Reference
+Push local changes to the Git remote, then use the **Refresh** button in the web UI (or `POST /refresh` on the API). The server does a `git fetch` + fast-forward merge. If there are uncommitted changes on the server, checkpoint first.
 
 ### Volume
 
 The Fly volume at `/data` persists across restarts, redeploys, and machine suspend/resume. It is tied to one machine in one region.
 
-**Recovery**: The volume is not replicated. Your Git remote is the durable copy. Use `lens checkpoint` (via the web UI) to push work off the server. Fly volume snapshots provide additional disaster recovery (`fly volumes snapshots list`).
+**Recovery**: The volume is not replicated. Your Git remotes are the durable copies. Use `lens checkpoint` (via the web UI) to push work off the server before doing anything risky. Fly volume snapshots provide additional disaster recovery (`fly volumes snapshots list`).
 
 ### Machine lifecycle
 
-The default config uses `auto_stop_machines = "suspend"` with `min_machines_running = 0`. The machine suspends after idle time and resumes on the next request (a few seconds of wake latency). To keep it always on, set `min_machines_running = 1` in `fly.toml` and redeploy.
+The default config suspends the machine after idle time and resumes it on the next request (a few seconds of wake latency). To keep it always on, set `min_machines_running = 1` in `fly.toml` and redeploy.
 
 ### SSH into the machine
 
 ```bash
-fly ssh console --app my-project
+fly ssh console --app my-campaign
 ```
 
 ### Logs
 
 ```bash
-fly logs --app my-project
+fly logs --app my-campaign
 ```
 
 ### Changing the password
 
 ```bash
-# Generate a new hash
 python -c "import bcrypt; print(bcrypt.hashpw(b'new-password', bcrypt.gensalt()).decode())"
-
-# Update the secret
-fly secrets set CADDY_BASIC_AUTH_HASH='$2b$12$...' --app my-project
+fly secrets set CADDY_BASIC_AUTH_HASH='$2b$12$...' --app my-campaign
 ```
 
 The machine restarts automatically after secret changes.
 
 ### Scaling
 
-To change VM size or memory, edit `[[vm]]` in your project's `fly.toml`:
+Edit `[[vm]]` in `fly.toml` and redeploy:
 
 ```toml
 [[vm]]
@@ -141,16 +168,12 @@ To change VM size or memory, edit `[[vm]]` in your project's `fly.toml`:
   memory = "1024mb"
 ```
 
-Then `lens deploy push`.
-
 ### Custom domain
 
 ```bash
-fly certs add lens.example.com --app my-project
-# Then point DNS: CNAME lens.example.com → my-project.fly.dev
+fly certs add lens.example.com --app my-campaign
+# Point DNS: CNAME lens.example.com → my-campaign.fly.dev
 ```
-
-Fly handles TLS for the custom domain. No Caddy config changes needed.
 
 ## Files
 
@@ -158,34 +181,26 @@ Fly handles TLS for the custom domain. No Caddy config changes needed.
 |------|---------|
 | `deploy/Dockerfile` | Multi-stage build: Python + Node builder → slim runtime with git + Caddy |
 | `deploy/Caddyfile` | Caddy config: Basic Auth + reverse proxy with SSE-safe flushing |
-| `deploy/start.sh` | Container entrypoint: SSH setup, repo clone, starts Caddy + Lens |
-| `<project>/fly.toml` | Generated into the project repo by `lens deploy init` |
+| `deploy/start.sh` | Container entrypoint: SSH setup, repo clone/update, starts Caddy + Lens |
+| `fly.toml` | Generated by `lens deploy init` in the project or parent directory |
 
-## Local deploy (Caddy on your machine)
+## Local Deploy (Caddy on your machine)
 
-This is the “minimum” deployment: run Lens on your machine, but expose it safely via Caddy (HTTPS + Basic Auth). The critical rule is **Lens must only bind to localhost**; Caddy is the only public entrypoint.
+Run Lens on your own machine and expose it safely via Caddy (HTTPS + Basic Auth). Lens must only bind to localhost; Caddy is the only public entrypoint.
 
-### 1) Run Lens bound to localhost
-
-From your Lens **project repo** (the one containing `lens.toml`):
+**1. Run Lens:**
 
 ```bash
 lens serve --host 127.0.0.1 --port 8000
 ```
 
-### 2) Install Caddy and generate a password hash
-
-Install Caddy via your OS package manager, then generate a hash:
+**2. Generate a password hash:**
 
 ```bash
 caddy hash-password --plaintext 'choose-a-strong-password'
 ```
 
-### 3) Create a Caddyfile that does Basic Auth + reverse proxy
-
-If you have a real hostname (recommended), Caddy can automatically obtain and renew TLS certificates.
-
-Example `Caddyfile`:
+**3. Create a Caddyfile:**
 
 ```caddyfile
 lens.example.com {
@@ -201,27 +216,12 @@ lens.example.com {
 }
 ```
 
-Notes:
+`flush_interval -1` is required for SSE streaming.
 
-- `flush_interval -1` is important for **SSE streaming** (don’t buffer).
-- Do **not** put Lens on `0.0.0.0` (don’t expose it directly to the internet).
-
-### 4) Start Caddy
-
-Run Caddy with your config:
+**4. Start Caddy:**
 
 ```bash
 caddy run --config ./Caddyfile --adapter caddyfile
 ```
 
-### 5) Make it reachable from the internet (optional)
-
-If you want external access from outside your LAN:
-
-- **DNS**: point `lens.example.com` to your home IP (dynamic DNS is fine).
-- **Router**: forward TCP `443` → your machine.
-- **Port choice**:
-  - Preferred: let Caddy bind to `:443` (may require sudo/capabilities depending on OS).
-  - Alternative: run Caddy on a high port (e.g. `:8443`) and forward router `443 → 8443`.
-
-If you want Caddy to both update dynamic DNS records and use DNS-01 for certificates, you’ll typically run a **custom Caddy build** with `dynamic_dns` plus the relevant DNS provider module (for example Cloudflare). Keep the DNS API token in environment variables; don’t write secrets into the Caddyfile.
+For external access, point `lens.example.com` to your machine's IP and forward TCP 443 from your router. For DNS-01 certificates or dynamic DNS, use a custom Caddy build with the appropriate provider module.

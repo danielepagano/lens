@@ -39,7 +39,7 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
             err=True,
         )
         raise typer.Exit(1)
-    if sub in ("init", "use", "serve", "dev"):
+    if sub in ("init", "use", "serve", "dev", "deploy"):
         return
     try:
         _git_root, project_root = require_lens_context(Path.cwd())

@@ -1,14 +1,5 @@
 # Lens Backlog
 
-- **Multi-Project Server Deploy**
-   - Currently `lens dev` and `lens serve` work from a "parent of projects" folder. Complete this support by allowing the deploy system to ALSO work on a "parent of projects" folder. Requires:
-      - All these projects need to have valid projects AND remotes AND S3 bucket if a mount is specified (no local)
-      - The server will still use a shared AWS account, so all projects MUST use the same S3 bucket
-      - There is only user user/pw for the app as a whole
-   - In this case fly.toml is in that parent directory, but `PROJECT_REPO_URL` is no longer singular, you need a section per project, with `LENS_PROJECT_DIR` being the root of all of thse these (if ANY project is not a good deployable state, the whole thing doesn't deploy); start script needs to pull and validate ALL of those. You also MUST have a separate deploy key for each project (they are different repos, possibly different git remote providers) so you need to collect and track those
-   - Deploying a single project (from the project directory) should still work, but you DO NOT have keep the old `fly.toml`'s compatible (project is still unreleased); I only have one, I can migrate it if needed
-   - Update docs an init scripts
-      - Local deploy should work without changes (?) we just need to update the wording
 - **Public Release Readiness**
    - License
    - Clean up documentation
