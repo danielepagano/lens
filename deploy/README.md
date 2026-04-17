@@ -9,7 +9,7 @@ Internet → Fly Edge (TLS) → Caddy (Basic Auth, :8080) → Lens Server (local
                                                               ↓
                                                      /data/repo (Fly volume)
                                                          ↕ git pull/push
-                                                      GitLab remote
+                                                      Git remote (SSH)
 ```
 
 - **Caddy** is the only listener — enforces Basic Auth and reverse-proxies to Lens.
@@ -21,7 +21,8 @@ Internet → Fly Edge (TLS) → Caddy (Basic Auth, :8080) → Lens Server (local
 ## Prerequisites
 
 - [flyctl](https://fly.io/docs/flyctl/install/) installed and authenticated (`fly auth login`)
-- A GitLab deploy key (SSH key pair) with write access to the project repo
+- `origin` set to an **SSH** remote URL (for example `git@github.com:org/repo.git`). HTTPS remotes are not supported for Fly deploy; the machine authenticates with an SSH deploy key only.
+- An SSH deploy key (key pair) registered on your Git host with read/write access to the repo behind `origin`
 - LLM API key(s) set in your environment (matching `api_key_env` in `lens.toml`)
 - If using S3 mount: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION` set in your environment
 
@@ -39,7 +40,7 @@ lens deploy init \
 
 You will be prompted for the Basic Auth password. This command:
 
-1. Reads the git remote URL from your project repo
+1. Reads the `origin` URL from your project repo and checks it is SSH (not HTTPS)
 2. Hashes the password (bcrypt, Caddy-compatible)
 3. Reads the deploy key file
 4. Collects LLM API keys and S3 credentials from your current environment
@@ -53,7 +54,7 @@ Secrets are split into two categories:
 
 | Category | Secrets | Source |
 |----------|---------|--------|
-| **Project-specific** | `CADDY_BASIC_AUTH_USER`, `CADDY_BASIC_AUTH_HASH`, `GITLAB_DEPLOY_KEY` | From `--user`, `--password`, `--deploy-key` flags |
+| **Project-specific** | `CADDY_BASIC_AUTH_USER`, `CADDY_BASIC_AUTH_HASH`, `GIT_REPO_DEPLOY_KEY` | From `--user`, `--password`, `--deploy-key` flags |
 | **Reusable** | LLM API keys (e.g. `OPEN_ROUTER_API_KEY`), `AWS_*` credentials | Pulled from your current shell environment |
 
 Reusable secrets are read from whatever is set in your env at init time. If you use the same LLM key or S3 bucket across projects, they carry over automatically.
@@ -72,7 +73,7 @@ This runs `fly deploy` with the Lens repo as the Docker build context and your p
 
 ### First deploy
 
-On the first boot, `start.sh` clones the project repo from GitLab onto the empty volume. **Make sure your project is pushed to the remote before the first deploy.**
+On the first boot, `start.sh` clones the project repo from `origin` onto the empty volume (over SSH, using the deploy key). **Make sure your project is pushed to the remote before the first deploy.**
 
 ### Subsequent deploys
 
@@ -92,7 +93,7 @@ This rebuilds the Docker image. The project repo on the volume is not touched.
 
 ### Updating project content on the server
 
-Push your local changes to GitLab, then use the **Refresh** button in the web UI (or call `POST /refresh` on the API). The server does a `git fetch` + fast-forward merge. If there are uncommitted changes on the server, refresh will fail — checkpoint first.
+Push your local changes to your Git remote, then use the **Refresh** button in the web UI (or call `POST /refresh` on the API). The server does a `git fetch` + fast-forward merge. If there are uncommitted changes on the server, refresh will fail — checkpoint first.
 
 ## Operational Reference
 
@@ -100,7 +101,7 @@ Push your local changes to GitLab, then use the **Refresh** button in the web UI
 
 The Fly volume at `/data` persists across restarts, redeploys, and machine suspend/resume. It is tied to one machine in one region.
 
-**Recovery**: The volume is not replicated. GitLab is the durable copy. Use `lens checkpoint` (via the web UI) to push work off the server. Fly volume snapshots provide additional disaster recovery (`fly volumes snapshots list`).
+**Recovery**: The volume is not replicated. Your Git remote is the durable copy. Use `lens checkpoint` (via the web UI) to push work off the server. Fly volume snapshots provide additional disaster recovery (`fly volumes snapshots list`).
 
 ### Machine lifecycle
 

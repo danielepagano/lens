@@ -1,20 +1,35 @@
 #!/bin/bash
 set -euo pipefail
 
-# ---- 1. SSH setup for GitLab ----
+# ---- 1. SSH setup (any Git host over SSH; deploy key from Fly secrets) ----
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 
-echo "$GITLAB_DEPLOY_KEY" > /root/.ssh/deploy_key
+if [ -z "${GIT_REPO_DEPLOY_KEY:-}" ]; then
+    echo "ERROR: Fly secret GIT_REPO_DEPLOY_KEY is not set" >&2
+    exit 1
+fi
+echo "$GIT_REPO_DEPLOY_KEY" > /root/.ssh/deploy_key
 chmod 600 /root/.ssh/deploy_key
 
-ssh-keyscan -t ed25519,rsa gitlab.com > /root/.ssh/known_hosts 2>/dev/null
+SSH_LINE=$(/app/.venv/bin/python -c "
+from lens.core.git_ssh_remote import parse_git_ssh_remote
+import os
+h, p = parse_git_ssh_remote(os.environ['PROJECT_REPO_URL'])
+print(f'{h}\t{p}')
+")
+GIT_SSH_HOST="${SSH_LINE%%	*}"
+GIT_SSH_PORT="${SSH_LINE##*	}"
+
+if [ "$GIT_SSH_PORT" = "22" ]; then
+    ssh-keyscan -t ed25519,rsa "$GIT_SSH_HOST" > /root/.ssh/known_hosts 2>/dev/null
+else
+    ssh-keyscan -t ed25519,rsa -p "$GIT_SSH_PORT" "$GIT_SSH_HOST" > /root/.ssh/known_hosts 2>/dev/null
+fi
 chmod 600 /root/.ssh/known_hosts
 
 cat > /root/.ssh/config <<EOF
-Host gitlab.com
-  HostName gitlab.com
-  User git
+Host *
   IdentityFile /root/.ssh/deploy_key
   IdentitiesOnly yes
   StrictHostKeyChecking yes

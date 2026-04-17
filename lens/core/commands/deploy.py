@@ -13,6 +13,7 @@ from typing import Any, cast
 import bcrypt  # type: ignore[import-untyped]
 
 from lens.core.exceptions import LensException
+from lens.core.git_ssh_remote import parse_git_ssh_remote
 from lens.core.project import datasets_root, get_selected_datasets, resolve_dataset_path
 from lens.core.storage import Storage
 
@@ -78,7 +79,7 @@ def _collect_required_secrets(
     # Deploy key
     if not deploy_key_path.exists():
         raise LensException(f"deploy key not found: {deploy_key_path}")
-    secrets["GITLAB_DEPLOY_KEY"] = deploy_key_path.read_text()
+    secrets["GIT_REPO_DEPLOY_KEY"] = deploy_key_path.read_text()
 
     # LLM API keys from lens.toml [[llm]] entries
     raw_llm_list = config.get("llm", [])
@@ -157,6 +158,10 @@ def init_deploy(
 
     # Get remote URL
     remote_url = storage.get_remote_url()
+    try:
+        parse_git_ssh_remote(remote_url)
+    except ValueError as exc:
+        raise LensException(str(exc)) from exc
 
     # Collect all secrets
     secrets = _collect_required_secrets(project_root, username, password, deploy_key_path)

@@ -1,16 +1,24 @@
 # Lens Backlog
 
+- **Multi-Project Server Deploy**
+   - Currently `lens dev` and `lens serve` work from a "parent of projects" folder. Complete this support by allowing the deploy system to ALSO work on a "parent of projects" folder. Requires:
+      - All these projects need to have valid projects AND remotes AND S3 bucket if a mount is specified (no local)
+      - The server will still use a shared AWS account, so all projects MUST use the same S3 bucket
+      - There is only user user/pw for the app as a whole
+   - In this case fly.toml is in that parent directory, but `PROJECT_REPO_URL` is no longer singular, you need a section per project, with `LENS_PROJECT_DIR` being the root of all of thse these (if ANY project is not a good deployable state, the whole thing doesn't deploy); start script needs to pull and validate ALL of those. You also MUST have a separate deploy key for each project (they are different repos, possibly different git remote providers) so you need to collect and track those
+   - Deploying a single project (from the project directory) should still work, but you DO NOT have keep the old `fly.toml`'s compatible (project is still unreleased); I only have one, I can migrate it if needed
+   - Update docs an init scripts
+      - Local deploy should work without changes (?) we just need to update the wording
 - **Public Release Readiness**
    - License
    - Clean up documentation
       - Focused main readme
       - Refreshed main design doc
       - Actual user manual for playing RPGs (dataset readme) with simpler bootstrap
-   - Remove hard-coding of usage of gitlab/fly, make modular/CI-friendly
+   - Remove hard-coding of usage of fly, make modular/CI-friendly
       - Remove reliance on specific env vars
    - Better "no desktop" usage
       - Better init tooling/docs
-      - Run server one level above projects and support project switching in app — [plan](multi-project-support.md)
       - Streamline project creation/management (from app if above?)
       - Ensure manual editing is solid
       - Some way to have a hook in a repo toto trigger deploy automatically, maybe even on lens releases
