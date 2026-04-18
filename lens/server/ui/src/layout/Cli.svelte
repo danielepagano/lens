@@ -1010,6 +1010,15 @@
     if (s.phase === 'positional' || s.phase === 'option-value') return 'on'
     return 'off'
   })()
+  $: cliInputPromptAssistEnabled = (() => {
+    const s = currentParseState
+    if (!s?.activePayload) return false
+    if (s.activePayload.valueType !== 'prompt') return false
+    return s.phase === 'positional' || s.phase === 'option-value'
+  })()
+  $: cliInputAutocorrect = cliInputPromptAssistEnabled ? 'on' : 'off'
+  $: cliInputAutocapitalize = cliInputPromptAssistEnabled ? 'sentences' : 'off'
+  $: cliInputSpellcheck = cliInputPromptAssistEnabled
 </script>
 
 <div class="bottom-bar" data-testid="bottom-bar" bind:this={bottomBarEl}>
@@ -1064,9 +1073,9 @@
         rows="1"
         disabled={busy}
         autocomplete={cliInputAutocomplete}
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck={false}
+        autocorrect={cliInputAutocorrect}
+        autocapitalize={cliInputAutocapitalize}
+        spellcheck={cliInputSpellcheck}
         data-testid="cli-input"
       />
       {#if showHint}
