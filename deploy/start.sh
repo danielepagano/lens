@@ -76,6 +76,10 @@ print(f'{h}\t{p}')
             || echo "Warning: could not fast-forward $SLUG"
     fi
 
+    # Persist the SSH command so all subsequent git operations in this repo
+    # (checkpoint, refresh) use the right deploy key without a global SSH config.
+    git -C "$PROJECT_REPO_DIR" config core.sshCommand "$GIT_SSH_CMD"
+
     if [ ! -f "$PROJECT_REPO_DIR/lens.toml" ]; then
         echo "ERROR: $PROJECT_REPO_DIR/lens.toml not found" >&2
         exit 1

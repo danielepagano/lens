@@ -423,15 +423,21 @@ class Storage:
         )
         self._ownership_checked = False
 
-    def checkpoint(self, message: str) -> None:
-        """Stage everything and create a git commit."""
+    def commit(self, message: str) -> None:
+        """Stage all changes and create a git commit, if there is anything to commit."""
         self.stage_all()
-        subprocess.run(
-            [self._GIT, "commit", "-m", message],
+        has_staged = subprocess.run(
+            [self._GIT, "diff", "--cached", "--quiet"],
             cwd=self._root,
-            check=True,
             capture_output=True,
-        )
+        ).returncode != 0
+        if has_staged:
+            subprocess.run(
+                [self._GIT, "commit", "-m", message],
+                cwd=self._root,
+                check=True,
+                capture_output=True,
+            )
 
     def has_remote(self) -> bool:
         """Return True if at least one git remote is configured."""

@@ -137,7 +137,7 @@ class TestCheckpoint(unittest.TestCase):
             root = _init_repo(Path(tmp))
             (root / "file.md").write_text("content")
             s = Storage(root)
-            s.checkpoint("add file")
+            s.commit("add file")
             self.assertFalse(s.has_pending())
             log = _git(root, "log", "--oneline")
             self.assertIn("add file", log)

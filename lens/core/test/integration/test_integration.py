@@ -121,7 +121,7 @@ class TestHappyPath(unittest.TestCase):
         )
 
     def _checkpoint(self, msg: str) -> None:
-        Storage(self._project_dir).checkpoint(msg)
+        Storage(self._project_dir).commit(msg)
 
     # ------------------------------------------------------------------
     # 01 — verify annotation format written by setup_test_project

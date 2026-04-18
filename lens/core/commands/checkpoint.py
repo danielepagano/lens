@@ -16,6 +16,6 @@ def execute_checkpoint(
 ) -> None:
     storage = session.new_storage()
     msg = message or default_checkpoint_message()
-    storage.checkpoint(msg)
+    storage.commit(msg)
     if push and storage.has_remote():
         storage.push_or_raise()

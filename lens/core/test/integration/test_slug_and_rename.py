@@ -76,7 +76,7 @@ class TestSlugAndRename(unittest.TestCase):
         return ProjectSession(self._project_dir, self._project_dir)
 
     def _checkpoint(self, msg: str = "checkpoint") -> None:
-        Storage(self._project_dir).checkpoint(msg)
+        Storage(self._project_dir).commit(msg)
 
     # ------------------------------------------------------------------
     # 01 — explicit --slug creates a named design sub-node
