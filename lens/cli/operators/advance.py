@@ -22,7 +22,6 @@ def advance(
     feedback: str | None = typer.Argument(
         None,
         help="Feedback for --retry (ignored otherwise)",
-        shell_complete=lambda ctx, param, incomplete: [],
     ),
     days: int = typer.Option(
         1,

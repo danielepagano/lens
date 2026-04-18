@@ -23,7 +23,6 @@ def design(
     prompt: str | None = typer.Argument(
         None,
         help="Design task or question",
-        shell_complete=lambda ctx, param, incomplete: [],
     ),
     module: str | None = typer.Option(
         None,

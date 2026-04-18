@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from typing import Any
 
 import typer
 
-from lens.cli.options import complete_kb_ids, pin_option, reasoning_option, unpin_option
+from lens.cli.options import pin_option, reasoning_option, unpin_option
 from lens.core.auto_compress import run_post_main_auto_compress_blocking_cli
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -25,21 +26,18 @@ def chat(
     prompt: str = typer.Argument(
         None,
         help="Stage directions (one-shot or fresh session) or the character's dialog (inside session)",
-        shell_complete=lambda ctx, param, incomplete: [],
     ),
     as_kb_id: str | None = typer.Option(
         None,
         "--as",
         "-as",
         help="KB id of the character the AI will voice (e.g. npc.bob, pc.alice)",
-        shell_complete=complete_kb_ids,
     ),
     with_kb_id: str | None = typer.Option(
         None,
         "--with",
         "-w",
         help="KB id of the counterpart character the user plays (e.g. pc.amy); triggers session mode",
-        shell_complete=complete_kb_ids,
     ),
     pin: list[str] = pin_option("KB ID to pin (repeatable)"),
     unpin: list[str] = unpin_option(),
@@ -81,11 +79,14 @@ def chat(
     Use --end to close the session with a prose summary.
     """
     if not end and not retry and not as_kb_id and not prompt:
-        typer.echo(
-            "lens chat: prompt or --as is required (unless using --end or --retry)",
-            err=True,
-        )
-        raise typer.Exit(1)
+        if sys.stdin.isatty():
+            prompt = typer.prompt("Prompt")
+        else:
+            typer.echo(
+                "lens chat: prompt or --as is required (unless using --end or --retry)",
+                err=True,
+            )
+            raise typer.Exit(1)
 
     try:
         session = ProjectSession.from_cwd()

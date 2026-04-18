@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from typing import Any
 
 import typer
@@ -39,7 +40,6 @@ def play(
     prompt: str = typer.Argument(
         None,
         help="Scene direction or situation for the player-facing moment (e.g. what the player says or does)",
-        shell_complete=lambda ctx, param, incomplete: [],
     ),
     pin: list[str] = pin_option(
         "KB ID to pin (repeatable); at least one must be tagged 'pc'"
@@ -101,11 +101,14 @@ def play(
     Use -as <key> to attribute the prompt to a specific pinned PC (e.g. -as alice → [Alice]).
     """
     if not end and not retry and not do_pass and not prompt:
-        typer.echo(
-            "lens play: prompt is required (unless using --end, --retry, or --pass)",
-            err=True,
-        )
-        raise typer.Exit(1)
+        if sys.stdin.isatty():
+            prompt = typer.prompt("Prompt")
+        else:
+            typer.echo(
+                "lens play: prompt is required (unless using --end, --retry, or --pass)",
+                err=True,
+            )
+            raise typer.Exit(1)
     if do_pass and retry:
         typer.echo("lens play: --pass cannot be combined with --retry", err=True)
         raise typer.Exit(1)

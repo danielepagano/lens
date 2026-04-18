@@ -49,7 +49,6 @@ def compress(
         None,
         metavar="PROMPT",
         help="What to collate (omit if using --aggressiveness)",
-        shell_complete=lambda ctx, param, incomplete: [],
     ),
     node: str | None = typer.Option(
         None,

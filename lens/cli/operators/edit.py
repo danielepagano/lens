@@ -20,10 +20,10 @@ async def _print_token(chunk: str) -> None:
 @app.callback()
 def edit(
     ctx: typer.Context,
-    address: str | None = typer.Argument(None, help="Narrative node address", shell_complete=lambda ctx, param, incomplete: []),
+    address: str | None = typer.Argument(None, help="Narrative node address"),
     start_line: int | None = typer.Argument(None, help="First line to edit (1-based, inclusive)"),
     end_line: int | None = typer.Argument(None, help="Last line to edit (1-based, inclusive)"),
-    prompt: str | None = typer.Argument(None, help="Editing instruction or replacement text", shell_complete=lambda ctx, param, incomplete: []),
+    prompt: str | None = typer.Argument(None, help="Editing instruction or replacement text"),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(

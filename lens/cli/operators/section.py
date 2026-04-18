@@ -46,7 +46,6 @@ def section(
             "Section ID when starting a section. With --end, optional extra "
             "instructions for the summary LLM (not a section id)."
         ),
-        shell_complete=lambda ctx, param, incomplete: [],
     ),
     end: bool = typer.Option(False, "--end", help="Close the current section"),
     pin: list[str] = pin_option("KB ID to pin in the new section's front matter (repeatable)"),

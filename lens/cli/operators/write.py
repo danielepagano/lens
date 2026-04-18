@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 
 import typer
 
@@ -23,7 +24,6 @@ def write(
     prompt: str | None = typer.Argument(
         None,
         help="Writing direction/instruction",
-        shell_complete=lambda ctx, param, incomplete: [],
     ),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
@@ -48,6 +48,10 @@ def write(
     ),
 ) -> None:
     """Generate narrative text at the cursor."""
+    if prompt is None and manual is None and sys.stdin.isatty():
+        typed = typer.prompt("Prompt", default="")
+        if typed.strip():
+            prompt = typed.strip()
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:
