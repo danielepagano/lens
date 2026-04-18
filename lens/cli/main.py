@@ -23,7 +23,7 @@ app = typer.Typer(
     name="lens",
     help="Lens: narrative engine with fractal summarization",
     no_args_is_help=True,
-    add_completion=False,
+    add_completion=True,
 )
 
 

@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import pin_option, reasoning_option, unpin_option
 from lens.core.compression import Aggressiveness
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -49,6 +49,7 @@ def compress(
         None,
         metavar="PROMPT",
         help="What to collate (omit if using --aggressiveness)",
+        shell_complete=lambda ctx, param, incomplete: [],
     ),
     node: str | None = typer.Option(
         None,
@@ -64,11 +65,7 @@ def compress(
         "-l",
         help="LLM ID to use (overrides project default)",
     ),
-    reasoning: str | None = typer.Option(
-        None,
-        "--reasoning",
-        help="Reasoning override: none, low, medium, high",
-    ),
+    reasoning: str | None = reasoning_option(),
     summary_guide: str | None = typer.Option(
         None,
         "--summary-guide",

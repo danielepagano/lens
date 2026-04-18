@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import pin_option, reasoning_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.narrative import NarrativeNode
@@ -46,6 +46,7 @@ def section(
             "Section ID when starting a section. With --end, optional extra "
             "instructions for the summary LLM (not a section id)."
         ),
+        shell_complete=lambda ctx, param, incomplete: [],
     ),
     end: bool = typer.Option(False, "--end", help="Close the current section"),
     pin: list[str] = pin_option("KB ID to pin in the new section's front matter (repeatable)"),
@@ -56,11 +57,7 @@ def section(
         "-l",
         help="LLM ID to use for summary (overrides project default)",
     ),
-    reasoning: str | None = typer.Option(
-        None,
-        "--reasoning",
-        help="Reasoning override: none, low, medium, high",
-    ),
+    reasoning: str | None = reasoning_option(),
 ) -> None:
     """Create a child node at the cursor and open a section tag."""
     if end:

@@ -5,7 +5,7 @@ from typing import Any
 
 import typer
 
-from lens.cli.options import pin_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
+from lens.cli.options import pin_option, reasoning_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.core.auto_compress import run_post_main_auto_compress_blocking_cli
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -39,6 +39,7 @@ def play(
     prompt: str = typer.Argument(
         None,
         help="Scene direction or situation for the player-facing moment (e.g. what the player says or does)",
+        shell_complete=lambda ctx, param, incomplete: [],
     ),
     pin: list[str] = pin_option(
         "KB ID to pin (repeatable); at least one must be tagged 'pc'"
@@ -50,11 +51,7 @@ def play(
         "-l",
         help="LLM ID to use (overrides project default)",
     ),
-    reasoning: str | None = typer.Option(
-        None,
-        "--reasoning",
-        help="Reasoning override: none, low, medium, high",
-    ),
+    reasoning: str | None = reasoning_option(),
     retry: bool = typer.Option(
         False,
         "--retry",

@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import pin_option, reasoning_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.narrative import NarrativeNode
@@ -52,11 +52,7 @@ def collate(
         "-l",
         help="LLM ID to use (overrides project default)",
     ),
-    reasoning: str | None = typer.Option(
-        None,
-        "--reasoning",
-        help="Reasoning override: none, low, medium, high",
-    ),
+    reasoning: str | None = reasoning_option(),
     summary_guide: str | None = typer.Option(
         None,
         "--summary-guide",

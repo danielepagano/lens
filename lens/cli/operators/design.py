@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import pin_option, reasoning_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator import OperatorError
@@ -23,6 +23,7 @@ def design(
     prompt: str | None = typer.Argument(
         None,
         help="Design task or question",
+        shell_complete=lambda ctx, param, incomplete: [],
     ),
     module: str | None = typer.Option(
         None,
@@ -38,11 +39,7 @@ def design(
         "-l",
         help="LLM ID to use (overrides project default)",
     ),
-    reasoning: str | None = typer.Option(
-        None,
-        "--reasoning",
-        help="Reasoning override: none, low, medium, high",
-    ),
+    reasoning: str | None = reasoning_option(),
     retry: bool = typer.Option(
         False,
         "--retry",

@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import pin_option, reasoning_option, unpin_option
 from lens.core.auto_compress import run_post_main_auto_compress_blocking_cli
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -23,6 +23,7 @@ def write(
     prompt: str | None = typer.Argument(
         None,
         help="Writing direction/instruction",
+        shell_complete=lambda ctx, param, incomplete: [],
     ),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
@@ -32,11 +33,7 @@ def write(
         "-l",
         help="LLM ID to use (overrides project default)",
     ),
-    reasoning: str | None = typer.Option(
-        None,
-        "--reasoning",
-        help="Reasoning override: none, low, medium, high",
-    ),
+    reasoning: str | None = reasoning_option(),
     retry: bool = typer.Option(
         False,
         "--retry",
