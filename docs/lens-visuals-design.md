@@ -9,9 +9,11 @@
   reference-picking, and generation review.
 - Ship thumbnails via Cloudflare Images (R2 is already the store) with a clean fallback so dev and
   self-hosted setups work without CF.
-- Add image generation as a pluggable subsystem. Two initial API families
-  (OpenRouter multimodal, A2E), with models declared in `lens.toml`. Other APIs / models added
-  incrementally.
+- Add image generation as a pluggable subsystem, delivered over SSE from the start (image
+  backends vary wildly in latency — batches and local models can take minutes — and we already
+  stream operators, so there's no reason to ever run generate synchronously). Two initial API
+  families (OpenRouter multimodal, A2E), with models declared in `lens.toml`. Other APIs / models
+  added incrementally.
 - Introduce `/visualize` — an LLM-assisted prompt-crafter on top of `/generate` that leverages the
   pin system (including node-slice pins) to visualize ongoing scenes using the knowledge we already
   track.
@@ -22,7 +24,8 @@
 
 - Audio/video generation.
 - In-browser image editing (crop, paint, inpaint, etc.) — future phase / backlog.
-- Server-side queue or job history. Generation is synchronous per call for v1.
+- Server-side queue or job history. One generation at a time per project, reusing the existing
+  `app.state.stream_lock` that operators already use.
 - Multi-user / cross-session collaboration on generation sessions.
 
 ## Architectural pillars
@@ -68,6 +71,10 @@ api_key_env = "OPENROUTER_API_KEY"
 aspect_ratios = ["1:1", "16:9", "9:16", "4:3", "3:4"]
 sizes = ["1k", "2k"]
 supports_reference = true
+# hard cap on the resolved prompt length sent to the provider. Enforced server-side
+# regardless of provider behavior (some silently truncate, some 400, some just burn
+# tokens). If unset, we pick a conservative default per api family.
+max_prompt_chars = 2000
 # optional, rendered as form controls in the Generate dialog
 [[image.extras]]
 name = "guidance"
@@ -83,12 +90,19 @@ Core abstraction:
 lens/core/image/
   spec.py       # ImageSpec dataclass (prompt, negative, aspect, size, batch,
                 # model_id, references: list[str], extras: dict)
-  backend.py    # ImageBackend ABC: generate(spec) -> list[ImageResult]
-                # ImageResult carries bytes + suggested ext + per-item metadata
+  backend.py    # ImageBackend ABC: async generate(spec) -> AsyncIterator[ImageEvent]
+                # ImageEvent is a union: Progress(phase, pct?, message?),
+                # ItemReady(index, bytes, ext, metadata), Done, Error.
+                # Backends that can't stream incremental items still emit
+                # Progress heartbeats and a single ItemReady per result.
   openrouter.py # implements ImageBackend for OpenRouter multimodal
   a2e.py        # implements ImageBackend for A2E
   registry.py   # reads [[image]] blocks, returns (descriptor, backend) for a model id
 ```
+
+The `AsyncIterator` contract means the route handler streams events out over SSE without ever
+holding the whole batch in memory, and slow providers (local models, large batches) look the same
+to the UI as fast cloud ones — there's always a heartbeat.
 
 Registry descriptor includes capability flags (`supports_reference`, `aspect_ratios`, `sizes`,
 `extras_schema`) so the Generate dialog can render only the fields the active model supports.
@@ -162,8 +176,13 @@ Goal: prove the pipeline end-to-end with OpenRouter multimodal. Deliberately nar
   3. Dispatch via registry. On success, write each result to
      `<mount>/generated/<session-id>/<n>.<ext>` and write `.lens-gen.json` sidecar.
   4. Return `{session_id, paths, prompt_resolved}`.
-- Route: `POST /{project}/generate`. Synchronous. Per-request caps (`max_batch`, `max_size`) read
-  from the `[[image]]` entry and enforced before dispatch.
+- Route: `POST /{project}/generate` returns `text/event-stream`. Acquires
+  `app.state.stream_lock` (same mutual-exclusion pattern operators use; no double-generation).
+  Event names: `progress`, `item`, `done`, `error`. `item` payloads carry `{index, path}` once the
+  file is written to the session folder, so the UI can light up each thumbnail as it lands
+  instead of waiting for the whole batch. Per-entry caps (`max_batch`, `max_size`,
+  `max_prompt_chars`) are enforced server-side **before dispatch** and also re-checked after
+  mention resolution (since @-mentions can blow the resolved prompt past the cap).
 - New route `GET /{project}/image/models` returning descriptors for the Generate dialog.
 - `lens/testing/fake_image.py` — drop-in fake backend emitting 1x1 PNGs and echoing the resolved
   prompt + settings in the sidecar. Mirrors `FakeLLMServer`.
@@ -172,7 +191,10 @@ Goal: prove the pipeline end-to-end with OpenRouter multimodal. Deliberately nar
 - `features/media/GenerateDialog.svelte` — prompt textarea with KB @-mention autocomplete, model
   picker, aspect ratio, size category, batch size, and dynamic extras (driven by
   `extras_schema`).
-- On submit: show progress, then open the carousel in `manage` mode rooted at the session folder.
+- On submit: open the carousel immediately in `manage` mode rooted at the session folder; SSE
+  events populate thumbnails as they arrive (each `item` event adds a tile; `progress` updates a
+  header line; `error` surfaces inline without closing the carousel).
+- SSE plumbing lives only in `services/sse.ts` (existing), matching the frontend contract.
 
 **DoD**
 - Unit: mention resolver (replace strategy), `generate` core with fake backend writes N files +
@@ -254,8 +276,15 @@ metadata in the spotlight.
 ### Security / cost controls
 
 - `[[image]]` uses `api_key_env` (never in `lens.toml`). Same pattern as `[[llm]]`.
-- Per-entry `max_batch` and `max_size` clamp requests server-side before dispatch, regardless of
-  what the UI sends.
+- Per-entry `max_batch`, `max_size`, and `max_prompt_chars` clamp requests server-side before
+  dispatch, regardless of what the UI sends. `max_prompt_chars` is re-checked after mention
+  resolution since `@kb.id` expansions can push the resolved prompt well past what the user
+  typed.
+- Providers vary: some silently truncate long prompts, some return 400, some happily burn tokens
+  on slop they ignore. Enforcing a hard cap server-side gives predictable behavior across the
+  registry.
+- Only one generation runs at a time per project (`app.state.stream_lock`), preventing runaway
+  cost from the UI double-firing.
 - No image ever becomes part of the repo until the user explicitly attaches it; discard = delete
   from the session folder.
 
@@ -272,10 +301,9 @@ metadata in the spotlight.
 1. **CF Images delivery**: do we front all mount files through Cloudflare Images, or only call it
    for thumbnail variants and let full-size pull straight from R2? Leaning toward "thumbs only"
    to keep CF Images costs predictable. Left as a config switch in phase 1.
-2. **Sync vs SSE for generate**: synchronous in v1 because most image calls are <30s and it keeps
-   the code simple. If latency becomes a pain, upgrade to SSE using the same
-   `app.state.stream_lock` pattern as operators. Backend contract is already iterator-friendly.
-3. **Old session cleanup**: no sweeper in v1. Users clean up via `/manage`. Revisit if mounts get
+2. **Old session cleanup**: no sweeper in v1. Users clean up via `/manage`. Revisit if mounts get
    large.
-4. **Prompt hygiene in `/visualize`**: do we cap crafted-prompt length, or let the user edit
-   freely? Starting permissive; add a soft cap if we see blow-ups in practice.
+3. **`/visualize` prompt hygiene**: the crafted prompt still has to pass the active model's
+   `max_prompt_chars` cap. When the LLM overshoots, do we truncate, ask it to retry with a
+   tighter budget, or just surface the error in the edit dialog? Leaning toward "surface it and
+   let the user edit down," since this is already a human-in-the-loop step.
