@@ -2139,3 +2139,201 @@ ul.kb-item-list {
   border-color: var(--pico-ins-color);
   color: #fff;
 }
+
+/* ── Media Carousel ──────────────────────────────────────── */
+.carousel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.carousel-container {
+  background: var(--pico-background-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 8px;
+  width: min(92vw, 860px);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.carousel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  min-height: 44px;
+}
+.carousel-breadcrumb {
+  flex: 1;
+  font-size: 0.85rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.carousel-breadcrumb button {
+  background: none;
+  border: none;
+  padding: 0 0.25rem;
+  color: var(--pico-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.carousel-breadcrumb button:hover {
+  text-decoration: underline;
+}
+.carousel-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+/* Strip: horizontal on desktop, 3-column grid on mobile */
+.carousel-strip {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  display: flex;
+  gap: 0.5rem;
+  min-height: 96px;
+  align-items: flex-start;
+}
+@media (max-width: 600px) {
+  .carousel-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 55vh;
+  }
+}
+.carousel-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 72px;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0.35rem 0.25rem;
+  border: 2px solid transparent;
+  font-size: 0.72rem;
+  text-align: center;
+  overflow: hidden;
+  vertical-align: top;
+  user-select: none;
+}
+@media (max-width: 600px) {
+  .carousel-tile {
+    width: 100%;
+  }
+}
+.carousel-tile:hover,
+.carousel-tile.selected {
+  border-color: var(--pico-primary);
+  background: var(--pico-primary-background);
+}
+.carousel-tile img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 3px;
+  display: block;
+}
+.carousel-tile .tile-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  opacity: 0.7;
+}
+.carousel-spotlight {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background: var(--pico-card-background-color, #1a1a1a);
+  min-height: 120px;
+  position: relative;
+}
+.carousel-spotlight img {
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.carousel-spotlight-placeholder {
+  opacity: 0.35;
+  font-size: 0.9rem;
+}
+.carousel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--pico-muted-border-color);
+}
+.carousel-actions button {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  min-height: 34px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--pico-muted-border-color);
+  background: transparent;
+  color: inherit;
+}
+.carousel-actions button:hover:not(:disabled) {
+  background: var(--pico-secondary-background, #333);
+}
+.carousel-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.carousel-actions .action-danger {
+  color: var(--pico-del-color);
+  border-color: var(--pico-del-color);
+}
+.carousel-actions .action-primary {
+  background: var(--pico-primary);
+  color: var(--pico-primary-inverse);
+  border-color: var(--pico-primary);
+}
+.carousel-actions .action-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.carousel-rename-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border-top: 1px solid var(--pico-muted-border-color);
+}
+.carousel-rename-row input {
+  flex: 1;
+  font-size: 0.88rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--pico-form-element-background-color, #1a1a1a);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 4px;
+  color: inherit;
+  min-height: 34px;
+}
+.carousel-drop-active .carousel-container {
+  border-color: var(--pico-primary);
+  box-shadow: 0 0 0 2px var(--pico-primary);
+}

@@ -48,20 +48,13 @@ export const scrollContentToBottom = writable(0)
 /** Increment to request any visible CodeMirror instance to scroll to the latest lines (line pick, inline edit). */
 export const scrollCodeMirrorToBottom = writable(0)
 
-export interface MediaUploadRequest {
+export interface MediaCarouselRequest {
+  mode: 'attach' | 'manage'
   dir: string
+  attachAddress?: string
+  attachLine?: number
 }
-export const mediaUploadRequest = writable<MediaUploadRequest | null>(null)
-
-export interface MediaRemoveRequest {
-  path: string
-}
-export const mediaRemoveRequest = writable<MediaRemoveRequest | null>(null)
-
-export interface MediaPreviewRequest {
-  path: string
-}
-export const mediaPreviewRequest = writable<MediaPreviewRequest | null>(null)
+export const mediaCarouselRequest = writable<MediaCarouselRequest | null>(null)
 
 /** Increment to force the mount directory autocomplete cache to reload. */
 export const mountCacheRefreshTrigger = writable(0)

@@ -9,9 +9,7 @@
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
   import TransactionResultPanel from './features/transaction/TransactionResultPanel.svelte'
   import StreamingPreviewPanel from './features/streaming/StreamingPreviewPanel.svelte'
-  import MediaUploadPanel from './features/cli/MediaUploadPanel.svelte'
-  import MediaRemovePanel from './features/cli/MediaRemovePanel.svelte'
-  import MediaPreviewPanel from './features/cli/MediaPreviewPanel.svelte'
+  import MediaCarousel from './features/media/MediaCarousel.svelte'
   import KbDiffModal from './features/kb/KbDiffModal.svelte'
   import KbPanel from './features/kb/KbPanel.svelte'
   import InlineEditView from './features/editor/InlineEditView.svelte'
@@ -205,9 +203,7 @@
   <CliOutputPanel />
   <TransactionResultPanel />
   <StreamingPreviewPanel />
-  <MediaUploadPanel />
-  <MediaRemovePanel />
-  <MediaPreviewPanel />
+  <MediaCarousel />
   <KbDiffModal />
 
   <svelte:fragment slot="bottombar">

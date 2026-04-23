@@ -127,6 +127,36 @@ def delete_mount_file(
     return {"status": "ok", "path": path}
 
 
+class MoveMountRequest(BaseModel):
+    to: str
+
+
+@router.patch("/mount/file/{path:path}")
+def move_mount_file(
+    path: str,
+    body: MoveMountRequest,
+    session: ProjectSession = Depends(get_session),
+) -> dict[str, Any]:
+    """Move/rename a mount-relative file."""
+    try:
+        backend = get_mount_backend(session.project_root)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
+    if backend is None:
+        raise HTTPException(status_code=404, detail="no mount configured")
+    try:
+        new_path = backend.move(path, body.to)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"not found: {path}")
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"mount storage error: {e}")
+    return {"status": "ok", "path": new_path}
+
+
 class AttachRequest(BaseModel):
     path: str
     address: str | None = None

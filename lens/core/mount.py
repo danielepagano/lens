@@ -57,6 +57,16 @@ class MountBackend(ABC):
         Raises :exc:`OSError` if *subpath* is a non-empty directory.
         """
 
+    @abstractmethod
+    def move(self, src: str, dst: str) -> str:
+        """Move/rename the file at *src* to *dst*.
+
+        Returns the new mount-relative path.
+        Raises :exc:`FileNotFoundError` if *src* does not exist.
+        Raises :exc:`FileExistsError` if *dst* already exists.
+        Raises :exc:`ValueError` if either path escapes the mount root.
+        """
+
 
 # ---------------------------------------------------------------------------
 # Local filesystem backend
@@ -144,6 +154,17 @@ class LocalMountBackend(MountBackend):
             return "dir"
         full.unlink()
         return "file"
+
+    def move(self, src: str, dst: str) -> str:
+        src_full = self._resolve(src)
+        dst_full = self._resolve(dst)
+        if not src_full.exists():
+            raise FileNotFoundError(f"not found: {src}")
+        if dst_full.exists():
+            raise FileExistsError(f"file already exists: {dst}")
+        dst_full.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(src_full), str(dst_full))
+        return str(dst_full.relative_to(self._root))
 
 
 # ---------------------------------------------------------------------------
@@ -317,6 +338,39 @@ class S3MountBackend(MountBackend):
         if not normalize_subpath(subpath):
             raise FileNotFoundError(f"not found: {subpath}")
         return "dir"
+
+    def move(self, src: str, dst: str) -> str:
+        from botocore.exceptions import ClientError  # type: ignore[import-untyped]
+
+        src_key = self._key(src)
+        dst_clean = normalize_subpath(dst)
+        dst_key = self.prefix + dst_clean
+
+        # Verify src exists
+        try:
+            self._s3.head_object(Bucket=self.bucket, Key=src_key)
+        except ClientError as e:
+            code: str = (e.response.get("Error") or {}).get("Code", "")  # type: ignore[union-attr]
+            if code in ("404", "NoSuchKey"):
+                raise FileNotFoundError(f"not found: {src}")
+            raise
+
+        # Verify dst does not exist
+        try:
+            self._s3.head_object(Bucket=self.bucket, Key=dst_key)
+            raise FileExistsError(f"file already exists: {dst}")
+        except ClientError as e:
+            code = (e.response.get("Error") or {}).get("Code", "")  # type: ignore[union-attr]
+            if code not in ("404", "NoSuchKey"):
+                raise
+
+        self._s3.copy_object(
+            CopySource={"Bucket": self.bucket, "Key": src_key},
+            Bucket=self.bucket,
+            Key=dst_key,
+        )
+        self._s3.delete_object(Bucket=self.bucket, Key=src_key)
+        return dst_clean
 
 
 # ---------------------------------------------------------------------------

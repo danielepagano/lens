@@ -253,6 +253,31 @@ class TestLocalMountBackend(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             self._backend.delete("ghost.jpg")
 
+    # --- move ---
+
+    def test_move_file(self) -> None:
+        result = self._backend.move("hero.jpg", "renamed.jpg")
+        self.assertEqual(result, "renamed.jpg")
+        self.assertFalse((self._root / "hero.jpg").exists())
+        self.assertTrue((self._root / "renamed.jpg").exists())
+
+    def test_move_into_subdir(self) -> None:
+        self._backend.move("hero.jpg", "sub/hero.jpg")
+        self.assertFalse(self._backend.file_exists("hero.jpg"))
+        self.assertTrue(self._backend.file_exists("sub/hero.jpg"))
+
+    def test_move_missing_raises(self) -> None:
+        with self.assertRaises(FileNotFoundError):
+            self._backend.move("ghost.jpg", "other.jpg")
+
+    def test_move_conflict_raises(self) -> None:
+        with self.assertRaises(FileExistsError):
+            self._backend.move("hero.jpg", "notes.txt")
+
+    def test_move_traversal_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            self._backend.move("../../etc/passwd", "safe.txt")
+
 
 # ---------------------------------------------------------------------------
 # S3MountBackend
@@ -382,6 +407,22 @@ class TestS3MountBackend(UsesMotoS3Env):
     def test_delete_nonempty_prefix_raises(self) -> None:
         with self.assertRaises(OSError):
             self._backend.delete("sub")
+
+    # --- move ---
+
+    def test_move_file(self) -> None:
+        result = self._backend.move("hero.jpg", "renamed.jpg")
+        self.assertEqual(result, "renamed.jpg")
+        self.assertFalse(self._backend.file_exists("hero.jpg"))
+        self.assertTrue(self._backend.file_exists("renamed.jpg"))
+
+    def test_move_missing_raises(self) -> None:
+        with self.assertRaises(FileNotFoundError):
+            self._backend.move("ghost.jpg", "other.jpg")
+
+    def test_move_conflict_raises(self) -> None:
+        with self.assertRaises(FileExistsError):
+            self._backend.move("hero.jpg", "clip.mp4")
 
 
 # ---------------------------------------------------------------------------

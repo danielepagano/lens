@@ -693,6 +693,19 @@ export const deleteMountPath = withStats((path: string): Promise<DeleteMountPath
   del(projectPath(`/mount/file/${path}`)) as Promise<DeleteMountPathResponse>
 )
 
+export interface MoveMountFileResponse {
+  status: string
+  path?: string
+  detail?: string
+}
+
+export const moveMountFile = (src: string, dst: string): Promise<MoveMountFileResponse> =>
+  patch(projectPath(`/mount/file/${src}`), { to: dst }) as Promise<MoveMountFileResponse>
+
+export function getMountPreviewPath(path: string): string {
+  return projectPath(`/mount/preview/${path}`)
+}
+
 export const getNodeAddresses = async (): Promise<string[]> => {
   const tree = await getTree()
   function flatten(nodes: TreeNode[]): string[] {
