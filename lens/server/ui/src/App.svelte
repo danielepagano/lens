@@ -82,6 +82,17 @@
     await navigate(newStats.cursor || '')
   }
 
+  async function handleCarouselDone(): Promise<void> {
+    const addr = get(currentAddress)
+    if (!addr) return
+    try {
+      const data = await getNode(addr)
+      nodeContent.set(data.content)
+    } catch (e) {
+      console.error('Carousel done refresh failed:', e)
+    }
+  }
+
   async function handleCliDone(): Promise<void> {
     const prevCursor = get(stats)?.cursor ?? null
     const addr = get(currentAddress)
@@ -203,7 +214,7 @@
   <CliOutputPanel />
   <TransactionResultPanel />
   <StreamingPreviewPanel />
-  <MediaCarousel />
+  <MediaCarousel on:done={handleCarouselDone} />
   <KbDiffModal />
 
   <svelte:fragment slot="bottombar">

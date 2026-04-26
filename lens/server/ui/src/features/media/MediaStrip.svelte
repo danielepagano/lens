@@ -6,6 +6,7 @@
   export let entries: MountEntry[] = []
   export let selectedIndex: number = -1
   export let currentDir: string = ''
+  export let compact: boolean = false
 
   const dispatch = createEventDispatcher<{
     select: number
@@ -84,7 +85,7 @@
   }
 </script>
 
-<div class="carousel-strip" role="listbox" aria-label="Media files">
+<div class="carousel-strip" class:compact role="listbox" aria-label="Media files">
   {#each entries as entry, i (entry.name)}
     <div
       class="carousel-tile"
@@ -109,7 +110,7 @@
       {:else}
         <span class="tile-icon" aria-hidden="true">📄</span>
       {/if}
-      <span class="tile-name">{entry.name}</span>
+      {#if !compact}<span class="tile-name">{entry.name}</span>{/if}
     </div>
   {/each}
   {#if entries.length === 0}
