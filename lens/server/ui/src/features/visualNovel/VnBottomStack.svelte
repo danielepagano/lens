@@ -3,7 +3,7 @@
   import type { VnLineAttributionPill } from '../../utils/vnAttribution'
   import type { VnTtsSettings } from '../../utils/vnTypes'
   import VnTextFrame from './VnTextFrame.svelte'
-  import Cli from '../../layout/Cli.svelte'
+  import Cli from '../cli/Cli.svelte'
 
   type Props = {
     items: unknown[]

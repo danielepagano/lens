@@ -35,6 +35,12 @@ export default defineConfig([
     },
   },
   {
+    files: ["src/features/cli/**/*.svelte"],
+    rules: {
+      "max-lines": ["warn", { max: 320, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
     ignores: ["dist/", "node_modules/"],
   },
 ]);

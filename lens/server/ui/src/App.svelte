@@ -3,7 +3,7 @@
   import { get } from 'svelte/store'
   import MainLayout from './layout/MainLayout.svelte'
   import TopBar from './layout/TopBar.svelte'
-  import Cli from './layout/Cli.svelte'
+  import Cli from './features/cli/Cli.svelte'
   import TreeBrowser from './features/tree/TreeBrowser.svelte'
   import MarkdownView from './features/viewer/MarkdownView.svelte'
   import CliOutputPanel from './features/cli/CliOutputPanel.svelte'
