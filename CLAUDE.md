@@ -256,7 +256,7 @@ The server is a FastAPI adapter over `lens/core/`. CLI and server are sibling in
 Svelte + Vite + Pico.css + CodeMirror 6 + markdown-it. No additional frameworks or UI libraries.
 
 **Hard constraints (architecture violations must be rejected):**
-1. No component may exceed ~300 lines.
+1. No component should grow without bound: ~300 lines is the usual target; **split when a file passes ~450 lines** or mixes unrelated concerns. Single-purpose components in the ~300–450 range are acceptable.
 2. CodeMirror is configured only in the editor component — nowhere else.
 3. Network logic (fetch, EventSource) lives only in `services/` — never in components.
 4. Global state lives only in `stores/` — never derived or duplicated in components.

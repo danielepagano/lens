@@ -1,6 +1,13 @@
 <script lang="ts">
   import type { MountEntry } from '../../services/api'
   import { getMountFilePath } from '../../services/api'
+  import {
+    AUDIO_EXTS,
+    IMAGE_EXTS,
+    TEXT_EXTS,
+    VIDEO_EXTS,
+    mountPathExt,
+  } from '../../utils/mountFileTypes'
 
   type MediaStripProps = {
     entries?: readonly MountEntry[]
@@ -26,30 +33,20 @@
     onPreview,
   }: MediaStripProps = $props()
 
-  const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif'])
-  const AUDIO_EXTS = new Set(['.mp3', '.wav'])
-  const VIDEO_EXTS = new Set(['.mp4', '.webm', '.mov', '.avi'])
-  const TEXT_EXTS = new Set(['.txt', '.json', '.yaml', '.yml', '.md'])
-
-  function ext(name: string): string {
-    const dot = name.lastIndexOf('.')
-    return dot >= 0 ? name.slice(dot).toLowerCase() : ''
-  }
-
   function isImage(entry: MountEntry): boolean {
-    return !entry.is_dir && IMAGE_EXTS.has(ext(entry.name))
+    return !entry.is_dir && IMAGE_EXTS.has(mountPathExt(entry.name))
   }
 
   function isAudio(entry: MountEntry): boolean {
-    return !entry.is_dir && AUDIO_EXTS.has(ext(entry.name))
+    return !entry.is_dir && AUDIO_EXTS.has(mountPathExt(entry.name))
   }
 
   function isVideo(entry: MountEntry): boolean {
-    return !entry.is_dir && VIDEO_EXTS.has(ext(entry.name))
+    return !entry.is_dir && VIDEO_EXTS.has(mountPathExt(entry.name))
   }
 
   function isText(entry: MountEntry): boolean {
-    return !entry.is_dir && TEXT_EXTS.has(ext(entry.name))
+    return !entry.is_dir && TEXT_EXTS.has(mountPathExt(entry.name))
   }
 
   function isIconTile(entry: MountEntry): boolean {
