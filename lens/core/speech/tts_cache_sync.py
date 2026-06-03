@@ -6,9 +6,9 @@ from pathlib import Path
 
 from lens.core.annotations import parse_front_matter
 from lens.core.narrative import NarrativeNode
-from lens.core.pinning import TTS_CACHED
-from lens.core.project import get_mount_backend
-from lens.core.speech.chunks import chunks_for_node_text, tts_cache_mount_prefix
+from lens.core.pinning import TTS_CACHED, set_tts_cached_rev
+from lens.core.project import ProjectSession, get_mount_backend, has_mount_config
+from lens.core.speech.chunks import TTS_CHUNK_REVISION, chunks_for_node_text, tts_cache_mount_prefix
 
 
 def text_has_tts_cached(raw_md: str) -> bool:
@@ -17,6 +17,23 @@ def text_has_tts_cached(raw_md: str) -> bool:
 
 def node_uses_tts_cache(node: NarrativeNode) -> bool:
     return text_has_tts_cached(node.md_path().read_text(encoding="utf-8"))
+
+
+def ensure_tts_front_matter_for_line_stability(
+    session: ProjectSession,
+    node: NarrativeNode,
+) -> None:
+    """Pin ``tts_cached`` before chunking when a mount exists so line numbers stay stable.
+
+    Must run before playback manifests or TTS routes return ``line`` values. Synthesis must not
+    be the first writer of front matter while clients hold stale line numbers from playback.
+    """
+    if not has_mount_config(session.project_root):
+        return
+    if node_uses_tts_cache(node):
+        return
+    storage = session.new_storage(owner=None)
+    set_tts_cached_rev(node, TTS_CHUNK_REVISION, storage)
 
 
 def narrative_storage_path_to_node(git_root: Path, path: Path) -> NarrativeNode | None:

@@ -80,7 +80,7 @@ def test_playback_manifest_order_and_shape(vn_client: TestClient) -> None:
     assert len(items) == 3
     assert items[0]["type"] == "text"
     assert items[0]["text"] == "Line one."
-    assert "tts_cached" not in items[0]
+    assert items[0]["tts_cached"] is False
     assert items[1]["type"] == "image"
     assert items[1]["url"] == "hero.png"
     assert items[2]["type"] == "text"
@@ -171,18 +171,14 @@ def test_playback_manifest_includes_attach_video_embed(tmp_path: Path) -> None:
     assert items[2]["text"] == "Tail."
 
 
-def test_playback_adds_tts_front_matter_before_chunking_when_speech_ready(
+def test_playback_adds_tts_front_matter_before_chunking_when_mount_configured(
     vn_client: TestClient, tmp_path: Path
 ) -> None:
-    """``tts_cached`` is written on first GET when mount + speech are ready so ``line`` stays valid."""
-    with mock.patch(
-        "lens.server.routes.narrative_playback.speech_registry.is_speech_backend_ready",
-        return_value=True,
-    ):
-        r = vn_client.get("/test/narrative/node/story/playback")
+    """``tts_cached`` is written on first GET when a mount exists so ``line`` stays valid for TTS."""
+    r = vn_client.get("/test/narrative/node/story/playback")
     assert r.status_code == 200
     data = r.json()
-    assert data["tts_enabled"] is True
+    assert data["tts_enabled"] is False
     node_path = tmp_path / "narrative" / "story" / "_node.md"
     body = node_path.read_text(encoding="utf-8")
     assert "tts_cached" in body
@@ -190,7 +186,13 @@ def test_playback_adds_tts_front_matter_before_chunking_when_speech_ready(
     assert items[0]["type"] == "text"
     assert items[0]["text"] == "Line one."
     assert items[0]["line"] > 1
-    assert items[0]["tts_cached"] is False
+
+    with mock.patch(
+        "lens.server.routes.narrative_playback.speech_registry.is_speech_backend_ready",
+        return_value=True,
+    ):
+        r2 = vn_client.get("/test/narrative/node/story/playback")
+    assert r2.json()["tts_enabled"] is True
 
 
 def test_tts_sse_sets_tts_cached_and_writes_mp3(vn_client: TestClient, tmp_path: Path) -> None:
