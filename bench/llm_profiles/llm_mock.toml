@@ -1,0 +1,21 @@
+# Controllable mock LLM for workflow / cancel / skip sandbox runs.
+#
+# 1. Start the server (repo root):
+#      poe mock-llm
+#    or: python bench/tools/mock_llm_server.py --tokens 100 --tps 3
+#
+# 2. Create a bench project:
+#      PROJECT=$(python bench/tools/setup_bench.py --profile llm_mock --scenario bench/scenarios/remember_section.md)
+#
+# Stream speed: put ``tokens=N`` and ``tps=Y`` in any LLM message text, or rely
+# on the server defaults from ``mock_llm_server.py`` / ``poe mock-llm``.
+#
+# Remember-step streams are empty unless tokens= is set (use tokens=60 tps=2 to
+# exercise cancel mid-remember in the UI).
+
+[llm]
+id = "mock"
+base_url = "http://127.0.0.1:18765/v1"
+model = "mock"
+timeout_seconds = 600
+first_token_timeout_seconds = 120

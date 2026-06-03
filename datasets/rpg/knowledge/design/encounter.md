@@ -1,0 +1,57 @@
+# [DESIGN MODULE]: ENCOUNTER DESIGN
+
+Build `encounter.*` objects: compact situations the GM can actually run. An encounter is ANY prepared situation with stakes, not just combat. A nervous informant, a chase through a burning market, a courtroom trial, a puzzle door, a boss fight — if it can turn into a scene with pressure, it qualifies.
+
+The `encounter._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
+
+Before building anything, establish why this scene deserves an object:
+- What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes (unless it was already provided).
+- Which PCs does it challenge? Check their `lore.<name>` objects for core questions this scene could pressure.
+- If the encounter doesn't connect to an active front or PC story, reflect: why does this scene matter? You may propose a front for whatever tension drives the scene; if the user wants to actually create the front, they will engage with a front design module; your job is still to create the encounter.
+
+Get the live shape of the situation:
+- What's the scene? (where, when, who's involved)
+- What type of situation? (combat, social, chase, puzzle, exploration, or a mix)
+- What's at stake? (consequences of success and failure)
+- Any secrets? (information the player shouldn't see until revealed through play)
+
+Assemble the participants cleanly. They include any given PCs, plus:
+- Named NPCs (recurring non-player characters) have `npc.*` objects
+- Factions, both as context and to control the rules of groups of creatures, have `faction.*` objects
+- Locations: if the encounter occurs in a specific, sufficiently complex, and recurring location, it will have a `location.*` object.
+
+IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest to the user that you want to introduce an NPC, faction, or location, and have them decide whether to accept and load the appropriate module for the task. If they decline, just add necessary character and location details in the encounter itself, not other objects.
+
+Write the encounter object like a playable script, not a story recap:
+- Situation: one or two sentences
+- Stakes: what can go wrong
+- Participants: links or inline descriptions of npc/faction/stat objects
+- Scene rules: special mechanics.
+- Triggers: what causes shifts (dialog to combat, timer expires, reinforcements, secret revealed)
+- Resolution: how it ends and what changes
+
+SECRETS
+If the encounter has secrets (the informant is actually a trap, the merchant is poisoning the drinks, the "abandoned" tower has invisible watchers):
+- Encode secrets using the `ai:secret` comment format so only the AI sees them during play
+- The encounter object's visible text should read naturally without the secret — the player may glimpse object names in pin lists
+
+What this is not:
+- Not a blow-by-blow prediction of how the scene will unfold.
+- Not a stat dump with no dramatic pressure.
+- Not a rigid format the GM must recite in order.
+
+APPENDIX - ENCOUNTER TYPES
+These are guidelines for scene rules, not separate templates or rigid categories:
+
+**Combat**: Link stat blocks or create mechanically interesting adversaries. Note terrain features, environmental hazards, and enemy goals (not just "attack"). Enemies have motivations — bandits flee when losing, cultists sacrifice themselves, intelligent foes adapt.
+
+**Social**: Note each NPC's goals, what they know, what they'll share freely, and what requires checks. Conversation encounters don't need rolls for every exchange — only when the PC pushes past what the NPC would naturally give.
+
+**Chase/Escape**: Note starting distance, terrain type, potential complications, exhaustion rules. What ends the chase (distance, hiding, obstacle, confrontation)?
+
+**Puzzle/Exploration**: Note the puzzle mechanics, what information is available, what checks reveal. What happens if they get stuck? What happens if they brute-force it?
+
+**Mixed**: Most interesting encounters are mixed. Note the triggers that shift between types. A negotiation that could become a fight. A combat that the quarry flees from. A puzzle room with a guardian. Write the triggers explicitly.
+
+ARC AWARENESS:
+If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.

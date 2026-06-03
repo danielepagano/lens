@@ -1,0 +1,78 @@
+[tool.poetry]
+name = "lens"
+version = "1.0.0"
+description = "Lens: narrative engine with fractal summarization"
+readme = "README.md"
+license = "MIT"
+packages = [{ include = "lens" }]
+
+[tool.poetry.scripts]
+lens = "lens.cli.main:main"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.0"
+uvicorn = { version = "^0.30.0", extras = ["standard"] }
+jinja2 = "^3.1.4"
+python-multipart = "^0.0.9"
+pysbd = "^0.3.4"
+cachetools = "^5.3.0"
+tomli-w = "^1.0.0"
+typer = "^0.16.0"
+pyyaml = "^6.0"
+httpx = "^0.28.1"
+dice = "^4.0.0"
+boto3 = "^1.35.0"
+bcrypt = "^4.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pyright = "^1.1.390"
+ruff = "^0.7.0"
+poethepoet = "^0.27.0"
+pytest = "^8.0.0"
+pytest-xdist = "^3.0.0"
+moto = {version = "^5.0.0", extras = ["s3"]}
+boto3-stubs = {version = "^1.35.0", extras = ["s3"]}
+
+[tool.poetry.group.e2e.dependencies]
+pytest-playwright = "^0.5.0"
+
+[tool.poe.tasks]
+lens = { cmd = "python -W ignore::SyntaxWarning:pysbd -m lens.cli.main" }
+pyright = "pyright"
+lint-py = "ruff check . --fix"
+lint-ts = { shell = "cd lens/server/ui && npm run lint" }
+check-svelte = { shell = "cd lens/server/ui && npm run check" }
+lint = { sequence = ["lint-py", "lint-ts", "check-svelte", "pyright"] }
+test = "pytest lens/core/test lens/cli/test lens/server/test lens/rpg/test -n auto --ignore=lens/core/test/integration -q"
+test-integration = "pytest lens/core/test/integration -n 0 -q"
+test-e2e = "pytest e2e/ -n 0 -q"
+test-ui = { shell = "cd lens/server/ui && npm install --no-package-lock --silent && npm test" }
+dev = { cmd = "python scripts/dev_project.py" }
+bench-setup = { cmd = "python bench/tools/setup_bench.py" }
+bench-report = { cmd = "python bench/tools/report.py" }
+build-ui = { shell = "cd lens/server/ui && npm install --no-package-lock --silent && npm run build" }
+e2e-sandbox = { cmd = "python -m lens.testing.e2e_sandbox" }
+mock-llm = { cmd = "python bench/tools/mock_llm_server.py" }
+check = { sequence = ["lint", "test", "test-integration", "test-ui", "build-ui", "test-e2e"] }
+
+[tool.pytest.ini_options]
+addopts = "-W ignore::SyntaxWarning:pysbd"
+testpaths = ["lens/core/test", "lens/cli/test", "lens/rpg/test"]
+filterwarnings = [
+    # Python 3.14 deprecations in third-party libs — not our code
+    "ignore:'asyncio\\.iscoroutinefunction' is deprecated",
+    "ignore:'asyncio\\.AbstractEventLoopPolicy' is deprecated",
+    "ignore:'asyncio\\.set_event_loop_policy' is deprecated",
+    # websockets library deprecating its legacy API
+    "ignore:websockets\\.legacy is deprecated",
+    "ignore:websockets\\.server\\.WebSocketServerProtocol is deprecated",
+    # python-dice uses deprecated pyparsing APIs (third-party); not our code
+    "ignore::pyparsing.warnings.PyparsingDeprecationWarning:dice",
+    "ignore::pyparsing.warnings.PyparsingDeprecationWarning:pyparsing",
+]
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
+

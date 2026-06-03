@@ -1,0 +1,440 @@
+"""Unit and integration tests for EditOperator."""
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import io
+import subprocess
+import tempfile
+import unittest
+from pathlib import Path
+from typing import Any, cast
+from unittest.mock import patch
+from collections.abc import Awaitable, Callable
+
+from lens.core.llm import StreamEvent, final_payload_from_text
+from lens.core.narrative import NarrativeNode
+from lens.core.operator import OperatorError
+from lens.core.operators.edit import EditOperator
+from lens.core.test.llm_run_mock import mock_run_llm
+from lens.core.project import ProjectSession
+from lens.core.storage import Storage
+
+
+def _init_repo(tmp: Path) -> Path:
+    subprocess.run(["git", "init"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=tmp, capture_output=True, check=True,
+    )
+    (tmp / ".gitkeep").write_text("")
+    subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"], cwd=tmp, capture_output=True, check=True,
+    )
+    return tmp
+
+
+def _make_project(tmp: Path, slug: str = "test") -> tuple[Path, NarrativeNode]:
+    (tmp / "lens.toml").write_text(f'[project]\nnarrative = "{slug}"\n')
+    narrative_dir = tmp / "narrative" / slug
+    narrative_dir.mkdir(parents=True)
+    (narrative_dir / "_node.md").write_text(f"# {slug}\n")
+    (tmp / "knowledge").mkdir(exist_ok=True)
+    subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "project"], cwd=tmp, capture_output=True, check=True,
+    )
+    return tmp, NarrativeNode(narrative_root=narrative_dir, key_path=())
+
+
+def _commit_node_content(root: Path, node: NarrativeNode, content: str) -> None:
+    node.md_path().write_text(content)
+    subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "content"], cwd=root, capture_output=True, check=True,
+    )
+
+
+async def _fake_generate_text(*args: Any, **kwargs: Any) -> str:
+    on_preview = kwargs.get("on_preview")
+    if on_preview is not None:
+        cb = cast(Callable[[str], Awaitable[None]], on_preview)
+        await cb("Generated")
+        await cb(" content")
+    return "Generated content"
+
+
+def _run_mutation(
+    root: Path,
+    node: NarrativeNode,
+    rel_path: str,
+    ann_id: str,
+    start_line: int,
+    end_line: int,
+    *,
+    prompt: str | None = None,
+    retry: bool = False,
+    generate_mock: Any = None,
+    manual: bool = False,
+) -> None:
+    raw_mock = generate_mock or _fake_generate_text
+
+    with patch(
+        "lens.core.operator.run_llm",
+        new=mock_run_llm(raw_mock),
+    ):
+        with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stderr(io.StringIO()):
+                asyncio.run(
+                    EditOperator.run_mutation(
+                        session=ProjectSession(root, root),
+                        node=node,
+                        rel_path=rel_path,
+                        ann_id=ann_id,
+                        start_line=start_line,
+                        end_line=end_line,
+                        prompt=prompt,
+                        manual=manual,
+                        pins=[],
+                        unpins=[],
+                        llm_id=None,
+                        retry=retry,
+                    )
+                )
+
+
+# ---------------------------------------------------------------------------
+# build_instruction
+# ---------------------------------------------------------------------------
+
+class TestEditOperatorBuildInstruction(unittest.TestCase):
+    def test_build_instruction_with_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            op = EditOperator(Storage(root), narrative)
+            result = op.build_instruction({"prompt": "make it darker"})
+            self.assertIn("make it darker", result)
+
+
+# ---------------------------------------------------------------------------
+# run_mutation integration tests
+# ---------------------------------------------------------------------------
+
+class TestEditOperatorRunMutation(unittest.TestCase):
+
+    _REL_PATH = "narrative/test/_node.md"
+
+    def test_run_mutation_fresh(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(root, narrative, self._REL_PATH, "e1_1", 1, 1, prompt="rewrite it")
+
+            self.assertTrue(Storage(root).has_pending())
+            text = narrative.md_path().read_text()
+            self.assertIn("Generated content", text)
+            self.assertNotIn("Original line one.", text)
+            self.assertNotIn("[edit:e1_1]: #", text)
+
+    def test_run_mutation_fresh_stores_prompt_in_claim(self) -> None:
+        """The prompt is stored in the staged claim tag for recovery on retry."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(root, narrative, self._REL_PATH, "e1_1", 1, 1, prompt="be poetic")
+
+            # The claim is staged — check the index content via git show
+            result = __import__("subprocess").run(
+                ["git", "show", f":{self._REL_PATH}"],
+                cwd=root, capture_output=True, text=True,
+            )
+            self.assertIn("be poetic", result.stdout)
+
+    def test_run_mutation_fresh_preserves_other_lines(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Line one.\nLine two.\nLine three.\n")
+
+            _run_mutation(root, narrative, self._REL_PATH, "e2_2", 2, 2, prompt="punch it up")
+
+            text = narrative.md_path().read_text()
+            self.assertIn("Generated content", text)
+            self.assertIn("Line three.", text)
+
+    def test_run_mutation_fresh_no_prompt_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Some content.\n")
+
+            with self.assertRaises(OperatorError):
+                asyncio.run(
+                    EditOperator.run_mutation(
+                        session=ProjectSession(root, root),
+                        node=narrative,
+                        rel_path=self._REL_PATH,
+                        ann_id="e1_1",
+                        start_line=1,
+                        end_line=1,
+                        prompt=None,
+                        pins=[],
+                        unpins=[],
+                        llm_id=None,
+                        retry=False,
+                    )
+                )
+
+    def test_run_mutation_retry_reuses_stored_prompt(self) -> None:
+        """Retry without a new prompt recovers the prompt from the claim tag."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(root, narrative, self._REL_PATH, "e1_1", 1, 1, prompt="be poetic")
+
+            async def _retry(*args: Any, **kwargs: Any) -> Any:
+                for chunk in ["Retried", " content"]:
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=final_payload_from_text(
+                        "Retried content",
+                        tool_calls=[],
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            # No prompt supplied — should recover from the claim tag
+            _run_mutation(
+                root, narrative, self._REL_PATH, "e1_1", 1, 1,
+                retry=True, generate_mock=_retry,
+            )
+
+            text = narrative.md_path().read_text()
+            self.assertIn("Retried content", text)
+            self.assertNotIn("Generated content", text)
+            self.assertTrue(Storage(root).has_pending())
+
+    def test_run_mutation_retry_with_feedback_appends_turns(self) -> None:
+        """Retry with a prompt treats it as feedback, not a new instruction.
+
+        The messages sent to the LLM must contain:
+          - an assistant turn with the previous proposal
+          - a user turn with the feedback text
+        The original stored instruction must be preserved.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(root, narrative, self._REL_PATH, "e1_1", 1, 1, prompt="be poetic")
+
+            captured_messages: list[dict[str, Any]] = []
+
+            async def _retry(*args: Any, **kwargs: Any) -> Any:
+                captured_messages.extend(args[0] if args else kwargs.get("messages", []))
+                for chunk in ["Updated", " content"]:
+                    yield StreamEvent(preview=chunk)
+                yield StreamEvent(
+                    final=final_payload_from_text(
+                        "Updated content",
+                        tool_calls=[],
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            _run_mutation(
+                root, narrative, self._REL_PATH, "e1_1", 1, 1,
+                retry=True, prompt="be dramatic", generate_mock=_retry,
+            )
+
+            text = narrative.md_path().read_text()
+            self.assertIn("Updated content", text)
+
+            # Original instruction must be preserved (not overwritten by feedback)
+            all_content = " ".join(m["content"] for m in captured_messages if isinstance(m.get("content"), str))
+            self.assertIn("be poetic", all_content)
+
+            # Feedback turn structure: assistant (previous proposal) + user (feedback)
+            roles = [m["role"] for m in captured_messages]
+            self.assertIn("assistant", roles)
+            last_assistant_idx = max(i for i, m in enumerate(captured_messages) if m["role"] == "assistant")
+            self.assertIn("Generated content", captured_messages[last_assistant_idx]["content"])
+            self.assertEqual(captured_messages[-1]["role"], "user")
+            self.assertIn("be dramatic", captured_messages[-1]["content"])
+
+    def test_run_mutation_range_has_annotation_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "[section:ch1]: #\nSome content.\n")
+
+            with self.assertRaises(OperatorError):
+                asyncio.run(
+                    EditOperator.run_mutation(
+                        session=ProjectSession(root, root),
+                        node=narrative,
+                        rel_path=self._REL_PATH,
+                        ann_id="e1_1",
+                        start_line=1,
+                        end_line=1,
+                        prompt="fix it",
+                        pins=[],
+                        unpins=[],
+                        llm_id=None,
+                        retry=False,
+                    )
+                )
+
+    def test_run_mutation_retry_no_pending_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Some content.\n")
+
+            with self.assertRaises(OperatorError):
+                asyncio.run(
+                    EditOperator.run_mutation(
+                        session=ProjectSession(root, root),
+                        node=narrative,
+                        rel_path=self._REL_PATH,
+                        ann_id="e1_1",
+                        start_line=1,
+                        end_line=1,
+                        prompt=None,
+                        pins=[],
+                        unpins=[],
+                        llm_id=None,
+                        retry=True,
+                    )
+                )
+
+    def test_run_mutation_manual_replace_replaces_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(
+                root,
+                narrative,
+                self._REL_PATH,
+                "e1_1",
+                1,
+                1,
+                prompt="Manual replacement",
+                manual=True,
+            )
+
+            text = narrative.md_path().read_text()
+            self.assertIn("Manual replacement", text)
+            self.assertNotIn("Original line one.", text)
+            self.assertNotIn("[edit:e1_1]: #", text)
+            self.assertFalse(
+                text.startswith("\n"),
+                "replace from line 1 must not prepend a spurious blank line",
+            )
+
+    def test_run_mutation_manual_replace_stores_params_in_claim(self) -> None:
+        """Manual replace stores manual flag and prompt in the claim tag."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Original line one.\nOriginal line two.\n")
+
+            _run_mutation(
+                root,
+                narrative,
+                self._REL_PATH,
+                "e1_1",
+                1,
+                1,
+                prompt="Some long replacement text",
+                manual=True,
+            )
+
+            result = __import__("subprocess").run(
+                ["git", "show", f":{self._REL_PATH}"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("manual: true", result.stdout)
+            self.assertIn("prompt: Some long replacement text", result.stdout)
+
+    def test_run_mutation_manual_replace_empty_deletes_middle_line(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(
+                root,
+                narrative,
+                "Line one.\n![img](mount/foo.png)\nLine three.\n",
+            )
+
+            _run_mutation(
+                root,
+                narrative,
+                self._REL_PATH,
+                "e2_2",
+                2,
+                2,
+                prompt="",
+                manual=True,
+            )
+
+            text = narrative.md_path().read_text()
+            self.assertIn("Line one.", text)
+            self.assertIn("Line three.", text)
+            self.assertNotIn("![img]", text)
+            self.assertNotIn("[edit:", text)
+
+    def test_run_mutation_manual_replace_empty_deletes_first_line(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Only first.\nRest.\n")
+
+            _run_mutation(
+                root,
+                narrative,
+                self._REL_PATH,
+                "e1_1",
+                1,
+                1,
+                prompt="",
+                manual=True,
+            )
+
+            text = narrative.md_path().read_text()
+            self.assertFalse(
+                text.startswith("\n"),
+                "deleting line 1 must not leave a leading newline",
+            )
+            self.assertNotIn("Only first.", text)
+            self.assertIn("Rest.", text)
+
+    def test_run_mutation_manual_replace_no_prompt_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            _commit_node_content(root, narrative, "Some content.\n")
+
+            with self.assertRaises(OperatorError):
+                asyncio.run(
+                    EditOperator.run_mutation(
+                        session=ProjectSession(root, root),
+                        node=narrative,
+                        rel_path=self._REL_PATH,
+                        ann_id="e1_1",
+                        start_line=1,
+                        end_line=1,
+                        prompt=None,
+                        pins=[],
+                        unpins=[],
+                        llm_id=None,
+                        retry=False,
+                        manual=True,
+                    )
+                )

@@ -1,0 +1,2 @@
+[prompts]
+tool.testing_ext.prompt_snippet = '''Testing extension tool for unit tests.'''

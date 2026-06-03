@@ -1,0 +1,1081 @@
+"""SessionOperator: base class for operators that manage sub-node sessions.
+
+Session operators (``design``, ``play``) create a sub-node the first time they
+are invoked and continue working inside it on subsequent calls.  They support
+*modules* — KB objects with a configurable prefix that are pinned one-at-a-time
+into the session sub-node front matter.
+
+Subclasses override :meth:`_run_fresh` and :meth:`_run_inside` to define how
+generation works, and optionally :meth:`run_session_end` for custom close
+behaviour.
+
+Session lifecycle
+-----------------
+*  First call → :meth:`_setup_fresh_session` creates the sub-node, pins
+   :attr:`auto_pins` and optional module, stages, then delegates to
+   :meth:`_run_fresh`.
+*  Subsequent calls inside the session → :meth:`_run_inside` (continue or
+   retry).  Front-matter is updated when ``--module`` changes or new
+   pins/unpins are supplied.
+*  ``--end`` → :meth:`run_session_end` appends the close tag to the parent.
+
+Module handling
+---------------
+``--module <key>`` pins ``<module_prefix><key>`` in the sub-node front matter.
+Only one module is active at a time: switching ``--module`` removes all
+``<module_prefix>*`` pins before adding the new one.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import re
+from collections.abc import Awaitable, Callable
+from pathlib import Path
+from typing import Any, ClassVar, cast
+
+from lens.core.annotations import parse_annotations, strip_markdown_comments
+from lens.core.context import CrawlResult, assemble_prompt, session_module_ids
+from lens.core.knowledge import KnowledgeStore
+from lens.core.generation_artifacts import (
+    GenerationArtifacts,
+    compose_audit_from_combined_text,
+    compose_audit_suffix,
+    compose_for_operator,
+)
+from lens.core.llm import (
+    LLMError,
+    DEFAULT_REMEMBER_COMMAND_TOOL_ITERATIONS,
+    build_kb_patch_whitelist_bundle,
+)
+from lens.core.llm_run import LlmRunRequest, run_llm
+from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
+from lens.core.operator import Operator, OperatorError
+from lens.core.operator_params import apply_pinned_invocation
+from lens.core.prompts import PromptStore
+from lens.core.pinning import pin as pin_node
+from lens.core.pinning import unpin as unpin_node
+from lens.core.project import ProjectSession, validate_slug
+from lens.core.storage import Storage
+from lens.core.workflow_runner import (
+    StepResult,
+    WorkflowRunner,
+    WorkflowStepDef,
+    finalize_workflow_outcome,
+)
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+_NONSLUG_RE = re.compile(r"[^a-z0-9]+")
+
+
+def prompt_to_slug(prompt: str, max_words: int = 5) -> str:
+    """Convert prompt text to a hyphen-joined slug of up to *max_words* words."""
+    words = _NONSLUG_RE.sub(" ", prompt.lower()).split()
+    return "-".join(words[:max_words])
+
+
+# ---------------------------------------------------------------------------
+# Shared summary block formatting
+# ---------------------------------------------------------------------------
+
+MAX_SUMMARY_TITLE_WORDS = 10
+"""Maximum number of words allowed in a summary title."""
+
+SUMMARY_COMMENT_TAG = "section"
+"""HTML comment tag prefix written above every summary block.
+
+All operators that summarize use the same tag so the LLM can deterministically
+recognize a summary block in context (annotations are stripped from LLM
+context, but HTML comments are preserved)."""
+
+_SLUG_OPERATOR_PREFIXES = (
+    "section-",
+    "play-",
+    "design-",
+    "collate-",
+    "advance-day-",
+    "advance-",
+)
+
+
+class SummaryTitleError(OperatorError):
+    """Raised when raw summary text lacks a valid first-line title (see :func:`format_summary_block`)."""
+
+
+def slug_for_summary_prompt(slug: str) -> str:
+    """Strip a leading session-operator slug prefix for LLM titling instructions only.
+
+    The HTML ``<!-- section:<slug> -->`` comment always uses the full storage
+    slug; prompts pass this shortened value as ``{slug}`` so the model titles
+    the meaningful segment (e.g. ``play-amy-dream`` → ``amy-dream``).
+    """
+    for prefix in _SLUG_OPERATOR_PREFIXES:
+        if slug.startswith(prefix):
+            return slug[len(prefix) :]
+    return slug
+
+
+_TITLE_LEADING_MARKERS = re.compile(r'^[#>\*_\s"\'`]+')
+_TITLE_TRAILING_MARKERS = re.compile(r'[\*_"\'`\s]+$')
+
+
+def _extract_title_candidate(line: str) -> str:
+    """Strip markdown/quote/bold markers from a candidate title line."""
+    s = _TITLE_LEADING_MARKERS.sub("", line.strip())
+    s = _TITLE_TRAILING_MARKERS.sub("", s)
+    return s.rstrip(":").strip()
+
+
+def _blockquote_body(lines: list[str]) -> list[str]:
+    """Format the summary body as one continuous Markdown blockquote.
+
+    Every line is written as ``> …``; blank lines use ``> `` so the blockquote
+    does not break. Leading ``>`` runts on each line are stripped first so
+    lines are not double-quoted.
+    """
+    out: list[str] = []
+    for line in lines:
+        stripped = line.rstrip()
+        if not stripped.strip():
+            out.append("> ")
+            continue
+        s = stripped
+        while s.startswith(">"):
+            s = s[1:]
+            if s.startswith(" "):
+                s = s[1:]
+        suffix = s
+        out.append(f"> {suffix}" if suffix else "> ")
+    return out
+
+
+def format_summary_block(slug: str, raw_summary: str) -> str:
+    """Format raw summary text into the canonical Lens summary block.
+
+    Canonical shape::
+
+        <!-- section:<slug> -->
+
+        ### <Title>
+
+        > body line 1
+        > body line 2
+
+    Algorithmic normalization applied:
+
+    - **Title**: the first non-empty line is the title after stripping markdown
+      markers (``#``, ``>``, ``**``, quotes). It must be non-empty and have at
+      most :data:`MAX_SUMMARY_TITLE_WORDS` words; otherwise
+      :exc:`SummaryTitleError` is raised (callers retry the LLM or surface the
+      error).
+    - **Body**: lines after the title, trimmed of leading/trailing blank lines,
+      then passed through :func:`_blockquote_body` so the body is one blockquote
+      run (blank lines are ``> ``).
+    - Exactly one blank line sits between the HTML comment and the ``###``
+      header, and between the header and the body.
+
+    The HTML comment always uses the full storage *slug*; LLM prompts may use
+    :func:`slug_for_summary_prompt` for the ``{slug}`` template field only.
+    """
+    text = (raw_summary or "").strip()
+    lines = text.split("\n") if text else []
+
+    first_idx = 0
+    while first_idx < len(lines) and not lines[first_idx].strip():
+        first_idx += 1
+
+    if first_idx >= len(lines):
+        raise SummaryTitleError("summary text is empty")
+
+    candidate = _extract_title_candidate(lines[first_idx])
+    if not candidate:
+        raise SummaryTitleError("summary has no usable first-line title")
+    title_words = candidate.split()
+    if len(title_words) > MAX_SUMMARY_TITLE_WORDS:
+        raise SummaryTitleError(
+            f"summary title exceeds {MAX_SUMMARY_TITLE_WORDS} words "
+            f"({len(title_words)} words)"
+        )
+
+    title = candidate
+    body_lines = lines[first_idx + 1 :]
+
+    while body_lines and not body_lines[0].strip():
+        body_lines.pop(0)
+    while body_lines and not body_lines[-1].strip():
+        body_lines.pop()
+
+    quoted = _blockquote_body(body_lines)
+
+    parts = [
+        f"<!-- {SUMMARY_COMMENT_TAG}:{slug} -->",
+        "",
+        f"### {title}",
+        "",
+        *quoted,
+    ]
+    return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Shared summary generation
+# ---------------------------------------------------------------------------
+
+def build_summary_messages(
+    crawl_result: CrawlResult,
+    content: str,
+    *,
+    slug: str,
+    system_key: str = "session.summary_system",
+    instruction_key: str = "session.summary_instruction_template",
+    summary_guidance: str | None = None,
+) -> list[dict[str, str]]:
+    """Build LLM messages for summarizing section/session content.
+
+    The instruction template receives ``content`` and ``slug``. The ``slug``
+    value is :func:`slug_for_summary_prompt` output so titling examples match
+    what the model sees; :func:`format_summary_block` still writes the full
+    storage slug in the HTML comment.
+    """
+    from lens.core.context import assemble_prompt
+
+    prompts = PromptStore(crawl_result.project_root)
+    prompt_slug = slug_for_summary_prompt(slug)
+    instruction = prompts.format(
+        instruction_key, content=content, slug=prompt_slug
+    )
+    guidance_stripped = (summary_guidance or "").strip()
+    if guidance_stripped:
+        instruction += prompts.format(
+            "session.summary_guidance_suffix",
+            guidance=guidance_stripped,
+        )
+    return assemble_prompt(
+        crawl_result,
+        system_prompt=prompts.get(system_key),
+        instruction=instruction,
+    )
+
+
+async def generate_summary_block(
+    *,
+    slug: str,
+    crawl_result: CrawlResult,
+    content: str,
+    project_root: Path,
+    operator_name: str,
+    llm_id: str | None = None,
+    on_token: Callable[[str], Awaitable[None]] | None = None,
+    cancel_event: Any | None = None,
+    reasoning: str | None = None,
+    system_key: str = "session.summary_system",
+    instruction_key: str = "session.summary_instruction_template",
+    max_attempts: int = 2,
+    summary_guidance: str | None = None,
+) -> str:
+    """Generate an LLM summary and return a fully formatted summary block.
+
+    Calls the LLM up to *max_attempts* times until :func:`format_summary_block`
+    accepts the first line as a title. Raises :exc:`SummaryTitleError` if every
+    attempt yields text but the title rule still fails. Raises
+    :exc:`OperatorError` if every attempt returns empty or whitespace-only
+    output.
+    """
+    attempts = max(1, max_attempts)
+    last_title_error: SummaryTitleError | None = None
+    for _ in range(attempts):
+        messages = build_summary_messages(
+            crawl_result,
+            content,
+            slug=slug,
+            system_key=system_key,
+            instruction_key=instruction_key,
+            summary_guidance=summary_guidance,
+        )
+        from lens.core.generation_artifacts import ComposePolicy, compose_generation_artifacts
+
+        raw = compose_generation_artifacts(
+            await run_llm(
+                LlmRunRequest(
+                    project_root=project_root,
+                    messages=messages,
+                    llm_id=llm_id,
+                    cancel_event=cancel_event,
+                    on_token=on_token,
+                    operator_name=operator_name,
+                    reasoning=reasoning,
+                ),
+            ),
+            ComposePolicy.NARRATIVE,
+        ).strip()
+        if not raw:
+            continue
+        try:
+            return format_summary_block(slug, raw)
+        except SummaryTitleError as exc:
+            last_title_error = exc
+            continue
+    if last_title_error is not None:
+        raise last_title_error
+    raise OperatorError(
+        "summary LLM returned empty or whitespace-only output after "
+        f"{attempts} attempt(s)"
+    )
+
+
+logger = logging.getLogger(__name__)
+
+_REMEMBER_MAX_LLM_ATTEMPTS = 2
+
+
+def format_remember_child_suffix(raw: str, failure_audits: list[str]) -> str:
+    return compose_audit_suffix(raw, failure_audits, tag="remember")
+
+
+def format_remember_llm_output_for_child(raw: str) -> str:
+    """Format remember LLM output for appending to the summarized child (test compat)."""
+    return compose_audit_from_combined_text(raw, tag="remember")
+
+
+def _remember_outline_block(title: str, body: str) -> str:
+    body_stripped = body.strip()
+    if not body_stripped:
+        return ""
+    return f"--- begin {title} ---\n{body_stripped}\n--- end {title} ---"
+
+
+async def apply_remember_patches(
+    *,
+    crawl_result: CrawlResult,
+    content: str,
+    project_root: Path,
+    llm_id: str | None = None,
+    reasoning: str | None = None,
+    cancel_event: Any | None = None,
+    storage: Storage | None = None,
+) -> str:
+    """Detect pinned objects with remember.* tags and apply kb_patch updates.
+
+    Pinned objects TAGGED with remember.* are the patch TARGETS (e.g. lore.alice
+    tagged 'remember.core-memories'). The remember.X KB objects provide INSTRUCTIONS.
+    X._template provides format hints.
+
+    Returns text to append to the **child** node after the summarized body:
+    composed via :func:`~lens.core.generation_artifacts.compose_for_operator`
+    (audit-comment policy). Empty string when
+    there is nothing to run. On ``LLMError``, returns a visible HTML comment
+    suffix and logs a warning (summary / parent close should still proceed).
+    """
+    if not crawl_result.pinned_ids:
+        return ""
+
+    store = KnowledgeStore.for_project(project_root)
+
+    pinned_objects = store.get_objects(crawl_result.pinned_ids)
+    target_to_rem_tags: dict[str, list[str]] = {}
+    for obj_id, obj in pinned_objects.items():
+        rem_tags = [t for t in obj.tags if t.startswith("remember.")]
+        if rem_tags:
+            target_to_rem_tags[obj_id] = rem_tags
+
+    if not target_to_rem_tags:
+        return ""
+
+    unique_rem_tags: set[str] = set()
+    for tags in target_to_rem_tags.values():
+        unique_rem_tags.update(tags)
+
+    pinned_set = frozenset(crawl_result.pinned_ids)
+    remember_ref_lines: list[str] = []
+    missing_instruction_ids: list[str] = []
+    seen_missing: set[str] = set()
+
+    for rem_tag in sorted(unique_rem_tags):
+        rem_key = rem_tag.split(".", 1)[1]
+        template_id = f"{rem_key}._template"
+        pair = store.get_objects([rem_tag, template_id])
+        has_rem = rem_tag in pair
+        has_tpl = template_id in pair
+        if has_rem and has_tpl:
+            remember_ref_lines.append(f"- `{rem_tag}` and `{template_id}`")
+        elif has_rem:
+            remember_ref_lines.append(f"- `{rem_tag}` (no `{template_id}`)")
+        elif has_tpl:
+            remember_ref_lines.append(
+                f"- `{template_id}` only — `{rem_tag}` missing"
+            )
+        else:
+            remember_ref_lines.append(
+                f"- Neither `{rem_tag}` nor `{template_id}` exists; "
+                f"use tag segment `{rem_key}` as a loose guideline."
+            )
+        for nid, present in ((rem_tag, has_rem), (template_id, has_tpl)):
+            if not present or nid in pinned_set or nid in seen_missing:
+                continue
+            seen_missing.add(nid)
+            missing_instruction_ids.append(nid)
+
+    remember_refs = "\n".join(remember_ref_lines)
+
+    target_listing = "\n".join(
+        f"- {oid} (remember via: {', '.join(tags)})"
+        for oid, tags in target_to_rem_tags.items()
+    )
+
+    extra_sections: list[str] | None = None
+    if missing_instruction_ids:
+        fetched = store.get_objects(missing_instruction_ids)
+        bodies: list[str] = []
+        for kid in missing_instruction_ids:
+            obj = fetched.get(kid)
+            if obj is None:
+                continue
+            if storage is not None:
+                bodies.append(
+                    storage.format_kb_prompt_block(
+                        canonical_id=obj.id,
+                        text=obj.text,
+                        tags=obj.tags,
+                        include_comments=False,
+                        source_id=f"remember:{obj.id}",
+                    )
+                )
+            else:
+                bodies.append(obj.format())
+        if bodies:
+            extra_sections = [
+                _remember_outline_block(
+                    "REMEMBER OBJECTS",
+                    "\n\n".join(bodies),
+                )
+            ]
+
+    prompts = PromptStore(project_root)
+    instruction = prompts.format(
+        "remember.instruction_template",
+        content=content,
+        remember_refs=remember_refs,
+        target_listing=target_listing,
+    )
+
+    messages = assemble_prompt(
+        crawl_result,
+        system_prompt=prompts.get("remember.system"),
+        instruction=instruction,
+        extra_sections=extra_sections,
+    )
+
+    allowed = frozenset(target_to_rem_tags.keys())
+    bundle = build_kb_patch_whitelist_bundle(allowed)
+    handlers = bundle.handlers or {}
+
+    artifacts = GenerationArtifacts()
+    for attempt in range(_REMEMBER_MAX_LLM_ATTEMPTS):
+        try:
+            artifacts = await run_llm(
+                LlmRunRequest(
+                    project_root=project_root,
+                    messages=messages,
+                    llm_id=llm_id,
+                    tools=bundle.tools,
+                    command_tool_handlers=handlers,
+                    cancel_event=cancel_event,
+                    operator_name="remember",
+                    reasoning=reasoning or "low",
+                    max_command_tool_iterations=DEFAULT_REMEMBER_COMMAND_TOOL_ITERATIONS,
+                ),
+            )
+            break
+        except LLMError as exc:
+            if attempt + 1 >= _REMEMBER_MAX_LLM_ATTEMPTS:
+                logger.warning("remember: LLM error: %s", exc)
+                safe = str(exc).replace("-->", "→").replace("<!--", "⟨")
+                return f"\n\n<!-- remember: error: {safe} -->\n"
+            logger.warning(
+                "remember: LLM error (attempt %s/%s): %s",
+                attempt + 1,
+                _REMEMBER_MAX_LLM_ATTEMPTS,
+                exc,
+            )
+
+    if artifacts.interrupted:
+        return ""
+
+    return compose_for_operator(artifacts, "remember")
+
+
+# ---------------------------------------------------------------------------
+# SessionOperator base
+# ---------------------------------------------------------------------------
+
+
+class SessionOperator(Operator):
+    """Base for operators that manage sub-node sessions with module support."""
+
+    requires_id: ClassVar[bool] = True
+
+    module_prefix: ClassVar[str] = ""
+    """KB id prefix for modules (e.g. ``"design."`` or ``"rules."``).
+
+    When the user passes ``--module <key>``, the full KB id is
+    ``module_prefix + key``.  Only one module pin (matching the prefix) is
+    active at a time.
+    """
+
+    auto_pins: ClassVar[list[str]] = []
+    """KB ids pinned automatically when a fresh session is created."""
+
+    @classmethod
+    def derive_modules_for_crawl(
+        cls, node: NarrativeNode
+    ) -> tuple[str, ...]:
+        """Active module KB ids for a session sub-node.
+
+        Reads the ``module`` param from the parent open annotation
+        (``[<op>:<session_id>]``) and returns the canonical KB id
+        ``module_prefix + module_key``.  Used by the operator to populate
+        :attr:`CrawlSpec.modules` so :class:`ModuleTransform` can resolve
+        the module + optional ``<key>._template`` companion at crawl time.
+        """
+        return session_module_ids(
+            node, operator_name=cls.name, module_prefix=cls.module_prefix
+        )
+
+    @classmethod
+    def modules_for_crawl(cls, node: NarrativeNode) -> tuple[str, ...]:
+        """Override of :meth:`Operator.modules_for_crawl` for session sub-nodes."""
+        return cls.derive_modules_for_crawl(node)
+
+    # ------------------------------------------------------------------
+    # Session detection
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def find_active_session(
+        cls, narrative: NarrativeNode
+    ) -> tuple[NarrativeNode | None, str | None]:
+        """Return ``(session_node, session_id)`` if cursor is inside a session.
+
+        The cursor is *inside* a session when the parent of the cursor node
+        has an unclosed ``[<operator>:<id>]: #`` annotation.
+        """
+        cursor = narrative.find_cursor()
+        if not cursor.key_path:
+            return None, None
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        try:
+            parent_text = parent.md_path().read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return None, None
+        open_ann = find_unclosed_cursor_annotation(parent_text)
+        if open_ann is not None and open_ann.operator == cls.name:
+            return cursor, open_ann.id
+        return None, None
+
+    @classmethod
+    def node_inside_active_session(cls, node: NarrativeNode) -> bool:
+        """True when *node* sits under an unclosed ``[<cls.name>:id]`` on its parent."""
+        if not node.key_path:
+            return False
+        parent = NarrativeNode(
+            narrative_root=node.narrative_root,
+            key_path=node.key_path[:-1],
+        )
+        try:
+            parent_text = parent.md_path().read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return False
+        open_ann = find_unclosed_cursor_annotation(parent_text)
+        return open_ann is not None and open_ann.operator == cls.name
+
+    # ------------------------------------------------------------------
+    # ID generation
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def generate_session_id(
+        cls,
+        prompt: str | None,
+        module_id: str | None,
+        parent: NarrativeNode,
+    ) -> str:
+        """Auto-generate a unique session sub-node id.
+
+        Pattern: ``<name>[-module_id][-prompt_slug]`` with a numeric suffix
+        when a sub-node with that name already exists.
+        """
+        parts = [cls.name]
+        if module_id:
+            parts.append(module_id.strip())
+        if prompt:
+            slug = prompt_to_slug(prompt)
+            if slug:
+                parts.append(slug)
+        base = "-".join(parts)
+        existing = set(parent.child_keys())
+        if base not in existing:
+            return base
+        n = 1
+        while f"{base}-{n}" in existing:
+            n += 1
+        return f"{base}-{n}"
+
+    # ------------------------------------------------------------------
+    # Front-matter / module helpers
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def _update_front_matter_for_call(
+        cls,
+        node: NarrativeNode,
+        module_id: str | None,
+        pins: list[str],
+        unpins: list[str],
+        storage: Storage,
+        session: ProjectSession,
+    ) -> None:
+        """Apply per-call front-matter / annotation updates.
+
+        - If *module_id* is provided and :attr:`module_prefix` is set, validate
+          the module exists and rewrite the parent open annotation's ``module``
+          param.  Modules no longer pin to front matter — they resolve at
+          crawl time via :class:`ModuleTransform`.
+        - Merge any extra *pins* / *unpins* into the sub-node's front matter
+          as before.
+        """
+        if module_id and cls.module_prefix:
+            new_module_kb_id = cls.module_prefix + module_id
+            if not session.kb.exists(new_module_kb_id):
+                raise OperatorError(
+                    f"module does not exist: {new_module_kb_id}"
+                )
+            cls._set_parent_module(node, module_id, storage)
+        if pins:
+            pin_node(node, pins, storage)
+        if unpins:
+            unpin_node(node, unpins, storage)
+
+    @classmethod
+    def _set_parent_module(
+        cls, node: NarrativeNode, module_id: str | None, storage: Storage
+    ) -> None:
+        """Rewrite the parent open annotation's ``module`` param for *node*.
+
+        Set ``module_id=None`` to drop the param.  Raises :class:`OperatorError`
+        if *node* is not inside an open ``[<op>:<id>]`` session.
+        """
+        if not node.key_path:
+            raise OperatorError(
+                f"{cls.name}: cannot set module on a root node"
+            )
+        session_id = node.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=node.narrative_root,
+            key_path=node.key_path[:-1],
+        )
+        text = parent.md_path().read_text(encoding="utf-8")
+        anns = parse_annotations(text)
+        target_ann = None
+        for ann in reversed(anns):
+            if (
+                ann.operator == cls.name
+                and ann.id == session_id
+                and not ann.closing
+                and not ann.self_closing
+            ):
+                target_ann = ann
+                break
+        if target_ann is None:
+            raise OperatorError(
+                f"no open [{cls.name}:{session_id}] annotation on parent"
+            )
+        new_params = dict(target_ann.params)
+        if module_id is None:
+            new_params.pop("module", None)
+        else:
+            new_params["module"] = module_id
+        op = cls(storage, node)
+        new_tag = op.build_open_tag(session_id, new_params or None)
+        lines = text.split("\n")
+        before = lines[: target_ann.line_start - 1]
+        after = lines[target_ann.line_end :]
+        rebuilt = "\n".join(before + [new_tag] + after)
+        storage.write_file(parent.md_path(), rebuilt)
+
+    # ------------------------------------------------------------------
+    # Fresh session setup
+    # ------------------------------------------------------------------
+
+    @classmethod
+    async def _setup_fresh_session(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        prompt: str | None,
+        module_id: str | None,
+        pins: list[str],
+        unpins: list[str],
+        on_stream_target: Callable[[str], Awaitable[None]] | None,
+        slug: str | None = None,
+    ) -> tuple[NarrativeNode, Storage]:
+        """Create a sub-node, pin auto_pins + module, stage setup.
+
+        Returns ``(child_node, storage)`` so the caller can create inline
+        storage keyed to the child.
+        """
+        cursor = narrative.find_cursor()
+        if slug is not None:
+            if not validate_slug(slug):
+                raise OperatorError(
+                    f"invalid slug '{slug}' (alphanumeric, underscores, hyphens only)"
+                )
+            # Auto-prepend operator prefix (e.g. "design-", "play-") if absent,
+            # keeping session slugs consistent with auto-generated ones.
+            prefix = f"{cls.name}-"
+            if not slug.startswith(prefix):
+                slug = prefix + slug
+            if slug in set(cursor.child_keys()):
+                raise OperatorError(
+                    f"a node named '{slug}' already exists here"
+                )
+            session_id = slug
+        else:
+            session_id = cls.generate_session_id(prompt, module_id, cursor)
+
+        rel_path = str(cursor.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(session_id, rel_path)
+        storage = session.new_storage(owner=owner)
+        op = cls(storage, narrative)
+
+        # Module is stored in the parent open annotation (resolved at crawl
+        # time by ModuleTransform), not in front-matter pins.  Validate first.
+        ann_params: dict[str, Any] = {}
+        if module_id and cls.module_prefix:
+            module_kb_id = cls.module_prefix + module_id
+            if not session.kb.exists(module_kb_id):
+                raise OperatorError(
+                    f"module does not exist: {module_kb_id}"
+                )
+            ann_params["module"] = module_id
+
+        child_node = op.create_subnode(
+            cursor, session_id, params=ann_params or None
+        )
+
+        # Auto-pins + user pins (modules excluded — see above).
+        all_pins = list(cls.auto_pins) + list(pins)
+        if all_pins:
+            pin_node(child_node, all_pins, storage)
+        if unpins:
+            unpin_node(child_node, unpins, storage)
+
+        storage.stage_all()
+
+        if on_stream_target is not None:
+            await on_stream_target(str(child_node.to_address()))
+
+        return child_node, storage
+
+    # ------------------------------------------------------------------
+    # Abstract generation hooks
+    # ------------------------------------------------------------------
+
+    @classmethod
+    async def _run_fresh(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        node: NarrativeNode,
+        setup_storage: Storage,
+        prompt: str | None,
+        llm_id: str | None,
+        reasoning: str | None,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None,
+        cancel_event: Any | None,
+        **kwargs: Any,
+    ) -> Any:
+        """Run generation in a freshly created session sub-node.
+
+        *node* is the newly created child; front matter is already set and
+        staged.  Subclasses implement the actual generation logic.
+        """
+        raise NotImplementedError  # pragma: no cover
+
+    @classmethod
+    async def _run_inside(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        node: NarrativeNode,
+        prompt: str | None,
+        module_id: str | None,
+        pins: list[str],
+        unpins: list[str],
+        llm_id: str | None,
+        reasoning: str | None,
+        retry: bool,
+        on_token: Callable[[str], Awaitable[None]] | None,
+        cancel_event: Any | None,
+        **kwargs: Any,
+    ) -> Any:
+        """Run generation inside an existing session sub-node.
+
+        Front-matter updates (module swap, extra pins/unpins) are handled
+        by the caller before this method; subclasses implement the generation.
+        """
+        raise NotImplementedError  # pragma: no cover
+
+    # ------------------------------------------------------------------
+    # Session end
+    # ------------------------------------------------------------------
+
+    summarize_on_end: ClassVar[bool] = False
+    """When True, ``run_session_end`` generates an LLM summary of the session
+    content and appends the canonical block (HTML comment, ``###`` title,
+    one blockquoted body) before the close tag."""
+
+    # Keys for :func:`build_summary_messages` when ``summarize_on_end`` runs.
+    summary_system_prompt_key: ClassVar[str] = "session.summary_system"
+    summary_instruction_prompt_key: ClassVar[str] = "session.summary_instruction_template"
+
+    @classmethod
+    async def run_session_end(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        llm_id: str | None = None,
+        reasoning: str | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
+        summary_guidance: str | None = None,
+        workflow: WorkflowRunner | None = None,
+        on_status: Callable[[str], None] | None = None,
+    ) -> Any:
+        """Close the current session.
+
+        Verifies the cursor is inside the session sub-node.  When
+        :attr:`summarize_on_end` is True, generates an LLM summary of the
+        session content and appends the canonical summary block before the
+        close tag. Override for fully custom close behaviour (e.g. KB extraction).
+        """
+        cursor = narrative.find_cursor()
+        llm_id, reasoning, _ = apply_pinned_invocation(
+            slug=cls.name,
+            project_root=session.project_root,
+            focus_node=cursor,
+            narrative=narrative,
+            llm_id=llm_id,
+            reasoning=reasoning,
+            extra_params=None,
+        )
+        if not cursor.key_path:
+            raise OperatorError(
+                f"no open {cls.name} to close (cursor at root)"
+            )
+        id = cursor.key_path[-1]
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        parent_text = parent.md_path().read_text(encoding="utf-8")
+        open_ann = find_unclosed_cursor_annotation(parent_text)
+        if (
+            open_ann is None
+            or open_ann.operator != cls.name
+            or open_ann.id != id
+        ):
+            raise OperatorError(
+                f"parent does not have unclosed [{cls.name}:{id}]: # — "
+                "cursor must be in the session sub-node"
+            )
+        rel_path = str(parent.md_path().relative_to(session.git_root))
+        owner = cls.owner_id(id, rel_path)
+        storage = session.new_storage(owner=owner)
+        if storage.has_pending() and storage.detect_pending_owner() == owner:
+            storage.stage_all()
+        op = cls(storage, narrative)
+
+        from lens.core.workflow_summarize import SummarizeRememberState, build_summarize_remember_steps
+
+        child_text = cursor.md_path().read_text(encoding="utf-8")
+        child_clean = strip_markdown_comments(child_text).strip()
+        sr_state = SummarizeRememberState(slug=id, content=child_clean)
+
+        async def run_close() -> StepResult:
+            op.close_subnode(parent, id, sr_state.summary)
+            if sr_state.remember_suffix:
+                child_md = cursor.md_path()
+                existing_child = child_md.read_text(encoding="utf-8")
+                storage.write_file(
+                    child_md, existing_child.rstrip("\n") + sr_state.remember_suffix
+                )
+            return StepResult(ok=True)
+
+        steps: list[WorkflowStepDef] = []
+        if cls.summarize_on_end:
+            steps.extend(
+                build_summarize_remember_steps(
+                    sr_state,
+                    session=session,
+                    cursor=cursor,
+                    operator_name=cls.name,
+                    llm_id=llm_id,
+                    reasoning=reasoning,
+                    on_token=on_token,
+                    cancel_event=cancel_event,
+                    storage=storage,
+                    system_key=cls.summary_system_prompt_key,
+                    instruction_key=cls.summary_instruction_prompt_key,
+                    summary_guidance=summary_guidance,
+                    summarize_should_run=lambda: bool(child_clean),
+                    operator=cls,
+                    operator_params={},
+                    narrative=narrative,
+                )
+            )
+        steps.append(
+            WorkflowStepDef(
+                id="close",
+                label="Closing session…",
+                run=run_close,
+            )
+        )
+
+        runner = workflow or WorkflowRunner(
+            session=session,
+            cancel_event=cancel_event,
+            on_status=on_status,
+        )
+        outcome = await runner.run(steps)
+        return finalize_workflow_outcome(session, outcome)
+
+    # ------------------------------------------------------------------
+    # Main entry point
+    # ------------------------------------------------------------------
+
+    @classmethod
+    async def run_session(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        prompt: str | None = None,
+        module_id: str | None = None,
+        pins: list[str],
+        unpins: list[str],
+        llm_id: str | None = None,
+        reasoning: str | None = None,
+        retry: bool = False,
+        end: bool = False,
+        slug: str | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+        on_stream_target: Callable[[str], Awaitable[None]] | None = None,
+        cancel_event: Any | None = None,
+        on_status: Callable[[str], None] | None = None,
+        on_info_event: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+        summary_guidance: str | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Run a session (create, continue, or end).
+
+        Routes to :meth:`run_session_end`, :meth:`_run_inside`, or
+        :meth:`_run_fresh` depending on state.
+        """
+        focus = narrative.find_cursor()
+        kwargs_dict = dict(kwargs)
+        ep_raw = kwargs_dict.get("extra_params")
+        ep0: dict[str, Any]
+        if isinstance(ep_raw, dict):
+            ep0 = dict(cast(dict[str, Any], ep_raw))
+        else:
+            ep0 = {}
+        # Idempotent if the CLI/API already merged (e.g. chat): caller-supplied
+        # scalars and extra_params keys still win over pins.
+        llm_id, reasoning, merged_ep = apply_pinned_invocation(
+            slug=cls.name,
+            project_root=session.project_root,
+            focus_node=focus,
+            narrative=narrative,
+            llm_id=llm_id,
+            reasoning=reasoning,
+            extra_params=ep0,
+        )
+        if merged_ep:
+            kwargs_dict["extra_params"] = merged_ep
+        else:
+            kwargs_dict.pop("extra_params", None)
+        kwargs = kwargs_dict
+
+        if end:
+            merged = (summary_guidance or "").strip() or ((prompt or "").strip() or None)
+            return await cls.run_session_end(
+                session=session, narrative=narrative,
+                llm_id=llm_id, reasoning=reasoning, on_token=on_token,
+                cancel_event=cancel_event,
+                summary_guidance=merged,
+                on_status=on_status,
+                workflow=kwargs.get("workflow"),
+            )
+
+        session_node, _ = cls.find_active_session(narrative)
+
+        if session_node is not None:
+            if slug is not None:
+                raise OperatorError(
+                    "--slug can only be used when starting a new session"
+                )
+            return await cls._run_inside(
+                session=session,
+                narrative=narrative,
+                node=session_node,
+                prompt=prompt,
+                module_id=module_id,
+                pins=pins,
+                unpins=unpins,
+                llm_id=llm_id,
+                reasoning=reasoning,
+                retry=retry,
+                on_token=on_token,
+                cancel_event=cancel_event,
+                on_status=on_status,
+                on_info_event=on_info_event,
+                **kwargs,
+            )
+        else:
+            node, setup_storage = await cls._setup_fresh_session(
+                session=session,
+                narrative=narrative,
+                prompt=prompt,
+                module_id=module_id,
+                pins=pins,
+                unpins=unpins,
+                on_stream_target=on_stream_target,
+                slug=slug,
+            )
+            return await cls._run_fresh(
+                session=session,
+                narrative=narrative,
+                node=node,
+                setup_storage=setup_storage,
+                prompt=prompt,
+                llm_id=llm_id,
+                reasoning=reasoning,
+                on_token=on_token,
+                on_stream_target=on_stream_target,
+                cancel_event=cancel_event,
+                on_status=on_status,
+                on_info_event=on_info_event,
+                **kwargs,
+            )

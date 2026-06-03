@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preview</title>
+  <style>
+    :root { color-scheme: light dark; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 1rem;
+      line-height: 1.65;
+      max-width: 780px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem 4rem;
+    }
+    img, video { max-width: 100%; height: auto; }
+    pre {
+      overflow-x: auto;
+      padding: 1rem;
+      background: rgba(128, 128, 128, 0.1);
+      border-radius: 6px;
+    }
+    code { font-size: 0.88em; }
+    blockquote {
+      margin-left: 0;
+      padding-left: 1rem;
+      border-left: 3px solid rgba(128, 128, 128, 0.4);
+      opacity: 0.85;
+    }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid rgba(128, 128, 128, 0.3); padding: 0.4rem 0.75rem; }
+    th { background: rgba(128, 128, 128, 0.1); }
+    #status { opacity: 0.5; font-style: italic; }
+  </style>
+  <script type="module" src="/src/preview.ts"></script>
+</head>
+<body>
+  <div id="content"><p id="status">Loading…</p></div>
+</body>
+</html>

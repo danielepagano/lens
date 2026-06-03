@@ -1,0 +1,36 @@
+# Speed up `docker build` by shrinking what gets tared and sent to the daemon.
+.git
+**/.DS_Store
+
+# Python / tooling caches (not needed in the image)
+**/__pycache__
+**/*.py[cod]
+.venv
+venv
+env
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.tox
+.coverage
+.coverage.*
+htmlcov
+*.egg-info
+dist
+build
+
+# UI: deps and build output are produced inside the Dockerfile
+**/node_modules
+lens/server/static
+
+# Local / generated junk
+.dev-project
+bench/projects
+bench/reports
+.playwright-mcp
+.cursor
+.idea
+
+# Not required to install or run the `lens` package in the image
+e2e
+docs

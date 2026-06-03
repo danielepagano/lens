@@ -1,0 +1,565 @@
+"""Project root discovery, slug validation, and active narrative."""
+
+from __future__ import annotations
+
+import os
+import re
+import tomllib
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
+import tomli_w
+
+from lens.core.address import NarrativeAddress
+from lens.core.narrative import NarrativeNode
+
+if TYPE_CHECKING:
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.mount import MountBackend
+    from lens.core.storage import Storage
+
+_SLUG_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+# Maps dataset name → Python package for datasets that ship Lens operators.
+# Used by CLI operator discovery to load dataset-specific operator modules.
+DATASET_PACKAGES: dict[str, str] = {"rpg": "lens.rpg"}
+
+
+def datasets_root() -> Path:
+    """Return the ``datasets/`` directory bundled with the Lens package."""
+    return Path(__file__).parent.parent.parent / "datasets"
+
+
+def _lens_repo_root() -> Path:
+    """Return the Lens repository root (parent of ``datasets/``)."""
+    return datasets_root().parent
+
+
+def read_local_dataset_paths(project_root: Path) -> dict[str, str]:
+    """Parse ``[dataset_paths]`` from ``lens.local.toml`` in *project_root*.
+
+    Returns an empty dict if the file is missing or has no such section.
+    """
+    local_toml = project_root / "lens.local.toml"
+    if not local_toml.exists():
+        return {}
+    with local_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw = config.get("dataset_paths", {})
+    if not isinstance(raw, dict):
+        return {}
+    raw_dict = cast(dict[str, Any], raw)
+    return {k: str(v) for k, v in raw_dict.items() if isinstance(v, str)}
+
+
+def resolve_dataset_path(project_root: Path, name: str) -> Path | None:
+    """Locate a dataset directory by *name*.
+
+    Resolution order:
+
+    1. Bundled with Lens: ``datasets/<name>``
+    2. Sibling of the Lens repo root: ``<lens-repo>/../<name>``
+    3. Explicit path in ``lens.local.toml`` ``[dataset_paths]``
+    """
+    # 1. Bundled
+    bundled = datasets_root() / name
+    if bundled.is_dir():
+        return bundled
+    # 2. Sibling of lens repo
+    sibling = _lens_repo_root().parent / name
+    if sibling.is_dir():
+        return sibling
+    # 3. lens.local.toml override
+    overrides = read_local_dataset_paths(project_root)
+    if name in overrides:
+        p = Path(overrides[name])
+        if not p.is_absolute():
+            p = (project_root / p).resolve()
+        if p.is_dir():
+            return p
+    return None
+
+
+def operator_applies_to_session(selected: list[str], limited: list[str]) -> bool:
+    """Return True if an operator/tool should be available for the active session.
+
+    - If ``limited`` is empty: always available.
+    - If ``limited`` is non-empty and ``selected`` is empty: excluded.
+    - If both are non-empty: available only if they share at least one member.
+    """
+    if not limited:
+        return True
+    if not selected:
+        return False
+    return bool(set(selected) & set(limited))
+
+
+def get_selected_datasets(project_root: Path) -> list[str]:
+    """Return the dataset names from ``[project] datasets`` in lens.toml, or [] if unset."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return []
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project", {})
+    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    raw_names = project.get("datasets", [])
+    dataset_names: list[Any] = cast(list[Any], raw_names) if isinstance(raw_names, list) else []
+    result: list[str] = []
+    for name in dataset_names:
+        if isinstance(name, str):
+            result.append(name)
+    return result
+
+
+def get_project_locale(project_root: Path) -> str:
+    """Return the BCP-47 locale tag from ``[project] locale`` in lens.toml.
+
+    Defaults to ``"en-US"`` when the field is absent or the file does not exist.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return "en-US"
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project", {})
+    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    raw_locale = project.get("locale")
+    if isinstance(raw_locale, str) and raw_locale.strip():
+        return raw_locale.strip()
+    return "en-US"
+
+
+def get_selected_prompt_pack(project_root: Path) -> str | None:
+    """Return prompt pack name from ``[project] prompt_pack``, or ``None``."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project", {})
+    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    raw_pack = project.get("prompt_pack")
+    if not isinstance(raw_pack, str):
+        return None
+    prompt_pack = raw_pack.strip()
+    return prompt_pack if prompt_pack else None
+
+
+def set_selected_prompt_pack(project_root: Path, prompt_pack: str | None) -> None:
+    """Set or clear ``[project] prompt_pack`` in lens.toml."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        raise RuntimeError("no lens.toml found in this directory or any parent")
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        raw_project = {}
+    project = cast(dict[str, Any], raw_project)
+    if prompt_pack is None:
+        project.pop("prompt_pack", None)
+    else:
+        project["prompt_pack"] = prompt_pack
+    config["project"] = project
+    lens_toml.write_bytes(tomli_w.dumps(config).encode("utf-8"))
+
+
+def list_available_llms(project_root: Path) -> list[str]:
+    """Return selectable LLM IDs from lens.toml.
+
+    The first ``[[llm]]`` entry returns its id if present, otherwise ``[default]``.
+    Subsequent entries are only included if they have an explicit id.
+    Returns empty list if lens.toml doesn't exist or has no ``[[llm]]`` entries.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return []
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_llm_list = config.get("llm", [])
+    llm_list: list[Any] = cast(list[Any], raw_llm_list) if isinstance(raw_llm_list, list) else []
+
+    result: list[str] = []
+    for i, raw_entry in enumerate(llm_list):
+        if not isinstance(raw_entry, dict):
+            continue
+        entry = cast(dict[str, Any], raw_entry)
+        entry_id = entry.get("id")
+        if i == 0:
+            result.append(entry_id if isinstance(entry_id, str) else "[default]")
+        elif isinstance(entry_id, str):
+            result.append(entry_id)
+    return result
+
+
+def list_available_images(project_root: Path) -> list[str]:
+    """Return selectable image-backend IDs from lens.toml.
+
+    Same shape as :func:`list_available_llms`: the first ``[[image]]`` entry
+    contributes its id (or ``[default]``); subsequent entries require an
+    explicit ``id``.  Returns ``[]`` if no entries are configured.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return []
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_image_list = config.get("image", [])
+    image_list: list[Any] = (
+        cast(list[Any], raw_image_list) if isinstance(raw_image_list, list) else []
+    )
+
+    result: list[str] = []
+    for i, raw_entry in enumerate(image_list):
+        if not isinstance(raw_entry, dict):
+            continue
+        entry = cast(dict[str, Any], raw_entry)
+        entry_id = entry.get("id")
+        if i == 0:
+            result.append(entry_id if isinstance(entry_id, str) else "[default]")
+        elif isinstance(entry_id, str):
+            result.append(entry_id)
+    return result
+
+
+def find_git_root_from(start: Path) -> Path:
+    """Walk up from *start* and return the nearest directory containing ``.git``.
+
+    Raises ``RuntimeError`` if no git repository is found.
+    """
+    path = start.resolve()
+    while path != path.parent:
+        if (path / ".git").exists():
+            return path
+        path = path.parent
+    raise RuntimeError(
+        f"'{start}' is not inside a git repository (run 'git init' first)"
+    )
+
+
+def find_git_root() -> Path:
+    """Return the git root for the current working directory.
+
+    Raises ``RuntimeError`` if not inside a git repository.
+    """
+    return find_git_root_from(Path.cwd())
+
+
+def find_project_root() -> Path:
+    """Walk up from CWD and return the nearest directory containing ``lens.toml``.
+
+    Raises ``RuntimeError`` if no Lens project is found.
+    """
+    path = Path.cwd().resolve()
+    while path != path.parent:
+        if (path / "lens.toml").exists():
+            return path
+        path = path.parent
+    raise RuntimeError(
+        "no lens.toml found in this directory or any parent (run 'lens init' first)"
+    )
+
+
+def find_project_root_if_any(start: Path | None = None) -> Path | None:
+    """Walk up from *start* (or CWD) and return the nearest directory containing
+    ``lens.toml``, or ``None`` if none is found.
+    """
+    path = (start or Path.cwd()).resolve()
+    while path != path.parent:
+        if (path / "lens.toml").exists():
+            return path
+        path = path.parent
+    return None
+
+
+def is_dataset_root(project_root: Path) -> bool:
+    """Return True if lens.toml at *project_root* declares a dataset."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return False
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    return "dataset" in config
+
+
+def validate_slug(slug: str) -> bool:
+    return bool(_SLUG_PATTERN.fullmatch(slug))
+
+
+def discover_projects(start: Path) -> list[tuple[str, Path, Path]]:
+    """Return [(slug, git_root, project_root), ...].
+
+    If start/ is itself a project, returns [(start.name, git_root, start)].
+    Otherwise scans one level deep for lens.toml in subdirectories, skipping
+    dataset roots and dirs not inside a git repo.
+    Raises RuntimeError if no projects found.
+    """
+    start = start.resolve()
+    if (start / "lens.toml").exists() and not is_dataset_root(start):
+        try:
+            git_root = find_git_root_from(start)
+            return [(start.name, git_root, start)]
+        except RuntimeError:
+            pass  # Not in a git repo — fall through to subdirectory scan
+
+    results: list[tuple[str, Path, Path]] = []
+    for child in sorted(start.iterdir()):
+        if not child.is_dir() or not (child / "lens.toml").exists():
+            continue
+        if is_dataset_root(child):
+            continue
+        try:
+            git_root = find_git_root_from(child)
+        except RuntimeError:
+            continue
+        results.append((child.name, git_root, child))
+
+    if not results:
+        raise RuntimeError(
+            f"No Lens projects found at '{start}'. "
+            "Run from a project folder or a parent containing project subfolders."
+        )
+    return results
+
+
+def require_lens_context(start: Path) -> tuple[Path, Path]:
+    """Return ``(git_root, project_root)`` for the Lens project containing *start*.
+
+    Performs the same two checks as the CLI preflight — git repository present
+    and ``lens.toml`` reachable — and raises ``RuntimeError`` with an actionable
+    message if either is missing.  Callers never need to handle ``None``.
+    """
+    git_root = find_git_root_from(start)
+    p = start.resolve()
+    while p != p.parent:
+        if (p / "lens.toml").exists():
+            return git_root, p
+        p = p.parent
+    raise RuntimeError(
+        f"'{start}' is not inside an initialized Lens project "
+        "(run 'lens init' first)"
+    )
+
+
+def has_mount_config(project_root: Path) -> bool:
+    """Return ``True`` if ``mount_point`` is set in ``lens.toml`` (any backend)."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return False
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return False
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    return isinstance(raw, str) and bool(raw.strip())
+
+
+_CLOUD_DEPLOYED_ENV = "LENS_CLOUD_DEPLOYED"
+_CLOUD_DEPLOYED_FALSE = frozenset({"0", "false", "no"})
+
+
+def is_cloud_deployed() -> bool:
+    """Return ``True`` when this process runs on a cloud-deployed Lens host (e.g. Fly).
+
+    Set by the deploy system via :envvar:`LENS_CLOUD_DEPLOYED` (typically ``1``).
+    Local development leaves this unset.
+    """
+    raw = os.environ.get(_CLOUD_DEPLOYED_ENV, "").strip()
+    if not raw:
+        return False
+    return raw.lower() not in _CLOUD_DEPLOYED_FALSE
+
+
+def _mount_point_raw(project_root: Path) -> str | None:
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return None
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    return raw.strip()
+
+
+def require_s3_mount_when_configured(
+    project_root: Path,
+    *,
+    slug: str | None = None,
+    context: str = "deploy",
+) -> None:
+    """Require ``mount_point`` to be an ``s3://`` URI when a mount is configured.
+
+    Used at deploy validation and on cloud hosts at runtime.
+    Raises :class:`~lens.core.exceptions.LensException` if a local path is configured.
+    """
+    from lens.core.exceptions import LensException
+
+    if not has_mount_config(project_root):
+        return
+    if is_cloud_mount_config(project_root):
+        return
+    mp = _mount_point_raw(project_root) or ""
+    prefix = f"project '{slug}': " if slug else ""
+    raise LensException(
+        f"{prefix}mount_point must be an S3 URI (s3://...) for {context}, got: {mp!r}"
+    )
+
+
+def require_cloud_compatible_mount(project_root: Path) -> None:
+    """On cloud-deployed hosts, reject local filesystem ``mount_point`` values."""
+    if not is_cloud_deployed():
+        return
+    require_s3_mount_when_configured(project_root, context="cloud deployment")
+
+
+def is_cloud_mount_config(project_root: Path) -> bool:
+    """Return ``True`` if ``mount_point`` is an ``s3://`` URI (object storage)."""
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return False
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return False
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    if not isinstance(raw, str):
+        return False
+    return raw.strip().startswith("s3://")
+
+
+def get_mount_point(project_root: Path) -> Path | None:
+    """Return the resolved mount_point path from [project] in lens.toml, or None.
+
+    Returns ``None`` for S3 URIs (``s3://...``) — use :func:`get_mount_backend` instead.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return None
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    raw = raw.strip()
+    if raw.startswith("s3://"):
+        return None
+    p = Path(raw)
+    return p if p.is_absolute() else (project_root / p).resolve()
+
+
+def get_mount_backend(project_root: Path) -> "MountBackend | None":
+    """Return a :class:`~lens.core.mount.MountBackend` for the configured mount_point, or ``None``.
+
+    Reads ``mount_point`` from ``[project]`` in ``lens.toml``:
+
+    - A local path (relative or absolute) → :class:`~lens.core.mount.LocalMountBackend`.
+    - An ``s3://`` URI → :class:`~lens.core.mount.S3MountBackend` using standard
+      AWS environment variables for credentials and endpoint.
+    """
+    from lens.core.mount import LocalMountBackend, get_backend_from_uri
+
+    require_cloud_compatible_mount(project_root)
+
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return None
+    project = cast(dict[str, Any], raw_project)
+    raw = project.get("mount_point")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    raw = raw.strip()
+    if raw.startswith("s3://"):
+        return get_backend_from_uri(raw)
+    p = Path(raw)
+    root = p if p.is_absolute() else (project_root / p).resolve()
+    return LocalMountBackend(root)
+
+
+def get_active_narrative(project_root: Path) -> NarrativeNode | None:
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project")
+    if not isinstance(raw_project, dict):
+        return None
+    project = cast(dict[str, Any], raw_project)
+    narrative = project.get("narrative")
+    if not isinstance(narrative, str) or not narrative.strip():
+        return None
+    narrative_dir = project_root / "narrative" / narrative
+    if not narrative_dir.exists() or not narrative_dir.is_dir():
+        return None
+    return NarrativeNode(narrative_root=narrative_dir, key_path=())
+
+
+class ProjectSession:
+    """Single source of truth for a Lens project's shared state.
+
+    Holds (git_root, project_root) and provides:
+    - .kb  — the singleton KnowledgeStore (tags cache persists for the lifetime
+             of this process)
+    - .new_storage(owner)  — factory for per-operation Storage instances
+    """
+
+    def __init__(self, git_root: Path, project_root: Path) -> None:
+        self.git_root = git_root
+        self.project_root = project_root
+        self.active_narrative: NarrativeNode | None = get_active_narrative(project_root)
+
+    @property
+    def cloud_deployed(self) -> bool:
+        """Whether this process is running on a cloud-deployed Lens host."""
+        return is_cloud_deployed()
+
+    @property
+    def kb(self) -> KnowledgeStore:
+        from lens.core.knowledge import KnowledgeStore
+        return KnowledgeStore.for_project(self.project_root)
+
+    def new_storage(self, owner: NarrativeAddress | None = None) -> Storage:
+        """Create a fresh Storage for one operation."""
+        from lens.core.storage import Storage
+        return Storage(self.git_root, owner=owner)
+
+    @classmethod
+    def from_cwd(cls) -> ProjectSession:
+        git_root, project_root = require_lens_context(Path.cwd())
+        return cls(git_root, project_root)
+
+
+def resolve_address(
+    addr: NarrativeAddress,
+    project_root: Path,
+) -> NarrativeAddress:
+    """Fill in active narrative and resolve /@cursor to actual position."""
+    if addr.narrative is None:
+        active = get_active_narrative(project_root)
+        if active is None:
+            raise ValueError("no active narrative set in lens.toml")
+        addr = addr.with_narrative(active.narrative_root.name)
+    if addr.cursor:
+        assert addr.narrative is not None
+        narrative_root = project_root / "narrative" / addr.narrative
+        root_node = NarrativeNode(narrative_root=narrative_root, key_path=())
+        return root_node.find_cursor_address()
+    return addr

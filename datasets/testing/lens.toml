@@ -1,0 +1,10 @@
+[dataset]
+extension = "lens_testing_ext"
+verbose_llm = true
+
+[[llm]]
+id = "local"
+base_url = "http://127.0.0.1:1234/v1"
+model = "qwen/qwen3.5-9b"
+temperature = 0.8
+timeout_seconds = 300

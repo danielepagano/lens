@@ -1,0 +1,42 @@
+"""Edit operator: LLM-assisted rewrite of a selected line range.
+
+``lens edit ADDRESS START_LINE END_LINE [PROMPT] [--pin/-p ID]...`` streams
+LLM output as a proposed replacement for lines START_LINE..END_LINE in the
+targeted node, staging a claim annotation to track the transaction.
+
+When called again with ``--retry``:
+- no PROMPT   → regenerate with the same parameters
+- PROMPT given → regenerate with updated instruction
+"""
+
+from __future__ import annotations
+
+from typing import Any, ClassVar
+
+from lens.core.operator import Operator
+from lens.core.prompts import PromptStore
+
+
+# ---------------------------------------------------------------------------
+# Operator class
+# ---------------------------------------------------------------------------
+
+
+class EditOperator(Operator):
+    name: ClassVar[str] = "edit"
+    requires_id: ClassVar[bool] = True
+
+    @property
+    def system_prompt(self) -> str:
+        return PromptStore(self.project_root).get("edit.system")
+
+    def build_instruction(self, params: dict[str, Any]) -> str:
+        return PromptStore(self.project_root).format(
+            "edit.instruction_template",
+            prompt=params.get("prompt", ""),
+            target=params.get("target", ""),
+        )
+
+    @staticmethod
+    def ann_id(start_line: int, end_line: int) -> str:
+        return f"e{start_line}_{end_line}"
