@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import type { Attachment } from 'svelte/attachments'
   import { selectedKbId, treeRefreshTrigger } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
   import { currentProject } from '../../stores/project'
@@ -15,15 +14,15 @@
     copyKbItem,
   } from '../../services/api'
   import type { KbItemDetail } from '../../services/api'
-  import {
-    createMarkdownRenderer,
-    preprocessBlockquotePills,
-    preprocessKbReferencePills,
-    prefixMountUrlsInRenderedHtml,
-  } from '../../utils/markdown'
   import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
-
-  const md = createMarkdownRenderer({ openLinksInNewTab: true })
+  import {
+    attachKbMarkdownClicks,
+    kbViewerHashBase,
+    openKbItemInHash,
+    renderKbMarkdown,
+  } from './kbViewerMarkdown'
+  import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
+  import KbViewerMetaSection from './KbViewerMetaSection.svelte'
 
   let item = $state.raw<KbItemDetail | null>(null)
   let editMode = $state(false)
@@ -43,18 +42,12 @@
   let actionError = $state('')
   let metaOpen = $state(false)
 
-  const viewerHashBase = $derived([$currentProject, $currentAddress || ''].filter(Boolean).join('/'))
-  const rawKbRendered = $derived(
+  const viewerHashBase = $derived(kbViewerHashBase($currentProject, $currentAddress || ''))
+  const rendered = $derived(
     item
-      ? md.render(
-          preprocessKbReferencePills(
-            preprocessBlockquotePills(item.content),
-            $stats?.remember_pins_at_cursor ?? undefined,
-          ),
-        )
-      : ''
+      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject)
+      : '',
   )
-  const rendered = $derived(prefixMountUrlsInRenderedHtml(rawKbRendered, $currentProject))
   const metaSummary = $derived.by(() => {
     if (!item) return ''
     const parts: string[] = []
@@ -68,6 +61,7 @@
     }
     return parts.join(' · ')
   })
+  const markdownClickAttach = $derived(attachKbMarkdownClicks(viewerHashBase))
 
   let activeLoadSeq = 0
 
@@ -212,7 +206,7 @@
     try {
       await renameKbItem(item.id, newId)
       selectedKbId.set(newId)
-      window.location.hash = `${viewerHashBase}?kb=${encodeURIComponent(newId)}`
+      openKbItemInHash(viewerHashBase, newId)
       treeRefreshTrigger.update((n) => n + 1)
       closeActions()
     } catch (e) {
@@ -226,34 +220,11 @@
     try {
       await copyKbItem(item.id, targetId)
       selectedKbId.set(targetId)
-      window.location.hash = `${viewerHashBase}?kb=${encodeURIComponent(targetId)}`
+      openKbItemInHash(viewerHashBase, targetId)
       treeRefreshTrigger.update((n) => n + 1)
       closeActions()
     } catch (e) {
       actionError = String(e)
-    }
-  }
-
-  function isDotTag(tag: string): boolean {
-    return tag.includes('.')
-  }
-
-  function openKbItem(id: string) {
-    window.location.hash = `${viewerHashBase}?kb=${encodeURIComponent(id)}`
-  }
-
-  function handleKbMarkdownClick(e: MouseEvent) {
-    const pinEl = (e.target as HTMLElement).closest('[data-kb-open-id]')
-    if (!pinEl) return
-    const id = pinEl.getAttribute('data-kb-open-id')
-    if (id) openKbItem(id)
-  }
-
-  const attachKbMarkdownClicks: Attachment<HTMLDivElement> = (element) => {
-    const handleClick = (event: MouseEvent) => handleKbMarkdownClick(event)
-    element.addEventListener('click', handleClick)
-    return () => {
-      element.removeEventListener('click', handleClick)
     }
   }
 
@@ -290,11 +261,6 @@
   function stopTagsEdit() {
     tagsEditMode = false
   }
-
-  function openKbItemFromClick(event: MouseEvent, id: string) {
-    event.preventDefault()
-    openKbItem(id)
-  }
 </script>
 
 <div class="kb-viewer">
@@ -314,55 +280,28 @@
             <button type="button" class="kb-action-btn" onclick={cancelEdit} disabled={saving}>Cancel</button>
           {:else}
             <button type="button" class="kb-action-btn" onclick={enterEdit}>Edit</button>
-            <div class="kb-viewer-menu-wrap">
-              <button
-                type="button"
-                class="kb-action-btn kb-action-btn-icon"
-                aria-haspopup="true"
-                aria-expanded={actionsOpen}
-                onclick={toggleActionsMenu}
-              >…</button>
-              {#if actionsOpen}
-                <div class="kb-viewer-menu" role="menu">
-                  {#if deleteConfirm}
-                    <div class="kb-menu-delete-confirm">
-                      <span>Delete this item?</span>
-                      <button type="button" class="kb-menu-confirm-btn" onclick={doDelete}>Delete</button>
-                      <button type="button" onclick={() => (deleteConfirm = false)}>Cancel</button>
-                    </div>
-                  {:else if showRenameInput}
-                    <div class="kb-menu-rename">
-                      <input
-                        type="text"
-                        placeholder="New ID"
-                        bind:value={renameId}
-                        onkeydown={(event) => handleActionInputKeydown(event, doRename)}
-                      />
-                      <button type="button" onclick={doRename}>Rename</button>
-                      <button type="button" onclick={cancelRename}>Cancel</button>
-                    </div>
-                  {:else if showCopyInput}
-                    <div class="kb-menu-copy">
-                      <input
-                        type="text"
-                        placeholder="Target ID"
-                        bind:value={copyTargetId}
-                        onkeydown={(event) => handleActionInputKeydown(event, doCopy)}
-                      />
-                      <button type="button" onclick={doCopy}>Copy</button>
-                      <button type="button" onclick={cancelCopy}>Cancel</button>
-                    </div>
-                  {:else}
-                    <button type="button" role="menuitem" onclick={startDeleteConfirm}>Delete</button>
-                    <button type="button" role="menuitem" onclick={startRename}>Rename</button>
-                    <button type="button" role="menuitem" onclick={startCopy}>Copy</button>
-                  {/if}
-                  {#if actionError}
-                    <p class="kb-menu-error">{actionError}</p>
-                  {/if}
-                </div>
-              {/if}
-            </div>
+            <KbViewerActionsMenu
+              {actionsOpen}
+              {deleteConfirm}
+              {showRenameInput}
+              {showCopyInput}
+              {renameId}
+              {copyTargetId}
+              {actionError}
+              onToggleMenu={toggleActionsMenu}
+              onDelete={doDelete}
+              onRename={doRename}
+              onCopy={doCopy}
+              onCancelDelete={() => (deleteConfirm = false)}
+              onCancelRename={cancelRename}
+              onCancelCopy={cancelCopy}
+              onStartDeleteConfirm={startDeleteConfirm}
+              onStartRename={startRename}
+              onStartCopy={startCopy}
+              onRenameIdChange={(value) => (renameId = value)}
+              onCopyTargetIdChange={(value) => (copyTargetId = value)}
+              onActionInputKeydown={handleActionInputKeydown}
+            />
           {/if}
         </div>
       </div>
@@ -383,7 +322,7 @@
       />
     {:else}
       <article class="content kb-rendered">
-        <div class="kb-rendered-md" {@attach attachKbMarkdownClicks}>
+        <div class="kb-rendered-md" {@attach markdownClickAttach}>
           <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
           {@html rendered}
         </div>
@@ -391,59 +330,23 @@
     {/if}
 
     {#if !editMode}
-      <details class="kb-meta-section" bind:open={metaOpen}>
-        <summary class="kb-meta-summary">{metaSummary}</summary>
-        <div class="kb-meta-body">
-          {#if tagsEditMode}
-            <div class="kb-tags-edit-area">
-              {#each item.tags as tag (tag)}
-                <button type="button" class="kb-tag-delete-pill" onclick={() => removeTag(tag)} title="Remove tag">{tag} ×</button>
-              {/each}
-            </div>
-            <div class="kb-tags-edit-input-row">
-              <input
-                type="text"
-                class="kb-viewer-tag-input"
-                placeholder="Add tag…"
-                bind:value={tagInput}
-                onkeydown={(event) => handleActionInputKeydown(event, addTagFromInput)}
-                onblur={addTagFromInput}
-              />
-              <button type="button" class="kb-meta-small-btn" onclick={stopTagsEdit}>Done</button>
-            </div>
-            {#if actionError}
-              <p class="error-state kb-save-error">{actionError}</p>
-            {/if}
-          {:else}
-            <div class="kb-meta-tags-row">
-              <span class="kb-meta-tags-list">
-                {#if item.tags.length > 0}
-                  {#each item.tags as tag, i (tag)}
-                    {#if i > 0}<span class="kb-viewer-tag-sep"> · </span>{/if}
-                    {#if isDotTag(tag)}
-                      <a class="kb-viewer-tag kb-viewer-tag-link" href="#{tag}" onclick={(event) => openKbItemFromClick(event, tag)}>{tag}</a>
-                    {:else}
-                      <span class="kb-viewer-tag">{tag}</span>
-                    {/if}
-                  {/each}
-                {:else}
-                  No tags
-                {/if}
-              </span>
-              <button type="button" class="kb-meta-small-btn" onclick={enterTagsEdit}>Edit tags</button>
-            </div>
-            {#if linkedFrom.length > 0}
-              <div class="kb-meta-linked-row">
-                <span class="kb-linked-from-label">Linked from:</span>
-                {#each linkedFrom as linkedId, i (linkedId)}
-                  {#if i > 0}<span class="kb-linked-from-sep">, </span>{/if}
-                  <a class="kb-linked-from-link" href="#{linkedId}" onclick={(event) => openKbItemFromClick(event, linkedId)}>{linkedId}</a>
-                {/each}
-              </div>
-            {/if}
-          {/if}
-        </div>
-      </details>
+      <KbViewerMetaSection
+        tags={item.tags}
+        {linkedFrom}
+        {metaOpen}
+        {metaSummary}
+        {tagsEditMode}
+        {tagInput}
+        {actionError}
+        {viewerHashBase}
+        onMetaOpenChange={(open) => (metaOpen = open)}
+        onRemoveTag={removeTag}
+        onAddTagFromInput={addTagFromInput}
+        onStopTagsEdit={stopTagsEdit}
+        onEnterTagsEdit={enterTagsEdit}
+        onTagInputChange={(value) => (tagInput = value)}
+        onActionInputKeydown={handleActionInputKeydown}
+      />
     {/if}
   {/if}
 </div>

@@ -48,7 +48,7 @@ src/
 
 ## Hard constraints
 
-1. **No component exceeds ~300 lines.**
+1. **Keep components small:** ~300 lines is the usual target; **split when a file passes ~450 lines** or mixes unrelated concerns. Single-purpose components in the ~300–450 range are fine — don’t split for the line count alone.
 2. **CodeMirror is configured only in the editor component** — nowhere else.
 3. **Network logic lives only in `services/`** — no component instantiates `EventSource` or calls `fetch` directly.
 4. **Global state lives only in `stores/`** — no component-local state duplicates global state.

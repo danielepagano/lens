@@ -23,7 +23,7 @@ export default defineConfig([
     },
   },
   {
-    files: ["**/*.svelte"],
+    files: ["src/**/*.svelte"],
     languageOptions: {
       parserOptions: {
         parser: tseslint.parser,
@@ -32,12 +32,16 @@ export default defineConfig([
     rules: {
       "svelte/infinite-reactive-loop": "off",
       "svelte/prefer-svelte-reactivity": "off",
+      "max-lines": [
+        "warn",
+        { max: 450, skipBlankLines: true, skipComments: true },
+      ],
     },
   },
   {
-    files: ["src/features/cli/**/*.svelte"],
+    files: ["src/features/editor/CodeMirrorEditor.svelte"],
     rules: {
-      "max-lines": ["warn", { max: 320, skipBlankLines: true, skipComments: true }],
+      "max-lines": "off",
     },
   },
   {
