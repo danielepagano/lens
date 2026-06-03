@@ -40,9 +40,14 @@ def read_mount_audio_bytes(backend: MountBackend, rel_file: str) -> tuple[bytes,
 
 
 def find_tts_chunk(node: NarrativeNode, *, line: int, chunk_id: str) -> TtsChunk:
+    by_id: TtsChunk | None = None
     for ch in chunks_for_node(node):
+        if ch.id == chunk_id:
+            by_id = ch
         if ch.source_kept_line_1 == line and ch.id == chunk_id:
             return ch
+    if by_id is not None:
+        return by_id
     raise LensException(f"no TTS chunk for line {line} with id {chunk_id!r}")
 
 

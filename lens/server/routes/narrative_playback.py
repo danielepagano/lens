@@ -12,17 +12,15 @@ from lens.core.annotations import parse_annotations
 from lens.core.address import NarrativeAddress
 from lens.core.exceptions import LensException
 from lens.core.narrative import NarrativeNode
-from lens.core.pinning import set_tts_cached_rev
 from lens.core.project import ProjectSession, has_mount_config
 from lens.core.speech import registry as speech_registry
-from lens.core.speech.chunks import TTS_CHUNK_REVISION
 from lens.core.speech.playback_sequence import (
     PlaybackImageItem,
     PlaybackTextItem,
     PlaybackVideoItem,
     playback_items_for_node,
 )
-from lens.core.speech.tts_cache_sync import node_uses_tts_cache
+from lens.core.speech.tts_cache_sync import ensure_tts_front_matter_for_line_stability
 from lens.server.streaming import StreamLock, sse_message
 
 _AUDIO_SSE_CHUNK = 48_000
@@ -76,18 +74,8 @@ def playback_item_to_json(item: PlaybackTextItem | PlaybackImageItem | PlaybackV
 
 
 def ensure_tts_front_matter_for_playback(session: ProjectSession, node: NarrativeNode) -> None:
-    """If the project can use TTS but the node has no ``tts_cached`` block yet, add it before chunking.
-
-    Otherwise the first TTS request would insert front matter and invalidate every ``line`` the client
-    already received from :func:`playback_items_for_node`.
-    """
-    root = session.project_root
-    if not has_mount_config(root) or not speech_registry.is_speech_backend_ready(root):
-        return
-    if node_uses_tts_cache(node):
-        return
-    storage = session.new_storage(owner=None)
-    set_tts_cached_rev(node, TTS_CHUNK_REVISION, storage)
+    """Pin ``tts_cached`` before playback chunking when a mount exists (see line-stability helper)."""
+    ensure_tts_front_matter_for_line_stability(session, node)
 
 
 def titlecase_kb_key(kb_id: str) -> str:
@@ -146,9 +134,10 @@ def playback_chat_session_to_json(node: NarrativeNode) -> dict[str, str] | None:
 def narrative_playback_payload(session: ProjectSession, node: NarrativeNode, addr: NarrativeAddress) -> dict[str, Any]:
     ensure_tts_front_matter_for_playback(session, node)
     items = playback_items_for_node(node, session.project_root)
+    root = session.project_root
     payload: dict[str, Any] = {
         "address": str(addr.node_only()),
-        "tts_enabled": node_uses_tts_cache(node),
+        "tts_enabled": has_mount_config(root) and speech_registry.is_speech_backend_ready(root),
         "items": [playback_item_to_json(x) for x in items],
     }
     chat_session = playback_chat_session_to_json(node)

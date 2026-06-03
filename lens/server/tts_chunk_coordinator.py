@@ -14,6 +14,7 @@ from lens.core.exceptions import LensException
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession, get_mount_backend
 from lens.core.speech.chunks import tts_cache_mount_prefix
+from lens.core.speech.tts_cache_sync import ensure_tts_front_matter_for_line_stability
 
 
 class TtsChunkCoordinator:
@@ -85,6 +86,8 @@ class TtsChunkCoordinator:
         if cached is not None:
             return cached
 
+        ensure_tts_front_matter_for_line_stability(session, node)
+
         async with self._lock:
             t = self._inflight.get(key)
             if t is None:
@@ -115,6 +118,7 @@ class TtsChunkCoordinator:
         language: str = "en",
         model_id: str | None = None,
     ) -> Literal["ready", "started", "rendering"]:
+        ensure_tts_front_matter_for_line_stability(session, node)
         await asyncio.to_thread(find_tts_chunk, node, line=line, chunk_id=chunk_id)
 
         key = self._key(session, node, chunk_id)
