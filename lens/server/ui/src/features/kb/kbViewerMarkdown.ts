@@ -6,6 +6,10 @@ import {
   preprocessKbReferencePills,
   prefixMountUrlsInRenderedHtml,
 } from '../../utils/markdown'
+import {
+  preprocessKbEditableControls,
+  type KbEditMeta,
+} from './kbEditableControls'
 
 const md = createMarkdownRenderer({ openLinksInNewTab: true })
 
@@ -13,15 +17,35 @@ export function renderKbMarkdown(
   content: string,
   rememberPinsAtCursor: Readonly<Record<string, string[]>> | null | undefined,
   projectSlug: string | null,
-): string {
+  enableEditableControls?: boolean,
+): { html: string; editMeta: KbEditMeta[] } {
   const { body } = stripKbItemFrontMatter(content)
+  const bodyOffset = content.indexOf(body)
+
+  let processed = body
+  let editMeta: KbEditMeta[] = []
+
+  if (enableEditableControls) {
+    const result = preprocessKbEditableControls(processed)
+    processed = result.processed
+    // Adjust offsets from body-relative to full-content-relative
+    for (const m of result.editMeta) {
+      m.rawStart += bodyOffset
+      m.rawEnd += bodyOffset
+    }
+    editMeta = result.editMeta
+  }
+
   const raw = md.render(
     preprocessKbReferencePills(
-      preprocessKbMarkdownLinks(preprocessBlockquotePills(body)),
+      preprocessKbMarkdownLinks(preprocessBlockquotePills(processed)),
       rememberPinsAtCursor,
     ),
   )
-  return prefixMountUrlsInRenderedHtml(raw, projectSlug)
+  return {
+    html: prefixMountUrlsInRenderedHtml(raw, projectSlug),
+    editMeta,
+  }
 }
 
 export function kbViewerHashBase(projectSlug: string | null, address: string): string {

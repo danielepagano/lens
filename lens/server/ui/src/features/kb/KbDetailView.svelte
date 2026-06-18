@@ -18,7 +18,7 @@
 
   const rendered = $derived(
     item
-      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject)
+      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject).html
       : '',
   )
 

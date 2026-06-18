@@ -261,7 +261,12 @@
       const initialStats = await getStats()
       applyStats(initialStats)
 
-      // 4. Navigate
+      // 4. Apply KB from URL before any navigation so that URL-changing writes
+      //    (navigate, hashAfterNodeResolved, etc.) preserve the kb/kb-detail
+      //    params via hashKbParam() / hashKbDetailParam().
+      applyKbFromUrl(kb, kbDetail)
+
+      // 5. Navigate
       if (path) {
         try {
           inlineEditMode.set(null)
@@ -278,7 +283,6 @@
       } else {
         await navigate(initialStats.cursor || '')
       }
-      applyKbFromUrl(kb, kbDetail)
     } catch (e) { console.error('Init failed:', e) }
   })
 </script>

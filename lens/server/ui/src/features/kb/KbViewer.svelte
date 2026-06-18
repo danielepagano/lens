@@ -7,6 +7,7 @@
   import {
     getKbItem,
     saveKbItem,
+    saveKbItemSilent,
     getKbWithTag,
     patchKbItemTags,
     deleteKbItem,
@@ -26,6 +27,8 @@
     toggleKbDetailsFlag,
   } from './kbViewerMarkdown'
   import type { KbLinkHandler } from './kbViewerMarkdown'
+  import { attachKbEditableControls } from './kbEditableControls'
+  import type { KbEditMeta } from './kbEditableControls'
   import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
   import KbViewerMetaSection from './KbViewerMetaSection.svelte'
   import KbDetailView from './KbDetailView.svelte'
@@ -50,12 +53,13 @@
 
   const viewerHashBase = $derived(kbViewerHashBase($currentProject, $currentAddress || ''))
   const kbDetails = $derived(item ? stripKbItemFrontMatter(item.content).frontMatter.kbDetails : false)
-  const mainBody = $derived(item ? stripKbItemFrontMatter(item.content).body : '')
-  const rendered = $derived(
+  const renderedResult = $derived(
     item
-      ? renderKbMarkdown(mainBody, $stats?.remember_pins_at_cursor ?? undefined, $currentProject)
-      : '',
+      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject, true)
+      : { html: '', editMeta: [] as KbEditMeta[] },
   )
+  const rendered = $derived(renderedResult.html)
+  const editMeta = $derived(renderedResult.editMeta)
   const metaSummary = $derived.by(() => {
     if (!item) return ''
     const parts: string[] = []
@@ -80,6 +84,20 @@
       ? attachKbDetailClicks(detailHandler)
       : attachKbMarkdownClicks(viewerHashBase),
   )
+
+  const editableControlsAttach = $derived(
+    attachKbEditableControls(
+      editMeta,
+      () => item?.content ?? '',
+      (newContent) => saveInlineEdit(newContent),
+    ),
+  )
+
+  function saveInlineEdit(newContent: string) {
+    if (!item) return
+    item.content = newContent
+    saveKbItemSilent(item.id, newContent)
+  }
 
   let splitRatio = $state(0.5)
   let dragging = $state(false)
@@ -154,11 +172,17 @@
     }
   }
 
+  let prevSelectedKbId: string | null = null
   onMount(() => {
     return selectedKbId.subscribe((id) => {
       activeLoadSeq += 1
       const loadSeq = activeLoadSeq
-      kbDetailId.set(null)
+      // Clear detail only on actual change — not on the initial subscribe
+      // (which fires during mount after stores are already populated from URL params).
+      if (prevSelectedKbId !== null && prevSelectedKbId !== id) {
+        kbDetailId.set(null)
+      }
+      prevSelectedKbId = id
       if (!id) {
         item = null
         loadError = ''
@@ -413,7 +437,7 @@
       <div class="kb-viewer-split" class:kb-viewer-split--dragging={dragging}>
         <div class="kb-viewer-split-pane kb-viewer-split-pane--main" style="flex:{splitRatio}">
           <article class="content kb-rendered">
-            <div class="kb-rendered-md" {@attach markdownClickAttach}>
+            <div class="kb-rendered-md" {@attach markdownClickAttach} {@attach editableControlsAttach}>
               <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
               {@html rendered}
             </div>
@@ -438,7 +462,7 @@
       </div>
     {:else}
       <article class="content kb-rendered">
-        <div class="kb-rendered-md" {@attach markdownClickAttach}>
+        <div class="kb-rendered-md" {@attach markdownClickAttach} {@attach editableControlsAttach}>
           <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
           {@html rendered}
         </div>

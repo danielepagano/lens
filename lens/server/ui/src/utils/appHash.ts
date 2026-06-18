@@ -164,7 +164,8 @@ export function hashAfterNodeResolved(
       vnTts: parsed.vnTts,
     })
   }
+  const parsedKb = parsed.kb
   const parsedKbDetail = parsed.kbDetail
-  const k = kb && kb.length > 0 ? kb : undefined
+  const k = (kb && kb.length > 0) ? kb : parsedKb
   return buildAppHash(slug, resolvedAddress, { kb: k, kbDetail: parsedKbDetail })
 }

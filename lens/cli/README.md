@@ -155,6 +155,18 @@ Arguments: `ID [CONTENT]`
 
 Options: `-t` / `--use-template` — use the type’s template content (from `_template.md`) when creating.
 
+You can create links to KB items by using the relative `/kb` address, e.g. `[Bandit](kb/stat.bandit)`. This opens to a new KB page in the UI. If a KB document with the link has a front matter entry for `kb-details: true`, the links will be opened in a detail panel _under_ the main content instead.
+
+KB items can also include interactive inline controls if rendered in the UI in preview mode; these are triggered by the following conventions in the raw markdown source:
+
+| Markdown | Rendered as |
+|----------|-------------|
+| `` `[ ]` `[x]` `` | Unchecked or checked checkbox |
+| `` `#5` `` | Number input (0–∞) |
+| `` `#3/10` `` | Number input (0–max, clamped) |
+| ` ```notes` … ` ``` ` | Auto-growing `<textarea>` |
+
+
 ### `lens kb get`
 
 Fetch and print knowledge objects. Append `+` to an ID to include directly linked objects (via dot-tags); append `++` for full breadth-first traversal of linked objects.
