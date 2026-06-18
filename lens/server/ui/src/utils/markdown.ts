@@ -145,6 +145,53 @@ export function preprocessKbReferencePills(
   return out.join('\n')
 }
 
+const KB_MARKDOWN_LINK_RE = new RegExp(
+  `\\[([^\\]]*)\\]\\(kb/(${KB_PIN_ID})\\)`,
+  'g',
+)
+
+/**
+ * Detect markdown links with `kb/` URLs like `[Frida](kb/character.frida)` and
+ * replace them with KB reference links (`data-kb-open-id`) so they open the
+ * KB viewer via `?kb=id` on click.
+ *
+ * Runs before `preprocessKbReferencePills` so that `[@type.key](kb/type.key)`
+ * is consumed entirely rather than having the inner `@` pattern processed separately.
+ * Skips fenced code blocks.
+ */
+export function preprocessKbMarkdownLinks(markdown: string): string {
+  const lines = markdown.split('\n')
+  const out: string[] = []
+  let inFence = false
+  let fenceMarker: '`' | '~' = '`'
+  let fenceLen = 3
+
+  for (const line of lines) {
+    if (inFence) {
+      if (isFenceCloser(line, fenceMarker, fenceLen)) inFence = false
+      out.push(line)
+      continue
+    }
+
+    const info = fenceInfo(line)
+    if (info) {
+      inFence = true
+      fenceMarker = info.marker
+      fenceLen = info.length
+      out.push(line)
+      continue
+    }
+
+    out.push(line.replace(KB_MARKDOWN_LINK_RE, (_match, text, kbId) => {
+      const escapedText = escapeHtmlText(text)
+      const escapedId = escapeHtmlText(kbId)
+      return `<a href="#" class="kb-md-link" data-kb-open-id="${escapedId}">${escapedText}</a>`
+    }))
+  }
+
+  return out.join('\n')
+}
+
 export interface RemovedGroup {
   beforeLine: number
   lines: string[]

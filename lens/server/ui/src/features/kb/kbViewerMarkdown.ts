@@ -2,6 +2,7 @@ import type { Attachment } from 'svelte/attachments'
 import {
   createMarkdownRenderer,
   preprocessBlockquotePills,
+  preprocessKbMarkdownLinks,
   preprocessKbReferencePills,
   prefixMountUrlsInRenderedHtml,
 } from '../../utils/markdown'
@@ -14,7 +15,10 @@ export function renderKbMarkdown(
   projectSlug: string | null,
 ): string {
   const raw = md.render(
-    preprocessKbReferencePills(preprocessBlockquotePills(content), rememberPinsAtCursor),
+    preprocessKbReferencePills(
+      preprocessKbMarkdownLinks(preprocessBlockquotePills(content)),
+      rememberPinsAtCursor,
+    ),
   )
   return prefixMountUrlsInRenderedHtml(raw, projectSlug)
 }
@@ -30,6 +34,7 @@ export function openKbItemInHash(viewerHashBase: string, id: string): void {
 export function handleKbMarkdownClick(event: MouseEvent, viewerHashBase: string): void {
   const pinEl = (event.target as HTMLElement).closest('[data-kb-open-id]')
   if (!pinEl) return
+  event.preventDefault()
   const id = pinEl.getAttribute('data-kb-open-id')
   if (id) openKbItemInHash(viewerHashBase, id)
 }
