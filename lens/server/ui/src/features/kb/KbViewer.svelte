@@ -23,6 +23,7 @@
     renderKbMarkdown,
     stripKbItemFrontMatter,
     setKbDetailParam,
+    toggleKbDetailsFlag,
   } from './kbViewerMarkdown'
   import type { KbLinkHandler } from './kbViewerMarkdown'
   import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
@@ -327,6 +328,26 @@
   function stopTagsEdit() {
     tagsEditMode = false
   }
+
+  async function toggleDetail() {
+    if (!item) return
+    closeActions()
+    const newContent = toggleKbDetailsFlag(item.content)
+    try {
+      await saveKbItem(item.id, newContent)
+      item = { ...item, content: newContent }
+      if (!kbDetails) {
+        // turning on: if there's already a detail selected, preserve it
+      } else {
+        // turning off: clear detail
+        kbDetailId.set(null)
+        setKbDetailParam(null)
+      }
+      treeRefreshTrigger.update((n) => n + 1)
+    } catch (e) {
+      actionError = String(e)
+    }
+  }
 </script>
 
 <div class="kb-viewer">
@@ -354,10 +375,12 @@
               {renameId}
               {copyTargetId}
               {actionError}
+              {kbDetails}
               onToggleMenu={toggleActionsMenu}
               onDelete={doDelete}
               onRename={doRename}
               onCopy={doCopy}
+              onToggleDetail={toggleDetail}
               onCancelDelete={() => (deleteConfirm = false)}
               onCancelRename={cancelRename}
               onCancelCopy={cancelCopy}

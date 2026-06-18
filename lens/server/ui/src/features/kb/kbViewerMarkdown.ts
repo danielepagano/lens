@@ -88,6 +88,42 @@ export function stripKbItemFrontMatter(content: string): {
   return { body: lines.slice(i).join('\n'), frontMatter: fm }
 }
 
+const KB_DETAILS_RE = /^(\s*)kb-details:\s*(true|false)\s*$/i
+
+/**
+ * Toggle the `kb-details` flag in an item's front matter.  If no front matter
+ * exists, one is created with `kb-details: true`.  Returns the updated full
+ * content string.
+ */
+export function toggleKbDetailsFlag(content: string): string {
+  const lines = content.split('\n')
+  if (lines.length === 0) return `[\n    kb-details: true\n]: #\n\n${content}`
+
+  if (FRONT_MATTER_OPEN_RE.test(lines[0]!)) {
+    let detailIndex = -1
+    let endIndex = -1
+    let currentValue = 'false'
+    for (let i = 1; i < lines.length; i++) {
+      if (FRONT_MATTER_END_RE.test(lines[i]!)) { endIndex = i; break }
+      const m = lines[i]!.match(KB_DETAILS_RE)
+      if (m) { detailIndex = i; currentValue = m[2]! }
+    }
+    if (endIndex === -1) {
+      // Malformed → wrap everything
+      return `[\n    kb-details: true\n]: #\n\n${content}`
+    }
+    const newValue = currentValue === 'true' ? 'false' : 'true'
+    if (detailIndex !== -1) {
+      lines[detailIndex] = lines[detailIndex]!.replace(KB_DETAILS_RE, `$1kb-details: ${newValue}`)
+    } else {
+      lines.splice(endIndex, 0, '    kb-details: true')
+    }
+    return lines.join('\n')
+  }
+
+  return `[\n    kb-details: true\n]: #\n\n${content}`
+}
+
 /**
  * Update only the `kb-detail` param in the current URL hash, preserving all
  * other params (kb, path, etc.).
