@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { selectedKbId, treeRefreshTrigger } from '../../stores/ui'
+  import { selectedKbId, kbDetailId, treeRefreshTrigger } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
   import { currentProject } from '../../stores/project'
   import { stats } from '../../stores/stats'
@@ -17,12 +17,17 @@
   import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
   import {
     attachKbMarkdownClicks,
+    attachKbDetailClicks,
     kbViewerHashBase,
     openKbItemInHash,
     renderKbMarkdown,
+    stripKbItemFrontMatter,
+    setKbDetailParam,
   } from './kbViewerMarkdown'
+  import type { KbLinkHandler } from './kbViewerMarkdown'
   import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
   import KbViewerMetaSection from './KbViewerMetaSection.svelte'
+  import KbDetailView from './KbDetailView.svelte'
 
   let item = $state.raw<KbItemDetail | null>(null)
   let editMode = $state(false)
@@ -43,9 +48,11 @@
   let metaOpen = $state(false)
 
   const viewerHashBase = $derived(kbViewerHashBase($currentProject, $currentAddress || ''))
+  const kbDetails = $derived(item ? stripKbItemFrontMatter(item.content).frontMatter.kbDetails : false)
+  const mainBody = $derived(item ? stripKbItemFrontMatter(item.content).body : '')
   const rendered = $derived(
     item
-      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject)
+      ? renderKbMarkdown(mainBody, $stats?.remember_pins_at_cursor ?? undefined, $currentProject)
       : '',
   )
   const metaSummary = $derived.by(() => {
@@ -61,7 +68,65 @@
     }
     return parts.join(' · ')
   })
-  const markdownClickAttach = $derived(attachKbMarkdownClicks(viewerHashBase))
+
+  const detailHandler: KbLinkHandler = (id: string) => {
+    kbDetailId.set(id)
+    setKbDetailParam(id)
+  }
+
+  const markdownClickAttach = $derived(
+    kbDetails
+      ? attachKbDetailClicks(detailHandler)
+      : attachKbMarkdownClicks(viewerHashBase),
+  )
+
+  let splitRatio = $state(0.5)
+  let dragging = $state(false)
+
+  function handleDividerMouseDown(e: MouseEvent) {
+    e.preventDefault()
+    const startY = e.clientY
+    const startRatio = splitRatio
+    const splitEl = (e.target as HTMLElement).closest('.kb-viewer-split') as HTMLElement | null
+    if (!splitEl) return
+    const panelHeight = splitEl.offsetHeight
+    dragging = true
+
+    function onMouseMove(ev: MouseEvent) {
+      const dy = ev.clientY - startY
+      splitRatio = Math.max(0.2, Math.min(0.8, startRatio + dy / panelHeight))
+    }
+    function onMouseUp() {
+      dragging = false
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }
+
+  function handleDividerTouchStart(e: TouchEvent) {
+    const startY = e.touches[0]!.clientY
+    const startRatio = splitRatio
+    const splitEl = (e.target as HTMLElement).closest('.kb-viewer-split') as HTMLElement | null
+    if (!splitEl) return
+    const panelHeight = splitEl.offsetHeight
+    dragging = true
+
+    function onTouchMove(ev: TouchEvent) {
+      const dy = ev.touches[0]!.clientY - startY
+      splitRatio = Math.max(0.2, Math.min(0.8, startRatio + dy / panelHeight))
+    }
+    function onTouchEnd() {
+      dragging = false
+      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', onTouchEnd)
+    }
+    document.addEventListener('touchmove', onTouchMove, { passive: true })
+    document.addEventListener('touchend', onTouchEnd)
+  }
+
+
 
   let activeLoadSeq = 0
 
@@ -92,6 +157,7 @@
     return selectedKbId.subscribe((id) => {
       activeLoadSeq += 1
       const loadSeq = activeLoadSeq
+      kbDetailId.set(null)
       if (!id) {
         item = null
         loadError = ''
@@ -320,6 +386,33 @@
           editContent = text
         }}
       />
+    {:else if kbDetails && $kbDetailId}
+      <div class="kb-viewer-split" class:kb-viewer-split--dragging={dragging}>
+        <div class="kb-viewer-split-pane kb-viewer-split-pane--main" style="flex:{splitRatio}">
+          <article class="content kb-rendered">
+            <div class="kb-rendered-md" {@attach markdownClickAttach}>
+              <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
+              {@html rendered}
+            </div>
+          </article>
+        </div>
+        <div
+          class="kb-viewer-split-divider"
+          role="separator"
+          tabindex="0"
+          onmousedown={handleDividerMouseDown}
+          ontouchstart={handleDividerTouchStart}
+          onkeydown={(e) => {
+            if (e.key === 'ArrowUp') splitRatio = Math.max(0.2, splitRatio - 0.02)
+            if (e.key === 'ArrowDown') splitRatio = Math.min(0.8, splitRatio + 0.02)
+          }}
+        >
+          <span class="kb-viewer-split-divider-grip"></span>
+        </div>
+        <div class="kb-viewer-split-pane kb-viewer-split-pane--detail" style="flex:{1 - splitRatio}">
+          <KbDetailView />
+        </div>
+      </div>
     {:else}
       <article class="content kb-rendered">
         <div class="kb-rendered-md" {@attach markdownClickAttach}>

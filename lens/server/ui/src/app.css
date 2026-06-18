@@ -2180,6 +2180,112 @@ ul.kb-item-list {
   overflow-y: auto;
 }
 
+/* ---- KB Split Pane ---- */
+
+.kb-viewer-split {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-viewer-split-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-viewer-split-pane--main {
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.kb-viewer-split-divider {
+  height: 6px;
+  cursor: row-resize;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  position: relative;
+  z-index: 10;
+  touch-action: none;
+}
+
+.kb-viewer-split-divider:hover,
+.kb-viewer-split--dragging .kb-viewer-split-divider {
+  background: var(--pico-primary-background);
+  opacity: 0.3;
+}
+
+.kb-viewer-split-divider-grip {
+  width: 1.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--pico-muted-border-color);
+}
+
+.kb-viewer-split-divider:hover .kb-viewer-split-divider-grip,
+.kb-viewer-split--dragging .kb-viewer-split-divider-grip {
+  background: var(--pico-primary-background);
+}
+
+.kb-viewer-split--dragging {
+  user-select: none;
+  cursor: row-resize;
+}
+
+/* ---- KB Detail View ---- */
+
+.kb-detail-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  flex-shrink: 0;
+}
+
+.kb-detail-id {
+  font-weight: 600;
+  font-size: 0.82rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-detail-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--pico-muted-color);
+  padding: 0 0.25rem;
+  flex-shrink: 0;
+}
+
+.kb-detail-close:hover {
+  color: var(--pico-color);
+}
+
+.kb-detail-body {
+  padding: 0.5rem 0.75rem;
+}
+
 .kb-meta-section {
   border-top: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
