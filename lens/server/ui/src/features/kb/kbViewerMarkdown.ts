@@ -39,7 +39,8 @@ export function preprocessDiceExpressions(mdText: string, mode: DiceRollMode | n
   const re = new RegExp(parts.join('|'), 'g')
 
   function makeDiceBtn(text: string, roll: string): string {
-    return `<button type="button" class="dice-roll-btn" data-roll="${escapeHtmlAttr(roll)}">${escapeHtmlText(text)}</button>`
+    const stripped = roll.replace(/\s+/g, '')
+    return `<button type="button" class="dice-roll-btn" data-roll="${escapeHtmlAttr(stripped)}">${escapeHtmlText(text)}</button>`
   }
 
   function makeImplicitBtn(text: string): string {

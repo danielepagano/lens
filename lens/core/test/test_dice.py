@@ -11,9 +11,9 @@ from lens.core.dice import DiceError, substitute_rolls
 
 
 def _extract_rolled_block(result: str) -> str:
-    # Match `rolled <expr>=<result>` where <expr> may include spaces.
+    # Match `_rolled <expr>=<result>_` where <expr> may include spaces.
     # `<result>` is either a single token (e.g. "17") or a list rendered like "[1, 2]".
-    m = re.search(r"rolled (.+?=(?:\[[^\]]*\]|\S+))", result)
+    m = re.search(r"_rolled (.+?=(?:\[[^\]]*\]|\S+))_", result)
     assert m is not None
     return m.group(1)
 
@@ -32,8 +32,8 @@ def _extract_ints(value: str) -> list[int]:
 
 def test_bare_roll_replaced():
     result = substitute_rolls("I @roll d20 for stealth")
-    assert result.startswith("I rolled ")
-    assert result.endswith(" for stealth")
+    assert result.startswith("I _rolled ")
+    assert result.endswith("_ for stealth")
     block = _extract_rolled_block(result)
     assert block.startswith("d20=")
     n = _result_int(block)
@@ -74,7 +74,7 @@ def test_no_roll_unchanged():
 
 def test_pure_arithmetic_uses_calculated_not_rolled():
     result = substitute_rolls("sum @roll (10+20) total")
-    assert "sum calculated 10+20=30 total" == result
+    assert "sum _calculated 10+20=30_ total" == result
     assert "rolled" not in result
 
 

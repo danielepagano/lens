@@ -582,6 +582,7 @@ details[open]>summary {
 /* ---- CLI ---- */
 
 .bottom-bar {
+  position: relative;
   padding: 0.25rem 1rem 0.5rem;
   font-size: 0.75rem;
   color: var(--pico-muted-color);
@@ -687,15 +688,26 @@ details[open]>summary {
 }
 
 .cli-suggestions {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  z-index: 251;
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
   font-family: ui-monospace, monospace;
+  padding: 0.25rem 1rem;
+  background: var(--pico-background-color);
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
 .cli-suggestions.no-wrap {
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .cli-suggestion {
