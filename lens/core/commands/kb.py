@@ -486,6 +486,7 @@ async def kb_edit(
     id: str,
     instruction: str,
     *,
+    project_root: Path | None = None,
     context_address: str | None = None,
     pins: list[str] | None = None,
     unpins: list[str] | None = None,
@@ -517,7 +518,8 @@ async def kb_edit(
     if key == "_template":
         raise LensException("kb edit targets object ids, not templates; use 'lens kb template'")
 
-    project_root = find_project_root()
+    if project_root is None:
+        project_root = find_project_root()
     if is_dataset_root(project_root) and context_address is not None:
         raise LensException("--context is not available in dataset mode")
 
