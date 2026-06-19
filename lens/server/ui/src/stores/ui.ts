@@ -92,6 +92,7 @@ export interface MediaPreviewState {
 
 export const mediaPreviewSession = writable<MediaPreviewState | null>(null)
 export const cliInputRequest = writable<string | null>(null)
+export const cliInputAppend = writable<string | null>(null)
 
 /** Increment to force the mount directory autocomplete cache to reload. */
 export const mountCacheRefreshTrigger = writable(0)

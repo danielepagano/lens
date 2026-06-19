@@ -559,6 +559,26 @@ details[open]>summary {
   border-color: rgba(37, 99, 235, 0.65);
 }
 
+.dice-roll-btn {
+  border-radius: 0.5rem;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  background-color: rgba(78, 65, 97, 0.12);
+  color: #edf;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.dice-roll-btn:hover {
+  background-color: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.8);
+}
+
 /* ---- CLI ---- */
 
 .bottom-bar {

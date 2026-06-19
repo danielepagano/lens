@@ -113,6 +113,7 @@ export interface Stats {
   tts_available: boolean
   active_session_operator: string | null
   transaction: TransactionState | null
+  dataset_configs: Record<string, Record<string, unknown>>
 }
 
 export interface TransactionState {
