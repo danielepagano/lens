@@ -23,6 +23,7 @@ from lens.core.project import (
     is_dataset_root,
     list_available_llms,
 )
+from lens.core.dataset_config import get_dataset_configs
 from lens.core.knowledge import KnowledgeStore
 from lens.core.speech import registry as speech_registry
 
@@ -66,6 +67,7 @@ class StatsResult:
     registered_modality_ids: list[str] = field(default_factory=list[str])
     modalities_at_cursor: list[str] = field(default_factory=list[str])
     modality_warnings_at_cursor: list[str] = field(default_factory=list[str])
+    dataset_configs: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
 
 
 def _operator_context_at_cursor(
@@ -136,6 +138,10 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     current_datasets: list[str] = []
     if not is_dataset:
         current_datasets = get_selected_datasets(root)
+
+    dataset_configs: dict[str, dict[str, Any]] = {}
+    if not is_dataset:
+        dataset_configs = get_dataset_configs(root)
 
     active = session.active_narrative
     cursor_addr = (
@@ -230,4 +236,5 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         registered_modality_ids=registered_modality_ids,
         modalities_at_cursor=modalities_at_cursor,
         modality_warnings_at_cursor=modality_warnings_at_cursor,
+        dataset_configs=dataset_configs,
     )

@@ -51,6 +51,7 @@ Select the active narrative with `lens use <slug>`, which sets `[project].narrat
 | `[compress]` | No | Auto-compress size thresholds |
 | `[params]` | No | Default operator invocation parameters |
 | `[dataset]` | No | Dataset-level flags (e.g. verbose LLM logging) |
+| `[config-<name>]` | No | Dataset-specific configuration overrides (one section per loaded dataset) |
 
 Array sections (`[[llm]]`, `[[image]]`, `[[speech]]`) use the **first entry as the default** unless you pass `--llm`, `--model`, or an explicit `id` in the API.
 
@@ -429,6 +430,22 @@ verbose_llm = true
 ```
 
 Currently used with the same effect as `[project].verbose_llm` for LLM logging (either can enable verbose prompts).
+
+---
+
+## `[config-<name>]` (dataset configuration)
+
+A project may override configuration values exposed by a loaded dataset.  Each dataset defines its own set of keys and defaults in Python; the project can selectively override them under a `[config-<name>]` section where `<name>` matches the dataset name in `[project] datasets`.
+
+```toml
+[project]
+datasets = ["rpg"]
+
+[config-rpg]
+# keys depend on the dataset — see that dataset's README
+```
+
+Keys not listed in the dataset's defaults are silently ignored.  See individual dataset READMEs (e.g. [`datasets/rpg/README.md`](../datasets/rpg/README.md)) for available keys.
 
 ---
 

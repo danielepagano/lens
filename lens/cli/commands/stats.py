@@ -40,6 +40,12 @@ def stats(
         else:
             typer.echo("Current datasets: (none)")
 
+    if result.dataset_configs:
+        for ds_name, cfg in result.dataset_configs.items():
+            typer.echo(f"Dataset config ({ds_name}):")
+            for key, value in cfg.items():
+                typer.echo(f"  {key} = {value}")
+
     if result.available_llms:
         typer.echo(f"Available LLMs: {','.join(result.available_llms)}")
     else:

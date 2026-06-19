@@ -48,6 +48,21 @@ datasets = ["rpg", "my-ruleset"]
 
 For time passes and fronts, use `lens advance` — same session pattern as play; see the [CLI reference](../../lens/cli/README.md).
 
+## Configuration
+
+The RPG dataset exposes one configuration key, settable under `[config-rpg]` in the project's `lens.toml`:
+
+| Key | Values | Default | Description |
+|-----|--------|---------|-------------|
+| `kb_dice_rolling` | `"disabled"`, `"expressions"`, `"implicit_d20"` | `"expressions"` | Whether dice expressions (e.g. `2d6+3`) show as a button in KB items; `implicit_d20` assumes any "+ number" text is actually a "d20 + number" expression and renders a button too (useful for D20 systems) |
+
+Example override:
+
+```toml
+[config-rpg]
+kb_dice_rolling = "disabled"
+```
+
 ## Documentation
 
 - **Operators and session flow** — [lens/rpg/README.md](../../lens/rpg/README.md) (`lens play`, modules, `--pass`, pinning `pc.*`)
