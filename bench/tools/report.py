@@ -6,7 +6,7 @@ Usage::
     # Create a new report JSON + HTML skeleton (after setup_bench, when you know PROJECT)
     python bench/tools/report.py init \\
         --scenario bench/scenarios/edit_quality.md \\
-        --profile grok \\
+        --profile deepseek \\
         --project-dir bench/projects/lens_bench_abc123
 
     # Merge a patch (steps, evaluation, meta) into an existing report — re-renders HTML

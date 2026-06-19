@@ -271,12 +271,16 @@ The rebel headquarters, hidden in an abandoned warehouse.
 
 ### `lens kb edit`
 
-Edit or create a knowledge object using AI. Works on existing objects (including dataset items — copy-on-write applies) or creates new ones from scratch.
+Edit or create a knowledge object using AI. Uses the same mutation pattern as `lens edit`: a fresh call wraps the KB file in staged claim tags (`[kb_edit:ke]: #` / `[/kb_edit:ke]: #`), runs the LLM, and proposes the replacement as an unstaged diff. `lens rollback` removes the claim tags and restores the original; `lens commit` / `lens checkpoint` accepts the proposed changes.
+
+Works on existing objects (including dataset items — copy-on-write applies) or creates new ones from scratch. When creating a new object, the type template is included in the prompt by default (unless `--include-template` is omitted).
 
 ```bash
 lens kb edit person.hero "add a dark secret"
 lens kb edit person.hero "make them more mysterious" -p place.castle
 lens kb edit person.new-npc "describe a weary traveler" -t
+lens kb edit person.hero "revise backstory" -c "/chapter-1 10 30"
+lens kb edit person.hero "tighten description" --reasoning medium
 ```
 
 Arguments: `ID INSTRUCTION`
@@ -284,7 +288,27 @@ Arguments: `ID INSTRUCTION`
 - `ID` — object ID (e.g. `person.hero`). Creates the object if it does not exist.
 - `INSTRUCTION` — AI instructions for what to write or change.
 
-Options: `-p`/`--pin`, `-u`/`--unpin`, `-c`/`--context` (narrative address to crawl for context), `-t`/`--include-template` (include type template in prompt), `-l`/`--llm`. `--context` is not available in dataset mode.
+Options:
+
+| Option | Short | Purpose |
+|--------|-------|---------|
+| `--pin ID` | `-p` | Pin a KB object for this call (repeatable) |
+| `--unpin ID` | `-u` | Suppress an inherited pin (repeatable) |
+| `--context ADDRESS [START [END]]` | `-c` | Narrative context: just an address (e.g. `/chapter-1`) for full crawl with ancestor pin resolution; with line bounds (e.g. `/chapter-1 10` or `/chapter-1 10 30`) injects as a `REF[…]` slice with no ancestor pins. Not available in dataset mode. |
+| `--include-template` | `-t` | Include the type template (`_template.md`) in the LLM prompt. Enabled by default when creating a new object. |
+| `--llm ID` | `-l` | Override the default LLM |
+| `--reasoning LEVEL` | — | Reasoning override: `none`, `low`, `medium`, `high` |
+| `--retry` | `-r` | Discard the current claim, rollback, and re-propose. The original content is extracted from between the claim tags and the LLM regenerates. |
+
+**Mutation flow:**
+
+1. **Fresh call:** If the object exists, its current content is read. The file is written wrapped in `[kb_edit:ke]: #` (open tag) and `[/kb_edit:ke]: #` (close tag) with the original content between them. This is staged (`git add`).
+2. **LLM generates** new content based on the instruction, pinned KB objects, template, and context (full narrative crawl or `--context` slice refs).
+3. **Propose:** The claim block is replaced with just the new content, written as an unstaged diff — the staged claim tags remain as a record.
+4. **Rollback:** `lens rollback` stages the claim tags (restoring the original content) then unstages them, leaving the file unchanged.
+5. **Commit:** `lens commit` / `lens checkpoint` stages the unstaged diff, committing both the tags (now in git history) and the new content.
+
+**Retry:** `lens kb edit ... --retry` detects the pending `[kb_edit:ke]` annotation, rolls back to the original claim-wrapped state, re-extracts the original content, and re-runs the LLM with the same (or updated) parameters. The new proposal replaces the old one.
 
 ### `lens kb list-tags`
 
@@ -698,7 +722,7 @@ After `--end` completes, newly inserted and updated KB objects are printed. Use 
 Discards the pending operator transaction. The behaviour differs by operator type:
 
 - **Inline operators** (`write`): unstaged changes are discarded (`git checkout -- .`).
-- **Mutation operators** (`edit`): a *compensating transaction* is applied — the staged claim tags are removed and the original text is restored, leaving no trace of the operator in the history.
+- **Mutation operators** (`edit`, `kb edit`): a *compensating transaction* is applied — the staged claim tags are removed and the original text is restored, leaving no trace of the operator in the history.
 
 ```bash
 lens rollback

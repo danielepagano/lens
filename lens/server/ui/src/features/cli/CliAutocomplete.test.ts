@@ -617,7 +617,7 @@ describe('optionShouldSuggest / availability', () => {
       fetchNodeTree: () => {},
       stats: baseStats({
         available_llms: ['a', 'b'],
-        effective_params_at_cursor: { 'global:llm': 'grok' },
+        effective_params_at_cursor: { 'global:llm': 'deepseek' },
       }),
       mountDirCache: new Map(),
       fetchMountDir: () => {},

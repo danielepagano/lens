@@ -25,7 +25,7 @@ there first, then keep this prose aligned). From the **repo root** after
 `setup_bench.py` prints the project path:
 
 ```bash
-export PROJECT   # e.g. PROJECT=$(python bench/tools/setup_bench.py --profile grok --scenario bench/scenarios/advance_fronts.md)
+export PROJECT   # e.g. PROJECT=$(python bench/tools/setup_bench.py --profile deepseek --scenario bench/scenarios/advance_fronts.md)
 bash bench/scenarios/advance_fronts_setup.sh
 ```
 

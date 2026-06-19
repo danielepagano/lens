@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import subprocess
 import tempfile
@@ -61,7 +62,7 @@ def _run_in_project(root: Path, fn: Any, *args: Any, **kwargs: Any) -> Any:
     old_cwd = os.getcwd()
     try:
         os.chdir(root)
-        return fn(*args, **kwargs)
+        return asyncio.run(fn(*args, **kwargs))
     finally:
         os.chdir(old_cwd)
 
@@ -128,6 +129,88 @@ class TestKbEditCrawlResolution(unittest.TestCase):
             self.assertIn("Amy", user_content)
 
 
+class TestKbEditRefs(unittest.TestCase):
+    def test_context_slice_injects_into_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _make_project(_init_repo(Path(tmp)))
+            node = root / "narrative" / "test" / "_node.md"
+            node.write_text("# test\n\nLine A content.\n\nLine B content.\n")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "node"], cwd=root, capture_output=True, check=True)
+
+            messages_captured: list[Any] = []
+
+            async def capture_run(request: LlmRunRequest, **kwargs: Any) -> Any:
+                messages_captured.append(request.messages or [])
+                return prose_artifacts("OK")
+
+            with patch("lens.core.commands.kb.run_llm", new=capture_run):
+                _run_in_project(
+                    root, kb_edit, "person.x", "edit",
+                    context_address="/ 3 4", pins=[], unpins=[],
+                )
+
+            self.assertEqual(len(messages_captured), 1)
+            msgs = messages_captured[0]
+            user_content = next((m["content"] for m in msgs if m.get("role") == "user"), "")
+            self.assertIn("Line A content.", user_content)
+            self.assertIn("REF['test@3:4']", user_content)
+
+    def test_context_slice_no_end_goes_to_eof(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _make_project(_init_repo(Path(tmp)))
+            node = root / "narrative" / "test" / "_node.md"
+            node.write_text("# test\n\nLine A content.\n\nLine B content.\n")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "node"], cwd=root, capture_output=True, check=True)
+
+            messages_captured: list[Any] = []
+
+            async def capture_run(request: LlmRunRequest, **kwargs: Any) -> Any:
+                messages_captured.append(request.messages or [])
+                return prose_artifacts("OK")
+
+            with patch("lens.core.commands.kb.run_llm", new=capture_run):
+                _run_in_project(
+                    root, kb_edit, "person.x", "edit",
+                    context_address="/ 3", pins=[], unpins=[],
+                )
+
+            self.assertEqual(len(messages_captured), 1)
+            msgs = messages_captured[0]
+            user_content = next((m["content"] for m in msgs if m.get("role") == "user"), "")
+            self.assertIn("Line A content.", user_content)
+            self.assertIn("Line B content.", user_content)
+            # No :end suffix when open-ended
+            self.assertIn("REF['test@3']", user_content)
+
+    def test_context_full_crawl_still_works(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "person").mkdir(exist_ok=True)
+            (root / "knowledge" / "person" / "amy.md").write_text("Amy.")
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(["git", "commit", "-m", "kb"], cwd=root, capture_output=True, check=True)
+
+            messages_captured: list[Any] = []
+
+            async def capture_run(request: LlmRunRequest, **kwargs: Any) -> Any:
+                messages_captured.append(request.messages or [])
+                return prose_artifacts("OK")
+
+            with patch("lens.core.commands.kb.run_llm", new=capture_run):
+                _run_in_project(
+                    root, kb_edit, "person.new", "create",
+                    context_address="/", pins=["person.amy"], unpins=[],
+                )
+
+            self.assertEqual(len(messages_captured), 1)
+            msgs = messages_captured[0]
+            user_content = next((m["content"] for m in msgs if m.get("role") == "user"), "")
+            self.assertIn("person.amy", user_content)
+            self.assertIn("Amy", user_content)
+
+
 class TestKbEditStorage(unittest.TestCase):
     def test_new_item_stores_llm_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -140,7 +223,7 @@ class TestKbEditStorage(unittest.TestCase):
 
             path = root / "knowledge" / "person" / "hero.md"
             self.assertTrue(path.exists())
-            self.assertEqual(path.read_text(), "New content")
+            self.assertEqual(path.read_text().strip(), "New content")
 
     def test_existing_item_overwrites(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -157,7 +240,7 @@ class TestKbEditStorage(unittest.TestCase):
                 _run_in_project(root, kb_edit, "person.amy", "update", pins=[], unpins=[])
 
             path = root / "knowledge" / "person" / "amy.md"
-            self.assertEqual(path.read_text(), "Updated")
+            self.assertEqual(path.read_text().strip(), "Updated")
 
     def test_encode_ai_secrets_before_store(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
