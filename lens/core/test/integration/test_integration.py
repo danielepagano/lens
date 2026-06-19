@@ -144,12 +144,10 @@ class TestHappyPath(unittest.TestCase):
 
     def test_02_kb_edit_with_llm(self) -> None:
         """kb_edit creates a new KB object populated by the fake LLM."""
-        # kb_edit is synchronous
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-            kb_edit(
-                "person.villain", "Create a villain character",
-                pins=[], unpins=[], llm_id="mock",
-            )
+        _run_async(kb_edit(
+            "person.villain", "Create a villain character",
+            pins=[], unpins=[], llm_id="mock",
+        ))
         path = self._project_dir / "knowledge" / "person" / "villain.md"
         self.assertTrue(path.exists())
         self.assertIn("Lorem ipsum", path.read_text())

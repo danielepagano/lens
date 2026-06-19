@@ -28,6 +28,8 @@ class ComposePolicy(Enum):
 
     NARRATIVE = "narrative"
     """Interleave prose and tool-call fences in generation order (inline operators)."""
+    PROSE_ONLY = "prose_only"
+    """Strip tool-call fences; keep only prose segments."""
     AUDIT_COMMENT = "audit_comment"
     """Remember-style: tool-call fences verbatim; other prose in HTML audit comments."""
 
@@ -207,9 +209,19 @@ def compose_generation_artifacts(
 ) -> str:
     if policy == ComposePolicy.NARRATIVE:
         return _compose_narrative(artifacts)
+    if policy == ComposePolicy.PROSE_ONLY:
+        return _compose_prose_only(artifacts)
     if policy == ComposePolicy.AUDIT_COMMENT:
         return _compose_audit_comment(artifacts, tag=audit_comment_tag)
     raise ValueError(f"unknown compose policy: {policy!r}")
+
+
+def _compose_prose_only(artifacts: GenerationArtifacts) -> str:
+    parts: list[str] = []
+    for seg in artifacts.segments:
+        if seg.kind == "prose" and seg.text:
+            parts.append(seg.text)
+    return "".join(parts)
 
 
 def _compose_narrative(artifacts: GenerationArtifacts) -> str:
@@ -277,7 +289,7 @@ def get_compose_policy(operator_name: str | None) -> ComposePolicy:
     return _compose_policies.get(operator_name, ComposePolicy.AUDIT_COMMENT)
 
 
-register_compose_policy("kb_edit", ComposePolicy.NARRATIVE)
+register_compose_policy("kb_edit", ComposePolicy.PROSE_ONLY)
 for _inline_op in ("write", "play", "chat", "design", "edit", "advance"):
     register_compose_policy(_inline_op, ComposePolicy.NARRATIVE)
 

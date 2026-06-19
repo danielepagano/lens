@@ -95,11 +95,18 @@ export function stripKbItemFrontMatter(content: string): {
   frontMatter: KbItemFrontMatter
 } {
   const lines = content.split('\n')
-  if (lines.length === 0 || !FRONT_MATTER_OPEN_RE.test(lines[0]!)) {
+  if (lines.length === 0) {
+    return { body: content, frontMatter: { kbDetails: false } }
+  }
+  let firstLine = 0
+  while (firstLine < lines.length && !lines[firstLine]!.trim()) {
+    firstLine++
+  }
+  if (firstLine >= lines.length || !FRONT_MATTER_OPEN_RE.test(lines[firstLine]!)) {
     return { body: content, frontMatter: { kbDetails: false } }
   }
 
-  let i = 1
+  let i = firstLine + 1
   const fm: KbItemFrontMatter = { kbDetails: false }
   while (i < lines.length && !FRONT_MATTER_END_RE.test(lines[i]!)) {
     const m = lines[i]!.trim().match(/^kb-details:\s*(true|false)$/i)
@@ -123,11 +130,15 @@ export function toggleKbDetailsFlag(content: string): string {
   const lines = content.split('\n')
   if (lines.length === 0) return `[\n    kb-details: true\n]: #\n\n${content}`
 
-  if (FRONT_MATTER_OPEN_RE.test(lines[0]!)) {
+  let firstLine = 0
+  while (firstLine < lines.length && !lines[firstLine]!.trim()) {
+    firstLine++
+  }
+  if (firstLine < lines.length && FRONT_MATTER_OPEN_RE.test(lines[firstLine]!)) {
     let detailIndex = -1
     let endIndex = -1
     let currentValue = 'false'
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = firstLine + 1; i < lines.length; i++) {
       if (FRONT_MATTER_END_RE.test(lines[i]!)) { endIndex = i; break }
       const m = lines[i]!.match(KB_DETAILS_RE)
       if (m) { detailIndex = i; currentValue = m[2]! }

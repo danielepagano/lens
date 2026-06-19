@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+import asyncio
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from lens.core.commands.kb import (
@@ -12,9 +16,12 @@ from lens.core.commands.kb import (
     kb_with_tag,
 )
 from lens.core.exceptions import LensException
-from lens.core.knowledge import KnowledgeStore, parse_id
+from lens.core.knowledge import KnowledgeStore, parse_id, validate_ids_exist
+from lens.core.llm import llm_progress_scope
+from lens.core.now import set_request_timezone
 from lens.core.project import ProjectSession
-from lens.server.dependencies import get_session
+from lens.server.dependencies import get_session, get_stream_lock
+from lens.server.streaming import StreamLock, operator_stream_response
 
 router = APIRouter(prefix="/{project_slug}")
 
@@ -312,3 +319,104 @@ def kb_with_tag_query(
         )
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+class KbEditBody(BaseModel):
+    id: str
+    instruction: str
+    context: str | None = None
+    include_template: bool = False
+    pins: list[str] = []
+    unpins: list[str] = []
+    llm_id: str | None = None
+    reasoning: str | None = None
+    retry: bool = False
+
+
+@router.post("/kb/edit")
+async def kb_edit_endpoint(
+    body: KbEditBody,
+    project_slug: str,
+    request: Request,
+    session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
+) -> StreamingResponse:
+    try:
+        parse_id(body.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    all_ids = list(body.pins) + list(body.unpins)
+    if all_ids:
+        try:
+            validate_ids_exist(session.project_root, all_ids)
+        except LensException as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+    set_request_timezone(request.headers.get("Time-Zone"))
+
+    from lens.core.commands.kb import kb_edit as _kb_edit
+
+    event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+
+    def on_token(chunk: str) -> None:
+        event_queue.put_nowait({"type": "token", "text": chunk})
+
+    async def on_llm_progress(phase: str, detail: dict[str, Any]) -> None:
+        payload: dict[str, Any] = {"type": "progress", "phase": phase}
+        for key, val in detail.items():
+            if isinstance(val, (str, int, float, bool)) or val is None:
+                payload[key] = val
+        await event_queue.put(payload)
+
+    lock.acquire("kb-edit")
+    event_queue.put_nowait({"type": "target", "node": body.id})
+    event_queue.put_nowait({
+        "type": "progress",
+        "phase": "operator_started",
+        "operator": "kb-edit",
+        "message": "Starting kb edit…",
+    })
+
+    async def _run_kb_edit() -> None:
+        try:
+            async with llm_progress_scope(on_llm_progress):
+                await _kb_edit(
+                    id=body.id,
+                    instruction=body.instruction,
+                    context_address=body.context,
+                    project_root=session.project_root,
+                    pins=list(body.pins),
+                    unpins=list(body.unpins),
+                    include_template=body.include_template,
+                    llm_id=body.llm_id,
+                    reasoning=body.reasoning,
+                    retry=body.retry,
+                    on_token=on_token,
+                    cancel_event=lock.cancel_event,
+                )
+            await event_queue.put({
+                "type": "done",
+                "operator": "kb-edit",
+                "node": body.id,
+                "interrupted": False,
+            })
+        except LensException as e:
+            await event_queue.put({"type": "error", "message": str(e)})
+        except asyncio.CancelledError:
+            await event_queue.put({
+                "type": "done",
+                "operator": "kb-edit",
+                "node": body.id,
+                "interrupted": True,
+            })
+        except Exception as e:
+            await event_queue.put({"type": "error", "message": str(e)})
+        finally:
+            await event_queue.put(None)
+            session.kb.evict_tag_cache()
+
+    task = asyncio.ensure_future(_run_kb_edit())
+    lock.task = task
+
+    return operator_stream_response(event_queue, lock, request, session)

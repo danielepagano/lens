@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.async_cancel import run_with_cancel
 from lens.cli.options import pin_option, unpin_option
 from lens.core.knowledge import KnowledgeObject, validate_ids_exist
 from lens.core.commands.kb import (
     kb_add,
-    kb_edit,
     kb_extract,
     kb_template,
     kb_tag,
@@ -120,11 +120,13 @@ def rename(
 def edit(
     id: str = typer.Argument(..., help="Object ID (type.key); creates if new"),
     instruction: str = typer.Argument(..., help="AI instructions for what to write/change"),
-    context: str | None = typer.Option(None, "--context", "-c", help="Narrative address to crawl for context (not available in dataset mode)"),
+    context: str | None = typer.Option(None, "--context", "-c", help="Narrative address with optional line slice (e.g. /chapter-1, /chapter-1 10, /chapter-1 10 30); with line bounds, no ancestor pin resolution"),
     include_template: bool = typer.Option(False, "--include-template", "-t", help="Include type template in prompt"),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(None, "--llm", "-l", help="LLM ID to use"),
+    reasoning: str | None = typer.Option(None, "--reasoning", help="Reasoning override: none, low, medium, high"),
+    retry: bool = typer.Option(False, "--retry", "-r", help="Re-propose with same or updated parameters"),
 ) -> None:
     """Edit or create a knowledge object using AI."""
     if not instruction or not instruction.strip():
@@ -140,23 +142,57 @@ def edit(
     try:
         def _print_token(chunk: str) -> None:
             print(chunk, end="", flush=True)
-        kb_edit(
-            id,
-            instruction,
-            context_address=context,
-            pins=list(pin),
-            unpins=list(unpin),
-            include_template=include_template,
-            llm_id=llm,
-            on_token=_print_token,
+        _, cancelled = run_with_cancel(
+            lambda cancel: _kb_edit_async(
+                id=id,
+                instruction=instruction,
+                context_address=context,
+                pins=list(pin),
+                unpins=list(unpin),
+                include_template=include_template,
+                llm_id=llm,
+                reasoning=reasoning,
+                retry=retry,
+                on_token=_print_token,
+                cancel_event=cancel,
+            )
         )
         print()
+        if cancelled:
+            raise typer.Exit(1)
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
-    except KeyboardInterrupt:
-        print()
-        raise typer.Exit(1)
+
+
+async def _kb_edit_async(
+    *,
+    id: str,
+    instruction: str,
+    context_address: str | None,
+    pins: list[str],
+    unpins: list[str],
+    include_template: bool,
+    llm_id: str | None,
+    reasoning: str | None,
+    retry: bool,
+    on_token: object,
+    cancel_event: object,
+) -> None:
+    from lens.core.commands.kb import kb_edit as _kb_edit
+    await _kb_edit(
+        id,
+        instruction,
+        context_address=context_address,
+        pins=pins,
+        unpins=unpins,
+        include_template=include_template,
+        llm_id=llm_id,
+        reasoning=reasoning,
+        retry=retry,
+        on_token=on_token,  # type: ignore[arg-type]
+        cancel_event=cancel_event,  # type: ignore[arg-type]
+    )
 
 
 @app.command(no_args_is_help=True)

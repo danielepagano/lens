@@ -1121,7 +1121,11 @@ def _build_kb_edit_system_prompt(
     parts = [f"{action} following the INSTRUCTIONS. "]
     if has_template:
         parts.append("Follow the structure in RESULT TEMPLATE. ")
-    parts.append("Emit only the final text, no meta-commentary.")
+    parts.append(
+        "You have access to KB lookup tools — use them to look up "
+        "existing knowledge objects before writing. "
+        "Emit only the final text, no meta-commentary."
+    )
     return " ".join(parts)
 
 

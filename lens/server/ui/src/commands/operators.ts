@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runChat, runSectionStart, runSectionEnd, runCollate, runCompress, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type OperatorDoneEvent, type OperatorWorkflowEvent, type Stats } from '../services/api'
+import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runChat, runSectionStart, runSectionEnd, runCollate, runCompress, runKbEdit, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type OperatorDoneEvent, type OperatorWorkflowEvent, type Stats } from '../services/api'
 import {
   cliOutput,
   treeRefreshTrigger,
@@ -19,6 +19,7 @@ import type {
   CommandModule,
 } from './common'
 import { normalizeAddress, addressToNavAddress, normalizePromptNodeSliceMentions } from './common'
+import { currentProject } from '../stores/project'
 import { stats } from '../stores/stats'
 
 function scrollMarkdownViewElToBottom(): void {
@@ -469,6 +470,24 @@ const commands: CommandDefinition[] = [
     ],
     options: [],
   },
+  {
+    trigger: 'kb-edit',
+    group: 'knowledge',
+    cursorTargeting: 'never',
+    positional: [
+      { name: 'id', valueType: 'kb-id', required: true, hint: 'Object ID (type.key)' },
+      { name: 'instruction', valueType: 'prompt', required: true, hint: 'AI instruction' },
+    ],
+    options: [
+      { name: 'pin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to pin' },
+      { name: 'unpin', valueType: 'kb-id', repeatable: true, hint: 'KB ID to unpin' },
+      { name: 'context', valueType: 'address', hint: 'narrative context (e.g. /chapter-1)' },
+      { name: 'include-template', valueType: 'flag', hint: 'include type template' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
+      { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
+      { name: 'retry' },
+    ],
+  },
 ]
 
 const handler: CommandHandler = async (
@@ -843,6 +862,51 @@ const handler: CommandHandler = async (
         },
         handleEvent
       )
+    } else if (command === 'kb-edit') {
+      const kbId = ctx.args.positional['id'] as string
+      const kbInstruction = ctx.args.positional['instruction'] as string
+      if (!kbId) throw new Error('kb-edit requires an object ID')
+      if (!kbInstruction) throw new Error('kb-edit requires an instruction')
+
+      const handleKbEvent = (event: OperatorEvent): void => {
+        if (event.type === 'error') {
+          errorOutput += event.message
+        } else if (event.type === 'target') {
+          streamingPreview.update((prev) =>
+            previewBase({
+              targetNode: event.node,
+              text: '',
+              steps: prev?.steps ?? [],
+            })
+          )
+        } else if (event.type === 'token') {
+          // ignored — no streaming preview for kb-edit
+        } else if (event.type === 'progress') {
+          const label = progressLabel(event)
+          streamingPreview.update((prev) => {
+            if (prev) return { ...prev, statusLine: label }
+            return previewBase({ statusLine: label })
+          })
+        } else if (event.type === 'info') {
+          const msg = typeof event.message === 'string' ? event.message.trim() : ''
+          if (msg) postOpInfoMessage = msg
+        }
+      }
+
+      result = await runKbEdit(
+        {
+          id: kbId,
+          instruction: kbInstruction,
+          context: (ctx.args.options['context'] as string | undefined) || undefined,
+          include_template: ctx.args.options['include-template'] === true,
+          pins,
+          unpins,
+          llm_id: llmId,
+          reasoning,
+          retry,
+        },
+        handleKbEvent
+      )
     } else {
       const address = normalizeAddress(ctx.args.positional['address'] as string)
       const startLine = parseInt(ctx.args.positional['start'] as string, 10)
@@ -953,6 +1017,13 @@ const handler: CommandHandler = async (
 
     if (ctx.onDone) await ctx.onDone()
     treeRefreshTrigger.update((n) => n + 1)
+
+    if (command === 'kb-edit' && 'node' in result && typeof result.node === 'string' && !('interrupted' in result && result.interrupted)) {
+      const slug = get(currentProject)
+      const addr = get(currentAddress) || ''
+      const base = [slug, addr].filter(Boolean).join('/')
+      window.location.hash = `${base}?kb=${encodeURIComponent(result.node)}`
+    }
 
     const isError = 'type' in result && result.type === 'error'
     if (isError || errorOutput) {

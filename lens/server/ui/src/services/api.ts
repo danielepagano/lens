@@ -612,6 +612,24 @@ export const runEdit = (
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp(projectPath('/operator/edit'), params, onEvent)
 
+export interface KbEditParams {
+  id: string
+  instruction: string
+  context?: string
+  include_template?: boolean
+  pins: string[]
+  unpins: string[]
+  llm_id?: string
+  reasoning?: string
+  retry?: boolean
+}
+
+export const runKbEdit = (
+  params: KbEditParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp(projectPath('/kb/edit'), params, onEvent)
+
 export interface SectionStartParams {
   id: string
   pins?: string[]

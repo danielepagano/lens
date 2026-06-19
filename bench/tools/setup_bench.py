@@ -5,9 +5,9 @@ Usage::
 
     # From the repo root:
     python bench/tools/setup_bench.py --profile local_thinking
-    python bench/tools/setup_bench.py --profile grok --scenario bench/scenarios/write_coherence.md
+    python bench/tools/setup_bench.py --profile deepseek --scenario bench/scenarios/write_coherence.md
     python bench/tools/setup_bench.py --profile local_thinking --project-dir path/to/mybench
-    python bench/tools/setup_bench.py --profile grok --print-env   # stderr: export PROJECT='…'
+    python bench/tools/setup_bench.py --profile deepseek --print-env   # stderr: export PROJECT='…'
 
 Without ``--project-dir``, the project is created under ``bench/projects/`` (gitignored),
 still with a unique ``lens_bench_*`` directory name.

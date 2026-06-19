@@ -12,8 +12,8 @@ Prerequisite: read `bench/agent.md` for setup and scoring mechanics.
 python bench/tools/setup_bench.py --profile local_thinking --scenario bench/scenarios/write_coherence.md
 # cd into project, run setup + steps, evaluate, then report.py init + complete report (merge or render/sync) — see bench/agent.md
 
-python bench/tools/setup_bench.py --profile grok --scenario bench/scenarios/write_coherence.md
-# same scenario; report.py init with --profile grok, then fill steps/evaluation (merge recommended)
+python bench/tools/setup_bench.py --profile deepseek --scenario bench/scenarios/write_coherence.md
+# same scenario; report.py init with --profile deepseek, then fill steps/evaluation (merge recommended)
 ```
 
 2. **Render comparison:**

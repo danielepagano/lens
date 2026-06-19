@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import asyncio
+from asyncio import Event
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -13,14 +13,17 @@ if TYPE_CHECKING:
 import yaml
 
 from lens.core.address import NarrativeAddress
+from lens.core.annotations import parse_annotations, strip_markdown_comments
 from lens.core.context import (
     CrawlSpec,
     assemble_prompt_kb_edit,
     crawl,
     crawl_result_from_pins,
 )
+from lens.core.crawl_graph import CrawlComponent, ComponentSource
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
+from lens.core.llm import build_command_tools_bundle
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.project import find_git_root_from, find_project_root, is_dataset_root, resolve_address
 from lens.core.storage import Storage
@@ -370,17 +373,141 @@ def check_invalid_tags(tags: list[str]) -> list[str]:
     return kb.get_invalid_dot_tags(tags)
 
 
-def kb_edit(
+_KB_EDIT_ANN_ID = "ke"
+"""Annotation id used for KB edit claim tags — simple alphanumeric to match annotation regex."""
+
+
+# ---------------------------------------------------------------------------
+# KB edit helpers — annotation tags for the mutation pattern
+# ---------------------------------------------------------------------------
+
+
+def _kb_edit_open_tag(params: dict[str, Any] | None = None) -> str:
+    tag = f"[kb_edit:{_KB_EDIT_ANN_ID}"
+    if not params:
+        return f"{tag}]: #"
+    yaml_text = yaml.dump(params, default_flow_style=False, allow_unicode=True).rstrip("\n")
+    indented = re.sub(r"^", "    ", yaml_text, flags=re.MULTILINE)
+    return f"{tag}\n{indented}\n]: #"
+
+
+def _kb_edit_close_tag() -> str:
+    return f"[/kb_edit:{_KB_EDIT_ANN_ID}]: #"
+
+
+# ---------------------------------------------------------------------------
+# KB edit ref helper — parse narrative slice strings like `/chapter-1 10 30`
+# and return formatted ``REF[…]`` blocks for the crawl graph.
+# ---------------------------------------------------------------------------
+
+
+def format_kb_edit_ref(ref_str: str, project_root: Path) -> str | None:
+    """Parse a narrative slice ref and return a formatted REF block.
+
+    *ref_str* format: ``<address> <start_line> [<end_line>]``
+    e.g. ``/chapter-1 10 30``, ``/chapter-1 10`` (through end of file).
+    """
+    parts = ref_str.strip().split(None, 2)
+    if len(parts) < 2:
+        return None
+    addr_part = parts[0]
+    try:
+        start_line = int(parts[1])
+        end_line = int(parts[2]) if len(parts) >= 3 else None
+    except ValueError:
+        return None
+    try:
+        addr = NarrativeAddress.parse(addr_part)
+    except ValueError:
+        return None
+    if addr.cursor or start_line < 1:
+        return None
+    if end_line is not None and end_line < start_line:
+        return None
+    line_arg = start_line
+    line_end_arg = end_line or start_line
+    addr = NarrativeAddress(
+        narrative=addr.narrative,
+        key_path=addr.key_path,
+        line=line_arg,
+        line_end=line_end_arg,
+    )
+    try:
+        resolved = resolve_address(addr, project_root)
+    except ValueError:
+        return None
+    if resolved.cursor or resolved.narrative is None or resolved.line is None:
+        return None
+    node = resolved.to_node(project_root)
+    if not node.exists():
+        return None
+    lines = node.md_path().read_text(encoding="utf-8").split("\n")
+    actual_end = end_line if end_line is not None else len(lines)
+    if actual_end > len(lines):
+        return None
+    excerpt = "\n".join(lines[resolved.line - 1 : actual_end]).rstrip()
+    if not excerpt:
+        return None
+    # Strip markdown annotation comments so the ref behaves like crawl content
+    excerpt = strip_markdown_comments(excerpt).strip()
+    if not excerpt:
+        return None
+    # str(resolved) already includes @line:line_end; for open-ended slices
+    # the label shows just the start line since the end is implicit.
+    if end_line is not None:
+        label = str(resolved)
+    else:
+        path = "/".join(resolved.key_path) if resolved.key_path else ""
+        label = f"{resolved.narrative}/{path}@{resolved.line}" if path else f"{resolved.narrative}@{resolved.line}"
+    return f"REF[{label!r}]\n{excerpt}\n"
+
+
+# ---------------------------------------------------------------------------
+# Pending claim detection for kb_edit
+# ---------------------------------------------------------------------------
+
+
+def _has_pending_kb_edit(file_path: Path) -> bool:
+    if not file_path.exists():
+        return False
+    text = file_path.read_text(encoding="utf-8")
+    for ann in parse_annotations(text):
+        if ann.operator == "kb_edit" and ann.id == _KB_EDIT_ANN_ID and not ann.closing and not ann.self_closing:
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# KB edit — mutation-based AI operator
+# ---------------------------------------------------------------------------
+
+
+async def kb_edit(
     id: str,
     instruction: str,
     *,
+    project_root: Path | None = None,
     context_address: str | None = None,
     pins: list[str] | None = None,
     unpins: list[str] | None = None,
     include_template: bool = False,
     llm_id: str | None = None,
+    reasoning: str | None = None,
+    retry: bool = False,
     on_token: Callable[[str], None] | None = None,
+    cancel_event: Event | None = None,
 ) -> None:
+    """Edit or create a knowledge object using AI, with mutation pattern support.
+
+    Fresh calls wrap the current content in claim tags (staged), generate a
+    replacement via LLM, then propose it as an unstaged diff.  ``--retry``
+    rolls back the proposal and re-generates.
+
+    *context_address* can be:
+      - ``/chapter-1`` — full crawl with pin resolution from the node's ancestor chain
+      - ``/chapter-1 10`` — slice from line 10 to end of node (ref, no ancestor pins)
+      - ``/chapter-1 10 30`` — slice lines 10–30 (ref, no ancestor pins)
+    """
     if not instruction or not instruction.strip():
         raise LensException("instruction is required (AI instructions for what to write/change)")
 
@@ -391,7 +518,8 @@ def kb_edit(
     if key == "_template":
         raise LensException("kb edit targets object ids, not templates; use 'lens kb template'")
 
-    project_root = find_project_root()
+    if project_root is None:
+        project_root = find_project_root()
     if is_dataset_root(project_root) and context_address is not None:
         raise LensException("--context is not available in dataset mode")
 
@@ -405,23 +533,55 @@ def kb_edit(
         if local_storage is not None
         else KnowledgeStore.for_project(project_root)
     )
+    file_path = project_root / "knowledge" / type_name / f"{key}.md"
     pins_list = pins or []
     unpins_list = unpins or []
 
+    # -- resolve crawl context --
+    # context_address may include optional line bounds for slice mode
     if context_address is not None:
-        addr = NarrativeAddress.parse(context_address)
-        resolved = resolve_address(addr, project_root)
-        node = resolved.to_node(project_root)
-        if not node.exists():
-            raise LensException(f"context node does not exist: {context_address}")
-        crawl_result = crawl(
-            CrawlSpec.of(
-                node,
-                extra_pins=pins_list,
-                extra_unpins=unpins_list,
+        parts = context_address.strip().split(None, 2)
+        addr = NarrativeAddress.parse(parts[0])
+
+        if len(parts) >= 2:
+            # Slice mode: inject as reference, no ancestor pin resolution
+            if addr.cursor:
+                raise LensException("cannot use cursor in context slice")
+            ref_str = " ".join(parts)
+            ref_block = format_kb_edit_ref(ref_str, project_root)
+            if ref_block is None:
+                raise LensException(f"invalid context slice: {context_address}")
+
+            crawl_result = crawl_result_from_pins(
+                project_root,
+                pins_list,
+                unpins_list,
                 storage=local_storage,
             )
-        )
+            crawl_result.graph.add_component(
+                CrawlComponent(
+                    id="kb-edit-context-slice",
+                    kind="reference",
+                    text=ref_block,
+                    role="context",
+                    source=ComponentSource(kind="operator", identifier="context_slice"),
+                    priority=60,
+                )
+            )
+        else:
+            # Full crawl mode: resolve pins from ancestor chain
+            resolved_addr = resolve_address(addr, project_root)
+            node = resolved_addr.to_node(project_root)
+            if not node.exists():
+                raise LensException(f"context node does not exist: {context_address}")
+            crawl_result = crawl(
+                CrawlSpec.of(
+                    node,
+                    extra_pins=pins_list,
+                    extra_unpins=unpins_list,
+                    storage=local_storage,
+                )
+            )
     else:
         crawl_result = crawl_result_from_pins(
             project_root,
@@ -430,9 +590,41 @@ def kb_edit(
             storage=local_storage,
         )
 
-    objs = kb_store.get_objects([id])
-    existing_obj = objs.get(id)
-    existing_content = existing_obj.text if existing_obj else None
+    storage = Storage(find_git_root_from(project_root))
+
+    # -- mutation flow: fresh or retry --
+    if retry:
+        if not file_path.exists() or not _has_pending_kb_edit(file_path):
+            raise LensException(f"no pending kb_edit transaction to retry for '{id}'")
+        storage.rollback()
+        text = file_path.read_text(encoding="utf-8")
+        anns = parse_annotations(text)
+        open_ann = None
+        close_ann = None
+        for a in anns:
+            if a.operator == "kb_edit" and a.id == _KB_EDIT_ANN_ID:
+                if not a.closing and not a.self_closing:
+                    open_ann = a
+                elif a.closing:
+                    close_ann = a
+        if open_ann is None or close_ann is None:
+            raise LensException("kb_edit claim tags not found after rollback")
+        lines = text.split("\n")
+        existing_content = "\n".join(lines[open_ann.line_end : close_ann.line_start - 1])
+    else:
+        # fresh edit — get current content and wrap in claim tags
+        objs = kb_store.get_objects([id])
+        existing_obj = objs.get(id)
+        existing_content = existing_obj.text if existing_obj else None
+
+        open_tag = _kb_edit_open_tag()
+        close_tag = _kb_edit_close_tag()
+        if existing_content:
+            wrapped = f"{open_tag}\n{existing_content.rstrip()}\n\n{close_tag}\n"
+        else:
+            wrapped = f"{open_tag}\n\n{close_tag}\n"
+        storage.write_file(file_path, wrapped)
+        storage.stage_all()
 
     template_content: str | None = None
     if include_template or existing_content is None:
@@ -441,34 +633,67 @@ def kb_edit(
     messages = assemble_prompt_kb_edit(
         crawl_result,
         instruction,
-        existing_content=existing_content,
+        existing_content=(existing_content or None),
         template_content=template_content,
         include_template=include_template,
     )
 
-    async def _run() -> str:
-        async def _on_preview(s: str) -> None:
-            if on_token is not None:
-                on_token(s)
+    # -- run LLM --
+    async def _on_preview(s: str) -> None:
+        if on_token is not None:
+            on_token(s)
 
-        from lens.core.generation_artifacts import compose_for_operator
+    from lens.core.generation_artifacts import compose_for_operator
 
-        artifacts = await run_llm(
-            LlmRunRequest(
-                project_root=project_root,
-                messages=messages,
-                llm_id=llm_id,
-                on_token=_on_preview if on_token is not None else None,
-                on_llm_error=lambda e: LensException(str(e)),
-            ),
-        )
-        return compose_for_operator(artifacts, "kb_edit")
+    bundle = build_command_tools_bundle(project_root)
 
-    content = asyncio.run(_run())
-    if not content.strip():
+    art = await run_llm(
+        LlmRunRequest(
+            project_root=project_root,
+            messages=messages,
+            tools=bundle.tools,
+            command_tool_handlers=bundle.handlers,
+            llm_id=llm_id,
+            reasoning=reasoning,
+            on_token=_on_preview if on_token is not None else None,
+            on_llm_error=lambda e: LensException(str(e)),
+            cancel_event=cancel_event,
+        ),
+    )
+    new_content = compose_for_operator(art, "kb_edit")
+    if not new_content.strip():
         return
 
-    kb_store.store_object(id, content)
+    # -- propose mutation (unstaged diff) —
+    # Replace the claim-block (open tag + original + close tag) with just the new content
+    text = file_path.read_text(encoding="utf-8")
+    anns = parse_annotations(text)
+    open_ann = None
+    close_ann = None
+    for a in anns:
+        if a.operator == "kb_edit" and a.id == _KB_EDIT_ANN_ID:
+            if not a.closing and not a.self_closing:
+                open_ann = a
+            elif a.closing:
+                close_ann = a
+    if open_ann is not None and close_ann is not None:
+        lines = text.split("\n")
+        before = lines[: open_ann.line_start - 1]
+        after = lines[close_ann.line_end :]
+        rebuilt = _lines_prefix(before) + new_content.rstrip() + _lines_suffix(after)
+        storage.write_file(file_path, rebuilt)
+
+
+def _lines_prefix(before_lines: list[str]) -> str:
+    if not before_lines:
+        return ""
+    return "\n".join(before_lines) + "\n"
+
+
+def _lines_suffix(after_lines: list[str]) -> str:
+    if not after_lines:
+        return ""
+    return "\n" + "\n".join(after_lines)
 
 
 # ---------------------------------------------------------------------------
