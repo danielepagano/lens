@@ -5,6 +5,7 @@ import { stats } from '../../stores/stats'
 import { currentAddress } from '../../stores/document'
 import { currentProject } from '../../stores/project'
 import {
+  cliInputAppend,
   cliInputRequest,
   linePickSelection,
   mountCacheRefreshTrigger,
@@ -56,6 +57,17 @@ export function setupCliLifecycle(ctx: CliLifecycleCtx): () => void {
       if (value === null) return
       ctx.setInput(value)
       cliInputRequest.set(null)
+      void tick().then(() => {
+        ctx.updateCommandState()
+        ctx.focusCliInput()
+        ctx.resizeCliInput()
+      })
+    }),
+    cliInputAppend.subscribe((value) => {
+      if (value === null) return
+      const current = ctx.getInput()
+      ctx.setInput(current ? `${current} ${value}` : value)
+      cliInputAppend.set(null)
       void tick().then(() => {
         ctx.updateCommandState()
         ctx.focusCliInput()

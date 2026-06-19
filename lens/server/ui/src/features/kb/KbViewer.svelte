@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable max-lines */
   import { onMount } from 'svelte'
   import { selectedKbId, kbDetailId, treeRefreshTrigger } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
@@ -19,6 +20,7 @@
   import {
     attachKbMarkdownClicks,
     attachKbDetailClicks,
+    attachDiceRollClicks,
     kbViewerHashBase,
     openKbItemInHash,
     renderKbMarkdown,
@@ -26,7 +28,8 @@
     setKbDetailParam,
     toggleKbDetailsFlag,
   } from './kbViewerMarkdown'
-  import type { KbLinkHandler } from './kbViewerMarkdown'
+  import type { KbLinkHandler, DiceRollMode } from './kbViewerMarkdown'
+  import { cliInputAppend } from '../../stores/ui'
   import { attachKbEditableControls } from './kbEditableControls'
   import type { KbEditMeta } from './kbEditableControls'
   import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
@@ -53,9 +56,17 @@
 
   const viewerHashBase = $derived(kbViewerHashBase($currentProject, $currentAddress || ''))
   const kbDetails = $derived(item ? stripKbItemFrontMatter(item.content).frontMatter.kbDetails : false)
+  const diceRollMode = $derived.by<DiceRollMode | null>(() => {
+    if (!$stats?.dataset_configs) return null
+    for (const c of Object.values($stats.dataset_configs)) {
+      const v = c?.kb_dice_rolling
+      if (v === 'expressions' || v === 'implicit_d20') return v
+    }
+    return null
+  })
   const renderedResult = $derived(
     item
-      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject, true)
+      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject, true, diceRollMode)
       : { html: '', editMeta: [] as KbEditMeta[] },
   )
   const rendered = $derived(renderedResult.html)
@@ -91,6 +102,12 @@
       () => item?.content ?? '',
       (newContent) => saveInlineEdit(newContent),
     ),
+  )
+
+  const diceRollAttach = $derived(
+    diceRollMode
+      ? attachDiceRollClicks((expr) => { cliInputAppend.set(`@roll ${expr} `) })
+      : () => {},
   )
 
   function saveInlineEdit(newContent: string) {
@@ -437,38 +454,38 @@
       <div class="kb-viewer-split" class:kb-viewer-split--dragging={dragging}>
         <div class="kb-viewer-split-pane kb-viewer-split-pane--main" style="flex:{splitRatio}">
           <article class="content kb-rendered">
-            <div class="kb-rendered-md" {@attach markdownClickAttach} {@attach editableControlsAttach}>
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
-              {@html rendered}
-            </div>
-          </article>
-        </div>
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-        <div
-          class="kb-viewer-split-divider"
-          role="separator"
-          tabindex="0"
-          onmousedown={handleDividerMouseDown}
-          ontouchstart={handleDividerTouchStart}
-          onkeydown={(e) => {
-            if (e.key === 'ArrowUp') splitRatio = Math.max(0.2, splitRatio - 0.02)
-            if (e.key === 'ArrowDown') splitRatio = Math.min(0.8, splitRatio + 0.02)
-          }}
-        >
-          <span class="kb-viewer-split-divider-grip"></span>
-        </div>
-        <div class="kb-viewer-split-pane kb-viewer-split-pane--detail" style="flex:{1 - splitRatio}">
-          <KbDetailView />
-        </div>
+          <div class="kb-rendered-md" {@attach markdownClickAttach} {@attach editableControlsAttach} {@attach diceRollAttach}>
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
+            {@html rendered}
+          </div>
+        </article>
       </div>
-    {:else}
-      <article class="content kb-rendered">
-        <div class="kb-rendered-md" {@attach markdownClickAttach} {@attach editableControlsAttach}>
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
-          {@html rendered}
-        </div>
-      </article>
-    {/if}
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+      <div
+        class="kb-viewer-split-divider"
+        role="separator"
+        tabindex="0"
+        onmousedown={handleDividerMouseDown}
+        ontouchstart={handleDividerTouchStart}
+        onkeydown={(e) => {
+          if (e.key === 'ArrowUp') splitRatio = Math.max(0.2, splitRatio - 0.02)
+          if (e.key === 'ArrowDown') splitRatio = Math.min(0.8, splitRatio + 0.02)
+        }}
+      >
+        <span class="kb-viewer-split-divider-grip"></span>
+      </div>
+      <div class="kb-viewer-split-pane kb-viewer-split-pane--detail" style="flex:{1 - splitRatio}">
+        <KbDetailView />
+      </div>
+    </div>
+  {:else}
+    <article class="content kb-rendered">
+      <div class="kb-rendered-md" {@attach markdownClickAttach} {@attach editableControlsAttach} {@attach diceRollAttach}>
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
+        {@html rendered}
+      </div>
+    </article>
+  {/if}
 
     {#if !editMode}
       <KbViewerMetaSection

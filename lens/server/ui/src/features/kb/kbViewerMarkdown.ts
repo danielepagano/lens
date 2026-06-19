@@ -13,16 +13,79 @@ import {
 
 const md = createMarkdownRenderer({ openLinksInNewTab: true })
 
+export type DiceRollMode = 'expressions' | 'implicit_d20'
+
+function escapeHtmlText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function escapeHtmlAttr(s: string): string {
+  return escapeHtmlText(s)
+}
+
+export function preprocessDiceExpressions(mdText: string, mode: DiceRollMode | null | undefined): string {
+  if (!mode) return mdText
+
+  const parts: string[] = [
+    String.raw`\((\b\d+d\d+(?:\s*[+-]\s*\d+)?\b)\)`,
+    String.raw`(\b\d+d\d+(?:\s*[+-]\s*\d+)?\b)`,
+  ]
+  if (mode === 'implicit_d20') {
+    parts.push(
+      String.raw`\((?<!\w)([+-]\s*\d+)(?!\s*\d+d)\)`,
+      String.raw`(?<!\w)([+-]\s*\d+)(?!\s*\d+d)`,
+    )
+  }
+  const re = new RegExp(parts.join('|'), 'g')
+
+  function makeDiceBtn(text: string, roll: string): string {
+    const stripped = roll.replace(/\s+/g, '')
+    return `<button type="button" class="dice-roll-btn" data-roll="${escapeHtmlAttr(stripped)}">${escapeHtmlText(text)}</button>`
+  }
+
+  function makeImplicitBtn(text: string): string {
+    const normalized = text.replace(/\s+/g, '')
+    return makeDiceBtn(text, `d20${normalized}`)
+  }
+
+  return mdText.replace(re, (match, g1, g2, g3, g4) => {
+    if (g1 !== undefined) return makeDiceBtn(g1, g1)
+    if (g2 !== undefined) return makeDiceBtn(g2, g2)
+    if (g3 !== undefined) return makeImplicitBtn(g3)
+    if (g4 !== undefined) return makeImplicitBtn(g4)
+    return match
+  })
+}
+
+export function createDiceRollClickHandler(onRoll: (expr: string) => void): (event: MouseEvent) => void {
+  return (event: MouseEvent) => {
+    const btn = (event.target as HTMLElement).closest('[data-roll]')
+    if (!btn) return
+    event.preventDefault()
+    const expr = btn.getAttribute('data-roll')
+    if (expr) onRoll(expr)
+  }
+}
+
+export function attachDiceRollClicks(onRoll: (expr: string) => void): Attachment<HTMLDivElement> {
+  return (element) => {
+    const handler = createDiceRollClickHandler(onRoll)
+    element.addEventListener('click', handler)
+    return () => element.removeEventListener('click', handler)
+  }
+}
+
 export function renderKbMarkdown(
   content: string,
   rememberPinsAtCursor: Readonly<Record<string, string[]>> | null | undefined,
   projectSlug: string | null,
   enableEditableControls?: boolean,
+  diceRollMode?: DiceRollMode | null,
 ): { html: string; editMeta: KbEditMeta[] } {
   const { body } = stripKbItemFrontMatter(content)
   const bodyOffset = content.indexOf(body)
 
-  let processed = body
+  let processed = preprocessDiceExpressions(body, diceRollMode)
   let editMeta: KbEditMeta[] = []
 
   if (enableEditableControls) {

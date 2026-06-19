@@ -30,6 +30,7 @@ const MINIMAL_STATS: Stats = {
   tts_available: false,
   active_session_operator: null,
   transaction: null,
+  dataset_configs: {},
 }
 
 beforeAll(() => {

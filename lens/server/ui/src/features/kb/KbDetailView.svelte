@@ -7,18 +7,29 @@
   import type { KbItemDetail } from '../../services/api'
   import {
     attachKbDetailClicks,
+    attachDiceRollClicks,
     renderKbMarkdown,
     setKbDetailParam,
   } from './kbViewerMarkdown'
-  import type { KbLinkHandler } from './kbViewerMarkdown'
+  import type { KbLinkHandler, DiceRollMode } from './kbViewerMarkdown'
+  import { cliInputAppend } from '../../stores/ui'
 
   let item = $state.raw<KbItemDetail | null>(null)
   let loadError = $state('')
   let activeLoadSeq = 0
 
+  const diceRollMode = $derived.by<DiceRollMode | null>(() => {
+    if (!$stats?.dataset_configs) return null
+    for (const config of Object.values($stats.dataset_configs)) {
+      const val = config?.kb_dice_rolling
+      if (val === 'expressions' || val === 'implicit_d20') return val
+    }
+    return null
+  })
+
   const rendered = $derived(
     item
-      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject).html
+      ? renderKbMarkdown(item.content, $stats?.remember_pins_at_cursor ?? undefined, $currentProject, false, diceRollMode).html
       : '',
   )
 
@@ -28,6 +39,12 @@
   }
 
   const markdownClickAttach = $derived(attachKbDetailClicks(handler))
+
+  const diceRollAttach = $derived(
+    diceRollMode
+      ? attachDiceRollClicks((expr) => { cliInputAppend.set(`@roll ${expr} `) })
+      : () => {},
+  )
 
   async function loadItem(id: string, loadSeq: number) {
     loadError = ''
@@ -78,7 +95,7 @@
   </div>
   {#if item && !loadError}
     <article class="content kb-rendered kb-detail-body">
-      <div class="kb-rendered-md" {@attach markdownClickAttach}>
+      <div class="kb-rendered-md" {@attach markdownClickAttach} {@attach diceRollAttach}>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -- markdown renderer -->
         {@html rendered}
       </div>

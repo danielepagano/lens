@@ -1,7 +1,7 @@
 """Dice roll substitution for prompts.
 
 Replaces ``@roll <expr>`` and ``@roll(<expr>)`` tokens in a prompt string
-with ``rolled <expr>=<result>`` (or ``calculated …`` when the expression
+with ``_rolled <expr>=<result>_`` (or ``calculated …`` when the expression
 contains no dice notation — no ``d``) before the prompt is sent to the LLM.
 The dice library (https://github.com/borntyping/python-dice) evaluates the expression.
 
@@ -69,7 +69,7 @@ def substitute_rolls(prompt: str, *, rng: random.Random | None = None) -> str:
                 if "d" not in expr.lower()
                 else "rolled"
             )
-            return f"{verb} {expr}={result}"
+            return f"_{verb} {expr}={result}_"
         except Exception as e:
             errors.append(f"@roll {expr!r}: {e}")
             return m.group(0)  # leave unchanged so we can report later
