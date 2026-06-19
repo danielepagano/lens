@@ -18,7 +18,7 @@
   import { getStats, getNode, getProjects, getPlayback, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
-  import { kbPanelOpen, selectedKbId, kbFilters, inlineEditMode, editorFocused, treeRefreshTrigger } from './stores/ui'
+  import { kbPanelOpen, selectedKbId, kbDetailId, kbFilters, inlineEditMode, editorFocused, treeRefreshTrigger } from './stores/ui'
   import { currentProject, availableProjects } from './stores/project'
   import { syncUrlHashFromWindow } from './stores/urlHash'
   import { parsedHash } from './stores/parsedHash'
@@ -56,34 +56,44 @@
   function hashKbParam(): string | null {
     return get(kbPanelOpen) ? get(selectedKbId) : null
   }
+  function hashKbDetailParam(): string | null {
+    return get(kbPanelOpen) ? get(kbDetailId) : null
+  }
 
   interface ParsedHash {
     project: string | null
     path: string
     kb: string | null
+    kbDetail: string | null
   }
 
   function parseHash(hash: string): ParsedHash {
-    if (!hash || hash === '#') return { project: null, path: '', kb: null }
+    if (!hash || hash === '#') return { project: null, path: '', kb: null, kbDetail: null }
     const raw = decodeURIComponent(hash.slice(1))
     const qIndex = raw.indexOf('?')
     const fullPath = qIndex === -1 ? raw : raw.slice(0, qIndex)
-    const kb = qIndex === -1 ? null : new URLSearchParams(raw.slice(qIndex + 1)).get('kb')
+    const params = qIndex === -1 ? new URLSearchParams() : new URLSearchParams(raw.slice(qIndex + 1))
+    const kb = params.get('kb')
+    const kbDetail = params.get('kb-detail')
     const stripped = fullPath.startsWith('/') ? fullPath.slice(1) : fullPath
     const slashIdx = stripped.indexOf('/')
-    if (slashIdx === -1) return { project: stripped || null, path: '', kb }
-    return { project: stripped.slice(0, slashIdx), path: stripped.slice(slashIdx + 1), kb }
+    if (slashIdx === -1) return { project: stripped || null, path: '', kb, kbDetail }
+    return { project: stripped.slice(0, slashIdx), path: stripped.slice(slashIdx + 1), kb, kbDetail }
   }
 
-  function buildHash(path: string, kb: string | null): string {
+  function buildHash(path: string, kb: string | null, kbDetail: string | null = null): string {
     const slug = get(currentProject) ?? ''
     const base = path ? `${slug}/${path}` : slug
-    return kb ? `${base}?kb=${encodeURIComponent(kb)}` : base
+    if (!kb && !kbDetail) return base
+    const params = new URLSearchParams()
+    if (kb) params.set('kb', kb)
+    if (kbDetail) params.set('kb-detail', kbDetail)
+    return `${base}?${params.toString()}`
   }
 
   function _updateUrlKb(kb: string | null) {
     const currentPath = get(currentAddress) || ''
-    const newHash = buildHash(currentPath, kb)
+    const newHash = buildHash(currentPath, kb, hashKbDetailParam())
     if (window.location.hash.slice(1) !== newHash) {
       window.location.hash = newHash
     }
@@ -96,7 +106,7 @@
       const data = await getNode(addr)
       currentAddress.set(data.address)
       nodeContent.set(data.content)
-      window.location.hash = buildHash(data.address, hashKbParam())
+      window.location.hash = buildHash(data.address, hashKbParam(), hashKbDetailParam())
     } catch (e) {
       console.error('Navigation failed:', e)
     }
@@ -105,7 +115,7 @@
   function syncLocation(addr: string): void {
     if (!addr) return
     inlineEditMode.set(null)
-    window.location.hash = buildHash(addr, hashKbParam())
+    window.location.hash = buildHash(addr, hashKbParam(), hashKbDetailParam())
   }
 
   async function switchProject(slug: string): Promise<void> {
@@ -194,35 +204,40 @@
     }
   }
 
-  function applyKbFromUrl(kb: string | null) {
+  function applyKbFromUrl(kb: string | null, kbDetail: string | null) {
     const currentKb = get(selectedKbId)
     const currentOpen = get(kbPanelOpen)
 
     if (kb) {
-      if (kb === currentKb && currentOpen) return
+      if (kb === currentKb && currentOpen) {
+        if (kbDetail !== get(kbDetailId)) kbDetailId.set(kbDetail)
+        return
+      }
       const dotIndex = kb.indexOf('.')
       const type = dotIndex > 0 ? kb.slice(0, dotIndex) : ''
       kbFilters.set({ type, tags: [] })
       selectedKbId.set(kb)
+      kbDetailId.set(kbDetail)
       kbPanelOpen.set(true)
     } else {
       if (!currentOpen) return
       kbPanelOpen.set(false)
+      kbDetailId.set(null)
     }
   }
 
   async function handleHashChange() {
     syncUrlHashFromWindow()
-    const { project, path, kb } = parseHash(window.location.hash)
+    const { project, path, kb, kbDetail } = parseHash(window.location.hash)
     const currentSlug = get(currentProject)
     if (project && project !== currentSlug) {
       await switchProject(project)
-      applyKbFromUrl(kb)
+      applyKbFromUrl(kb, kbDetail)
       return
     }
     const addr = get(currentAddress)
     if (path && path !== addr) navigate(path)
-    applyKbFromUrl(kb)
+    applyKbFromUrl(kb, kbDetail)
   }
 
   onMount(async () => {
@@ -236,7 +251,7 @@
       availableProjects.set(slugs)
 
       // 2. Pick project from hash or default to first
-      const { project: hashProject, path, kb } = parseHash(window.location.hash)
+      const { project: hashProject, path, kb, kbDetail } = parseHash(window.location.hash)
       const selectedSlug = (hashProject && slugs.includes(hashProject))
         ? hashProject : (slugs[0] ?? null)
       if (!selectedSlug) { console.error('No projects available'); return }
@@ -246,7 +261,12 @@
       const initialStats = await getStats()
       applyStats(initialStats)
 
-      // 4. Navigate
+      // 4. Apply KB from URL before any navigation so that URL-changing writes
+      //    (navigate, hashAfterNodeResolved, etc.) preserve the kb/kb-detail
+      //    params via hashKbParam() / hashKbDetailParam().
+      applyKbFromUrl(kb, kbDetail)
+
+      // 5. Navigate
       if (path) {
         try {
           inlineEditMode.set(null)
@@ -263,7 +283,6 @@
       } else {
         await navigate(initialStats.cursor || '')
       }
-      applyKbFromUrl(kb)
     } catch (e) { console.error('Init failed:', e) }
   })
 </script>

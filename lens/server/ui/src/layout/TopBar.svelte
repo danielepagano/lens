@@ -109,7 +109,13 @@
       window.location.hash = slug && addr ? `${slug}/${addr}` : addr
     } else {
       kbPanelOpen.set(true)
-      if (!get(selectedKbId)) {
+      const slug = get(currentProject) ?? ''
+      const addr = get(currentAddress) || ''
+      const kb = get(selectedKbId)
+      if (kb && slug && addr) {
+        window.location.hash = `${slug}/${addr}?kb=${encodeURIComponent(kb)}`
+      }
+      if (!kb) {
         treeOpen.set(true)
       }
     }

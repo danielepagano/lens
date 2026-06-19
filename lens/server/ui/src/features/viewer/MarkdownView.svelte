@@ -5,6 +5,7 @@
   import {
     preprocessAnnotations,
     preprocessBlockquotePills,
+    preprocessKbMarkdownLinks,
     preprocessKbReferencePills,
     preprocessThinkingTags,
     createMarkdownRenderer,
@@ -61,7 +62,9 @@
         preprocessThinkingTags(
           preprocessAnnotations(
             preprocessKbReferencePills(
-              preprocessBlockquotePills($nodeContent),
+              preprocessKbMarkdownLinks(
+                preprocessBlockquotePills($nodeContent),
+              ),
               rememberPins,
             ),
             $currentAddress,
@@ -100,6 +103,7 @@
   async function handleMarkdownClick(e: MouseEvent) {
     const pinEl = (e.target as HTMLElement).closest('[data-kb-open-id]')
     if (pinEl) {
+      e.preventDefault()
       const id = pinEl.getAttribute('data-kb-open-id')
       if (id) openKbItem(id)
       return

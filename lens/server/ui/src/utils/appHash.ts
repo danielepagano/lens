@@ -5,6 +5,7 @@ export interface ParsedAppHash {
   project: string | null
   path: string
   kb: string | null
+  kbDetail: string | null
   vn: boolean
   /** Scene step: user-visible beat index (text / orphan image), not raw `PlaybackItem` index. */
   vn_i: number
@@ -86,6 +87,8 @@ export function parseAppHash(hash: string): ParsedAppHash {
   const path = slashIdx === -1 ? '' : stripped.slice(slashIdx + 1)
 
   const kb = query.get('kb')
+  const kbDetailRaw = query.get('kb-detail')
+  const kbDetail = kbDetailRaw && kbDetailRaw.length > 0 ? kbDetailRaw : null
   const vn = query.get('vn') === '1'
   const vn_i_explicit = query.has('vn_i')
   const vn_i_raw = query.get('vn_i')
@@ -102,6 +105,7 @@ export function parseAppHash(hash: string): ParsedAppHash {
     project,
     path,
     kb: kb && kb.length > 0 ? kb : null,
+    kbDetail,
     vn,
     vn_i,
     vn_i_explicit,
@@ -112,6 +116,7 @@ export function parseAppHash(hash: string): ParsedAppHash {
 
 export interface BuildAppHashOpts {
   kb?: string | null
+  kbDetail?: string | null
   vn?: boolean
   vn_i?: number
   vnTts?: VnTtsSettings
@@ -133,6 +138,7 @@ export function buildAppHash(slug: string, narrativePath: string, opts: BuildApp
     }
   } else {
     if (opts.kb) params.set('kb', opts.kb)
+    if (opts.kbDetail) params.set('kb-detail', opts.kbDetail)
   }
 
   const q = params.toString()
@@ -158,6 +164,8 @@ export function hashAfterNodeResolved(
       vnTts: parsed.vnTts,
     })
   }
-  const k = kb && kb.length > 0 ? kb : undefined
-  return buildAppHash(slug, resolvedAddress, { kb: k })
+  const parsedKb = parsed.kb
+  const parsedKbDetail = parsed.kbDetail
+  const k = (kb && kb.length > 0) ? kb : parsedKb
+  return buildAppHash(slug, resolvedAddress, { kb: k, kbDetail: parsedKbDetail })
 }

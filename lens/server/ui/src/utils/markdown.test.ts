@@ -12,6 +12,7 @@ import {
   prefixMountUrlsInRenderedHtml,
   parseChatDividerParams,
   preprocessAnnotations,
+  preprocessKbMarkdownLinks,
   preprocessThinkingTags,
   type NodeTransactionOverlay,
 } from './markdown'
@@ -209,6 +210,71 @@ After`
     expect(rendered).toContain('<ol>')
     expect(rendered).toContain('<li>first</li>')
     expect(rendered).not.toContain('<thinking>')
+  })
+})
+
+describe('preprocessKbMarkdownLinks', () => {
+  it('replaces [text](kb/type.key) with a KB reference link', () => {
+    const input = 'See [Frida](kb/character.frida) for details.'
+    const result = preprocessKbMarkdownLinks(input)
+    expect(result).toContain('data-kb-open-id="character.frida"')
+    expect(result).toContain('Frida')
+    expect(result).not.toContain('[Frida](kb/character.frida)')
+  })
+
+  it('preserves ordinary markdown links', () => {
+    const input = 'Visit [example](https://example.com) and [local](/page).'
+    const result = preprocessKbMarkdownLinks(input)
+    expect(result).toBe(input)
+  })
+
+  it('skips links inside fenced code blocks', () => {
+    const input = '```\n[secret](kb/npc.hidden)\n```'
+    const result = preprocessKbMarkdownLinks(input)
+    expect(result).toBe(input)
+  })
+
+  it('handles multiple kb links on the same line', () => {
+    const input = '[Amy](kb/npc.amy) and [Bob](kb/npc.bob) are here.'
+    const result = preprocessKbMarkdownLinks(input)
+    expect(result).toContain('data-kb-open-id="npc.amy"')
+    expect(result).toContain('data-kb-open-id="npc.bob"')
+    expect(result).toContain('Amy')
+    expect(result).toContain('Bob')
+  })
+
+  it('escapes HTML in link text and KB id', () => {
+    const input = '[<script>](kb/npc.xss)'
+    const result = preprocessKbMarkdownLinks(input)
+    expect(result).not.toContain('<script>')
+    expect(result).toContain('&lt;script&gt;')
+  })
+
+  it('renders via markdown-it as a link element', () => {
+    const md = createMarkdownRenderer()
+    const input = '[Frida](kb/character.frida)'
+    const processed = preprocessKbMarkdownLinks(input)
+    const html = md.render(processed)
+    expect(html).toContain('data-kb-open-id="character.frida"')
+    expect(html).toContain('Frida')
+    // markdown-it with html:true passes through the anchor
+    expect(html).toContain('<a ')
+  })
+
+  it('consumes [@type.key](kb/type.key) before @-pattern processing', () => {
+    // This pattern would be broken by preprocessKbReferencePills if not
+    // consumed first by preprocessKbMarkdownLinks.
+    const input = '[@character.frida](kb/character.frida)'
+    const processed = preprocessKbMarkdownLinks(input)
+    // The @ should be inside the link text, not a standalone KB ref
+    expect(processed).toContain('>@character.frida<')
+    expect(processed).toContain('data-kb-open-id="character.frida"')
+  })
+
+  it('skips links in fenced code blocks with tilde fences', () => {
+    const input = '~~~\n[secret](kb/npc.hidden)\n~~~'
+    const result = preprocessKbMarkdownLinks(input)
+    expect(result).toBe(input)
   })
 })
 

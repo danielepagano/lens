@@ -7,10 +7,12 @@
     renameId: string
     copyTargetId: string
     actionError: string
+    kbDetails: boolean
     onToggleMenu: () => void
     onDelete: () => void
     onRename: () => void
     onCopy: () => void
+    onToggleDetail: () => void
     onCancelDelete: () => void
     onCancelRename: () => void
     onCancelCopy: () => void
@@ -30,10 +32,12 @@
     renameId,
     copyTargetId,
     actionError,
+    kbDetails,
     onToggleMenu,
     onDelete,
     onRename,
     onCopy,
+    onToggleDetail,
     onCancelDelete,
     onCancelRename,
     onCancelCopy,
@@ -88,6 +92,9 @@
         </div>
       {:else}
         <button type="button" role="menuitem" onclick={onStartDeleteConfirm}>Delete</button>
+        <button type="button" role="menuitem" onclick={onToggleDetail}>
+          Detail View: {kbDetails ? 'On' : 'Off'}
+        </button>
         <button type="button" role="menuitem" onclick={onStartRename}>Rename</button>
         <button type="button" role="menuitem" onclick={onStartCopy}>Copy</button>
       {/if}

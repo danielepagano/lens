@@ -2180,6 +2180,112 @@ ul.kb-item-list {
   overflow-y: auto;
 }
 
+/* ---- KB Split Pane ---- */
+
+.kb-viewer-split {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-viewer-split-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-viewer-split-pane--main {
+  border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.kb-viewer-split-divider {
+  height: 6px;
+  cursor: row-resize;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  position: relative;
+  z-index: 10;
+  touch-action: none;
+}
+
+.kb-viewer-split-divider:hover,
+.kb-viewer-split--dragging .kb-viewer-split-divider {
+  background: var(--pico-primary-background);
+  opacity: 0.3;
+}
+
+.kb-viewer-split-divider-grip {
+  width: 1.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--pico-muted-border-color);
+}
+
+.kb-viewer-split-divider:hover .kb-viewer-split-divider-grip,
+.kb-viewer-split--dragging .kb-viewer-split-divider-grip {
+  background: var(--pico-primary-background);
+}
+
+.kb-viewer-split--dragging {
+  user-select: none;
+  cursor: row-resize;
+}
+
+/* ---- KB Detail View ---- */
+
+.kb-detail-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kb-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  flex-shrink: 0;
+}
+
+.kb-detail-id {
+  font-weight: 600;
+  font-size: 0.82rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kb-detail-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--pico-muted-color);
+  padding: 0 0.25rem;
+  flex-shrink: 0;
+}
+
+.kb-detail-close:hover {
+  color: var(--pico-color);
+}
+
+.kb-detail-body {
+  padding: 0.5rem 0.75rem;
+}
+
 .kb-meta-section {
   border-top: 1px solid var(--pico-muted-border-color);
   flex-shrink: 0;
@@ -2257,6 +2363,119 @@ ul.kb-item-list {
   color: var(--pico-muted-color);
   cursor: pointer;
   white-space: nowrap;
+}
+
+/* ---- KB Editable Controls ---- */
+
+.kb-edit-checkbox {
+  width: 1rem;
+  height: 1rem;
+  margin: 0 0.15rem;
+  cursor: pointer;
+  vertical-align: middle;
+  accent-color: var(--pico-primary-background);
+}
+
+.kb-edit-counter {
+  all: unset;
+  display: inline-flex;
+  align-items: stretch;
+  vertical-align: middle;
+  white-space: nowrap;
+  margin: 0 0.1rem;
+  border-width: 1px;
+  border-style: dotted;
+}
+
+.kb-edit-counter .kb-edit-counter-max {
+  font-size: 0.8rem;
+  color: var(--pico-muted-color);
+  opacity: 0.7;
+  padding-top: 4px;
+  margin-right: 0.25rem;
+}
+
+.kb-edit-counter input[role="spinbutton"] {
+  all: unset;
+  width: 2rem;
+  padding: 0 0.2rem;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  height: 1.25rem;
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+  text-align: center;
+  outline: none;
+  border: 1px solid var(--pico-muted-border-color);
+  border-left: none;
+  border-right: none;
+  box-sizing: content-box;
+}
+
+.kb-edit-counter-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  min-height: 1.25rem;
+  font-size: 0.7rem;
+  line-height: 1;
+  border: 1px solid var(--pico-muted-border-color);
+  background: var(--pico-card-background-color, var(--pico-background-color));
+  color: var(--pico-color);
+  cursor: pointer;
+  padding: 0 0.1rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.kb-edit-counter-btn--dec {
+  border-radius: 3px 0 0 3px;
+}
+
+.kb-edit-counter-btn--inc {
+  border-radius: 0 3px 3px 0;
+  border-left: none;
+}
+
+.kb-edit-counter-btn:active {
+  background: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+  border-color: var(--pico-primary-background);
+}
+
+.kb-edit-counter-btn:active {
+  background: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+  border-color: var(--pico-primary-background);
+}
+
+.kb-edit-notes {
+  display: block;
+  font-family: ui-monospace, monospace;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  padding: 0.1rem 0.3rem;
+  margin: 0.1rem 0;
+  min-height: 1.35rem;
+  max-height: 3.9rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 2px;
+  background: var(--pico-background-color);
+  color: var(--pico-color);
+  resize: vertical;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.kb-edit-notes:focus,
+.kb-edit-counter input[role="spinbutton"]:focus {
+  outline: none;
+  border-color: var(--pico-primary-background);
 }
 
 .kb-meta-small-btn:hover {

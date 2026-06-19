@@ -31,6 +31,7 @@ export const transactionResult = writable<TransactionResultState | null>(null)
 
 // KB state
 export const selectedKbId = writable<string | null>(null)
+export const kbDetailId = writable<string | null>(null)
 
 // Line pick mode: active when CLI is waiting for a line number input
 export interface LinePickState {

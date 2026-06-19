@@ -717,6 +717,13 @@ export const saveKbItem = withStats((id: string, content: string): Promise<{ id:
   put(projectPath(`/kb/item/${id}`), { content }) as Promise<{ id: string }>
 )
 
+/** Like `saveKbItem` but skips the post-mutation stats refresh.
+ *  Used for inline editable controls (checkboxes, counters, notes) where
+ *  stats-triggered re-render would destroy the focused input element. */
+export async function saveKbItemSilent(id: string, content: string): Promise<{ id: string }> {
+  return put(projectPath(`/kb/item/${id}`), { content }) as Promise<{ id: string }>
+}
+
 export const createKbItem = withStats((
   id: string,
   content?: string,
