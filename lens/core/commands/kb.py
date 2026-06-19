@@ -23,6 +23,7 @@ from lens.core.context import (
 from lens.core.crawl_graph import CrawlComponent, ComponentSource
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
+from lens.core.llm import build_command_tools_bundle
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.project import find_git_root_from, find_project_root, is_dataset_root, resolve_address
 from lens.core.storage import Storage
@@ -642,10 +643,14 @@ async def kb_edit(
 
     from lens.core.generation_artifacts import compose_for_operator
 
+    bundle = build_command_tools_bundle(project_root)
+
     art = await run_llm(
         LlmRunRequest(
             project_root=project_root,
             messages=messages,
+            tools=bundle.tools,
+            command_tool_handlers=bundle.handlers,
             llm_id=llm_id,
             reasoning=reasoning,
             on_token=_on_preview if on_token is not None else None,
