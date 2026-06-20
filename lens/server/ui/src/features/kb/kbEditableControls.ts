@@ -267,6 +267,9 @@ export function attachKbEditableControls(
       if (target.getAttribute('data-kb-edit-action')) {
         handleEvent(e)
       }
+      if (target.tagName === 'INPUT' && target.getAttribute('role') === 'spinbutton') {
+        ;(target as HTMLInputElement).select()
+      }
     }
 
     element.addEventListener('change', handleEvent)

@@ -5,6 +5,7 @@
     treeOpen,
     kbPanelOpen,
     selectedKbId,
+    kbDetailId,
     inlineEditMode,
     inlineEditConfirmTrigger,
     inlineEditCancelTrigger,
@@ -112,8 +113,13 @@
       const slug = get(currentProject) ?? ''
       const addr = get(currentAddress) || ''
       const kb = get(selectedKbId)
+      const detail = get(kbDetailId)
       if (kb && slug && addr) {
-        window.location.hash = `${slug}/${addr}?kb=${encodeURIComponent(kb)}`
+        let hash = `${slug}/${addr}?kb=${encodeURIComponent(kb)}`
+        if (detail) {
+          hash += `&kb-detail=${encodeURIComponent(detail)}`
+        }
+        window.location.hash = hash
       }
       if (!kb) {
         treeOpen.set(true)

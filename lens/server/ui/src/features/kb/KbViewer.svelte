@@ -112,7 +112,7 @@
 
   function saveInlineEdit(newContent: string) {
     if (!item) return
-    item.content = newContent
+    item = { ...item, content: newContent }
     saveKbItemSilent(item.id, newContent)
   }
 
