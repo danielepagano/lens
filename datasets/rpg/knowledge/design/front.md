@@ -5,7 +5,7 @@ This is the module for keeping pressure alive in the campaign. Use it when the s
 The `front._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Assess the current state before creating or changing anything.
 
 Start by getting your footing:
-- Unless fronts were already pinned for you, fetch them. If a timeline is pinned, always use `kb_with_tag` with the tag as that timeline id and object type front.
+- Read the timeline object. Its tags list the active front IDs. The timeline and all tagged fronts are already in RELEVANT KNOWLEDGE.
 - Fetch PC lore: use `kb_get` for each PC's `lore.<name>` object: you need their depth (wounds, flaws, desires, core questions) to make fronts that matter
 - Read the narrative context: what has happened recently? What loose threads exist? Ensure fronts are updated based on what already happened.
 - If this is an on-demand session (not an `advance`), ask the user if goal unclear: what do they need? New content? Updates? Something specific?
@@ -13,7 +13,7 @@ Start by getting your footing:
 Then groom what already exists before inventing more:
 - Has the situation changed? Update phases, reflect PC actions, note what's resolved
 - Should it spawn a DERIVED front? A derived front inherits the original's secret seed (see CREATING FRONTS below) and represents escalation or complication — the same underlying tension manifesting in a new form
-- Is it resolved or stale? Retire it: note the outcome and archive. You can't delete KB items: use `remove-tags` in a KB front-matter only item (works like `tags` but in reverse) to detach it from the timeline.
+- Is it resolved or stale? Close it: note the outcome. Emit a `kb` fenced code block with `id: timeline.<name>`, `remove-tags: [front.<name>]`, and empty body — this removes the front from the timeline's active set without altering the front's content. The resolved front still exists in the KB for reference.
 - Does it need new supporting objects? See below for rules.
 
 Aim for 2-4 active fronts at any time. Fewer means the story lacks tension; more fragments attention.
@@ -58,21 +58,56 @@ Fronts may need objects that do not exist yet:
 IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest to the user that you want to introduce an NPC, faction, or location, and have them decide whether to accept and load the appropriate module for the task. If they decline, just add necessary character and location details in the encounter itself, not other objects.  
 
 Before closing, do a quick pressure check:
-- List all fronts created/updated/retired with their IDs
+- List all fronts created/updated/closed with their IDs
 - Are 2-4 fronts active?
 - Do active fronts collectively challenge multiple PCs? (Check against their core questions)
-- Are timeline tags correct?
+- Are the timeline's tags correct (active fronts present, closed fronts absent)?
 
-TIMELINE AWARENESS:
-Fronts belong to timelines. If a timeline is pinned, only groom fronts tagged to that timeline. If no timeline is pinned, work with all active fronts. When creating new fronts, tag them to the appropriate timeline. Un-tag them from the timeline to retire them.
+TIMELINE AWARENESS — CRITICAL:
+The timeline object's tags are what keep fronts active. Your job is to manage the tags: when you create a front or close one, update the timeline's tag set. That's it.
+
+**Rule**: `advance` updates front **content** (clocks, phases, resolution notes) but NEVER changes the tag set. You are the lifecycle operator — only you add or remove tags.
+
+When creating a new front, you MUST do TWO things:
+1. Emit a `kb` fenced code block for the front object itself (with full content, three layers, etc.)
+2. Emit a `kb` fenced code block with ``id: timeline.<name>``, ``tags: [front.<name>]``, and EMPTY body to add the front to the timeline's active set
+
+   ```kb
+   ---
+   id: timeline.epic
+   tags: [front.goblins]
+   ---
+   ```
+
+   (Empty body + tags adds the tags without altering the timeline's day counter.)
+
+To close a front:
+1. Emit a `kb` fenced code block with ``id: timeline.<name>``, ``remove-tags: [front.<name>]``, empty body
+
+   ```kb
+   ---
+   id: timeline.epic
+   remove-tags: [front.goblins]
+   ---
+   ```
+
+   (This removes the front from the timeline's active set. The front object stays intact for reference.)
+
+Optionally tag supporting objects (locations, factions, NPCs) on the timeline for rich context:
+   ```kb
+   ---
+   id: timeline.epic
+   tags: [location.goblin-camp, faction.red-fang]
+   ---
+   ```
+   These become visible alongside fronts during play. Only tag objects important enough to be in every scene. If in doubt, keep the timeline lean and inline context in the front's own content.
 
 GUIDELINES:
 - The player does not see or know about the three-layer structure. They experience it as "the AI makes interesting fronts." Do not explain the mechanics — just apply them.
 - Not every front needs to develop into a grand arc. Some fronts are small and resolve quickly. The three layers ensure they COULD develop, not that they must.
 - When the user asks for "something to do" or "new hooks," that's your cue to create fronts. Always seed them properly.
 - Fronts are compact. The surface should be 2-4 sentences. The secret layers are one sentence each. If a front needs detailed plans, link to a `lore.*` object.
-- Check existing objects before creating new ones. Use `kb_get` and `kb_with_tag` liberally.
-- Remember, if you are in `advance` mode you should work more quickly, focusing on incremental changes only, and be done in one shot; do not ask for follow-up tasks or questions unless absolutely necessary.
+- Check existing objects before creating new ones. You can use `kb_get` to look up objects not already in your context (e.g. NPCs, factions, locations mentioned in passing).
 
 What this is not:
 - Not a pile of disconnected quest hooks.

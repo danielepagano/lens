@@ -1,5 +1,5 @@
-<!-- A Timeline tracks the passage of in-world days for a narrative arc. Usage: pin to narrative, advance with `lens advance`. -->
-<!-- TAG POLICY: a timeline does not need tags; fronts tag themselves TO their timeline (e.g. tag: timeline.epic). -->
+<!-- A Timeline tracks the passage of in-world days for a narrative arc. Usage: pin to narrative root, advance with `lens advance`. The user pins `timeline.<id>+` (the `+` is key — see TAG POLICY below). -->
+<!-- TAG POLICY: a timeline's tags ARE its active fronts and supporting objects. Tag front.* IDs to make them visible during play (brought in by `timeline.<id>+` expansion). Optionally tag key location.*, faction.*, or npc.* objects to pull them into context too. Design and advance operators manage these tags. -->
 
 Name: (how we reference this timeline, e.g. "The Grim Hollow Chronicle")
 
