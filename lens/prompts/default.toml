@@ -261,9 +261,9 @@ Output only the title, a blank line, and the summary body — no preamble, no me
 TEXT TO SUMMARIZE:
 {content}'''
 
-advance.system = '''You move the campaign clock forward and keep every front honest. Read fronts as live pressures in the world: clocks, timers, phases, chance events, and looming interruptions to a quiet stretch of time.
+advance.system = '''You move the campaign clock forward. Time passes; fronts evolve. Read each front as a live pressure in the world: clocks, timers, phases, chance events, and looming interruptions.
 
-Reference the content of [DESIGN MODULE]: FRONT GROOMING. Follow its front grooming rules when updating or creating fronts. You are running that design module in the special context of time passing: this is advance mode.
+Reference the content of [DESIGN MODULE]: FRONT GROOMING for guidance on how fronts work, but remember: in advance mode you only update existing fronts — you do NOT create, retire, or change the active set of fronts.
 
 Work in this order:
 - The first day always passes. It represents time that has already elapsed in the fiction, so it cannot retroactively interrupt the current scene. If a front should already have shown visible fallout but the narrative missed it, let that fallout become tomorrow's interruption instead.
@@ -286,9 +286,9 @@ remove-tags:
 Markdown content here; when this body is non-empty, it fully replaces any existing content.
 ```
 
-If the body is empty (or whitespace-only) and the front already exists, only ``tags`` / ``remove-tags`` are applied—the existing front text is kept. ``tags`` add only; use ``remove-tags`` to remove. For a new id, an empty body still creates an empty object.
+If the body is empty (or whitespace-only) and the front already exists, only ``tags`` / ``remove-tags`` are applied—the existing front text is kept. ``tags`` add only; use ``remove-tags`` to remove.
 
-Include as many blocks as needed, one per item. You can write any text around blocks to think, discuss, or explain; only the blocks have side-effects in the knowledge base, and only the last block for that id has effect, so you can change your mind and try again as you go.
+Include as many blocks as needed, one per item. You can write any text around blocks to think, discuss, or explain; only the blocks have side-effects in the knowledge base.
 
 You can emit an ``advance`` fenced block if either there was an interruption, or if you want to describe anything interesting that happened that the player should know. If time was cut short by an interruption, you must include ``days_elapsed`` with the actual days elapsed and a summary of what happened to interrupt the original amount.
 
@@ -301,6 +301,8 @@ summary: |
 If there is an interruption, the summary must describe the triggering current situation in enough detail for the scene to be played immediately after.
 If an ``advance`` block is not emitted, the time will be incremented by the amount requested and the summary will simply be that those days passed. This is normal and usually the default outcome.
 
+If a front reaches resolution (situation resolved, all phases completed, stakes no longer relevant), note this clearly in the advance summary. Do NOT remove or retire the front — the player will close it in a design session.
+
 Keep the summary lean and situational.
 Negative example: "The autumn sun poured molten gold across the hills as fate quietly rearranged itself."
 Better: "Three quiet days pass on the road. On the fourth morning, riders from Dunmere arrive with word that the mill has gone silent."
@@ -309,7 +311,7 @@ What NOT to do:
 - Do not write extended narrative prose — keep the summary brief.
 - Do not roll dice or make decisions for player characters.
 - Do not update fronts that are unaffected by the time passage.
-- Do not create fronts unless the front design module says it's appropriate.
+- Do not create, retire, or change the tags on any front — only update content that time affects.
 '''
 advance.instruction_template = '''The player ends the day. Advance time by up to {days} day(s).
 Current day counter: {current_day}.
@@ -321,9 +323,11 @@ For each front: evaluate what changes given the time passed and the narrative so
 
 If any front INTERRUPTS the time jump (random encounter, urgent event reaching the PCs), only one front may interrupt. Report the actual days that passed before interruption.
 
+If a front reaches resolution (situation resolved), note it in the advance summary. Do NOT remove or alter the front's tags — the player closes it in a separate design session.
+
 Output:
 - Use thinking for your front-by-front reasoning.
-- Emit ``kb`` fenced blocks for any front updates (non-empty body replaces content; front-matter-only on an existing id adjusts tags only).
+- Emit ``kb`` fenced blocks for any front content updates (non-empty body replaces front content; tags-only blocks on an existing id adjust tags without changing text).
 - Emit an ``advance`` fenced block with a ``summary`` field when there is an interruption or notable development; include ``days_elapsed`` only if interrupted.'''
 
 shared.retry_feedback_template = 'Feedback: {feedback}\n\nRewrite from scratch. Output only the replacement.'

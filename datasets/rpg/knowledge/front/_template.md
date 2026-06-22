@@ -11,4 +11,4 @@ Name (any way we'd be referencing this problem)
   - Any dependencies on chance, in the form of "every (counter mod x) days there is a y% chance that z could happen"
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `front` object minimally (they are either pinned or spawn changes and narrative during planning); you can include a location key location or the driving faction or npc. Tag it with its timeline if it belongs to one.  -->
+<!-- TAG POLICY: Fronts are not typically tagged (timeline objects tag active fronts) -->

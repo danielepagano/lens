@@ -19,7 +19,6 @@ from lens.core.project import ProjectSession
 from lens.core.test.llm_run_mock import run_llm_from_text
 from lens.rpg.operators.advance import (
     AdvanceOperator,
-    discover_front_pins,
     find_advance_anchor,
     generate_advance_id,
     generate_luck_rolls,
@@ -176,44 +175,6 @@ class TestParseAdvanceResult(unittest.TestCase):
         self.assertEqual(days, 3)
         self.assertIn("Day one is calm.", summary or "")
         self.assertIn("Day two brings rain.", summary or "")
-
-
-# ---------------------------------------------------------------------------
-# discover_front_pins
-# ---------------------------------------------------------------------------
-
-
-class TestDiscoverFrontPins(unittest.TestCase):
-    def test_finds_fronts_with_timeline_tag(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            d = Path(tmp)
-            _init_repo(d)
-            root, _ = _make_project(d)
-            # Create front objects and tag them
-            kb_dir = d / "knowledge"
-            front_dir = kb_dir / "front"
-            front_dir.mkdir(parents=True)
-            (front_dir / "goblins.md").write_text("Goblin threat")
-            (front_dir / "drought.md").write_text("Water shortage")
-            # Create tags.toml
-            (kb_dir / "tags.toml").write_text(
-                '[tags]\n"timeline.epic" = ["front.goblins", "front.drought"]\n'
-            )
-            session = ProjectSession(root, root)
-            result = discover_front_pins(
-                session.kb,
-                ["timeline.epic", "design.front"],
-            )
-            self.assertEqual(result, ["front.drought+", "front.goblins+"])
-
-    def test_no_fronts_returns_empty(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            d = Path(tmp)
-            _init_repo(d)
-            root, _ = _make_project(d)
-            session = ProjectSession(root, root)
-            result = discover_front_pins(session.kb, ["timeline.epic"])
-            self.assertEqual(result, [])
 
 
 # ---------------------------------------------------------------------------

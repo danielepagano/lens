@@ -36,3 +36,40 @@ Default: append one or more player lines (blockquotes) without calling the GM / 
 
 **`--pass`**: call the GM / LLM to respond, writing a `[play]...[/play]` block containing only GM output. With no prompt text, it generates a GM response based on the current passage.
 
+## How `lens advance` works
+
+`advance` is a **session operator** that moves time forward and updates fronts. It requires a `timeline.*` object pinned on an ancestor node (typically at the narrative root).
+
+**Requirements**:
+- At least one `timeline.*` pinned on an ancestor node
+
+**Front discovery**: The user pins `timeline.<id>+` on the narrative root. The `+` suffix does a one-hop expansion following the timeline's dot-tags, which list the active front IDs. Fronts are automatically in context for every crawl — no manual pinning/unpinning needed.
+
+**Lifecycle**:
+
+| Phase | Operator | What happens |
+|-------|----------|-------------|
+| Create timeline | `lens kb add timeline.epic` + root pin `timeline.epic+` | One-time setup |
+| Create fronts | `lens design --module front` | Creates front objects + tags them on the timeline |
+| Advance time | `lens advance --days N` | Updates front content (clocks, phases). Notes resolution in summary |
+| Close fronts | `lens design --module front` | Removes resolved front's tag from timeline. Creates next front |
+
+**Advance does NOT close or retire fronts** — it only updates front content. When a front reaches resolution (all phases complete, stakes resolved), `advance` notes this in its summary block. The player then uses `lens design --module front` to close the resolved front (remove its tag from the timeline) and design the next pressure. This keeps the resolved front in context for the LLM when planning what comes next.
+
+**Ending a front** (in a design session): Close the front by emitting a `kb` fenced code block with `id: timeline.<name>`, `remove-tags: [front.<name>]`, and empty body. This removes the front from the timeline's active set without altering its content. The resolved front stays in the KB for reference. Then create the new front and tag it on the timeline.
+
+## The `timeline+` convention
+
+The timeline object drives context economy. Pin `timeline.<id>+` at the narrative root:
+
+```
+kb_pin:
+  - lore.world
+  - pc.alice
+  - timeline.epic+
+```
+
+The `+` expansion follows the timeline's dot-tags, pulling in all active fronts plus any supporting objects (locations, factions, NPCs) tagged on the timeline. Changing which fronts are active is a matter of adding/removing tags on the timeline object — done by `design`, not by editing narrative front matter.
+
+For the full design rationale, see [docs/rpg-design.md](../../docs/rpg-design.md) § *Front* and § *Pass The Time*.
+

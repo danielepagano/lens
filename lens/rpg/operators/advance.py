@@ -1,10 +1,10 @@
-"""Advance operator: pass the time, update fronts, resolve consequences.
+"""Advance operator: pass the time, update fronts.
 
-``lens advance [--days N]`` creates an ``advance-day-*`` sub-node, pins fronts
-tagged to the pinned timeline (with ``+`` for expansion), and runs the LLM with
-the ``design.front`` module. KB updates and the timeline day counter apply only
-after ``lens advance --end`` (with the cursor in that sub-node). Use
-``lens advance --retry`` to discard the last generated block and regenerate.
+``lens advance [--days N]`` creates an ``advance-day-*`` sub-node and runs the
+LLM with the ``design.front`` module. Active fronts are pulled into context
+automatically via ``timeline.<id>+`` expansion on the ancestor chain. KB
+updates and the timeline day counter apply only after ``lens advance --end``
+(with the cursor in that sub-node). Use ``lens advance --retry`` to discard.
 
 Dataset-gated: requires the ``rpg`` dataset.
 
@@ -34,7 +34,7 @@ from lens.core.llm import LLMError
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator, OperatorError, extract_annotation_content, build_feedback_messages
-from lens.core.operators.session import format_summary_block
+from lens.core.operators.session import SummaryTitleError, format_summary_block
 from lens.core.pinning import pin as pin_node
 from lens.core.pinning import unpin as unpin_node
 from lens.core.prompts import PromptStore
@@ -63,16 +63,11 @@ def generate_advance_id(parent: NarrativeNode) -> str:
     return f"advance-day-{n}"
 
 
-def discover_front_pins(
-    kb: KnowledgeStore,
-    pinned_ids: list[str],
-) -> list[str]:
-    """Find all ``front.*`` IDs tagged with a pinned ``timeline.*``, return with ``+``."""
-    timeline_ids = [p for p in pinned_ids if p.startswith("timeline.")]
-    front_ids: set[str] = set()
-    for tid in timeline_ids:
-        front_ids.update(kb.get_ids_with_tag(tid, type_filter="front"))
-    return [f"{fid}+" for fid in sorted(front_ids)]
+def _front_ids_from_pins(pinned_ids: list[str]) -> list[str]:
+    """Extract sorted ``front.*`` base IDs from *pinned_ids* (stripping suffixes)."""
+    return sorted({
+        p.rstrip("+") for p in pinned_ids if p.startswith("front.")
+    })
 
 
 def generate_luck_rolls(front_ids: list[str]) -> dict[str, tuple[int, int]]:
@@ -553,7 +548,11 @@ class AdvanceOperator(Operator):
             session.kb, timeline_ids[0], days_elapsed, storage
         )
 
-        summary_block = format_summary_block(session_id, summary)
+        try:
+            summary_block = format_summary_block(session_id, summary)
+        except SummaryTitleError:
+            title = " ".join(w.capitalize() for w in session_id.split("-"))
+            summary_block = format_summary_block(session_id, f"{title}\n\n{summary}")
         op.close_subnode(parent, session_id, summary_block)
         return result
 
@@ -675,11 +674,10 @@ class AdvanceOperator(Operator):
         )
         cls.check_requirements(pre_crawl)
 
-        front_pins = discover_front_pins(session.kb, pre_crawl.pinned_ids)
         timeline_ids = [p for p in pre_crawl.pinned_ids if p.startswith("timeline.")]
         current_day = read_current_day(session.kb, timeline_ids[0])
-        raw_front_ids = [f.rstrip("+") for f in front_pins]
-        luck_rolls = generate_luck_rolls(raw_front_ids)
+        front_ids = _front_ids_from_pins(pre_crawl.pinned_ids)
+        luck_rolls = generate_luck_rolls(front_ids)
         ann_params: dict[str, Any] = {
             "increment": increment,
             "current_day": current_day,
@@ -698,7 +696,6 @@ class AdvanceOperator(Operator):
         all_pins = list(pins)
         if DESIGN_MODULE_PIN not in pre_crawl.pinned_ids:
             all_pins.append(DESIGN_MODULE_PIN)
-        all_pins.extend(front_pins)
         if all_pins:
             pin_node(child_node, all_pins, storage)
         if unpins:
