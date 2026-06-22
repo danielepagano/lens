@@ -15,7 +15,7 @@ from collections.abc import Awaitable, Callable
 
 from lens.core.llm import StreamEvent, final_payload_from_text
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import ValidationError
 from lens.core.operators.edit import EditOperator
 from lens.core.test.llm_run_mock import mock_run_llm
 from lens.core.project import ProjectSession
@@ -174,7 +174,7 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_node_content(root, narrative, "Some content.\n")
 
-            with self.assertRaises(OperatorError):
+            with self.assertRaises(ValidationError):
                 asyncio.run(
                     EditOperator.run_mutation(
                         session=ProjectSession(root, root),
@@ -276,7 +276,7 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_node_content(root, narrative, "[section:ch1]: #\nSome content.\n")
 
-            with self.assertRaises(OperatorError):
+            with self.assertRaises(ValidationError):
                 asyncio.run(
                     EditOperator.run_mutation(
                         session=ProjectSession(root, root),
@@ -298,7 +298,7 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_node_content(root, narrative, "Some content.\n")
 
-            with self.assertRaises(OperatorError):
+            with self.assertRaises(ValidationError):
                 asyncio.run(
                     EditOperator.run_mutation(
                         session=ProjectSession(root, root),
@@ -421,7 +421,7 @@ class TestEditOperatorRunMutation(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _commit_node_content(root, narrative, "Some content.\n")
 
-            with self.assertRaises(OperatorError):
+            with self.assertRaises(ValidationError):
                 asyncio.run(
                     EditOperator.run_mutation(
                         session=ProjectSession(root, root),

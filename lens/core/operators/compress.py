@@ -17,7 +17,7 @@ from lens.core.compression import (
     measure_visible_bytes,
 )
 from lens.core.pinning import set_last_compress_size
-from lens.core.exceptions import LensException
+from lens.core.exceptions import LensException, ValidationError
 from lens.core.llm import LLMError, ToolCall
 from lens.core.llm_run import LlmRunRequest, run_llm_final
 from lens.core.operator import OperatorError
@@ -185,9 +185,9 @@ async def run_compress(
     has_prompt = bool(stripped_prompt)
     has_aggr = aggressiveness is not None
     if has_prompt and has_aggr:
-        raise OperatorError("compress: pass a prompt or aggressiveness, not both")
+        raise ValidationError("compress: pass a prompt or aggressiveness, not both")
     if not has_prompt and not has_aggr:
-        raise OperatorError(
+        raise ValidationError(
             "compress: provide a non-empty prompt or aggressiveness (low | medium | high)"
         )
 
@@ -195,7 +195,7 @@ async def run_compress(
     try:
         target = resolve_node(session, node_arg)
     except (LensException, ValueError, RuntimeError) as e:
-        raise OperatorError(f"compress: {e}") from e
+        raise ValidationError(f"compress: {e}") from e
     llm_id, reasoning, _ = apply_pinned_invocation(
         slug="compress",
         project_root=session.project_root,

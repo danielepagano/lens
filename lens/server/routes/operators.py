@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from lens.core.compression import Aggressiveness
 from lens.core.commands.pin import resolve_node
 from lens.core.commands.rollback import execute_rollback
-from lens.core.exceptions import LensException
+from lens.core.exceptions import LensException, ValidationError
 from lens.core.knowledge import validate_ids_exist
 from lens.core.now import set_request_timezone
 from lens.core.operator import OperatorError
@@ -251,6 +251,9 @@ async def _run_operator_task(
                     elif isinstance(result, str):
                         done_payload["section_key"] = result
                 await event_queue.put(done_payload)
+            except ValidationError as e:
+                _log.warning("operator %s validation error: %s", operator_name, e)
+                await event_queue.put({"type": "error", "message": str(e)})
             except OperatorError as e:
                 execute_rollback(session)
                 _log.warning("operator %s failed: %s", operator_name, e)
@@ -885,7 +888,7 @@ async def operator_compress(
             workflow=lock.workflow,
         )
         if isinstance(r, CompressNoCollate):
-            raise OperatorError(r.explanation or "compress: model did not select a range to collate")
+            raise ValidationError(r.explanation or "compress: model did not select a range to collate")
         return r
 
     def coro_fn() -> Any:

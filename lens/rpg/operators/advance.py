@@ -25,6 +25,7 @@ from typing import Any, ClassVar, cast
 
 import yaml
 
+from lens.core.exceptions import ValidationError
 from lens.core.annotations import ParsedAnnotation
 from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import CrawlResult, SliceAnchor, crawl
@@ -256,7 +257,7 @@ def _check_node_for_advance_anchor(
             days_elapsed = increment
 
         if start_day + days_elapsed != current_day:
-            raise OperatorError(
+            raise ValidationError(
                 f"advance anchor validation failed for {advance_id}: "
                 f"start_day ({start_day}) + days_elapsed ({days_elapsed}) = "
                 f"{start_day + days_elapsed}, but current timeline day is "
@@ -337,7 +338,7 @@ class AdvanceOperator(Operator):
     def check_requirements(cls, crawl_result: CrawlResult) -> None:
         pinned = set(crawl_result.pinned_ids)
         if not any(pid.startswith("timeline.") for pid in pinned):
-            raise OperatorError(
+            raise ValidationError(
                 "advance requires at least one timeline.* to be pinned — "
                 "add a timeline KB object with --pin or kb_pin front matter"
             )
@@ -488,7 +489,7 @@ class AdvanceOperator(Operator):
     ) -> KbExtractResult:
         cursor = narrative.find_cursor()
         if not cursor.key_path:
-            raise OperatorError(
+            raise ValidationError(
                 "no open advance to close (cursor must be in the advance sub-node)"
             )
         session_id = cursor.key_path[-1]
@@ -503,7 +504,7 @@ class AdvanceOperator(Operator):
             or open_ann.operator != cls.name
             or open_ann.id != session_id
         ):
-            raise OperatorError(
+            raise ValidationError(
                 f"parent does not have unclosed [advance:{session_id}]: # — "
                 "cursor must be in the advance sub-node"
             )
@@ -512,7 +513,7 @@ class AdvanceOperator(Operator):
         probe_op = cls(session.new_storage(), narrative)
         inline_ann = probe_op.find_open_annotation(cursor)
         if inline_ann is None or inline_ann.id is not None:
-            raise OperatorError(
+            raise ValidationError(
                 "advance sub-node has no inline [advance …]: # block to read params from"
             )
         requested_increment = int(inline_ann.params.get("increment", 1))
@@ -530,7 +531,7 @@ class AdvanceOperator(Operator):
             p for p in child_crawl.pinned_ids if p.startswith("timeline.")
         ]
         if not timeline_ids:
-            raise OperatorError(
+            raise ValidationError(
                 "advance --end requires a pinned timeline.* on the sub-node"
             )
 
@@ -574,7 +575,7 @@ class AdvanceOperator(Operator):
         cursor = narrative.find_cursor()
         _session_node, session_id = cls._find_active_session(narrative)
         if session_id is None or cursor.key_path[-1] != session_id:
-            raise OperatorError(
+            raise ValidationError(
                 "advance --retry requires the cursor in the active advance sub-node"
             )
 
@@ -586,12 +587,12 @@ class AdvanceOperator(Operator):
         probe_op = cls(probe_storage, narrative)
         existing_ann = probe_op.find_open_annotation(cursor)
         if existing_ann is None:
-            raise OperatorError("no advance annotation found to retry")
+            raise ValidationError("no advance annotation found to retry")
 
         ann_owner = cls._owner_for_ann(existing_ann, child_rel_path)
         is_owner = (pending_owner == ann_owner) if has_pending else False
         if not is_owner:
-            raise OperatorError("no pending advance transaction to retry")
+            raise ValidationError("no pending advance transaction to retry")
 
         # Capture previous content before discarding (for feedback mode).
         previous_content: str | None = None
@@ -657,7 +658,7 @@ class AdvanceOperator(Operator):
     ) -> KbExtractResult:
         cursor = narrative.find_cursor()
         if cls._unclosed_advance_on_node(cursor):
-            raise OperatorError(
+            raise ValidationError(
                 "an advance session is already open — open the advance sub-node "
                 "and run `lens advance --end`, or discard changes, before starting another"
             )
@@ -756,7 +757,7 @@ class AdvanceOperator(Operator):
                 narrative=narrative,
             )
         if increment < 1:
-            raise OperatorError("advance increment must be >= 1")
+            raise ValidationError("advance increment must be >= 1")
         if retry:
             return await cls._run_advance_retry(
                 session=session,
@@ -772,7 +773,7 @@ class AdvanceOperator(Operator):
             )
         active, _ = cls._find_active_session(narrative)
         if active is not None:
-            raise OperatorError(
+            raise ValidationError(
                 "an advance session is in progress — use `lens advance --end` "
                 "to apply changes or `lens advance --retry` to regenerate"
             )

@@ -50,6 +50,7 @@ from typing import Any, ClassVar, cast
 from lens.core.annotations import parse_annotations
 from lens.core.context import CrawlResult, crawl
 from lens.core.dice import DiceError
+from lens.core.exceptions import ValidationError
 from lens.core.knowledge import KnowledgeStore
 from lens.core.generation_artifacts import GenerationArtifacts
 from lens.core.llm import LLMError
@@ -168,7 +169,7 @@ class ChatOperator(SessionOperator):
         """Validate that the ``--as`` character exists in the knowledge base."""
         as_kb_id = params.get("as_kb_id")
         if not as_kb_id:
-            raise OperatorError(
+            raise ValidationError(
                 "chat requires --as <kb.id> to specify the character the AI will voice"
             )
         # Character sheets are pulled into crawl via session params (``--as`` /
@@ -177,7 +178,7 @@ class ChatOperator(SessionOperator):
         if crawl_result.project_root is not None:
             store = KnowledgeStore.for_project(crawl_result.project_root)
             if not store.exists(as_kb_id):
-                raise OperatorError(
+                raise ValidationError(
                     f"--as '{as_kb_id}' does not exist in the knowledge base"
                 )
 
@@ -267,7 +268,7 @@ class ChatOperator(SessionOperator):
     ) -> str:
         raw = user_prompt.strip()
         if not raw:
-            raise OperatorError("a non-empty prompt is required for this chat turn")
+            raise ValidationError("a non-empty prompt is required for this chat turn")
         lines_list = raw.splitlines()
         out: list[str] = []
         if narrate:
@@ -325,7 +326,7 @@ class ChatOperator(SessionOperator):
                 user_prompt, session=session, cursor=node
             )
         except DiceError as e:
-            raise OperatorError(str(e)) from e
+            raise ValidationError(str(e)) from e
         block = cls._format_direct_user_block(
             with_kb_id=with_kb_id,
             user_prompt=user_prompt,
@@ -512,14 +513,14 @@ class ChatOperator(SessionOperator):
         # Validate / compute slug.
         if slug is not None:
             if not validate_slug(slug):
-                raise OperatorError(
+                raise ValidationError(
                     f"invalid slug '{slug}' (alphanumeric, underscores, hyphens only)"
                 )
             prefix = f"{cls.name}-"
             if not slug.startswith(prefix):
                 slug = prefix + slug
             if slug in set(cursor.child_keys()):
-                raise OperatorError(f"a node named '{slug}' already exists here")
+                raise ValidationError(f"a node named '{slug}' already exists here")
             session_id = slug
         else:
             session_id = cls._make_chat_slug(as_kb_id, with_kb_id, prompt, cursor)
@@ -536,7 +537,7 @@ class ChatOperator(SessionOperator):
                     prompt, session=session, cursor=cursor
                 )
             except DiceError as e:
-                raise OperatorError(str(e)) from e
+                raise ValidationError(str(e)) from e
 
         # Build parent annotation params — everything the session needs.
         ann_params: dict[str, Any] = {"as_kb_id": as_kb_id}
@@ -771,7 +772,7 @@ class ChatOperator(SessionOperator):
         # Fresh session — atomic setup + first generation.
         as_kb_id, with_kb_id, _narrate, _wait = cls._extract_extra(kwargs)
         if not as_kb_id:
-            raise OperatorError("--as is required when starting a chat session")
+            raise ValidationError("--as is required when starting a chat session")
 
         cursor = narrative.find_cursor()
         result = await cls._start_fresh_session(
@@ -807,7 +808,7 @@ class ChatOperator(SessionOperator):
     async def _run_fresh(cls, **kwargs: Any) -> None:  # type: ignore[override]
         # Never called: run_session handles the fresh path directly.
         _ = kwargs
-        raise OperatorError(
+        raise ValidationError(
             "chat _run_fresh should not be called directly — use run_session"
         )  # pragma: no cover
 
@@ -843,7 +844,7 @@ class ChatOperator(SessionOperator):
             with_kb_id = session_with_kb_id
 
         if not as_kb_id:
-            raise OperatorError(
+            raise ValidationError(
                 "no character found in session — specify --as <kb.id> to identify "
                 "who the AI voices"
             )

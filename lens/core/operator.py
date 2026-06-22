@@ -142,6 +142,7 @@ from lens.core.prompt_transforms import (
 )
 from lens.core.crawl_graph import ComponentSource, CrawlComponent, CrawlTransform
 from lens.core.dice import DiceError
+from lens.core.exceptions import ValidationError
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import (
     LLMError,
@@ -258,8 +259,7 @@ def _normalize_for_yaml_dump(obj: Any) -> Any:
     return obj
 
 
-class OperatorError(Exception):
-    """User-visible error raised by operator flow orchestrators."""
+from lens.core.exceptions import OperatorError  # noqa: E402, F401 — re-exported for convenience
 
 
 class Operator(ABC):
@@ -1258,7 +1258,7 @@ class Operator(ABC):
                     prompt, session=session, cursor=cursor
                 )
             except DiceError as e:
-                raise OperatorError(str(e)) from e
+                raise ValidationError(str(e)) from e
 
         mention_pins = cls.mention_pins(prompt, session.project_root)
         if mention_pins:
@@ -1459,7 +1459,7 @@ class Operator(ABC):
             is_owner = pending_owner == cls._owner_for_ann(existing_ann, rel_path)
 
         if retry and not is_owner:
-            raise OperatorError(f"no pending {cls.name} transaction to retry")
+            raise ValidationError(f"no pending {cls.name} transaction to retry")
 
         if is_owner:
             assert existing_ann is not None
@@ -1487,7 +1487,7 @@ class Operator(ABC):
                 )
             else:
                 if not prompt and not empty_prompt_ok:
-                    raise OperatorError(f"{cls.name} requires a prompt (or --retry)")
+                    raise ValidationError(f"{cls.name} requires a prompt (or --retry)")
                 session.new_storage().stage_all()
                 return await cls._do_fresh_inline(
                     session, narrative, cursor, rel_path,
@@ -1946,7 +1946,7 @@ class Operator(ABC):
                     effective_prompt, session=session, cursor=node
                 )
             except DiceError as e:
-                raise OperatorError(str(e)) from e
+                raise ValidationError(str(e)) from e
         mention_pins = cls.mention_pins(effective_prompt, session.project_root)
         if mention_pins:
             pins = pins + mention_pins
@@ -1961,10 +1961,10 @@ class Operator(ABC):
         is_owner = (pending_owner == owner) if has_pending else False
 
         if manual and retry:
-            raise OperatorError("retry is not supported in replace mode")
+            raise ValidationError("retry is not supported in replace mode")
 
         if retry and not is_owner:
-            raise OperatorError(f"no pending {cls.name} transaction to retry")
+            raise ValidationError(f"no pending {cls.name} transaction to retry")
 
         params: dict[str, Any] = {}
         if manual:
@@ -2017,16 +2017,16 @@ class Operator(ABC):
         prompt = params.get("prompt")
 
         if not manual and not prompt:
-            raise OperatorError("a prompt is required for a fresh edit")
+            raise ValidationError("a prompt is required for a fresh edit")
         if manual and prompt is None:
-            raise OperatorError("replacement text is required in replace mode")
+            raise ValidationError("replacement text is required in replace mode")
 
         text = file_path.read_text(encoding="utf-8")
         lines = text.split("\n")
         anns = parse_annotations(text)
         for a in anns:
             if start_line <= a.line_start <= end_line:
-                raise OperatorError(
+                raise ValidationError(
                     f"line range contains existing annotation at line {a.line_start}"
                 )
 
@@ -2174,7 +2174,7 @@ class Operator(ABC):
         if params.get("reasoning"):
             effective_params["reasoning"] = params["reasoning"]
         if not effective_params.get("prompt"):
-            raise OperatorError("no prompt found in claim tag and none provided")
+            raise ValidationError("no prompt found in claim tag and none provided")
         effective_params["target"] = selected_text
 
         op = cls(session.new_storage(owner=owner), narrative_root)

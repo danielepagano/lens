@@ -37,6 +37,7 @@ from typing import Any, ClassVar, cast
 
 from lens.core.annotations import parse_annotations, strip_markdown_comments
 from lens.core.context import CrawlResult, assemble_prompt, session_module_ids
+from lens.core.exceptions import ValidationError
 from lens.core.knowledge import KnowledgeStore
 from lens.core.generation_artifacts import (
     GenerationArtifacts,
@@ -653,7 +654,7 @@ class SessionOperator(Operator):
         if module_id and cls.module_prefix:
             new_module_kb_id = cls.module_prefix + module_id
             if not session.kb.exists(new_module_kb_id):
-                raise OperatorError(
+                raise ValidationError(
                     f"module does not exist: {new_module_kb_id}"
                 )
             cls._set_parent_module(node, module_id, storage)
@@ -672,7 +673,7 @@ class SessionOperator(Operator):
         if *node* is not inside an open ``[<op>:<id>]`` session.
         """
         if not node.key_path:
-            raise OperatorError(
+            raise ValidationError(
                 f"{cls.name}: cannot set module on a root node"
             )
         session_id = node.key_path[-1]
@@ -693,7 +694,7 @@ class SessionOperator(Operator):
                 target_ann = ann
                 break
         if target_ann is None:
-            raise OperatorError(
+            raise ValidationError(
                 f"no open [{cls.name}:{session_id}] annotation on parent"
             )
         new_params = dict(target_ann.params)
@@ -734,7 +735,7 @@ class SessionOperator(Operator):
         cursor = narrative.find_cursor()
         if slug is not None:
             if not validate_slug(slug):
-                raise OperatorError(
+                raise ValidationError(
                     f"invalid slug '{slug}' (alphanumeric, underscores, hyphens only)"
                 )
             # Auto-prepend operator prefix (e.g. "design-", "play-") if absent,
@@ -743,7 +744,7 @@ class SessionOperator(Operator):
             if not slug.startswith(prefix):
                 slug = prefix + slug
             if slug in set(cursor.child_keys()):
-                raise OperatorError(
+                raise ValidationError(
                     f"a node named '{slug}' already exists here"
                 )
             session_id = slug
@@ -761,7 +762,7 @@ class SessionOperator(Operator):
         if module_id and cls.module_prefix:
             module_kb_id = cls.module_prefix + module_id
             if not session.kb.exists(module_kb_id):
-                raise OperatorError(
+                raise ValidationError(
                     f"module does not exist: {module_kb_id}"
                 )
             ann_params["module"] = module_id
@@ -881,7 +882,7 @@ class SessionOperator(Operator):
             extra_params=None,
         )
         if not cursor.key_path:
-            raise OperatorError(
+            raise ValidationError(
                 f"no open {cls.name} to close (cursor at root)"
             )
         id = cursor.key_path[-1]
@@ -896,7 +897,7 @@ class SessionOperator(Operator):
             or open_ann.operator != cls.name
             or open_ann.id != id
         ):
-            raise OperatorError(
+            raise ValidationError(
                 f"parent does not have unclosed [{cls.name}:{id}]: # — "
                 "cursor must be in the session sub-node"
             )
@@ -1033,7 +1034,7 @@ class SessionOperator(Operator):
 
         if session_node is not None:
             if slug is not None:
-                raise OperatorError(
+                raise ValidationError(
                     "--slug can only be used when starting a new session"
                 )
             return await cls._run_inside(

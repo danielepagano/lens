@@ -20,7 +20,7 @@ from typing import Any, TypeVar
 
 from lens.core.commands.rename_node import rename_node
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import ValidationError
 from lens.core.operators.design import DesignOperator
 from lens.core.operators.section import SectionOperator
 from lens.core.project import ProjectSession
@@ -114,7 +114,7 @@ class TestSlugAndRename(unittest.TestCase):
     # ------------------------------------------------------------------
 
     def test_02_slug_conflict_raises(self) -> None:
-        """--slug with a name that already exists raises OperatorError."""
+        """--slug with a name that already exists raises ValidationError."""
         # cursor is inside my-tavern; close it first so we can try creating again
         session = self._session()
         narrative = session.active_narrative
@@ -125,7 +125,7 @@ class TestSlugAndRename(unittest.TestCase):
         session = self._session()
         narrative = session.active_narrative
         assert narrative is not None
-        with self.assertRaises(OperatorError) as ctx:
+        with self.assertRaises(ValidationError) as ctx:
             _run(DesignOperator.run_design(
                 session=session,
                 narrative=narrative,
@@ -139,14 +139,14 @@ class TestSlugAndRename(unittest.TestCase):
         self.assertIn("already exists", str(ctx.exception))
 
     # ------------------------------------------------------------------
-    # 03 — --slug with invalid characters raises OperatorError
+    # 03 — --slug with invalid characters raises ValidationError
     # ------------------------------------------------------------------
 
     def test_03_slug_invalid_raises(self) -> None:
         session = self._session()
         narrative = session.active_narrative
         assert narrative is not None
-        with self.assertRaises(OperatorError) as ctx:
+        with self.assertRaises(ValidationError) as ctx:
             _run(DesignOperator.run_design(
                 session=session,
                 narrative=narrative,
@@ -185,7 +185,7 @@ class TestSlugAndRename(unittest.TestCase):
         session = self._session()
         narrative = session.active_narrative
         assert narrative is not None
-        with self.assertRaises(OperatorError) as ctx:
+        with self.assertRaises(ValidationError) as ctx:
             _run(DesignOperator.run_design(
                 session=session,
                 narrative=narrative,

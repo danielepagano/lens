@@ -16,6 +16,7 @@ from lens.core.annotations import parse_front_matter
 from lens.core.annotations import parse_annotations
 from lens.core.llm import StreamEvent, final_payload_from_text
 from lens.core.narrative import NarrativeNode
+from lens.core.exceptions import ValidationError
 from lens.core.operator import OperatorError
 from lens.core.operators.design import DesignOperator
 from lens.core.test.llm_run_mock import mock_run_llm
@@ -344,7 +345,7 @@ class TestDesignModulePin(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            with self.assertRaises(OperatorError) as ctx:
+            with self.assertRaises(ValidationError) as ctx:
                 _run_design(root, narrative, module_id="missing")
 
             self.assertIn("module does not exist", str(ctx.exception))
@@ -572,7 +573,7 @@ class TestDesignRetry(unittest.TestCase):
                 ["git", "commit", "-m", "done"], cwd=root, capture_output=True, check=True,
             )
 
-            with self.assertRaises(OperatorError) as ctx:
+            with self.assertRaises(ValidationError) as ctx:
                 _run_design(root, narrative, retry=True)
 
             self.assertIn("no pending design transaction", str(ctx.exception))
@@ -644,7 +645,7 @@ class TestDesignEnd(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
-            with self.assertRaises(OperatorError) as ctx:
+            with self.assertRaises(ValidationError) as ctx:
                 asyncio.run(
                     DesignOperator.run_session_end(
                         session=ProjectSession(root, root), narrative=narrative

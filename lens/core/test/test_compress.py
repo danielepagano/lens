@@ -17,6 +17,7 @@ from lens.core.compression import Aggressiveness
 from lens.core.llm import FinalPayload, ToolCall, final_payload_from_text
 from lens.core.llm_run import LlmRunRequest, resolve_llm_run_messages
 from lens.core.narrative import NarrativeNode
+from lens.core.exceptions import ValidationError
 from lens.core.operator import OperatorError
 from lens.core.operators.collate import CollateOperator
 from lens.core.operators.compress import (
@@ -173,7 +174,7 @@ class TestRunCompress(unittest.TestCase):
         self.assertIn("Nothing here", str(ctx.exception))
 
     def test_empty_prompt(self) -> None:
-        with self.assertRaises(OperatorError) as ctx:
+        with self.assertRaises(ValidationError) as ctx:
             asyncio.run(
                 run_compress(
                     session=self.session,
@@ -482,7 +483,7 @@ class TestRunCompressAutoMode(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_no_prompt_no_aggressiveness_raises(self) -> None:
-        with self.assertRaises(OperatorError) as ctx:
+        with self.assertRaises(ValidationError) as ctx:
             asyncio.run(
                 run_compress(
                     session=self.session,
@@ -494,7 +495,7 @@ class TestRunCompressAutoMode(unittest.TestCase):
         self.assertIn("aggressiveness", msg)
 
     def test_both_prompt_and_aggressiveness_raises(self) -> None:
-        with self.assertRaises(OperatorError) as ctx:
+        with self.assertRaises(ValidationError) as ctx:
             asyncio.run(
                 run_compress(
                     session=self.session,
