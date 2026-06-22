@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, patch
 
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.operators.chat import ChatOperator
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
@@ -575,8 +575,8 @@ class TestChatSession(unittest.TestCase):
         self.assertLess(text.find("Line two."), text.find("[Bob]"))
 
     def test_session_requires_as(self) -> None:
-        """Starting a session without --as raises OperatorError."""
-        with self.assertRaises(OperatorError):
+        """Starting a session without --as raises ValidationError."""
+        with self.assertRaises(ValidationError):
             asyncio.run(
                 ChatOperator.run_session(
                     session=self.session,

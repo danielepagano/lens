@@ -21,9 +21,8 @@ from lens.cli.help_strings import (
     HELP_OPTS,
 )
 from lens.cli.options import pin_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
-from lens.core.exceptions import LensException
+from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
-from lens.core.operator import OperatorError
 from lens.rpg.operators.play import PlayOperator
 from lens.core.project import ProjectSession
 

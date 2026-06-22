@@ -37,11 +37,12 @@ from typing import Any, ClassVar
 from lens.core.annotations import ParsedAnnotation
 from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import crawl
+from lens.core.exceptions import ValidationError, OperatorError
 from lens.core.generation_artifacts import GenerationArtifacts
 from lens.core.llm import LLMError
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
-from lens.core.operator import OperatorError, extract_annotation_content, build_feedback_messages
+from lens.core.operator import extract_annotation_content, build_feedback_messages
 from lens.core.operators.session import SessionOperator
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
@@ -290,13 +291,13 @@ class DesignOperator(SessionOperator):
             probe_op = cls(probe_storage, narrative)
             existing_ann = probe_op.find_open_annotation(node)
             if existing_ann is None:
-                raise OperatorError("no design annotation found to retry")
+                raise ValidationError("no design annotation found to retry")
 
             child_rel_path = str(node.md_path().relative_to(session.git_root))
             ann_owner = cls._owner_for_ann(existing_ann, child_rel_path)
             is_owner = (pending_owner == ann_owner) if has_pending else False
             if not is_owner:
-                raise OperatorError("no pending design transaction to retry")
+                raise ValidationError("no pending design transaction to retry")
 
             storage = session.new_storage(owner=ann_owner)
             op = cls(storage, narrative)
@@ -421,7 +422,7 @@ class DesignOperator(SessionOperator):
         """
         cursor = narrative.find_cursor()
         if not cursor.key_path:
-            raise OperatorError("no open design to close (cursor at root)")
+            raise ValidationError("no open design to close (cursor at root)")
         id = cursor.key_path[-1]
         parent = NarrativeNode(
             narrative_root=cursor.narrative_root,
@@ -430,7 +431,7 @@ class DesignOperator(SessionOperator):
         parent_text = parent.md_path().read_text(encoding="utf-8")
         open_ann = find_unclosed_cursor_annotation(parent_text)
         if open_ann is None or open_ann.operator != cls.name or open_ann.id != id:
-            raise OperatorError(
+            raise ValidationError(
                 f"parent does not have unclosed [design:{id}]: # — "
                 "cursor must be in the design sub-node"
             )

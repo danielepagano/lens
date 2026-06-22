@@ -18,10 +18,9 @@ from lens.cli.help_strings import (
 )
 from lens.cli.options import pin_option, unpin_option
 from lens.core.address import NarrativeAddress
-from lens.core.exceptions import LensException
+from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operators.edit import EditOperator
-from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession, resolve_address
 
 app = typer.Typer(

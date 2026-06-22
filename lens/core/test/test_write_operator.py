@@ -18,7 +18,7 @@ from lens.core.context import CrawlResult
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError, StreamEvent, final_payload_from_text
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError
 from lens.core.operators.write import WriteOperator
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession

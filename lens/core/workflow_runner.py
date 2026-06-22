@@ -528,7 +528,7 @@ def finalize_workflow_outcome(
         execute_rollback(session)
         outcome.rollback_pending = False
     if outcome.kind == "failed":
-        from lens.core.operator import OperatorError
+        from lens.core.exceptions import OperatorError
 
         failed = next(s for s in outcome.steps if s.status == "failed")
         raise OperatorError(failed.error or f"workflow step {failed.id} failed")

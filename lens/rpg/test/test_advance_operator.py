@@ -14,7 +14,7 @@ from unittest.mock import patch
 from lens.core.context import CrawlResult
 from lens.core.generation_artifacts import GenerationArtifacts, GenerationSegment
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import ValidationError
 from lens.core.project import ProjectSession
 from lens.core.test.llm_run_mock import run_llm_from_text
 from lens.rpg.operators.advance import (
@@ -286,7 +286,7 @@ class TestCheckRequirements(unittest.TestCase):
             previous_summaries=[],
             current_content="",
         )
-        with self.assertRaises(OperatorError) as ctx:
+        with self.assertRaises(ValidationError) as ctx:
             AdvanceOperator.check_requirements(cr)
         self.assertIn("timeline", str(ctx.exception))
 
@@ -652,7 +652,7 @@ class TestFindAdvanceAnchor(unittest.TestCase):
                 narrative, "advance-day-1", "timeline.epic",
                 current_day=1, increment=1,
             )
-            with self.assertRaises(OperatorError) as ctx:
+            with self.assertRaises(ValidationError) as ctx:
                 find_advance_anchor(narrative, "timeline.epic", 5)
             self.assertIn("validation failed", str(ctx.exception))
 

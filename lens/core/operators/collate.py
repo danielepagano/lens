@@ -370,7 +370,7 @@ class CollateOperator(Operator):
             on_status=on_status,
         )
         if outcome.rollback_pending or outcome.interrupted or outcome.kind == "cancelled":
-            from lens.core.operator import OperatorError
+            from lens.core.exceptions import OperatorError
 
             raise OperatorError("collate aborted")
         return storage

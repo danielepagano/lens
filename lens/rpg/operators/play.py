@@ -41,11 +41,11 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar, cast
 
+from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.context import CrawlResult
 from lens.core.modalities import apply_modality_crawl
 from lens.core.modalities.catalog.rpg_play_context import PLAY_AUTO_PINS
 from lens.core.dice import DiceError
-from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
@@ -97,7 +97,7 @@ class PlayOperator(SessionOperator):
             return
         pc_id = f"pc.{as_pc}" if not as_pc.startswith("pc.") else as_pc
         if pc_id not in pinned_pcs:
-            raise OperatorError(
+            raise ValidationError(
                 f"-as {as_pc!r} is not a pinned PC (pinned pc.*: "
                 + ", ".join(sorted(pinned_pcs))
                 + ")"
@@ -123,7 +123,7 @@ class PlayOperator(SessionOperator):
         pinned_pcs = [p for p in crawl_result.pinned_ids if p.startswith("pc.")]
         pc_id = f"pc.{as_pc}" if not as_pc.startswith("pc.") else as_pc
         if pc_id not in pinned_pcs:
-            raise OperatorError(
+            raise ValidationError(
                 f"-as {as_pc!r} is not a pinned PC (pinned pc.*: "
                 + ", ".join(sorted(pinned_pcs))
                 + ")"
@@ -145,7 +145,7 @@ class PlayOperator(SessionOperator):
     ) -> None:
         cursor = _cursor_override if _cursor_override is not None else narrative.find_cursor()
         if not cursor.key_path:
-            raise OperatorError("play requires a cursor inside a play session sub-node")
+            raise ValidationError("play requires a cursor inside a play session sub-node")
 
         session_id = cursor.key_path[-1]
         parent = NarrativeNode(
@@ -192,7 +192,7 @@ class PlayOperator(SessionOperator):
         pinned = set(crawl_result.pinned_ids)
         design_pins = sorted(p for p in crawl_result.pinned_ids if p.startswith("design."))
         if design_pins:
-            raise OperatorError(
+            raise ValidationError(
                 "play refuses to run while design modules are pinned ("
                 + ", ".join(design_pins)
                 + "). Design sessions use their own node; remove design.* from kb_pin "
@@ -200,14 +200,14 @@ class PlayOperator(SessionOperator):
             )
         missing = REQUIRED_PINS - pinned
         if missing:
-            raise OperatorError(
+            raise ValidationError(
                 "play requires the following KB objects to be pinned: "
                 + ", ".join(sorted(missing))
                 + " — add them with --pin or kb_pin front matter"
             )
 
         if not any(pid.startswith("pc.") for pid in crawl_result.pinned_ids):
-            raise OperatorError(
+            raise ValidationError(
                 "play requires at least one player character (pc.*) to be pinned — "
                 "add a pc.* KB object with --pin or kb_pin front matter"
             )
