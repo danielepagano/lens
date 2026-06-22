@@ -4,22 +4,29 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import ARG_RENAME_ADDR, ARG_NEW_SLUG, CMD_RENAME, HELP_OPTS
 from lens.core.commands.rename_node import rename_node
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False, no_args_is_help=True)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    no_args_is_help=True,
+    help=CMD_RENAME,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 @app.callback()
 def rename(
     address: str = typer.Argument(
         ...,
-        help="Address of the node to rename (e.g. /chapter-1/design-old)",
+        help=ARG_RENAME_ADDR,
     ),
     new_slug: str = typer.Argument(
         ...,
-        help="New slug (alphanumeric, underscores, hyphens only)",
+        help=ARG_NEW_SLUG,
     ),
 ) -> None:
     """Rename a narrative node, updating its annotation tag and file/folder name."""

@@ -46,7 +46,11 @@ def register_commands(main_app: typer.Typer) -> None:
         if not app.registered_commands and app.registered_callback:
             callback = app.registered_callback.callback
             if callback is not None:
-                main_app.command(name)(callback)
+                help_text = app.registered_callback.help
+                if isinstance(help_text, str):
+                    main_app.command(name, help=help_text)(callback)
+                else:
+                    main_app.command(name)(callback)
                 continue
         main_app.add_typer(app, name=name)
 

@@ -4,6 +4,13 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import (
+    ARG_PATH,
+    ARG_MEDIA_ADDR,
+    ARG_MEDIA_LINE,
+    HELP_OPTS,
+    MEDIA_ATTACH,
+)
 from lens.core.commands.attach import attach as attach_core
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
@@ -12,22 +19,23 @@ attach_app = typer.Typer(
     invoke_without_command=True,
     no_args_is_help=True,
     add_completion=False,
-    help="Attach a media file into the narrative after a line (or at end of node).",
+    help=MEDIA_ATTACH,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
 @attach_app.callback()
 def attach_cmd(
     path: str = typer.Argument(
-        ..., help="Mount-relative file path (e.g. 'photo.jpg', not a filesystem path)"
+        ..., help=ARG_PATH
     ),
     address: str | None = typer.Argument(
         None,
-        help="Narrative node address (default: /@cursor). Use e.g. '/' or '/chapter-1'.",
+        help=ARG_MEDIA_ADDR,
     ),
     line: int | None = typer.Argument(
         None,
-        help="1-based line to insert after (default: append after last line of the node).",
+        help=ARG_MEDIA_LINE,
     ),
     preview: bool = typer.Option(
         False, "--preview", help="Validate only, don't attach"

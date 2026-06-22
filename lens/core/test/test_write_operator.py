@@ -315,6 +315,139 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             self.assertEqual(text.count("[/write]: #"), 1)
             self.assertLess(text.index("Updated content"), text.index("[/write]: #"))
 
+    def test_run_inline_retry_with_feedback_sends_previous_content(self) -> None:
+        """Retry with prompt sends previous content as assistant+feedback turns."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            _run_inline(root, narrative, prompt="original direction")
+
+            captured_messages: list[dict[str, str]] = []
+
+            async def _retry_with_capture(
+                messages: list[dict[str, str]], *_args: Any, **_kwargs: Any
+            ) -> Any:
+                captured_messages.extend(messages)
+                yield StreamEvent(
+                    final=final_payload_from_text(
+                        "Updated content",
+                        tool_calls=[],
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            _run_inline(
+                root, narrative,
+                retry=True, prompt="that part was wrong",
+                generate_mock=_retry_with_capture,
+            )
+
+            # Must have at least 4 messages: system, user, assistant, user
+            self.assertGreaterEqual(len(captured_messages), 4)
+
+            roles = [m["role"] for m in captured_messages]
+            last_asst_idx = max(
+                i for i, r in enumerate(roles) if r == "assistant"
+            )
+            # The last assistant turn must contain the previous generated content
+            self.assertIn(
+                "Generated content", captured_messages[last_asst_idx]["content"]
+            )
+            # The last user turn must contain the feedback
+            self.assertEqual(captured_messages[-1]["role"], "user")
+            self.assertIn(
+                "that part was wrong", captured_messages[-1]["content"]
+            )
+            # Original prompt must NOT appear in the feedback turns
+            self.assertNotIn(
+                "original direction", captured_messages[-1]["content"]
+            )
+            # Original prompt must appear somewhere in the earlier user message
+            user_before_feedback = " ".join(
+                m["content"]
+                for m in captured_messages[:last_asst_idx]
+                if m["role"] == "user"
+            )
+            self.assertIn("original direction", user_before_feedback)
+
+    def test_run_inline_retry_with_feedback_multi_turn_sends_previous_content(
+        self,
+    ) -> None:
+        """Retry with feedback on a node with prior committed writes must still
+        send the *pending* write's content as the assistant turn, not the
+        committed one."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+
+            FIRST = "FIRST_WRITE_VERY_DISTINCT"
+            SECOND = "SECOND_WRITE_VERY_DISTINCT"
+
+            async def _first_gen(*args: Any, **kwargs: Any) -> Any:
+                yield StreamEvent(
+                    final=final_payload_from_text(
+                        FIRST, tool_calls=[], usage=None, interrupted=False,
+                    )
+                )
+            _run_inline(root, narrative, prompt="first write", generate_mock=_first_gen)
+            Storage(root).stage_all()
+
+            async def _second_gen(*args: Any, **kwargs: Any) -> Any:
+                yield StreamEvent(
+                    final=final_payload_from_text(
+                        SECOND, tool_calls=[], usage=None, interrupted=False,
+                    )
+                )
+            _run_inline(root, narrative, prompt="second write", generate_mock=_second_gen)
+
+            captured_messages: list[dict[str, str]] = []
+
+            async def _retry_capture(
+                messages: list[dict[str, str]], *_args: Any, **_kwargs: Any
+            ) -> Any:
+                captured_messages.extend(messages)
+                yield StreamEvent(
+                    final=final_payload_from_text(
+                        "Retried content",
+                        tool_calls=[],
+                        usage=None,
+                        interrupted=False,
+                    )
+                )
+
+            _run_inline(
+                root, narrative,
+                retry=True, prompt="fix it",
+                generate_mock=_retry_capture,
+            )
+
+            self.assertGreaterEqual(len(captured_messages), 3)
+
+            roles = [m["role"] for m in captured_messages]
+            last_asst_idx = max(
+                i for i, r in enumerate(roles) if r == "assistant"
+            )
+            self.assertEqual(captured_messages[-1]["role"], "user")
+
+            last_asst_content = captured_messages[last_asst_idx]["content"]
+
+            # BUG: The multi-turn path replaces the last user message with
+            # feedback but does NOT update the last assistant turn with the
+            # pending write's content.  Instead the LLM sees the committed
+            # write's content as the "previous attempt".
+            self.assertIn(
+                SECOND, last_asst_content,
+                "pending write content must appear as last assistant turn",
+            )
+            self.assertNotIn(
+                FIRST, last_asst_content,
+                "committed write content must NOT be the last assistant turn",
+            )
+            self.assertIn(
+                "fix it", captured_messages[-1]["content"],
+                "feedback must appear as last user turn",
+            )
+
     def test_run_inline_retry_no_pending_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))

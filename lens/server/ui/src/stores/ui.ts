@@ -123,6 +123,9 @@ export interface KbDiffRequest {
 }
 export const kbDiffRequest = writable<KbDiffRequest | null>(null)
 
+/** Guide key to show in the CLI guide modal. Null = modal closed. */
+export const guideModalCommand = writable<string | null>(null)
+
 /** True when a CodeMirror editor has focus.  Used on mobile to hide the CLI
  *  bottom bar so the virtual keyboard doesn't waste screen space. */
 export const editorFocused = writable(false)

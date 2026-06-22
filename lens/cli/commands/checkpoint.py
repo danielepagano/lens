@@ -2,22 +2,28 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import ARG_MESSAGE, CMD_CHECKPOINT, HELP_OPTS, OPT_NO_PUSH
 from lens.core.commands.checkpoint import execute_checkpoint
 from lens.core.exceptions import LensException
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=CMD_CHECKPOINT,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 @app.callback()
 def checkpoint(
     message: str | None = typer.Argument(
         None,
-        help="Commit message (default: lens checkpoint <timestamp>)",
+        help=ARG_MESSAGE,
     ),
     no_push: bool = typer.Option(
         False,
         "--no-push",
-        help="Do not push to remote after committing.",
+        help=OPT_NO_PUSH,
     ),
 ) -> None:
     """Stage all changes, commit, and push if remote is configured."""

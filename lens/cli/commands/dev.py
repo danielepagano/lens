@@ -9,19 +9,22 @@ from pathlib import Path
 
 import typer
 
+from lens.cli.help_strings import CMD_DEV, HELP_OPTS, MEDIA_SERVER_HOST, MEDIA_SERVER_PORT
+
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent
 _UI_DIR = _LENS_ROOT / "server" / "ui"
 
 app = typer.Typer(
-    help="Start the Vite dev server and Lens API with hot reload.",
+    help=CMD_DEV,
     add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
 @app.callback(invoke_without_command=True)
 def dev(
-    host: str = typer.Option("127.0.0.1", help="Bind host"),
-    port: int = typer.Option(8000, help="API port"),
+    host: str = typer.Option("127.0.0.1", help=MEDIA_SERVER_HOST),
+    port: int = typer.Option(8000, help=MEDIA_SERVER_PORT),
 ) -> None:
     """Start the Vite dev server (HMR) and Lens API for the current project."""
     import uvicorn

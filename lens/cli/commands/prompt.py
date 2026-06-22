@@ -4,6 +4,13 @@ from pathlib import Path
 
 import typer
 
+from lens.cli.help_strings import (
+    ARG_PROMPT_KEY,
+    ARG_PROMPT_CONTENT,
+    ARG_PACK_NAME,
+    CMD_PROMPT,
+    HELP_OPTS,
+)
 from lens.core.commands.prompt import (
     builtin_prompts_path,
     prompt_clear,
@@ -19,8 +26,9 @@ from lens.core.exceptions import LensException
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Manage operator prompts and project-local prompt overrides.",
+    help=CMD_PROMPT,
     add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
@@ -40,7 +48,7 @@ def list_prompts(
 
 @app.command("get", no_args_is_help=True)
 def get_prompt(
-    key: str = typer.Argument(..., help="Prompt key (e.g. write.system)"),
+    key: str = typer.Argument(..., help=ARG_PROMPT_KEY),
 ) -> None:
     """Print the effective prompt and its source layer."""
     try:
@@ -54,8 +62,8 @@ def get_prompt(
 
 @app.command("set", no_args_is_help=True)
 def set_prompt(
-    key: str = typer.Argument(..., help="Prompt key"),
-    content: str = typer.Argument(..., help="Override prompt content"),
+    key: str = typer.Argument(..., help=ARG_PROMPT_KEY),
+    content: str = typer.Argument(..., help=ARG_PROMPT_CONTENT),
 ) -> None:
     """Set or update a project-local prompt override."""
     try:
@@ -68,7 +76,7 @@ def set_prompt(
 
 @app.command("clear", no_args_is_help=True)
 def clear_prompt(
-    key: str = typer.Argument(..., help="Prompt key"),
+    key: str = typer.Argument(..., help=ARG_PROMPT_KEY),
 ) -> None:
     """Remove a project-local prompt override."""
     try:
@@ -100,7 +108,7 @@ def list_packs() -> None:
 
 @app.command("use-pack")
 def use_pack(
-    name: str = typer.Argument(..., help="Pack name from lens/prompts/packs/<name>.toml"),
+    name: str = typer.Argument(..., help=ARG_PACK_NAME),
 ) -> None:
     """Select a prompt pack in lens.toml."""
     try:

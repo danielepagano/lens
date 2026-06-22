@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import CMD_CHECK, HELP_OPTS, OPT_SKIP_NETWORK
 from lens.core.commands.check import run_project_check
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=CMD_CHECK,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 @app.callback()
@@ -13,7 +19,7 @@ def check(
     skip_network: bool = typer.Option(
         False,
         "--skip-network",
-        help="Skip TCP reachability checks for LLM base_url (env and paths still verified).",
+        help=OPT_SKIP_NETWORK,
     ),
 ) -> None:
     """Verify lens.toml, API keys, optional mount, and related paths for this project."""

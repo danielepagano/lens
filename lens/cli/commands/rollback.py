@@ -2,16 +2,21 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import CMD_ROLLBACK, DESC_ROLLBACK, HELP_OPTS
 from lens.core.commands.rollback import rollback as rollback_core
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=CMD_ROLLBACK,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
-@app.callback()
+@app.callback(help=DESC_ROLLBACK)
 def rollback() -> None:
-    """Discard the pending transaction, reverting all unstaged changes."""
     try:
         session = ProjectSession.from_cwd()
         result = rollback_core(session)

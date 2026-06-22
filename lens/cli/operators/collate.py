@@ -4,6 +4,18 @@ import typer
 
 from lens.cli.async_cancel import run_with_cancel
 
+from lens.cli.help_strings import (
+    ARG_ADDRESS,
+    ARG_LINE_1,
+    DESC_COLLATE,
+    OP_COLLATE,
+    OPT_LLM,
+    OPT_PIN_SUMMARY,
+    OPT_REASONING,
+    OPT_SUMMARY_GUIDE,
+    OPT_UNPIN_SUMMARY,
+    HELP_OPTS,
+)
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -15,8 +27,9 @@ from lens.core.operators.collate import CollateOperator
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Section a line range at an arbitrary address (move content into a new child node).",
+    help=OP_COLLATE,
     add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
@@ -37,34 +50,33 @@ def _get_session_and_narrative() -> tuple[ProjectSession, NarrativeNode | None]:
     return session, narrative
 
 
-@app.callback(invoke_without_command=True)
+@app.callback(invoke_without_command=True, help=DESC_COLLATE)
 def collate(
     ctx: typer.Context,
     id: str = typer.Argument(..., help="Section ID for the new child node"),
-    address: str = typer.Argument(..., help="Node address to section"),
-    start_line: int = typer.Argument(..., help="First line of range (1-based, inclusive)"),
-    end_line: int = typer.Argument(..., help="Last line of range (1-based, inclusive)"),
-    pin: list[str] = pin_option("KB ID to pin for summary context (repeatable)"),
-    unpin: list[str] = unpin_option("KB ID to unpin for summary context (repeatable)"),
+    address: str = typer.Argument(..., help=ARG_ADDRESS),
+    start_line: int = typer.Argument(..., help=ARG_LINE_1),
+    end_line: int = typer.Argument(..., help=ARG_LINE_1),
+    pin: list[str] = pin_option(OPT_PIN_SUMMARY),
+    unpin: list[str] = unpin_option(OPT_UNPIN_SUMMARY),
     llm: str | None = typer.Option(
         None,
         "--llm",
         "-l",
-        help="LLM ID to use (overrides project default)",
+        help=OPT_LLM,
     ),
     reasoning: str | None = typer.Option(
         None,
         "--reasoning",
-        help="Reasoning override: none, low, medium, high",
+        help=OPT_REASONING,
     ),
     summary_guide: str | None = typer.Option(
         None,
         "--summary-guide",
         "-g",
-        help="Optional extra instructions for the collate summary LLM",
+        help=OPT_SUMMARY_GUIDE,
     ),
 ) -> None:
-    """Section a line range at an arbitrary address."""
     session, narrative = _get_session_and_narrative()
     assert narrative is not None
     try:

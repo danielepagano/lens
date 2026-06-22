@@ -3,6 +3,16 @@ from __future__ import annotations
 import typer
 
 from lens.cli.async_cancel import run_with_cancel
+from lens.cli.help_strings import (
+    ARG_PROMPT_WRITE,
+    DESC_WRITE,
+    OP_WRITE,
+    OPT_LLM,
+    OPT_MANUAL_WRITE,
+    OPT_REASONING,
+    OPT_RETRY,
+    HELP_OPTS,
+)
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -10,17 +20,22 @@ from lens.core.operator import OperatorError
 from lens.core.operators.write import WriteOperator
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=OP_WRITE,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
-@app.callback()
+@app.callback(help=DESC_WRITE)
 def write(
     prompt: str | None = typer.Argument(
         None,
-        help="Writing direction/instruction",
+        help=ARG_PROMPT_WRITE,
     ),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
@@ -28,27 +43,26 @@ def write(
         None,
         "--llm",
         "-l",
-        help="LLM ID to use (overrides project default)",
+        help=OPT_LLM,
     ),
     reasoning: str | None = typer.Option(
         None,
         "--reasoning",
-        help="Reasoning override: none, low, medium, high",
+        help=OPT_REASONING,
     ),
     retry: bool = typer.Option(
         False,
         "--retry",
         "-r",
-        help="Discard generated text and regenerate",
+        help=OPT_RETRY,
     ),
     manual: str | None = typer.Option(
         None,
         "--manual",
         "-m",
-        help="Append text directly to the cursor node without AI",
+        help=OPT_MANUAL_WRITE,
     ),
 ) -> None:
-    """Generate narrative text at the cursor."""
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:

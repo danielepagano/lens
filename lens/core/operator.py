@@ -1826,14 +1826,16 @@ class Operator(ABC):
                     and messages[-1]["role"] == "user"
                     and messages[-2]["role"] == "assistant"
                 ):
-                    # Multi-turn: the last assistant turn is already in the message
-                    # history (from build_messages).  Replace the trailing task-
-                    # instruction user message with the feedback turn instead of
-                    # appending a duplicate assistant + user pair.
+                    # Multi-turn: the last assistant turn came from earlier
+                    # conversation history (e.g. a committed write block) but the
+                    # user's retry feedback refers to the *pending* write's content
+                    # (previous_content).  Replace both trailing turns so the LLM
+                    # sees the correct previous attempt + feedback.
                     from lens.core.prompts import PromptStore as _PS
                     feedback_text = _PS(session.project_root).format(
                         "shared.retry_feedback_template", feedback=feedback
                     )
+                    messages[-2] = {"role": "assistant", "content": previous_content}
                     messages[-1] = {"role": "user", "content": feedback_text}
                 else:
                     messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))

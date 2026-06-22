@@ -6,6 +6,22 @@ from typing import Any
 import typer
 
 from lens.cli.async_cancel import run_with_cancel
+from lens.cli.help_strings import (
+    ARG_PROMPT_CHAT,
+    OP_CHAT,
+    OPT_AS_CHAT,
+    OPT_WITH,
+    OPT_PIN,
+    OPT_UNPIN,
+    OPT_LLM,
+    OPT_REASONING,
+    OPT_RETRY,
+    OPT_END_CHAT,
+    OPT_SLUG_CHAT,
+    OPT_NARRATE,
+    OPT_WAIT,
+    HELP_OPTS,
+)
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -14,7 +30,12 @@ from lens.core.operator_params import chat_invocation_uses_session, prepare_chat
 from lens.core.operators.chat import ChatOperator
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=OP_CHAT,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 async def _print_token(chunk: str) -> None:
@@ -25,43 +46,43 @@ async def _print_token(chunk: str) -> None:
 def chat(
     prompt: str = typer.Argument(
         None,
-        help="Stage directions (one-shot or fresh session) or the character's dialog (inside session)",
+        help=ARG_PROMPT_CHAT,
     ),
     as_kb_id: str | None = typer.Option(
         None,
         "--as",
         "-as",
-        help="KB id of the character the AI will voice (e.g. npc.bob, pc.alice)",
+        help=OPT_AS_CHAT,
     ),
     with_kb_id: str | None = typer.Option(
         None,
         "--with",
         "-w",
-        help="KB id of the counterpart character the user plays (e.g. pc.amy); triggers session mode",
+        help=OPT_WITH,
     ),
-    pin: list[str] = pin_option("KB ID to pin (repeatable)"),
-    unpin: list[str] = unpin_option(),
-    llm: str | None = typer.Option(None, "--llm", "-l", help="LLM ID to use"),
+    pin: list[str] = pin_option(OPT_PIN),
+    unpin: list[str] = unpin_option(OPT_UNPIN),
+    llm: str | None = typer.Option(None, "--llm", "-l", help=OPT_LLM),
     reasoning: str | None = typer.Option(
-        None, "--reasoning", help="Reasoning override: none, low, medium, high"
+        None, "--reasoning", help=OPT_REASONING
     ),
-    retry: bool = typer.Option(False, "--retry", "-r", help="Discard and regenerate"),
-    end: bool = typer.Option(False, "--end", help="Close the current chat session"),
+    retry: bool = typer.Option(False, "--retry", "-r", help=OPT_RETRY),
+    end: bool = typer.Option(False, "--end", help=OPT_END_CHAT),
     slug: str | None = typer.Option(
         None,
         "--slug",
         "-s",
-        help="Sub-node id for a new session (default: auto-generated from characters and prompt)",
+        help=OPT_SLUG_CHAT,
     ),
     narrate: bool = typer.Option(
         False,
         "--narrate",
-        help="In a session: append as blockquote prose only (no [Name] prefix)",
+        help=OPT_NARRATE,
     ),
     wait: bool = typer.Option(
         False,
         "--wait",
-        help="In a session: append the line only, do not request an AI reply",
+        help=OPT_WAIT,
     ),
 ) -> None:
     """Have the AI speak as a specific character in the current scene.

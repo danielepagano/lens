@@ -9,6 +9,7 @@ from pathlib import Path
 import typer
 
 from lens.cli.commands import register_commands
+from lens.cli.help_strings import APP, HELP_OPTS
 from lens.cli.operators import register_operators
 from lens.core.modalities.bootstrap import ensure_modalities_registered
 from lens.core.project import (
@@ -24,9 +25,10 @@ _DATASET_ALLOWED = frozenset({"stats", "kb", "prompt", "commit", "rollback", "se
 
 app = typer.Typer(
     name="lens",
-    help="Lens: narrative engine with fractal summarization",
+    help=APP,
     no_args_is_help=True,
     add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 

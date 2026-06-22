@@ -5,6 +5,21 @@ from typing import Any
 import typer
 
 from lens.cli.async_cancel import run_with_cancel
+from lens.cli.help_strings import (
+    ARG_PROMPT_PLAY,
+    OP_PLAY,
+    OPT_LLM,
+    OPT_REASONING,
+    OPT_RETRY,
+    OPT_AS_PLAY,
+    OPT_MODULE_PLAY,
+    OPT_END_PLAY,
+    OPT_PASS,
+    OPT_SLUG,
+    OPT_PIN_PLAY,
+    OPT_UNPIN,
+    HELP_OPTS,
+)
 from lens.cli.options import pin_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -12,7 +27,12 @@ from lens.core.operator import OperatorError
 from lens.rpg.operators.play import PlayOperator
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=OP_PLAY,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 def _pins_with_encounter_expand(pins: list[str]) -> list[str]:
@@ -37,56 +57,54 @@ def _play_extra_params(as_pc: str | None, do_pass: bool) -> dict[str, Any] | Non
 def play(
     prompt: str = typer.Argument(
         None,
-        help="Scene direction or situation for the player-facing moment (e.g. what the player says or does)",
+        help=ARG_PROMPT_PLAY,
     ),
-    pin: list[str] = pin_option(
-        "KB ID to pin (repeatable); at least one must be tagged 'pc'"
-    ),
-    unpin: list[str] = unpin_option(),
+    pin: list[str] = pin_option(OPT_PIN_PLAY),
+    unpin: list[str] = unpin_option(OPT_UNPIN),
     llm: str | None = typer.Option(
         None,
         "--llm",
         "-l",
-        help="LLM ID to use (overrides project default)",
+        help=OPT_LLM,
     ),
     reasoning: str | None = typer.Option(
         None,
         "--reasoning",
-        help="Reasoning override: none, low, medium, high",
+        help=OPT_REASONING,
     ),
     retry: bool = typer.Option(
         False,
         "--retry",
         "-r",
-        help="Discard generated text and regenerate",
+        help=OPT_RETRY,
     ),
     as_pc: str | None = typer.Option(
         None,
         "--as",
         "-as",
-        help="PC key to attribute the prompt to (e.g. alice → [Alice]); must be a pinned pc.*",
+        help=OPT_AS_PLAY,
     ),
     module: str | None = typer.Option(
         None,
         "--module",
         "-m",
-        help="Rules module to activate (e.g. 'combat' → rules.combat); swaps previous module",
+        help=OPT_MODULE_PLAY,
     ),
     end: bool = typer.Option(
         False,
         "--end",
-        help="Close the current play session",
+        help=OPT_END_PLAY,
     ),
     do_pass: bool = typer.Option(
         False,
         "--pass",
-        help="Have the GM respond now (call the LLM)",
+        help=OPT_PASS,
     ),
     slug: str | None = typer.Option(
         None,
         "--slug",
         "-s",
-        help="Sub-node id to use when starting a new session (default: auto-generated from prompt)",
+        help=OPT_SLUG,
     ),
 ) -> None:
     """Narrate a player-agency moment in GM voice, then pause for player response.
