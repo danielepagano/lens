@@ -25,7 +25,7 @@
   import { submitCliCommand } from './cliSubmit'
   import { setupCliLifecycle } from './cliLifecycle'
   import { computeCliHint, computeCliInputAttrs, scheduleCliResize, setupIosViewportHandler } from './cliInputHints'
-  import { cliOutput, linePickMode, linePickSelection } from '../../stores/ui'
+  import { cliOutput, linePickMode, linePickSelection, guideModalCommand } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
   import { stats } from '../../stores/stats'
 
@@ -255,6 +255,16 @@
   )
   const showHint = $derived(Boolean(computedHint) && isKnownCommand)
   const inputAttrs = $derived(computeCliInputAttrs(currentParseState))
+
+  const guideKey = $derived(
+    activeCommandDef
+      ? activeCommandDef.trigger
+      : '__general'
+  )
+
+  function openGuide() {
+    guideModalCommand.set(guideKey)
+  }
 </script>
 
 <svelte:window onkeydowncapture={globalKeydownFocusCli} />
@@ -266,31 +276,79 @@
     onBeforeSelect={snapshotCaretBeforeChipPointer}
     onSelect={(suggestion) => handleCliSuggestionChipClick(suggestion, createRefs())}
   />
-  <CliInputField
-    bind:input
-    {showInvalid}
-    {flashInvalid}
-    {busy}
-    {busyMessage}
-    {showHint}
-    {computedHint}
-    autocomplete={inputAttrs.autocomplete}
-    autocorrect={inputAttrs.autocorrect}
-    autocapitalize={inputAttrs.autocapitalize}
-    spellcheck={inputAttrs.spellcheck}
-    attachInputEl={attachCliInputEl}
-    onInput={(event) => handleCliTextInput(event, createRefs())}
-    onKeydown={(event) => handleCliInputKeydown(event, createRefs())}
-    onKeyup={(event) => handleCliInputKeyup(event, createRefs())}
-    onSelectionRefresh={() => {
-      if (!busy) updateCommandState()
-    }}
-    onBeforeInput={(event) => handleCliBeforeInput(event, createRefs())}
-    onFocus={() => handleCliFocus(createRefs(), (value) => {
-      isFocused = value
-    })}
-    onBlur={(event) => handleCliBlur(event, createRefs(), (value) => {
-      isFocused = value
-    })}
-  />
+  <div class="cli-bar-row">
+    <div class="cli-bar-input-wrap">
+      <CliInputField
+      bind:input
+      {showInvalid}
+      {flashInvalid}
+      {busy}
+      {busyMessage}
+      {showHint}
+      {computedHint}
+      autocomplete={inputAttrs.autocomplete}
+      autocorrect={inputAttrs.autocorrect}
+      autocapitalize={inputAttrs.autocapitalize}
+      spellcheck={inputAttrs.spellcheck}
+      attachInputEl={attachCliInputEl}
+      onInput={(event) => handleCliTextInput(event, createRefs())}
+      onKeydown={(event) => handleCliInputKeydown(event, createRefs())}
+      onKeyup={(event) => handleCliInputKeyup(event, createRefs())}
+      onSelectionRefresh={() => {
+        if (!busy) updateCommandState()
+      }}
+      onBeforeInput={(event) => handleCliBeforeInput(event, createRefs())}
+      onFocus={() => handleCliFocus(createRefs(), (value) => {
+        isFocused = value
+      })}
+      onBlur={(event) => handleCliBlur(event, createRefs(), (value) => {
+        isFocused = value
+      })}
+    /></div>
+    <button
+      type="button"
+      class="cli-guide-btn"
+      onclick={openGuide}
+      aria-label="Show guide"
+      title="Guide"
+    >?</button>
+  </div>
 </div>
+
+<style>
+  .cli-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .cli-bar-input-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cli-guide-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 50%;
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--pico-muted-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-bottom: 0.3rem;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .cli-guide-btn:hover {
+    color: var(--pico-color);
+    border-color: var(--pico-color);
+  }
+</style>
