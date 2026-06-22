@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typer
 
-from lens.cli.help_strings import CMD_INIT, HELP_OPTS
+from lens.cli.help_strings import CMD_INIT, DESC_INIT, HELP_OPTS
 from lens.core.commands.init import init_project
 from lens.core.exceptions import LensException
 
@@ -14,9 +14,8 @@ app = typer.Typer(
 )
 
 
-@app.callback()
+@app.callback(help=DESC_INIT)
 def init() -> None:
-    """Initialize a Lens project in the current git repo."""
     try:
         root = init_project()
         typer.echo(f"Initialized Lens project at {root}")

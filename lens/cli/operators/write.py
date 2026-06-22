@@ -5,6 +5,7 @@ import typer
 from lens.cli.async_cancel import run_with_cancel
 from lens.cli.help_strings import (
     ARG_PROMPT_WRITE,
+    DESC_WRITE,
     OP_WRITE,
     OPT_LLM,
     OPT_MANUAL_WRITE,
@@ -30,7 +31,7 @@ app = typer.Typer(
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
-@app.callback()
+@app.callback(help=DESC_WRITE)
 def write(
     prompt: str | None = typer.Argument(
         None,
@@ -62,7 +63,6 @@ def write(
         help=OPT_MANUAL_WRITE,
     ),
 ) -> None:
-    """Generate narrative text at the cursor."""
     try:
         session = ProjectSession.from_cwd()
     except RuntimeError as e:

@@ -21,21 +21,26 @@ APP = "Lens: narrative engine with fractal summarization."
 #  Top-level commands  (lens <command>)
 # ═══════════════════════════════════════════════════════════════════
 CMD_INIT = "Initialize a Lens project in the current git repo."
-CMD_USE = "Select the active narrative in lens.toml."
+CMD_USE = "Choose which narrative tree to work on (creates the folder structure if needed)."
 CMD_CHECK = "Verify lens.toml, API keys, mount, and paths."
 CMD_STATS = "Count knowledge objects and narrative nodes."
-CMD_COMMIT = "Stage all changes (git add -A)."
+CMD_COMMIT = "Save pending work by staging all changes. Run 'lens checkpoint' to commit."
 CMD_CHECKPOINT = (
-    "Stage all changes, commit, and push if remote is configured."
+    "Commit all staged changes with a message and push to the remote. "
+    "Permanently saves your work."
 )
 CMD_REFRESH = "Fetch from remote and fast-forward the current branch."
-CMD_REWIND = "Rewind the cursor to a node or line, deleting everything after."
-CMD_ROLLBACK = "Discard the pending transaction."
+CMD_REWIND = "Move the cursor backward in the narrative tree, discarding all content that comes after."
+CMD_ROLLBACK = "Undo the last AI operation and restore the narrative to its previous state."
 CMD_KB = (
     "Manage knowledge objects "
     "(add, edit, get, tag, template, copy, rename, delete, with-tag, extract)."
 )
-CMD_PIN = "Pin knowledge, narrative vars, or operator params at narrative nodes."
+CMD_PIN = (
+    "Declare which knowledge objects, variables, and operator settings apply "
+    "at a node. Pins tell the AI what facts are 'in frame' for a scene; "
+    "they inherit from root to cursor."
+)
 CMD_PROMPT = "Manage operator prompts and project-local prompt overrides."
 CMD_MEDIA = "Image generation, TTS, attachment, and related commands."
 CMD_RENAME = "Rename a narrative node."
@@ -46,18 +51,26 @@ CMD_DEPLOY = "Manage Fly.io deployment."
 # ═══════════════════════════════════════════════════════════════════
 #  Operators  (lens <operator>)
 # ═══════════════════════════════════════════════════════════════════
-OP_WRITE = "Generate narrative text at the cursor."
+OP_WRITE = (
+    "Generate narrative prose at the cursor. "
+    "Provide an optional instruction or continue from where you left off."
+)
 OP_EDIT = (
     "Rewrite a line range in a narrative node using the LLM, "
     "or replace it directly."
 )
-OP_SECTION = "Start or end a section at the cursor."
+OP_SECTION = (
+    "Create a child node for deeper detail, or close one and "
+    "summarize back to the parent. Sections structure the narrative tree."
+)
 OP_COLLATE = (
-    "Carve a line range into a new child section at an arbitrary address."
+    "Extract a range of existing lines into a new child section, "
+    "replacing them with an AI summary."
 )
 OP_COMPRESS = (
-    "Use AI to pick a range on the cursor node and collate it "
-    "into a child section (provide a PROMPT or --aggressiveness)."
+    "Use AI to find and extract a matching passage into a child section. "
+    "Describe what to pull out, or use --aggressiveness for automatic "
+    "range selection."
 )
 OP_CHAT = "Have the AI speak as a character in the current scene."
 OP_PLAY = "Narrate a player-agency moment in GM voice."
@@ -69,21 +82,21 @@ OP_ADVANCE = "Advance time, update fronts, resolve consequences."
 # ═══════════════════════════════════════════════════════════════════
 
 # --pin / -p
-OPT_PIN = "Knowledge base ID to pin for this operator (repeatable)"
+OPT_PIN = "KB object ID (type.key) to include in AI context for this call (repeatable)"
 OPT_PIN_SECTION = (
-    "KB ID to pin in the new section's front matter (repeatable)"
+    "KB object ID to pin in the new section's front matter (repeatable)"
 )
-OPT_PIN_SUMMARY = "KB ID to pin for summary context (repeatable)"
+OPT_PIN_SUMMARY = "KB object ID to pin for summary context (repeatable)"
 OPT_PIN_PLAY = (
-    "KB ID to pin (repeatable); at least one must be tagged 'pc'"
+    "KB object ID to pin (repeatable); at least one must be tagged 'pc'"
 )
 
 # --unpin / -u
-OPT_UNPIN = "Knowledge base ID to unpin for this operator (repeatable)"
+OPT_UNPIN = "KB object ID to exclude from inherited context for this call (repeatable)"
 OPT_UNPIN_SECTION = (
-    "KB ID to unpin in the new section's front matter (repeatable)"
+    "KB object ID to unpin in the new section's front matter (repeatable)"
 )
-OPT_UNPIN_SUMMARY = "KB ID to unpin for summary context (repeatable)"
+OPT_UNPIN_SUMMARY = "KB object ID to unpin for summary context (repeatable)"
 
 # --llm / -l
 OPT_LLM = "LLM ID to use (overrides project default)"
@@ -92,7 +105,7 @@ OPT_LLM_SUMMARY = (
 )
 
 # --reasoning
-OPT_REASONING = "Reasoning override: none, low, medium, high"
+OPT_REASONING = "Reasoning effort: none, low, medium, high (for models that support it)"
 
 # --retry / -r
 OPT_RETRY = "Discard generated text and regenerate"
@@ -103,8 +116,8 @@ OPT_RETRY_DESIGN = (
 
 # --node / -n
 OPT_NODE = (
-    "Narrative node address (default: cursor, "
-    "same addressing rules as lens pin kb)"
+    "Narrative node address, e.g. /chapter-1 or /chapter-1/scene-2 "
+    "(default: current cursor position)"
 )
 
 # --end
@@ -141,7 +154,7 @@ OPT_MODULE_DESIGN = (
 
 # --summary-guide / -g
 OPT_SUMMARY_GUIDE = (
-    "Optional extra instructions for the collate summary LLM"
+    "Optional extra instructions for the summary LLM"
 )
 
 # --pass
@@ -221,9 +234,9 @@ ARG_ID = "Object ID (type.key)"
 ARG_ID_OR_NONE = "Object ID (type.key); omit to see usage"
 ARG_ADDRESS = "Narrative node address (e.g. /chapter-1)"
 ARG_LINE_1 = "1-based line number (inclusive)"
-ARG_PROMPT = "Prompt text (may contain @-mentions for KB, vars, rolls)"
+ARG_PROMPT = "Prompt text (may contain @type.key for KB, @var:key, @roll expr, @now)"
 ARG_PROMPT_OPT = (
-    "Prompt text. May contain @-mentions. Omit if using --from."
+    "Prompt text (supports @type.key, @var:key, @roll). Omit if using --from."
 )
 ARG_PROMPT_WRITE = "Writing direction / instruction (omit to continue)"
 ARG_PROMPT_EDIT = "Editing instruction or replacement text"
@@ -237,7 +250,7 @@ ARG_PROMPT_PLAY = (
 )
 ARG_PROMPT_DESIGN = "Design task or question"
 ARG_PROMPT_COMPRESS = (
-    "What to collate into a child section "
+    "What to extract into a child section "
     "(omit if using --aggressiveness)"
 )
 ARG_FEEDBACK = "Feedback for --retry (ignored otherwise)"
@@ -302,7 +315,7 @@ ARG_NEW_SLUG = "New slug (alphanumeric, underscores, hyphens only)"
 ARG_PACK_NAME = (
     "Pack name from lens/prompts/packs/<name>.toml"
 )
-ARG_SCOPE = "'global' or operator slug (e.g. write)"
+ARG_SCOPE = "'global' for all operators, or an operator slug (e.g. write, chat) for one"
 ARG_PARAM_KEY = "Canonical param name (e.g. llm_id)"
 ARG_VAR_KEY = "Var key"
 ARG_VAR_VALUE = "Value (multiple words join with spaces)"
@@ -336,27 +349,33 @@ KB_EXTRACT = (
 )
 
 # pin sub-commands
-PIN_KB = "Pin or unpin knowledge objects (kb_pin / kb_unpin)."
+PIN_KB = (
+    "Add or remove knowledge objects from a node's prompt context. "
+    "Pinned objects are automatically included when AI operators run "
+    "at or below this node."
+)
 PIN_VAR = (
-    "Set or unset vars in node front matter "
-    "(string substitution via @var:)."
+    "Set or unset key-value variables that prompts can reference as "
+    "@var:key. Useful for dynamic values like character mood, "
+    "season, or scene location."
 )
 PIN_PARAM = (
-    "Set or unset operator params under params.global "
-    "or params.<operator>."
+    "Override operator defaults (LLM choice, reasoning level, "
+    "temperature, etc.) at a specific node. Use global scope for "
+    "all operators or an operator slug (e.g. write, chat) for one."
 )
-PIN_KB_ADD = "Add knowledge objects to kb_pin at the target node."
-PIN_KB_REMOVE = "Remove knowledge objects from kb_pin."
+PIN_KB_ADD = "Pin a KB object to a node so the AI includes it in prompt context."
+PIN_KB_REMOVE = "Unpin a KB object so it no longer appears in context at this node."
 PIN_KB_BLOCK = (
-    "Add knowledge objects to kb_unpin (cancel ancestor pins)."
+    "Suppress a pin inherited from an ancestor node. "
+    "Useful when a globally-relevant fact should be ignored for "
+    "a specific scene."
 )
-PIN_KB_UNBLOCK = "Remove knowledge objects from kb_unpin."
-PIN_VAR_SET = "Set a var in front matter at the target node."
-PIN_VAR_UNSET = "Remove a var from front matter at the target node."
-PIN_PARAM_SET = "Set a param under params.<scope> at the target node."
-PIN_PARAM_UNSET = (
-    "Remove a param key from params.<scope> at the target node."
-)
+PIN_KB_UNBLOCK = "Restore an ancestor pin that was previously suppressed at this node."
+PIN_VAR_SET = "Set a @var:key value at the target node."
+PIN_VAR_UNSET = "Remove a @var:key value from the target node."
+PIN_PARAM_SET = "Set an operator parameter (e.g. llm_id, reasoning) for a scope at the target node."
+PIN_PARAM_UNSET = "Remove an operator parameter from a scope at the target node."
 
 # prompt sub-commands
 PROMPT_LIST = "List available prompt keys."
@@ -409,7 +428,10 @@ DESC_CHECK = (
     "and related paths for this project."
 )
 
-DESC_COMMIT = "Stage all changes in the project (git add -A)."
+DESC_COMMIT = (
+    "Save all pending work by staging every change in the project. "
+    "Run 'lens checkpoint' to create a permanent commit and push."
+)
 
 DESC_CHECKPOINT = (
     "Stage all changes, create a git commit, and push to the remote "
@@ -435,21 +457,22 @@ DESC_REWIND = (
     "With a line number, the node\u2019s file is truncated at that line "
     "with structural adjustments:\n"
     "\n"
-    "\u2022 Line in front matter        \u2192 node is cleared entirely.\n"
-    "\u2022 Line inside an annotation   \u2192 annotation and everything "
+    "\b\n"
+    "- Line in front matter        \u2192 node is cleared entirely.\n"
+    "- Line inside an annotation   \u2192 annotation and everything "
     "after is deleted.\n"
-    "\u2022 Line inside a section body  \u2192 the entire section block "
+    "- Line inside a section body  \u2192 the entire section block "
     "and child node are deleted (partial summaries are invalid).\n"
-    "\u2022 Line inside a write body    \u2192 body is truncated there "
+    "- Line inside a write body    \u2192 body is truncated there "
     "and the close tag is moved to that position.\n"
-    "\u2022 Otherwise (free text)       \u2192 simple truncation.\n\n"
+    "- Otherwise (free text)       \u2192 simple truncation.\n\n"
     "Side effects such as knowledge-base objects created by design "
     "operators are never modified."
 )
 
 DESC_ROLLBACK = (
-    "Discard the pending operator transaction.\n\n"
-    "Inline operators (write): unstaged changes are discarded.\n"
+    "Undo the last AI operation and restore the narrative to its previous state.\n\n"
+    "Inline operators (write, play, chat): unstaged changes are discarded.\n"
     "Mutation operators (edit, kb edit): a compensating transaction "
     "removes claim tags and restores the original text."
 )

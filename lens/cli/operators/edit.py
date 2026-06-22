@@ -8,6 +8,7 @@ from lens.cli.help_strings import (
     ARG_ADDRESS_EDIT,
     ARG_LINE_1,
     ARG_PROMPT_EDIT,
+    DESC_EDIT,
     OP_EDIT,
     OPT_LLM,
     OPT_REASONING,
@@ -34,7 +35,7 @@ app = typer.Typer(
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
-@app.callback()
+@app.callback(help=DESC_EDIT)
 def edit(
     ctx: typer.Context,
     address: str | None = typer.Argument(None, help=ARG_ADDRESS_EDIT),
@@ -66,7 +67,6 @@ def edit(
         help=OPT_REPLACE,
     ),
 ) -> None:
-    """Rewrite a line range in a narrative node using the LLM, or replace it directly."""
     if address is None or start_line is None or end_line is None:
         typer.echo(ctx.get_help())
         raise typer.Exit(0)

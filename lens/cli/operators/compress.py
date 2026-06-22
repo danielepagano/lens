@@ -5,6 +5,7 @@ import typer
 from lens.cli.async_cancel import run_with_cancel
 from lens.cli.help_strings import (
     ARG_PROMPT_COMPRESS,
+    DESC_COMPRESS,
     OP_COMPRESS,
     OPT_AGGRESSIVENESS,
     OPT_LLM,
@@ -52,7 +53,7 @@ def _get_session_and_narrative() -> tuple[ProjectSession, NarrativeNode | None]:
     return session, narrative
 
 
-@app.callback(invoke_without_command=True)
+@app.callback(invoke_without_command=True, help=DESC_COMPRESS)
 def compress(
     ctx: typer.Context,
     prompt: str | None = typer.Argument(
@@ -92,7 +93,6 @@ def compress(
         help=OPT_AGGRESSIVENESS,
     ),
 ) -> None:
-    """Pick a range via AI (compress_collate tool) then collate at the cursor or --node."""
     session, narrative = _get_session_and_narrative()
     assert narrative is not None
     stripped_arg = (prompt or "").strip()

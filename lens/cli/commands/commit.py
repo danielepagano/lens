@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typer
 
-from lens.cli.help_strings import CMD_COMMIT, HELP_OPTS
+from lens.cli.help_strings import CMD_COMMIT, DESC_COMMIT, HELP_OPTS
 from lens.core.commands.commit import execute_commit
 from lens.core.exceptions import LensException
 
@@ -14,9 +14,8 @@ app = typer.Typer(
 )
 
 
-@app.callback()
+@app.callback(help=DESC_COMMIT)
 def commit() -> None:
-    """Stage all changes (git add -A)."""
     try:
         from lens.core.project import ProjectSession
 

@@ -69,7 +69,7 @@ def add(
     extra_ids: list[str] = typer.Option([], "--id", "-i", help=PIN_EXTRA_IDS),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Add knowledge objects to kb_pin at the target node."""
+    """Pin a KB object to a node so the AI includes it in prompt context."""
     try:
         session = ProjectSession.from_cwd()
         count, target_path = pin_add(session, id, node_pos, extra_ids, node_opt)
@@ -89,7 +89,7 @@ def remove(
     extra_ids: list[str] = typer.Option([], "--id", "-i", help=PIN_EXTRA_IDS),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Remove knowledge objects from kb_pin."""
+    """Unpin a KB object so it no longer appears in context at this node."""
     try:
         session = ProjectSession.from_cwd()
         count, target_path = pin_remove(session, id, node_pos, extra_ids, node_opt)
@@ -109,7 +109,7 @@ def block(
     extra_ids: list[str] = typer.Option([], "--id", "-i", help=PIN_EXTRA_IDS),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Add knowledge objects to kb_unpin (cancel ancestor pins)."""
+    """Suppress an ancestor pin at this node (kb_unpin)."""
     try:
         session = ProjectSession.from_cwd()
         count, target_path = pin_block(session, id, node_pos, extra_ids, node_opt)
@@ -129,7 +129,7 @@ def unblock(
     extra_ids: list[str] = typer.Option([], "--id", "-i", help=PIN_EXTRA_IDS),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Remove knowledge objects from kb_unpin."""
+    """Restore an ancestor pin previously suppressed at this node."""
     try:
         session = ProjectSession.from_cwd()
         count, target_path = pin_unblock(session, id, node_pos, extra_ids, node_opt)
@@ -151,7 +151,7 @@ def var_set_cmd(
     ),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Set a var in front matter at the target node."""
+    """Set a @var:key value at the target node."""
     try:
         session = ProjectSession.from_cwd()
         _, target_path = var_set(session, key, list(value), "/@cursor", node_opt)
@@ -166,7 +166,7 @@ def var_unset_cmd(
     key: str = typer.Argument(..., help=ARG_VAR_KEY),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Remove a var from front matter at the target node."""
+    """Remove a @var:key value from the target node."""
     try:
         session = ProjectSession.from_cwd()
         _, target_path = var_unset(session, key, "/@cursor", node_opt)
@@ -186,7 +186,7 @@ def param_set_cmd(
     ),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Set a param under params.<scope> at the target node."""
+    """Set an operator parameter (e.g. llm_id, reasoning) for a scope."""
     try:
         session = ProjectSession.from_cwd()
         _, target_path = param_set(session, scope, key, list(value), "/@cursor", node_opt)
@@ -202,7 +202,7 @@ def param_unset_cmd(
     key: str = typer.Argument(..., help=ARG_PARAM_KEY),
     node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
 ) -> None:
-    """Remove a param key from params.<scope> at the target node."""
+    """Remove an operator parameter from a scope at the target node."""
     try:
         session = ProjectSession.from_cwd()
         _, target_path = param_unset(session, scope, key, "/@cursor", node_opt)

@@ -6,6 +6,7 @@ import typer
 
 from lens.cli.help_strings import (
     ARG_FEEDBACK,
+    DESC_ADVANCE,
     OP_ADVANCE,
     OPT_LLM,
     OPT_REASONING,
@@ -34,7 +35,7 @@ async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
 
 
-@app.callback()
+@app.callback(help=DESC_ADVANCE)
 def advance(
     feedback: str | None = typer.Argument(
         None,
@@ -71,7 +72,6 @@ def advance(
         help=OPT_END_ADVANCE,
     ),
 ) -> None:
-    """Advance time, update fronts, resolve consequences."""
     from lens.rpg.operators.advance import AdvanceOperator
 
     if end and retry:

@@ -40,6 +40,10 @@ def register_operators(main_app: typer.Typer) -> None:
         if not app.registered_commands and app.registered_callback:
             mod = importlib.import_module(f"lens.cli.operators.{name}")
             callback = getattr(mod, name)
-            main_app.command(name, rich_help_panel="Operators")(callback)
+            help_text = app.registered_callback.help
+            if isinstance(help_text, str):
+                main_app.command(name, rich_help_panel="Operators", help=help_text)(callback)
+            else:
+                main_app.command(name, rich_help_panel="Operators")(callback)
         else:
             main_app.add_typer(app, name=name, rich_help_panel="Operators")

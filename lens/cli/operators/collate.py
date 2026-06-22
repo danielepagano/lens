@@ -7,6 +7,7 @@ from lens.cli.async_cancel import run_with_cancel
 from lens.cli.help_strings import (
     ARG_ADDRESS,
     ARG_LINE_1,
+    DESC_COLLATE,
     OP_COLLATE,
     OPT_LLM,
     OPT_PIN_SUMMARY,
@@ -49,7 +50,7 @@ def _get_session_and_narrative() -> tuple[ProjectSession, NarrativeNode | None]:
     return session, narrative
 
 
-@app.callback(invoke_without_command=True)
+@app.callback(invoke_without_command=True, help=DESC_COLLATE)
 def collate(
     ctx: typer.Context,
     id: str = typer.Argument(..., help="Section ID for the new child node"),
@@ -76,7 +77,6 @@ def collate(
         help=OPT_SUMMARY_GUIDE,
     ),
 ) -> None:
-    """Section a line range at an arbitrary address."""
     session, narrative = _get_session_and_narrative()
     assert narrative is not None
     try:

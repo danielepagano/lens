@@ -7,6 +7,7 @@ import typer
 from lens.cli.async_cancel import run_with_cancel
 
 from lens.cli.help_strings import (
+    DESC_SECTION,
     OP_SECTION,
     OPT_END_SECTION,
     OPT_LLM_SUMMARY,
@@ -49,7 +50,7 @@ def _get_session_and_narrative() -> tuple[ProjectSession, NarrativeNode | None]:
     return session, narrative
 
 
-@app.callback(invoke_without_command=True)
+@app.callback(invoke_without_command=True, help=DESC_SECTION)
 def section(
     ctx: typer.Context,
     id: str | None = typer.Argument(
@@ -74,7 +75,6 @@ def section(
         help=OPT_REASONING,
     ),
 ) -> None:
-    """Create a child node at the cursor and open a section tag."""
     if end:
         guidance = id.strip() if id and id.strip() else None
         _do_end(llm, reasoning, guidance)
