@@ -4,6 +4,17 @@ import typer
 
 from lens.cli.async_cancel import run_with_cancel
 
+from lens.cli.help_strings import (
+    ARG_ADDRESS_EDIT,
+    ARG_LINE_1,
+    ARG_PROMPT_EDIT,
+    OP_EDIT,
+    OPT_LLM,
+    OPT_REASONING,
+    OPT_RETRY_PROPOSE,
+    OPT_REPLACE,
+    HELP_OPTS,
+)
 from lens.cli.options import pin_option, unpin_option
 from lens.core.address import NarrativeAddress
 from lens.core.exceptions import LensException
@@ -12,7 +23,13 @@ from lens.core.operators.edit import EditOperator
 from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession, resolve_address
 
-app = typer.Typer(invoke_without_command=True, no_args_is_help=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    no_args_is_help=True,
+    add_completion=False,
+    help=OP_EDIT,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 async def _print_token(chunk: str) -> None:
     print(chunk, end="", flush=True)
@@ -20,33 +37,33 @@ async def _print_token(chunk: str) -> None:
 @app.callback()
 def edit(
     ctx: typer.Context,
-    address: str | None = typer.Argument(None, help="Narrative node address"),
-    start_line: int | None = typer.Argument(None, help="First line to edit (1-based, inclusive)"),
-    end_line: int | None = typer.Argument(None, help="Last line to edit (1-based, inclusive)"),
-    prompt: str | None = typer.Argument(None, help="Editing instruction or replacement text"),
+    address: str | None = typer.Argument(None, help=ARG_ADDRESS_EDIT),
+    start_line: int | None = typer.Argument(None, help=ARG_LINE_1),
+    end_line: int | None = typer.Argument(None, help=ARG_LINE_1),
+    prompt: str | None = typer.Argument(None, help=ARG_PROMPT_EDIT),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
     llm: str | None = typer.Option(
         None,
         "--llm",
         "-l",
-        help="LLM ID to use (overrides project default)",
+        help=OPT_LLM,
     ),
     reasoning: str | None = typer.Option(
         None,
         "--reasoning",
-        help="Reasoning override: none, low, medium, high",
+        help=OPT_REASONING,
     ),
     retry: bool = typer.Option(
         False,
         "--retry",
         "-r",
-        help="Re-propose with same or updated parameters",
+        help=OPT_RETRY_PROPOSE,
     ),
     replace: bool = typer.Option(
         False,
         "--replace",
-        help="Replace the selected text directly with PROMPT (no LLM)",
+        help=OPT_REPLACE,
     ),
 ) -> None:
     """Rewrite a line range in a narrative node using the LLM, or replace it directly."""

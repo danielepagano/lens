@@ -6,6 +6,15 @@ import typer
 
 from lens.cli.async_cancel import run_with_cancel
 
+from lens.cli.help_strings import (
+    OP_SECTION,
+    OPT_END_SECTION,
+    OPT_LLM_SUMMARY,
+    OPT_PIN_SECTION,
+    OPT_REASONING,
+    OPT_UNPIN_SECTION,
+    HELP_OPTS,
+)
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -17,8 +26,9 @@ from lens.core.operators.section import SectionOperator
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Start or end a section at the cursor.",
+    help=OP_SECTION,
     add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
@@ -49,19 +59,19 @@ def section(
             "instructions for the summary LLM (not a section id)."
         ),
     ),
-    end: bool = typer.Option(False, "--end", help="Close the current section"),
-    pin: list[str] = pin_option("KB ID to pin in the new section's front matter (repeatable)"),
-    unpin: list[str] = unpin_option("KB ID to unpin in the new section's front matter (repeatable)"),
+    end: bool = typer.Option(False, "--end", help=OPT_END_SECTION),
+    pin: list[str] = pin_option(OPT_PIN_SECTION),
+    unpin: list[str] = unpin_option(OPT_UNPIN_SECTION),
     llm: str | None = typer.Option(
         None,
         "--llm",
         "-l",
-        help="LLM ID to use for summary (overrides project default)",
+        help=OPT_LLM_SUMMARY,
     ),
     reasoning: str | None = typer.Option(
         None,
         "--reasoning",
-        help="Reasoning override: none, low, medium, high",
+        help=OPT_REASONING,
     ),
 ) -> None:
     """Create a child node at the cursor and open a section tag."""

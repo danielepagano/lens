@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import CMD_REFRESH, HELP_OPTS, OPT_RESET
 from lens.core.commands.refresh import execute_refresh
 from lens.core.exceptions import LensException
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=CMD_REFRESH,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 @app.callback()
@@ -13,8 +19,7 @@ def refresh(
     reset: bool = typer.Option(
         False,
         "--reset",
-        help="Match the remote branch exactly: discard unpushed commits, uncommitted work, "
-        "and untracked files.",
+        help=OPT_RESET,
     ),
 ) -> None:
     """Fetch from remote and fast-forward the current branch (no merge commits).

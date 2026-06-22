@@ -4,14 +4,21 @@ from typing import Literal
 
 import typer
 
+from lens.cli.help_strings import ARG_SLUG_NARRATIVE, CMD_USE, HELP_OPTS
 from lens.core.commands.use import use_narrative
 from lens.core.exceptions import LensException
 
-app = typer.Typer(invoke_without_command=True, no_args_is_help=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    no_args_is_help=True,
+    add_completion=False,
+    help=CMD_USE,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 @app.callback()
 def use(
-    slug: str = typer.Argument(..., help="Narrative slug (alphanumeric, underscores, hyphens)"),
+    slug: str = typer.Argument(..., help=ARG_SLUG_NARRATIVE),
     companion: str | None = typer.Option(
         None,
         "--companion",

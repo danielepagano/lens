@@ -6,6 +6,18 @@ from pathlib import Path
 
 import typer
 
+from lens.cli.help_strings import (
+    ARG_APP_NAME,
+    ARG_REGION,
+    ARG_USERNAME,
+    ARG_PASSWORD,
+    ARG_PROJECT_SLUG,
+    ARG_DEPLOY_KEY,
+    CMD_DEPLOY,
+    HELP_OPTS,
+    DEPLOY_MODE,
+    DEPLOY_KEY_HELP,
+)
 from lens.core.commands.deploy import (
     FlyDeployBuildMode,
     add_project,
@@ -17,27 +29,22 @@ from lens.core.exceptions import LensException
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Manage Fly.io deployment.",
+    help=CMD_DEPLOY,
     add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
 @app.command()
 def init(
-    app_name: str = typer.Option(..., "--app", help="Fly app name"),
-    region: str = typer.Option(..., "--region", help="Fly region (e.g. lax, ams)"),
-    username: str = typer.Option(..., "--user", help="Basic Auth username"),
-    password: str = typer.Option(..., "--password", prompt=True, hide_input=True, help="Basic Auth password"),
+    app_name: str = typer.Option(..., "--app", help=ARG_APP_NAME),
+    region: str = typer.Option(..., "--region", help=ARG_REGION),
+    username: str = typer.Option(..., "--user", help=ARG_USERNAME),
+    password: str = typer.Option(..., "--password", prompt=True, hide_input=True, help=ARG_PASSWORD),
     deploy_key: list[str] = typer.Option(
         [],
         "--deploy-key",
-        help=(
-            "SSH deploy key. "
-            "Single-project: path to key file (slug derived from directory name). "
-            "Multi-project: slug=path, repeated for each project "
-            "(e.g. --deploy-key proj-a=~/.ssh/key_a --deploy-key proj-b=~/.ssh/key_b). "
-            "The slugs determine which projects are included."
-        ),
+        help=DEPLOY_KEY_HELP,
     ),
 ) -> None:
     """Create Fly app, volume, set secrets, and generate fly.toml.
@@ -118,11 +125,7 @@ def push(
     mode: FlyDeployBuildMode = typer.Option(
         FlyDeployBuildMode.fly,
         "--mode",
-        help=(
-            "fly: Fly remote builder without Depot (--depot=false). "
-            "depot: Depot remote builder (--depot=true). "
-            "local: build on this machine (--local-only)."
-        ),
+        help=DEPLOY_MODE,
     ),
 ) -> None:
     """Deploy (or redeploy) the Lens application image to Fly.io.
@@ -149,8 +152,8 @@ def push(
 
 @app.command()
 def add(
-    slug: str = typer.Argument(..., help="Project directory name (slug) to add"),
-    deploy_key: Path = typer.Option(..., "--deploy-key", help="Path to SSH deploy key for the project repo"),
+    slug: str = typer.Argument(..., help=ARG_PROJECT_SLUG),
+    deploy_key: Path = typer.Option(..., "--deploy-key", help=ARG_DEPLOY_KEY),
 ) -> None:
     """Add a project to an existing multi-project deployment.
 
@@ -176,7 +179,7 @@ def add(
 
 @app.command()
 def remove(
-    slug: str = typer.Argument(..., help="Project directory name (slug) to remove"),
+    slug: str = typer.Argument(..., help=ARG_PROJECT_SLUG),
 ) -> None:
     """Remove a project from an existing multi-project deployment.
 

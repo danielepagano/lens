@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import ARG_LINE_NUM, ARG_NODE_ADDR, CMD_REWIND, HELP_OPTS
 from lens.core.address import NarrativeAddress
 from lens.core.commands.rewind import rewind as rewind_core
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession, resolve_address
 
-app = typer.Typer(invoke_without_command=True, no_args_is_help=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    no_args_is_help=True,
+    add_completion=False,
+    help=CMD_REWIND,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 @app.callback()
@@ -17,17 +24,11 @@ def rewind(
     ctx: typer.Context,
     address: str | None = typer.Argument(
         None,
-        help=(
-            "Node address to rewind to.  "
-            "Use '/' for the narrative root or '/@cursor' for the current cursor."
-        ),
+        help=ARG_NODE_ADDR,
     ),
     line: int | None = typer.Argument(
         None,
-        help=(
-            "Line number within the node (1-based, inclusive).  "
-            "When omitted, the cursor is placed at the end of the node."
-        ),
+        help=ARG_LINE_NUM,
     ),
 ) -> None:
     """Rewind the cursor to a node or line, deleting everything after.

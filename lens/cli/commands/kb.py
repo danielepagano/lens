@@ -1,8 +1,28 @@
 from __future__ import annotations
 
 import typer
+from pathlib import Path
 
 from lens.cli.async_cancel import run_with_cancel
+from lens.cli.help_strings import (
+    ARG_ID,
+    ARG_INSTRUCTION,
+    ARG_CONTENT_OPT,
+    ARG_TYPE_NAME,
+    ARG_SOURCE_ID,
+    ARG_TARGET_ID,
+    ARG_OLD_ID,
+    ARG_NEW_ID,
+    ARG_TYPE_FILTER,
+    ARG_TAG_PREFIX,
+    ARG_TAGS,
+    ARG_MEDIA_SOURCE as ARG_EXTRACT_SOURCE,
+    CMD_KB,
+    HELP_OPTS,
+    OPT_LLM,
+    OPT_REASONING,
+    OPT_RETRY_PROPOSE,
+)
 from lens.cli.options import pin_option, unpin_option
 from lens.core.knowledge import KnowledgeObject, validate_ids_exist
 from lens.core.commands.kb import (
@@ -20,19 +40,19 @@ from lens.core.commands.kb import (
 )
 from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
-from pathlib import Path
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Manage knowledge objects (add, edit, get, tag, template, copy, rename, delete, with-tag, extract).",
+    help=CMD_KB,
     add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
 @app.command(no_args_is_help=True)
 def add(
-    id: str = typer.Argument(..., help="Object ID (type.key)"),
-    content: str | None = typer.Argument(None, help="Object content (omit to create empty or no-op)"),
+    id: str = typer.Argument(..., help=ARG_ID),
+    content: str | None = typer.Argument(None, help=ARG_CONTENT_OPT),
     use_template: bool = typer.Option(False, "-t", "--use-template", help="Use template content"),
 ) -> None:
     """Upsert a single knowledge object."""
@@ -45,7 +65,7 @@ def add(
 
 @app.command(no_args_is_help=True)
 def template(
-    type_name: str = typer.Argument(..., help="Object type"),
+    type_name: str = typer.Argument(..., help=ARG_TYPE_NAME),
     content: str | None = typer.Argument(None, help="Template content (omit to print existing)"),
 ) -> None:
     """Manage _template.md for a type."""
@@ -80,7 +100,7 @@ def tag(
 
 @app.command(no_args_is_help=True)
 def delete(
-    id: str = typer.Argument(..., help="Object ID to delete"),
+    id: str = typer.Argument(..., help=ARG_ID),
 ) -> None:
     """Delete an object (file, tags, references)."""
     try:
@@ -92,8 +112,8 @@ def delete(
 
 @app.command(no_args_is_help=True)
 def copy(
-    source_id: str = typer.Argument(..., help="Source object ID (type.key)"),
-    target_id: str = typer.Argument(..., help="Target object ID (must be valid and unused)"),
+    source_id: str = typer.Argument(..., help=ARG_SOURCE_ID),
+    target_id: str = typer.Argument(..., help=ARG_TARGET_ID),
 ) -> None:
     """Copy an object to a new ID. Target type may differ; directory is created if needed."""
     try:
@@ -105,8 +125,8 @@ def copy(
 
 @app.command(no_args_is_help=True)
 def rename(
-    old_id: str = typer.Argument(..., help="Current object ID"),
-    new_id: str = typer.Argument(..., help="New object ID (must be valid and unused)"),
+    old_id: str = typer.Argument(..., help=ARG_OLD_ID),
+    new_id: str = typer.Argument(..., help=ARG_NEW_ID),
 ) -> None:
     """Rename an object to a new ID. New type may differ; directory is created if needed."""
     try:
@@ -119,14 +139,14 @@ def rename(
 @app.command(no_args_is_help=True)
 def edit(
     id: str = typer.Argument(..., help="Object ID (type.key); creates if new"),
-    instruction: str = typer.Argument(..., help="AI instructions for what to write/change"),
+    instruction: str = typer.Argument(..., help=ARG_INSTRUCTION),
     context: str | None = typer.Option(None, "--context", "-c", help="Narrative address with optional line slice (e.g. /chapter-1, /chapter-1 10, /chapter-1 10 30); with line bounds, no ancestor pin resolution"),
     include_template: bool = typer.Option(False, "--include-template", "-t", help="Include type template in prompt"),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
-    llm: str | None = typer.Option(None, "--llm", "-l", help="LLM ID to use"),
-    reasoning: str | None = typer.Option(None, "--reasoning", help="Reasoning override: none, low, medium, high"),
-    retry: bool = typer.Option(False, "--retry", "-r", help="Re-propose with same or updated parameters"),
+    llm: str | None = typer.Option(None, "--llm", "-l", help=OPT_LLM),
+    reasoning: str | None = typer.Option(None, "--reasoning", help=OPT_REASONING),
+    retry: bool = typer.Option(False, "--retry", "-r", help=OPT_RETRY_PROPOSE),
 ) -> None:
     """Edit or create a knowledge object using AI."""
     if not instruction or not instruction.strip():
@@ -201,7 +221,7 @@ def get(
         ...,
         help="Object ID(s); append + for one-hop linked objects, or ++ for full linked traversal",
     ),
-    include_comments: bool = typer.Option(True, "--include-comments", help="Keep markdown comments"),
+    include_comments: bool = typer.Option(True, "--include-comments", help="Keep markdown comments in output"),
 ) -> None:
     """Fetch and print knowledge objects."""
     try:
@@ -227,8 +247,8 @@ def get(
 
 @app.command("list-tags")
 def list_tags(
-    type_filter: str | None = typer.Option(None, "--type", "-t", help="Only tags on objects of this type"),
-    start_with: str | None = typer.Option(None, "--start-with", "-s", help="Only tags starting with this prefix"),
+    type_filter: str | None = typer.Option(None, "--type", "-t", help=ARG_TYPE_FILTER),
+    start_with: str | None = typer.Option(None, "--start-with", "-s", help=ARG_TAG_PREFIX),
 ) -> None:
     """List unique tag values, optionally filtered by type or prefix."""
     try:
@@ -244,7 +264,7 @@ def list_tags(
 def with_tag(
     tags: list[str] = typer.Argument(
         ...,
-        help="Tag(s) to query. AND across args; use (a b c) for OR within, e.g. type:undead (cr:1 cr:2)",
+        help=ARG_TAGS,
     ),
     expand: bool = typer.Option(False, "-e", "--expand", help="Print full objects instead of IDs"),
     recurse: int | None = typer.Option(
@@ -348,7 +368,7 @@ def _collect_markdown_files(root: Path) -> list[str]:
 
 @app.command(no_args_is_help=True)
 def extract(
-    path: str = typer.Argument(..., help="Markdown file or folder containing ```kb blocks"),
+    path: str = typer.Argument(..., help=ARG_EXTRACT_SOURCE),
 ) -> None:
     """Extract and upsert KB objects from structured markdown (single transaction).
 

@@ -4,6 +4,19 @@ import typer
 
 from lens.cli.async_cancel import run_with_cancel
 
+from lens.cli.help_strings import (
+    ARG_PROMPT_DESIGN,
+    OP_DESIGN,
+    OPT_LLM,
+    OPT_REASONING,
+    OPT_RETRY_DESIGN,
+    OPT_END_DESIGN,
+    OPT_SLUG,
+    OPT_PIN,
+    OPT_UNPIN,
+    OPT_MODULE_DESIGN,
+    HELP_OPTS,
+)
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import LensException
 from lens.core.knowledge import validate_ids_exist
@@ -11,7 +24,13 @@ from lens.core.operator import OperatorError
 from lens.core.operators.design import DesignOperator
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False, no_args_is_help=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    no_args_is_help=False,
+    help=OP_DESIGN,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 async def _print_token(chunk: str) -> None:
@@ -22,42 +41,42 @@ async def _print_token(chunk: str) -> None:
 def design(
     prompt: str | None = typer.Argument(
         None,
-        help="Design task or question",
+        help=ARG_PROMPT_DESIGN,
     ),
     module: str | None = typer.Option(
         None,
         "--module",
         "-m",
-        help="Design module key to use (KB object under design.<key>, e.g. 'encounter')",
+        help=OPT_MODULE_DESIGN,
     ),
-    pin: list[str] = pin_option(),
-    unpin: list[str] = unpin_option(),
+    pin: list[str] = pin_option(OPT_PIN),
+    unpin: list[str] = unpin_option(OPT_UNPIN),
     llm: str | None = typer.Option(
         None,
         "--llm",
         "-l",
-        help="LLM ID to use (overrides project default)",
+        help=OPT_LLM,
     ),
     reasoning: str | None = typer.Option(
         None,
         "--reasoning",
-        help="Reasoning override: none, low, medium, high",
+        help=OPT_REASONING,
     ),
     retry: bool = typer.Option(
         False,
         "--retry",
-        help="Retry (regenerate) the last design generation in the current session",
+        help=OPT_RETRY_DESIGN,
     ),
     end: bool = typer.Option(
         False,
         "--end",
-        help="Close the current design session and extract KB entries",
+        help=OPT_END_DESIGN,
     ),
     slug: str | None = typer.Option(
         None,
         "--slug",
         "-s",
-        help="Sub-node id to use when starting a new session (default: auto-generated from prompt)",
+        help=OPT_SLUG,
     ),
 ) -> None:
     """Collaborative KB design session: think, look up, and propose changes.

@@ -8,6 +8,24 @@ from pathlib import Path
 
 import typer
 
+from lens.cli.help_strings import (
+    ARG_TTS_ADDR,
+    ARG_PROMPT_OPT as ARG_MEDIA_PROMPT,
+    CMD_MEDIA,
+    HELP_OPTS,
+    MEDIA_MODEL,
+    MEDIA_ASPECT,
+    MEDIA_SIZE,
+    MEDIA_BATCH,
+    MEDIA_SLUG,
+    MEDIA_NEGATIVE,
+    MEDIA_FROM,
+    MEDIA_REF,
+    TTS_MODEL,
+    TTS_VOICE,
+    TTS_LANG,
+    TTS_SILENT,
+)
 from lens.core.address import NarrativeAddress
 from lens.core.commands.generate import generate as generate_core
 from lens.core.commands.media_tts import iter_node_tts_playback
@@ -19,7 +37,8 @@ from .attach import attach_app
 app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
-    help="Image generation, TTS, attachment, and related commands.",
+    help=CMD_MEDIA,
+    context_settings={"help_option_names": HELP_OPTS},
 )
 
 
@@ -27,75 +46,53 @@ app = typer.Typer(
 def generate(
     prompt: str | None = typer.Argument(
         None,
-        help="Prompt text. May contain @-mentions. Omit if using --from.",
+        help=ARG_MEDIA_PROMPT,
     ),
     model: str | None = typer.Option(
         None,
         "--model",
         "-m",
-        help=(
-            "[[image]] id from lens.toml (default: first block, shown as [default] "
-            "when id is omitted)."
-        ),
+        help=MEDIA_MODEL,
     ),
     aspect: str | None = typer.Option(
         None,
         "--aspect",
         "-a",
-        help=(
-            "Aspect ratio; must be one of the backend's aspect_ratios in lens.toml "
-            "(default: first listed value, or sidecar when using --from)."
-        ),
+        help=MEDIA_ASPECT,
     ),
     size: str | None = typer.Option(
         None,
         "--size",
         "-s",
-        help=(
-            "Resolution tier; must be one of the backend's sizes in lens.toml "
-            "(default: first listed value, or sidecar when using --from)."
-        ),
+        help=MEDIA_SIZE,
     ),
     batch: int | None = typer.Option(
         None,
         "--batch",
         "-b",
-        help=(
-            "How many images (default: 1; capped by the backend's `max_batch`, "
-            "or sidecar `batch_size` when using --from)."
-        ),
+        help=MEDIA_BATCH,
     ),
     slug: str | None = typer.Option(
         None,
         "--slug",
-        help=(
-            "Folder name under generated/ (default: slug derived from the "
-            "resolved prompt, or sidecar folder when using --from)."
-        ),
+        help=MEDIA_SLUG,
     ),
     negative: str | None = typer.Option(
         None,
         "--negative",
         "-n",
-        help="Optional negative prompt (default: none, or sidecar when using --from).",
+        help=MEDIA_NEGATIVE,
     ),
     from_sidecar: Path | None = typer.Option(
         None,
         "--from",
-        help=(
-            "Batch sidecar YAML: mount-relative (e.g. generated/<slug>/b_1.yaml) "
-            "or absolute path inside mount_point. Pre-fills prompt and flags; "
-            "CLI args override."
-        ),
+        help=MEDIA_FROM,
         show_default=False,
     ),
     ref: list[str] = typer.Option(
         [],
         "--ref",
-        help=(
-            "Mount-relative reference image path if supported (repeatable). "
-            "Requires s3:// mount_point."
-        ),
+        help=MEDIA_REF,
     ),
 ) -> None:
     """Generate images via the configured backend and save them to the mount."""
@@ -130,42 +127,33 @@ def generate(
 def tts(
     address: str = typer.Argument(
         ...,
-        help=(
-            "Narrative node address (e.g. /@cursor, /chapter-1). "
-            "Optional line slice @N or @N:M (physical lines in the node file)."
-        ),
+        help=ARG_TTS_ADDR,
     ),
     model: str | None = typer.Option(
         None,
         "--model",
         "-m",
-        help=(
-            "[[speech]] id from lens.toml (default: first block, shown as [default] "
-            "when id is omitted)."
-        ),
+        help=TTS_MODEL,
     ),
     voice: str | None = typer.Option(
         None,
         "--voice",
         "-v",
-        help=(
-            "Voice id (xAI: eve, ara, rex, sal, leo). "
-            "Default: [[speech]] default_voice if set, else eve."
-        ),
+        help=TTS_VOICE,
     ),
     language: str = typer.Option(
         "en",
         "--language",
         "-l",
-        help="BCP-47 language code (e.g. en, auto).",
+        help=TTS_LANG,
     ),
     silent: bool = typer.Option(
         False,
         "--silent",
-        help="Do not auto-play with ffplay after each chunk.",
+        help=TTS_SILENT,
     ),
 ) -> None:
-    """Synthesize a narrative node line-by-line; MP3s live under ``tts-cache/`` on the mount."""
+    """Synthesize a narrative node line-by-line; MP3s live under tts-cache/ on the mount."""
     try:
         session = ProjectSession.from_cwd()
         try:

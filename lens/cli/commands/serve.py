@@ -7,17 +7,23 @@ from pathlib import Path
 
 import typer
 
+from lens.cli.help_strings import CMD_SERVE, HELP_OPTS, MEDIA_SERVER_HOST, MEDIA_SERVER_PORT
+
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent
 _UI_DIR = _LENS_ROOT / "server" / "ui"
 _STATIC_INDEX = _LENS_ROOT / "server" / "static" / "index.html"
 
-app = typer.Typer(help="Build the frontend and start the Lens API server.", add_completion=False)
+app = typer.Typer(
+    help=CMD_SERVE,
+    add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 @app.callback(invoke_without_command=True)
 def serve(
-    host: str = typer.Option("127.0.0.1", help="Bind host"),
-    port: int = typer.Option(8000, help="Bind port"),
+    host: str = typer.Option("127.0.0.1", help=MEDIA_SERVER_HOST),
+    port: int = typer.Option(8000, help=MEDIA_SERVER_PORT),
 ) -> None:
     """Build the frontend and serve the bundle from FastAPI (no hot-reload)."""
     import uvicorn

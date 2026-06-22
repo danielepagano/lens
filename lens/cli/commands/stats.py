@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import typer
 
+from lens.cli.help_strings import CMD_STATS, HELP_OPTS, OPT_VERBOSE
 from lens.core.commands.stats import get_stats
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
-app = typer.Typer(invoke_without_command=True, add_completion=False)
+app = typer.Typer(
+    invoke_without_command=True,
+    add_completion=False,
+    help=CMD_STATS,
+    context_settings={"help_option_names": HELP_OPTS},
+)
 
 
 @app.callback()
@@ -15,7 +21,7 @@ def stats(
         False,
         "--verbose",
         "-v",
-        help="Show pending transaction diff and staged (checkpoint) diff.",
+        help=OPT_VERBOSE,
     ),
 ) -> None:
     """Count knowledge objects and narrative nodes."""
