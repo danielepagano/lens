@@ -17,8 +17,7 @@ from lens.core.compression import Aggressiveness
 from lens.core.llm import FinalPayload, ToolCall, final_payload_from_text
 from lens.core.llm_run import LlmRunRequest, resolve_llm_run_messages
 from lens.core.narrative import NarrativeNode
-from lens.core.exceptions import ValidationError
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.operators.collate import CollateOperator
 from lens.core.operators.compress import (
     CompressNoCollate,

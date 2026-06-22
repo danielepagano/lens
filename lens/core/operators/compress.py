@@ -17,10 +17,9 @@ from lens.core.compression import (
     measure_visible_bytes,
 )
 from lens.core.pinning import set_last_compress_size
-from lens.core.exceptions import LensException, ValidationError
+from lens.core.exceptions import OperatorError, LensException, ValidationError
 from lens.core.llm import LLMError, ToolCall
 from lens.core.llm_run import LlmRunRequest, run_llm_final
-from lens.core.operator import OperatorError
 from lens.core.operator_params import apply_pinned_invocation
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.collate import CollateOperator

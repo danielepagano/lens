@@ -142,7 +142,7 @@ from lens.core.prompt_transforms import (
 )
 from lens.core.crawl_graph import ComponentSource, CrawlComponent, CrawlTransform
 from lens.core.dice import DiceError
-from lens.core.exceptions import ValidationError
+from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import (
     LLMError,
@@ -257,10 +257,6 @@ def _normalize_for_yaml_dump(obj: Any) -> Any:
         lst = cast(list[Any], obj)
         return [_normalize_for_yaml_dump(item) for item in lst]
     return obj
-
-
-from lens.core.exceptions import OperatorError  # noqa: E402, F401 — re-exported for convenience
-
 
 class Operator(ABC):
     """Base class for all Lens operators.

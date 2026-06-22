@@ -15,7 +15,7 @@ from unittest.mock import AsyncMock, patch
 
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError
 from lens.core.operators.collate import CollateOperator
 from lens.core.operators.section import SectionOperator
 from lens.core.project import ProjectSession

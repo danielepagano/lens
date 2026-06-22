@@ -16,8 +16,7 @@ from lens.core.annotations import parse_front_matter
 from lens.core.annotations import parse_annotations
 from lens.core.llm import StreamEvent, final_payload_from_text
 from lens.core.narrative import NarrativeNode
-from lens.core.exceptions import ValidationError
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.operators.design import DesignOperator
 from lens.core.test.llm_run_mock import mock_run_llm
 from lens.core.operators.session import prompt_to_slug

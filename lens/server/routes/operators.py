@@ -14,10 +14,9 @@ from pydantic import BaseModel
 from lens.core.compression import Aggressiveness
 from lens.core.commands.pin import resolve_node
 from lens.core.commands.rollback import execute_rollback
-from lens.core.exceptions import LensException, ValidationError
+from lens.core.exceptions import OperatorError, LensException, ValidationError
 from lens.core.knowledge import validate_ids_exist
 from lens.core.now import set_request_timezone
-from lens.core.operator import OperatorError
 from lens.core.operator_params import chat_invocation_uses_session, prepare_chat_invocation
 from lens.core.storage import Storage
 from lens.core.llm import llm_progress_scope

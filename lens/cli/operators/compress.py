@@ -18,11 +18,10 @@ from lens.cli.help_strings import (
 )
 from lens.cli.options import pin_option, unpin_option
 from lens.core.compression import Aggressiveness
-from lens.core.exceptions import LensException
+from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.llm import LLMError
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
 from lens.core.project import ProjectSession
 from lens.core.operators.compress import CompressNoCollate, run_compress
 from lens.core.workflow_runner import WorkflowOutcome

@@ -9,7 +9,7 @@ from typing import Any
 from lens.core.context import CrawlResult, CrawlSpec, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError
 from lens.core.operators.session import apply_remember_patches, generate_summary_block
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage

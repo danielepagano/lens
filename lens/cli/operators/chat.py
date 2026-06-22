@@ -23,9 +23,8 @@ from lens.cli.help_strings import (
     HELP_OPTS,
 )
 from lens.cli.options import pin_option, unpin_option
-from lens.core.exceptions import LensException
+from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
-from lens.core.operator import OperatorError
 from lens.core.operator_params import chat_invocation_uses_session, prepare_chat_invocation
 from lens.core.operators.chat import ChatOperator
 from lens.core.project import ProjectSession

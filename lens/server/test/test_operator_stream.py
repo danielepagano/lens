@@ -12,7 +12,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError
 from lens.core.test.llm_run_mock import mock_run_llm
 
 

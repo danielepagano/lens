@@ -37,12 +37,12 @@ from typing import Any, ClassVar
 from lens.core.annotations import ParsedAnnotation
 from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import crawl
-from lens.core.exceptions import ValidationError
+from lens.core.exceptions import ValidationError, OperatorError
 from lens.core.generation_artifacts import GenerationArtifacts
 from lens.core.llm import LLMError
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
-from lens.core.operator import OperatorError, extract_annotation_content, build_feedback_messages
+from lens.core.operator import extract_annotation_content, build_feedback_messages
 from lens.core.operators.session import SessionOperator
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession

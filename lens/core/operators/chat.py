@@ -56,7 +56,7 @@ from lens.core.generation_artifacts import GenerationArtifacts
 from lens.core.llm import LLMError
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
 from lens.core.pinning import pin as pin_node
 from lens.core.prompts import PromptStore

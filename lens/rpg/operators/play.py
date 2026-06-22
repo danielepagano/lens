@@ -41,12 +41,11 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from typing import Any, ClassVar, cast
 
-from lens.core.exceptions import ValidationError
+from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.context import CrawlResult
 from lens.core.modalities import apply_modality_crawl
 from lens.core.modalities.catalog.rpg_play_context import PLAY_AUTO_PINS
 from lens.core.dice import DiceError
-from lens.core.operator import OperatorError
 from lens.core.operators.session import SessionOperator
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession

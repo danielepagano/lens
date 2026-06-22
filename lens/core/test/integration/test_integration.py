@@ -32,7 +32,7 @@ from lens.core.commands.kb import kb_edit
 from lens.core.commands.rollback import execute_rollback
 from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
-from lens.core.operator import OperatorError
+from lens.core.exceptions import OperatorError
 from lens.core.operators.collate import CollateOperator
 from lens.core.operators.edit import EditOperator
 from lens.core.operators.section import SectionOperator
