@@ -677,6 +677,7 @@ async def _stream_once_http(
     stream_idle_s = float(cfg.timeout_seconds)
     timeout = httpx.Timeout(connect=30.0, read=None, write=120.0, pool=30.0)
     t0 = time.monotonic()
+    is_first_round = round_index == 0
     logger.info(
         "LLM HTTP POST starting round=%s host=%s model=%s first_token_timeout_s=%s stream_idle_timeout_s=%s",
         round_index,
@@ -701,20 +702,32 @@ async def _stream_once_http(
             try:
                 response = await asyncio.wait_for(
                     client.send(req, stream=True),
-                    timeout=_first_phase_time_remaining(t0, first_token_budget),
+                    timeout=(
+                        _first_phase_time_remaining(t0, first_token_budget)
+                        if is_first_round
+                        else stream_idle_s
+                    ),
                 )
             except asyncio.TimeoutError as exc:
+                phase_label = "first_token" if is_first_round else "subsequent_round"
+                timeout_used = first_token_budget if is_first_round else stream_idle_s
                 logger.error(
-                    "LLM HTTP timeout round=%s host=%s phase=first_token after %.2fs (budget=%ss)",
+                    "LLM HTTP timeout round=%s host=%s phase=%s after %.2fs (budget=%ss)",
                     round_index,
                     host,
+                    phase_label,
                     time.monotonic() - t0,
-                    first_token_budget,
+                    timeout_used,
                 )
+                if is_first_round:
+                    raise LLMError(
+                        f"LLM request produced no response within {cfg.first_token_timeout_seconds}s "
+                        "(headers or first stream data; increase [[llm]] first_token_timeout_seconds "
+                        "for slow cold starts)"
+                    ) from exc
                 raise LLMError(
-                    f"LLM request produced no response within {cfg.first_token_timeout_seconds}s "
-                    "(headers or first stream data; increase [[llm]] first_token_timeout_seconds "
-                    "for slow cold starts)"
+                    f"LLM request produced no response within {cfg.timeout_seconds}s "
+                    "(subsequent round; increase [[llm]] timeout_seconds)"
                 ) from exc
 
             try:
@@ -746,7 +759,7 @@ async def _stream_once_http(
                 )
 
                 line_iter = response.aiter_lines().__aiter__()
-                first_phase = True
+                first_phase = is_first_round
                 while True:
                     if cancel_event.is_set():
                         interrupted = True
