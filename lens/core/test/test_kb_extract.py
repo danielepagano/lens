@@ -213,7 +213,7 @@ Line three.
         self.assertEqual(errors, [])
         self.assertEqual(entries[0].content, "Line one.\nLine two.\nLine three.")
 
-    def test_duplicate_id_last_block_wins_single_entry(self) -> None:
+    def test_duplicate_id_cumulative_tags_last_content_wins(self) -> None:
         text = """\
 ```kb
 ---
@@ -234,11 +234,11 @@ Second version.
 ```"""
         entries, errors = self._parse(text)
         self.assertEqual(errors, [])
-        # Only the last block for a given id should remain
+        # Tags are cumulative; content is last-wins
         self.assertEqual(len(entries), 1)
         entry = entries[0]
         self.assertEqual(entry.id, "npc.hero")
-        self.assertEqual(entry.tags, ["second-tag"])
+        self.assertEqual(entry.tags, ["first-tag", "second-tag"])
         self.assertEqual(entry.content, "Second version.")
 
 
@@ -287,7 +287,7 @@ Bob.
         self.assertTrue((self.root / "knowledge" / "person" / "alice.md").exists())
         self.assertTrue((self.root / "knowledge" / "person" / "bob.md").exists())
 
-    def test_multi_file_duplicate_id_last_file_wins(self) -> None:
+    def test_multi_file_duplicate_id_cumulative_tags_last_content_wins(self) -> None:
         path1 = self._write_md("first.md", """\
 ```kb
 ---
@@ -313,7 +313,8 @@ Second version.
         self.assertEqual(obj_path.read_text(), "Second version.")
         store = KnowledgeStore(self.root)
         tags = store.get_tags("npc.hero")
-        self.assertEqual(tags, ["second-tag"])
+        self.assertIn("first-tag", tags)
+        self.assertIn("second-tag", tags)
 
     def test_insert_single_object(self) -> None:
         path = self._write_md("objects.md", """\
@@ -498,7 +499,7 @@ Bob.
         self.assertIn("alice.md", all_pending)
         self.assertIn("bob.md", all_pending)
 
-    def test_duplicate_blocks_single_file_last_wins_without_tag_merge(self) -> None:
+    def test_duplicate_blocks_single_file_cumulative_tags(self) -> None:
         path = self._write_md("dupes.md", """\
 ```kb
 ---
@@ -516,8 +517,7 @@ tags:
   - second-tag
 ---
 Second version.
-```
-""")
+```""")
         result = kb_extract([path])
         self.assertEqual(result.errors, [])
         obj_path = self.root / "knowledge" / "npc" / "hero.md"
@@ -525,7 +525,8 @@ Second version.
         self.assertEqual(obj_path.read_text(), "Second version.")
         store = KnowledgeStore(self.root)
         tags = store.get_tags("npc.hero")
-        self.assertEqual(tags, ["second-tag"])
+        self.assertIn("first-tag", tags)
+        self.assertIn("second-tag", tags)
 
     def test_tag_only_preserves_body_when_object_exists(self) -> None:
         kb = KnowledgeStore(self.root)
@@ -581,6 +582,73 @@ tags:
         self.assertEqual(obj_path.read_text(), "")
         kb = KnowledgeStore(self.root)
         self.assertIn("faction.mercs", kb.get_tags("place.stub"))
+
+    def test_duplicate_blocks_accumulate_add_and_remove_tags(self) -> None:
+        """Same id across blocks: tags and remove-tags both accumulate."""
+        path = self._write_md("mixed.md", """\
+```kb
+---
+id: timeline.act-1
+remove-tags:
+  - front.old-front
+---
+```
+
+```kb
+---
+id: timeline.act-1
+tags:
+  - front.new-front
+---
+```""")
+        # Pre-create the object with a tag to remove
+        kb = KnowledgeStore(self.root)
+        kb.store_object("timeline.act-1", "Original body.")
+        kb.add_tags("timeline.act-1", ["front.old-front", "front.other"])
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "seed timeline"],
+            cwd=self.root, capture_output=True, check=True,
+        )
+        KnowledgeStore.clear_registry()
+
+        result = kb_extract([path])
+        self.assertEqual(result.errors, [])
+        obj_path = self.root / "knowledge" / "timeline" / "act-1.md"
+        self.assertEqual(obj_path.read_text(), "Original body.")
+        kb2 = KnowledgeStore(self.root)
+        tags = kb2.get_tags("timeline.act-1")
+        self.assertIn("front.new-front", tags)
+        self.assertIn("front.other", tags)
+        self.assertNotIn("front.old-front", tags)
+
+    def test_duplicate_blocks_tag_only_after_body_does_not_wipe_body(self) -> None:
+        """Tag-only block after body block: body preserved, tags merge."""
+        path = self._write_md("tag_after_body.md", """\
+```kb
+---
+id: npc.hero
+tags:
+  - first-tag
+---
+Hero body here.
+```
+
+```kb
+---
+id: npc.hero
+tags:
+  - second-tag
+---
+```""")
+        result = kb_extract([path])
+        self.assertEqual(result.errors, [])
+        obj_path = self.root / "knowledge" / "npc" / "hero.md"
+        self.assertEqual(obj_path.read_text(), "Hero body here.")
+        store = KnowledgeStore(self.root)
+        tags = store.get_tags("npc.hero")
+        self.assertIn("first-tag", tags)
+        self.assertIn("second-tag", tags)
 
     def test_whitespace_only_body_treated_as_tag_only_when_exists(self) -> None:
         kb = KnowledgeStore(self.root)
