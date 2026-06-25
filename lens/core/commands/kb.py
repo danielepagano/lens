@@ -728,6 +728,10 @@ def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
     Empty or whitespace-only body is preserved in ``KbExtractEntry.content``;
     :func:`kb_extract_from_text` uses that to apply tag-only updates for objects
     that already exist.
+
+    When the same id appears in multiple blocks, entries are **merged**:
+    ``tags`` and ``remove-tags`` accumulate (order-preserving dedup), and the
+    last block's ``content`` wins.
     """
     entries_by_id: dict[str, KbExtractEntry] = {}
     errors: list[str] = []
@@ -800,8 +804,14 @@ def parse_kb_fences(text: str) -> tuple[list[KbExtractEntry], list[str]]:
             content="\n".join(content_lines),
             source_line=open_line,
         )
-        # Later blocks for the same id overwrite earlier ones entirely
-        entries_by_id[entry.id] = entry
+        if entry.id in entries_by_id:
+            existing = entries_by_id[entry.id]
+            existing.tags = list(dict.fromkeys(existing.tags + entry.tags))
+            existing.remove_tags = list(dict.fromkeys(existing.remove_tags + entry.remove_tags))
+            if entry.content.strip():
+                existing.content = entry.content
+        else:
+            entries_by_id[entry.id] = entry
 
     return list(entries_by_id.values()), errors
 

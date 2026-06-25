@@ -774,7 +774,7 @@ Bob.
         all_pending = r.stdout.strip() + "\n" + untracked.stdout.strip()
         self.assertTrue("alice.md" in all_pending or "bob.md" in all_pending)
 
-    def test_cli_extract_directory_duplicate_id_last_visited_wins(self) -> None:
+    def test_cli_extract_directory_duplicate_id_cumulative_tags(self) -> None:
         base = self.root / "notes2"
         left = base / "a"
         right = base / "b"
@@ -815,7 +815,8 @@ Second version.
         self.assertEqual(obj_path.read_text(), "Second version.")
         store = KnowledgeStore.for_project(self.root)
         tags = store.get_tags("npc.hero")
-        self.assertEqual(tags, ["second-tag"])
+        self.assertIn("first-tag", tags)
+        self.assertIn("second-tag", tags)
 
 
 class TestKnowledgeDatasets(unittest.TestCase):
