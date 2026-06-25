@@ -81,7 +81,12 @@ def _audit_comment(tag: str, text: str) -> str:
 
 
 def format_tool_call_fence(name: str, arguments: dict[str, Any], *, response_char_len: int | None) -> str:
-    """Fenced block: tool request JSON plus optional response size."""
+    """Fenced block: tool request JSON plus optional response size.
+
+    Always includes a newline before the opening ``` and after the closing ``` so
+    the fence never abuts adjacent prose or other fences, which would mangle the
+    markdown.
+    """
     req = json.dumps(arguments, indent=2, ensure_ascii=False, default=str)
     lines = [
         "```tool-call",
@@ -89,7 +94,7 @@ def format_tool_call_fence(name: str, arguments: dict[str, Any], *, response_cha
         req,
         "```",
     ]
-    return "\n".join(lines) + "\n"
+    return "\n" + "\n".join(lines) + "\n"
 
 
 def format_tool_result_fence(result: str, *, max_chars: int = _TOOL_RESULT_MAX_CHARS) -> str:
