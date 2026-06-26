@@ -15,6 +15,28 @@ Add another dataset **after** `rpg` to override `rules.system` (later entries sh
 datasets = ["rpg", "my-ruleset"]
 ```
 
+## Content organization
+
+| Directory | Contents |
+|-----------|----------|
+| `knowledge/pc/_template.md` | Player Character template (play surface — appearance, context, affiliations, problem-solving style; no power lists or backstory) |
+| `knowledge/npc/_template.md` | NPC template (appearance, affiliations, goals, status; `ai:secret` for GM-only info) |
+| `knowledge/location/_template.md` | Location template (type, scale, sensory feel, history, tensions; links to parent location via tag) |
+| `knowledge/faction/_template.md` | Faction template (beliefs, methods, territory, stance toward party, plans) |
+| `knowledge/front/_template.md` | Front template (problem, stakes, phases/beats, timeline anchors, resolution triggers) |
+| `knowledge/encounter/_template.md` | Encounter template (situation, stakes, participants, scene rules, triggers, resolution) |
+| `knowledge/lore/_template.md` | Lore template (arbitrary details about any topic; tagged to its subject, not vice versa) |
+| `knowledge/timeline/_template.md` | Timeline template (calendar reference, day counter; tags ARE active fronts) |
+| `knowledge/design/pc.md` | Design module: player character (splits into `pc.*` + `lore.*` with core questions) |
+| `knowledge/design/npc.md` | Design module: NPC creation (recurring characters; story-service gated) |
+| `knowledge/design/location.md` | Design module: location build-out (few locations, well-described; sensory > historical) |
+| `knowledge/design/faction.md` | Design module: faction build-out (methods section is most important) |
+| `knowledge/design/front.md` | Design module: front grooming (three-layer structure: surface, core question, twist) |
+| `knowledge/design/encounter.md` | Design module: encounter design (combat, social, chase, puzzle, mixed; arc-aware) |
+| `knowledge/design/world.md` | Design module: world and setting (`lore.world` <500 words, directive-style) |
+| `knowledge/rules/rpg.md` | Rules of Engagement — AI-GM behavioral contract (authority boundaries, gates, conduct) |
+| `knowledge/rules/system.md` | System stub: Lasers & Feelings (CC BY 4.0; overridable by a higher-priority dataset) |
+
 ## How to bootstrap a campaign
 
 1. Create a Lens project and add `datasets = ["rpg"]` to `lens.toml` (plus at least one `[[llm]]` block — see [Configuration](../../docs/configuration.md)).
