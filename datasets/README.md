@@ -7,6 +7,7 @@ This repository ships two bundled datasets:
 | Name | Folder | Guide |
 |------|--------|--------|
 | `rpg` | `datasets/rpg/` | [rpg/README.md](rpg/README.md) |
+| `lens-dnd` | `datasets/lens-dnd/` | [lens-dnd/README.md](lens-dnd/README.md) |
 | `companion` | `datasets/companion/` | [companion/README.md](companion/README.md) |
 
 Other datasets (for example a private D&D reference tree) are **not** part of Lens — you create or clone them separately and Lens discovers them by **directory name**.

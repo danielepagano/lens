@@ -55,9 +55,10 @@ A **Lens project** is **your** Git repository — campaign, novel, or experiment
 
 | Goal | Next step |
 |------|-----------|
-| General fiction | Follow steps 1–3 below |
-| Companion chat | [Companion dataset guide](datasets/companion/README.md); `datasets = ["companion"]` in `lens.toml` |
-| Tabletop RPG | [RPG dataset guide](datasets/rpg/README.md); `datasets = ["rpg"]` in `lens.toml` |
+| Write fiction | Follow steps 1–3 below |
+| USe companion chat | [Companion dataset guide](datasets/companion/README.md); `datasets = ["companion"]` in `lens.toml` |
+| Play tabletop RPGs | [RPG dataset guide](datasets/rpg/README.md); `datasets = ["rpg"]` in `lens.toml` |
+| Play D&D | [D&D dataset guide](datasets/lens-dnd/README.md); `datasets = ["rpg", "lens-dnd"]` in `lens.toml` |
 
 **Starter `lens.toml` fragment** (add your API details):
 

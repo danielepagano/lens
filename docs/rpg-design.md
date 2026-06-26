@@ -112,159 +112,7 @@ So, how do we track time if we want to do in an advanced way? We follow these ru
 
 ## RPG Object Templates
 
-This section contains the RPG Object templates, and their rationale.
-
-### Player Characters (`pc.*`)
-
-One object per PC. We should have a template and guidance, but it's the job of the user to fill this in, since it's their avatar and they have their character sheet.
-
-Content per object is just enough to get the AI to talk about the character and talk _as_ the character (represent them). It is tempting to add their powers, ideals, fears, etc. but we need to optimize these objects for play, NOT planning. Adding details is a double-edged sword because the AI may take too much initiative with powers, or use this information at inopportune times, like "you said this character has green eyes, so let me mention their green eyes EVERY TIME they are mentioned". So we need to strike a balance of enough details that they're not just "she squinted her green eyes as she notched her arrow," but also not get "Alice thought about her troubled childhood at the orphanage as she notched her arrow." Going for something like "Alice deftly jumped the narrow wall to get a good angle as she notched her arrow" (she's agile and needs to trigger sneak attack, you see?)
-
-```kb
----
-id: pc._template
----
-<!-- Player Character. Usage: most details owned by player; use these objects to correctly describe and speak as these characters when the player makes them act. -->
-Name (plus any nicknames or code-names we'd see them called)
-
-- Appearance: (species, presented gender, physique, distinguishing details, visible kit, mannerisms, how they talk, etc.)
-- Context: (relevant background, goals, motivations, personal struggles - nothing too detailed; enough to flavor their interactions, but the player is expected to control when these are surfaced)
-- Affiliations and Relationships: (only non-obvious and story-relevant) 
-- How they solve problems: (key strengths and weaknesses, passive features that make a difference in how the character interfaces with the world that matter to the GM, like sense, movement speeds, etc. Do not include specific active skills or powers: it is the player's responsibility to surface when these are revealed and used.)
-
-<!-- TAG POLICY: Link PCs to any faction of which they are members. -->
-```
-
-### Location (`location.*`)
-
-Geography is important and fractal, we'll need to know the region we're in and sometimes the city, or even the tavern or someone's room, if for some reason that matters.
-Critically, we only want to create objects for places that _matter_, so somewhere we're at for a while, or somewhere we're returning to. In a social game, maybe every room in a mansion has a record, in other adventures just the overland we travel, and then a bunch of places we visit and remember only in narrative summaries, if at all.
-
-If we want to store places so we can return to them, we will need to find them again later! Therefore, we need a map. A map is just a tree, so all we need to do is link locations, expand the graph, and we have a "map". If we care, we can note distances or containment, but since these are LLM-processed, we can use the objects text for that, adding as needed (the "only what is mentioned or planned for exists" rule). So each location should link to its parent location, and we can use a recursive tag traversal of the root location to make a map (e.g. `lens kb with-tag location.kingdom --recurse --expand --same-type` to get all the locations in the kingdom).  
-
-```kb
----
-id: location._template
----
-<!-- Any type of Location. Usage: Ensures continuity when revisiting places; we ALWAYS link a location to the one of which it's part (or lore.world for roots), which lets us create a map graph of our setting. -->
-Name
-
-- Type of location (everything else below is optional, just add if relevant to story)
-- Scale and distance to other places
-- Sensory feel: looks, sounds, smells
-- Social feel: who is usually here, mood
-- History/usage: how this place has been used over time
-- Why it matters: dangers, opportunities, adventure relevance
-- Tensions or secrets
-
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `location` object with the location.id that contains it, if any. -->
-```
-
-### NPCs (`npc.*`)
-
-NPCs may have less flavor than a PC, but the AI can have a full view on their motivations, goals, abilities, and secrets, as they are fully controlled by the GM. They may be connected to a stat block, and we can even seed a secret (would be decoded when the AI sees it).
-
-```kb
----
-id: npc._template
----
-<!-- Non-player Character. Usage: A developed, recurring character controlled by the AI. NOT needed for transient characters such as one-off vendors and monsters. -->
-Name (plus any nicknames or code-names we'd see them called)
-
-- Appearance: (species, presented gender, physique, distinguishing details, visible kit, mannerisms, how they talk, etc.)
-- Affiliations and Relationships: (particularly towards PCs)
-- How they solve problems: (key strengths and weaknesses, go-to abilities they would use, when, and how they present)
-- Goals and Motivations: (what they want, as far as people know)
-- Status and Moves: (what they are up to, as far as people know)
-
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: you may link a base NPC object to mechanical details like a `stat` block, a lore object, their faction, or a front they own, if any. -->
-```
-
-### Faction (`faction.*`)
-
-Factions mostly provide a mechanism to give NPCs or monsters we don't track individually a place in the world, some flavor and some motivation. So in an encounter you could say you are in a location (specific to the encounter, or sometimes in KB), fighting one or more `factions`, and then the `stat` blocks for the encounter could be attached to each faction (or we can just say it's rogues or zombies), so the AI can model behavior in a good narrative way for one or multiple groups.
-
-```kb
----
-id: faction._template
----
-<!-- Faction or Group. Usage: Defines intent and behavior for groups of NPCs; useful for contextualizing fronts and npc/monster behavior. -->
-Name (plus any nicknames or code-names we'd see them called)
-
-- Who they are and what they believe or want
-- How they operate (methods, subtlety or brutality)
-- Where they are strongest, whom they recruit (particularly the hard rules)
-- How they feel about the party and other factions
-- Ongoing plans or operations
-
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `faction` object minimally (they are linked to); you can include the location headquarters or the pc/npc leader  -->
-```
-
-### Front (`front.*`)
-
-Fronts let us steer the story forward and provide the hooks and challenges for the players. They are the quests to solve, the rituals to stop, and the horrible "coincidences" that are about to unfold. They are automatically pulled into narrative context via `timeline.<id>+` expansion, so they should be self-contained and compact.
-
-```kb
----
-id: front._template
----
-<!-- A Front is a changing situation of some kind we want to track. Usage: track cross-cutting problems, clocks, changing situations; updated by the "advance" operator. -->
-Name (any way we'd be referencing this problem)
-
-- Problem: one or two sentences
-- Stakes if ignored
-- Known to PCs: what the party believes
-- Phases or beats: how it might escalate, where it's at  
-  - Timeline anchors: if applicable, specific values of the day counter when something is meant to happen
-- Possible resolutions
-  - Specific triggers, state of the world, or actions that affect the result
-  - Any dependencies on chance, in the form of "every (counter mod x) days there is a y% chance that z could happen"
-
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: Fronts are not tagged; the timeline tags its active fronts. -->
-```
-
-### Lore (`lore.*`)
-
-Lore is our catch-all container for tracking specific bits of knowledge that don't fit anywhere else. For example `lore.world` can be our setting, or we could have lore about important items (McGuffins that need to work in a specific way). Lore regarding other objects can also live here: so a `pc.alice` can also have a `lore.alice` (NOT linked from the PC object) that contains details used in planning specific trials for her, but not relevant to know during play. We could prepare lore objects for specific exposition (e.g. wording for a book or instructions for a puzzle) and pin/tag them just when needed in the narrative later.
-
-```kb
----
-id: lore._template
----
-<!-- Arbitrary details about anything. Usage: Often used in planning so details are not surfaced to narrative all the time; mention or pin this directly when needed. -->
-Gathered knowledge about any other object or topic
-
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag a `lore` object to point to the object it is about (if any), and not the other way around (it's a separate object to keep it isolated/secret)  -->
-```
-
-### Encounter (`encounter.*`)
-
-An encounter is any prepared situation for `play`; not just combat, but also not every situation, it's something worth preparing: a set piece. It acts as DM's script for a scene that has stakes, participants, and rules beyond "the world is there." A friendly but complex conversation with an NPC who has information, but also personality, motives, and conflict; an ambush at a bridge that requires tactical planning; a chase through a burning market with specific mechanics; etc. The encounter carries what `play` needs to run the scene well, and links to the detailed objects (stat blocks, NPC objects, location) that provide depth.
-
-Most encounters are short. If the rules for a situation are simple ("you're talking to a nervous informant who knows X and Y but won't reveal Z"), there is no need to involve the design operator or make an encounter object. If the rules are complex (a multi-phase boss fight with environmental hazards), the encounter says so and may link to a `lore.*` object with more details.
-
-```kb
----
-id: encounter._template
----
-<!-- A prepared situation for play. Usage: pin this when the scene starts; play reads it as a script. Can be any situation type: combat, social, chase, puzzle, heist, or any mix. Link to participants and relevant objects. -->
-Encounter name
-
-- Situation: (what's happening, in one or two sentences)
-- Stakes: (what can go wrong, what's at risk)
-- Participants: (who's involved; link npc/faction or stat block objects)
-- Scene rules: (special mechanics for this situation — tactical features, environmental effects, conversation goals, chase rules, puzzle mechanics, time pressure. Keep short; link lore object if complex.)
-- Triggers: (what causes the situation to shift — dialog escalates, timer expires, reinforcements arrive, secret is revealed)
-- Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
-
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
-<!-- TAG POLICY: tag an encounter with the location where it takes place and any driving front or npc. For combat encounters, tag with difficulty:low/moderate/high. -->
-```
+Object templates, field descriptions, and usage guidance live in `datasets/rpg/knowledge/` — one `_template.md` per type (`pc.*`, `npc.*`, `location.*`, `faction.*`, `front.*`, `lore.*`, `encounter.*`, `timeline.*`).
 
 ## RPG Operators
 
@@ -303,15 +151,7 @@ Each design module is a `design.*` KB object that contains instructions for the 
 
 When the user is done with a design session, `lens design --end` runs `kb extract` on the full sub-node and imports all the generated KB objects. Each call to `lens design` adds a new inline block to the sub-node; the user can refine progressively across multiple calls. You can start with no module for an open-ended session, or go straight to a specific task — `lens design "build the ambush" --module encounter` creates a sub-node with `design.encounter` already pinned.
 
-| Module | Defined in | What it produces | Notes |
-|---|---|---|---|
-| World | `design.world` | `lore.world` + optional deep `lore.*` | Setting and tone — first thing for a new game |
-| Player Character | `design.pc` | `pc.<name>` + `lore.<name>` (two objects) | Play surface + planning depth with core questions |
-| Front | `design.front` | `front.*` with supporting stubs | Create, groom, develop, retire fronts — arc seeding baked in |
-| Encounter | `design.encounter` | `encounter.*` objects | Prepared situations for play (see below) |
-| Location | `design.location` | `location.*` network with parent links | Geography at any scale; story-service gated |
-| NPC | `design.npc` | `npc.*` with links and secrets | Recurring characters; story-service gated |
-| Faction | `design.faction` | `faction.*` with links and secrets | Groups with collective stakes; controls group behavior in encounters |
+Design module definitions live in `datasets/rpg/knowledge/design/` — each `design.<topic>.md` file is the current spec (world, pc, npc, location, faction, front, encounter).
 
 #### Encounter objects: the script for `play`
 
@@ -323,22 +163,6 @@ This is powerful because:
 3. **Secrets stay secret.** The player can tell `design` "I'm going to the bridge to meet the informant" and the encounter object can encode that the informant is actually an ambush. The player doesn't see the encounter object contents during design — they see the design conversation. During play, the AI sees the encounter and acts accordingly.
 4. **Reuse and adaptation.** An encounter object can be re-used (the patrol at the checkpoint is the same every time) or adapted (the party's reputation has changed, so the guards react differently — update the encounter or let `play` figure it out from the pinned front).
 
-##### The `encounter.*` template
-
-An encounter object is compact and links to everything `play` needs:
-
-- **Situation**: what's happening and why (one or two sentences)
-- **Stakes**: what can go wrong, what's at risk
-- **Participants**: who's involved, linking to `npc.*`, `faction.*`, or `stat.*` objects
-- **Scene rules**: any special mechanics — tactical features, environmental effects, chase rules, conversation goals, puzzle mechanics, time pressure. For most situations this is short. If a situation is mechanically complex (a multi-room dungeon, a heist with phases), the encounter object says so concisely and links to a `lore.*` object with the full rules.
-- **Triggers and transitions**: what causes the situation to shift (dialog escalates to combat, the timer runs out, reinforcements arrive)
-- **Resolution**: how it ends and what changes
-
-##### How D&D encounters are balanced (combat-specific)
-
-If we're playing D&D, the `design.encounter` module can use the `balance_encounter` tool for combat encounters specifically: the AI discovers stat block candidates via tags (CR, habitat, type), ranks them by narrative fit, then calls `balance_encounter` to produce balanced proposals. But the encounter object it produces is the same template regardless of whether it's combat, social, or hybrid.
-
-The party has an XP budget from PC levels and chosen difficulty (low/moderate/high). Allied combatants are passed as `{ id, count }` stat blocks (same shape as required enemies); their CR-derived XP is **added** to that budget so enemy counts match the full battlefield. Required monsters are fixed; the tool either fills the remaining budget from optional candidates (weighted by narrative-fit rank) or, if required alone exceed the budget, suggests reduced counts. Encounters can be re-balanced on the fly — situations change, allies join, character levels shift — so the encounter object can record the parameters used, and `design` can refresh the balance without rebuilding the whole encounter.
 
 ### Play with `play`
 
