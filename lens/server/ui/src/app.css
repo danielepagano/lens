@@ -110,10 +110,12 @@ select {
   .sidebar.open {
     display: flex;
     position: fixed;
-    inset: 0;
     z-index: 200;
     overflow: hidden;
     top: calc(42px + env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -174,7 +176,7 @@ select {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
   padding: 0.25rem 0;
 }
 

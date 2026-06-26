@@ -548,11 +548,14 @@ class AdvanceOperator(Operator):
             session.kb, timeline_ids[0], days_elapsed, storage
         )
 
+        current_day = int(inline_ann.params.get("current_day", 0))
         try:
             summary_block = format_summary_block(session_id, summary)
         except SummaryTitleError:
-            title = " ".join(w.capitalize() for w in session_id.split("-"))
-            summary_block = format_summary_block(session_id, f"{title}\n\n{summary}")
+            fallback_title = f"Advance (Day {current_day})"
+            summary_block = format_summary_block(
+                session_id, f"{fallback_title}\n\n{summary}"
+            )
         op.close_subnode(parent, session_id, summary_block)
         return result
 
