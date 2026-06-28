@@ -50,6 +50,7 @@
 <div class="cli-input-row">
   <div class="cli-input-wrapper">
     <textarea
+      id="lens-cli"
       {@attach attachInputEl}
       class={['cli-input', { invalid: showInvalid, 'flash-invalid': flashInvalid }]}
       bind:value={input}
