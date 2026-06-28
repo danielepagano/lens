@@ -6,6 +6,7 @@
   import type { ParseState } from '../../commands/parser'
   import type { Suggestion } from './CliAutocomplete'
   import CliSuggestions from './CliSuggestions.svelte'
+  import CliHistoryDrawer from './CliHistoryDrawer.svelte'
   import CliInputField from './CliInputField.svelte'
   import { CliDataSources } from './cliDataSources'
   import { runCliCommandState } from './cliStateRunner'
@@ -25,7 +26,7 @@
   import { submitCliCommand } from './cliSubmit'
   import { setupCliLifecycle } from './cliLifecycle'
   import { computeCliHint, computeCliInputAttrs, scheduleCliResize, setupIosViewportHandler } from './cliInputHints'
-  import { cliOutput, linePickMode, linePickSelection, guideModalCommand } from '../../stores/ui'
+  import { cliHistory, cliOutput, linePickMode, linePickSelection, guideModalCommand } from '../../stores/ui'
   import { currentAddress } from '../../stores/document'
   import { stats } from '../../stores/stats'
 
@@ -48,6 +49,7 @@
   let currentParseState = $state.raw<ParseState | null>(null)
   let cliCaretHi = $state(0)
 
+  let historyOpen = $state(false)
   let cliInputEl: HTMLTextAreaElement | null = null
   let isFocused = false
   let lastAutoFilledCommand: string | null = null
@@ -276,7 +278,31 @@
     onBeforeSelect={snapshotCaretBeforeChipPointer}
     onSelect={(suggestion) => handleCliSuggestionChipClick(suggestion, createRefs())}
   />
+  <CliHistoryDrawer
+    open={historyOpen}
+    history={$cliHistory}
+    onSelect={(entry) => {
+      input = entry
+      historyOpen = false
+      updateCommandState()
+      focusCliInput()
+    }}
+    onClear={() => {
+      input = ''
+      historyOpen = false
+      updateCommandState()
+      focusCliInput()
+    }}
+    onClose={() => historyOpen = false}
+  />
   <div class="cli-bar-row">
+    <button
+      type="button"
+      class={['cli-history-btn', { active: historyOpen }]}
+      onclick={() => historyOpen = !historyOpen}
+      aria-label="Command history"
+      title="History"
+    >↓</button>
     <div class="cli-bar-input-wrap">
       <CliInputField
       bind:input
@@ -298,9 +324,12 @@
         if (!busy) updateCommandState()
       }}
       onBeforeInput={(event) => handleCliBeforeInput(event, createRefs())}
-      onFocus={() => handleCliFocus(createRefs(), (value) => {
-        isFocused = value
-      })}
+      onFocus={() => {
+        historyOpen = false
+        handleCliFocus(createRefs(), (value) => {
+          isFocused = value
+        })
+      }}
       onBlur={(event) => handleCliBlur(event, createRefs(), (value) => {
         isFocused = value
       })}
@@ -327,13 +356,11 @@
     min-width: 0;
   }
 
+  .cli-history-btn,
   .cli-guide-btn {
     flex-shrink: 0;
     background: none;
     border: 1px solid var(--pico-muted-border-color);
-    border-radius: 50%;
-    width: 1.6rem;
-    height: 1.6rem;
     font-size: 0.85rem;
     font-weight: 600;
     line-height: 1;
@@ -343,12 +370,33 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    margin-bottom: 0.3rem;
     transition: color 0.15s, border-color 0.15s;
   }
 
+  .cli-guide-btn {
+    border-radius: 50%;
+    width: 1.6rem;
+    height: 1.6rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .cli-history-btn {
+    margin-top: 0rem;
+    margin-bottom: 0.4rem;    
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 4px;
+  }
+
+  .cli-history-btn:hover,
   .cli-guide-btn:hover {
     color: var(--pico-color);
     border-color: var(--pico-color);
+  }
+
+  .cli-history-btn.active {
+    color: var(--pico-color);
+    border-color: var(--pico-color);
+    background: var(--pico-muted-border-color);
   }
 </style>

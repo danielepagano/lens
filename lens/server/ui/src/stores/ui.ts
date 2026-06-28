@@ -15,7 +15,26 @@ export interface CliOutputState {
 }
 export const cliOutput = writable<CliOutputState | null>(null)
 
-export const cliHistory = writable<string[]>([])
+const CLI_HISTORY_KEY = 'lens.cli.history'
+
+function readCliHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(CLI_HISTORY_KEY)
+    return raw ? (JSON.parse(raw) as string[]) : []
+  } catch {
+    return []
+  }
+}
+
+const _cliHistory = writable<string[]>(readCliHistory())
+_cliHistory.subscribe((value) => {
+  try {
+    localStorage.setItem(CLI_HISTORY_KEY, JSON.stringify(value))
+  } catch {
+    /* quota / private mode */
+  }
+})
+export const cliHistory = _cliHistory
 /** `-1` means not currently browsing history. */
 export const cliHistoryIndex = writable(-1)
 
