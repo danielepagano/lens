@@ -1298,7 +1298,7 @@ details[open]>summary {
   padding-top: 0.5rem;
 }
 
-.annotation-divider::before {
+.annotation-divider--cursor::before {
   content: ">";
   font-family: monospace;
   font-weight: bold;

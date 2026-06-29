@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from 'svelte'
+
   type Props = {
     open: boolean
     history: string[]
@@ -9,6 +11,16 @@
 
   let { open, history, onSelect, onClear, onClose }: Props = $props()
 
+  let drawerEl: HTMLDivElement | null = $state(null)
+
+  $effect(() => {
+    if (open) {
+      void tick().then(() => {
+        if (drawerEl) drawerEl.scrollTop = drawerEl.scrollHeight
+      })
+    }
+  })
+
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') onClose()
   }
@@ -18,11 +30,12 @@
 
 {#if open}
   <div
+    bind:this={drawerEl}
     class="cli-history-drawer"
     role="listbox"
     aria-label="Command history"
   >
-    {#each history as entry (entry)}
+    {#each history as entry, i (i)}
       <button
         type="button"
         class="cli-history-entry"
@@ -49,7 +62,7 @@
     bottom: 100%;
     left: 0;
     right: 0;
-    max-height: 200px;
+    max-height: 50vh;
     overflow-y: auto;
     background: var(--pico-background-color);
     border: 1px solid var(--pico-muted-border-color);
