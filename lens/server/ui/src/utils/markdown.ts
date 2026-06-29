@@ -319,8 +319,14 @@ export function buildAnnotationDividerLabelHtml(
   return `<span class="annotation-divider-title">${dividerTitleOnlyHtml(id)}</span>${extras.join('')}`
 }
 
-function renderDivider(innerHtml: string, href: string): string {
-  return `<div class="annotation-divider"><a href="#${href}">${innerHtml}</a></div>`
+function renderDivider(innerHtml: string, href: string, isCursor = false): string {
+  const cls = `annotation-divider${isCursor ? ' annotation-divider--cursor' : ''}`
+  return `<div class="${cls}"><a href="#${href}">${innerHtml}</a></div>`
+}
+
+/** True when cursor is at or inside the child node (open ancestor). */
+function cursorAtOrInside(cursorAddress: string | null, childAddr: string): boolean {
+  return cursorAddress !== null && (cursorAddress === childAddr || cursorAddress.startsWith(childAddr + '/'))
 }
 
 const SECTION_SUMMARY_COMMENT_RE = /^\s*<!--\s*section:[a-zA-Z0-9_-]+\s*-->\s*$/i
@@ -539,6 +545,7 @@ function renderAnnotationWithBody(
   paramBlock: string | null,
   overlay: NodeTransactionOverlay | null,
   removedByLine: Map<number, RemovedGroup[]>,
+  cursorAddress: string | null,
 ): { output: string[]; nextI: number } {
   const bodyLines: string[] = []
   let j = bodyStart
@@ -625,7 +632,7 @@ function renderAnnotationWithBody(
     return { output, nextI: hasClose ? j + 1 : j }
   } else {
     output.push(
-      renderDivider(buildAnnotationDividerLabelHtml(operator, id, paramBlock), childAddr),
+      renderDivider(buildAnnotationDividerLabelHtml(operator, id, paramBlock), childAddr, cursorAtOrInside(cursorAddress, childAddr)),
     )
     return { output, nextI: hasClose ? j + 1 : j }
   }
@@ -649,6 +656,7 @@ export function preprocessAnnotations(
   markdown: string,
   baseAddress: string | null,
   overlay: NodeTransactionOverlay | null = null,
+  cursorAddress: string | null = null,
  ): string {
   const lines = markdown.split('\n')
   const result: string[] = []
@@ -715,6 +723,7 @@ export function preprocessAnnotations(
           paramBlock,
           overlay,
           removedByLine,
+          cursorAddress,
         )
         result.push(...output)
         i = nextI
@@ -749,7 +758,7 @@ export function preprocessAnnotations(
 
       if (self_close) {
         result.push(
-          renderDivider(buildAnnotationDividerLabelHtml(operator, id, null), childAddr),
+          renderDivider(buildAnnotationDividerLabelHtml(operator, id, null), childAddr, cursorAtOrInside(cursorAddress, childAddr)),
         )
         i++
         continue
@@ -765,6 +774,7 @@ export function preprocessAnnotations(
         null,
         overlay,
         removedByLine,
+        cursorAddress,
       )
       result.push(...output)
       i = nextI

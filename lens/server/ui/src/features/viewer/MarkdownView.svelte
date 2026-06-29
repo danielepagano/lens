@@ -69,6 +69,7 @@
             ),
             $currentAddress,
             overlay,
+            $stats?.cursor ?? null,
           ),
         ),
       )
