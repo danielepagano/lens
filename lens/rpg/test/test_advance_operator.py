@@ -78,34 +78,30 @@ def _register_advance_child(parent: NarrativeNode, advance_id: str) -> None:
 
 
 class TestGenerateAdvanceId(unittest.TestCase):
-    def test_first_id(self) -> None:
+    def test_uses_current_day_as_slug(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)
             _init_repo(d)
             _, narrative = _make_project(d)
-            result = generate_advance_id(narrative)
+            result = generate_advance_id(narrative, 42)
+            self.assertEqual(result, "advance-day-42")
+
+    def test_day_one_slug(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            _init_repo(d)
+            _, narrative = _make_project(d)
+            result = generate_advance_id(narrative, 1)
             self.assertEqual(result, "advance-day-1")
 
-    def test_monotonic_increment(self) -> None:
+    def test_raises_on_duplicate_day(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)
             _init_repo(d)
             _, narrative = _make_project(d)
-            _register_advance_child(narrative, "advance-day-1")
-            _register_advance_child(narrative, "advance-day-2")
-            result = generate_advance_id(narrative)
-            self.assertEqual(result, "advance-day-3")
-
-    def test_gap_fills_first_available(self) -> None:
-        """If advance-day-1 and advance-day-3 exist, next is advance-day-2."""
-        with tempfile.TemporaryDirectory() as tmp:
-            d = Path(tmp)
-            _init_repo(d)
-            _, narrative = _make_project(d)
-            _register_advance_child(narrative, "advance-day-1")
-            _register_advance_child(narrative, "advance-day-3")
-            result = generate_advance_id(narrative)
-            self.assertEqual(result, "advance-day-2")
+            _register_advance_child(narrative, "advance-day-7")
+            with self.assertRaises(ValidationError):
+                generate_advance_id(narrative, 7)
 
 
 # ---------------------------------------------------------------------------
@@ -216,13 +212,14 @@ class TestReadCurrentDay(unittest.TestCase):
             session = ProjectSession(root, root)
             self.assertEqual(read_current_day(session.kb, "timeline.epic"), 42)
 
-    def test_missing_object_returns_1(self) -> None:
+    def test_missing_object_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp)
             _init_repo(d)
             root, _ = _make_project(d)
             session = ProjectSession(root, root)
-            self.assertEqual(read_current_day(session.kb, "timeline.missing"), 1)
+            with self.assertRaises(ValidationError):
+                read_current_day(session.kb, "timeline.missing")
 
 
 # ---------------------------------------------------------------------------

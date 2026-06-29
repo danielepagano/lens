@@ -54,13 +54,14 @@ _ADVANCE_BLOCK_RE = re.compile(r"```advance\s*\n(.*?)\n```", re.DOTALL)
 _DAY_COUNTER_RE = re.compile(r"^(- Day:\s*)(\d+)", re.MULTILINE)
 
 
-def generate_advance_id(parent: NarrativeNode) -> str:
-    """Generate ``advance-day-{N}`` where N is a monotonic counter."""
-    existing = set(parent.child_keys())
-    n = 1
-    while f"advance-day-{n}" in existing:
-        n += 1
-    return f"advance-day-{n}"
+def generate_advance_id(parent: NarrativeNode, current_day: int) -> str:
+    """Generate ``advance-day-{current_day}`` based on the timeline day counter."""
+    slug = f"advance-day-{current_day}"
+    if slug in set(parent.child_keys()):
+        raise ValidationError(
+            f"advance session for day {current_day} ({slug}) already exists"
+        )
+    return slug
 
 
 def _front_ids_from_pins(pinned_ids: list[str]) -> list[str]:
@@ -117,13 +118,25 @@ def parse_advance_result(
 
 
 def read_current_day(kb: KnowledgeStore, timeline_id: str) -> int:
-    """Read the current day counter from a timeline KB object."""
+    """Read the current day counter from a timeline KB object.
+
+    Raises :class:`ValidationError` if the object is missing or lacks
+    a ``- Day: N`` line.
+    """
     objs = kb.get_objects([timeline_id])
     obj = objs.get(timeline_id)
     if obj is None:
-        return 1
+        raise ValidationError(
+            f"timeline object '{timeline_id}' not found — "
+            "advance requires a timeline KB object with '- Day: N'"
+        )
     match = _DAY_COUNTER_RE.search(obj.text)
-    return int(match.group(2)) if match else 1
+    if not match:
+        raise ValidationError(
+            f"timeline '{timeline_id}' has no '- Day: N' line — "
+            "advance requires a day counter"
+        )
+    return int(match.group(2))
 
 
 def update_timeline_day(
@@ -688,7 +701,7 @@ class AdvanceOperator(Operator):
             "luck_rolls": luck_rolls,
         }
 
-        advance_id = generate_advance_id(cursor)
+        advance_id = generate_advance_id(cursor, current_day)
         rel_path = str(cursor.md_path().relative_to(session.git_root))
         owner = cls.owner_id(advance_id, rel_path)
         storage = session.new_storage(owner=owner)
