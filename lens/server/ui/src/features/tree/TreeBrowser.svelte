@@ -3,8 +3,9 @@
   import type { NarrativeKind, TreeNode } from '../../services/api'
   import CloseIcon from '../../components/icons/CloseIcon.svelte'
   import { currentProject, availableProjects } from '../../stores/project'
+  import { currentAddress } from '../../stores/document'
   import { applyStats, stats } from '../../stores/stats'
-  import { scrollContentToBottom, treeOpen, treeRefreshTrigger } from '../../stores/ui'
+  import { treeOpen, treeRefreshTrigger } from '../../stores/ui'
   import TreeNodeComp from './TreeNode.svelte'
 
   type Props = { navigate: (addr: string) => Promise<void>; onProjectSwitch?: (slug: string) => Promise<void> }
@@ -28,6 +29,49 @@
   const HUMAN_PREFIX = 'human.'
   const hasCompanionDataset = $derived($stats?.current_datasets?.includes('companion') === true)
   const refreshTrigger = $derived($treeRefreshTrigger)
+
+  /** Collect spine node addresses for a given target (cursor or selection). */
+  function collectAddrs(node: TreeNode, target: string, visible: Set<string>): void {
+    if (!(target === node.address || target.startsWith(node.address + '/'))) return
+    visible.add(node.address)
+    for (const child of node.children) {
+      visible.add(child.address)
+      if (target === child.address || target.startsWith(child.address + '/')) {
+        collectAddrs(child, target, visible)
+      }
+    }
+  }
+
+  /** Filter the tree to only keep nodes in the visible set. */
+  function filterNodes(nodes: TreeNode[], visible: Set<string>): TreeNode[] {
+    const result: TreeNode[] = []
+    for (const node of nodes) {
+      if (visible.has(node.address)) {
+        const filteredChildren = filterNodes(node.children, visible)
+        const hasHiddenChildren = node.children.length > 0 && filteredChildren.length < node.children.length
+        result.push({
+          address: node.address,
+          key: node.key,
+          children: filteredChildren,
+          hasHiddenChildren: hasHiddenChildren || undefined,
+        })
+      }
+    }
+    return result
+  }
+
+  /** Compute a spine tree: only selected node, cursor, their ancestors, and their immediate children. */
+  function computeSpine(nodes: TreeNode[], cursorAddr: string | null, selectedAddr: string | null): TreeNode[] {
+    if (!cursorAddr && !selectedAddr) return nodes
+    const visible = new Set<string>()
+    for (const root of nodes) {
+      if (cursorAddr) collectAddrs(root, cursorAddr, visible)
+      if (selectedAddr && selectedAddr !== cursorAddr) collectAddrs(root, selectedAddr, visible)
+    }
+    return filterNodes(nodes, visible)
+  }
+
+  let spineTree = $derived(computeSpine(tree, $stats?.cursor ?? null, $currentAddress))
 
   function selectValue(event: Event): string {
     return (event.currentTarget as HTMLInputElement | HTMLSelectElement).value
@@ -155,10 +199,8 @@
   }
 
   async function handleNodeNavigate(addr: string) {
-    const isCursor = $stats?.cursor === addr
     await navigate(addr)
     treeOpen.set(false)
-    if (isCursor) scrollContentToBottom.update((count) => count + 1)
   }
 
   $effect(() => {
@@ -271,11 +313,11 @@
   <div class="sidebar-body">
     {#if error}
       <p class="error-state">{error}</p>
-    {:else if tree.length === 0}
+    {:else if spineTree.length === 0}
       <p class="empty-state">No sub-nodes</p>
     {:else}
       <ul class="tree-list tree-list-top">
-        {#each tree as node, i (node.address)}
+        {#each spineTree as node, i (node.address)}
           <TreeNodeComp node={node} isRoot={i === 0} onNavigate={handleNodeNavigate} />
         {/each}
       </ul>

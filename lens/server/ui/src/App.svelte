@@ -19,7 +19,7 @@
   import { getStats, getNode, getProjects, getPlayback, onAfterMutation } from './services/api'
   import { currentAddress, nodeContent } from './stores/document'
   import { applyStats, stats } from './stores/stats'
-  import { kbPanelOpen, selectedKbId, kbDetailId, kbFilters, inlineEditMode, editorFocused, treeRefreshTrigger } from './stores/ui'
+  import { kbPanelOpen, selectedKbId, kbDetailId, kbFilters, inlineEditMode, editorFocused, treeRefreshTrigger, scrollContentToBottom } from './stores/ui'
   import { currentProject, availableProjects } from './stores/project'
   import { syncUrlHashFromWindow } from './stores/urlHash'
   import { parsedHash } from './stores/parsedHash'
@@ -108,6 +108,10 @@
       currentAddress.set(data.address)
       nodeContent.set(data.content)
       window.location.hash = buildHash(data.address, hashKbParam(), hashKbDetailParam())
+      const s = get(stats)
+      if (s?.cursor === data.address) {
+        scrollContentToBottom.update((count) => count + 1)
+      }
     } catch (e) {
       console.error('Navigation failed:', e)
     }
@@ -277,6 +281,9 @@
           const priorHash = window.location.hash
           window.location.hash =
             '#' + hashAfterNodeResolved(selectedSlug, data.address, hashKbParam(), priorHash)
+          if (initialStats.cursor === data.address) {
+            scrollContentToBottom.update((count) => count + 1)
+          }
         } catch {
           window.location.hash = buildHash('', kb)
           await navigate(initialStats.cursor || '')
@@ -293,7 +300,7 @@
 <MainLayout>
   {#snippet topbar()}
     {#if !(vnActive && $vnImageExplore)}
-      <TopBar />
+      <TopBar {navigate} />
     {/if}
   {/snippet}
 
