@@ -28,7 +28,7 @@
     onclick={() => onNavigate(node.address)}
     data-address={node.address}
   >
-    {#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}{node.key}
+    {#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}{node.key}{#if node.hasHiddenChildren}<span class="collapsed-indicator">&raquo;</span>{/if}
   </button>
   {#if node.children?.length}
     <ul class="tree-list">

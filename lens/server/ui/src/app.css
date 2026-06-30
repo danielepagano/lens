@@ -253,6 +253,12 @@ ul.tree-list li {
   margin-right: 4px;
 }
 
+.collapsed-indicator {
+  color: #aaa;
+  margin-left: 0.2rem;
+  font-size: 0.75rem;
+}
+
 .cursor-indicator-preview {
   display: flex;
   align-items: center;
@@ -1124,6 +1130,11 @@ details[open]>summary {
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+  cursor: pointer;
+}
+
+.node-title:hover {
+  color: var(--pico-primary);
 }
 
 /* ---- Narrative switcher in sidebar ---- */

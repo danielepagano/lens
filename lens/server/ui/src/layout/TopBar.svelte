@@ -31,6 +31,8 @@
   import type { VnTtsSettings } from '../utils/vnTypes'
   import { readVnSession, writeVnSession } from '../utils/vnSessionStorage'
 
+  let { navigate }: { navigate?: (addr: string) => Promise<void> } = $props()
+
   const parts = $derived($currentAddress ? $currentAddress.split('/') : [])
   const parentAddr = $derived(parts.length > 1 ? parts.slice(0, -1).join('/') : null)
   const parentHash = $derived(parentAddr ? `${$currentProject ?? ''}/${parentAddr}` : null)
@@ -309,7 +311,7 @@
       >
     {/if}
     {#if currentTitle}
-      <span class="node-title"
+      <span class="node-title" role="link" tabindex="0" onclick={() => navigate?.($currentAddress ?? '')} onkeydown={(e) => e.key === 'Enter' && navigate?.($currentAddress ?? '')}
         >{#if isCursor}<span class="cursor-indicator">&gt;</span>{/if}{currentTitle}</span
       >
     {/if}

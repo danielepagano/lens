@@ -95,7 +95,7 @@
     const scrollTrigger = $scrollContentToBottom
     if (scrollTrigger <= 0 || !contentEl) return
     tick().then(() => {
-      if (contentEl) contentEl.scrollTo({ top: contentEl.scrollHeight, behavior: 'smooth' })
+      if (contentEl) contentEl.scrollTo({ top: contentEl.scrollHeight })
     })
   })
 

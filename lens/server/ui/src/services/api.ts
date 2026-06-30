@@ -127,6 +127,7 @@ export interface TreeNode {
   address: string
   key: string
   children: TreeNode[]
+  hasHiddenChildren?: boolean
 }
 
 export interface NodeData {
