@@ -114,3 +114,51 @@ def test_no_space_no_match():
 
 def test_empty_prompt_unchanged():
     assert substitute_rolls("") == ""
+
+
+def test_trailing_semicolon():
+    result = substitute_rolls("my attack is @roll d20+3; what happens?")
+    assert "rolled d20+3=" in result
+    assert "; what happens?" in result
+
+
+def test_trailing_exclamation():
+    result = substitute_rolls("I roll @roll d6! critical!")
+    assert "rolled d6=" in result
+    # First ! is excluded from expression, second ! stays as word
+    assert "critical!" in result
+
+
+def test_trailing_question_mark():
+    result = substitute_rolls("is @roll d8+2 enough?")
+    assert "rolled d8+2=" in result
+    assert " enough?" in result
+
+
+def test_trailing_colon():
+    result = substitute_rolls("damage: @roll 2d6+3: total")
+    assert "rolled 2d6+3=" in result
+    assert ": total" in result
+
+
+def test_trailing_comma():
+    result = substitute_rolls("I roll @roll d6, then move")
+    assert "rolled d6=" in result
+    assert ", then move" in result
+
+
+def test_adjacent_punctuation():
+    result = substitute_rolls("hit: @roll d20; miss: @roll d4")
+    blocks = re.findall(r"rolled (.+?=(?:\[[^\]]*\]|\S+))", result)
+    assert len(blocks) == 2
+
+
+def test_parenthetical_aside():
+    result = substitute_rolls("I check what the vibe is (insight @roll 2d20h+2)")
+    assert "rolled 2d20h+2=" in result
+
+
+def test_trailing_period():
+    result = substitute_rolls("I rolled @roll d20.")
+    assert "rolled d20=" in result
+    assert result.endswith("_.")

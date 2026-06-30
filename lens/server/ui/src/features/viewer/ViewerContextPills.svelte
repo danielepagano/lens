@@ -3,8 +3,8 @@
   import type { ParsedNodeHeader } from '../../utils/nodeHeaderBlock'
 
   type Props = {
-    header: ParsedNodeHeader
     stats: Stats | null
+    header: ParsedNodeHeader
     isCursorNode: boolean
     rememberPins: Record<string, string[]>
     /** Header row(s) vs cursor column (after markdown body). */
@@ -16,8 +16,8 @@
   type ParamPillRow = { key: string; label: string }
 
   let {
-    header,
     stats,
+    header,
     isCursorNode,
     rememberPins,
     placement = 'header',
@@ -105,7 +105,7 @@
   varEntries: [string, string][],
   paramRows: ParamPillRow[],
 )}
-  {#each kbRows as row (row.unpin ? `u:${row.id}` : row.id)}
+  {#each kbRows as row, i (`${i}:${row.unpin ? `u:${row.id}` : row.id}`)}
     <button
       type="button"
       class={[

@@ -27,10 +27,14 @@ _DICE_RNG = random.Random()
 # Matches either:
 #   @roll (<expression>)  — parenthesised form, allows spaces in expression
 #   @roll <expression>    — bare form, space required, expression until next space
+# Bare form only matches characters valid in python-dice expressions.
+# Sentence punctuation (;, !, ?, :, ') is excluded so @roll works naturally
+# mid-sentence (e.g. "I @roll d20+3; did I hit?").
+_DICE_VALID_CHARS = r"0-9a-zA-Z+\-*/|.%^()"
 _DICE_ROLL_RE = re.compile(
-    r"@roll\s+\(([^)]+)\)"  # parenthesised: @roll (expr) or @roll(expr)
+    r"@roll\s+\(([^)]+)\)"                                # parenthesised: @roll (expr) or @roll(expr)
     r"|"
-    r"@roll\s+(\S+)",       # bare: @roll expr
+    rf"@roll\s+([{_DICE_VALID_CHARS}]+)",                 # bare: @roll expr
 )
 
 
@@ -61,7 +65,17 @@ def substitute_rolls(prompt: str, *, rng: random.Random | None = None) -> str:
     roll_rng = rng if rng is not None else _DICE_RNG
 
     def _replace(m: re.Match[str]) -> str:
-        expr = (m.group(1) or m.group(2)).strip()
+        raw = (m.group(1) or m.group(2)).strip()
+        trailing = ""
+        # Bare form (group 2): strip trailing ") & ." — these are valid dice
+        # chars but far more likely to be sentence punctuation
+        # (e.g. "(insight @roll d20)" or "I rolled @roll d20.").
+        # Re-append anything stripped so the surrounding text is preserved.
+        if m.group(2):
+            expr = raw.rstrip(").")
+            trailing = raw[len(expr):]
+        else:
+            expr = raw
         try:
             result = _roll_to_text(expr, rng=roll_rng)
             verb = (
@@ -69,7 +83,7 @@ def substitute_rolls(prompt: str, *, rng: random.Random | None = None) -> str:
                 if "d" not in expr.lower()
                 else "rolled"
             )
-            return f"_{verb} {expr}={result}_"
+            return f"_{verb} {expr}={result}_" + trailing
         except Exception as e:
             errors.append(f"@roll {expr!r}: {e}")
             return m.group(0)  # leave unchanged so we can report later
