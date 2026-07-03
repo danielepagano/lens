@@ -30,11 +30,7 @@ from lens.core.release.config import (
     parse_dataset_repo_configs,
     parse_release_config,
 )
-from lens.core.release.version import (
-    compute_local_version,
-    find_lens_repo_root,
-    installed_version,
-)
+from lens.core.release.version import installed_version
 from lens.core.speech import registry as speech_registry
 
 SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
@@ -245,8 +241,6 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
                 raw_config = tomllib.load(f)
         release_cfg = parse_release_config(raw_config)
         release_installed_version = installed_version()
-        if find_lens_repo_root() is not None:
-            release_local_checkout_version = compute_local_version()
         release_repos = []
         for r in parse_dataset_repo_configs(raw_config):
             repo_info: dict[str, str] = {

@@ -6,6 +6,7 @@ from lens.cli.help_strings import CMD_STATS, HELP_OPTS, OPT_VERBOSE
 from lens.core.commands.stats import get_stats
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
+from lens.core.release.version import compute_local_version, find_lens_repo_root
 
 app = typer.Typer(
     invoke_without_command=True,
@@ -31,6 +32,9 @@ def stats(
     except (RuntimeError, LensException) as e:
         typer.echo(f"lens stats: {e}", err=True)
         raise typer.Exit(1)
+
+    if result.dataset_name is None and find_lens_repo_root() is not None:
+        result.release_local_checkout_version = compute_local_version()
 
     if result.dataset_name is not None:
         typer.echo(f"Dataset: {result.dataset_name}")
