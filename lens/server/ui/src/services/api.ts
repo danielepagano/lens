@@ -847,10 +847,24 @@ export const checkpointTransaction = (opts?: {
 }): Promise<TransactionActionResponse> =>
   post(projectPath('/checkpoint'), opts ?? {}) as Promise<TransactionActionResponse>
 
+export interface RefreshEntry {
+  name: string
+  status: string
+  action: string
+  detail: string
+}
+
+export interface RefreshResponse {
+  status: 'ok' | 'error'
+  entries?: RefreshEntry[]
+  any_changed?: boolean
+  detail?: string
+}
+
 export const refreshTransaction = (opts?: {
   reset?: boolean
-}): Promise<TransactionActionResponse> =>
-  post(projectPath('/refresh'), opts ?? {}) as Promise<TransactionActionResponse>
+}): Promise<RefreshResponse> =>
+  post(projectPath('/refresh'), opts ?? {}) as Promise<RefreshResponse>
 
 export interface TxStatusCommit {
   hash: string

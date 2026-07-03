@@ -73,8 +73,15 @@ def refresh(
 ) -> dict[str, Any]:
     try:
         reset = body.reset if body is not None and body.reset is not None else False
-        execute_refresh(session, reset=reset)
-        return {"status": "ok"}
+        result = execute_refresh(session, reset=reset)
+        return {
+            "status": "ok",
+            "entries": [
+                {"name": e.name, "status": e.status, "action": e.action, "detail": e.detail}
+                for e in result.entries
+            ],
+            "any_changed": result.any_changed,
+        }
     except (RuntimeError, LensException) as e:
         return {"status": "error", "detail": str(e)}
 

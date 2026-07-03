@@ -267,6 +267,32 @@ def build_projects(deploy_dir: Path, slugs: list[str]) -> list[tuple[str, Path, 
     return projects
 
 
+def collect_dataset_repo_deploy_key_secrets(
+    projects: list[tuple[str, Path, Path]],
+) -> dict[str, str]:
+    """Collect ``DATASET_REPO_DEPLOY_KEY_<NAME>`` secrets from the local environment.
+
+    For each unique ``[[dataset_repo]]`` name across all *projects*, checks if
+    ``DATASET_REPO_DEPLOY_KEY_<ENV_KEY>`` is set in the environment.  If found,
+    it's included — if not, the repo is assumed public (no deploy key needed).
+    Returns an empty dict when no dataset repos are configured.
+    """
+    secrets: dict[str, str] = {}
+    seen: set[str] = set()
+    for _slug, _git_root, project_root in projects:
+        config = read_lens_toml(project_root)
+        for repo in parse_dataset_repo_configs(config):
+            if repo.name in seen:
+                continue
+            seen.add(repo.name)
+            env_key = repo.name.upper().replace("-", "_")
+            var_name = f"DATASET_REPO_DEPLOY_KEY_{env_key}"
+            value = os.environ.get(var_name)
+            if value:
+                secrets[var_name] = value
+    return secrets
+
+
 def _collect_secrets(
     projects: list[tuple[str, Path, Path]],
     deploy_keys: dict[str, Path],
@@ -315,6 +341,9 @@ def _collect_secrets(
                     f"S3 mount configured but {var} is not set in your environment"
                 )
             secrets[var] = value
+
+    dataset_repo_secrets = collect_dataset_repo_deploy_key_secrets(projects)
+    secrets.update(dataset_repo_secrets)
 
     return secrets
 
@@ -496,6 +525,11 @@ def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
     seen_keys: set[str] = set()
     _append_project_api_key_secrets(config, secrets, seen_keys)
 
+    # Re-sync dataset repo deploy keys from all projects (existing + new)
+    all_projects = build_projects(deploy_dir, current_slugs + [slug])
+    dataset_repo_secrets = collect_dataset_repo_deploy_key_secrets(all_projects)
+    secrets.update(dataset_repo_secrets)
+
     secret_args = [f"{k}={v}" for k, v in secrets.items()]
     _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
     _update_slugs_in_fly_toml(fly_toml, current_slugs + [slug])
@@ -561,6 +595,12 @@ def push_deploy(
     api_key_secrets = collect_all_project_api_key_secrets(projects)
     if api_key_secrets:
         secret_args = [f"{k}={v}" for k, v in api_key_secrets.items()]
+        _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
+
+    # Re-sync dataset repo deploy keys from all projects
+    dataset_repo_secrets = collect_dataset_repo_deploy_key_secrets(projects)
+    if dataset_repo_secrets:
+        secret_args = [f"{k}={v}" for k, v in dataset_repo_secrets.items()]
         _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
 
     seen_names: set[str] = set()

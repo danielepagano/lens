@@ -500,6 +500,15 @@ class Storage:
         except ValueError:
             return 0
 
+    def needs_fast_forward(self) -> bool:
+        """Return True when the remote is ahead of HEAD (new commits to pull)."""
+        if not self.has_remote():
+            return False
+        self.fetch_quiet()
+        if not self._has_upstream():
+            return False
+        return self._rev_list_count("HEAD..@{upstream}") > 0
+
     def fetch_quiet(self) -> None:
         r = subprocess.run(
             [self._GIT, "fetch", "-q"],

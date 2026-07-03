@@ -526,6 +526,16 @@ git_url = "https://github.com/org/custom-rules.git"
 | `git_url` | Yes | — | SSH or HTTPS git URL of the dataset repository |
 | `ref` | No | `"main"` | Git ref (branch, tag, or commit) to track |
 
+> **Deploy keys for private repos:** set the Fly secret `DATASET_REPO_DEPLOY_KEY_<NAME>`
+> (where `<NAME>` is the repo name uppercased with hyphens→underscores; e.g.
+> `lens-my-dataset` → `DATASET_REPO_DEPLOY_KEY_LENS_MY_DATASET`) if the
+> dataset repo is private and needs SSH authentication. In the **desktop deploy**
+> flow (`lens deploy push`), private datasets are bundled into the Docker image,
+> so the deploy key is optional — it's only needed for runtime updates via
+> `/refresh`. A **CI deploy** has no local checkout to copy from, making the
+> deploy key **required** for any private `[[dataset_repo]]`. See
+> [deploy/README.md](../deploy/README.md) for secret management.
+
 `lens check` validates each repo's `git_url` format and warns when `name`
 does not match any entry in `[project] datasets`.
 

@@ -86,10 +86,59 @@ print(f'{h}\t{p}')
     fi
 done
 
-# ---- 4. Start Caddy (background) ----
+# ---- 4. Clone or update shared dataset repos ----
+DATASET_DIR="$REPOS_DIR/_datasets"
+mkdir -p "$DATASET_DIR"
+: > /tmp/_ds_seen.txt
+for SLUG in "${SLUGS[@]}"; do
+    PROJECT_FILE="$REPOS_DIR/$SLUG/lens.toml"
+    [ ! -f "$PROJECT_FILE" ] && continue
+
+    /app/.venv/bin/python -c "
+import tomllib, sys
+with open('$PROJECT_FILE', 'rb') as f:
+    cfg = tomllib.load(f)
+for entry in cfg.get('dataset_repo', []):
+    if isinstance(entry, dict) and entry.get('name') and entry.get('git_url'):
+        print(f\"{entry['name']}|{entry['git_url']}|{entry.get('ref', 'main')}\")
+" 2>/dev/null | while IFS='|' read -r DS_NAME DS_URL DS_REF; do
+        if grep -qx "$DS_NAME" /tmp/_ds_seen.txt 2>/dev/null; then
+            continue
+        fi
+        echo "$DS_NAME" >> /tmp/_ds_seen.txt
+
+        DS_KEY=$(echo "$DS_NAME" | tr '[:lower:]-' '[:upper:]_')
+        DS_DEPLOY_KEY_VAR="DATASET_REPO_DEPLOY_KEY_${DS_KEY}"
+        DS_DEPLOY_KEY="${!DS_DEPLOY_KEY_VAR:-}"
+
+        DS_DIR="$DATASET_DIR/$DS_NAME"
+        DS_SSH_CMD="ssh -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/root/.ssh/known_hosts"
+
+        if [ -n "$DS_DEPLOY_KEY" ]; then
+            DS_KEY_FILE="/root/.ssh/dataset_deploy_key_${DS_KEY}"
+            echo "$DS_DEPLOY_KEY" > "$DS_KEY_FILE"
+            chmod 600 "$DS_KEY_FILE"
+            DS_SSH_CMD="ssh -i $DS_KEY_FILE -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/root/.ssh/known_hosts"
+        fi
+
+        if [ ! -d "$DS_DIR/.git" ]; then
+            echo "Cloning dataset $DS_NAME…"
+            GIT_SSH_COMMAND="$DS_SSH_CMD" git clone --depth 1 "$DS_URL" "$DS_DIR" \
+                || echo "Warning: clone failed for dataset $DS_NAME"
+        else
+            echo "Dataset $DS_NAME found on volume."
+            GIT_SSH_COMMAND="$DS_SSH_CMD" git -C "$DS_DIR" fetch origin \
+                || echo "Warning: git fetch failed for dataset $DS_NAME"
+            git -C "$DS_DIR" merge --ff-only "origin/$DS_REF" \
+                || echo "Warning: could not fast-forward dataset $DS_NAME"
+        fi
+    done
+done
+
+# ---- 5. Start Caddy (background) ----
 caddy run --config /etc/caddy/Caddyfile --adapter caddyfile &
 
-# ---- 5. Start Lens (foreground) ----
+# ---- 6. Start Lens (foreground) ----
 # REPOS_DIR contains one subdirectory per project; discover_projects() finds them all.
 cd "$REPOS_DIR"
 exec lens serve --host 127.0.0.1 --port "${LENS_PORT:-8000}"

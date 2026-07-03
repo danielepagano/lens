@@ -51,24 +51,44 @@ def read_local_dataset_paths(project_root: Path) -> dict[str, str]:
     return {k: str(v) for k, v in raw_dict.items() if isinstance(v, str)}
 
 
+def _cloud_dataset_clone_path(name: str) -> Path | None:
+    """Return the path to a ``[[dataset_repo]]`` clone on the Fly volume.
+
+    Only meaningful when :func:`is_cloud_deployed` returns ``True``.
+    Returns ``None`` when the clone does not exist or the env var is unset.
+    """
+    base = os.environ.get("LENS_PROJECT_DIR")
+    if not base:
+        return None
+    p = Path(base) / "_datasets" / name
+    return p if p.is_dir() else None
+
+
 def resolve_dataset_path(project_root: Path, name: str) -> Path | None:
     """Locate a dataset directory by *name*.
 
     Resolution order:
 
     1. Bundled with Lens: ``datasets/<name>``
-    2. Sibling of the Lens repo root: ``<lens-repo>/../<name>``
-    3. Explicit path in ``lens.local.toml`` ``[dataset_paths]``
+    2. Cloud volume clone: ``$LENS_PROJECT_DIR/_datasets/<name>`` (when
+       :envvar:`LENS_CLOUD_DEPLOYED` is truthy and the clone exists)
+    3. Sibling of the Lens repo root: ``<lens-repo>/../<name>``
+    4. Explicit path in ``lens.local.toml`` ``[dataset_paths]``
     """
     # 1. Bundled
     bundled = datasets_root() / name
     if bundled.is_dir():
         return bundled
-    # 2. Sibling of lens repo
+    # 2. Cloud volume clone (only when deployed)
+    if is_cloud_deployed():
+        cloud_path = _cloud_dataset_clone_path(name)
+        if cloud_path is not None:
+            return cloud_path
+    # 3. Sibling of lens repo
     sibling = _lens_repo_root().parent / name
     if sibling.is_dir():
         return sibling
-    # 3. lens.local.toml override
+    # 4. lens.local.toml override
     overrides = read_local_dataset_paths(project_root)
     if name in overrides:
         p = Path(overrides[name])

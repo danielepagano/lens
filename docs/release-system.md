@@ -512,7 +512,7 @@ pending major-version bump; no UI yet (routes + tests only).
 
 ---
 
-## Phase 7 — Dataset repo runtime sync
+## Phase 7 — Dataset repo runtime sync [COMPLETED]
 
 **Difficulty: High**
 
@@ -546,10 +546,19 @@ up to date via the existing refresh mechanism; no CI involvement required.
   ability to also set `DATASET_REPO_DEPLOY_KEY_<NAME>` secrets when a
   project's `[[dataset_repo]]` entries are private — additive flags only, no
   change to existing desktop behavior for projects without `[[dataset_repo]]`.
-- Tests: extend `e2e/testing/project.py` / a new e2e test that boots
-  `FakeLLMServer` + a local bare dataset repo, verifies `resolve_dataset_path`
-  picks up the cloud clone, and that `/refresh` fast-forwards it after a new
-  commit is pushed to the fake dataset remote.
+  **Key nuance for deploy keys:** in the desktop flow, external datasets are
+  bundled into the Docker image by `push_deploy`'s copytree logic, so the
+  runtime `start.sh` clone is optional — if it fails (missing deploy key),
+  `resolve_dataset_path` finds the image-bundled copy at tier 1 and
+  operation continues normally. The deploy key is only needed for runtime
+  updates via `/refresh`. In contrast, a **CI deploy** (Phase 9) has no
+  local checkout to copy from — private dataset repos are only accessible
+  through the runtime clone, making `DATASET_REPO_DEPLOY_KEY_*` secrets
+  **required** for any private `[[dataset_repo]]` entry.
+- Tests: a new e2e test (`e2e/tests/test_dataset_repo_refresh.py`) that
+  creates a local bare dataset repo, exercises the cloud-mode clone and
+  fast-forward paths via `execute_refresh`. Deploy-key secret collection is
+  covered by unit tests in `lens/core/test/test_deploy_secrets.py`.
 
 ---
 

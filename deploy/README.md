@@ -98,6 +98,7 @@ Set by `lens deploy init` (not secrets):
 | `PROJECT_REPO_URL_<SLUG>` | Git remote URL per project |
 | LLM / image / speech keys (e.g. `OPEN_ROUTER_API_KEY`, `A2E_TOKEN`, `XAI_API_KEY`) | From each project's ``[[llm]]`` / ``[[image]]`` / ``[[speech]]`` ``api_key_env``; deduplicated across blocks and projects |
 | `AWS_*` | S3 credentials, if any project uses an S3 mount |
+| `DATASET_REPO_DEPLOY_KEY_<NAME>` | SSH deploy key for a private ``[[dataset_repo]]`` (name uppercased, hyphens→underscores). E.g. a repo named ``lens-my-dataset`` uses env var ``DATASET_REPO_DEPLOY_KEY_LENS_MY_DATASET``. Optional in the desktop flow — external datasets are bundled into the Docker image, so the key is only needed for runtime ``/refresh`` updates. **Required** for private repos in a CI deploy where no local checkout exists to copy from. |
 
 ## Deploying
 
@@ -110,6 +111,8 @@ lens deploy push
 Optional: `lens deploy push --mode fly` (default, Fly builder without Depot), `--mode depot`, or `--mode local` (build image on this machine with Docker, then push).
 
 Run this from the same directory as `fly.toml`. **`push` re-syncs all LLM, image, and speech `api_key_env` secrets** from your current shell into the Fly app (then deploys), so you can add a new ``[[image]]`` or ``[[speech]]`` block, export the key locally, and run `lens deploy push` without re-running `init`.
+
+`push` also re-syncs any `DATASET_REPO_DEPLOY_KEY_<NAME>` secrets from your current environment, so adding a new ``[[dataset_repo]]`` entry (or rotating a deploy key) only requires setting the env var locally and running `lens deploy push` — no need to re-run `init`.
 
 On first boot, `start.sh` clones each repo onto the volume. On subsequent boots it fast-forwards from `origin`. The volume is never touched by a redeploy.
 
