@@ -62,6 +62,8 @@ def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> 
             "gated_update_approved": result.release_gated_update_approved,
             "app_leader": result.release_app_leader,
             "dataset_repos": result.release_dataset_repos,
+            "installed_version": result.release_installed_version,
+            "local_checkout_version": result.release_local_checkout_version,
         } if result.dataset_name is None else None,
         "transaction": transaction,
     }

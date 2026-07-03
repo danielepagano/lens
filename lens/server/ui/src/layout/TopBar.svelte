@@ -30,6 +30,7 @@
   import { navigateVnLogicalStep, vnLogicalStepCount } from '../utils/vnPlaybackNav'
   import type { VnTtsSettings } from '../utils/vnTypes'
   import { readVnSession, writeVnSession } from '../utils/vnSessionStorage'
+  import ReleaseNotification from '../features/release/ReleaseNotification.svelte'
 
   let { navigate }: { navigate?: (addr: string) => Promise<void> } = $props()
 
@@ -316,12 +317,13 @@
       >
     {/if}
     <div class="mode-switch">
-      {#if $currentAddress}
-        <button type="button" class="mode-btn scene-entry-btn" onclick={openScene}>Scene</button>
-      {/if}
       <span class={['tx-status', { staged: !hasPending && hasStaged }]}
         >{hasPending ? '*' : hasStaged ? '^' : ''}</span
       >
+      <ReleaseNotification />
+      {#if $currentAddress}
+        <button type="button" class="mode-btn scene-entry-btn" onclick={openScene}>Scene</button>
+      {/if}
       <button
         class={['mode-btn', 'kb-toggle-btn', { active: $kbPanelOpen }]}
         onclick={toggleKb}

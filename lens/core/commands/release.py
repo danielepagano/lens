@@ -109,13 +109,6 @@ def execute_release_check(project_root: Path) -> ReleaseCheckResult:
     if not status.enabled:
         return ReleaseCheckResult(action="none", summary="release system not enabled")
 
-    if status.gated_update_pending and not status.gated_update_approved:
-        target = status.gated_update_target_version or status.requested_version
-        summary = (
-            f"awaiting approval for gated update {target or '(no target set)'}"
-        )
-        return ReleaseCheckResult(action="await_approval", target=target, summary=summary)
-
     if status.gated_update_pending and status.gated_update_approved:
         target = status.gated_update_target_version
         if not target:
@@ -125,6 +118,10 @@ def execute_release_check(project_root: Path) -> ReleaseCheckResult:
 
     target_tag = _select_target_tag(status)
     if target_tag is None:
+        if status.gated_update_pending and not status.gated_update_approved:
+            target = status.gated_update_target_version
+            summary = f"awaiting approval for gated update {target}"
+            return ReleaseCheckResult(action="await_approval", target=target, summary=summary)
         return ReleaseCheckResult(action="none", summary="no release action required")
 
     installed_semver = status.installed_semver
@@ -235,31 +232,6 @@ def execute_release_gated_approve(session: ProjectSession) -> None:
         return
     storage.write_file(lens_toml, updated)
     storage.commit("release: approve gated update")
-    if storage.has_remote():
-        storage.push_or_raise()
-
-
-def execute_release_gated_reject(session: ProjectSession) -> None:
-    """Clear all pending gated-update fields and commit+push.
-
-    Resets ``gated_update_pending``, ``gated_update_target_version``, and
-    ``gated_update_approved``.
-    """
-    storage = session.new_storage(owner=None)
-    lens_toml = session.project_root / "lens.toml"
-    raw = lens_toml.read_text(encoding="utf-8")
-    updated = _apply_release_updates(
-        raw,
-        {
-            "gated_update_pending": False,
-            "gated_update_target_version": "",
-            "gated_update_approved": False,
-        },
-    )
-    if updated == raw:
-        return
-    storage.write_file(lens_toml, updated)
-    storage.commit("release: reject gated update")
     if storage.has_remote():
         storage.push_or_raise()
 

@@ -161,26 +161,4 @@ class TestReleaseGatedApprove:
         assert r.status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# POST /release/gated-update/reject
-# ---------------------------------------------------------------------------
 
-
-class TestReleaseGatedReject:
-    def test_reject_returns_ok(self, release_client: TestClient) -> None:
-        r = release_client.post("/test/release/gated-update/reject")
-        assert r.status_code == 200
-        assert r.json()["status"] == "ok"
-
-    def test_reject_clears_flags(self, release_client: TestClient) -> None:
-        # First approve, then reject, then verify cleared.
-        release_client.post("/test/release/gated-update/approve")
-        release_client.post("/test/release/gated-update/reject")
-        data = release_client.get("/test/release/status").json()
-        assert data["gated_update_pending"] is False
-        assert data["gated_update_target_version"] == ""
-        assert data["gated_update_approved"] is False
-
-    def test_returns_404_when_not_enabled(self, no_release_client: TestClient) -> None:
-        r = no_release_client.post("/test/release/gated-update/reject")
-        assert r.status_code == 404

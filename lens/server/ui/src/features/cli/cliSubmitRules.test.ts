@@ -31,6 +31,7 @@ const MINIMAL_STATS: Stats = {
   active_session_operator: null,
   transaction: null,
   dataset_configs: {},
+  release: null,
 }
 
 beforeAll(() => {

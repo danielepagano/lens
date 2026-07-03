@@ -95,30 +95,50 @@ reviewers can push back before implementation starts.
      function; the server may cache it in-process for a short TTL to avoid
      hammering the remote on every page load, but never writes it to git.
 
-3. **Major-bump approval happens in the deployed app UI, not via a PR — and
-   involves no data migration.** Per the non-goals above, this plan assumes
-   project data needs no changes across a Lens major version, so there's
-   nothing to run and nothing to diff. When `check` finds a target whose
-   major is greater than the currently installed major, CI commits
-   `gated_update_pending = true` and `gated_update_target_version = <tag>`
-   directly to the tracked branch (not a side branch) — a pure metadata
-   write, no project files touched. The Lens app shows a banner naming the
-   target version (linking out to the Lens repo's release notes for context)
-   with an Approve/Reject action. Approving commits
-   `gated_update_approved = true` (pushed via the same Storage/checkpoint
-   pattern); that push is what triggers the next CI run to actually build
-   and deploy the tag. This works identically for GitHub- and GitLab-hosted
-   project repos, since it never touches a host-specific PR API. Rejecting
-   clears the pending fields so the next `check` won't re-offer the same tag
-   automatically — the user has to bump `requested_version` (or wait for a
-   newer one under `auto_update = "major"`) to be asked again.
+ 3. **Major-bump approval happens in the deployed app UI, not via a PR — and
+    involves no data migration.** Per the non-goals above, this plan assumes
+    project data needs no changes across a Lens major version, so there's
+    nothing to run and nothing to diff. When `check` finds a target whose
+    major is greater than the currently installed major, CI commits
+    `gated_update_pending = true` and `gated_update_target_version = <tag>`
+    directly to the tracked branch (not a side branch) — a pure metadata
+    write, no project files touched. The Lens app shows a banner naming the
+    target version (linking out to the Lens repo's release notes for context)
+    with an Approve/Reject action. Approving commits
+    `gated_update_approved = true` (pushed via the same Storage/checkpoint
+    pattern); that push is what triggers the next CI run to actually build
+    and deploy the tag. This works identically for GitHub- and GitLab-hosted
+    project repos, since it never touches a host-specific PR API.
 
-4. **Any major bump always requires the approval handshake**, regardless of
-   whether the target was reached via `auto_update = "major"` or an explicit
-   `requested_version`. Policy only controls whether CI acts autonomously for
-   **minor/patch** bumps and which version it aims for; it never skips human
-   review for a major bump — even though, under this plan, that review has
-   nothing to inspect but the version number itself.
+    **While a major bump is pending, minor/patch updates within the current
+    major version are NOT blocked.** The `check` command still runs
+    `_select_target_tag` and applies a same‑major target immediately —
+    only a cross‑major target triggers the `await_approval` gate. See
+    Decision #4 and the Phase 4 check flow for the combined rules.
+
+    Rejecting clears the `gated_update_pending` / `gated_update_target_version`
+    / `gated_update_approved` fields and pushes the change. The next `check`
+    run will re‑evaluate the target from scratch — if the same tag is still
+    the best candidate (per policy or `requested_version`), it will be offered
+    again. This is intentional: rejection is a "not now," not a "never." To
+    stop being asked about a particular tag, change the `auto_update` policy
+    or remove the `requested_version` that selected it.
+
+ 4. **Any major bump always requires the approval handshake**, regardless of
+    whether the target was reached via `auto_update = "major"` or an explicit
+    `requested_version`. Policy only controls whether CI acts autonomously for
+    **minor/patch** bumps and which version it aims for; it never skips human
+    review for a major bump — even though, under this plan, that review has
+    nothing to inspect but the version number itself.
+
+    **Critically, a pending major bump does not block minor/patch updates
+    within the current major.** The `check` command evaluates the target
+    through `_select_target_tag` (which respects `auto_update` and
+    `requested_version`) before checking the major boundary. If the selected
+    target shares the installed major, it proceeds as `apply` — only a target
+    whose major exceeds the installed major triggers the gated approval path.
+    This means a project on `auto_update = "minor"` will keep receiving the
+    latest v1.x patches even while approval for v2.0.0 awaits a human click.
 
 5. **Dataset repos are tracked but never version-gated.** They're cloned onto
    the same Fly volume as project repos (extending the existing `start.sh`
@@ -346,24 +366,30 @@ branching in a pipeline.
   above) — update `ReleaseConfig`/`ReleaseStatus`, validation, and the
   `lens stats` display accordingly as part of this phase's work, not as a
   separate cleanup step.
-- `lens release check` — reads config + live status (Phase 2), and:
-  1. If `gated_update_pending` and not yet `gated_update_approved`: exit 0,
-     JSON `{"action": "await_approval", "target": "<tag>"}`, do nothing else.
-  2. Else pick a target tag per decision #4 above (explicit
-     `requested_version` wins if set and newer than installed; otherwise
-     `auto_update` policy ceiling; `off` → no target).
-     - Reject (non-zero exit, clear error) a `requested_version` older than
-       the currently installed tag or an unparseable tag — never silently
-       downgrade.
-  3. No target / already installed: JSON `{"action": "none"}`.
-  4. Target major == currently installed major: JSON
-     `{"action": "apply", "target": "<tag>"}` — no approval needed, straight
-     to build+deploy (minor/patch).
-  5. Target major > currently installed major: commits
-     `gated_update_pending = true`, `gated_update_target_version = <tag>`
-     (pure metadata write, no project files touched — decision #3), JSON
-     `{"action": "await_approval", "target": "<tag>"}`. CI stops here; the
-     app surfaces the approval banner (Phase 6).
+ - `lens release check` — reads config + live status (Phase 2), and:
+   1. If `gated_update_pending` and `gated_update_approved`: JSON
+      `{"action": "apply", "target": "<approved tag>"}` — the approved major
+      bump is ready to build and deploy.
+   2. Pick a target tag per decision #4 above (explicit `requested_version`
+      wins if set and newer than installed; otherwise `auto_update` policy
+      ceiling; `off` → no target).
+      - Reject (non-zero exit, clear error) a `requested_version` older than
+        the currently installed tag or an unparseable tag — never silently
+        downgrade.
+   3. No target and no pending gated update: JSON `{"action": "none"}`.
+   4. No target but a pending gated update exists (no minor/patch available
+      within the current major, but a major bump is still awaiting approval):
+      JSON `{"action": "await_approval", "target": "<pending tag>"}`.
+   5. Target shares the installed major (minor/patch): JSON
+      `{"action": "apply", "target": "<tag>"}` — no approval needed, straight
+      to build+deploy. **This fires even if a cross-major gated update is
+      also pending** (Decision #4).
+   6. Target major > installed major: commits
+      `gated_update_pending = true`, `gated_update_target_version = <tag>`
+      (pure metadata write, no project files touched — decision #3), JSON
+      `{"action": "await_approval", "target": "<tag>"}`. If already pending,
+      the metadata write is a no-op. CI stops here; the app surfaces the
+      approval banner (Phase 6).
 - `lens release apply --to <tag>` — prints the build parameters CI needs
   (Lens repo URL + tag to check out) as JSON. **Makes no commit** in the
   common case (decision #2) — matches "tag-based, no commit needed"
@@ -428,10 +454,7 @@ pending major-version bump; no UI yet (routes + tests only).
     (mirrors `execute_checkpoint`).
   - `POST /{slug}/release/gated-update/approve` → sets
     `gated_update_approved = true`, commits+pushes.
-  - `POST /{slug}/release/gated-update/reject` → clears
-    `gated_update_pending` / `gated_update_target_version` /
-    `gated_update_approved`, commits+pushes. No revert needed — the pending
-    commit only ever touched `[release]` metadata, never project data.
+
   - All routes 404 with a clear message when `[release]` is absent/disabled
     (matches Phase 1's "no-op" default).
   - **Multi-project deploy (decision #8):** every route resolves to the
@@ -453,7 +476,7 @@ pending major-version bump; no UI yet (routes + tests only).
 
 ---
 
-## Phase 6 — UI: Release panel
+## Phase 6 — UI: Release panel [COMPLETED]
 
 **Difficulty: Medium**
 

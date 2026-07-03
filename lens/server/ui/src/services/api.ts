@@ -114,6 +114,22 @@ export interface Stats {
   active_session_operator: string | null
   transaction: TransactionState | null
   dataset_configs: Record<string, Record<string, unknown>>
+  /** Release system status (null when viewing a dataset or release not enabled). */
+  release: ReleaseStats | null
+}
+
+export interface ReleaseStats {
+  enabled: boolean
+  lens_repo_url: string
+  auto_update: string
+  requested_version: string
+  gated_update_pending: boolean
+  gated_update_target_version: string
+  gated_update_approved: boolean
+  app_leader: boolean
+  dataset_repos: { name: string; git_url: string; ref: string }[]
+  installed_version: string | null
+  local_checkout_version: string | null
 }
 
 export interface TransactionState {
@@ -215,6 +231,13 @@ export async function workflowStreamAction(
   })
   if (!r.ok) throw new Error(await errorDetail(r))
 }
+
+// ---- Release system (Phase 6) ----
+
+export const releaseApprove = withStats(
+  (): Promise<{ status: string }> =>
+    post(projectPath('/release/gated-update/approve'), {}) as Promise<{ status: string }>
+)
 
 // ---- Media generate (SSE) + incremental save ----
 

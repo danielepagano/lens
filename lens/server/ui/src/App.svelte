@@ -13,6 +13,7 @@
   import MediaPreviewCarousel from './features/media/MediaPreviewCarousel.svelte'
   import KbDiffModal from './features/kb/KbDiffModal.svelte'
   import GuideModal from './features/cli/GuideModal.svelte'
+  import ReleaseModal from './features/release/ReleaseModal.svelte'
   import KbPanel from './features/kb/KbPanel.svelte'
   import InlineEditView from './features/editor/InlineEditView.svelte'
   import VisualNovelView from './features/visualNovel/VisualNovelView.svelte'
@@ -328,6 +329,7 @@
   <MediaCarousel onDone={handleCarouselDone} />
   <KbDiffModal />
   <GuideModal />
+  <ReleaseModal />
 
   {#snippet bottombar()}
     {#if !vnActive}

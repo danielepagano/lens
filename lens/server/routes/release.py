@@ -14,7 +14,6 @@ from pydantic import BaseModel
 
 from lens.core.commands.release import (
     execute_release_gated_approve,
-    execute_release_gated_reject,
     execute_release_policy_update,
 )
 from lens.core.exceptions import LensException
@@ -137,20 +136,4 @@ def release_gated_approve(
         return {"status": "error", "detail": str(e)}
 
 
-@router.post("/release/gated-update/reject")
-def release_gated_reject(
-    project_slug: str,  # noqa: ARG001
-    session: ProjectSession = Depends(_release_session),
-) -> dict[str, Any]:
-    status = compute_release_status(session.project_root)
-    if not status.enabled:
-        raise HTTPException(
-            status_code=404,
-            detail="release system is not enabled for this project",
-        )
 
-    try:
-        execute_release_gated_reject(session)
-        return {"status": "ok"}
-    except (RuntimeError, LensException) as e:
-        return {"status": "error", "detail": str(e)}

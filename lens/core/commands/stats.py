@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -26,11 +27,14 @@ from lens.core.project import (
 from lens.core.dataset_config import get_dataset_configs
 from lens.core.knowledge import KnowledgeStore
 from lens.core.release.config import (
-    ReleaseConfig,
+    parse_dataset_repo_configs,
     parse_release_config,
 )
-from lens.core.release.status import compute_release_status
-from lens.core.release.version import resolve_remote_ref_sha
+from lens.core.release.version import (
+    compute_local_version,
+    find_lens_repo_root,
+    installed_version,
+)
 from lens.core.speech import registry as speech_registry
 
 SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
@@ -234,31 +238,23 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     release_local_checkout_version: str | None = None
     release_latest_available: str | None = None
     if not is_dataset:
-        rs = compute_release_status(root)
-        release_cfg = ReleaseConfig(
-            enabled=rs.enabled,
-            lens_repo_url=rs.lens_repo_url,
-            auto_update=rs.auto_update,
-            requested_version=rs.requested_version,
-            gated_update_pending=rs.gated_update_pending,
-            gated_update_target_version=rs.gated_update_target_version,
-            gated_update_approved=rs.gated_update_approved,
-            app_leader=rs.app_leader,
-        )
+        raw_config: dict[str, Any] = {}
+        lens_toml = root / "lens.toml"
+        if lens_toml.exists():
+            with lens_toml.open("rb") as f:
+                raw_config = tomllib.load(f)
+        release_cfg = parse_release_config(raw_config)
+        release_installed_version = installed_version()
+        if find_lens_repo_root() is not None:
+            release_local_checkout_version = compute_local_version()
         release_repos = []
-        for r in rs.dataset_repos:
-            sha = resolve_remote_ref_sha(r.git_url, r.ref)
+        for r in parse_dataset_repo_configs(raw_config):
             repo_info: dict[str, str] = {
                 "name": r.name,
                 "git_url": r.git_url,
                 "ref": r.ref,
             }
-            if sha:
-                repo_info["head_sha"] = sha
             release_repos.append(repo_info)
-        release_installed_version = rs.installed_version_str
-        release_local_checkout_version = rs.local_checkout_version
-        release_latest_available = rs.latest_available_str
 
     return StatsResult(
         kb_types=kb_types,

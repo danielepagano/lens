@@ -105,6 +105,24 @@ class TestReleaseCommands(unittest.TestCase):
         self.assertEqual(result.action, "await_approval")
         self.assertEqual(result.target, "v2.0.0")
 
+    def test_check_pending_gated_still_allows_minor(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            "auto_update = \"minor\"\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"v2.0.0\"\n"
+            "gated_update_approved = false\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.0.0"}, clear=False):
+            result = execute_release_check(proj)
+        self.assertEqual(result.action, "apply")
+        self.assertEqual(result.target, "v1.1.0")
+        contents = (proj / "lens.toml").read_text(encoding="utf-8")
+        self.assertIn("gated_update_pending = true", contents)
+
     def test_check_auto_minor_applies(self) -> None:
         block = (
             "[release]\n"
