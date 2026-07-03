@@ -199,11 +199,13 @@ class TestValidateReleaseConfig(unittest.TestCase):
             errors = [ln for ln in validate_release_config(cfg, [], []) if ln[0] == "error"]
             self.assertEqual([ln for ln in errors if "auto_update" in ln[1]], [], f"failed for {val}")
 
-    def test_data_major_version_zero_error(self) -> None:
+    def test_data_major_version_zero_is_valid(self) -> None:
+        # 0 is a legitimate value for a project tracking Lens's pre-1.0 major
+        # line (e.g. installed/latest available is still v0.x.y).
         cfg = ReleaseConfig(enabled=True, lens_repo_url="https://github.com/user/lens.git", data_major_version=0)
         lines = validate_release_config(cfg, [], [])
         errors = [ln for ln in lines if ln[0] == "error"]
-        self.assertTrue(any("data_major_version" in ln[1] for ln in errors))
+        self.assertEqual([ln for ln in errors if "data_major_version" in ln[1]], [])
 
     def test_data_major_version_negative_error(self) -> None:
         cfg = ReleaseConfig(

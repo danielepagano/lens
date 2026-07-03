@@ -173,7 +173,7 @@ Refresh action  -----------------------> project + [[dataset_repo]] clones on vo
 
 ---
 
-## Phase 1 — Config schema & validation
+## Phase 1 — Config schema & validation [COMPLETED]
 
 **Difficulty: Low**
 
@@ -190,7 +190,8 @@ acts on it yet.
 - Validate in `lens check` (`lens/core/commands/check.py`): `auto_update` is
   one of the three allowed values; `lens_repo_url` is a valid SSH/HTTPS git
   URL (reuse `parse_git_ssh_remote` where SSH); `data_major_version` is a
-  positive int; each `[[dataset_repo]]` has `name` (matches an entry in
+  non-negative int (`0` is valid — e.g. a project tracking Lens's pre-1.0
+  major line); each `[[dataset_repo]]` has `name` (matches an entry in
   `[project].datasets`, or warn if not — a declared repo that nothing
   references is likely a mistake), a valid `git_url`, and `ref` defaulting to
   `main`.
@@ -203,7 +204,7 @@ in later phases).
 
 ---
 
-## Phase 2 — Version resolution core (live checks)
+## Phase 2 — Version resolution core (live checks) [COMPLETED]
 
 **Difficulty: Medium**
 
@@ -226,6 +227,7 @@ in later phases).
   ReleaseStatus` combining config + live tag list + installed version +
   migration-pending fields, into one struct the CLI and the server route will
   both consume in later phases.
+- As a sanity check, expose this data in CLI `lens stats` (under Release section)
 - Tests: no real network — spin up a local bare git repo with tags in a
   tempdir (`git init --bare`, `git tag`, `git push`) and point
   `list_remote_tags` at its `file://` path. Cover: no tags, only-prerelease

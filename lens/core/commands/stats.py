@@ -26,9 +26,11 @@ from lens.core.project import (
 from lens.core.dataset_config import get_dataset_configs
 from lens.core.knowledge import KnowledgeStore
 from lens.core.release.config import (
-    parse_dataset_repo_configs,
+    ReleaseConfig,
     parse_release_config,
 )
+from lens.core.release.status import compute_release_status
+from lens.core.release.version import resolve_remote_ref_sha
 from lens.core.speech import registry as speech_registry
 
 SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
@@ -78,6 +80,9 @@ class StatsResult:
     release_requested_version: str = ""
     release_data_major_version: int = 1
     release_migration_pending: bool = False
+    release_installed_version: str | None = None
+    release_local_checkout_version: str | None = None
+    release_latest_available: str | None = None
     release_dataset_repos: list[dict[str, str]] = field(default_factory=list[dict[str, str]])
 
 
@@ -223,17 +228,35 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
 
     release_cfg = parse_release_config({})
     release_repos: list[dict[str, str]] = []
+    release_installed_version: str | None = None
+    release_local_checkout_version: str | None = None
+    release_latest_available: str | None = None
     if not is_dataset:
-        lens_toml = root / "lens.toml"
-        if lens_toml.exists():
-            import tomllib
-            with lens_toml.open("rb") as f:
-                raw_config = tomllib.load(f)
-            release_cfg = parse_release_config(raw_config)
-            release_repos = [
-                {"name": r.name, "git_url": r.git_url, "ref": r.ref}
-                for r in parse_dataset_repo_configs(raw_config)
-            ]
+        rs = compute_release_status(root)
+        release_cfg = ReleaseConfig(
+            enabled=rs.enabled,
+            lens_repo_url=rs.lens_repo_url,
+            auto_update=rs.auto_update,
+            requested_version=rs.requested_version,
+            data_major_version=rs.data_major_version,
+            migration_pending=rs.migration_pending,
+            migration_target_version=rs.migration_target_version,
+            migration_commit=rs.migration_commit,
+        )
+        release_repos = []
+        for r in rs.dataset_repos:
+            sha = resolve_remote_ref_sha(r.git_url, r.ref)
+            repo_info: dict[str, str] = {
+                "name": r.name,
+                "git_url": r.git_url,
+                "ref": r.ref,
+            }
+            if sha:
+                repo_info["head_sha"] = sha
+            release_repos.append(repo_info)
+        release_installed_version = rs.installed_version_str
+        release_local_checkout_version = rs.local_checkout_version
+        release_latest_available = rs.latest_available_str
 
     return StatsResult(
         kb_types=kb_types,
@@ -268,5 +291,8 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         release_requested_version=release_cfg.requested_version,
         release_data_major_version=release_cfg.data_major_version,
         release_migration_pending=release_cfg.migration_pending,
+        release_installed_version=release_installed_version,
+        release_local_checkout_version=release_local_checkout_version,
+        release_latest_available=release_latest_available,
         release_dataset_repos=release_repos,
     )

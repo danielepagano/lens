@@ -141,12 +141,12 @@ def validate_release_config(
             )
         )
 
-    if config.data_major_version < 1:
+    if config.data_major_version < 0:
         lines.append(
             (
                 "error",
                 "release data_major_version",
-                f"must be a positive integer, got {config.data_major_version!r}",
+                f"must be a non-negative integer, got {config.data_major_version!r}",
             )
         )
 

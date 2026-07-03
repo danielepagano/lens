@@ -476,7 +476,7 @@ data_major_version  = 1
 | `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
 | `auto_update` | No | `"off"` | Auto-update policy: `"off"`, `"minor"`, or `"major"` |
 | `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); cleared once fulfilled |
-| `data_major_version` | No | `1` | Major version the project's data is compatible with; bumped by migration |
+| `data_major_version` | No | `1` | Major version the project's data is compatible with (non-negative; `0` is valid, e.g. while tracking Lens's pre-1.0 major line); bumped by migration |
 | `migration_pending` | No | `false` | Set by CI when a migration commit is pending approval |
 | `migration_target_version` | No | `""` | Target version of the pending migration |
 | `migration_commit` | No | `""` | Git commit SHA of the pending migration commit |

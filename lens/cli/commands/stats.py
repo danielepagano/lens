@@ -101,11 +101,25 @@ def stats(
         if result.release_requested_version:
             typer.echo(f"  Requested version: {result.release_requested_version}")
         typer.echo(f"  Data major version: {result.release_data_major_version}")
+        if result.release_installed_version:
+            typer.echo(f"  Installed: {result.release_installed_version}")
+        else:
+            typer.echo("  Installed: (not deployed / LENS_VERSION unset)")
+        if result.release_local_checkout_version:
+            typer.echo(
+                f"  Local checkout would deploy as: {result.release_local_checkout_version}"
+            )
+        if result.release_latest_available:
+            typer.echo(f"  Latest available: {result.release_latest_available}")
         if result.release_migration_pending:
             typer.echo("  Migration: pending")
         if result.release_dataset_repos:
             for repo in result.release_dataset_repos:
-                typer.echo(f"  Dataset repo: {repo['name']} -> {repo['git_url']} ({repo['ref']})")
+                line = f"  Dataset repo: {repo['name']} -> {repo['git_url']} ({repo['ref']})"
+                head_sha = repo.get("head_sha")
+                if head_sha:
+                    line = f"{line} @ {head_sha}"
+                typer.echo(line)
     else:
         typer.echo("Release: not configured")
 
