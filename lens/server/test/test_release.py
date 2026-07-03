@@ -6,9 +6,11 @@ test group sets up exactly the ``lens.toml`` configuration it needs.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from typing import Generator
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -91,6 +93,11 @@ class TestReleaseStatus:
         assert data["app_leader"] is False
         assert data["installed_version"] is None
         assert data["latest_available"] is None
+
+    def test_installed_version_reflects_env_var(self, release_client: TestClient) -> None:
+        with patch.dict(os.environ, {"LENS_VERSION": "v2.0.0"}):
+            data = release_client.get("/test/release/status").json()
+        assert data["installed_version"] == "v2.0.0"
 
     def test_returns_404_when_not_enabled(self, no_release_client: TestClient) -> None:
         r = no_release_client.get("/test/release/status")

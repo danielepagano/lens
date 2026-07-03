@@ -29,6 +29,7 @@ from lens.core.release.config import (
     parse_release_config,
     validate_deploy_topology,
 )
+from lens.core.release.version import compute_local_version
 from lens.core.storage import Storage
 
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -385,9 +386,12 @@ def _fly_deploy(
     (``--local-only``).
     """
     dockerfile = build_context / "deploy" / "Dockerfile"
+    lens_version = compute_local_version(repo_root=_LENS_ROOT)
     cmd: list[str] = [
         "fly",
         "deploy",
+        "--build-arg",
+        f"LENS_VERSION={lens_version}",
         str(build_context),
         "--config",
         str(fly_toml),

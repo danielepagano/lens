@@ -562,25 +562,35 @@ up to date via the existing refresh mechanism; no CI involvement required.
 
 ---
 
-## Phase 8 — Bake `LENS_VERSION` into the runtime image
+## Phase 8 — Bake `LENS_VERSION` into the runtime image [COMPLETED]
 
 **Difficulty: Medium**
 
-**Goal:** the running container can self-report exactly which Lens tag it was
-built from, with zero git dependency at runtime.
+**Goal:** `installed_version()` (`lens/core/release/version.py`) returns the
+correct tag at container runtime, where there is no `.git` directory and no
+way to run `compute_local_version()`.
+
+The env var is the canonical source consumed by `installed_version()`. The
+primary consumer is the **CI build path** (Phase 9): it stamps the image with
+the exact target tag from `lens release apply --json` so `installed_version()`
+reports the tag CI intended to deploy, not whatever package version
+`importlib.metadata.version("lens")` happens to resolve at runtime. This is an
+assertion, not a functional dependency — the container would run fine without
+it, but the app couldn't self-identify without git.
+
+Desktop `lens deploy push` also sets the env var, using the existing
+`compute_local_version()` instead of duplicating tag resolution in shell.
 
 - `deploy/Dockerfile`: add `ARG LENS_VERSION=dev` and `ENV LENS_VERSION=${LENS_VERSION}`
   in the runtime stage.
 - Desktop `lens deploy push` (`lens/core/commands/deploy.py` `_fly_deploy`):
-  pass `--build-arg LENS_VERSION=$(git -C <lens repo root> describe --tags
-  --always)` so the existing desktop flow also gets accurate self-reporting
-  (small, additive change — does not alter desktop UX or CLI surface, just
-  fixes a previously-unset env var to `dev`/untagged today).
-  This is the one small touch to the existing deploy code the plan requires;
-  confirm with the user before implementing since they asked to keep desktop
-  deploy unchanged — it's additive/non-breaking but touches that file.
-- New CI build path (used by Phase 9): passes `--build-arg
-  LENS_VERSION=<target tag>` where `<target tag>` came from
+  call `compute_local_version(lens_repo_root)` and pass the result as
+  `--build-arg LENS_VERSION=...` — uses the same tag+short-hash logic
+  (including edge cases: no tags, detached HEAD, dirty tree) that already
+  exists in `lens/core/release/version.py`. Additive only; does not alter
+  the desktop UX or CLI surface.
+- New CI build path (used by Phase 9): passes
+  `--build-arg LENS_VERSION=<target tag>` where `<target tag>` came from
   `lens release apply`'s JSON output.
 - Tests: a unit test asserting the Dockerfile contains the ARG/ENV lines
   (guards against accidental removal); the server route from Phase 5 gets a
