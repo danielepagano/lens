@@ -100,7 +100,6 @@ def stats(
         typer.echo(f"  Auto-update: {result.release_auto_update}")
         if result.release_requested_version:
             typer.echo(f"  Requested version: {result.release_requested_version}")
-        typer.echo(f"  Data major version: {result.release_data_major_version}")
         if result.release_installed_version:
             typer.echo(f"  Installed: {result.release_installed_version}")
         else:
@@ -111,8 +110,16 @@ def stats(
             )
         if result.release_latest_available:
             typer.echo(f"  Latest available: {result.release_latest_available}")
-        if result.release_migration_pending:
-            typer.echo("  Migration: pending")
+        if result.release_major_update_pending:
+            target = result.release_major_update_target_version or "(none specified)"
+            typer.echo(f"  Major update pending: {target}")
+        else:
+            typer.echo("  Major update pending: no")
+        typer.echo(
+            f"  Major update approved: {'yes' if result.release_major_update_approved else 'no'}"
+        )
+        if result.release_app_leader:
+            typer.echo("  App leader: yes (governs release for the whole Fly app)")
         if result.release_dataset_repos:
             for repo in result.release_dataset_repos:
                 line = f"  Dataset repo: {repo['name']} -> {repo['git_url']} ({repo['ref']})"

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 from urllib.parse import urlparse
 
+from lens.core.exceptions import LensException
 from lens.core.git_ssh_remote import parse_git_ssh_remote
 
 _VALID_AUTO_UPDATE = frozenset({"off", "minor", "major"})
@@ -17,10 +18,16 @@ class ReleaseConfig:
     lens_repo_url: str = ""
     auto_update: str = "off"
     requested_version: str = ""
-    data_major_version: int = 1
-    migration_pending: bool = False
-    migration_target_version: str = ""
-    migration_commit: str = ""
+    major_update_pending: bool = False
+    major_update_target_version: str = ""
+    major_update_approved: bool = False
+    # Only meaningful when this project's Fly app also serves sibling
+    # projects (parent-of-projects `fly.toml` topology). Ignored for
+    # single-project apps, where the sole served project is trivially the
+    # leader. In a multi-project app, exactly one served project must set
+    # this true; that project's `[release]` table is authoritative for the
+    # whole Fly app.
+    app_leader: bool = False
 
 
 @dataclass(frozen=True)
@@ -45,16 +52,14 @@ def parse_release_config(raw_config: dict[str, Any]) -> ReleaseConfig:
         "lens_repo_url",
         "auto_update",
         "requested_version",
-        "migration_pending",
-        "migration_target_version",
-        "migration_commit",
+        "major_update_pending",
+        "major_update_target_version",
+        "major_update_approved",
+        "app_leader",
     ):
         val = raw_dict.get(field_name)
         if val is not None:
             kwargs[field_name] = val
-    dmv = raw_dict.get("data_major_version")
-    if dmv is not None:
-        kwargs["data_major_version"] = dmv
     return ReleaseConfig(**kwargs)
 
 
@@ -141,15 +146,6 @@ def validate_release_config(
             )
         )
 
-    if config.data_major_version < 0:
-        lines.append(
-            (
-                "error",
-                "release data_major_version",
-                f"must be a non-negative integer, got {config.data_major_version!r}",
-            )
-        )
-
     seen_names: set[str] = set()
     for repo in dataset_repos:
         if not repo.name:
@@ -177,3 +173,74 @@ def validate_release_config(
             )
 
     return lines
+
+
+def validate_deploy_topology(
+    project_configs: list[tuple[str, ReleaseConfig, list[DatasetRepoConfig]]],
+) -> None:
+    """Validate cross-project consistency for a Fly app serving multiple projects.
+
+    *project_configs* is ``[(slug, release_config, dataset_repos), ...]`` for
+    every project sharing one Fly app (the parent-of-projects ``fly.toml``
+    topology documented in ``deploy/README.md``). Callers should skip this
+    entirely for single-project apps — a lone project is trivially the
+    leader and there's nothing cross-project to reconcile.
+
+    Raises :class:`LensException` (never returns a value) when:
+
+    - more than one project sets ``[release] app_leader = true`` — only one
+      project may govern the Lens version for a shared Fly app;
+    - any project has ``[release] enabled = true`` while not being the
+      designated leader — release automation only ever runs from the
+      leader's own `lens.toml`/CI pipeline;
+    - two projects declare a ``[[dataset_repo]]`` with the same ``name`` but
+      a different ``git_url``/``ref`` — they would race for the same shared
+      clone on the Fly volume.
+
+    Does *not* require a leader to exist — a multi-project deployment that
+    doesn't use the release system at all is valid. Callers that need to
+    resolve an actual leader (e.g. ``lens release check`` run from the
+    parent directory) must check for that themselves.
+    """
+    if len(project_configs) <= 1:
+        return
+
+    leaders = sorted(slug for slug, cfg, _ in project_configs if cfg.app_leader)
+    if len(leaders) > 1:
+        raise LensException(
+            "multiple projects set [release] app_leader = true: "
+            f"{', '.join(leaders)} — exactly one project may be the release "
+            "leader for a Fly app serving multiple projects"
+        )
+
+    non_leader_enabled = sorted(
+        slug for slug, cfg, _ in project_configs if cfg.enabled and not cfg.app_leader
+    )
+    if non_leader_enabled:
+        raise LensException(
+            "[release] is enabled on non-leader project(s) "
+            f"{', '.join(non_leader_enabled)} — only the release leader "
+            "(app_leader = true) may enable release automation in a "
+            "multi-project deployment; disable [release] there or make it "
+            "the leader instead"
+        )
+
+    seen: dict[str, tuple[str, str, str]] = {}
+    conflicts: list[str] = []
+    for slug, _cfg, dataset_repos in project_configs:
+        for repo in dataset_repos:
+            prior = seen.get(repo.name)
+            if prior is None:
+                seen[repo.name] = (slug, repo.git_url, repo.ref)
+            elif (prior[1], prior[2]) != (repo.git_url, repo.ref):
+                conflicts.append(
+                    f"dataset_repo '{repo.name}': '{prior[0]}' declares "
+                    f"{prior[1]}@{prior[2]}, '{slug}' declares "
+                    f"{repo.git_url}@{repo.ref}"
+                )
+
+    if conflicts:
+        raise LensException(
+            "conflicting [[dataset_repo]] declarations across projects "
+            "sharing this Fly app: " + "; ".join(conflicts)
+        )

@@ -47,6 +47,9 @@ CMD_RENAME = "Rename a narrative node."
 CMD_SERVE = "Build the frontend and start the Lens API server."
 CMD_DEV = "Start the Vite dev server and Lens API with hot reload."
 CMD_DEPLOY = "Manage Fly.io deployment."
+CMD_RELEASE = "Coordinate CI-driven releases."
+CMD_RELEASE_CHECK = "Check release state and branch the CI flow."
+CMD_RELEASE_APPLY = "Print build parameters for deploying a given tag."
 
 # ═══════════════════════════════════════════════════════════════════
 #  Operators  (lens <operator>)
@@ -226,6 +229,8 @@ OPT_RESET = (
     "uncommitted work, and untracked files."
 )
 
+OPT_JSON = "Output structured JSON on stdout; human summary on stderr."
+
 # ═══════════════════════════════════════════════════════════════════
 #  Shared argument help strings
 # ═══════════════════════════════════════════════════════════════════
@@ -308,6 +313,7 @@ ARG_USERNAME = "Basic Auth username"
 ARG_PASSWORD = "Basic Auth password"
 ARG_DEPLOY_KEY = "Path to SSH deploy key for the project repo"
 ARG_PROJECT_SLUG = "Project directory name (slug)"
+ARG_RELEASE_TAG = "Release tag (vMAJOR.MINOR.PATCH)"
 ARG_RENAME_ADDR = (
     "Address of the node to rename (e.g. /chapter-1/design-old)"
 )

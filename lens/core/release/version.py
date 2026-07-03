@@ -208,8 +208,6 @@ def _fetch_tags_quiet(repo_root: Path) -> None:
 def compute_local_version(repo_root: Path | None = None) -> str:
     """Compute ``LENS_VERSION`` from the local Lens repo checkout.
 
-    Follows Design Decision #7 in ``docs/release-system.md``:
-
     * HEAD matches the latest release tag → ``<tag>`` (e.g. ``v1.4.2``).
     * HEAD is ahead of the latest tag → ``<tag>+<short-hash>``.
     * No tags in the checkout → ``0.0.0+<short-hash>``.

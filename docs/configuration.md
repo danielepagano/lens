@@ -467,7 +467,9 @@ enabled             = true
 lens_repo_url       = "https://github.com/your-org/lens.git"
 auto_update         = "minor"
 requested_version   = ""
-data_major_version  = 1
+major_update_pending        = false
+major_update_target_version = ""
+major_update_approved       = false
 ```
 
 | Field | Required | Default | Description |
@@ -476,14 +478,13 @@ data_major_version  = 1
 | `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
 | `auto_update` | No | `"off"` | Auto-update policy: `"off"`, `"minor"`, or `"major"` |
 | `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); cleared once fulfilled |
-| `data_major_version` | No | `1` | Major version the project's data is compatible with (non-negative; `0` is valid, e.g. while tracking Lens's pre-1.0 major line); bumped by migration |
-| `migration_pending` | No | `false` | Set by CI when a migration commit is pending approval |
-| `migration_target_version` | No | `""` | Target version of the pending migration |
-| `migration_commit` | No | `""` | Git commit SHA of the pending migration commit |
+| `major_update_pending` | No | `false` | Set by CI when a major version bump is waiting on human approval |
+| `major_update_target_version` | No | `""` | Target tag of the pending major update |
+| `major_update_approved` | No | `false` | Set by the deployed app when the user approves a pending major update |
 
-`migration_pending`, `migration_target_version`, and `migration_commit` are
-system-managed — Lens sets them during the migrate workflow.  Do not edit them
-manually.
+`major_update_pending`, `major_update_target_version`, and `major_update_approved`
+are system-managed — CI and the Lens app set them during the release workflow.
+Do not edit them manually.
 
 ### `[[dataset_repo]]`
 
@@ -630,7 +631,7 @@ lens check --skip-network
 | `prompt_pack` file exists | warn if missing |
 | Each `datasets` name has bundled dir | warn if missing |
 | Active `narrative` folder exists | warn if missing |
-| `[release]` configuration | ok / error | if present: `lens_repo_url` format, `auto_update` values, `data_major_version` |
+| `[release]` configuration | ok / error | if present: `lens_repo_url` format, `auto_update` values |
 | `[[dataset_repo]]` entries | error / warn | if present: valid `git_url`, `name` matches `[project] datasets` |
 
 Image and speech backends are not fully probed here; missing keys surface when you run `lens media`.

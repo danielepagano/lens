@@ -30,10 +30,10 @@ class ReleaseStatus:
     lens_repo_url: str = ""
     auto_update: str = "off"
     requested_version: str = ""
-    data_major_version: int = 1
-    migration_pending: bool = False
-    migration_target_version: str = ""
-    migration_commit: str = ""
+    major_update_pending: bool = False
+    major_update_target_version: str = ""
+    major_update_approved: bool = False
+    app_leader: bool = False
     dataset_repos: list[DatasetRepoConfig] = field(default_factory=list[DatasetRepoConfig])
 
     installed_version_str: str | None = None
@@ -74,16 +74,16 @@ def compute_release_status(project_root: Path) -> ReleaseStatus:
         lens_repo_url=cfg.lens_repo_url,
         auto_update=cfg.auto_update,
         requested_version=cfg.requested_version,
-        data_major_version=cfg.data_major_version,
-        migration_pending=cfg.migration_pending,
-        migration_target_version=cfg.migration_target_version,
-        migration_commit=cfg.migration_commit,
+        major_update_pending=cfg.major_update_pending,
+        major_update_target_version=cfg.major_update_target_version,
+        major_update_approved=cfg.major_update_approved,
+        app_leader=cfg.app_leader,
         dataset_repos=dataset_repos,
     )
 
     # "Installed" reflects the deployed container's baked-in LENS_VERSION env
-    # var only (decision #2 in docs/release-system.md) — None when unset (a
-    # desktop checkout, or a container that wasn't built with the ARG set).
+    # var only — None when unset (a desktop checkout, or a container that
+    # wasn't built with the ARG set).
     # It must NOT fall back to compute_local_version(): conflating the two
     # would silently mask a real deployment misconfiguration (missing/unset
     # LENS_VERSION) behind a plausible-looking but unrelated version string.

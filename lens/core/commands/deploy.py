@@ -22,6 +22,13 @@ from lens.core.project import (
     require_s3_mount_when_configured,
     resolve_dataset_path,
 )
+from lens.core.release.config import (
+    DatasetRepoConfig,
+    ReleaseConfig,
+    parse_dataset_repo_configs,
+    parse_release_config,
+    validate_deploy_topology,
+)
 from lens.core.storage import Storage
 
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -82,7 +89,7 @@ def _slug_to_env_key(slug: str) -> str:
     return slug.upper().replace("-", "_")
 
 
-def _read_lens_toml(project_root: Path) -> dict[str, Any]:
+def read_lens_toml(project_root: Path) -> dict[str, Any]:
     lens_toml = project_root / "lens.toml"
     if not lens_toml.exists():
         raise LensException(f"{lens_toml} not found")
@@ -97,7 +104,7 @@ def _read_fly_toml(fly_toml: Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
-def _get_fly_app_name(fly_toml: Path) -> str:
+def get_fly_app_name(fly_toml: Path) -> str:
     config = _read_fly_toml(fly_toml)
     app = config.get("app")
     if not isinstance(app, str) or not app:
@@ -105,7 +112,7 @@ def _get_fly_app_name(fly_toml: Path) -> str:
     return app
 
 
-def _get_slugs(fly_toml: Path) -> list[str]:
+def get_slugs(fly_toml: Path) -> list[str]:
     """Return the current project slugs from fly.toml."""
     config = _read_fly_toml(fly_toml)
     env_section = config.get("env", {})
@@ -194,7 +201,7 @@ def collect_all_project_api_key_secrets(
     seen: set[str] = set()
     out: dict[str, str] = {}
     for _slug, _git_root, project_root in projects:
-        config = _read_lens_toml(project_root)
+        config = read_lens_toml(project_root)
         _append_project_api_key_secrets(config, out, seen)
     return out
 
@@ -236,7 +243,7 @@ def _validate_project_for_deploy(slug: str, project_root: Path, git_root: Path) 
     return remote_url
 
 
-def _build_projects(deploy_dir: Path, slugs: list[str]) -> list[tuple[str, Path, Path]]:
+def build_projects(deploy_dir: Path, slugs: list[str]) -> list[tuple[str, Path, Path]]:
     """Return ``[(slug, git_root, project_root), ...]`` for the given slugs.
 
     When ``deploy_dir`` itself contains ``lens.toml`` (single-project: fly.toml
@@ -291,7 +298,7 @@ def _collect_secrets(
         secrets[f"GIT_REPO_DEPLOY_KEY_{env_key}"] = key_path.read_text()
         secrets[f"PROJECT_REPO_URL_{env_key}"] = remote_urls[slug]
 
-        config = _read_lens_toml(project_root)
+        config = read_lens_toml(project_root)
         _append_project_api_key_secrets(config, secrets, seen_api_key_env)
 
         raw_project = config.get("project", {})
@@ -370,6 +377,27 @@ def _fly_deploy(
         raise LensException("fly deploy failed")
 
 
+def _validate_release_topology(projects: list[tuple[str, Path, Path]]) -> None:
+    """Cross-project ``[release]``/``[[dataset_repo]]`` consistency check.
+
+    *projects* is ``[(slug, git_root, project_root), ...]``. No-op for a
+    single project (nothing cross-project to reconcile). Raises
+    ``LensException`` via :func:`validate_deploy_topology` when more than
+    one project claims ``app_leader`` (or none do while more than one has
+    ``[release]`` enabled), or when sibling projects declare conflicting
+    ``[[dataset_repo]]`` entries for the same name.
+    """
+    if len(projects) <= 1:
+        return
+    project_configs: list[tuple[str, ReleaseConfig, list[DatasetRepoConfig]]] = []
+    for slug, _git_root, project_root in projects:
+        raw = read_lens_toml(project_root)
+        project_configs.append(
+            (slug, parse_release_config(raw), parse_dataset_repo_configs(raw))
+        )
+    validate_deploy_topology(project_configs)
+
+
 def init_deploy(
     deploy_dir: Path,
     app_name: str,
@@ -385,7 +413,8 @@ def init_deploy(
     *deploy_keys* maps slug → path to SSH deploy key.
     """
     slugs = list(deploy_keys.keys())
-    projects = _build_projects(deploy_dir, slugs)
+    projects = build_projects(deploy_dir, slugs)
+    _validate_release_topology(projects)
 
     remote_urls: dict[str, str] = {}
     s3_buckets: list[str] = []
@@ -393,7 +422,7 @@ def init_deploy(
         remote_url = _validate_project_for_deploy(slug, project_root, git_root)
         remote_urls[slug] = remote_url
 
-        config = _read_lens_toml(project_root)
+        config = read_lens_toml(project_root)
         raw_project = config.get("project", {})
         proj: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
         mount_point = proj.get("mount_point", "")
@@ -437,8 +466,8 @@ def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
     afterwards to apply.
     """
     fly_toml = deploy_dir / "fly.toml"
-    app_name = _get_fly_app_name(fly_toml)
-    current_slugs = _get_slugs(fly_toml)
+    app_name = get_fly_app_name(fly_toml)
+    current_slugs = get_slugs(fly_toml)
 
     if slug in current_slugs:
         raise LensException(f"project '{slug}' is already in this deployment")
@@ -454,6 +483,7 @@ def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
         raise LensException(f"project '{slug}': {exc}") from exc
 
     remote_url = _validate_project_for_deploy(slug, project_root, git_root)
+    _validate_release_topology(build_projects(deploy_dir, current_slugs + [slug]))
 
     env_key = _slug_to_env_key(slug)
     if not deploy_key_path.exists():
@@ -462,7 +492,7 @@ def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
         f"GIT_REPO_DEPLOY_KEY_{env_key}": deploy_key_path.read_text(),
         f"PROJECT_REPO_URL_{env_key}": remote_url,
     }
-    config = _read_lens_toml(project_root)
+    config = read_lens_toml(project_root)
     seen_keys: set[str] = set()
     _append_project_api_key_secrets(config, secrets, seen_keys)
 
@@ -479,8 +509,8 @@ def remove_project(deploy_dir: Path, slug: str) -> None:
     afterwards to apply.
     """
     fly_toml = deploy_dir / "fly.toml"
-    app_name = _get_fly_app_name(fly_toml)
-    current_slugs = _get_slugs(fly_toml)
+    app_name = get_fly_app_name(fly_toml)
+    current_slugs = get_slugs(fly_toml)
 
     if slug not in current_slugs:
         raise LensException(f"project '{slug}' is not in this deployment")
@@ -522,11 +552,12 @@ def push_deploy(
     :class:`FlyDeployBuildMode`.
     """
     fly_toml = deploy_dir / "fly.toml"
-    slugs = _get_slugs(fly_toml)  # also validates fly.toml exists
-    app_name = _get_fly_app_name(fly_toml)
+    slugs = get_slugs(fly_toml)  # also validates fly.toml exists
+    app_name = get_fly_app_name(fly_toml)
     is_single = (deploy_dir / "lens.toml").exists()
 
-    projects = _build_projects(deploy_dir, slugs)
+    projects = build_projects(deploy_dir, slugs)
+    _validate_release_topology(projects)
     api_key_secrets = collect_all_project_api_key_secrets(projects)
     if api_key_secrets:
         secret_args = [f"{k}={v}" for k, v in api_key_secrets.items()]

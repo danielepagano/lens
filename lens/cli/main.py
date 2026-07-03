@@ -44,7 +44,11 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
             err=True,
         )
         raise typer.Exit(1)
-    if sub in ("init", "use", "serve", "dev", "deploy"):
+    if sub in ("init", "use", "serve", "dev", "deploy", "release"):
+        # `release` resolves its own project root (possibly a multi-project
+        # deploy directory with no `lens.toml` of its own — see
+        # `resolve_release_project_root`), so it must bypass the generic
+        # git/narrative preflight below, same as `deploy`.
         return
     try:
         _git_root, project_root = require_lens_context(Path.cwd())
@@ -56,7 +60,17 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
         raise typer.Exit(1)
     if is_dataset_root(project_root):
         return
-    _NO_NARRATIVE_NEEDED = ("kb", "prompt", "pin", "commit", "checkpoint", "refresh", "deploy", "check")
+    _NO_NARRATIVE_NEEDED = (
+        "kb",
+        "prompt",
+        "pin",
+        "commit",
+        "checkpoint",
+        "refresh",
+        "deploy",
+        "check",
+        "release",
+    )
     if sub not in _NO_NARRATIVE_NEEDED:
         if get_active_narrative(project_root) is None:
             typer.echo("lens: no active narrative (run 'lens use <slug>' first)", err=True)

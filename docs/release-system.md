@@ -32,6 +32,10 @@ made in earlier ones.
   latest commit on their tracked ref, no version compatibility system. If a
   dataset ships an extension package, keeping it working across Lens versions
   is the dataset author's problem, not this system's.
+- Automatic election or failover of the release leader in a multi-project
+  Fly deployment (decision #8). Designating (and re-designating, if the
+  leader project is ever removed) `[release] app_leader = true` is a manual,
+  one-time operator action, not something the system infers.
 
 ## Phase difficulty at a glance
 
@@ -152,6 +156,44 @@ reviewers can push back before implementation starts.
      lineage it's based on.
    - no tags at all in the checkout → `LENS_VERSION = 0.0.0+<short-hash>`.
 
+8. **A multi-project Fly app designates exactly one release leader; there is
+   no cross-project reconciliation.** `deploy/README.md` already documents a
+   parent-of-projects `fly.toml` topology — one Fly app, one deployed Lens
+   binary, several project repos underneath it, possibly on different Git
+   hosts entirely. But there is only **one** `LENS_VERSION` for that whole
+   app, so the `[release]` state (decision #1) can't independently live in
+   every served project's own `lens.toml` — two sibling projects' CI
+   pipelines could pick different targets and race to `fly deploy` the same
+   app, or show conflicting approval banners for a version that only one of
+   them actually controls. Rather than inventing a new app-level config
+   file/repo (which would need its own git remote and CI wiring, on top of
+   whatever host each project already uses), exactly one served project is
+   flagged `[release] app_leader = true`; its `lens.toml` is the single
+   source of truth for that Fly app, and only its CI pipeline is wired up to
+   run `lens release apply` + `flyctl deploy` (Phase 9). Server routes
+   (Phase 5) resolve to the leader's config regardless of which project's
+   slug was in the request URL, so every served project's UI shows/controls
+   the identical shared state — there's no "wrong project" error. This is a
+   manual, one-time designation: there's no automatic election or failover
+   if the leader project is ever removed from the deployment (`lens deploy
+   remove`) — the operator must re-flag a new leader by hand. Single-project
+   apps are entirely unaffected; `app_leader` is ignored there since the
+   lone served project is trivially the leader.
+
+   `lens deploy init` / `add` / `push` validate this topology up front (the
+   only place that already resolves every sibling's `lens.toml` locally —
+   see `_validate_release_topology` in `lens/core/commands/deploy.py`):
+   at most one project may set `app_leader = true`, no non-leader project
+   may enable `[release]` at all, and — since it's the same kind of
+   cross-project consistency problem — `[[dataset_repo]]` entries sharing a
+   `name` across sibling projects must agree on `git_url`/`ref` (otherwise
+   they'd race for the same clone on the shared Fly volume; see Phase 7).
+   `lens release check`/`apply` also work when run **from the parent
+   deploy directory itself** (not just from inside a project) — they detect
+   the `fly.toml`-only, no-`lens.toml` directory shape, run the same
+   topology validation, and resolve to the leader's project root, instead of
+   failing with a generic "not inside a git repository" error.
+
 ## Config schema (target shape)
 
 ```toml
@@ -165,6 +207,8 @@ requested_version   = ""        # e.g. "v2.1.0"; explicit override, cleared once
 major_update_pending        = false  # set by CI when a major bump is waiting on human approval
 major_update_target_version = ""
 major_update_approved       = false
+app_leader                  = false  # required (and must be true on exactly one project) when
+                                      # this Fly app serves >1 project — see decision #8
 
 [[dataset_repo]]
 name    = "lens-dnd"
@@ -194,6 +238,13 @@ live git ls-remote  ---------------------> Lens repo tags (GitHub, any fork)   <
 
 Refresh action  -----------------------> project + [[dataset_repo]] clones on volume  <---- CI cron just calls /refresh
 ```
+
+This diagram is the single-project case (one Fly app, one project repo). For
+a Fly app serving several projects (decision #8), "Project repo" / "CI" on
+the right only exist for the one project flagged `app_leader = true` —
+siblings have no `[release]` state and no release-triggering CI at all; the
+deployed app's server routes still resolve to the leader's `lens.toml`
+regardless of which served project's UI made the request.
 
 ---
 
@@ -282,7 +333,7 @@ before it's deployed (Phase 4), with no data mutation step in between.
 
 ---
 
-## Phase 4 — Release decision engine (`check` / `apply`)
+## Phase 4 — Release decision engine (`check` / `apply`) [COMPLETED]
 
 **Difficulty: Medium**
 
@@ -327,6 +378,34 @@ branching in a pipeline.
   `RESULT=$(lens release check --json)` and branch on `.action`.
 - Tests: integration-style, using the Phase 2 fixtures; cover all four
   branches above plus the downgrade-rejection case.
+- **Multi-project deploy support (decision #8):** adds `app_leader` to
+  `ReleaseConfig`/`ReleaseStatus` alongside the `major_update_*` fields above,
+  and:
+  - `lens/core/release/config.py`: `validate_deploy_topology(project_configs)`
+    — given `[(slug, ReleaseConfig, [DatasetRepoConfig]), ...]` for every
+    project sharing one Fly app, raises if more than one sets
+    `app_leader = true`, if any non-leader project has `[release] enabled =
+    true`, or if sibling projects declare a `[[dataset_repo]]` with the same
+    `name` but a different `git_url`/`ref`. No-op for a single project.
+  - `lens/core/commands/deploy.py`: `_validate_release_topology` calls the
+    above from `init_deploy`, `add_project`, and `push_deploy` — the only
+    places that already resolve every sibling's `lens.toml` locally, so
+    misconfiguration is caught at setup/deploy time rather than at CI runtime.
+  - `lens/core/commands/release.py`: `resolve_release_project_root(cwd)` —
+    used by the `lens release check`/`apply` CLI instead of a plain
+    `ProjectSession.from_cwd()`. If `cwd` (or an ancestor) has its own
+    `lens.toml`, behaves exactly as before (works from inside any single
+    project, leader or not). Otherwise, if `cwd` has a `fly.toml` (the
+    parent-of-projects topology, no sibling `lens.toml`), it reads
+    `LENS_PROJECT_SLUGS`, builds every sibling's config, runs
+    `validate_deploy_topology`, and resolves to the leader's project root —
+    so `lens release check`/`apply` work when run from the deploy directory
+    itself instead of failing with "not inside a git repository". Raises a
+    clear error if no project sets `app_leader = true`.
+  - Tests: unit tests for `validate_deploy_topology` (leader-uniqueness,
+    non-leader-enabled, dataset_repo conflict cases) and for
+    `resolve_release_project_root` against a fixture multi-project directory
+    (bare-git siblings, mirroring the Phase 2/4 fixture style).
 
 ---
 
@@ -355,6 +434,17 @@ pending major-version bump; no UI yet (routes + tests only).
     commit only ever touched `[release]` metadata, never project data.
   - All routes 404 with a clear message when `[release]` is absent/disabled
     (matches Phase 1's "no-op" default).
+  - **Multi-project deploy (decision #8):** every route resolves to the
+    release *leader's* `lens.toml` regardless of which project's `{slug}`
+    is in the URL — add a core helper (e.g.
+    `resolve_release_leader_slug(project_root)`) that reads
+    `LENS_PROJECT_SLUGS` and, when it names more than one project, scans
+    each sibling clone already present at `LENS_PROJECT_DIR/<slug>/` for
+    `app_leader = true`; falls back to the current project when there's
+    only one slug. Both reads and writes (policy, approve, reject) go
+    through this resolution, so every served project's UI transparently
+    shows/controls the same shared state — there is no separate "you're
+    not the leader" error path to build.
 - No business logic in routes — all of the above lives in
   `lens/core/commands/release.py`, routes just validate + call + map
   exceptions to HTTP errors (per the server rules in `CLAUDE.md`).
@@ -385,6 +475,12 @@ pending major-version bump; no UI yet (routes + tests only).
   similar project-level info is already surfaced — likely a settings route or
   sidebar section; follow the existing `MainLayout.svelte` structure, do not
   redefine layout).
+- **Multi-project deploy (decision #8):** no special-casing needed beyond a
+  cosmetic note — when `stats`/`release/status` reports more than one slug
+  under `LENS_PROJECT_SLUGS`, show a small "this Lens version applies to all
+  N projects on this deployment" indicator, since an operator viewing any
+  one project's panel is also affecting its siblings (Phase 5 already makes
+  the underlying state shared/transparent).
 - Tests: Vitest component/store tests (`poe test-ui`); one Playwright e2e
   happy-path (policy change persists; major-update approve banner appears and
   clears) added to `e2e/tests/test_browser.py` or a new
@@ -400,6 +496,12 @@ pending major-version bump; no UI yet (routes + tests only).
 **Goal:** `[[dataset_repo]]` entries are cloned onto the Fly volume and kept
 up to date via the existing refresh mechanism; no CI involvement required.
 
+- **Already shipped in Phase 4** (decision #8): the static consistency check
+  that sibling projects sharing a Fly app must agree on `git_url`/`ref` for
+  any `[[dataset_repo]]` `name` they have in common
+  (`validate_deploy_topology` in `lens/core/release/config.py`, enforced by
+  `lens deploy init`/`add`/`push`). This phase is the runtime counterpart —
+  it doesn't need to re-validate agreement, just clone/refresh by name.
 - Extend `deploy/start.sh`: after cloning/fast-forwarding each project repo,
   do the same for each `[[dataset_repo]]` declared across all served
   projects, into `REPOS_DIR/_datasets/<name>` (one shared clone per dataset
@@ -489,6 +591,18 @@ Phase 4 CLI commands.
   prerequisites (which secrets go where, on GitHub vs GitLab), how this
   relates to the existing desktop flow (either/or, not both against the same
   Fly app), and a link to this design doc.
+- **Multi-project deploy (decision #8):** only the release *leader*
+  project's repo gets this pipeline wired up to actually run `lens release
+  apply` + `flyctl deploy` for the shared Fly app. Sibling project repos, if
+  they have CI at all, only trigger their own content `/refresh` — never the
+  Lens-version pipeline; document this explicitly as a setup instruction
+  (which repo gets which template) rather than something the pipeline
+  itself has to detect. This works even when siblings live on entirely
+  different hosts than the leader, because the leader's CI never needs to
+  know about them at all: it just checks out Lens at a tag and deploys the
+  shared app; datasets are unioned at the runtime-volume layer (Phase 7),
+  not baked into the image at build time, so no cross-repo coordination is
+  needed at build time either.
 - Tests: these are YAML templates, not Python — validate with a lint
   (`actionlint` for the GitHub template if available, `gitlab-ci` linter via
   their API is out of reach in this repo's test suite) or, at minimum, keep
