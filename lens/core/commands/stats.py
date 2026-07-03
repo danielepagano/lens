@@ -25,6 +25,10 @@ from lens.core.project import (
 )
 from lens.core.dataset_config import get_dataset_configs
 from lens.core.knowledge import KnowledgeStore
+from lens.core.release.config import (
+    parse_dataset_repo_configs,
+    parse_release_config,
+)
 from lens.core.speech import registry as speech_registry
 
 SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
@@ -68,6 +72,13 @@ class StatsResult:
     modalities_at_cursor: list[str] = field(default_factory=list[str])
     modality_warnings_at_cursor: list[str] = field(default_factory=list[str])
     dataset_configs: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
+    release_enabled: bool = False
+    release_lens_repo_url: str = ""
+    release_auto_update: str = "off"
+    release_requested_version: str = ""
+    release_data_major_version: int = 1
+    release_migration_pending: bool = False
+    release_dataset_repos: list[dict[str, str]] = field(default_factory=list[dict[str, str]])
 
 
 def _operator_context_at_cursor(
@@ -210,6 +221,20 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     has_m = has_mount_config(root)
     tts_available = has_m and speech_registry.is_speech_backend_ready(root)
 
+    release_cfg = parse_release_config({})
+    release_repos: list[dict[str, str]] = []
+    if not is_dataset:
+        lens_toml = root / "lens.toml"
+        if lens_toml.exists():
+            import tomllib
+            with lens_toml.open("rb") as f:
+                raw_config = tomllib.load(f)
+            release_cfg = parse_release_config(raw_config)
+            release_repos = [
+                {"name": r.name, "git_url": r.git_url, "ref": r.ref}
+                for r in parse_dataset_repo_configs(raw_config)
+            ]
+
     return StatsResult(
         kb_types=kb_types,
         kb_count=kb_count,
@@ -237,4 +262,11 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         modalities_at_cursor=modalities_at_cursor,
         modality_warnings_at_cursor=modality_warnings_at_cursor,
         dataset_configs=dataset_configs,
+        release_enabled=release_cfg.enabled,
+        release_lens_repo_url=release_cfg.lens_repo_url,
+        release_auto_update=release_cfg.auto_update,
+        release_requested_version=release_cfg.requested_version,
+        release_data_major_version=release_cfg.data_major_version,
+        release_migration_pending=release_cfg.migration_pending,
+        release_dataset_repos=release_repos,
     )

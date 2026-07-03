@@ -12,6 +12,11 @@ from urllib.parse import urlparse
 
 from lens.core.dataset_extensions import try_load_dataset_extension
 from lens.core.exceptions import LensException
+from lens.core.release.config import (
+    parse_dataset_repo_configs,
+    parse_release_config,
+    validate_release_config,
+)
 from lens.core.project import (
     datasets_root,
     get_mount_point,
@@ -222,5 +227,11 @@ def run_project_check(project_root: Path, *, skip_network: bool = False) -> Proj
                 "narrative",
                 f"{slug!r}: {nd} is not an existing directory (run lens use?)",
             )
+
+    release_cfg = parse_release_config(config)
+    dataset_repos = parse_dataset_repo_configs(config)
+    ds_names = get_selected_datasets(project_root)
+    for severity, topic, detail in validate_release_config(release_cfg, dataset_repos, ds_names):
+        result.add(severity, topic, detail)
 
     return result

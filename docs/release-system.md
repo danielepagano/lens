@@ -194,6 +194,7 @@ acts on it yet.
   `[project].datasets`, or warn if not — a declared repo that nothing
   references is likely a mistake), a valid `git_url`, and `ref` defaulting to
   `main`.
+- Add release medatada to `lens stats` for CLI visibility (API comes later)
 - Unit tests only (`lens/core/test/`), no network, no CI, no server changes.
 
 **Docs:** add `[release]` / `[[dataset_repo]]` reference tables to

@@ -94,6 +94,21 @@ def stats(
         else:
             typer.echo("Active narrative cursor:  (no active narrative)")
 
+    if result.dataset_name is None and result.release_enabled:
+        typer.echo("Release:")
+        typer.echo(f"  Lens repo: {result.release_lens_repo_url}")
+        typer.echo(f"  Auto-update: {result.release_auto_update}")
+        if result.release_requested_version:
+            typer.echo(f"  Requested version: {result.release_requested_version}")
+        typer.echo(f"  Data major version: {result.release_data_major_version}")
+        if result.release_migration_pending:
+            typer.echo("  Migration: pending")
+        if result.release_dataset_repos:
+            for repo in result.release_dataset_repos:
+                typer.echo(f"  Dataset repo: {repo['name']} -> {repo['git_url']} ({repo['ref']})")
+    else:
+        typer.echo("Release: not configured")
+
     typer.echo(f"Open transaction: {'yes' if result.has_pending else 'no'}")
     if result.has_pending:
         if result.pending_owner is not None:

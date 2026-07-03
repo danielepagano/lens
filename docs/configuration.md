@@ -16,12 +16,13 @@ This guide covers every supported configuration surface, environment variables, 
 8. [`[compress]`](#compress)
 9. [`[params]`](#params)
 10. [`[dataset]`](#dataset)
-11. [Narrative front matter](#narrative-front-matter)
-12. [Prompt packs](#prompt-packs)
-13. [Dataset bundles](#dataset-bundles)
-14. [Environment variables](#environment-variables)
-15. [Validation: `lens check`](#validation-lens-check)
-16. [Precedence reference](#precedence-reference)
+11. [`[release]` / `[[dataset_repo]]`](#release--dataset_repo)
+12. [Narrative front matter](#narrative-front-matter)
+13. [Prompt packs](#prompt-packs)
+14. [Dataset bundles](#dataset-bundles)
+15. [Environment variables](#environment-variables)
+16. [Validation: `lens check`](#validation-lens-check)
+17. [Precedence reference](#precedence-reference)
 
 ---
 
@@ -51,6 +52,8 @@ Select the active narrative with `lens use <slug>`, which sets `[project].narrat
 | `[compress]` | No | Auto-compress size thresholds |
 | `[params]` | No | Default operator invocation parameters |
 | `[dataset]` | No | Dataset-level flags (e.g. verbose LLM logging) |
+| `[release]` | No | Cloud release tracking policy (absent = disabled) |
+| `[[dataset_repo]]` | No | External dataset repos to clone on the server volume |
 | `[config-<name>]` | No | Dataset-specific configuration overrides (one section per loaded dataset) |
 
 Array sections (`[[llm]]`, `[[image]]`, `[[speech]]`) use the **first entry as the default** unless you pass `--llm`, `--model`, or an explicit `id` in the API.
@@ -449,6 +452,67 @@ Keys not listed in the dataset's defaults are silently ignored.  See individual 
 
 ---
 
+## `[release]` / `[[dataset_repo]]`
+
+Controls the **cloud release system**: auto-update policy, Lens version tracking,
+and external dataset repos cloned onto the server volume.
+
+The release system is **disabled** when `[release]` is absent from `lens.toml` —
+all release CLI commands and server routes return a clear "not enabled" message.
+Add the section to opt in.
+
+```toml
+[release]
+enabled             = true
+lens_repo_url       = "https://github.com/your-org/lens.git"
+auto_update         = "minor"
+requested_version   = ""
+data_major_version  = 1
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `enabled` | No | `false` | Enable the release system for this project |
+| `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
+| `auto_update` | No | `"off"` | Auto-update policy: `"off"`, `"minor"`, or `"major"` |
+| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); cleared once fulfilled |
+| `data_major_version` | No | `1` | Major version the project's data is compatible with; bumped by migration |
+| `migration_pending` | No | `false` | Set by CI when a migration commit is pending approval |
+| `migration_target_version` | No | `""` | Target version of the pending migration |
+| `migration_commit` | No | `""` | Git commit SHA of the pending migration commit |
+
+`migration_pending`, `migration_target_version`, and `migration_commit` are
+system-managed — Lens sets them during the migrate workflow.  Do not edit them
+manually.
+
+### `[[dataset_repo]]`
+
+External dataset repos that are cloned onto the server volume (Fly) for
+runtime use, not baked into the Docker image.  Each entry is fetched and
+fast-forwarded independently during refresh.
+
+```toml
+[[dataset_repo]]
+name    = "lens-dnd"
+git_url = "git@gitlab.com:org/lens-dnd.git"
+ref     = "main"
+
+[[dataset_repo]]
+name    = "custom-rules"
+git_url = "https://github.com/org/custom-rules.git"
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `name` | Yes | — | Matches an entry in `[project].datasets`; `lens check` warns if it does not |
+| `git_url` | Yes | — | SSH or HTTPS git URL of the dataset repository |
+| `ref` | No | `"main"` | Git ref (branch, tag, or commit) to track |
+
+`lens check` validates each repo's `git_url` format and warns when `name`
+does not match any entry in `[project] datasets`.
+
+---
+
 ## Narrative front matter
 
 YAML at the top of node files (`---` … `---`). Not in `lens.toml` but central to behaviour.
@@ -566,6 +630,8 @@ lens check --skip-network
 | `prompt_pack` file exists | warn if missing |
 | Each `datasets` name has bundled dir | warn if missing |
 | Active `narrative` folder exists | warn if missing |
+| `[release]` configuration | ok / error | if present: `lens_repo_url` format, `auto_update` values, `data_major_version` |
+| `[[dataset_repo]]` entries | error / warn | if present: valid `git_url`, `name` matches `[project] datasets` |
 
 Image and speech backends are not fully probed here; missing keys surface when you run `lens media`.
 
