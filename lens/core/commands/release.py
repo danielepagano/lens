@@ -11,6 +11,7 @@ from typing import Any, Iterable, Mapping
 import tomli_w
 
 from lens.core.exceptions import LensException
+from lens.core.project import ProjectSession
 from lens.core.release.config import (
     DatasetRepoConfig,
     ReleaseConfig,
@@ -108,18 +109,18 @@ def execute_release_check(project_root: Path) -> ReleaseCheckResult:
     if not status.enabled:
         return ReleaseCheckResult(action="none", summary="release system not enabled")
 
-    if status.major_update_pending and not status.major_update_approved:
-        target = status.major_update_target_version or status.requested_version
+    if status.gated_update_pending and not status.gated_update_approved:
+        target = status.gated_update_target_version or status.requested_version
         summary = (
-            f"awaiting approval for major update {target or '(no target set)'}"
+            f"awaiting approval for gated update {target or '(no target set)'}"
         )
         return ReleaseCheckResult(action="await_approval", target=target, summary=summary)
 
-    if status.major_update_pending and status.major_update_approved:
-        target = status.major_update_target_version
+    if status.gated_update_pending and status.gated_update_approved:
+        target = status.gated_update_target_version
         if not target:
-            raise LensException("major_update_target_version is required when approval is true")
-        summary = f"major update {target} approved; ready to apply"
+            raise LensException("gated_update_target_version is required when approval is true")
+        summary = f"gated update {target} approved; ready to apply"
         return ReleaseCheckResult(action="apply", target=target, summary=summary)
 
     target_tag = _select_target_tag(status)
@@ -143,8 +144,8 @@ def execute_release_check(project_root: Path) -> ReleaseCheckResult:
         )
 
     if installed_semver is not None and target_semver.major > installed_semver.major:
-        _mark_major_update_pending(project_root, target_tag)
-        summary = f"major update {target_tag} pending approval"
+        _mark_gated_pending(project_root, target_tag)
+        summary = f"gated update {target_tag} pending approval"
         return ReleaseCheckResult(action="await_approval", target=target_tag, summary=summary)
 
     summary = f"apply release {target_tag}"
@@ -165,19 +166,102 @@ def execute_release_apply(project_root: Path, target_tag: str) -> ReleaseApplyRe
         raise LensException("--to must be a valid vMAJOR.MINOR.PATCH tag")
 
     summary = f"release apply target {normalized_tag}"
-    if cfg.major_update_approved and cfg.major_update_target_version == normalized_tag:
+    if cfg.gated_update_approved and cfg.gated_update_target_version == normalized_tag:
         _update_release_section(
             project_root,
             {
-                "major_update_pending": False,
-                "major_update_target_version": "",
-                "major_update_approved": False,
+                "gated_update_pending": False,
+                "gated_update_target_version": "",
+                "gated_update_approved": False,
             },
             commit_message=f"release approve {normalized_tag}",
         )
         summary = f"cleared approval state for {normalized_tag}"
 
     return ReleaseApplyResult(lens_repo_url=url, tag=normalized_tag, summary=summary)
+
+
+def execute_release_policy_update(
+    session: ProjectSession,
+    *,
+    auto_update: str | None = None,
+    requested_version: str | None = None,
+) -> None:
+    """Update ``[release]`` policy fields and commit+push via *session*'s Storage.
+
+    Only the fields explicitly passed (not ``None``) are updated in
+    ``lens.toml``.  The commit message is ``"release: update policy"``.
+    Push is attempted only when a remote is configured.
+    """
+    storage = session.new_storage(owner=None)
+    project_root = session.project_root
+
+    if auto_update is not None and auto_update not in ("off", "minor", "major"):
+        raise LensException(
+            "auto_update must be 'off', 'minor', or 'major', "
+            f"got {auto_update!r}"
+        )
+
+    updates: dict[str, bool | str] = {}
+    if auto_update is not None:
+        updates["auto_update"] = auto_update
+    if requested_version is not None:
+        updates["requested_version"] = requested_version
+    if not updates:
+        return
+
+    lens_toml = project_root / "lens.toml"
+    raw = lens_toml.read_text(encoding="utf-8")
+    updated = _apply_release_updates(raw, updates)
+    if updated == raw:
+        return
+
+    storage.write_file(lens_toml, updated)
+    storage.commit("release: update policy")
+    if storage.has_remote():
+        storage.push_or_raise()
+
+
+def execute_release_gated_approve(session: ProjectSession) -> None:
+    """Set ``gated_update_approved = true`` and commit+push.
+
+    Does nothing if the change would be a no-op (already approved).
+    """
+    storage = session.new_storage(owner=None)
+    lens_toml = session.project_root / "lens.toml"
+    raw = lens_toml.read_text(encoding="utf-8")
+    updated = _apply_release_updates(raw, {"gated_update_approved": True})
+    if updated == raw:
+        return
+    storage.write_file(lens_toml, updated)
+    storage.commit("release: approve gated update")
+    if storage.has_remote():
+        storage.push_or_raise()
+
+
+def execute_release_gated_reject(session: ProjectSession) -> None:
+    """Clear all pending gated-update fields and commit+push.
+
+    Resets ``gated_update_pending``, ``gated_update_target_version``, and
+    ``gated_update_approved``.
+    """
+    storage = session.new_storage(owner=None)
+    lens_toml = session.project_root / "lens.toml"
+    raw = lens_toml.read_text(encoding="utf-8")
+    updated = _apply_release_updates(
+        raw,
+        {
+            "gated_update_pending": False,
+            "gated_update_target_version": "",
+            "gated_update_approved": False,
+        },
+    )
+    if updated == raw:
+        return
+    storage.write_file(lens_toml, updated)
+    storage.commit("release: reject gated update")
+    if storage.has_remote():
+        storage.push_or_raise()
 
 
 def _select_target_tag(status: ReleaseStatus) -> str | None:
@@ -216,15 +300,15 @@ def _semver_from_version_string(value: str | None) -> SemverTag | None:
     return parse_semver_tag(core)
 
 
-def _mark_major_update_pending(project_root: Path, target: str) -> None:
+def _mark_gated_pending(project_root: Path, target: str) -> None:
     _update_release_section(
         project_root,
         {
-            "major_update_pending": True,
-            "major_update_target_version": target,
-            "major_update_approved": False,
+            "gated_update_pending": True,
+            "gated_update_target_version": target,
+            "gated_update_approved": False,
         },
-        commit_message=f"release major update pending {target}",
+        commit_message=f"release gated update pending {target}",
     )
 
 

@@ -464,12 +464,13 @@ Add the section to opt in.
 ```toml
 [release]
 enabled             = true
-lens_repo_url       = "https://github.com/your-org/lens.git"
+lens_repo_url       = "https://github.com/danielepagano/lens.git"
 auto_update         = "minor"
 requested_version   = ""
-major_update_pending        = false
-major_update_target_version = ""
-major_update_approved       = false
+gated_update_pending        = false
+gated_update_target_version = ""
+gated_update_approved       = false
+app_leader                  = false
 ```
 
 | Field | Required | Default | Description |
@@ -478,13 +479,29 @@ major_update_approved       = false
 | `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
 | `auto_update` | No | `"off"` | Auto-update policy: `"off"`, `"minor"`, or `"major"` |
 | `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); cleared once fulfilled |
-| `major_update_pending` | No | `false` | Set by CI when a major version bump is waiting on human approval |
-| `major_update_target_version` | No | `""` | Target tag of the pending major update |
-| `major_update_approved` | No | `false` | Set by the deployed app when the user approves a pending major update |
+| `gated_update_pending` | No | `false` | Set by CI when a non-auto version bump is waiting on human approval |
+| `gated_update_target_version` | No | `""` | Target tag of the pending gated update |
+| `gated_update_approved` | No | `false` | Set by the deployed app when the user approves a pending gated update |
+| `app_leader` | No | `false` | Designate this project as the release leader in a multi-project Fly deployment |
 
-`major_update_pending`, `major_update_target_version`, and `major_update_approved`
+`gated_update_pending`, `gated_update_target_version`, and `gated_update_approved`
 are system-managed — CI and the Lens app set them during the release workflow.
 Do not edit them manually.
+
+### `app_leader` (multi-project deployments)
+
+When a single Fly app serves **multiple** project repos (the parent-of-projects
+`fly.toml` topology documented in `deploy/README.md`), exactly one project must
+be designated the release leader by setting `[release] app_leader = true`. That
+project's `lens.toml` becomes the single source of truth for the Lens version
+of the whole Fly app — its CI pipeline runs `lens release check`/`apply`, and
+every served project's UI reads/writes the leader's state transparently.
+
+- **Single-project apps** trivially have one leader; `app_leader` is ignored.
+- No automatic election or failover — if the leader project is ever removed
+  from the deployment, an operator must re-flag a new leader by hand.
+- A non-leader project **must not** enable `[release]` at all (validated by
+  `lens deploy init`/`add`/`push`).
 
 ### `[[dataset_repo]]`
 

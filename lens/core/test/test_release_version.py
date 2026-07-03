@@ -366,17 +366,17 @@ class TestComputeReleaseStatus(unittest.TestCase):
             f'lens_repo_url = "file://{bare}"\n'
             f'auto_update = "minor"\n'
             f'requested_version = "v2.0.0"\n'
-            f"major_update_pending = true\n"
-            f'major_update_target_version = "v2.0.0"\n'
-            f"major_update_approved = false\n"
+            f"gated_update_pending = true\n"
+            f'gated_update_target_version = "v2.0.0"\n'
+            f"gated_update_approved = false\n"
         )
         status = compute_release_status(self._root)
         self.assertTrue(status.enabled)
         self.assertEqual(status.auto_update, "minor")
         self.assertEqual(status.requested_version, "v2.0.0")
-        self.assertTrue(status.major_update_pending)
-        self.assertEqual(status.major_update_target_version, "v2.0.0")
-        self.assertFalse(status.major_update_approved)
+        self.assertTrue(status.gated_update_pending)
+        self.assertEqual(status.gated_update_target_version, "v2.0.0")
+        self.assertFalse(status.gated_update_approved)
 
     def test_installed_is_none_when_env_unset(self) -> None:
         # "Installed" must reflect only the deployed container's baked-in

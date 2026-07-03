@@ -35,9 +35,9 @@ class TestParseReleaseConfig(unittest.TestCase):
                 "lens_repo_url": "git@github.com:user/lens.git",
                 "auto_update": "minor",
                 "requested_version": "v2.0.0",
-                "major_update_pending": True,
-                "major_update_target_version": "v2.0.0",
-                "major_update_approved": False,
+                "gated_update_pending": True,
+                "gated_update_target_version": "v2.0.0",
+                "gated_update_approved": False,
             }
         }
         cfg = parse_release_config(raw)
@@ -45,9 +45,9 @@ class TestParseReleaseConfig(unittest.TestCase):
         self.assertEqual(cfg.lens_repo_url, "git@github.com:user/lens.git")
         self.assertEqual(cfg.auto_update, "minor")
         self.assertEqual(cfg.requested_version, "v2.0.0")
-        self.assertTrue(cfg.major_update_pending)
-        self.assertEqual(cfg.major_update_target_version, "v2.0.0")
-        self.assertFalse(cfg.major_update_approved)
+        self.assertTrue(cfg.gated_update_pending)
+        self.assertEqual(cfg.gated_update_target_version, "v2.0.0")
+        self.assertFalse(cfg.gated_update_approved)
 
     def test_app_leader_defaults_false(self) -> None:
         cfg = parse_release_config({"release": {"enabled": True}})
@@ -62,9 +62,9 @@ class TestParseReleaseConfig(unittest.TestCase):
         self.assertTrue(cfg.enabled)
         self.assertEqual(cfg.lens_repo_url, "https://example.com/repo.git")
         self.assertEqual(cfg.auto_update, "off")
-        self.assertFalse(cfg.major_update_pending)
-        self.assertEqual(cfg.major_update_target_version, "")
-        self.assertFalse(cfg.major_update_approved)
+        self.assertFalse(cfg.gated_update_pending)
+        self.assertEqual(cfg.gated_update_target_version, "")
+        self.assertFalse(cfg.gated_update_approved)
 
     def test_wrong_type_ignored(self) -> None:
         cfg = parse_release_config({"release": "not a table"})

@@ -110,13 +110,13 @@ def stats(
             )
         if result.release_latest_available:
             typer.echo(f"  Latest available: {result.release_latest_available}")
-        if result.release_major_update_pending:
-            target = result.release_major_update_target_version or "(none specified)"
-            typer.echo(f"  Major update pending: {target}")
+        if result.release_gated_update_pending:
+            target = result.release_gated_update_target_version or "(none specified)"
+            typer.echo(f"  Gated update pending: {target}")
         else:
-            typer.echo("  Major update pending: no")
+            typer.echo("  Gated update pending: no")
         typer.echo(
-            f"  Major update approved: {'yes' if result.release_major_update_approved else 'no'}"
+            f"  Gated update approved: {'yes' if result.release_gated_update_approved else 'no'}"
         )
         if result.release_app_leader:
             typer.echo("  App leader: yes (governs release for the whole Fly app)")

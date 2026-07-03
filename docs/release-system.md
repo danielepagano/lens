@@ -70,14 +70,14 @@ reviewers can push back before implementation starts.
 2. **Minimize persisted version state — prefer live checks.** Only facts that
    must survive across independent CI runs / app restarts are persisted:
    - user intent (`auto_update` policy, `requested_version`)
-   - in-flight major-bump approval handshake state (`major_update_pending`,
-     `major_update_target_version`, `major_update_approved`)
+   - in-flight major-bump approval handshake state (`gated_update_pending`,
+     `gated_update_target_version`, `gated_update_approved`)
 
    > Phase 1 (already shipped) persisted `data_major_version` and
    > `migration_pending`/`migration_target_version`/`migration_commit`
    > instead — fields designed for the data-migration handshake now spun off
    > to **#88**. They're dead weight under this trimmed plan. Phase 4 below
-   > replaces them with the `major_update_*` fields described here as part of
+   > replaces them with the `gated_update_*` fields described here as part of
    > implementing the decision engine; there's no standalone cleanup phase
    > for this, since Phase 4 hasn't shipped yet.
 
@@ -100,12 +100,12 @@ reviewers can push back before implementation starts.
    project data needs no changes across a Lens major version, so there's
    nothing to run and nothing to diff. When `check` finds a target whose
    major is greater than the currently installed major, CI commits
-   `major_update_pending = true` and `major_update_target_version = <tag>`
+   `gated_update_pending = true` and `gated_update_target_version = <tag>`
    directly to the tracked branch (not a side branch) — a pure metadata
    write, no project files touched. The Lens app shows a banner naming the
    target version (linking out to the Lens repo's release notes for context)
    with an Approve/Reject action. Approving commits
-   `major_update_approved = true` (pushed via the same Storage/checkpoint
+   `gated_update_approved = true` (pushed via the same Storage/checkpoint
    pattern); that push is what triggers the next CI run to actually build
    and deploy the tag. This works identically for GitHub- and GitLab-hosted
    project repos, since it never touches a host-specific PR API. Rejecting
@@ -204,9 +204,9 @@ enabled            = true
 lens_repo_url       = "https://github.com/danielepagano/lens.git"  # default; override for a fork
 auto_update         = "minor"   # "off" | "minor" | "major"
 requested_version   = ""        # e.g. "v2.1.0"; explicit override, cleared once fulfilled
-major_update_pending        = false  # set by CI when a major bump is waiting on human approval
-major_update_target_version = ""
-major_update_approved       = false
+gated_update_pending        = false  # set by CI when a major bump is waiting on human approval
+gated_update_target_version = ""
+gated_update_approved       = false
 app_leader                  = false  # required (and must be true on exactly one project) when
                                       # this Fly app serves >1 project — see decision #8
 
@@ -221,7 +221,7 @@ see decision #2.
 
 > Phase 1 shipped with `data_major_version`/`migration_pending`/
 > `migration_target_version`/`migration_commit` instead of the
-> `major_update_*` fields shown above — see the note under decision #2.
+> `gated_update_*` fields shown above — see the note under decision #2.
 
 ## Architecture at a glance
 
@@ -279,7 +279,7 @@ in later phases).
 
 > **Note (post-trim):** this phase shipped before the data-migration engine
 > was spun off to #88, so it validates `data_major_version` and the
-> `migration_*` fields rather than the `major_update_*` fields now described
+> `migration_*` fields rather than the `gated_update_*` fields now described
 > in the [config schema](#config-schema-target-shape) above. Phase 4 below
 > is where those fields get replaced for real.
 
@@ -341,13 +341,13 @@ before it's deployed (Phase 4), with no data mutation step in between.
 branching in a pipeline.
 
 - This phase replaces Phase 1's `data_major_version`/`migration_*` fields
-  with `major_update_pending`/`major_update_target_version`/
-  `major_update_approved` (see decision #2's note and the config schema
+  with `gated_update_pending`/`gated_update_target_version`/
+  `gated_update_approved` (see decision #2's note and the config schema
   above) — update `ReleaseConfig`/`ReleaseStatus`, validation, and the
   `lens stats` display accordingly as part of this phase's work, not as a
   separate cleanup step.
 - `lens release check` — reads config + live status (Phase 2), and:
-  1. If `major_update_pending` and not yet `major_update_approved`: exit 0,
+  1. If `gated_update_pending` and not yet `gated_update_approved`: exit 0,
      JSON `{"action": "await_approval", "target": "<tag>"}`, do nothing else.
   2. Else pick a target tag per decision #4 above (explicit
      `requested_version` wins if set and newer than installed; otherwise
@@ -360,7 +360,7 @@ branching in a pipeline.
      `{"action": "apply", "target": "<tag>"}` — no approval needed, straight
      to build+deploy (minor/patch).
   5. Target major > currently installed major: commits
-     `major_update_pending = true`, `major_update_target_version = <tag>`
+     `gated_update_pending = true`, `gated_update_target_version = <tag>`
      (pure metadata write, no project files touched — decision #3), JSON
      `{"action": "await_approval", "target": "<tag>"}`. CI stops here; the
      app surfaces the approval banner (Phase 6).
@@ -369,17 +369,17 @@ branching in a pipeline.
   common case (decision #2) — matches "tag-based, no commit needed"
   literally.
   - Exception: if this `apply` is *fulfilling* a previously approved major
-    bump (i.e. `major_update_approved == true` and
-    `major_update_target_version == tag`), it also clears
-    `major_update_pending` / `major_update_target_version` /
-    `major_update_approved` in one commit+push. This is the only case
+    bump (i.e. `gated_update_approved == true` and
+    `gated_update_target_version == tag`), it also clears
+    `gated_update_pending` / `gated_update_target_version` /
+    `gated_update_approved` in one commit+push. This is the only case
     `apply` commits.
 - All output is JSON on stdout, human summary on stderr, so CI YAML can do
   `RESULT=$(lens release check --json)` and branch on `.action`.
 - Tests: integration-style, using the Phase 2 fixtures; cover all four
   branches above plus the downgrade-rejection case.
 - **Multi-project deploy support (decision #8):** adds `app_leader` to
-  `ReleaseConfig`/`ReleaseStatus` alongside the `major_update_*` fields above,
+  `ReleaseConfig`/`ReleaseStatus` alongside the `gated_update_*` fields above,
   and:
   - `lens/core/release/config.py`: `validate_deploy_topology(project_configs)`
     — given `[(slug, ReleaseConfig, [DatasetRepoConfig]), ...]` for every
@@ -409,7 +409,7 @@ branching in a pipeline.
 
 ---
 
-## Phase 5 — App-side server routes
+## Phase 5 — App-side server routes [COMPLETED]
 
 **Difficulty: Medium**
 
@@ -420,17 +420,17 @@ pending major-version bump; no UI yet (routes + tests only).
   - `GET /{slug}/release/status` → `compute_release_status` (Phase 2) as JSON:
     enabled, installed (from `LENS_VERSION` env, `None` if unset), latest
     available (live check, short in-process TTL cache — e.g. 5 minutes),
-    auto_update policy, requested_version, and major-update pending info
-    (`major_update_pending`, `major_update_target_version`). No diff to
+    auto_update policy, requested_version, and gated-update pending info
+    (`gated_update_pending`, `gated_update_target_version`). No diff to
     surface — nothing but the metadata flags changed (decision #3).
   - `POST /{slug}/release/policy` `{auto_update?, requested_version?}` →
     updates `[release]` in `lens.toml` and commits+pushes via `Storage`
     (mirrors `execute_checkpoint`).
-  - `POST /{slug}/release/major-update/approve` → sets
-    `major_update_approved = true`, commits+pushes.
-  - `POST /{slug}/release/major-update/reject` → clears
-    `major_update_pending` / `major_update_target_version` /
-    `major_update_approved`, commits+pushes. No revert needed — the pending
+  - `POST /{slug}/release/gated-update/approve` → sets
+    `gated_update_approved = true`, commits+pushes.
+  - `POST /{slug}/release/gated-update/reject` → clears
+    `gated_update_pending` / `gated_update_target_version` /
+    `gated_update_approved`, commits+pushes. No revert needed — the pending
     commit only ever touched `[release]` metadata, never project data.
   - All routes 404 with a clear message when `[release]` is absent/disabled
     (matches Phase 1's "no-op" default).
@@ -467,7 +467,7 @@ pending major-version bump; no UI yet (routes + tests only).
 - `stores/releaseStore.ts` — status, loading/error state.
 - Components: a settings-style panel showing installed/latest/policy
   controls (radio or select for off/minor/major, a text input + "Request
-  version" button), and — when `major_update_pending` — a prominent banner
+  version" button), and — when `gated_update_pending` — a prominent banner
   naming the target version (with a link out to the Lens repo's release
   notes/tags page for context) and Approve/Reject buttons. No diff view —
   there's nothing to diff (decision #3).
@@ -482,7 +482,7 @@ pending major-version bump; no UI yet (routes + tests only).
   one project's panel is also affecting its siblings (Phase 5 already makes
   the underlying state shared/transparent).
 - Tests: Vitest component/store tests (`poe test-ui`); one Playwright e2e
-  happy-path (policy change persists; major-update approve banner appears and
+  happy-path (policy change persists; gated-update approve banner appears and
   clears) added to `e2e/tests/test_browser.py` or a new
   `test_release_browser.py`, following the regression-fixture pattern in
   `e2e/fixtures/README.md`.

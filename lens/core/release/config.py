@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import tomllib
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
 
@@ -18,9 +20,9 @@ class ReleaseConfig:
     lens_repo_url: str = ""
     auto_update: str = "off"
     requested_version: str = ""
-    major_update_pending: bool = False
-    major_update_target_version: str = ""
-    major_update_approved: bool = False
+    gated_update_pending: bool = False
+    gated_update_target_version: str = ""
+    gated_update_approved: bool = False
     # Only meaningful when this project's Fly app also serves sibling
     # projects (parent-of-projects `fly.toml` topology). Ignored for
     # single-project apps, where the sole served project is trivially the
@@ -52,9 +54,9 @@ def parse_release_config(raw_config: dict[str, Any]) -> ReleaseConfig:
         "lens_repo_url",
         "auto_update",
         "requested_version",
-        "major_update_pending",
-        "major_update_target_version",
-        "major_update_approved",
+        "gated_update_pending",
+        "gated_update_target_version",
+        "gated_update_approved",
         "app_leader",
     ):
         val = raw_dict.get(field_name)
@@ -244,3 +246,38 @@ def validate_deploy_topology(
             "conflicting [[dataset_repo]] declarations across projects "
             "sharing this Fly app: " + "; ".join(conflicts)
         )
+
+
+def find_release_leader_slug(project_roots: dict[str, Path]) -> str | None:
+    """Return the slug of the release leader among *project_roots*.
+
+    Scans each project's ``lens.toml`` for ``[release] app_leader = true``.
+    Returns ``None`` when there is at most one project — the lone project is
+    trivially the leader, and the caller should use whatever slug was
+    originally requested rather than requiring an explicit ``app_leader``
+    marker.
+
+    Raises :class:`LensException` when multiple projects match.
+    """
+    if len(project_roots) <= 1:
+        return None
+
+    leaders: list[str] = []
+    for slug, root in project_roots.items():
+        lens_toml = root / "lens.toml"
+        if not lens_toml.exists():
+            continue
+        with lens_toml.open("rb") as f:
+            raw: dict[str, Any] = tomllib.load(f)
+        cfg = parse_release_config(raw)
+        if cfg.app_leader:
+            leaders.append(slug)
+
+    if len(leaders) > 1:
+        raise LensException(
+            "multiple projects set [release] app_leader = true: "
+            f"{', '.join(sorted(leaders))}"
+        )
+    if leaders:
+        return leaders[0]
+    return None

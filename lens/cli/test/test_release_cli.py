@@ -161,14 +161,14 @@ class TestReleaseCli(unittest.TestCase):
         self.assertIn('"tag"', result.stdout)
         self.assertIn('"v1.1.0"', result.stdout)
 
-    def test_check_pending_major_json_output(self) -> None:
+    def test_check_pending_gated_json_output(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "major_update_pending = true\n"
-            "major_update_target_version = \"v2.0.0\"\n"
-            "major_update_approved = false\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"v2.0.0\"\n"
+            "gated_update_approved = false\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = subprocess.run(

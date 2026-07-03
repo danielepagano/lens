@@ -91,14 +91,14 @@ class TestReleaseCommands(unittest.TestCase):
         result = execute_release_check(proj)
         self.assertEqual(result.action, "none")
 
-    def test_check_pending_major_awaits(self) -> None:
+    def test_check_pending_gated_awaits(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "major_update_pending = true\n"
-            "major_update_target_version = \"v2.0.0\"\n"
-            "major_update_approved = false\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"v2.0.0\"\n"
+            "gated_update_approved = false\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_check(proj)
@@ -118,7 +118,7 @@ class TestReleaseCommands(unittest.TestCase):
         self.assertEqual(result.action, "apply")
         self.assertEqual(result.target, "v1.1.0")
 
-    def test_check_auto_major_marks_pending(self) -> None:
+    def test_check_auto_major_marks_gated_pending(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
@@ -131,7 +131,7 @@ class TestReleaseCommands(unittest.TestCase):
         self.assertEqual(result.action, "await_approval")
         self.assertEqual(result.target, "v2.0.0")
         contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("major_update_pending = true", contents)
+        self.assertIn("gated_update_pending = true", contents)
 
     def test_check_requested_version_downgrade_rejected(self) -> None:
         block = (
@@ -150,9 +150,9 @@ class TestReleaseCommands(unittest.TestCase):
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "major_update_pending = true\n"
-            "major_update_target_version = \"v2.0.0\"\n"
-            "major_update_approved = true\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"v2.0.0\"\n"
+            "gated_update_approved = true\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_check(proj)
@@ -164,9 +164,9 @@ class TestReleaseCommands(unittest.TestCase):
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "major_update_pending = true\n"
-            "major_update_target_version = \"\"\n"
-            "major_update_approved = true\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"\"\n"
+            "gated_update_approved = true\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         with self.assertRaises(LensException):
@@ -276,26 +276,26 @@ class TestReleaseCommands(unittest.TestCase):
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_apply(proj, "v1.1.0")
         self.assertEqual(result.tag, "v1.1.0")
-        # No commit was made (not an approved major bump), so lens.toml is unchanged
+        # No commit was made (not an approved gated bump), so lens.toml is unchanged
         contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertNotIn("major_update_pending", contents)
+        self.assertNotIn("gated_update_pending", contents)
 
-    def test_apply_clears_major_fields_when_approved(self) -> None:
+    def test_apply_clears_gated_fields_when_approved(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "major_update_pending = true\n"
-            "major_update_target_version = \"v2.0.0\"\n"
-            "major_update_approved = true\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"v2.0.0\"\n"
+            "gated_update_approved = true\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_apply(proj, "v2.0.0")
         self.assertEqual(result.tag, "v2.0.0")
         contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("major_update_pending = false", contents)
-        self.assertIn("major_update_approved = false", contents)
-        self.assertIn("major_update_target_version = \"\"", contents)
+        self.assertIn("gated_update_pending = false", contents)
+        self.assertIn("gated_update_approved = false", contents)
+        self.assertIn("gated_update_target_version = \"\"", contents)
 
     def test_check_auto_major_no_tags_returns_none(self) -> None:
         no_tags_remote = _init_bare_repo_with_tags(self._tmp_path, [])
