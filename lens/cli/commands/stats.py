@@ -33,7 +33,7 @@ def stats(
         typer.echo(f"lens stats: {e}", err=True)
         raise typer.Exit(1)
 
-    if result.dataset_name is None and find_lens_repo_root() is not None:
+    if result.release_enabled and result.dataset_name is None and find_lens_repo_root() is not None:
         result.release_local_checkout_version = compute_local_version()
 
     if result.dataset_name is not None:

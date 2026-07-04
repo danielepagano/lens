@@ -48,8 +48,6 @@ CMD_SERVE = "Build the frontend and start the Lens API server."
 CMD_DEV = "Start the Vite dev server and Lens API with hot reload."
 CMD_DEPLOY = "Manage Fly.io deployment."
 CMD_RELEASE = "Coordinate CI-driven releases."
-CMD_RELEASE_CHECK = "Check release state and branch the CI flow."
-CMD_RELEASE_APPLY = "Print build parameters for deploying a given tag."
 
 # ═══════════════════════════════════════════════════════════════════
 #  Operators  (lens <operator>)

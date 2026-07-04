@@ -129,6 +129,7 @@ export interface ReleaseStats {
   app_leader: boolean
   dataset_repos: { name: string; git_url: string; ref: string }[]
   installed_version: string | null
+  latest_available: string | null
   local_checkout_version: string | null
 }
 
@@ -237,6 +238,16 @@ export async function workflowStreamAction(
 export const releaseApprove = withStats(
   (): Promise<{ status: string }> =>
     post(projectPath('/release/gated-update/approve'), {}) as Promise<{ status: string }>
+)
+
+export const releaseReject = withStats(
+  (): Promise<{ status: string }> =>
+    post(projectPath('/release/gated-update/reject'), {}) as Promise<{ status: string }>
+)
+
+export const releasePolicy = withStats(
+  (body: { auto_update?: string; requested_version?: string }): Promise<{ status: string }> =>
+    post(projectPath('/release/policy'), body) as Promise<{ status: string }>
 )
 
 // ---- Media generate (SSE) + incremental save ----

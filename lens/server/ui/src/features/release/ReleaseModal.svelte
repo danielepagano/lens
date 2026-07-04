@@ -1,18 +1,25 @@
 <script lang="ts">
   import { stats } from '../../stores/stats'
   import { releaseModalOpen } from '../../stores/ui'
-  import { releaseApprove } from '../../services/api'
+  import { releaseApprove, releaseReject, releasePolicy } from '../../services/api'
 
   let dialog: HTMLDialogElement | undefined
-  let approving = $state(false)
+  let actionInProgress = $state(false)
+  let approvalBusy = $state(false)
+  let rejectBusy = $state(false)
+  let policyBusy = $state(false)
   let error = $state<string | null>(null)
+  let selectedAutoUpdate = $state('')
+  let requestedVersionInput = $state('')
 
   const rls = $derived($stats?.release)
+  const pending = $derived(rls?.gated_update_pending ?? false)
   const approved = $derived(rls?.gated_update_approved ?? false)
   const targetVersion = $derived(rls?.gated_update_target_version ?? '')
   const repoUrl = $derived(rls?.lens_repo_url ?? '')
   const installedVersion = $derived(rls?.installed_version ?? '')
-  const autoUpdate = $derived(rls?.auto_update ?? '')
+  const latestAvailable = $derived(rls?.latest_available ?? '')
+  const autoUpdate = $derived(rls?.auto_update ?? 'off')
 
   function releaseUrl(ver: string): string {
     const base = repoUrl.replace(/\.git$/, '')
@@ -23,6 +30,8 @@
     if (!dialog) return
     if ($releaseModalOpen) {
       dialog.showModal()
+      selectedAutoUpdate = autoUpdate
+      requestedVersionInput = rls?.requested_version ?? ''
     } else {
       if (dialog.open) dialog.close()
     }
@@ -36,15 +45,58 @@
     if (e.target === dialog) handleClose()
   }
 
+  function resetBusy() {
+    approvalBusy = false
+    rejectBusy = false
+    policyBusy = false
+    actionInProgress = false
+  }
+
   async function approve() {
-    approving = true
+    approvalBusy = true
+    actionInProgress = true
     error = null
     try {
       await releaseApprove()
     } catch (e) {
       error = String(e)
     } finally {
-      approving = false
+      resetBusy()
+    }
+  }
+
+  async function reject() {
+    rejectBusy = true
+    actionInProgress = true
+    error = null
+    try {
+      await releaseReject()
+    } catch (e) {
+      error = String(e)
+    } finally {
+      resetBusy()
+    }
+  }
+
+  async function savePolicy() {
+    policyBusy = true
+    actionInProgress = true
+    error = null
+    try {
+      const body: { auto_update?: string; requested_version?: string } = {}
+      if (selectedAutoUpdate !== autoUpdate) {
+        body.auto_update = selectedAutoUpdate
+      }
+      if (requestedVersionInput !== (rls?.requested_version ?? '')) {
+        body.requested_version = requestedVersionInput
+      }
+      if (Object.keys(body).length > 0) {
+        await releasePolicy(body)
+      }
+    } catch (e) {
+      error = String(e)
+    } finally {
+      resetBusy()
     }
   }
 </script>
@@ -71,7 +123,7 @@
       <div class="release-actions">
         <button type="button" class="release-btn release-close-action-btn" onclick={handleClose}>Close</button>
       </div>
-    {:else}
+    {:else if pending && !approved}
       <p>A new Lens version is available for review:</p>
 
       <div class="release-info">
@@ -88,13 +140,6 @@
         <span class="release-value">{installedVersion || '(desktop / unknown)'}</span>
       </div>
 
-      {#if autoUpdate}
-        <div class="release-info">
-          <span class="release-label">Auto-update policy</span>
-          <span class="release-value">{autoUpdate}</span>
-        </div>
-      {/if}
-
       {#if error}
         <p class="release-error">{error}</p>
       {/if}
@@ -104,8 +149,61 @@
           type="button"
           class="release-btn release-approve-btn"
           onclick={approve}
-          disabled={approving}
-        >{approving ? 'Approving…' : 'Approve'}</button>
+          disabled={actionInProgress}
+        >{approvalBusy ? 'Approving…' : 'Approve'}</button>
+        <button
+          type="button"
+          class="release-btn release-reject-btn"
+          onclick={reject}
+          disabled={actionInProgress}
+        >{rejectBusy ? 'Rejecting…' : 'Reject'}</button>
+        <button type="button" class="release-btn release-close-action-btn" onclick={handleClose}>Close</button>
+      </div>
+    {:else}
+      <p class="release-section-label">Release settings</p>
+
+      <div class="release-info">
+        <span class="release-label">Installed version</span>
+        <span class="release-value">{installedVersion || '(desktop / unknown)'}</span>
+      </div>
+
+      {#if latestAvailable}
+        <div class="release-info">
+          <span class="release-label">Latest available</span>
+          <span class="release-value">{latestAvailable}</span>
+        </div>
+      {/if}
+
+      <label class="release-field">
+        <span class="release-field-label">Auto-update policy</span>
+        <select bind:value={selectedAutoUpdate} class="release-select">
+          <option value="off">Off</option>
+          <option value="minor">Minor</option>
+          <option value="major">Major</option>
+        </select>
+      </label>
+
+      <label class="release-field">
+        <span class="release-field-label">Requested version</span>
+        <input
+          type="text"
+          bind:value={requestedVersionInput}
+          placeholder="e.g. v2.1.0"
+          class="release-input"
+        />
+      </label>
+
+      {#if error}
+        <p class="release-error">{error}</p>
+      {/if}
+
+      <div class="release-actions">
+        <button
+          type="button"
+          class="release-btn release-primary-btn"
+          onclick={savePolicy}
+          disabled={actionInProgress}
+        >{policyBusy ? 'Saving…' : 'Save settings'}</button>
         <button type="button" class="release-btn release-close-action-btn" onclick={handleClose}>Close</button>
       </div>
     {/if}
@@ -206,6 +304,11 @@
     color: #fff;
   }
 
+  .release-reject-btn {
+    background: var(--pico-del-color, #da3633);
+    color: #fff;
+  }
+
   .release-close-action-btn {
     background: transparent;
     border: 1px solid var(--pico-muted-border-color, #555);
@@ -217,6 +320,11 @@
     cursor: pointer;
     text-align: center;
     font-size: 0.9rem;
+  }
+
+  .release-primary-btn {
+    background: var(--pico-primary, #2ea043);
+    color: #fff;
   }
 
   .release-approved-text {
@@ -235,5 +343,34 @@
     color: var(--pico-del-color, #da3633);
     font-size: 0.85rem;
     margin-top: 0.6rem;
+  }
+
+  .release-section-label {
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    font-size: 0.95rem;
+    opacity: 0.85;
+  }
+
+  .release-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.8rem;
+  }
+
+  .release-field-label {
+    font-size: 0.85rem;
+    opacity: 0.7;
+  }
+
+  .release-select,
+  .release-input {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--pico-muted-border-color, #555);
+    border-radius: 6px;
+    background: var(--pico-card-background-color, #1a1a2e);
+    color: inherit;
+    font-size: 0.9rem;
   }
 </style>

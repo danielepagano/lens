@@ -198,7 +198,7 @@ def _fetch_tags_quiet(repo_root: Path) -> None:
     if r.returncode != 0:
         return
     subprocess.run(
-        ["git", "fetch", "origin", "--tags", "--quiet", "--force"],
+        ["git", "fetch", "origin", "--tags", "--quiet"],
         cwd=repo_root,
         capture_output=True,
         env=env,

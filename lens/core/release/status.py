@@ -97,7 +97,9 @@ def compute_release_status(project_root: Path) -> ReleaseStatus:
     # `lens deploy push` would bake LENS_VERSION to right now (decision #7).
     # This is informational/local-sanity-check data, distinct from
     # "installed" — a pending build target, not a deployed fact.
-    if find_lens_repo_root() is not None:
+    # Only computed when LENS_VERSION is unset (we're on a desktop, not in
+    # a deployed container) to avoid side effects like auto-fetching tags.
+    if status.installed_version_str is None and find_lens_repo_root() is not None:
         status.local_checkout_version = compute_local_version()
 
     if cfg.lens_repo_url:

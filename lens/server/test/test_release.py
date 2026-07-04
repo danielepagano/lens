@@ -64,12 +64,15 @@ def _build_client(tmp: Path, toml: str) -> TestClient:
 
 @pytest.fixture()
 def release_client(tmp_path: Path) -> Generator[TestClient, None, None]:
-    yield _build_client(tmp_path, RELEASE_TOML)
+    # Prevent auto-discovery of the real Lens repo checkout during tests.
+    with patch("lens.core.release.status.find_lens_repo_root", return_value=None):
+        yield _build_client(tmp_path, RELEASE_TOML)
 
 
 @pytest.fixture()
 def no_release_client(tmp_path: Path) -> Generator[TestClient, None, None]:
-    yield _build_client(tmp_path, NO_RELEASE_TOML)
+    with patch("lens.core.release.status.find_lens_repo_root", return_value=None):
+        yield _build_client(tmp_path, NO_RELEASE_TOML)
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +168,29 @@ class TestReleaseGatedApprove:
 
     def test_returns_404_when_not_enabled(self, no_release_client: TestClient) -> None:
         r = no_release_client.post("/test/release/gated-update/approve")
+        assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# POST /release/gated-update/reject
+# ---------------------------------------------------------------------------
+
+
+class TestReleaseGatedReject:
+    def test_reject_returns_ok(self, release_client: TestClient) -> None:
+        r = release_client.post("/test/release/gated-update/reject")
+        assert r.status_code == 200
+        assert r.json()["status"] == "ok"
+
+    def test_reject_clears_pending(self, release_client: TestClient) -> None:
+        release_client.post("/test/release/gated-update/reject")
+        data = release_client.get("/test/release/status").json()
+        assert data["gated_update_pending"] is False
+        assert data["gated_update_target_version"] == ""
+        assert data["gated_update_approved"] is False
+
+    def test_returns_404_when_not_enabled(self, no_release_client: TestClient) -> None:
+        r = no_release_client.post("/test/release/gated-update/reject")
         assert r.status_code == 404
 
 

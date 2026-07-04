@@ -14,8 +14,10 @@ from unittest import mock
 from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
+    execute_release_gated_reject,
     resolve_release_project_root,
 )
+from lens.core.project import ProjectSession
 from lens.core.exceptions import LensException
 
 
@@ -82,8 +84,13 @@ class TestReleaseCommands(unittest.TestCase):
         self._lens_remote = _init_bare_repo_with_tags(
             self._tmp_path, ["v1.0.0", "v1.1.0", "v2.0.0"]
         )
+        self._find_lens_patch = mock.patch(
+            "lens.core.release.status.find_lens_repo_root", return_value=None
+        )
+        self._find_lens_patch.start()
 
     def tearDown(self) -> None:
+        self._find_lens_patch.stop()
         shutil.rmtree(self._tmp, ignore_errors=True)
 
     def test_check_disabled_returns_none(self) -> None:
@@ -350,6 +357,93 @@ class TestReleaseCommands(unittest.TestCase):
         contents = (proj / "lens.toml").read_text(encoding="utf-8")
         self.assertIn("base_url = \"http://localhost:11434/v1\"", contents)
         self.assertIn('datasets = ["testing"]', contents)
+
+    def test_reject_clears_gated_fields(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"v2.0.0\"\n"
+            "gated_update_approved = false\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        session = ProjectSession(proj, proj)
+        execute_release_gated_reject(session)
+        contents = (proj / "lens.toml").read_text(encoding="utf-8")
+        self.assertIn("gated_update_pending = false", contents)
+        self.assertIn("gated_update_approved = false", contents)
+        self.assertIn("gated_update_target_version = \"\"", contents)
+
+    def test_reject_noop_when_no_pending(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        before = (proj / "lens.toml").read_text(encoding="utf-8")
+        session = ProjectSession(proj, proj)
+        execute_release_gated_reject(session)
+        after = (proj / "lens.toml").read_text(encoding="utf-8")
+        self.assertEqual(before, after)
+
+    def test_apply_clears_requested_version_when_fulfilled(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            "requested_version = \"v1.1.0\"\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        execute_release_apply(proj, "v1.1.0")
+        contents = (proj / "lens.toml").read_text(encoding="utf-8")
+        self.assertIn("requested_version = \"\"", contents)
+
+    def test_apply_does_not_clear_requested_version_for_different_tag(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            "requested_version = \"v2.0.0\"\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        execute_release_apply(proj, "v1.0.0")
+        contents = (proj / "lens.toml").read_text(encoding="utf-8")
+        self.assertIn("requested_version = \"v2.0.0\"", contents)
+
+    def test_apply_combines_gated_clear_and_requested_clear(self) -> None:
+        """Clearing both gated-update and requested_version in a single commit."""
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            "gated_update_pending = true\n"
+            "gated_update_target_version = \"v2.0.0\"\n"
+            "gated_update_approved = true\n"
+            "requested_version = \"v2.0.0\"\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        execute_release_apply(proj, "v2.0.0")
+        contents = (proj / "lens.toml").read_text(encoding="utf-8")
+        self.assertIn("gated_update_pending = false", contents)
+        self.assertIn("gated_update_approved = false", contents)
+        self.assertIn("gated_update_target_version = \"\"", contents)
+        self.assertIn("requested_version = \"\"", contents)
+
+    def test_check_clears_requested_version_when_already_installed(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            "requested_version = \"v1.0.0\"\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.0.0"}, clear=False):
+            result = execute_release_check(proj)
+        self.assertEqual(result.action, "none")
+        contents = (proj / "lens.toml").read_text(encoding="utf-8")
+        self.assertIn("requested_version = \"\"", contents)
 
 
 class TestResolveReleaseProjectRoot(unittest.TestCase):

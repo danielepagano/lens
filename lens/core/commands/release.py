@@ -133,6 +133,16 @@ def execute_release_check(project_root: Path) -> ReleaseCheckResult:
         raise LensException("target release tag is not a valid vMAJOR.MINOR.PATCH value")
 
     if installed_semver is not None and target_semver == installed_semver:
+        # Clear requested_version if it was the source of the target and is
+        # already fulfilled — otherwise it lingers and blocks auto_update.
+        if status.requested_version.strip():
+            req_semver = _semver_from_version_string(status.requested_version)
+            if req_semver is not None and req_semver.tag == target_tag:
+                _update_release_section(
+                    project_root,
+                    {"requested_version": ""},
+                    commit_message="release: clear fulfilled requested_version",
+                )
         return ReleaseCheckResult(action="none", summary="already at target version")
 
     if installed_semver is not None and target_semver < installed_semver:
@@ -163,17 +173,28 @@ def execute_release_apply(project_root: Path, target_tag: str) -> ReleaseApplyRe
         raise LensException("--to must be a valid vMAJOR.MINOR.PATCH tag")
 
     summary = f"release apply target {normalized_tag}"
+
+    updates: dict[str, bool | str] = {}
+
+    # Clear gated-update fields if this was an approved major bump
     if cfg.gated_update_approved and cfg.gated_update_target_version == normalized_tag:
+        updates["gated_update_pending"] = False
+        updates["gated_update_target_version"] = ""
+        updates["gated_update_approved"] = False
+
+    # Clear requested_version when the applied tag fulfills it
+    if cfg.requested_version.strip():
+        req_semver = _semver_from_version_string(cfg.requested_version)
+        if req_semver is not None and req_semver.tag == normalized_tag:
+            updates["requested_version"] = ""
+
+    if updates:
         _update_release_section(
             project_root,
-            {
-                "gated_update_pending": False,
-                "gated_update_target_version": "",
-                "gated_update_approved": False,
-            },
-            commit_message=f"release approve {normalized_tag}",
+            updates,
+            commit_message=f"release apply {normalized_tag}",
         )
-        summary = f"cleared approval state for {normalized_tag}"
+        summary = f"cleared state for {normalized_tag}"
 
     return ReleaseApplyResult(lens_repo_url=url, tag=normalized_tag, summary=summary)
 
@@ -232,6 +253,39 @@ def execute_release_gated_approve(session: ProjectSession) -> None:
         return
     storage.write_file(lens_toml, updated)
     storage.commit("release: approve gated update")
+    if storage.has_remote():
+        storage.push_or_raise()
+
+
+def execute_release_gated_reject(session: ProjectSession) -> None:
+    """Clear pending gated-update fields and commit+push (reject a major bump).
+
+    Clears ``gated_update_pending``, ``gated_update_target_version``, and
+    ``gated_update_approved``.  Does nothing if there is no pending gated
+    update (checked against the *parsed* config, not raw text, so this is a
+    true no-op rather than writing out already-default values as explicit
+    lines).  Rejection is a "not now", not a "never" — the next ``check``
+    run will re-evaluate the target from scratch.
+    """
+    lens_toml = session.project_root / "lens.toml"
+    raw = lens_toml.read_text(encoding="utf-8")
+    cfg = parse_release_config(tomllib.loads(raw))
+    if not cfg.gated_update_pending:
+        return
+
+    storage = session.new_storage(owner=None)
+    updated = _apply_release_updates(
+        raw,
+        {
+            "gated_update_pending": False,
+            "gated_update_target_version": "",
+            "gated_update_approved": False,
+        },
+    )
+    if updated == raw:
+        return
+    storage.write_file(lens_toml, updated)
+    storage.commit("release: reject gated update")
     if storage.has_remote():
         storage.push_or_raise()
 
