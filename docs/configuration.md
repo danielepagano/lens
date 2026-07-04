@@ -474,7 +474,7 @@ app_leader            = false
 |-------|----------|---------|-------------|
 | `enabled` | No | `false` | Enable the release system for this project |
 | `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
-| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); set by CI's `lens release request` |
+| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); set by the UI's **Update** button and never cleared automatically |
 | `requested_from_commit` | No | `""` | Full commit hash that was `HEAD` when `requested_version` was requested; CI deploys only the next commit whose parent is this hash |
 | `app_leader` | No | `false` | Designate this project as the release leader in a multi-project Fly deployment |
 
