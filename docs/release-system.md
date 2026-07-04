@@ -301,7 +301,7 @@ shows notification, human clicks Update
         (one plain uncommitted file write,      | swept into the user's next
          no push — decision #1/#3)              | checkpoint, whenever that is
                                                  v
-                                          pushed to tracked branch  ------->  triggers CI (push, decision #5)
+                                           pushed to tracked branch  ------->  triggers CI (push, decision #6)
                                                                                    |
                                                                                    v
                                                                              lens release check
@@ -387,7 +387,7 @@ hard-to-test surface area is involved — not raw line count.
 | Phase | Title | Difficulty | Why |
 |-------|-------|------------|-----|
 | 1 | Simplify the release decision engine | **Low** | Net deletion of the policy/gating state machine and the git-write path, replaced by a stateless, read-only parent-hash check; smaller and simpler than what's there today, not an extension of it. |
-| 2 | App-side server routes | **Low** | Drop two routes, trim one, add one plain-write route with no commit/push involved — smaller than what's already there. |
+| 2 | App-side server routes | **Low** | Drop four routes, plumb release fields into existing `GET /stats`, add one plain-write route with no commit/push involved — smaller than what's already there. |
 | 3 | UI: single update notification | **Low** | One notification + one button, no diff review, no policy selector. Smaller than the panel it replaces. |
 | 4 | CI reference pipelines (GitHub + GitLab) | **High** | Two separate CI systems and real Fly deploys; the pipeline logic itself is trivial (decision #4), but secrets/host-specific glue and the multi-commit-push edge case are only discoverable by running it for real. |
 | 5 | End-to-end validation & docs polish | **High** | Large integration test tying every phase together; not novel design, but any gap upstream surfaces here first. |
@@ -410,8 +410,6 @@ match; do not leave either describing the old shape.
   `lens/core/commands/check.py`); add `requested_from_commit: str = ""`.
   `ReleaseConfig` ends up with exactly `enabled`, `lens_repo_url`,
   `requested_version`, `requested_from_commit`, `app_leader`.
-- `lens/core/release/status.py`: same field changes in `ReleaseStatus`/
-  `compute_release_status`.
 - `lens/core/commands/release.py`: delete `_select_target_tag`,
   `_mark_gated_pending`, the major/minor boundary logic, and
   `_git_commit_and_push`/`_run_git` entirely — nothing in this module writes
@@ -469,6 +467,10 @@ match; do not leave either describing the old shape.
 version, and surface release info in existing project-level responses
 rather than a dedicated polled route.
 
+- `lens/core/release/status.py`: update `ReleaseStatus`/`compute_release_status`
+  to match the trimmed config — drop gated/policy fields, add
+  `requested_from_commit`. This internal model is used by the stats endpoint,
+  not by a standalone route.
 - `lens/server/routes/release.py`:
   - Remove `GET /release/status`, `POST /release/policy`, `POST
     /release/gated-update/approve`, and `.../reject` entirely. `status` had
@@ -485,9 +487,10 @@ rather than a dedicated polled route.
     fires when the user explicitly asks). `requested_from_commit` is an
     implementation detail CI needs, not UI-facing — leave it out.
   - Add `POST /release/request` `{target_version}`: validate
-    `target_version` parses as a valid tag and isn't older than `installed`
-    (this is exactly where that check belongs — the app has a reliable
-    `installed` value; CI, per decision #4, does not), then call a new
+    `target_version` matches `vMAJOR.MINOR.PATCH` (same sanity check Phase 1
+    uses in `check`) and isn't older than `installed` (this is exactly where
+    that check belongs — the app has a reliable `installed` value; CI, per
+    decision #4, does not), then call a new
     `execute_release_request(session, target_version)` that reads the
     session's current `HEAD` commit hash and does a single
     `session.new_storage(owner=None).write_file(lens_toml, updated)` writing
