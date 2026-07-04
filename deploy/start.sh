@@ -123,14 +123,14 @@ for entry in cfg.get('dataset_repo', []):
 
         if [ ! -d "$DS_DIR/.git" ]; then
             echo "Cloning dataset $DS_NAME…"
-            GIT_SSH_COMMAND="$DS_SSH_CMD" git clone --depth 1 "$DS_URL" "$DS_DIR" \
-                || echo "Warning: clone failed for dataset $DS_NAME"
+            GIT_SSH_COMMAND="$DS_SSH_CMD" git clone --depth 1 "$DS_URL" "$DS_DIR" 2>/dev/null \
+                || echo "Warning: could not clone dataset '$DS_NAME' from $DS_URL (add DATASET_REPO_DEPLOY_KEY_${DS_KEY} Fly secret if private)"
         else
             echo "Dataset $DS_NAME found on volume."
-            GIT_SSH_COMMAND="$DS_SSH_CMD" git -C "$DS_DIR" fetch origin \
-                || echo "Warning: git fetch failed for dataset $DS_NAME"
+            GIT_SSH_COMMAND="$DS_SSH_CMD" git -C "$DS_DIR" fetch origin 2>/dev/null \
+                || echo "Warning: could not fetch dataset '$DS_NAME' from $DS_URL"
             git -C "$DS_DIR" merge --ff-only "origin/$DS_REF" \
-                || echo "Warning: could not fast-forward dataset $DS_NAME"
+                || echo "Warning: could not fast-forward dataset '$DS_NAME'"
         fi
     done
 done

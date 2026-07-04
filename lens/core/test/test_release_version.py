@@ -104,8 +104,15 @@ class TestParseSemverTag(unittest.TestCase):
     def test_prerelease_rejected(self) -> None:
         self.assertIsNone(parse_semver_tag("v1.0.0-beta"))
 
-    def test_build_metadata_rejected(self) -> None:
-        self.assertIsNone(parse_semver_tag("v1.0.0+build.1"))
+    def test_build_metadata_accepted(self) -> None:
+        """Build metadata (+...) is stripped before matching per semver spec."""
+        t = parse_semver_tag("v1.0.0+build.1")
+        self.assertEqual(t, SemverTag(1, 0, 0))
+
+    def test_build_metadata_with_git_hash(self) -> None:
+        """Pattern produced by compute_local_version()."""
+        t = parse_semver_tag("v0.1.0+0999fc3")
+        self.assertEqual(t, SemverTag(0, 1, 0))
 
     def test_missing_patch_rejected(self) -> None:
         self.assertIsNone(parse_semver_tag("v1.0"))

@@ -86,7 +86,7 @@ def _release_info(session: ProjectSession) -> ReleaseInfo | None:
         parse_dataset_repo_configs,
         parse_release_config,
     )
-    from lens.core.release.status import compute_latest_available
+    from lens.core.release.status import compute_release_status
     from lens.core.release.version import installed_version
 
     lens_toml = session.project_root / "lens.toml"
@@ -101,7 +101,7 @@ def _release_info(session: ProjectSession) -> ReleaseInfo | None:
         return None
 
     dataset_repos = parse_dataset_repo_configs(raw)
-    latest = compute_latest_available(session.project_root)
+    rls_status = compute_release_status(session.project_root)
 
     return ReleaseInfo(
         enabled=True,
@@ -114,7 +114,8 @@ def _release_info(session: ProjectSession) -> ReleaseInfo | None:
             for r in dataset_repos
         ],
         installed_version=installed_version(),
-        latest_available=latest,
+        latest_available=rls_status.latest_available_str,
+        update_available=rls_status.update_available,
     )
 
 

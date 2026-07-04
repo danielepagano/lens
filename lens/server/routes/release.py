@@ -32,6 +32,7 @@ class ReleaseInfo(BaseModel):
     dataset_repos: list[dict[str, str]] = []
     installed_version: str | None = None
     latest_available: str | None = None
+    update_available: bool = False
 
 
 class ReleaseRequest(BaseModel):
@@ -90,10 +91,13 @@ def release_clear(
 def release_latest(
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
-    from lens.core.release.status import compute_latest_available
+    from lens.core.release.status import compute_release_status
 
     try:
-        latest = compute_latest_available(session.project_root)
-        return {"latest_available": latest}
+        status = compute_release_status(session.project_root)
+        return {
+            "latest_available": status.latest_available_str,
+            "update_available": status.update_available,
+        }
     except Exception as e:
-        return {"latest_available": None, "error": str(e)}
+        return {"latest_available": None, "update_available": False, "error": str(e)}

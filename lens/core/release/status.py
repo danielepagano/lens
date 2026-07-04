@@ -38,6 +38,7 @@ class ReleaseStatus:
     local_checkout_version: str | None = None
     latest_available: SemverTag | None = None
     latest_available_str: str | None = None
+    update_available: bool = False
     available_tags: list[SemverTag] = field(default_factory=list[SemverTag])
     tag_count: int = 0
 
@@ -105,6 +106,8 @@ def compute_release_status(project_root: Path) -> ReleaseStatus:
             status.latest_available = latest
             if latest is not None:
                 status.latest_available_str = latest.tag
+            if latest is not None and status.installed_semver is not None:
+                status.update_available = latest > status.installed_semver
         except Exception as exc:
             status.remote_error = str(exc)
 

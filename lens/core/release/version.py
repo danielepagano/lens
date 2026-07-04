@@ -33,9 +33,19 @@ class SemverTag:
 def parse_semver_tag(ref: str) -> SemverTag | None:
     """Parse a ``vMAJOR.MINOR.PATCH`` tag string into a ``SemverTag``.
 
+    Strips build metadata (everything after ``+``) before matching — per
+    semver spec, build metadata does not affect version precedence, so
+    ``v0.1.0`` and ``v0.1.0+0999fc3`` resolve to the same ``SemverTag``.
+
     Returns ``None`` for tags that don't match (prereleases, non-semver, etc.).
     """
-    m = _SEMVER_RE.match(ref.strip())
+    cleaned = ref.strip()
+    m = _SEMVER_RE.match(cleaned)
+    if m is None:
+        plus_idx = cleaned.find("+")
+        if plus_idx > 0:
+            cleaned = cleaned[:plus_idx]
+            m = _SEMVER_RE.match(cleaned)
     if m is None:
         return None
     return SemverTag(

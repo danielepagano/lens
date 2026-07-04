@@ -10,19 +10,15 @@
     !!requestedVersion && !!installedVersion && requestedVersion !== installedVersion
   )
 
-  const latestAvailable = $derived($releaseInfo?.latest_available ?? null)
-  const updateAvailable = $derived(
-    !!installedVersion && !!latestAvailable && latestAvailable !== installedVersion
-  )
+  const updateAvailable = $derived($releaseInfo?.update_available ?? false)
 
   onMount(async () => {
     try {
       const result = await fetchLatestRelease()
-      if (result.latest_available) {
-        $releaseInfo = {
-          ...($releaseInfo ?? { enabled: false, lens_repo_url: '', requested_version: '', requested_from_commit: '', app_leader: false, dataset_repos: [], installed_version: null }),
-          latest_available: result.latest_available,
-        }
+      $releaseInfo = {
+        ...($releaseInfo ?? { enabled: false, lens_repo_url: '', requested_version: '', requested_from_commit: '', app_leader: false, dataset_repos: [], installed_version: null, update_available: false }),
+        latest_available: result.latest_available,
+        update_available: result.update_available,
       }
     } catch {
       // silently ignore

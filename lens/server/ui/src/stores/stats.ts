@@ -22,9 +22,11 @@ export function applyStats(data: Stats): void {
         dataset_repos: [],
         installed_version: null,
         latest_available: null,
+        update_available: false,
       }),
       ...data.release,
       latest_available: prev?.latest_available ?? null,
+      update_available: prev?.update_available ?? false,
     }))
   }
 

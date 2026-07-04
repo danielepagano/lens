@@ -51,7 +51,7 @@
           ...($releaseInfo ?? {
             enabled: false, lens_repo_url: '', requested_version: '',
             requested_from_commit: '', app_leader: false, dataset_repos: [],
-            installed_version: null, latest_available: null,
+            installed_version: null, latest_available: null, update_available: false,
           }),
           requested_version: result.requested_version ?? '',
           requested_from_commit: result.requested_from_commit ?? '',
@@ -77,7 +77,7 @@
           ...($releaseInfo ?? {
             enabled: false, lens_repo_url: '', requested_version: '',
             requested_from_commit: '', app_leader: false, dataset_repos: [],
-            installed_version: null, latest_available: null,
+            installed_version: null, latest_available: null, update_available: false,
           }),
           requested_version: '',
           requested_from_commit: '',
@@ -93,7 +93,7 @@
 
   const currentMsg = $derived(installed ? `v${installed.replace(/^v/, '')}` : '—')
   const latestMsg = $derived(latest ? `v${latest.replace(/^v/, '')}` : '—')
-  const newerAvailable = $derived(!!installed && !!latest && latest !== installed)
+  const newerAvailable = $derived(rls?.update_available ?? false)
 </script>
 
 <dialog

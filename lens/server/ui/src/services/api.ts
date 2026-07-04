@@ -22,6 +22,7 @@ function _updateReleaseFromResponse(data: unknown): void {
           dataset_repos: [],
           installed_version: null,
           latest_available: null,
+          update_available: false,
         } as ReleaseInfo),
         ...(rls as Partial<ReleaseInfo>),
       }))
@@ -163,6 +164,7 @@ export interface ReleaseInfo {
   dataset_repos: { name: string; git_url: string; ref: string }[]
   installed_version: string | null
   latest_available: string | null
+  update_available: boolean
 }
 
 export interface TransactionState {
@@ -918,6 +920,7 @@ export const getTxStatus = (): Promise<TxStatusResponse> =>
 
 export interface ReleaseLatestResponse {
   latest_available: string | null
+  update_available: boolean
 }
 
 export const fetchLatestRelease = (): Promise<ReleaseLatestResponse> =>
