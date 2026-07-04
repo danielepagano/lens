@@ -386,7 +386,7 @@ class TestComputeReleaseStatus(unittest.TestCase):
 
     def test_installed_is_none_when_env_unset(self) -> None:
         # "Installed" must reflect only the deployed container's baked-in
-        # LENS_VERSION env var (decision #2) -- never a value computed from
+        # LENS_VERSION env var -- never a value computed from
         # a local checkout. A desktop/dev run (env unset) must report None,
         # not a plausible-looking but unrelated local version.
         self._write_toml("[release]\nenabled = true\nlens_repo_url = \"\"\n")

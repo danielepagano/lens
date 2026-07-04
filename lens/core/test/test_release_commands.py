@@ -20,6 +20,7 @@ from lens.core.commands.release import (
     execute_release_check,
     execute_release_clear,
     execute_release_request,
+    execute_release_secrets_check,
     execute_release_secrets_sync,
     resolve_release_project_root,
 )
@@ -178,9 +179,9 @@ class TestReleaseCommands(unittest.TestCase):
         result = execute_release_check(proj, since=after_sha)
         self.assertEqual(result.action, "none")
 
-    def test_check_with_since_range_multi_commit(self) -> None:
+    def test_check_with_since_range_multi_commit_exactly_once(self) -> None:
         """A push carrying two commits: only the first has
-        requested_from_commit as its parent."""
+        requested_from_commit as its parent — deploy fires exactly once."""
         proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
         before = _get_head_sha(proj)
 
@@ -201,10 +202,59 @@ class TestReleaseCommands(unittest.TestCase):
             ["git", "commit", "-m", "set requested version"],
             cwd=proj, check=True, capture_output=True,
         )
-        # Check the range before..HEAD — the first commit's parent is before (match)
+
+        # Push 1: since=before, range=before..HEAD
+        # Parents of commits in range: [C1_sha, before] — before matches
         result = execute_release_check(proj, since=before)
         self.assertEqual(result.action, "apply")
         self.assertEqual(result.target, "v1.1.0")
+
+        # Simulate second push: another commit on top (carrying stale request forward)
+        after_c2 = _make_commit(proj, "unrelated work after deploy")
+
+        # Push 2: since=after_c2's parent (= HEAD~1), range=<parent>..HEAD
+        # Parents of commits in range: the parent is after_c2's parent (C2's parent = C1),
+        # not "before" — no match
+        first_parent = subprocess.run(
+            ["git", "rev-parse", f"{after_c2}^1"],
+            cwd=proj, capture_output=True, text=True,
+        ).stdout.strip()
+        result2 = execute_release_check(proj, since=first_parent)
+        self.assertEqual(result2.action, "none")
+
+    def test_check_stale_request_carried_forward_spent(self) -> None:
+        """requested_from_commit lives in a commit before the push range
+        and is carried forward unchanged — should not match."""
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        c0 = _get_head_sha(proj)
+
+        # Commit the request at C0
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            "requested_version = \"v1.1.0\"\n"
+            f"requested_from_commit = \"{c0}\"\n"
+        )
+        (proj / "lens.toml").write_text(block)
+        subprocess.run(["git", "add", "lens.toml"], cwd=proj, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "set request at c0"],
+            cwd=proj, check=True, capture_output=True,
+        )
+        c1 = _get_head_sha(proj)  # child of c0
+
+        # Two more commits carry the (now stale) request forward unchanged
+        _make_commit(proj, "work after request")
+        _make_commit(proj, "more work after request")
+
+        # Push 1: c0..c1 (the commit that first carries the request)
+        result = execute_release_check(proj, since=c0)
+        self.assertEqual(result.action, "apply")
+
+        # Push 2: c1..HEAD — neither commit has c0 as parent → no match
+        result2 = execute_release_check(proj, since=c1)
+        self.assertEqual(result2.action, "none")
 
     def test_check_unparseable_tag_raises(self) -> None:
         block = (
@@ -681,3 +731,169 @@ class TestSecretsSync(unittest.TestCase):
             self.assertIn(f"PROJECT_REPO_URL_{dep_env_key}", result.collected_secrets)
         finally:
             os.environ.pop("DEPENDENT_OPENAI_KEY", None)
+
+
+class TestSecretsCheck(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self._tmp_path = Path(self._tmp)
+        self._env = dict(os.environ)
+
+    def tearDown(self) -> None:
+        os.environ.clear()
+        os.environ.update(self._env)
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def _init_leader(self, extra_toml: str = "") -> Path:
+        project = self._tmp_path / f"leader_{uuid.uuid4().hex}"
+        project.mkdir()
+        subprocess.run(["git", "init", "-b", "main"], cwd=project, check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=project, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=project, check=True)
+        (project / "lens.toml").write_text(
+            "[release]\nenabled = true\nlens_repo_url = \"https://example.com/lens.git\"\n"
+            + extra_toml
+        )
+        subprocess.run(["git", "add", "lens.toml"], cwd=project, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True
+        )
+        remote = self._tmp_path / f"leader_remote_{uuid.uuid4().hex}.git"
+        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        subprocess.run(["git", "remote", "add", "origin", str(remote)], cwd=project, check=True)
+        subprocess.run(
+            ["git", "push", "-u", "origin", "main"], cwd=project, check=True, capture_output=True
+        )
+        return project
+
+    def _init_dependent_bare(self, name: str, extra_toml: str = "") -> Path:
+        remote = self._tmp_path / f"{name}_remote_{uuid.uuid4().hex}.git"
+        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        clone = self._tmp_path / f"{name}_clone_{uuid.uuid4().hex}"
+        subprocess.run(["git", "clone", str(remote), str(clone)], check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=clone, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=clone, check=True)
+        (clone / "lens.toml").write_text(
+            "[project]\ndatasets = ['testing']\n"
+            "[[llm]]\nprovider = 'openai'\napi_key_env = 'DEPENDENT_OPENAI_KEY'\n"
+            + extra_toml
+        )
+        subprocess.run(["git", "add", "lens.toml"], cwd=clone, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"], cwd=clone, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "push", "-u", "origin", "main"], cwd=clone, check=True, capture_output=True
+        )
+        shutil.rmtree(clone, ignore_errors=True)
+        return remote
+
+    def test_disabled_release_raises(self) -> None:
+        project = self._tmp_path / "disabled"
+        project.mkdir()
+        (project / "lens.toml").write_text("[project]\ndatasets = ['testing']\n")
+        subprocess.run(["git", "init", "-b", "main"], cwd=project, check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=project, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=project, check=True)
+        subprocess.run(["git", "add", "lens.toml"], cwd=project, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True
+        )
+        with self.assertRaises(LensException):
+            execute_release_secrets_check(project)
+
+    def test_leader_only_reports_api_key_and_deploy_key(self) -> None:
+        extra = (
+            "[[llm]]\nprovider = 'openai'\napi_key_env = 'TEST_OPENAI_KEY'\n"
+            "[[image]]\nprovider = 'dalle'\napi_key_env = 'TEST_DALLE_KEY'\n"
+        )
+        leader = self._init_leader(extra)
+
+        result = execute_release_secrets_check(leader)
+        self.assertEqual(result.leader_slug, leader.name)
+        self.assertEqual(result.project_slugs, [leader.name])
+
+        names = {s.name for s in result.secrets}
+        self.assertIn("TEST_OPENAI_KEY", names)
+        self.assertIn("TEST_DALLE_KEY", names)
+        leader_key_var = f"GIT_REPO_DEPLOY_KEY_{leader.name.upper().replace('-', '_')}"
+        self.assertIn(leader_key_var, names)
+        self.assertIn("FLY_API_TOKEN", names)
+
+    def test_api_key_env_status_reflects_local_env(self) -> None:
+        extra = "[[llm]]\nprovider = 'openai'\napi_key_env = 'TEST_OPENAI_KEY'\n"
+        leader = self._init_leader(extra)
+        os.environ["TEST_OPENAI_KEY"] = "sk-set"
+
+        result = execute_release_secrets_check(leader)
+        api_key_req = [s for s in result.secrets if s.name == "TEST_OPENAI_KEY"]
+        self.assertEqual(len(api_key_req), 1)
+        self.assertTrue(api_key_req[0].set_in_env)
+
+    def test_api_key_env_shows_unset_when_not_in_env(self) -> None:
+        extra = "[[llm]]\nprovider = 'openai'\napi_key_env = 'TEST_UNSET_KEY'\n"
+        leader = self._init_leader(extra)
+
+        result = execute_release_secrets_check(leader)
+        api_key_req = [s for s in result.secrets if s.name == "TEST_UNSET_KEY"]
+        self.assertEqual(len(api_key_req), 1)
+        self.assertFalse(api_key_req[0].set_in_env)
+
+    def test_dataset_repo_deploy_key_appears(self) -> None:
+        extra = (
+            "[[dataset_repo]]\nname = 'lens-dnd'\ngit_url = 'https://github.com/org/lens-dnd.git'\n"
+        )
+        leader = self._init_leader(extra)
+
+        result = execute_release_secrets_check(leader)
+        ds_key_var = "DATASET_REPO_DEPLOY_KEY_LENS_DND"
+        ds_keys = [s for s in result.secrets if s.name == ds_key_var]
+        self.assertEqual(len(ds_keys), 1)
+        self.assertEqual(ds_keys[0].source, "dataset_repo: lens-dnd")
+
+    def test_dependent_project_keys_and_api_keys(self) -> None:
+        leader = self._init_leader()
+        dep_name = "my-other-app"
+        dep_remote = self._init_dependent_bare(dep_name)
+
+        leader_raw = tomllib.loads((leader / "lens.toml").read_text())
+        leader_raw.setdefault("dependent_project", []).append({
+            "name": dep_name,
+            "git_url": str(dep_remote),
+            "ref": "main",
+        })
+        with (leader / "lens.toml").open("wb") as f:
+            import tomli_w
+            tomli_w.dump(leader_raw, f)
+        subprocess.run(
+            ["git", "add", "lens.toml"], cwd=leader, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "add dependent_project"],
+            cwd=leader, check=True, capture_output=True,
+        )
+        subprocess.run(["git", "push"], cwd=leader, check=True, capture_output=True)
+
+        result = execute_release_secrets_check(leader)
+
+        # Dependent's API key from its lens.toml should appear
+        dep_api = [s for s in result.secrets if s.name == "DEPENDENT_OPENAI_KEY"]
+        self.assertEqual(len(dep_api), 1)
+        self.assertIn("my-other-app", dep_api[0].source)
+
+        # Dependent's deploy key should appear
+        dep_key_var = f"GIT_REPO_DEPLOY_KEY_{dep_name.upper().replace('-', '_')}"
+        dep_key = [s for s in result.secrets if s.name == dep_key_var]
+        self.assertEqual(len(dep_key), 1)
+
+        # Project slugs should include both
+        self.assertIn(leader.name, result.project_slugs)
+        self.assertIn(dep_name, result.project_slugs)
+
+    def test_fly_app_read_from_fly_toml(self) -> None:
+        extra = "[[llm]]\nprovider = 'openai'\napi_key_env = 'TEST_KEY'\n"
+        leader = self._init_leader(extra)
+        (leader / "fly.toml").write_text('app = "my-fly-app"\n')
+
+        result = execute_release_secrets_check(leader)
+        self.assertEqual(result.fly_app, "my-fly-app")

@@ -5,19 +5,20 @@ set -euo pipefail
 #
 # Usage: release.sh --since <commit> --fly-app <name>
 #
-# Prerequisites (CI secrets / env vars):
-#   FLY_API_TOKEN                                  required — flyctl deploy auth
-#   DEPENDENT_PROJECT_DEPLOY_KEY_<NAME>            optional, per [[dependent_project]]
-#   DATASET_REPO_DEPLOY_KEY_<NAME>                 optional, per [[dataset_repo]]
-#   Any api_key_env from [[llm]] / [[image]] / [[speech]]  optional
+# Prerequisites (CI secrets / env vars — all required, checked every run):
+#   FLY_API_TOKEN                                  flyctl deploy auth
+#   GIT_REPO_DEPLOY_KEY_<LEADER_SLUG>              leader project clone at boot
+#   GIT_REPO_DEPLOY_KEY_<DEPENDENT_NAME>           per [[dependent_project]]
+#   DATASET_REPO_DEPLOY_KEY_<NAME>                 per [[dataset_repo]]
+#   Any api_key_env from [[llm]] / [[image]] / [[speech]]
 #
 # Steps:
-#   1. lens release check --since <SHA> --json  →  decide apply or none
-#   2. lens release secrets sync                →  discover topology, sync Fly secrets
-#   3. lens release apply --to <tag> --json      →  build params
-#   4. flyctl deploy --build-arg LENS_VERSION=<tag>
+#   1. release_secrets.py check --json   →  blocking pre-flight (every commit)
+#   2. lens release check --since <SHA> --json  →  decide apply or none
+#   3. release_secrets.py sync             →  discover topology, sync Fly secrets
+#   4. lens release apply --to <tag> --json      →  build params
+#   5. flyctl deploy --build-arg LENS_VERSION=<tag>
 #
-# Design docs/release-system.md Phase 4 for full architecture.
 
 SINCE=""
 FLY_APP=""
@@ -49,7 +50,23 @@ if [ -z "$FLY_APP" ]; then
   exit 1
 fi
 
-# Step 1 — check
+# Step 1 — pre-flight secrets check (every commit, fail fast on drift)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "$SCRIPT_DIR/release_secrets.py" check --json | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+missing_env = [s['name'] for s in data.get('secrets', []) if not s['set_in_env']]
+if missing_env:
+    print('release.sh: FATAL — the following secrets are not set in CI environment:')
+    for n in missing_env:
+        print(f'  {n}')
+    print('release.sh: set them as CI env vars and retry.')
+    sys.exit(1)
+else:
+    print('release.sh: all secrets present in environment')
+"
+
+# Step 2 — check
 CHECK=$(lens release check --since "$SINCE" --json)
 ACTION=$(echo "$CHECK" | sed -n '1p' | python3 -c \
   "import sys,json; print(json.load(sys.stdin).get('action','none'))")
@@ -63,17 +80,17 @@ fi
 
 echo "release.sh: deploying $TARGET"
 
-# Step 2 — topology discovery and secret sync
+# Step 3 — topology discovery and secret sync
 # Reads [[dependent_project]] from the leader's lens.toml, clones each
 # sibling to collect API keys and dataset references, then calls
 # fly secrets set for every secret that has a CI env var available.
 # Secrets without a CI env var are left unchanged (additive only).
-lens release secrets sync --fly-app "$FLY_APP"
+python3 "$SCRIPT_DIR/release_secrets.py" sync --fly-app "$FLY_APP"
 
-# Step 3 — build params
+# Step 4 — build params
 lens release apply --to "$TARGET" --json
 
-# Step 4 — deploy
+# Step 5 — deploy
 # On failure the flyctl error output (missing secret, build timeout, image
 # issue, infra error) is captured in CI logs.  The exit code propagates and
 # fails the pipeline step — no automated retry or webhook.

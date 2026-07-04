@@ -89,7 +89,7 @@ def compute_release_status(project_root: Path) -> ReleaseStatus:
 
     # Separately, and only when there's an actual local Lens repo checkout
     # to compute from (desktop dev, not a deployed container), surface what
-    # `lens deploy push` would bake LENS_VERSION to right now (decision #7).
+    # `lens deploy push` would bake LENS_VERSION to right now.
     # This is informational/local-sanity-check data, distinct from
     # "installed" — a pending build target, not a deployed fact.
     # Only computed when LENS_VERSION is unset (we're on a desktop, not in

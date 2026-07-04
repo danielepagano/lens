@@ -17,6 +17,7 @@ from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
     execute_release_clear,
+    execute_release_secrets_check,
     execute_release_secrets_sync,
     resolve_release_project_root,
 )
@@ -170,3 +171,94 @@ def secrets_sync(
         "secrets_set": str(result.secrets_set),
     }
     _print_json(payload, result.summary, use_json=json_output)
+
+
+@secrets_app.command(name="check")
+def secrets_check(
+    *,
+    check_fly: bool = typer.Option(False, "--fly", help="Check which secrets are already set on Fly app"),
+    json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
+) -> None:
+    """List every secret the release system needs and its status.
+
+    Scans the project's ``lens.toml``, discovers ``[[dependent_project]]``
+    topology, clones each dependent to read its API key config, then lists
+    every environment variable the release pipeline needs.
+
+    With ``--fly``, also checks which secrets are already set on the Fly app
+    (requires ``fly.toml`` in the project root and ``fly`` CLI on PATH).
+    """
+    try:
+        project_root = resolve_release_project_root(Path.cwd())
+    except (RuntimeError, LensException) as exc:
+        typer.echo(f"lens release secrets check: {exc}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        result = execute_release_secrets_check(project_root, check_fly=check_fly)
+    except LensException as exc:
+        typer.echo(f"lens release secrets check: {exc}", err=True)
+        raise typer.Exit(1)
+
+    if json_output:
+        payload: dict[str, object] = {
+            "leader_slug": result.leader_slug,
+            "fly_app": result.fly_app,
+            "project_slugs": result.project_slugs,
+            "secrets": [
+                {
+                    "name": s.name,
+                    "source": s.source,
+                    "set_in_env": s.set_in_env,
+                    "set_on_fly": s.set_on_fly,
+                }
+                for s in result.secrets
+            ],
+        }
+        typer.echo(json.dumps(payload))
+        return
+
+    # Human-readable output
+    typer.echo(f"Release secrets check for app: {result.fly_app or '(unknown)'}")
+    typer.echo()
+    typer.echo(f"  Leader:     {result.leader_slug}")
+    if result.dependent_projects:
+        dep_names = ", ".join(d.name for d in result.dependent_projects)
+        typer.echo(f"  Dependents: {dep_names}")
+    else:
+        typer.echo("  Dependents: (none)")
+    if result.dataset_repos:
+        ds_names = ", ".join(r.name for r in result.dataset_repos)
+        typer.echo(f"  Datasets:   {ds_names}")
+    else:
+        typer.echo("  Datasets:   (none)")
+
+    typer.echo()
+    typer.echo(f"  {'NAME':<45} {'SOURCE':<30} {'ENV':<5} {'FLY':<5}")
+    typer.echo(f"  {'─'*44}  {'─'*28}  {'─'*3}  {'─'*3}")
+
+    env_count = 0
+    fly_ok = 0
+    fly_total = 0
+    for s in result.secrets:
+        env_sym = "✓" if s.set_in_env else "✗"
+        if s.set_in_env:
+            env_count += 1
+        fly_sym = "✓" if s.set_on_fly else "✗" if s.set_on_fly is False else "—"
+        if s.set_on_fly is not None:
+            fly_total += 1
+            if s.set_on_fly:
+                fly_ok += 1
+        name = s.name
+        source = s.source
+        typer.echo(f"  {name:<45} {source:<30} {env_sym:<5} {fly_sym:<5}")
+
+    typer.echo()
+    typer.echo(
+        f"  {env_count}/{len(result.secrets)} secrets set in environment",
+    )
+    if fly_total:
+        typer.echo(f"  {fly_ok}/{fly_total} checkable secrets set on Fly")
+    if not check_fly:
+        typer.echo()
+        typer.echo("  Tip: pass --fly to also check which secrets are set on the Fly app.")
