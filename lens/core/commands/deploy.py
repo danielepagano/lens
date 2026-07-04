@@ -244,28 +244,117 @@ def _validate_project_for_deploy(slug: str, project_root: Path, git_root: Path) 
     return remote_url
 
 
+def _resolve_project_root_for_slug(deploy_dir: Path, slug: str) -> Path:
+    """Resolve a single project's root directory for *slug* relative to ``deploy_dir``.
+
+    Tries, in order:
+
+    1. ``deploy_dir`` itself, when its directory name is *slug* and it has its
+       own ``lens.toml`` — single-project mode, or the release leader's own
+       slug in the leader-colocated multi-project topology (fly.toml lives
+       inside the leader's project directory; see "Multi-project deployments"
+       in ``deploy/README.md``).
+    2. ``deploy_dir / slug`` — the classic multi-project topology, where
+       ``fly.toml`` lives in a bare parent-of-projects directory and every
+       project is an immediate child of it.
+    3. ``deploy_dir.parent / slug`` — sibling ("cousin") resolution for the
+       leader-colocated topology: other served projects live alongside the
+       leader, not underneath it.
+
+    Raises :class:`LensException` if none of these has a ``lens.toml``.
+    """
+    if deploy_dir.name == slug and (deploy_dir / "lens.toml").exists():
+        return deploy_dir
+
+    child = deploy_dir / slug
+    if (child / "lens.toml").exists():
+        return child
+
+    cousin = deploy_dir.parent / slug
+    if (cousin / "lens.toml").exists():
+        return cousin
+
+    raise LensException(
+        f"project '{slug}': no lens.toml found at {child} or {cousin}"
+    )
+
+
 def build_projects(deploy_dir: Path, slugs: list[str]) -> list[tuple[str, Path, Path]]:
     """Return ``[(slug, git_root, project_root), ...]`` for the given slugs.
 
-    When ``deploy_dir`` itself contains ``lens.toml`` (single-project: fly.toml
-    lives inside the project directory), the project root is ``deploy_dir``
-    regardless of the slug.  Otherwise (multi-project: fly.toml in a parent
-    directory) each project root is ``deploy_dir / slug``.
+    Each slug's project root is resolved via
+    :func:`_resolve_project_root_for_slug`, which supports both the bare
+    parent-of-projects ``fly.toml`` topology and the leader-colocated
+    topology (fly.toml inside the release leader's own project directory,
+    siblings resolved as ``deploy_dir.parent / slug``).
     """
     from lens.core.project import find_git_root_from
 
-    is_single = (deploy_dir / "lens.toml").exists()
     projects: list[tuple[str, Path, Path]] = []
     for slug in slugs:
-        project_root = deploy_dir if is_single else deploy_dir / slug
-        if not (project_root / "lens.toml").exists():
-            raise LensException(f"project '{slug}': no lens.toml found at {project_root}")
+        project_root = _resolve_project_root_for_slug(deploy_dir, slug)
         try:
             git_root = find_git_root_from(project_root)
         except RuntimeError as exc:
             raise LensException(f"project '{slug}': {exc}") from exc
         projects.append((slug, git_root, project_root))
     return projects
+
+
+def find_colocated_fly_toml(start: Path) -> Path | None:
+    """Return the ``fly.toml`` path in an immediate child of *start*, if any.
+
+    Supports the leader-colocated multi-project topology, where ``fly.toml``
+    lives inside one served project's own directory (the release leader)
+    instead of a separate bare parent-of-projects directory — see
+    "Multi-project deployments" in ``deploy/README.md``. Scans one level
+    deep only, matching the same convention as
+    :func:`lens.core.project.discover_projects`. Returns ``None`` if *start*
+    is not a directory or no child qualifies.
+    """
+    if not start.is_dir():
+        return None
+    for child in sorted(start.iterdir()):
+        if child.is_dir() and (child / "lens.toml").exists() and (child / "fly.toml").exists():
+            return child / "fly.toml"
+    return None
+
+
+def resolve_deploy_dir(cwd: Path) -> Path:
+    """Resolve the directory ``lens deploy push``/``add``/``remove`` should act on.
+
+    Tries, in order:
+
+    1. *cwd* itself has ``fly.toml`` — the bare parent-of-projects directory,
+       or a single-project / leader-project directory that colocates
+       ``fly.toml`` with its own ``lens.toml``.
+    2. *cwd* is inside a project (``lens.toml`` at *cwd* or an ancestor) whose
+       root also has ``fly.toml`` — running from a subdirectory of a
+       single-project deployment.
+    3. An immediate child of *cwd* colocates ``lens.toml`` + ``fly.toml`` —
+       running from the grandparent directory of a leader-colocated
+       multi-project deployment.
+
+    Raises :class:`LensException` if none apply.
+    """
+    cwd = cwd.resolve()
+    if (cwd / "fly.toml").exists():
+        return cwd
+
+    from lens.core.project import find_project_root_if_any
+
+    project_root = find_project_root_if_any(cwd)
+    if project_root is not None and (project_root / "fly.toml").exists():
+        return project_root
+
+    fly_toml = find_colocated_fly_toml(cwd)
+    if fly_toml is not None:
+        return fly_toml.parent
+
+    raise LensException(
+        "no fly.toml found at this directory, an ancestor project, or an "
+        "immediate leader-project subdirectory — run 'lens deploy init' first"
+    )
 
 
 def collect_dataset_repo_deploy_key_secrets(
@@ -410,7 +499,7 @@ def _fly_deploy(
         raise LensException("fly deploy failed")
 
 
-def _validate_release_topology(projects: list[tuple[str, Path, Path]]) -> None:
+def _validate_release_topology(projects: list[tuple[str, Path, Path]]) -> Path | None:
     """Cross-project ``[release]``/``[[dataset_repo]]`` consistency check.
 
     *projects* is ``[(slug, git_root, project_root), ...]``. No-op for a
@@ -419,16 +508,23 @@ def _validate_release_topology(projects: list[tuple[str, Path, Path]]) -> None:
     one project claims ``app_leader`` (or none do while more than one has
     ``[release]`` enabled), or when sibling projects declare conflicting
     ``[[dataset_repo]]`` entries for the same name.
+
+    Returns the release leader's project root when exactly one project sets
+    ``[release] app_leader = true`` (``None`` for a single project, or a
+    multi-project deployment with no designated leader).
     """
     if len(projects) <= 1:
-        return
+        return None
     project_configs: list[tuple[str, ReleaseConfig, list[DatasetRepoConfig]]] = []
+    leader_root: Path | None = None
     for slug, _git_root, project_root in projects:
         raw = read_lens_toml(project_root)
-        project_configs.append(
-            (slug, parse_release_config(raw), parse_dataset_repo_configs(raw))
-        )
+        cfg = parse_release_config(raw)
+        project_configs.append((slug, cfg, parse_dataset_repo_configs(raw)))
+        if cfg.app_leader:
+            leader_root = project_root
     validate_deploy_topology(project_configs)
+    return leader_root
 
 
 def init_deploy(
@@ -438,16 +534,24 @@ def init_deploy(
     username: str,
     password: str,
     deploy_keys: dict[str, Path],
-) -> None:
+) -> Path:
     """Create Fly app, volume, set secrets, and generate fly.toml.
 
     Works for both single-project (one slug, ``deploy_dir`` is the project dir)
     and multi-project (multiple slugs, ``deploy_dir`` is the parent dir).
     *deploy_keys* maps slug → path to SSH deploy key.
+
+    When a multi-project deployment designates a release leader
+    (``[release] app_leader = true`` on exactly one of the given projects),
+    ``fly.toml`` is written inside that leader's project directory instead
+    of ``deploy_dir`` — the leader-colocated topology (see "Multi-project
+    deployments" in ``deploy/README.md``), letting the leader's own git repo
+    track and version the deployment config. Returns the path to the
+    generated ``fly.toml``.
     """
     slugs = list(deploy_keys.keys())
     projects = build_projects(deploy_dir, slugs)
-    _validate_release_topology(projects)
+    leader_root = _validate_release_topology(projects)
 
     remote_urls: dict[str, str] = {}
     s3_buckets: list[str] = []
@@ -470,7 +574,8 @@ def init_deploy(
 
     secrets = _collect_secrets(projects, deploy_keys, username, password, remote_urls)
 
-    fly_toml = deploy_dir / "fly.toml"
+    fly_toml_dir = leader_root if leader_root is not None else deploy_dir
+    fly_toml = fly_toml_dir / "fly.toml"
     fly_toml.write_text(
         _FLY_TOML_TEMPLATE.format(
             app_name=app_name,
@@ -489,6 +594,7 @@ def init_deploy(
     ])
     secret_args = [f"{k}={v}" for k, v in secrets.items()]
     _run(["fly", "secrets", "set", "--app", app_name] + secret_args)
+    return fly_toml
 
 
 def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
@@ -507,9 +613,7 @@ def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
 
     from lens.core.project import find_git_root_from
 
-    project_root = deploy_dir / slug
-    if not (project_root / "lens.toml").exists():
-        raise LensException(f"project '{slug}': no lens.toml found at {project_root}")
+    project_root = _resolve_project_root_for_slug(deploy_dir, slug)
     try:
         git_root = find_git_root_from(project_root)
     except RuntimeError as exc:
@@ -577,10 +681,11 @@ def push_deploy(
 ) -> None:
     """Deploy (or redeploy) the Lens application to Fly.io.
 
-    *deploy_dir* is the directory containing ``fly.toml`` — either the
-    project directory itself (single-project) or the parent directory
-    (multi-project).  External datasets from all projects are bundled
-    into the Docker build context if needed.
+    *deploy_dir* is the directory containing ``fly.toml`` — the project
+    directory itself (single-project, or the release leader in the
+    leader-colocated multi-project topology) or a bare parent directory
+    (multi-project).  External datasets from all projects are bundled into
+    the Docker build context if needed.
 
     Refreshes Fly secrets for every ``api_key_env`` referenced in ``[[llm]]``,
     ``[[image]]``, and ``[[speech]]`` across all deployed projects (values read
@@ -592,7 +697,6 @@ def push_deploy(
     fly_toml = deploy_dir / "fly.toml"
     slugs = get_slugs(fly_toml)  # also validates fly.toml exists
     app_name = get_fly_app_name(fly_toml)
-    is_single = (deploy_dir / "lens.toml").exists()
 
     projects = build_projects(deploy_dir, slugs)
     _validate_release_topology(projects)
@@ -609,8 +713,7 @@ def push_deploy(
 
     seen_names: set[str] = set()
     all_external: list[tuple[str, Path]] = []
-    for slug in slugs:
-        project_root = deploy_dir if is_single else deploy_dir / slug
+    for _slug, _git_root, project_root in projects:
         for name, path in _resolve_external_datasets(project_root):
             if name not in seen_names:
                 seen_names.add(name)

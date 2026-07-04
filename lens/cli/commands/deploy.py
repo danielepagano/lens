@@ -24,6 +24,7 @@ from lens.core.commands.deploy import (
     init_deploy,
     push_deploy,
     remove_project,
+    resolve_deploy_dir,
 )
 from lens.core.exceptions import LensException
 
@@ -51,7 +52,11 @@ def init(
 
     Run from a project directory (lens.toml present) for single-project mode,
     or from a parent directory for multi-project mode (use slug=path for each
-    --deploy-key to select which projects to deploy).
+    --deploy-key to select which projects to deploy). In multi-project mode,
+    if exactly one selected project sets [release] app_leader = true,
+    fly.toml is written inside that leader's own project directory instead
+    of the parent directory, so it's tracked by the leader's git repo (see
+    "Multi-project deployments" in deploy/README.md).
     """
     cwd = Path.cwd()
     is_single = (cwd / "lens.toml").exists()
@@ -72,7 +77,7 @@ def init(
 
             project_root = find_project_root()
             slug = project_root.name
-            init_deploy(
+            fly_toml = init_deploy(
                 deploy_dir=project_root,
                 app_name=app_name,
                 region=region,
@@ -81,7 +86,7 @@ def init(
                 deploy_keys={slug: Path(raw_key).expanduser()},
             )
             typer.echo(f"Created Fly app '{app_name}' in region '{region}'.")
-            typer.echo(f"Generated {project_root / 'fly.toml'}")
+            typer.echo(f"Generated {fly_toml}")
         else:
             # Multi-project: --deploy-key is slug=path, repeatable
             if not deploy_key:
@@ -100,7 +105,7 @@ def init(
                     raise LensException(f"empty slug in --deploy-key: {entry!r}")
                 parsed_keys[slug] = Path(raw_path.strip()).expanduser()
 
-            init_deploy(
+            fly_toml = init_deploy(
                 deploy_dir=cwd,
                 app_name=app_name,
                 region=region,
@@ -109,7 +114,7 @@ def init(
                 deploy_keys=parsed_keys,
             )
             typer.echo(f"Created Fly app '{app_name}' in region '{region}'.")
-            typer.echo(f"Generated {cwd / 'fly.toml'}")
+            typer.echo(f"Generated {fly_toml}")
 
         typer.echo("Next: lens deploy push")
     except RuntimeError as e:
@@ -131,16 +136,13 @@ def push(
     """Deploy (or redeploy) the Lens application image to Fly.io.
 
     Run from the directory containing fly.toml (the project directory for
-    single-project mode, or the parent directory for multi-project mode).
+    single-project mode or the leader-colocated multi-project mode), from
+    an ancestor project directory, or from the grandparent directory of a
+    leader-colocated multi-project deployment — fly.toml is located
+    automatically in all three cases.
     """
-    cwd = Path.cwd()
     try:
-        if (cwd / "fly.toml").exists():
-            deploy_dir = cwd
-        else:
-            # Walk up to find the project root (fly.toml should be there)
-            from lens.core.project import find_project_root
-            deploy_dir = find_project_root()
+        deploy_dir = resolve_deploy_dir(Path.cwd())
         push_deploy(deploy_dir, build_mode=mode)
     except RuntimeError as e:
         typer.echo(f"lens deploy push: {e}", err=True)
@@ -157,13 +159,15 @@ def add(
 ) -> None:
     """Add a project to an existing multi-project deployment.
 
-    Run from the parent directory that contains fly.toml and the project
-    subdirectory.  Updates fly.toml and sets the project's secrets on the
+    Run from the directory containing fly.toml (a bare parent directory, or
+    the release leader's own project directory in the leader-colocated
+    topology), or from the grandparent directory — fly.toml is located
+    automatically. Updates fly.toml and sets the project's secrets on the
     Fly app.  Run 'lens deploy push' afterwards to apply.
     """
     try:
         add_project(
-            deploy_dir=Path.cwd(),
+            deploy_dir=resolve_deploy_dir(Path.cwd()),
             slug=slug,
             deploy_key_path=deploy_key.expanduser(),
         )
@@ -183,12 +187,14 @@ def remove(
 ) -> None:
     """Remove a project from an existing multi-project deployment.
 
-    Run from the parent directory that contains fly.toml.  Updates fly.toml
-    and removes the project's secrets from the Fly app.  Run 'lens deploy push'
-    afterwards to apply.
+    Run from the directory containing fly.toml (a bare parent directory, or
+    the release leader's own project directory in the leader-colocated
+    topology), or from the grandparent directory — fly.toml is located
+    automatically.  Updates fly.toml and removes the project's secrets from
+    the Fly app.  Run 'lens deploy push' afterwards to apply.
     """
     try:
-        remove_project(deploy_dir=Path.cwd(), slug=slug)
+        remove_project(deploy_dir=resolve_deploy_dir(Path.cwd()), slug=slug)
         typer.echo(f"Removed '{slug}' from the deployment.")
         typer.echo("Run 'lens deploy push' to apply.")
     except RuntimeError as e:

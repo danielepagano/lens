@@ -490,12 +490,16 @@ Do not edit them manually.
 
 ### `app_leader` (multi-project deployments)
 
-When a single Fly app serves **multiple** project repos (the parent-of-projects
-`fly.toml` topology documented in `deploy/README.md`), exactly one project must
-be designated the release leader by setting `[release] app_leader = true`. That
-project's `lens.toml` becomes the single source of truth for the Lens version
-of the whole Fly app — its CI pipeline runs `lens release check`/`apply`, and
-every served project's UI reads/writes the leader's state transparently.
+When a single Fly app serves **multiple** project repos, exactly one project
+must be designated the release leader by setting `[release] app_leader =
+true`. That project's `lens.toml` becomes the single source of truth for the
+Lens version of the whole Fly app — its CI pipeline runs `lens release
+check`/`apply`, and every served project's UI reads/writes the leader's
+state transparently. Setting `app_leader = true` also moves where `lens
+deploy init` writes `fly.toml` — see [Multi-project
+deployments](../deploy/README.md#multi-project-deployments) in
+`deploy/README.md` for both supported directory layouts and how deploy/dev
+commands locate them.
 
 - **Single-project apps** trivially have one leader; `app_leader` is ignored.
 - No automatic election or failover — if the leader project is ever removed

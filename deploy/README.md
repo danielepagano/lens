@@ -64,7 +64,7 @@ lens deploy init \
 
 The `slug=path` pairs in `--deploy-key` select which projects to include — no directory scanning. You will be prompted for the Basic Auth password in both cases.
 
-If you also use the release/auto-update system, note that a Fly app serving multiple projects has only **one** deployed Lens version shared by all of them: exactly one project must be flagged `[release] app_leader = true` in its `lens.toml`, and only that project's `lens.toml`/CI governs upgrades for the whole app. `lens deploy init`/`add`/`push` validate this (and that sibling projects don't declare conflicting `[[dataset_repo]]` entries for the same name).
+If you also use the release/auto-update system, note that a Fly app serving multiple projects has only **one** deployed Lens version shared by all of them: exactly one project must be flagged `[release] app_leader = true` in its `lens.toml`, and only that project's `lens.toml`/CI governs upgrades for the whole app. `lens deploy init`/`add`/`push` validate this (and that sibling projects don't declare conflicting `[[dataset_repo]]` entries for the same name). See [Multi-project deployments](#multi-project-deployments) below for where `fly.toml` ends up and how commands find it.
 
 `init` will:
 1. Validate each project: SSH remote, S3-only mount (if any), same S3 bucket across all
@@ -100,6 +100,58 @@ Set by `lens deploy init` (not secrets):
 | `AWS_*` | S3 credentials, if any project uses an S3 mount |
 | `DATASET_REPO_DEPLOY_KEY_<NAME>` | SSH deploy key for a private ``[[dataset_repo]]`` (name uppercased, hyphens→underscores). E.g. a repo named ``lens-my-dataset`` uses env var ``DATASET_REPO_DEPLOY_KEY_LENS_MY_DATASET``. Optional in the desktop flow — external datasets are bundled into the Docker image, so the key is only needed for runtime ``/refresh`` updates. **Required** for private repos in a CI deploy where no local checkout exists to copy from. |
 
+## Multi-project deployments
+
+A Fly app serving several project repos needs exactly one `fly.toml`, and (if
+you use the release system) exactly one `[release] app_leader = true`
+project governing the shared Lens version. `fly.toml` can live in either of
+two places:
+
+1. **Bare parent directory** — `fly.toml` sits in a plain directory above the
+   project subdirectories (the directory itself has no `lens.toml`). This is
+   what `lens deploy init` generates by default when no project sets
+   `app_leader = true`.
+2. **Leader-colocated** — if exactly one of the projects passed to `lens
+   deploy init` sets `[release] app_leader = true`, `fly.toml` is generated
+   **inside that leader's own project directory** instead, so it's tracked
+   and versioned by the leader's own git repo (no bare, ungitted directory
+   holding your deployment config). Sibling projects stay where they are, as
+   siblings of the leader's directory — not nested under it.
+
+`lens deploy push` / `add` / `remove` (and `lens release check` / `apply`)
+locate `fly.toml` automatically, in this order, so the same commands work
+under either layout:
+
+1. The current directory itself has `fly.toml`.
+2. The current directory is inside a project (`lens.toml` at an ancestor)
+   whose root also has `fly.toml`.
+3. An immediate child of the current directory colocates `lens.toml` +
+   `fly.toml` — this is what lets you run these commands from the
+   **grandparent** directory (the folder containing the leader project and
+   its siblings) in the leader-colocated layout, exactly like you would from
+   the bare parent directory in layout 1.
+
+Example: `~/projects/` contains `campaign-a/` (the release leader, holding
+`campaign-a/fly.toml`) and `campaign-b/` (a sibling with no remote-tracking
+requirement beyond being listed in `LENS_PROJECT_SLUGS`). Running `lens dev`,
+`lens serve`, or `lens deploy push` from `~/projects/` works the same as
+running them from inside `campaign-a/` — commands resolve the deployment
+automatically either way. Sibling directories that aren't a Fly-tracked
+project at all (no `lens.toml`, or a `lens.toml` never passed to `lens deploy
+init`/`add`) are simply not part of `LENS_PROJECT_SLUGS` and are ignored by
+`deploy`/`release`, even though `lens dev`/`serve` will still serve them
+locally alongside the deployed ones.
+
+Only the leader's own CI needs deployment access: a `FLY_API_TOKEN` secret to
+run `flyctl deploy`, plus whatever git access it already has to check out its
+own repo (which now includes `fly.toml`). It does not need credentials for
+sibling project repos — those repos' `GIT_REPO_DEPLOY_KEY_<SLUG>` /
+`PROJECT_REPO_URL_<SLUG>` secrets are already set on the Fly app itself (via
+`lens deploy init`/`add` from the desktop), and the running container uses
+them directly to clone/refresh each project on the volume. Sibling repos'
+own CI, if any, should only call their project's `/refresh` endpoint — never
+`flyctl deploy` — since only one project may control the shared Lens version.
+
 ## Deploying
 
 Make sure all project repos are pushed to their remotes, then:
@@ -110,7 +162,7 @@ lens deploy push
 
 Optional: `lens deploy push --mode fly` (default, Fly builder without Depot), `--mode depot`, or `--mode local` (build image on this machine with Docker, then push).
 
-Run this from the same directory as `fly.toml`. **`push` re-syncs all LLM, image, and speech `api_key_env` secrets** from your current shell into the Fly app (then deploys), so you can add a new ``[[image]]`` or ``[[speech]]`` block, export the key locally, and run `lens deploy push` without re-running `init`.
+Run this from the directory containing `fly.toml`, from inside that project, or — in a multi-project deployment — from its parent directory; see [Multi-project deployments](#multi-project-deployments) for exactly how `fly.toml` is located. **`push` re-syncs all LLM, image, and speech `api_key_env` secrets** from your current shell into the Fly app (then deploys), so you can add a new ``[[image]]`` or ``[[speech]]`` block, export the key locally, and run `lens deploy push` without re-running `init`.
 
 `push` also re-syncs any `DATASET_REPO_DEPLOY_KEY_<NAME>` secrets from your current environment, so adding a new ``[[dataset_repo]]`` entry (or rotating a deploy key) only requires setting the env var locally and running `lens deploy push` — no need to re-run `init`.
 
@@ -118,7 +170,7 @@ On first boot, `start.sh` clones each repo onto the volume. On subsequent boots 
 
 ## Managing Projects
 
-To add a project to an existing deployment (run from the `fly.toml` directory):
+To add a project to an existing deployment (run from wherever `fly.toml` resolves — see [Multi-project deployments](#multi-project-deployments)):
 
 ```bash
 lens deploy add campaign-c --deploy-key ~/.ssh/key_c
@@ -207,7 +259,7 @@ fly certs add lens.example.com --app my-campaign
 | `deploy/Dockerfile` | Multi-stage build: Python + Node builder → slim runtime with git + Caddy |
 | `deploy/Caddyfile` | Caddy config: Basic Auth + reverse proxy with SSE-safe flushing |
 | `deploy/start.sh` | Container entrypoint: SSH setup, repo clone/update, starts Caddy + Lens |
-| `fly.toml` | Generated by `lens deploy init` in the project or parent directory |
+| `fly.toml` | Generated by `lens deploy init` — in the project directory (single-project), a bare parent directory, or the release leader's project directory (see [Multi-project deployments](#multi-project-deployments)) |
 
 ## Local Deploy (Caddy on your machine)
 

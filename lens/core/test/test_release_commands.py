@@ -497,6 +497,37 @@ class TestResolveReleaseProjectRoot(unittest.TestCase):
         with self.assertRaises(LensException):
             resolve_release_project_root(deploy_dir)
 
+    def test_colocated_leader_fly_toml_resolves_from_grandparent(self) -> None:
+        """fly.toml lives inside the leader's own project dir; running from
+        the grandparent (bare directory with no lens.toml/fly.toml of its
+        own) still resolves to the leader — see "Multi-project deployments"
+        in deploy/README.md."""
+        grandparent = self._tmp_path / f"deploy_{uuid.uuid4().hex}"
+        grandparent.mkdir()
+        leader_block = (
+            "[release]\n"
+            "enabled = true\n"
+            "app_leader = true\n"
+            'lens_repo_url = "https://example.com/lens.git"\n'
+        )
+        leader_root = _init_project_repo_at(grandparent / "a", leader_block)
+        _init_project_repo_at(grandparent / "b", "[project]\ndatasets = ['testing']\n")
+        _write_fly_toml(leader_root, ["a", "b"])
+
+        result = resolve_release_project_root(grandparent)
+        self.assertEqual(result, leader_root)
+
+    def test_colocated_leader_fly_toml_resolves_from_leader_itself(self) -> None:
+        grandparent = self._tmp_path / f"deploy_{uuid.uuid4().hex}"
+        grandparent.mkdir()
+        leader_block = "[release]\nenabled = true\napp_leader = true\n"
+        leader_root = _init_project_repo_at(grandparent / "a", leader_block)
+        _init_project_repo_at(grandparent / "b", "[project]\ndatasets = ['testing']\n")
+        _write_fly_toml(leader_root, ["a", "b"])
+
+        result = resolve_release_project_root(leader_root)
+        self.assertEqual(result, leader_root.resolve())
+
     def test_no_lens_toml_no_fly_toml_raises_runtime_error(self) -> None:
         empty_dir = self._tmp_path / f"empty_{uuid.uuid4().hex}"
         empty_dir.mkdir()

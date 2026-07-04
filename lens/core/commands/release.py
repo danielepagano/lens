@@ -52,9 +52,12 @@ def resolve_release_project_root(cwd: Path) -> Path:
       This covers single-project Fly apps (``fly.toml`` lives alongside
       ``lens.toml``) as well as running from inside one sibling project of a
       multi-project app.
-    - **At a multi-project deploy directory** (a parent-of-projects
-      ``fly.toml`` with no sibling ``lens.toml`` — see ``deploy/README.md``):
-      resolves to whichever served project is the release leader
+    - **At a multi-project deploy directory** — either a bare
+      parent-of-projects directory holding ``fly.toml`` directly (no
+      sibling ``lens.toml``), or its grandparent when ``fly.toml`` is
+      colocated inside the release leader's own project directory (see
+      "Multi-project deployments" in ``deploy/README.md``): resolves to
+      whichever served project is the release leader
       (``[release] app_leader = true``), after validating the deploy
       topology (:func:`validate_deploy_topology`: exactly one leader, no
       conflicting ``[[dataset_repo]]`` declarations across siblings).
@@ -64,15 +67,21 @@ def resolve_release_project_root(cwd: Path) -> Path:
     ``LensException`` (multi-project topology present but invalid, or no
     leader designated).
     """
-    from lens.core.commands.deploy import build_projects, get_slugs, read_lens_toml
+    from lens.core.commands.deploy import (
+        build_projects,
+        find_colocated_fly_toml,
+        get_slugs,
+        read_lens_toml,
+    )
     from lens.core.project import find_project_root, find_project_root_if_any
 
     project_root = find_project_root_if_any(cwd)
     if project_root is not None:
         return project_root
 
-    fly_toml = cwd / "fly.toml"
-    if not fly_toml.exists():
+    direct_fly_toml = cwd / "fly.toml"
+    fly_toml = direct_fly_toml if direct_fly_toml.exists() else find_colocated_fly_toml(cwd)
+    if fly_toml is None:
         # Neither a project nor a deploy directory — raise the standard,
         # already-clear "no lens.toml found" error rather than a
         # git-specific one.
@@ -82,7 +91,7 @@ def resolve_release_project_root(cwd: Path) -> Path:
     if not slugs:
         raise LensException(f"{fly_toml} has no project slugs (LENS_PROJECT_SLUGS is empty)")
 
-    projects = build_projects(cwd, slugs)
+    projects = build_projects(fly_toml.parent, slugs)
     project_configs: list[tuple[str, ReleaseConfig, list[DatasetRepoConfig]]] = []
     leader_root: Path | None = None
     for slug, _git_root, proj_root in projects:
