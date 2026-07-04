@@ -80,8 +80,6 @@ class StatsResult:
     release_requested_from_commit: str = ""
     release_app_leader: bool = False
     release_installed_version: str | None = None
-    release_local_checkout_version: str | None = None
-    release_latest_available: str | None = None
     release_dataset_repos: list[dict[str, str]] = field(default_factory=list[dict[str, str]])
 
 
@@ -228,8 +226,6 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     release_cfg = parse_release_config({})
     release_repos: list[dict[str, str]] = []
     release_installed_version: str | None = None
-    release_local_checkout_version: str | None = None
-    release_latest_available: str | None = None
     if not is_dataset:
         raw_config: dict[str, Any] = {}
         lens_toml = root / "lens.toml"
@@ -280,7 +276,5 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         release_requested_from_commit=release_cfg.requested_from_commit,
         release_app_leader=release_cfg.app_leader,
         release_installed_version=release_installed_version,
-        release_local_checkout_version=release_local_checkout_version,
-        release_latest_available=release_latest_available,
         release_dataset_repos=release_repos,
     )

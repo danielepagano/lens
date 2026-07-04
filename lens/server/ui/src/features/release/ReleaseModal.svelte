@@ -1,26 +1,32 @@
 <script lang="ts">
-  import { stats } from '../../stores/stats'
   import { releaseModalOpen } from '../../stores/ui'
-
+  import { releaseInfo } from '../../stores/release'
+  import { releaseClear, releaseRequest } from '../../services/api'
   let dialog: HTMLDialogElement | undefined
-  let error = $state<string | null>(null)
 
-  const rls = $derived($stats?.release)
-  const repoUrl = $derived(rls?.lens_repo_url ?? '')
-  const installedVersion = $derived(rls?.installed_version ?? '')
-  const latestAvailable = $derived(rls?.latest_available ?? '')
+  let updating = $state(false)
+  let updateError = $state('')
+  let clearing = $state(false)
+  let clearError = $state('')
 
-  function releaseUrl(ver: string): string {
-    const base = repoUrl.replace(/\.git$/, '')
-    return `${base}/releases/tag/${ver}`
-  }
+  const rls = $derived($releaseModalOpen ? $releaseInfo : null)
+  const installed = $derived(rls?.installed_version ?? null)
+  const latest = $derived(rls?.latest_available ?? null)
+  const requested = $derived(rls?.requested_version ?? '')
+  const hasPendingRequest = $derived(!!requested && !!installed && requested !== installed)
 
   $effect(() => {
     if (!dialog) return
+
     if ($releaseModalOpen) {
-      dialog.showModal()
-    } else {
-      if (dialog.open) dialog.close()
+      if (!dialog.open) {
+        dialog.showModal()
+      }
+      return
+    }
+
+    if (dialog.open) {
+      dialog.close()
     }
   })
 
@@ -31,53 +37,100 @@
   function handleBackdropClick(e: MouseEvent) {
     if (e.target === dialog) handleClose()
   }
+
+  async function handleUpdate() {
+    if (!latest) return
+    updating = true
+    updateError = ''
+    try {
+      const result = await releaseRequest(latest)
+      if (result.status === 'error') {
+        updateError = result.detail ?? 'Update request failed'
+      } else {
+        handleClose()
+      }
+    } catch (err) {
+      updateError = err instanceof Error ? err.message : String(err)
+    } finally {
+      updating = false
+    }
+  }
+
+  async function handleClear() {
+    clearing = true
+    clearError = ''
+    try {
+      const result = await releaseClear()
+      if (result.status === 'error') {
+        clearError = result.detail ?? 'Clear failed'
+      } else {
+        handleClose()
+      }
+    } catch (err) {
+      clearError = err instanceof Error ? err.message : String(err)
+    } finally {
+      clearing = false
+    }
+  }
+
+  const currentMsg = $derived(installed ? `v${installed.replace(/^v/, '')}` : '—')
+  const latestMsg = $derived(latest ? `v${latest.replace(/^v/, '')}` : '—')
+  const newerAvailable = $derived(!!installed && !!latest && latest !== installed)
 </script>
 
 <dialog
   bind:this={dialog}
+  class="release-dialog"
   onclose={handleClose}
   onclick={handleBackdropClick}
-  class="release-dialog"
 >
-  <article class="release-article">
-    <header class="release-header">
-      <strong>Release Update</strong>
-      <button type="button" class="release-close-btn" onclick={handleClose}>✕</button>
-    </header>
-
-    {#if !rls || !rls.enabled}
-      <p>Release system is not enabled.</p>
-    {:else}
-      <div class="release-info">
-        <span class="release-label">Installed version</span>
-        <span class="release-value">{installedVersion || '(desktop / unknown)'}</span>
-      </div>
-
-      {#if latestAvailable}
-        <div class="release-info">
-          <span class="release-label">Latest available</span>
-          <span class="release-value">{latestAvailable}</span>
+  {#if rls}
+    <article class="release-article">
+      <header class="release-header">
+        <strong>Release Update</strong>
+        <button type="button" class="release-close" onclick={handleClose}>✕</button>
+      </header>
+      <div class="release-body">
+        <div class="release-row">
+          <span class="release-label">Current version</span>
+          <span class="release-value">{currentMsg}</span>
         </div>
-      {/if}
+        <div class="release-row">
+          <span class="release-label">Latest available</span>
+          <span class="release-value">{latestMsg}</span>
+        </div>
 
-      {#if latestAvailable && latestAvailable !== installedVersion}
-        <p class="release-upgrade-msg">
-          <a href={releaseUrl(latestAvailable)} target="_blank" rel="noopener noreferrer">
-            {latestAvailable} ↗
-          </a>
-          is available — deploy via CI to upgrade.
-        </p>
-      {/if}
-
-      {#if error}
-        <p class="release-error">{error}</p>
-      {/if}
-
-      <div class="release-actions">
-        <button type="button" class="release-btn release-close-action-btn" onclick={handleClose}>Close</button>
+        {#if hasPendingRequest}
+          <div class="release-pending">
+            Update to <strong>{requested}</strong> requested — will apply on next checkpoint
+          </div>
+          {#if clearError}
+            <div class="release-error">{clearError}</div>
+          {/if}
+          <button
+            class="release-clear-btn"
+            onclick={handleClear}
+            disabled={clearing}
+          >
+            {clearing ? 'Clearing…' : 'Clear update request'}
+          </button>
+        {:else if newerAvailable}
+          {#if updateError}
+            <div class="release-error">{updateError}</div>
+          {/if}
+          <button
+            class="release-update-btn"
+            onclick={handleUpdate}
+            disabled={updating}
+          >
+            {updating ? 'Requesting…' : `Update to ${latest}`}
+          </button>
+        {:else}
+          <div class="release-up-to-date">Lens is up to date</div>
+        {/if}
       </div>
-    {/if}
-  </article>
+    </article>
+  {/if}
 </dialog>
 
 <style>
@@ -85,112 +138,121 @@
     background: rgba(0, 0, 0, 0.7);
   }
 
-  .release-dialog {
-    max-width: 28rem;
-    width: 90vw;
-    border: none;
-    border-radius: 10px;
-    padding: 0;
-    background: var(--pico-card-background-color, #1a1a2e);
-    color: var(--pico-color, #ddd);
-    overflow: visible;
-  }
-
   .release-article {
-    padding: 1.2rem;
-    background: none;
-    box-shadow: none;
+    margin: 0;
+    flex-shrink: 0;
+    max-width: 420px;
+    width: min(90vw, 420px);
   }
 
   .release-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    flex-shrink: 0;
   }
 
-  .release-close-btn {
+  .release-close {
     background: none;
     border: none;
-    font-size: 1.2rem;
     cursor: pointer;
-    color: inherit;
-    padding: 0.2rem;
+    font-size: 1rem;
     line-height: 1;
+    padding: 0.25rem 0.5rem;
+    color: var(--pico-muted-color);
   }
 
-  .release-info {
+  .release-close:hover {
+    color: var(--pico-color);
+  }
+
+  .release-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .release-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.45rem 0;
-    border-bottom: 1px solid var(--pico-muted-border-color, #333);
     font-size: 0.9rem;
   }
 
   .release-label {
-    opacity: 0.7;
+    opacity: 0.75;
   }
 
   .release-value {
-    font-weight: 500;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
-  .release-actions {
-    display: flex;
-    gap: 0.6rem;
-    margin-top: 1.2rem;
-    flex-wrap: wrap;
-  }
-
-  .release-btn {
-    flex: 1;
-    min-width: 6rem;
-    padding: 0.5rem 0.8rem;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
+  .release-pending {
+    font-size: 0.82rem;
+    opacity: 0.85;
+    padding: 0.5rem 0.75rem;
+    background: rgba(241, 196, 15, 0.12);
+    border-radius: var(--pico-border-radius);
     text-align: center;
-    font-size: 0.9rem;
   }
 
-  .release-btn:disabled {
-    opacity: 0.5;
+  .release-update-btn {
+    padding: 0.5rem 1rem;
+    background: var(--pico-primary-background, #1e90ff);
+    color: var(--pico-primary-inverse, #fff);
+    border: none;
+    border-radius: var(--pico-border-radius);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .release-update-btn:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .release-update-btn:disabled {
+    opacity: 0.6;
     cursor: not-allowed;
   }
 
-  .release-close-action-btn {
+  .release-clear-btn {
+    padding: 0.5rem 1rem;
     background: transparent;
-    border: 1px solid var(--pico-muted-border-color, #555);
-    color: inherit;
-    flex: 0.6;
-    min-width: 5rem;
-    padding: 0.5rem 0.8rem;
-    border-radius: 6px;
+    color: var(--pico-del-color, #c0392b);
+    border: 1px solid var(--pico-del-color, #c0392b);
+    border-radius: var(--pico-border-radius);
     cursor: pointer;
+    font-size: 0.85rem;
     text-align: center;
-    font-size: 0.9rem;
+  }
+
+  .release-clear-btn:hover:not(:disabled) {
+    background: rgba(192, 57, 43, 0.08);
+  }
+
+  .release-clear-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .release-error {
-    color: var(--pico-del-color, #da3633);
+    font-size: 0.82rem;
+    color: var(--pico-del-color, #c0392b);
+    padding: 0.4rem 0.5rem;
+    background: rgba(192, 57, 43, 0.1);
+    border-radius: var(--pico-border-radius);
+  }
+
+  .release-up-to-date {
     font-size: 0.85rem;
-    margin-top: 0.6rem;
-  }
-
-  .release-upgrade-msg {
-    margin-top: 0.8rem;
-    font-size: 0.9rem;
-  }
-
-  .release-upgrade-msg a {
-    color: var(--pico-primary);
-    text-decoration: none;
-    font-weight: 600;
-  }
-
-  .release-upgrade-msg a:hover {
-    text-decoration: underline;
+    opacity: 0.7;
+    text-align: center;
+    padding: 0.5rem 0;
   }
 </style>

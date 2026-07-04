@@ -17,6 +17,7 @@ from pathlib import Path
 from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
+    execute_release_clear,
     execute_release_request,
     resolve_release_project_root,
 )
@@ -404,5 +405,76 @@ class TestExecuteReleaseRequest(unittest.TestCase):
         self.assertEqual(release["requested_version"], "v2.0.0")
         self.assertEqual(release["requested_from_commit"], result.requested_from_commit)
         # Existing fields are preserved
+        self.assertTrue(release["enabled"])
+        self.assertEqual(release["lens_repo_url"], "https://example.com/lens.git")
+
+
+class TestExecuteReleaseClear(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self._tmp_path = Path(self._tmp)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def _request(self, proj: Path, tag: str = "v1.1.0") -> str:
+        result = execute_release_request(proj, tag)
+        return result.requested_from_commit
+
+    def test_clears_both_fields(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        self._request(proj, "v2.0.0")
+
+        execute_release_clear(proj)
+
+        parsed = tomllib.loads((proj / "lens.toml").read_text())
+        release = parsed.get("release", {})
+        self.assertEqual(release.get("requested_version"), "")
+        self.assertEqual(release.get("requested_from_commit"), "")
+
+    def test_never_commits(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        self._request(proj)
+        before = _get_head_sha(proj)
+        execute_release_clear(proj)
+        after = _get_head_sha(proj)
+        self.assertEqual(before, after, "clear should not create a commit")
+
+    def test_clear_when_already_empty_is_noop(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            'lens_repo_url = "https://example.com/lens.git"\n'
+            "requested_version = \"\"\n"
+            "requested_from_commit = \"\"\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        before = _get_head_sha(proj)
+        result = execute_release_clear(proj)
+        after = _get_head_sha(proj)
+        self.assertEqual(before, after)
+        self.assertIn("nothing to clear", result.summary)
+
+    def test_clear_when_no_release_section_is_noop(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "")
+        before = _get_head_sha(proj)
+        result = execute_release_clear(proj)
+        after = _get_head_sha(proj)
+        self.assertEqual(before, after)
+        self.assertIn("no [release] section", result.summary)
+
+    def test_clear_preserves_other_release_fields(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            'lens_repo_url = "https://example.com/lens.git"\n'
+            'requested_version = "v1.0.0"\n'
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        execute_release_clear(proj)
+        parsed = tomllib.loads((proj / "lens.toml").read_text())
+        release = parsed["release"]
+        self.assertEqual(release["requested_version"], "")
+        self.assertEqual(release["requested_from_commit"], "")
         self.assertTrue(release["enabled"])
         self.assertEqual(release["lens_repo_url"], "https://example.com/lens.git")

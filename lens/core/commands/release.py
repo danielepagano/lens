@@ -13,7 +13,7 @@ import subprocess
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 import tomli_w
 
 from lens.core.exceptions import LensException
@@ -290,6 +290,48 @@ def execute_release_request(project_root: Path, target_version: str) -> ReleaseR
         requested_from_commit=head,
         summary=f"release request for {target} recorded (HEAD={head[:12]})",
     )
+
+
+@dataclass(frozen=True)
+class ReleaseClearResult:
+    summary: str
+
+
+def execute_release_clear(project_root: Path) -> ReleaseClearResult:
+    """Clear ``requested_version`` and ``requested_from_commit`` from ``lens.toml``.
+
+    This is the inverse of :func:`execute_release_request` — it allows a user
+    to cancel a pending deploy request.  Like ``request``, this is one
+    uncommitted write via ``Storage`` (no ``.commit()``, no
+    ``.push_or_raise()``).
+    """
+    from lens.core.storage import Storage
+
+    raw: dict[str, Any] = {}
+    lens_toml = project_root / "lens.toml"
+    if lens_toml.exists():
+        with lens_toml.open("rb") as f:
+            raw = tomllib.load(f)
+
+    release_section = raw.get("release")
+    if not isinstance(release_section, dict):
+        return ReleaseClearResult(summary="no [release] section to clear")
+    rs = cast("dict[str, Any]", release_section)
+
+    if not rs.get("requested_version") and not rs.get("requested_from_commit"):
+        return ReleaseClearResult(summary="nothing to clear — both fields already empty")
+
+    rs["requested_version"] = ""
+    rs["requested_from_commit"] = ""
+    raw["release"] = rs
+
+    buf = io.BytesIO()
+    tomli_w.dump(raw, buf)
+
+    storage = Storage(project_root, owner=None)
+    storage.write_file_bytes(lens_toml, buf.getvalue())
+
+    return ReleaseClearResult(summary="release request cleared")
 
 
 def _read_lens_toml(project_root: Path) -> dict[str, Any]:

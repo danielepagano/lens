@@ -474,7 +474,7 @@ app_leader            = false
 |-------|----------|---------|-------------|
 | `enabled` | No | `false` | Enable the release system for this project |
 | `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
-| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); set by the UI's **Update** button and never cleared automatically |
+| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); set by the UI's **Update** button and cleared via `POST /release/clear` or `lens release clear` |
 | `requested_from_commit` | No | `""` | Full commit hash that was `HEAD` when `requested_version` was requested; CI deploys only the next commit whose parent is this hash |
 | `app_leader` | No | `false` | Designate this project as the release leader in a multi-project Fly deployment |
 
@@ -656,7 +656,7 @@ lens check --skip-network
 | `prompt_pack` file exists | warn if missing |
 | Each `datasets` name has bundled dir | warn if missing |
 | Active `narrative` folder exists | warn if missing |
-| `[release]` configuration | ok / error | if present: `lens_repo_url` format, semver `requested_version` |
+| `[release]` configuration | ok / error | if present: `lens_repo_url` format, app_leader topology |
 | `[[dataset_repo]]` entries | error / warn | if present: valid `git_url`, `name` matches `[project] datasets` |
 
 Image and speech backends are not fully probed here; missing keys surface when you run `lens media`.

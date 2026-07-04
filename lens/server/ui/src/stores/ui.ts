@@ -145,9 +145,9 @@ export const kbDiffRequest = writable<KbDiffRequest | null>(null)
 /** Guide key to show in the CLI guide modal. Null = modal closed. */
 export const guideModalCommand = writable<string | null>(null)
 
-/** Non-null when the release notification modal should be open. */
-export const releaseModalOpen = writable(false)
-
 /** True when a CodeMirror editor has focus.  Used on mobile to hide the CLI
  *  bottom bar so the virtual keyboard doesn't waste screen space. */
 export const editorFocused = writable(false)
+
+/** Release modal open state. */
+export const releaseModalOpen = writable(false)

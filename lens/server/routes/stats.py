@@ -60,8 +60,6 @@ def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> 
             "app_leader": result.release_app_leader,
             "dataset_repos": result.release_dataset_repos,
             "installed_version": result.release_installed_version,
-            "local_checkout_version": result.release_local_checkout_version,
-            "latest_available": result.release_latest_available,
         } if result.dataset_name is None else None,
         "transaction": transaction,
     }

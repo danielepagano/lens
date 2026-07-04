@@ -109,3 +109,32 @@ def compute_release_status(project_root: Path) -> ReleaseStatus:
             status.remote_error = str(exc)
 
     return status
+
+
+def compute_latest_available(project_root: Path) -> str | None:
+    """Compute the latest available version tag from the remote repo.
+
+    Lightweight helper used by ``GET /release/latest`` and transaction
+    endpoints — does not need most of the fields that
+    :func:`compute_release_status` builds.  Returns ``None`` when release
+    is disabled, no remote URL is configured, or the network call fails.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return None
+
+    import tomllib
+
+    with lens_toml.open("rb") as f:
+        raw: dict[str, Any] = tomllib.load(f)
+
+    cfg = parse_release_config(raw)
+    if not cfg.enabled or not cfg.lens_repo_url:
+        return None
+
+    try:
+        tags = list_remote_tags(cfg.lens_repo_url)
+        latest = latest_overall(tags)
+        return latest.tag if latest is not None else None
+    except Exception:
+        return None

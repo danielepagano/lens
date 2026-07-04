@@ -16,6 +16,7 @@ from lens.cli.help_strings import (
 from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
+    execute_release_clear,
     resolve_release_project_root,
 )
 from lens.core.exceptions import LensException
@@ -98,4 +99,31 @@ def apply(
         "lens_repo_url": result.lens_repo_url,
         "tag": result.tag,
     }
+    _print_json(payload, result.summary, use_json=json_output)
+
+
+@app.command(name="clear")
+def clear_cmd(
+    *,
+    json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
+) -> None:
+    """Clear a pending release request.
+
+    Sets ``requested_version`` and ``requested_from_commit`` back to empty
+    strings in ``lens.toml`` (uncommitted).  This is the inverse of the
+    UI's *Update* action.
+    """
+    try:
+        project_root = resolve_release_project_root(Path.cwd())
+    except (RuntimeError, LensException) as exc:
+        typer.echo(f"lens release clear: {exc}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        result = execute_release_clear(project_root)
+    except LensException as exc:
+        typer.echo(f"lens release clear: {exc}", err=True)
+        raise typer.Exit(1)
+
+    payload: dict[str, str | None] = {"status": "ok"}
     _print_json(payload, result.summary, use_json=json_output)
