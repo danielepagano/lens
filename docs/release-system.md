@@ -273,7 +273,21 @@ app_leader            = false  # only relevant (and must be true on exactly one 
 name    = "lens-dnd"
 git_url = "git@gitlab.com:org/lens-dnd.git"
 ref     = "main"
+
+[[dependent_project]]
+name    = "campaign-b"
+git_url = "git@gitlab.com:org/campaign-b.git"
+ref     = "main"
 ```
+
+Only the release leader's project sets `app_leader = true` and declares
+`[[dependent_project]]` entries for sibling projects served by the same Fly
+app. Sibling repos contain their own `lens.toml` with their own datasets,
+API keys, and mounts — they do not duplicate `[release]` or
+`[[dependent_project]]`. The leader's CI uses this array to discover the
+full topology at deploy time: it clones each sibling, reads their
+``lens.toml`` to collect API key env vars and dataset-repo references, then
+pushes the necessary Fly secrets before deploying the shared image.
 
 `installed_version` and `latest_available_version` are **not** stored here —
 see decision #2. There is **no** `auto_update` field and **no**
@@ -555,65 +569,208 @@ decision #3 removed the need for any of them.
 
 **Difficulty: High**
 
-**Goal:** two ready-to-copy pipeline templates. Per decision #4, these are
-deliberately thin — no policy logic, no HTTP calls to the deployed app, no
-scheduler, and **CI never writes to git**. Net new; nothing on this branch
-touches CI yet.
+**Goal:** two ready-to-copy pipeline templates, plus a shared shell script
+that encapsulates all decision logic. Per decision #4, these are deliberately
+thin — no policy logic, no HTTP calls to the deployed app, no scheduler, and
+**CI never writes to git**. CI must be fully self-sufficient for adding a new
+sibling project, rotating a deploy key, or adding a dataset — no desktop
+`lens deploy push` required for routine topology changes.
 
-- `deploy/ci/github-release.yml` (template to copy into a project repo's
-  `.github/workflows/`): **triggers on `push` to the tracked branch only —
-  no schedule, no cron, ever** (decision #5). Checkout step needs enough
-  history to compute parent hashes — **do not use the default shallow
-  checkout**; fetch at least the commits introduced by this push plus one
-  more (e.g. `fetch-depth: 0` for simplicity, or a depth just past
-  `github.event.before`). Steps: checkout project repo, install `lens` (see
-  issue #56 for the version-pin bootstrap rule), run `lens release check
-  --json` — passing it the push's commit range (e.g.
-  `--since ${{ github.event.before }}` or equivalent, so it can check every
-  commit introduced by this push, not just the tip; **a push can carry more
-  than one new commit**, and the one whose parent matches
-  `requested_from_commit` might not be the tip — get this right, it's the
-  one real correctness subtlety in an otherwise trivial pipeline) — then
-  branch on `.action`:
-  - `apply`: checkout Lens repo at target tag into a build context, `flyctl
-    deploy` with `--build-arg LENS_VERSION=<tag>` (needs `FLY_API_TOKEN`
-    secret). **That's it — no further step.** Nothing is written back to
-    the project repo, committed, or pushed, on success or failure.
-  - `none`: no-op.
-  Also runs `curl -X POST https://<app>/<slug>/refresh` (Basic Auth
-  credential as a CI secret) as one more step of this **same** push-triggered
-  run, to drive dataset auto-update per decision #5 — not a separate schedule.
-- No concurrency group is required for correctness (decision #4 — there is
-  no shared mutable state to race on). Adding one anyway for ordinary CI
-  hygiene (avoid wasting parallel Fly build minutes if, rarely, two pushes
-  land close together) is a reasonable, optional addition — don't spend
-  design effort on it; a plain `concurrency: { group: release-<app> }`
-  (GitHub) / `resource_group: release-<app>` (GitLab) is enough if added at
-  all.
-- `deploy/ci/gitlab-release.yml`: identical steps/stages and the same
-  push-only trigger, GitLab CI syntax (`rules: - if: $CI_PIPELINE_SOURCE ==
-  "push"`, no `schedule` block at all), using `$CI_COMMIT_BEFORE_SHA`/
-  `$CI_COMMIT_SHA` for the equivalent commit-range check.
-- `deploy/README.md`: new "CI-driven deploy (no desktop)" section describing
-  prerequisites (which secrets go where, on GitHub vs GitLab), how this
-  relates to the existing desktop flow (either/or, not both against the same
-  Fly app), and a link to this design doc.
-- **Multi-project deploy (decision #8):** only the release *leader*
-  project's repo gets this pipeline wired up to actually run `lens release
-  apply` + `flyctl deploy` for the shared Fly app. Sibling project repos, if
-  they have CI at all, only trigger their own content `/refresh` — never the
-  Lens-version pipeline; document this explicitly as a setup instruction.
-  This works even when siblings live on entirely different hosts than the
-  leader, because the leader's CI never needs to know about them at all.
-- Tests: these are YAML templates, not Python — validate with a lint
-  (`actionlint` for the GitHub template if available) or, at minimum, keep
-  them out of `poe check`'s scope and cover the underlying CLI commands with
-  the Phase 1 tests instead. Add one e2e test that shells out the exact
-  command sequence a pipeline would run (not the YAML itself) against a
-  fixture project + fake upstream repo, **including a push that carries two
-  new commits at once, where only the first has `requested_from_commit` as
-  its parent**, asserting the deploy still fires correctly — this is
-  exactly the multi-commit-push edge case that's easy to get wrong.
+**Architecture: common script + provider-specific YAML wrappers.**
+
+All non-trivial logic lives in `deploy/ci/release.sh`, a single shell script
+shared by every CI system. The per-provider YAML files handle only:
+- Triggers (push event, branch filter)
+- The commit range variables unique to each CI system
+
+Secrets are read from CI env vars by `release.sh` — no per-secret wiring in
+the YAML templates beyond what the project's own CI configuration already
+does. Required: `FLY_API_TOKEN`. Optional: `DEPENDENT_PROJECT_DEPLOY_KEY_*`,
+`DATASET_REPO_DEPLOY_KEY_*`, and any `api_key_env` values from `lens.toml`.
+
+### Topology: `[[dependent_project]]`
+
+In a multi-project Fly app, the release leader's `lens.toml` declares sibling
+projects via a `[[dependent_project]]` array:
+
+```toml
+[[dependent_project]]
+name    = "campaign-b"
+git_url = "git@gitlab.com:org/campaign-b.git"
+ref     = "main"
+
+[[dependent_project]]
+name    = "campaign-c"
+git_url = "git@github.com:org/campaign-c.git"
+ref     = "main"
+```
+
+This is the single source of truth for topology — CI has no access to sibling
+directories on disk, so the leader's checked-out `lens.toml` is how CI
+discovers them. Adding a new sibling means: edit this array, commit, push →
+CI picks it up, no desktop command needed.
+
+### Secrets management
+
+At deploy time, `release.sh` discovers every secret the running app needs:
+
+1. **Project repo URLs and deploy keys** — one `PROJECT_REPO_URL_<SLUG>` and
+   `GIT_REPO_DEPLOY_KEY_<SLUG>` per slug (leader + dependents). URLs are
+   read from `[[dependent_project]]` entries (and the leader's own git
+   remote). Deploy keys come from CI env vars
+   `DEPENDENT_PROJECT_DEPLOY_KEY_<NAME>`.
+2. **Dataset repo deploy keys** — `DATASET_REPO_DEPLOY_KEY_<NAME>` for each
+   unique `[[dataset_repo]]` across all projects. Sourced from CI env vars.
+3. **API keys** — every `api_key_env` value from `[[llm]]`, `[[image]]`,
+   `[[speech]]` across all projects. Sourced from CI env vars
+   (e.g. `OPEN_ROUTER_API_KEY`).
+
+Each is pushed via `fly secrets set --app <name> KEY=VAL ...` **only when
+the CI env var is set**. If a secret already exists on Fly (set by a previous
+desktop `lens deploy push`) and CI has no value for it, it is **left
+unchanged** — never deleted or overwritten with empty. This means:
+
+- A new sibling added to `[[dependent_project]]` with a corresponding CI
+  secret → pushed to Fly automatically.
+- An existing sibling with no CI secret → its existing Fly secret is
+  preserved.
+- A desktop-only API key set via `lens deploy push` → untouched by CI.
+
+`LENS_PROJECT_SLUGS` is also computed (the leader slug + all dependent
+project names) and pushed as a Fly secret — `start.sh` reads it to know
+which repos to clone at boot.
+
+### `deploy/ci/release.sh` — shared script
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+# Common CI release logic — shared by all provider-specific pipeline wrappers.
+# Usage: release.sh --since <commit> --fly-app <name>
+#
+# Prerequisites:
+#   FLY_API_TOKEN         CI secret (required) — flyctl deploy auth
+#   DEPENDENT_PROJECT_DEPLOY_KEY_<NAME>  CI secret (optional, per dependent project)
+#   DATASET_REPO_DEPLOY_KEY_<NAME>       CI secret (optional, per dataset repo)
+#   Any api_key_env from lens.toml       CI secret (optional)
+#
+# Steps:
+#   1. lens release check  →  decide apply or none
+#   2. Clone each [[dependent_project]] to read lens.toml
+#   3. Collect all Fly secrets needed (project URLs, deploy keys, API keys)
+#   4. fly secrets set (additive — never deletes)
+#   5. lens release apply  →  build params
+#   6. flyctl deploy
+
+SINCE="" FLY_APP=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in --since) SINCE="$2"; shift ;; --fly-app) FLY_APP="$2"; shift ;;
+    *) echo "Unknown: $1" >&2; exit 1 ;; esac; shift
+done
+
+[ -n "$SINCE" ] || { echo "Missing --since" >&2; exit 1; }
+[ -n "$FLY_APP" ] || { echo "Missing --fly-app" >&2; exit 1; }
+
+# Step 1 — check
+CHECK=$(lens release check --since "$SINCE" --json)
+ACTION=$(echo "$CHECK" | head -1 | python3 -c \
+  "import sys,json; print(json.load(sys.stdin).get('action','none'))")
+TARGET=$(echo "$CHECK" | head -1 | python3 -c \
+  "import sys,json; print(json.load(sys.stdin).get('target','') or '')")
+
+if [ "$ACTION" != "apply" ]; then
+  echo "release.sh: no action ($ACTION)"
+  exit 0
+fi
+
+echo "release.sh: deploying $TARGET"
+
+# Step 2-4 — topology discovery and secret sync (handled by a Python helper
+# bundled with Lens).  Reads [[dependent_project]] from the leader's
+# lens.toml, clones each sibling, collects secrets from CI env, and calls
+# fly secrets set (additive only).
+lens release secrets sync --fly-app "$FLY_APP"
+
+# Step 5 — build params
+lens release apply --to "$TARGET" --json
+
+# Step 6 — deploy
+flyctl deploy --app "$FLY_APP" --build-arg LENS_VERSION="$TARGET" --remote-only
+```
+
+The topology/secrets logic lives in a dedicated `lens release secrets sync`
+CLI subcommand (Python) rather than inline bash, because:
+- It needs to parse TOML from multiple repos, clone git repos, and call `fly`
+  with structured arguments — all significantly cleaner in Python.
+- It's unit-testable.
+- The shell script stays a readable composition of high-level steps.
+
+`flyctl deploy` exit code and stderr are the deploy-failure signals — the
+pipeline step fails, the CI run goes red. Checking CI logs for the failure
+reason (missing `FLY_API_TOKEN`, build timeout, etc.) is the intended
+debugging workflow. No polling, no webhook, no write-back.
+
+### Pipeline templates
+
+- **`deploy/ci/github-release.yml`** — copy into `.github/workflows/` of the
+  release leader project. Triggers on `push` to the tracked branch only — no
+  schedule, no cron, ever (decision #5). Requires `fetch-depth: 0` for
+  parent-hash history:
+
+  ```yaml
+  name: Lens Release
+  on:
+    push:
+      branches: [main]
+  concurrency:
+    group: release-${{ vars.FLY_APP || 'lens' }}
+  jobs:
+    deploy:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - uses: actions/setup-python@v5
+          with:
+            python-version: "3.12"
+        - run: pip install lens
+        - run: bash deploy/ci/release.sh
+               --since ${{ github.event.before }}
+               --fly-app my-app
+          env:
+            FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  ```
+
+  Additional optional secrets (`DEPENDENT_PROJECT_DEPLOY_KEY_*`, API keys)
+  are added to the `env:` block as needed by the specific project.
+
+- **`deploy/ci/gitlab-release.yml`** — identical logic using GitLab CI
+  syntax (`rules: - if: $CI_PIPELINE_SOURCE == "push"`), `$CI_COMMIT_BEFORE_SHA`
+  for `--since`, same required/optional secrets as CI/CD variables.
+
+- **No `curl -X POST .../refresh` step.** Dataset repos are fast-forwarded
+  on every container boot by `deploy/start.sh` (decision #5), making a CI
+  step redundant. Adding one would require Basic Auth secrets in CI for no
+  benefit and violate the "CI never talks to the live app" design rule.
+
+- `deploy/README.md`: already updated as part of Phase 4 (the "CI-driven deploy"
+  section). Phase 5's final docs-polish pass should review it for consistency
+  with the new `[[dependent_project]]` and `lens release secrets sync` subcommand.
+
+- Tests: `release.sh` is plain bash — `shellcheck` if available, out of `poe
+  check`'s scope. `lens release secrets sync` is Python — add unit tests in
+  `lens/core/test/test_release_commands.py` (config parsing, secret
+  collection, additive-only semantics). Add one **integration test that
+  shells out the exact command sequence** (including a push carrying two new
+  commits where only the first has `requested_from_commit` as its parent)
+  against a fixture project + fake upstream repo, asserting the deploy fires
+  exactly once. This is the multi-commit-push edge case (decision #4's
+  correctness subtlety), and it's the only part of Phase 4 that needs
+  end-to-end coverage — `lens release secrets sync` can be tested with a
+  fake `fly` binary or mocked subprocess.
 
 ---
 

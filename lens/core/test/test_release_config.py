@@ -7,8 +7,10 @@ import unittest
 from lens.core.exceptions import LensException
 from lens.core.release.config import (
     DatasetRepoConfig,
+    DependentProjectConfig,
     ReleaseConfig,
     parse_dataset_repo_configs,
+    parse_dependent_project_configs,
     parse_release_config,
     validate_deploy_topology,
     validate_git_url,
@@ -302,3 +304,93 @@ class TestValidateDeployTopology(unittest.TestCase):
             ("b", sibling, []),
             ("c", sibling, []),
         ])
+
+
+class TestParseDependentProjectConfigs(unittest.TestCase):
+    def test_absent_returns_empty(self) -> None:
+        deps = parse_dependent_project_configs({})
+        self.assertEqual(deps, [])
+
+    def test_single_dep_parsed(self) -> None:
+        deps = parse_dependent_project_configs({
+            "dependent_project": [{"name": "my-other-app", "git_url": "git@github.com:org/other.git"}]
+        })
+        self.assertEqual(len(deps), 1)
+        self.assertEqual(deps[0].name, "my-other-app")
+        self.assertEqual(deps[0].git_url, "git@github.com:org/other.git")
+        self.assertEqual(deps[0].ref, "main")
+
+    def test_ref_defaults_to_main(self) -> None:
+        deps = parse_dependent_project_configs({
+            "dependent_project": [{"name": "x", "git_url": "https://example.com/x.git"}]
+        })
+        self.assertEqual(deps[0].ref, "main")
+
+    def test_ref_overridden(self) -> None:
+        deps = parse_dependent_project_configs({
+            "dependent_project": [{"name": "x", "git_url": "https://example.com/x.git", "ref": "develop"}]
+        })
+        self.assertEqual(deps[0].ref, "develop")
+
+    def test_missing_name_skipped(self) -> None:
+        deps = parse_dependent_project_configs({
+            "dependent_project": [
+                {"git_url": "https://example.com/noname.git"},
+                {"name": "valid", "git_url": "https://example.com/valid.git"},
+            ]
+        })
+        self.assertEqual(len(deps), 1)
+        self.assertEqual(deps[0].name, "valid")
+
+    def test_not_a_list_returns_empty(self) -> None:
+        deps = parse_dependent_project_configs({"dependent_project": "not-a-list"})
+        self.assertEqual(deps, [])
+
+    def test_filters_non_dict_entries(self) -> None:
+        deps = parse_dependent_project_configs({
+            "dependent_project": [
+                {"name": "good", "git_url": "https://example.com/good.git"},
+                42,
+                "string",
+            ]
+        })
+        self.assertEqual(len(deps), 1)
+        self.assertEqual(deps[0].name, "good")
+
+    def test_empty_ref_becomes_main(self) -> None:
+        deps = parse_dependent_project_configs({
+            "dependent_project": [{"name": "x", "git_url": "https://example.com/x.git", "ref": "  "}]
+        })
+        self.assertEqual(deps[0].ref, "main")
+
+
+class TestValidateReleaseConfigWithDependentProjects(unittest.TestCase):
+    def test_no_deps_no_warnings(self) -> None:
+        cfg = ReleaseConfig(enabled=True, lens_repo_url="https://example.com/lens.git")
+        lines = validate_release_config(cfg, [], [], dependent_projects=[])
+        errors = [ln for ln in lines if ln[0] == "error"]
+        self.assertEqual(errors, [])
+
+    def test_valid_dep_ok(self) -> None:
+        cfg = ReleaseConfig(enabled=True, lens_repo_url="https://example.com/lens.git")
+        deps = [DependentProjectConfig(name="other", git_url="https://github.com/org/other.git")]
+        lines = validate_release_config(cfg, [], [], dependent_projects=deps)
+        errors = [ln for ln in lines if ln[0] == "error"]
+        self.assertEqual(errors, [])
+
+    def test_invalid_dep_git_url_error(self) -> None:
+        cfg = ReleaseConfig(enabled=True, lens_repo_url="https://example.com/lens.git")
+        deps = [DependentProjectConfig(name="other", git_url="not-a-valid-url")]
+        lines = validate_release_config(cfg, [], [], dependent_projects=deps)
+        errors = [ln for ln in lines if ln[0] == "error"]
+        self.assertTrue(any("other" in ln[1] for ln in errors))
+
+    def test_duplicate_dep_name_warn(self) -> None:
+        cfg = ReleaseConfig(enabled=True, lens_repo_url="https://example.com/lens.git")
+        deps = [
+            DependentProjectConfig(name="dup", git_url="https://github.com/org/a.git"),
+            DependentProjectConfig(name="dup", git_url="https://github.com/org/b.git"),
+        ]
+        lines = validate_release_config(cfg, [], [], dependent_projects=deps)
+        warns = [ln for ln in lines if ln[0] == "warn"]
+        self.assertTrue(any("duplicate" in ln[2] for ln in warns))

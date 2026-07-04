@@ -1,13 +1,11 @@
 <script lang="ts">
-  import { stats } from '../../stores/stats'
   import { releaseInfo } from '../../stores/release'
   import { releaseModalOpen } from '../../stores/ui'
   import { fetchLatestRelease } from '../../services/api'
   import { onMount } from 'svelte'
 
-  const rls = $derived($stats?.release)
-  const installedVersion = $derived(rls?.installed_version ?? null)
-  const requestedVersion = $derived(rls?.requested_version ?? '')
+  const installedVersion = $derived($releaseInfo?.installed_version ?? null)
+  const requestedVersion = $derived($releaseInfo?.requested_version ?? '')
   const requestPending = $derived(
     !!requestedVersion && !!installedVersion && requestedVersion !== installedVersion
   )
@@ -38,27 +36,34 @@
 
 {#if requestPending}
   <button class="release-indicator release-requested" onclick={openModal} data-testid="release-requested"
-    >Update requested</button
-  >
+    title="Update requested">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"
+      ><path d="M1.5 6a4.5 4.5 0 1 1 9 0M10.5 3.5v2.5H8"/></svg
+    >
+  </button>
 {:else if updateAvailable}
   <button class="release-indicator release-available" onclick={openModal}
-    >v{latestAvailable?.replace(/^v/, '')} available</button
-  >
+    title="Update available">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"
+      ><path d="M6 10V3M3 6l3-3 3 3"/></svg
+    >
+  </button>
 {/if}
 
 <style>
   .release-indicator {
     background: none;
     border: 1px solid var(--pico-muted-border-color, #444);
-    border-radius: 6px;
-    padding: 0.15rem 0.45rem;
+    border-radius: 5px;
     cursor: pointer;
-    margin-bottom: 0px;
-    font-size: 0.72rem;
-    color: inherit;
     flex-shrink: 0;
-    white-space: nowrap;
-    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    line-height: 1;
   }
 
   .release-indicator:hover {

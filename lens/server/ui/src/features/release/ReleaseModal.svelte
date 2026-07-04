@@ -47,6 +47,15 @@
       if (result.status === 'error') {
         updateError = result.detail ?? 'Update request failed'
       } else {
+        $releaseInfo = {
+          ...($releaseInfo ?? {
+            enabled: false, lens_repo_url: '', requested_version: '',
+            requested_from_commit: '', app_leader: false, dataset_repos: [],
+            installed_version: null, latest_available: null,
+          }),
+          requested_version: result.requested_version ?? '',
+          requested_from_commit: result.requested_from_commit ?? '',
+        }
         handleClose()
       }
     } catch (err) {
@@ -64,6 +73,15 @@
       if (result.status === 'error') {
         clearError = result.detail ?? 'Clear failed'
       } else {
+        $releaseInfo = {
+          ...($releaseInfo ?? {
+            enabled: false, lens_repo_url: '', requested_version: '',
+            requested_from_commit: '', app_leader: false, dataset_repos: [],
+            installed_version: null, latest_available: null,
+          }),
+          requested_version: '',
+          requested_from_commit: '',
+        }
         handleClose()
       }
     } catch (err) {

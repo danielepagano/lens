@@ -34,6 +34,43 @@ class DatasetRepoConfig:
     ref: str = "main"
 
 
+@dataclass(frozen=True)
+class DependentProjectConfig:
+    name: str
+    git_url: str
+    ref: str = "main"
+
+
+def parse_dependent_project_configs(raw_config: dict[str, Any]) -> list[DependentProjectConfig]:
+    """Parse ``[[dependent_project]]`` from a parsed ``lens.toml`` dict."""
+    raw_list = raw_config.get("dependent_project", [])
+    if not isinstance(raw_list, list):
+        return []
+    typed_list = cast(list[Any], raw_list)
+    result: list[DependentProjectConfig] = []
+    for raw_entry in typed_list:
+        if not isinstance(raw_entry, dict):
+            continue
+        entry = cast(dict[str, Any], raw_entry)
+        name = entry.get("name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        git_url = entry.get("git_url", "")
+        if not isinstance(git_url, str):
+            continue
+        ref = entry.get("ref", "main")
+        if not isinstance(ref, str):
+            ref = "main"
+        result.append(
+            DependentProjectConfig(
+                name=name.strip(),
+                git_url=git_url.strip(),
+                ref=ref.strip() if ref.strip() else "main",
+            )
+        )
+    return result
+
+
 def parse_release_config(raw_config: dict[str, Any]) -> ReleaseConfig:
     """Parse ``[release]`` from a parsed ``lens.toml`` dict.
 
@@ -111,6 +148,7 @@ def validate_release_config(
     config: ReleaseConfig,
     dataset_repos: list[DatasetRepoConfig],
     project_dataset_names: list[str],
+    dependent_projects: list[DependentProjectConfig] | None = None,
 ) -> list[tuple[str, str, str]]:
     """Validate release configuration.
 
@@ -130,6 +168,16 @@ def validate_release_config(
         err = validate_git_url(config.lens_repo_url)
         if err:
             lines.append(("error", "release lens_repo_url", err))
+
+    if dependent_projects:
+        seen_dep_names: set[str] = set()
+        for dep in dependent_projects:
+            if dep.name in seen_dep_names:
+                lines.append(("warn", f"dependent_project {dep.name}", "duplicate name"))
+            seen_dep_names.add(dep.name)
+            err = validate_git_url(dep.git_url)
+            if err:
+                lines.append(("error", f"dependent_project {dep.name}", err))
 
     seen_names: set[str] = set()
     for repo in dataset_repos:

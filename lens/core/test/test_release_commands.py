@@ -6,6 +6,7 @@ temporary repositories so that ``git rev-list`` and related commands work.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -19,6 +20,7 @@ from lens.core.commands.release import (
     execute_release_check,
     execute_release_clear,
     execute_release_request,
+    execute_release_secrets_sync,
     resolve_release_project_root,
 )
 from lens.core.exceptions import LensException
@@ -478,3 +480,204 @@ class TestExecuteReleaseClear(unittest.TestCase):
         self.assertEqual(release["requested_from_commit"], "")
         self.assertTrue(release["enabled"])
         self.assertEqual(release["lens_repo_url"], "https://example.com/lens.git")
+
+
+class TestSecretsSync(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self._tmp_path = Path(self._tmp)
+        self._env = dict(os.environ)
+
+    def tearDown(self) -> None:
+        os.environ.clear()
+        os.environ.update(self._env)
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def _make_lenstoml(self, project: Path, extra: str = "") -> None:
+        (project / "lens.toml").write_text(
+            "[release]\nenabled = true\nlens_repo_url = \"https://example.com/lens.git\"\n"
+            + extra
+        )
+
+    def _init_leader(self) -> Path:
+        """Create a leader project with a git remote and lens.toml."""
+        project = self._tmp_path / f"leader_{uuid.uuid4().hex}"
+        project.mkdir()
+        subprocess.run(["git", "init", "-b", "main"], cwd=project, check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=project, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=project, check=True)
+        self._make_lenstoml(project)
+        subprocess.run(["git", "add", "lens.toml"], cwd=project, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True)
+        remote = self._tmp_path / f"leader_remote_{uuid.uuid4().hex}.git"
+        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        subprocess.run(["git", "remote", "add", "origin", str(remote)], cwd=project, check=True)
+        subprocess.run(["git", "push", "-u", "origin", "main"], cwd=project, check=True, capture_output=True)
+        return project
+
+    def _init_dependent_bare(self, name: str) -> Path:
+        """Create a bare repo that a dependent clone target can reference."""
+        remote = self._tmp_path / f"{name}_remote_{uuid.uuid4().hex}.git"
+        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        clone = self._tmp_path / f"{name}_clone_{uuid.uuid4().hex}"
+        subprocess.run(["git", "clone", str(remote), str(clone)], check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=clone, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=clone, check=True)
+        (clone / "lens.toml").write_text(
+            "[project]\ndatasets = ['testing']\n"
+            "[[llm]]\nprovider = 'openai'\napi_key_env = 'DEPENDENT_OPENAI_KEY'\n"
+        )
+        subprocess.run(["git", "add", "lens.toml"], cwd=clone, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "init"], cwd=clone, check=True, capture_output=True)
+        subprocess.run(["git", "push", "-u", "origin", "main"], cwd=clone, check=True, capture_output=True)
+        shutil.rmtree(clone, ignore_errors=True)
+        return remote
+
+    def test_disabled_release_raises(self) -> None:
+        project = self._tmp_path / "disabled"
+        project.mkdir()
+        (project / "lens.toml").write_text("[project]\ndatasets = ['testing']\n")
+        subprocess.run(["git", "init", "-b", "main"], cwd=project, check=True, capture_output=True)
+        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=project, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=project, check=True)
+        subprocess.run(["git", "add", "lens.toml"], cwd=project, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True
+        )
+        with self.assertRaises(LensException):
+            execute_release_secrets_sync(project, "my-app", dry_run=True)
+
+    def test_leader_only_sets_repo_url_and_slugs(self) -> None:
+        leader = self._init_leader()
+        result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
+        self.assertEqual(result.status, "ok")
+        env_key = leader.name.upper().replace("-", "_")
+        self.assertIn(f"PROJECT_REPO_URL_{env_key}", result.collected_secrets)
+        self.assertIn("LENS_PROJECT_SLUGS", result.collected_secrets)
+        self.assertEqual(result.collected_secrets["LENS_PROJECT_SLUGS"], leader.name)
+
+    def test_additive_api_keys_collected_when_set(self) -> None:
+        leader = self._init_leader()
+        leader_raw = tomllib.loads((leader / "lens.toml").read_text())
+        leader_raw.setdefault("llm", []).append({
+            "provider": "openai",
+            "api_key_env": "LEADER_OPENAI_KEY",
+        })
+        with (leader / "lens.toml").open("wb") as f:
+            import tomli_w
+            tomli_w.dump(leader_raw, f)
+        subprocess.run(["git", "add", "lens.toml"], cwd=leader, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "add llm config"],
+            cwd=leader, check=True, capture_output=True,
+        )
+        subprocess.run(["git", "push"], cwd=leader, check=True, capture_output=True)
+
+        os.environ["LEADER_OPENAI_KEY"] = "sk-test123"
+        try:
+            result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
+            self.assertIn("LEADER_OPENAI_KEY", result.collected_secrets)
+            self.assertEqual(result.collected_secrets["LEADER_OPENAI_KEY"], "sk-test123")
+        finally:
+            os.environ.pop("LEADER_OPENAI_KEY", None)
+
+    def test_additive_api_keys_skipped_when_not_set(self) -> None:
+        leader = self._init_leader()
+        leader_raw = tomllib.loads((leader / "lens.toml").read_text())
+        leader_raw.setdefault("llm", []).append({
+            "provider": "openai",
+            "api_key_env": "LEADER_OPENAI_KEY",
+        })
+        with (leader / "lens.toml").open("wb") as f:
+            import tomli_w
+            tomli_w.dump(leader_raw, f)
+        subprocess.run(["git", "add", "lens.toml"], cwd=leader, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "add llm config"],
+            cwd=leader, check=True, capture_output=True,
+        )
+        subprocess.run(["git", "push"], cwd=leader, check=True, capture_output=True)
+
+        # Do NOT set LEADER_OPENAI_KEY in env — should be silently skipped
+        result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
+        self.assertNotIn("LEADER_OPENAI_KEY", result.collected_secrets)
+
+    def test_deploy_key_collected_when_set(self) -> None:
+        leader = self._init_leader()
+        env_key = leader.name.upper().replace("-", "_")
+        deploy_key_var = f"GIT_REPO_DEPLOY_KEY_{env_key}"
+        os.environ[deploy_key_var] = "fake-key-content"
+        try:
+            result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
+            self.assertIn(deploy_key_var, result.collected_secrets)
+            self.assertEqual(result.collected_secrets[deploy_key_var], "fake-key-content")
+        finally:
+            os.environ.pop(deploy_key_var, None)
+
+    def test_dataset_deploy_key_collected_when_set(self) -> None:
+        leader = self._init_leader()
+        leader_raw = tomllib.loads((leader / "lens.toml").read_text())
+        leader_raw.setdefault("dataset_repo", []).append({
+            "name": "my-ds",
+            "git_url": "https://example.com/my-ds.git",
+        })
+        with (leader / "lens.toml").open("wb") as f:
+            import tomli_w
+            tomli_w.dump(leader_raw, f)
+        subprocess.run(["git", "add", "lens.toml"], cwd=leader, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "add dataset repo"],
+            cwd=leader, check=True, capture_output=True,
+        )
+        subprocess.run(["git", "push"], cwd=leader, check=True, capture_output=True)
+
+        os.environ["DATASET_REPO_DEPLOY_KEY_MY_DS"] = "ds-key-content"
+        try:
+            result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
+            self.assertIn("DATASET_REPO_DEPLOY_KEY_MY_DS", result.collected_secrets)
+            self.assertEqual(
+                result.collected_secrets["DATASET_REPO_DEPLOY_KEY_MY_DS"], "ds-key-content"
+            )
+        finally:
+            os.environ.pop("DATASET_REPO_DEPLOY_KEY_MY_DS", None)
+
+    def test_with_dependent_sets_slugs_and_clones(self) -> None:
+        leader = self._init_leader()
+        dep_name = "my-other-app"
+        dep_remote = self._init_dependent_bare(dep_name)
+
+        # Add [[dependent_project]] to leader config
+        leader_raw = tomllib.loads((leader / "lens.toml").read_text())
+        leader_raw.setdefault("dependent_project", []).append({
+            "name": dep_name,
+            "git_url": str(dep_remote),
+            "ref": "main",
+        })
+        with (leader / "lens.toml").open("wb") as f:
+            import tomli_w
+            tomli_w.dump(leader_raw, f)
+        subprocess.run(["git", "add", "lens.toml"], cwd=leader, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "add dependent_project"],
+            cwd=leader, check=True, capture_output=True,
+        )
+        subprocess.run(["git", "push"], cwd=leader, check=True, capture_output=True)
+
+        # Set dependent's API key in env
+        os.environ["DEPENDENT_OPENAI_KEY"] = "sk-dependent"
+        try:
+            result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
+            # Expected slugs: leader + dependent
+            slugs = result.collected_secrets.get("LENS_PROJECT_SLUGS", "")
+            self.assertIn(leader.name, slugs)
+            self.assertIn(dep_name, slugs)
+
+            # Dependent's API key from its lens.toml should be collected
+            self.assertIn("DEPENDENT_OPENAI_KEY", result.collected_secrets)
+            self.assertEqual(result.collected_secrets["DEPENDENT_OPENAI_KEY"], "sk-dependent")
+
+            # Dependent's repo URL should be set
+            dep_env_key = dep_name.upper().replace("-", "_")
+            self.assertIn(f"PROJECT_REPO_URL_{dep_env_key}", result.collected_secrets)
+        finally:
+            os.environ.pop("DEPENDENT_OPENAI_KEY", None)

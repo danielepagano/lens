@@ -1,0 +1,25 @@
+# GitLab CI — Lens release deploy
+# Copy into .gitlab-ci.yml in the release leader project repo.
+# Triggered on push to the tracked branch only — no schedule, no cron.
+#
+# Required CI/CD variable:
+#   FLY_API_TOKEN  — flyctl deploy auth for the Fly app
+#
+# Optional CI/CD variables (set as needed for your topology):
+#   DEPENDENT_PROJECT_DEPLOY_KEY_<NAME>  — SSH deploy key per [[dependent_project]]
+#   DATASET_REPO_DEPLOY_KEY_<NAME>       — SSH deploy key per [[dataset_repo]]
+#   Any api_key_env from lens.toml       — LLM / image / speech API keys
+
+release:
+  stage: deploy
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      changes:
+        - lens.toml
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - pip install lens
+    - bash deploy/ci/release.sh --since "$CI_COMMIT_BEFORE_SHA" --fly-app "$FLY_APP"
+  environment:
+    name: production

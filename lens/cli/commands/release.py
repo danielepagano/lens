@@ -17,6 +17,7 @@ from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
     execute_release_clear,
+    execute_release_secrets_sync,
     resolve_release_project_root,
 )
 from lens.core.exceptions import LensException
@@ -28,6 +29,14 @@ app = typer.Typer(
     add_completion=False,
     context_settings={"help_option_names": HELP_OPTS},
 )
+
+secrets_app = typer.Typer(
+    no_args_is_help=True,
+    help="Manage Fly secrets for release deployment",
+    add_completion=False,
+    context_settings={"help_option_names": HELP_OPTS},
+)
+app.add_typer(secrets_app, name="secrets")
 
 
 def _print_json(data: dict[str, str | None], summary: str, *, use_json: bool) -> None:
@@ -126,4 +135,38 @@ def clear_cmd(
         raise typer.Exit(1)
 
     payload: dict[str, str | None] = {"status": "ok"}
+    _print_json(payload, result.summary, use_json=json_output)
+
+
+@secrets_app.command(name="sync")
+def secrets_sync(
+    *,
+    fly_app: str = typer.Option(..., "--fly-app", help="Fly app name to push secrets to"),
+    json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
+) -> None:
+    """Synchronize CI-available secrets to the Fly app.
+
+    Reads the project's ``lens.toml``, discovers ``[[dependent_project]]``
+    topology, clones each dependent to read its API key config, collects all
+    secrets that are set in the CI environment, and pushes them to Fly.
+
+    Additive-only: existing Fly secrets not present in CI env are left
+    untouched.
+    """
+    try:
+        project_root = resolve_release_project_root(Path.cwd())
+    except (RuntimeError, LensException) as exc:
+        typer.echo(f"lens release secrets sync: {exc}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        result = execute_release_secrets_sync(project_root, fly_app)
+    except LensException as exc:
+        typer.echo(f"lens release secrets sync: {exc}", err=True)
+        raise typer.Exit(1)
+
+    payload: dict[str, str | None] = {
+        "status": result.status,
+        "secrets_set": str(result.secrets_set),
+    }
     _print_json(payload, result.summary, use_json=json_output)

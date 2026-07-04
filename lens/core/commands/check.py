@@ -14,6 +14,7 @@ from lens.core.dataset_extensions import try_load_dataset_extension
 from lens.core.exceptions import LensException
 from lens.core.release.config import (
     parse_dataset_repo_configs,
+    parse_dependent_project_configs,
     parse_release_config,
     validate_release_config,
 )
@@ -231,7 +232,10 @@ def run_project_check(project_root: Path, *, skip_network: bool = False) -> Proj
     release_cfg = parse_release_config(config)
     dataset_repos = parse_dataset_repo_configs(config)
     ds_names = get_selected_datasets(project_root)
-    for severity, topic, detail in validate_release_config(release_cfg, dataset_repos, ds_names):
+    dep_projects = parse_dependent_project_configs(config)
+    for severity, topic, detail in validate_release_config(
+        release_cfg, dataset_repos, ds_names, dependent_projects=dep_projects,
+    ):
         result.add(severity, topic, detail)
 
     return result

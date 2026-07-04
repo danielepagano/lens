@@ -1,0 +1,43 @@
+# GitHub Actions — Lens release deploy
+# Copy into .github/workflows/release.yml in the release leader project repo.
+# Triggered on push to the tracked branch only — no schedule, no cron.
+#
+# Required secrets:
+#   FLY_API_TOKEN  — flyctl deploy auth for the Fly app
+#
+# Optional secrets (set as needed for your topology):
+#   DEPENDENT_PROJECT_DEPLOY_KEY_<NAME>  — SSH deploy key per [[dependent_project]]
+#   DATASET_REPO_DEPLOY_KEY_<NAME>       — SSH deploy key per [[dataset_repo]]
+#   Any api_key_env from lens.toml       — LLM / image / speech API keys
+
+name: Lens Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ vars.FLY_APP || 'lens' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Lens
+        run: pip install lens  # or pinned equivalent
+
+      - name: Release check + deploy
+        run: bash deploy/ci/release.sh --since ${{ github.event.before }} --fly-app ${{ vars.FLY_APP }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          # Add optional secrets below as env vars, e.g.:
+          # DEPENDENT_PROJECT_DEPLOY_KEY_CAMPAIGN_B: ${{ secrets.DEPENDENT_PROJECT_DEPLOY_KEY_CAMPAIGN_B }}
+          # OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
