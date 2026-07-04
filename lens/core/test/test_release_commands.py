@@ -9,6 +9,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+import tomllib
 import unittest
 import uuid
 from pathlib import Path
@@ -16,6 +17,7 @@ from pathlib import Path
 from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
+    execute_release_request,
     resolve_release_project_root,
 )
 from lens.core.exceptions import LensException
@@ -348,3 +350,59 @@ class TestResolveReleaseProjectRoot(unittest.TestCase):
 
         result = resolve_release_project_root(grandparent)
         self.assertEqual(result, leader_root)
+
+
+class TestExecuteReleaseRequest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self._tmp_path = Path(self._tmp)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    def test_request_writes_both_fields(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        result = execute_release_request(proj, "v1.1.0")
+        self.assertEqual(result.requested_version, "v1.1.0")
+        self.assertTrue(len(result.requested_from_commit) > 0)
+
+        parsed = tomllib.loads((proj / "lens.toml").read_text())
+        release = parsed.get("release", {})
+        self.assertEqual(release.get("requested_version"), "v1.1.0")
+        self.assertEqual(release.get("requested_from_commit"), result.requested_from_commit)
+
+    def test_request_never_commits(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        before = _get_head_sha(proj)
+        execute_release_request(proj, "v2.0.0")
+        after = _get_head_sha(proj)
+        self.assertEqual(before, after, "request should not create a commit")
+
+    def test_request_invalid_tag_raises(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        with self.assertRaises(LensException):
+            execute_release_request(proj, "not-a-valid-tag")
+
+    def test_request_creates_release_section_when_missing(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        execute_release_request(proj, "v1.0.0")
+        parsed = tomllib.loads((proj / "lens.toml").read_text())
+        self.assertIn("release", parsed)
+        self.assertEqual(parsed["release"]["requested_version"], "v1.0.0")
+
+    def test_request_preserves_existing_release_fields(self) -> None:
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            'lens_repo_url = "https://example.com/lens.git"\n'
+            'requested_version = "v1.0.0"\n'
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        result = execute_release_request(proj, "v2.0.0")
+        parsed = tomllib.loads((proj / "lens.toml").read_text())
+        release = parsed["release"]
+        self.assertEqual(release["requested_version"], "v2.0.0")
+        self.assertEqual(release["requested_from_commit"], result.requested_from_commit)
+        # Existing fields are preserved
+        self.assertTrue(release["enabled"])
+        self.assertEqual(release["lens_repo_url"], "https://example.com/lens.git")

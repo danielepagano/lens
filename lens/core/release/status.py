@@ -48,7 +48,7 @@ def compute_release_status(project_root: Path) -> ReleaseStatus:
     """Compute the full release status combining config + live checks.
 
     This is the single entry point consumed by both the CLI ``stats``
-    command and the Phase 5 server route.  Network failures are non-fatal
+    command and ``GET /{slug}/stats``.  Network failures are non-fatal
     — ``remote_error`` carries the message, but other fields are populated.
     """
     lens_toml = project_root / "lens.toml"

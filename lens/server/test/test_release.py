@@ -1,6 +1,78 @@
-"""Server route tests for the release system — reserved for Phase 2.
+"""Server route tests for the release system.
 
-All previous release routes were removed in Phase 1.
-Phase 2 tests for ``POST /{slug}/release/request`` and release fields
-in ``GET /{slug}/stats`` go here.
+Tests for ``POST /{slug}/release/request`` and release fields
+in ``GET /{slug}/stats``.
 """
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+class TestReleaseRequest:
+    def test_request_valid(self, test_client: TestClient) -> None:
+        r = test_client.post(
+            "/test/release/request",
+            json={"target_version": "v99.0.0"},
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "ok"
+        assert data["requested_version"] == "v99.0.0"
+        assert len(data["requested_from_commit"]) > 0
+
+    def test_request_invalid_tag(self, test_client: TestClient) -> None:
+        r = test_client.post(
+            "/test/release/request",
+            json={"target_version": "not-a-tag"},
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "error"
+        assert "not a valid" in data["detail"]
+
+    def test_request_missing_body_field(self, test_client: TestClient) -> None:
+        r = test_client.post(
+            "/test/release/request",
+            json={},
+        )
+        assert r.status_code == 422
+
+    def test_request_writes_to_lens_toml(self, test_client: TestClient, test_project_dir: Path) -> None:
+        import tomllib
+
+        r = test_client.post(
+            "/test/release/request",
+            json={"target_version": "v99.0.0"},
+        )
+        assert r.status_code == 200
+
+        after = tomllib.loads((test_project_dir / "lens.toml").read_text())
+        release = after.get("release", {})
+        assert release.get("requested_version") == "v99.0.0"
+        assert len(release.get("requested_from_commit", "")) > 0
+
+    def test_request_never_commits(
+        self, test_client: TestClient, test_project_dir: Path
+    ) -> None:
+        import subprocess
+
+        before = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=test_project_dir,
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+
+        r = test_client.post(
+            "/test/release/request",
+            json={"target_version": "v99.0.0"},
+        )
+        assert r.status_code == 200
+
+        after = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=test_project_dir,
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+
+        assert before == after, "request should not create a commit"

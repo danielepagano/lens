@@ -1,6 +1,6 @@
 """E2E tests for ``[[dataset_repo]]`` clone + fast-forward via ``execute_refresh``.
 
-Tests the Phase 7 cloud-deployed refresh flow without needing a server or
+Tests the cloud-deployed dataset-repo refresh flow without needing a server or
 fake LLM — just git and the core Python API.
 """
 

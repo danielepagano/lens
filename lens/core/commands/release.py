@@ -1,16 +1,20 @@
 """Core helpers for the release decision engine (`lens release`).
 
 Per decision #4 in docs/release-system.md: CI's job is a single, stateless,
-read-only parent-hash check. Nothing in this module writes to git.
+read-only parent-hash check. Nothing in this module writes to git, *except*
+``execute_release_request`` which the app uses to record a human's deploy
+request (decision #1/#3 — one uncommitted write, never a commit/push).
 """
 
 from __future__ import annotations
 
+import io
 import subprocess
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+import tomli_w
 
 from lens.core.exceptions import LensException
 from lens.core.release.config import (
@@ -217,6 +221,74 @@ def execute_release_apply(project_root: Path, target_tag: str) -> ReleaseApplyRe
         lens_repo_url=url,
         tag=normalized_tag,
         summary=f"release apply target {normalized_tag}",
+    )
+
+
+def _get_head_sha(project_root: Path) -> str:
+    """Return the full SHA of HEAD in *project_root*."""
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+@dataclass(frozen=True)
+class ReleaseRequestResult:
+    requested_version: str
+    requested_from_commit: str
+    summary: str
+
+
+def execute_release_request(project_root: Path, target_version: str) -> ReleaseRequestResult:
+    """Record a human's request to deploy *target_version*.
+
+    Validates *target_version* is a well-formed ``vMAJOR.MINOR.PATCH`` tag,
+    reads the current ``lens.toml``, sets ``requested_version`` **and**
+    ``requested_from_commit`` (the current ``HEAD`` hash), and writes it
+    back via ``Storage`` — **no ``.commit()``, no ``.push_or_raise()``**.
+
+    This is the sole app-side mechanism of decision #3: one uncommitted
+    write that rides along with whatever the user's next checkpoint turns
+    out to be.
+    """
+    from lens.core.storage import Storage
+
+    target = target_version.strip()
+    semver = parse_semver_tag(target)
+    if semver is None:
+        raise LensException(
+            f"target_version {target!r} is not a valid vMAJOR.MINOR.PATCH tag"
+        )
+
+    head = _get_head_sha(project_root)
+
+    raw: dict[str, Any] = {}
+    lens_toml = project_root / "lens.toml"
+    if lens_toml.exists():
+        with lens_toml.open("rb") as f:
+            raw = tomllib.load(f)
+
+    release_section = raw.get("release")
+    if not isinstance(release_section, dict):
+        release_section = {}
+    release_section["requested_version"] = target
+    release_section["requested_from_commit"] = head
+    raw["release"] = release_section
+
+    buf = io.BytesIO()
+    tomli_w.dump(raw, buf)
+
+    storage = Storage(project_root, owner=None)
+    storage.write_file_bytes(lens_toml, buf.getvalue())
+
+    return ReleaseRequestResult(
+        requested_version=target,
+        requested_from_commit=head,
+        summary=f"release request for {target} recorded (HEAD={head[:12]})",
     )
 
 
