@@ -11,18 +11,13 @@ from urllib.parse import urlparse
 from lens.core.exceptions import LensException
 from lens.core.git_ssh_remote import parse_git_ssh_remote
 
-_VALID_AUTO_UPDATE = frozenset({"off", "minor", "major"})
-
 
 @dataclass(frozen=True)
 class ReleaseConfig:
     enabled: bool = False
     lens_repo_url: str = ""
-    auto_update: str = "off"
     requested_version: str = ""
-    gated_update_pending: bool = False
-    gated_update_target_version: str = ""
-    gated_update_approved: bool = False
+    requested_from_commit: str = ""
     # Only meaningful when this project's Fly app also serves sibling
     # projects (parent-of-projects `fly.toml` topology). Ignored for
     # single-project apps, where the sole served project is trivially the
@@ -52,11 +47,8 @@ def parse_release_config(raw_config: dict[str, Any]) -> ReleaseConfig:
     for field_name in (
         "enabled",
         "lens_repo_url",
-        "auto_update",
         "requested_version",
-        "gated_update_pending",
-        "gated_update_target_version",
-        "gated_update_approved",
+        "requested_from_commit",
         "app_leader",
     ):
         val = raw_dict.get(field_name)
@@ -138,15 +130,6 @@ def validate_release_config(
         err = validate_git_url(config.lens_repo_url)
         if err:
             lines.append(("error", "release lens_repo_url", err))
-
-    if config.auto_update not in _VALID_AUTO_UPDATE:
-        lines.append(
-            (
-                "error",
-                "release auto_update",
-                f"must be one of {', '.join(sorted(_VALID_AUTO_UPDATE))}, got {config.auto_update!r}",
-            )
-        )
 
     seen_names: set[str] = set()
     for repo in dataset_repos:

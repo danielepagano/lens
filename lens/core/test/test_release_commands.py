@@ -1,23 +1,23 @@
-"""Tests for the release decision engine commands."""
+"""Tests for the release decision engine commands.
+
+All tests that involve parent-hash matching create real git commits in
+temporary repositories so that ``git rev-list`` and related commands work.
+"""
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import tempfile
 import unittest
 import uuid
 from pathlib import Path
-from unittest import mock
 
 from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
-    execute_release_gated_reject,
     resolve_release_project_root,
 )
-from lens.core.project import ProjectSession
 from lens.core.exceptions import LensException
 
 
@@ -67,6 +67,26 @@ def _init_project_repo_at(project: Path, lens_toml: str) -> Path:
     return project
 
 
+def _get_head_sha(project: Path) -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=project, capture_output=True, text=True, check=True,
+    )
+    return result.stdout.strip()
+
+
+def _make_commit(project: Path, file_content: str) -> str:
+    """Create a new commit on the project repo and return its SHA."""
+    marker = project / f"marker_{uuid.uuid4().hex}.txt"
+    marker.write_text(file_content)
+    subprocess.run(["git", "add", str(marker)], cwd=project, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", file_content],
+        cwd=project, check=True, capture_output=True,
+    )
+    return _get_head_sha(project)
+
+
 def _write_fly_toml(deploy_dir: Path, slugs: list[str]) -> Path:
     fly_toml = deploy_dir / "fly.toml"
     fly_toml.write_text(
@@ -84,157 +104,104 @@ class TestReleaseCommands(unittest.TestCase):
         self._lens_remote = _init_bare_repo_with_tags(
             self._tmp_path, ["v1.0.0", "v1.1.0", "v2.0.0"]
         )
-        self._find_lens_patch = mock.patch(
-            "lens.core.release.status.find_lens_repo_root", return_value=None
-        )
-        self._find_lens_patch.start()
 
     def tearDown(self) -> None:
-        self._find_lens_patch.stop()
         shutil.rmtree(self._tmp, ignore_errors=True)
+
+    # ---- check: enabled / disabled ----
 
     def test_check_disabled_returns_none(self) -> None:
         proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
         result = execute_release_check(proj)
         self.assertEqual(result.action, "none")
 
-    def test_check_pending_gated_awaits(self) -> None:
+    def test_check_enabled_no_request_returns_none(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"v2.0.0\"\n"
-            "gated_update_approved = false\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_check(proj)
-        self.assertEqual(result.action, "await_approval")
-        self.assertEqual(result.target, "v2.0.0")
-
-    def test_check_pending_gated_still_allows_minor(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"v2.0.0\"\n"
-            "gated_update_approved = false\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.0.0"}, clear=False):
-            result = execute_release_check(proj)
-        self.assertEqual(result.action, "apply")
-        self.assertEqual(result.target, "v1.1.0")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("gated_update_pending = true", contents)
-
-    def test_check_auto_minor_applies(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.0.0"}, clear=False):
-            result = execute_release_check(proj)
-        self.assertEqual(result.action, "apply")
-        self.assertEqual(result.target, "v1.1.0")
-
-    def test_check_auto_major_marks_gated_pending(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"major\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.1.0"}, clear=False):
-            result = execute_release_check(proj)
-        self.assertEqual(result.action, "await_approval")
-        self.assertEqual(result.target, "v2.0.0")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("gated_update_pending = true", contents)
-
-    def test_check_requested_version_downgrade_rejected(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "requested_version = \"v1.0.0\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.1.0"}, clear=False):
-            with self.assertRaises(LensException):
-                execute_release_check(proj)
-
-    def test_check_pending_and_approved_returns_apply(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"v2.0.0\"\n"
-            "gated_update_approved = true\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        result = execute_release_check(proj)
-        self.assertEqual(result.action, "apply")
-        self.assertEqual(result.target, "v2.0.0")
-
-    def test_check_pending_approved_missing_target_raises(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"\"\n"
-            "gated_update_approved = true\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with self.assertRaises(LensException):
-            execute_release_check(proj)
-
-    def test_check_already_at_target_returns_none(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.1.0"}, clear=False):
-            result = execute_release_check(proj)
         self.assertEqual(result.action, "none")
 
-    def test_check_requested_version_equals_installed_returns_none(self) -> None:
+    # ---- check: parent matching ----
+
+    def test_check_parent_matches_returns_apply(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        before = _get_head_sha(proj)
+
+        # Set requested_version + requested_from_commit, then commit (child of before)
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+            f"requested_version = \"v1.1.0\"\n"
+            f"requested_from_commit = \"{before}\"\n"
+        )
+        (proj / "lens.toml").write_text(block)
+        subprocess.run(["git", "add", "lens.toml"], cwd=proj, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "set requested version"],
+            cwd=proj, check=True, capture_output=True,
+        )
+
+        # The committed change has `before` as its parent → match
+        result = execute_release_check(proj, since=before)
+        self.assertEqual(result.action, "apply")
+        self.assertEqual(result.target, "v1.1.0")
+
+    def test_check_parent_does_not_match_returns_none(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        irrelevant = "0" * 40
+
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
             "requested_version = \"v1.1.0\"\n"
+            f"requested_from_commit = \"{irrelevant}\"\n"
         )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.1.0"}, clear=False):
-            result = execute_release_check(proj)
+        (proj / "lens.toml").write_text(block)
+        subprocess.run(["git", "add", "lens.toml"], cwd=proj, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "set requested version"],
+            cwd=proj, check=True, capture_output=True,
+        )
+        after_sha = _get_head_sha(proj)
+
+        result = execute_release_check(proj, since=after_sha)
         self.assertEqual(result.action, "none")
 
-    def test_check_requested_version_applies_when_newer(self) -> None:
+    def test_check_with_since_range_multi_commit(self) -> None:
+        """A push carrying two commits: only the first has
+        requested_from_commit as its parent."""
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        before = _get_head_sha(proj)
+
+        # First commit after before becomes the child of before
+        _make_commit(proj, "first post-init")
+
+        # Set requested_from_commit = before
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "requested_version = \"v2.0.0\"\n"
+            f"requested_version = \"v1.1.0\"\n"
+            f"requested_from_commit = \"{before}\"\n"
         )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.1.0"}, clear=False):
-            result = execute_release_check(proj)
-        self.assertEqual(result.action, "await_approval")
-        self.assertEqual(result.target, "v2.0.0")
+        (proj / "lens.toml").write_text(block)
+        subprocess.run(["git", "add", "lens.toml"], cwd=proj, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "set requested version"],
+            cwd=proj, check=True, capture_output=True,
+        )
+        # Check the range before..HEAD — the first commit's parent is before (match)
+        result = execute_release_check(proj, since=before)
+        self.assertEqual(result.action, "apply")
+        self.assertEqual(result.target, "v1.1.0")
 
-    def test_check_requested_version_unparseable_raises(self) -> None:
+    def test_check_unparseable_tag_raises(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
@@ -245,27 +212,19 @@ class TestReleaseCommands(unittest.TestCase):
         with self.assertRaises(LensException):
             execute_release_check(proj)
 
-    def test_check_auto_off_no_requested_returns_none(self) -> None:
+    def test_check_empty_requested_from_commit_returns_none(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"off\"\n"
+            "requested_version = \"v1.1.0\"\n"
+            "requested_from_commit = \"\"\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_check(proj)
         self.assertEqual(result.action, "none")
 
-    def test_check_auto_minor_no_installed_returns_none(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        result = execute_release_check(proj)
-        self.assertEqual(result.action, "none")
+    # ---- apply ----
 
     def test_apply_disabled_raises(self) -> None:
         proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
@@ -292,158 +251,31 @@ class TestReleaseCommands(unittest.TestCase):
         with self.assertRaises(LensException):
             execute_release_apply(proj, "not-a-tag")
 
-    def test_apply_no_approval_does_not_commit(self) -> None:
+    def test_apply_never_commits(self) -> None:
+        """Assert execute_release_apply never touches git — no commit, no push."""
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
+        )
+        proj = _init_project_repo(self._tmp_path, block)
+        before = _get_head_sha(proj)
+        result = execute_release_apply(proj, "v1.1.0")
+        self.assertEqual(result.tag, "v1.1.0")
+        after = _get_head_sha(proj)
+        self.assertEqual(before, after, "apply should not create a commit")
+
+    def test_apply_output(self) -> None:
+        url = f"file://{self._lens_remote}"
+        block = (
+            "[release]\n"
+            "enabled = true\n"
+            f"lens_repo_url = \"{url}\"\n"
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_apply(proj, "v1.1.0")
+        self.assertEqual(result.lens_repo_url, url)
         self.assertEqual(result.tag, "v1.1.0")
-        # No commit was made (not an approved gated bump), so lens.toml is unchanged
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertNotIn("gated_update_pending", contents)
-
-    def test_apply_clears_gated_fields_when_approved(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"v2.0.0\"\n"
-            "gated_update_approved = true\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        result = execute_release_apply(proj, "v2.0.0")
-        self.assertEqual(result.tag, "v2.0.0")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("gated_update_pending = false", contents)
-        self.assertIn("gated_update_approved = false", contents)
-        self.assertIn("gated_update_target_version = \"\"", contents)
-
-    def test_check_auto_major_no_tags_returns_none(self) -> None:
-        no_tags_remote = _init_bare_repo_with_tags(self._tmp_path, [])
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{no_tags_remote}\"\n"
-            "auto_update = \"major\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.0.0"}, clear=False):
-            result = execute_release_check(proj)
-        self.assertEqual(result.action, "none")
-
-    def test_update_release_section_preserves_other_sections(self) -> None:
-        """_update_release_section should not touch unrelated config sections."""
-        block = (
-            "[project]\n"
-            'datasets = ["testing"]\n'
-            "\n"
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
-            "\n"
-            "[[llm]]\n"
-            'base_url = "http://localhost:11434/v1"\n'
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.0.0"}, clear=False):
-            result = execute_release_check(proj)
-        self.assertEqual(result.action, "apply")
-        self.assertEqual(result.target, "v1.1.0")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("base_url = \"http://localhost:11434/v1\"", contents)
-        self.assertIn('datasets = ["testing"]', contents)
-
-    def test_reject_clears_gated_fields(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"v2.0.0\"\n"
-            "gated_update_approved = false\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        session = ProjectSession(proj, proj)
-        execute_release_gated_reject(session)
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("gated_update_pending = false", contents)
-        self.assertIn("gated_update_approved = false", contents)
-        self.assertIn("gated_update_target_version = \"\"", contents)
-
-    def test_reject_noop_when_no_pending(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        before = (proj / "lens.toml").read_text(encoding="utf-8")
-        session = ProjectSession(proj, proj)
-        execute_release_gated_reject(session)
-        after = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertEqual(before, after)
-
-    def test_apply_clears_requested_version_when_fulfilled(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "requested_version = \"v1.1.0\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        execute_release_apply(proj, "v1.1.0")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("requested_version = \"\"", contents)
-
-    def test_apply_does_not_clear_requested_version_for_different_tag(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "requested_version = \"v2.0.0\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        execute_release_apply(proj, "v1.0.0")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("requested_version = \"v2.0.0\"", contents)
-
-    def test_apply_combines_gated_clear_and_requested_clear(self) -> None:
-        """Clearing both gated-update and requested_version in a single commit."""
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"v2.0.0\"\n"
-            "gated_update_approved = true\n"
-            "requested_version = \"v2.0.0\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        execute_release_apply(proj, "v2.0.0")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("gated_update_pending = false", contents)
-        self.assertIn("gated_update_approved = false", contents)
-        self.assertIn("gated_update_target_version = \"\"", contents)
-        self.assertIn("requested_version = \"\"", contents)
-
-    def test_check_clears_requested_version_when_already_installed(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "requested_version = \"v1.0.0\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        with mock.patch.dict(os.environ, {"LENS_VERSION": "v1.0.0"}, clear=False):
-            result = execute_release_check(proj)
-        self.assertEqual(result.action, "none")
-        contents = (proj / "lens.toml").read_text(encoding="utf-8")
-        self.assertIn("requested_version = \"\"", contents)
 
 
 class TestResolveReleaseProjectRoot(unittest.TestCase):
@@ -516,33 +348,3 @@ class TestResolveReleaseProjectRoot(unittest.TestCase):
 
         result = resolve_release_project_root(grandparent)
         self.assertEqual(result, leader_root)
-
-    def test_colocated_leader_fly_toml_resolves_from_leader_itself(self) -> None:
-        grandparent = self._tmp_path / f"deploy_{uuid.uuid4().hex}"
-        grandparent.mkdir()
-        leader_block = "[release]\nenabled = true\napp_leader = true\n"
-        leader_root = _init_project_repo_at(grandparent / "a", leader_block)
-        _init_project_repo_at(grandparent / "b", "[project]\ndatasets = ['testing']\n")
-        _write_fly_toml(leader_root, ["a", "b"])
-
-        result = resolve_release_project_root(leader_root)
-        self.assertEqual(result, leader_root.resolve())
-
-    def test_no_lens_toml_no_fly_toml_raises_runtime_error(self) -> None:
-        empty_dir = self._tmp_path / f"empty_{uuid.uuid4().hex}"
-        empty_dir.mkdir()
-        with self.assertRaises(RuntimeError):
-            resolve_release_project_root(empty_dir)
-
-    def test_running_from_inside_sibling_project_uses_that_project(self) -> None:
-        """Running from inside a specific sibling still targets that project,
-        not the leader — matches ordinary `lens` command behavior."""
-        deploy_dir = self._tmp_path / f"deploy_{uuid.uuid4().hex}"
-        deploy_dir.mkdir()
-        leader_block = "[release]\nenabled = true\napp_leader = true\n"
-        _init_project_repo_at(deploy_dir / "a", leader_block)
-        _init_project_repo_at(deploy_dir / "b", "[project]\ndatasets = ['testing']\n")
-        _write_fly_toml(deploy_dir, ["a", "b"])
-
-        result = resolve_release_project_root(deploy_dir / "b")
-        self.assertEqual(result, (deploy_dir / "b").resolve())

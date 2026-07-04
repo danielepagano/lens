@@ -3,21 +3,23 @@
   import { releaseModalOpen } from '../../stores/ui'
 
   const rls = $derived($stats?.release)
-  const pending = $derived(rls?.gated_update_pending ?? false)
-  const approved = $derived(rls?.gated_update_approved ?? false)
+  const latestAvailable = $derived(rls?.latest_available ?? '')
+  const installedVersion = $derived(rls?.installed_version ?? '')
+  const hasNewer = $derived(
+    !!latestAvailable && !!installedVersion && latestAvailable !== installedVersion
+  )
 
   function open() {
     releaseModalOpen.set(true)
   }
 </script>
 
-{#if pending}
+{#if hasNewer}
   <button
     class="release-indicator"
-    class:approved
     onclick={open}
-    aria-label={approved ? 'Update approved, awaiting deployment' : 'New release pending'}
-    title={approved ? 'Approved — awaiting deployment' : 'Update available'}
+    aria-label="New release available"
+    title="{latestAvailable} available"
   ></button>
 {/if}
 
@@ -35,9 +37,5 @@
     flex-shrink: 0;
     margin-left: 0.35rem;
     padding: 0;
-  }
-
-  .release-indicator.approved {
-    background: var(--pico-ins-color, #2ea043);
   }
 </style>

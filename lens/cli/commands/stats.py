@@ -101,9 +101,10 @@ def stats(
     if result.dataset_name is None and result.release_enabled:
         typer.echo("Release:")
         typer.echo(f"  Lens repo: {result.release_lens_repo_url}")
-        typer.echo(f"  Auto-update: {result.release_auto_update}")
         if result.release_requested_version:
             typer.echo(f"  Requested version: {result.release_requested_version}")
+        if result.release_requested_from_commit:
+            typer.echo(f"  Requested from commit: {result.release_requested_from_commit}")
         if result.release_installed_version:
             typer.echo(f"  Installed: {result.release_installed_version}")
         else:
@@ -114,14 +115,6 @@ def stats(
             )
         if result.release_latest_available:
             typer.echo(f"  Latest available: {result.release_latest_available}")
-        if result.release_gated_update_pending:
-            target = result.release_gated_update_target_version or "(none specified)"
-            typer.echo(f"  Gated update pending: {target}")
-        else:
-            typer.echo("  Gated update pending: no")
-        typer.echo(
-            f"  Gated update approved: {'yes' if result.release_gated_update_approved else 'no'}"
-        )
         if result.release_app_leader:
             typer.echo("  App leader: yes (governs release for the whole Fly app)")
         if result.release_dataset_repos:

@@ -55,15 +55,13 @@ def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> 
         "release": {
             "enabled": result.release_enabled,
             "lens_repo_url": result.release_lens_repo_url,
-            "auto_update": result.release_auto_update,
             "requested_version": result.release_requested_version,
-            "gated_update_pending": result.release_gated_update_pending,
-            "gated_update_target_version": result.release_gated_update_target_version,
-            "gated_update_approved": result.release_gated_update_approved,
+            "requested_from_commit": result.release_requested_from_commit,
             "app_leader": result.release_app_leader,
             "dataset_repos": result.release_dataset_repos,
             "installed_version": result.release_installed_version,
             "local_checkout_version": result.release_local_checkout_version,
+            "latest_available": result.release_latest_available,
         } if result.dataset_name is None else None,
         "transaction": transaction,
     }

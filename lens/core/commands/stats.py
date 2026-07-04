@@ -76,11 +76,8 @@ class StatsResult:
     dataset_configs: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     release_enabled: bool = False
     release_lens_repo_url: str = ""
-    release_auto_update: str = "off"
     release_requested_version: str = ""
-    release_gated_update_pending: bool = False
-    release_gated_update_target_version: str = ""
-    release_gated_update_approved: bool = False
+    release_requested_from_commit: str = ""
     release_app_leader: bool = False
     release_installed_version: str | None = None
     release_local_checkout_version: str | None = None
@@ -279,11 +276,8 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         dataset_configs=dataset_configs,
         release_enabled=release_cfg.enabled,
         release_lens_repo_url=release_cfg.lens_repo_url,
-        release_auto_update=release_cfg.auto_update,
         release_requested_version=release_cfg.requested_version,
-        release_gated_update_pending=release_cfg.gated_update_pending,
-        release_gated_update_target_version=release_cfg.gated_update_target_version,
-        release_gated_update_approved=release_cfg.gated_update_approved,
+        release_requested_from_commit=release_cfg.requested_from_commit,
         release_app_leader=release_cfg.app_leader,
         release_installed_version=release_installed_version,
         release_local_checkout_version=release_local_checkout_version,

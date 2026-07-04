@@ -454,8 +454,8 @@ Keys not listed in the dataset's defaults are silently ignored.  See individual 
 
 ## `[release]` / `[[dataset_repo]]`
 
-Controls the **cloud release system**: auto-update policy, Lens version tracking,
-and external dataset repos cloned onto the server volume.
+Controls the **cloud release system**: Lens version tracking, external dataset
+repos cloned onto the server volume, and parent-hash-based CI deployment gate.
 
 The release system is **disabled** when `[release]` is absent from `lens.toml` —
 all release CLI commands and server routes return a clear "not enabled" message.
@@ -463,30 +463,24 @@ Add the section to opt in.
 
 ```toml
 [release]
-enabled             = true
-lens_repo_url       = "https://github.com/danielepagano/lens.git"
-auto_update         = "minor"
-requested_version   = ""
-gated_update_pending        = false
-gated_update_target_version = ""
-gated_update_approved       = false
-app_leader                  = false
+enabled               = true
+lens_repo_url         = "https://github.com/danielepagano/lens.git"
+requested_version     = ""
+requested_from_commit = ""
+app_leader            = false
 ```
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `enabled` | No | `false` | Enable the release system for this project |
 | `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
-| `auto_update` | No | `"off"` | Auto-update policy: `"off"`, `"minor"`, or `"major"` |
-| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); cleared once fulfilled |
-| `gated_update_pending` | No | `false` | Set by CI when a non-auto version bump is waiting on human approval |
-| `gated_update_target_version` | No | `""` | Target tag of the pending gated update |
-| `gated_update_approved` | No | `false` | Set by the deployed app when the user approves a pending gated update |
+| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); set by CI's `lens release request` |
+| `requested_from_commit` | No | `""` | Full commit hash that was `HEAD` when `requested_version` was requested; CI deploys only the next commit whose parent is this hash |
 | `app_leader` | No | `false` | Designate this project as the release leader in a multi-project Fly deployment |
 
-`gated_update_pending`, `gated_update_target_version`, and `gated_update_approved`
-are system-managed — CI and the Lens app set them during the release workflow.
-Do not edit them manually.
+Only **five** fields total.  There is no `auto_update` field and no
+`gated_update_*` field — the system is stateless between CI runs (see
+`docs/release-system.md` for the design rationale).
 
 ### `app_leader` (multi-project deployments)
 
@@ -662,7 +656,7 @@ lens check --skip-network
 | `prompt_pack` file exists | warn if missing |
 | Each `datasets` name has bundled dir | warn if missing |
 | Active `narrative` folder exists | warn if missing |
-| `[release]` configuration | ok / error | if present: `lens_repo_url` format, `auto_update` values |
+| `[release]` configuration | ok / error | if present: `lens_repo_url` format, semver `requested_version` |
 | `[[dataset_repo]]` entries | error / warn | if present: valid `git_url`, `name` matches `[project] datasets` |
 
 Image and speech backends are not fully probed here; missing keys surface when you run `lens media`.

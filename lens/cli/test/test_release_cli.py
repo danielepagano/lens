@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import sys
@@ -95,41 +94,33 @@ class TestReleaseCli(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
 
-    def test_check_json_output(self) -> None:
+    def test_check_with_request_and_parent_match_applies(self) -> None:
+        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
+        # Get the initial commit SHA
+        init_sha = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=proj, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        # Set requested_version + requested_from_commit matching the init commit
         block = (
             "[release]\n"
             "enabled = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
+            "requested_version = \"v1.1.0\"\n"
+            f"requested_from_commit = \"{init_sha}\"\n"
         )
-        proj = _init_project_repo(self._tmp_path, block)
-        env = os.environ.copy()
-        env["LENS_VERSION"] = "v1.0.0"
+        (proj / "lens.toml").write_text(block)
+        subprocess.run(["git", "add", "lens.toml"], cwd=proj, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "set request"],
+            cwd=proj, check=True, capture_output=True,
+        )
         result = subprocess.run(
-            _LENS_CMD + ["release", "check", "--json"],
-            cwd=proj, capture_output=True, text=True, env=env,
+            _LENS_CMD + ["release", "check", "--json", "--since", init_sha],
+            cwd=proj, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"action"', result.stdout)
         self.assertIn('"apply"', result.stdout)
-        self.assertGreater(len(result.stderr.strip()), 0)
-
-    def test_check_downgrade_rejected_exits_one(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "requested_version = \"v1.0.0\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        env = os.environ.copy()
-        env["LENS_VERSION"] = "v1.1.0"
-        result = subprocess.run(
-            _LENS_CMD + ["release", "check", "--json"],
-            cwd=proj, capture_output=True, text=True, env=env,
-        )
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("older than the currently installed", result.stderr)
 
     def test_apply_invalid_tag_exits_one(self) -> None:
         block = (
@@ -161,24 +152,6 @@ class TestReleaseCli(unittest.TestCase):
         self.assertIn('"tag"', result.stdout)
         self.assertIn('"v1.1.0"', result.stdout)
 
-    def test_check_pending_gated_json_output(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "gated_update_pending = true\n"
-            "gated_update_target_version = \"v2.0.0\"\n"
-            "gated_update_approved = false\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        result = subprocess.run(
-            _LENS_CMD + ["release", "check", "--json"],
-            cwd=proj, capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0)
-        self.assertIn('"await_approval"', result.stdout)
-        self.assertIn('"v2.0.0"', result.stdout)
-
     def test_check_not_enabled_exits_zero(self) -> None:
         proj = _init_project_repo(self._tmp_path, "# no release section\n")
         result = subprocess.run(
@@ -187,24 +160,6 @@ class TestReleaseCli(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
         self.assertIn('"none"', result.stdout)
-
-    def test_check_human_output_no_json(self) -> None:
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
-        )
-        proj = _init_project_repo(self._tmp_path, block)
-        env = os.environ.copy()
-        env["LENS_VERSION"] = "v1.0.0"
-        result = subprocess.run(
-            _LENS_CMD + ["release", "check"],
-            cwd=proj, capture_output=True, text=True, env=env,
-        )
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(len(result.stderr.strip()), 0)
-        self.assertIn("apply", result.stdout)
 
     def test_check_from_multi_project_deploy_dir_resolves_leader(self) -> None:
         import uuid
@@ -216,21 +171,17 @@ class TestReleaseCli(unittest.TestCase):
             "enabled = true\n"
             "app_leader = true\n"
             f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "auto_update = \"minor\"\n"
         )
         _init_project_repo_at(deploy_dir / "a", leader_block)
         _init_project_repo_at(deploy_dir / "b", "[project]\ndatasets = ['testing']\n")
         _write_fly_toml(deploy_dir, ["a", "b"])
 
-        env = os.environ.copy()
-        env["LENS_VERSION"] = "v1.0.0"
         result = subprocess.run(
             _LENS_CMD + ["release", "check", "--json"],
-            cwd=deploy_dir, capture_output=True, text=True, env=env,
+            cwd=deploy_dir, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"apply"', result.stdout)
-        self.assertIn('"v1.1.0"', result.stdout)
+        self.assertIn('"none"', result.stdout)
 
     def test_check_from_multi_project_deploy_dir_no_leader_exits_one(self) -> None:
         import uuid

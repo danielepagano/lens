@@ -409,7 +409,7 @@ match; do not leave either describing the old shape.
   `ReleaseConfig` entirely (and the corresponding parsing/validation in
   `lens/core/commands/check.py`); add `requested_from_commit: str = ""`.
   `ReleaseConfig` ends up with exactly `enabled`, `lens_repo_url`,
-  `requested_version`, `requested_from_commit`, `app_leader`.
+  `requested_version`, `requested_from_commit`, `app_leader`.  **✓ done**
 - `lens/core/commands/release.py`: delete `_select_target_tag`,
   `_mark_gated_pending`, the major/minor boundary logic, and
   `_git_commit_and_push`/`_run_git` entirely — nothing in this module writes
@@ -424,12 +424,12 @@ match; do not leave either describing the old shape.
     A basic "does `requested_version` parse as `vMAJOR.MINOR.PATCH`" sanity
     check is still worth keeping (so a garbaged value fails loudly instead
     of reaching `flyctl` with nonsense); there is **no** comparison against
-    "installed" — CI doesn't reliably know that, and doesn't need to.
+    "installed" — CI doesn't reliably know that, and doesn't need to.  **✓ done**
   - `apply --to <tag>`: unchanged in spirit — prints `{lens_repo_url, tag}`
     as JSON. **No commit, ever, in any case.** There is no
-    `--confirm-deployed` flag, no clearing step, nothing written back.
+    `--confirm-deployed` flag, no clearing step, nothing written back.  **✓ done**
 - `lens/cli/commands/release.py`: drop any CLI surface for the removed
-  gated fields (e.g. an `approve`/`reject` CLI mirror, if one exists).
+  gated fields (e.g. an `approve`/`reject` CLI mirror, if one exists).  **✓ done**
 - **`docs/configuration.md`** (real, shipped docs — see the callout at the
   top of this file): rewrite the `[release]` / `[[dataset_repo]]` section's
   intro (it currently says "auto-update policy, Lens version tracking..." —
@@ -441,11 +441,11 @@ match; do not leave either describing the old shape.
   `requested_version`'s description to mention the UI's Update button as
   the common path and that it's never cleared automatically. Also fix the
   `lens check` validation table further down that page — it currently lists
-  "`auto_update` values" as something `lens check` validates; remove that.
+  "`auto_update` values" as something `lens check` validates; remove that.  **✓ done**
 - **`deploy/README.md`** (real, shipped docs): it currently calls this "the
   release/auto-update system" (Initial Setup section) — reword to "the
   release system" (or similar) now that there's no autonomous auto-update
-  behavior to name it after.
+  behavior to name it after.  **✓ done**
 - Tests: delete/rewrite `lens/core/test/test_release_commands.py`'s
   gated-approval-flow and target-selection-policy cases entirely; add cases
   for the new shape (no request; request whose parent matches → apply;
@@ -455,7 +455,19 @@ match; do not leave either describing the old shape.
   `push` calls at all — a good regression guard, since the whole point of
   this phase is that CI stops writing). Multi-project topology tests
   (`resolve_release_project_root`, `validate_deploy_topology`) are unaffected
-  — keep as-is.
+  — keep as-is.  **✓ done**
+- **Server routes** (strategically moved from Phase 2): remove
+  `GET /release/status`, `POST /release/policy`,
+  `POST /release/gated-update/approve`, `.../reject` — the removed fields
+  and imports break pyright, so routes must go now. Stub the route file for
+  Phase 2.  **✓ done**
+- **Frontend** (strategically moved from Phase 3): strip `auto_update`,
+  `gated_update_*`, `latest_available` (re-added for notification indicator),
+  `releaseApprove`/`releaseReject`/`releasePolicy` from `api.ts`; rewrite
+  `ReleaseNotification.svelte` to show a version-available indicator instead
+  of the pending/approved banner; rewrite `ReleaseModal.svelte` to show a
+  simple info-only dialog without the policy selector or approve/reject
+  buttons.  **✓ done**
 
 ---
 

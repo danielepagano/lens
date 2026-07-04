@@ -20,8 +20,8 @@ class TestParseReleaseConfig(unittest.TestCase):
     def test_absent_returns_disabled_default(self) -> None:
         cfg = parse_release_config({})
         self.assertFalse(cfg.enabled)
-        self.assertEqual(cfg.auto_update, "off")
         self.assertEqual(cfg.lens_repo_url, "")
+        self.assertEqual(cfg.requested_version, "")
 
     def test_present_enabled(self) -> None:
         cfg = parse_release_config({"release": {"enabled": True, "lens_repo_url": "https://github.com/user/lens.git"}})
@@ -33,21 +33,15 @@ class TestParseReleaseConfig(unittest.TestCase):
             "release": {
                 "enabled": True,
                 "lens_repo_url": "git@github.com:user/lens.git",
-                "auto_update": "minor",
                 "requested_version": "v2.0.0",
-                "gated_update_pending": True,
-                "gated_update_target_version": "v2.0.0",
-                "gated_update_approved": False,
+                "requested_from_commit": "abc123def456",
             }
         }
         cfg = parse_release_config(raw)
         self.assertTrue(cfg.enabled)
         self.assertEqual(cfg.lens_repo_url, "git@github.com:user/lens.git")
-        self.assertEqual(cfg.auto_update, "minor")
         self.assertEqual(cfg.requested_version, "v2.0.0")
-        self.assertTrue(cfg.gated_update_pending)
-        self.assertEqual(cfg.gated_update_target_version, "v2.0.0")
-        self.assertFalse(cfg.gated_update_approved)
+        self.assertEqual(cfg.requested_from_commit, "abc123def456")
 
     def test_app_leader_defaults_false(self) -> None:
         cfg = parse_release_config({"release": {"enabled": True}})
@@ -61,10 +55,8 @@ class TestParseReleaseConfig(unittest.TestCase):
         cfg = parse_release_config({"release": {"enabled": True, "lens_repo_url": "https://example.com/repo.git"}})
         self.assertTrue(cfg.enabled)
         self.assertEqual(cfg.lens_repo_url, "https://example.com/repo.git")
-        self.assertEqual(cfg.auto_update, "off")
-        self.assertFalse(cfg.gated_update_pending)
-        self.assertEqual(cfg.gated_update_target_version, "")
-        self.assertFalse(cfg.gated_update_approved)
+        self.assertEqual(cfg.requested_version, "")
+        self.assertEqual(cfg.requested_from_commit, "")
 
     def test_wrong_type_ignored(self) -> None:
         cfg = parse_release_config({"release": "not a table"})
@@ -177,7 +169,6 @@ class TestValidateReleaseConfig(unittest.TestCase):
         cfg = ReleaseConfig(
             enabled=True,
             lens_repo_url="https://github.com/user/lens.git",
-            auto_update="minor",
         )
         lines = validate_release_config(cfg, [], [])
         errors = [ln for ln in lines if ln[0] == "error"]
@@ -194,18 +185,6 @@ class TestValidateReleaseConfig(unittest.TestCase):
         lines = validate_release_config(cfg, [], [])
         errors = [ln for ln in lines if ln[0] == "error"]
         self.assertTrue(any("lens_repo_url" in ln[1] for ln in errors))
-
-    def test_invalid_auto_update_error(self) -> None:
-        cfg = ReleaseConfig(enabled=True, lens_repo_url="https://github.com/user/lens.git", auto_update="weekly")
-        lines = validate_release_config(cfg, [], [])
-        errors = [ln for ln in lines if ln[0] == "error"]
-        self.assertTrue(any("auto_update" in ln[1] for ln in errors))
-
-    def test_valid_auto_update_values(self) -> None:
-        for val in ("off", "minor", "major"):
-            cfg = ReleaseConfig(enabled=True, lens_repo_url="https://github.com/user/lens.git", auto_update=val)
-            errors = [ln for ln in validate_release_config(cfg, [], []) if ln[0] == "error"]
-            self.assertEqual([ln for ln in errors if "auto_update" in ln[1]], [], f"failed for {val}")
 
     def test_dataset_repo_missing_name_error(self) -> None:
         cfg = ReleaseConfig(enabled=True, lens_repo_url="https://github.com/user/lens.git")

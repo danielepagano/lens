@@ -64,7 +64,7 @@ lens deploy init \
 
 The `slug=path` pairs in `--deploy-key` select which projects to include — no directory scanning. You will be prompted for the Basic Auth password in both cases.
 
-If you also use the release/auto-update system, note that a Fly app serving multiple projects has only **one** deployed Lens version shared by all of them: exactly one project must be flagged `[release] app_leader = true` in its `lens.toml`, and only that project's `lens.toml`/CI governs upgrades for the whole app. `lens deploy init`/`add`/`push` validate this (and that sibling projects don't declare conflicting `[[dataset_repo]]` entries for the same name). See [Multi-project deployments](#multi-project-deployments) below for where `fly.toml` ends up and how commands find it.
+If you also use the release system, note that a Fly app serving multiple projects has only **one** deployed Lens version shared by all of them: exactly one project must be flagged `[release] app_leader = true` in its `lens.toml`, and only that project's `lens.toml`/CI governs upgrades for the whole app. `lens deploy init`/`add`/`push` validate this (and that sibling projects don't declare conflicting `[[dataset_repo]]` entries for the same name). See [Multi-project deployments](#multi-project-deployments) below for where `fly.toml` ends up and how commands find it.
 
 `init` will:
 1. Validate each project: SSH remote, S3-only mount (if any), same S3 bucket across all

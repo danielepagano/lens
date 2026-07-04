@@ -39,8 +39,15 @@ def _print_json(data: dict[str, str | None], summary: str, *, use_json: bool) ->
             typer.echo(summary)
 
 
+_OPT_SINCE = "Commit SHA of the parent of the push range (e.g. `github.event.before`); checks every commit in `since..HEAD` for a parent match."
+
+
 @app.command(name="check")
-def check(*, json_output: bool = typer.Option(False, "--json", help=OPT_JSON)) -> None:
+def check(
+    *,
+    since: str | None = typer.Option(None, "--since", help=_OPT_SINCE),
+    json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
+) -> None:
     """Check for releases and emit the CI contract.
 
     Runs from inside a project directory, or from a multi-project deploy
@@ -55,7 +62,7 @@ def check(*, json_output: bool = typer.Option(False, "--json", help=OPT_JSON)) -
         raise typer.Exit(1)
 
     try:
-        result = execute_release_check(project_root)
+        result = execute_release_check(project_root, since=since)
     except LensException as exc:
         typer.echo(f"lens release check: {exc}", err=True)
         raise typer.Exit(1)

@@ -28,11 +28,8 @@ class ReleaseStatus:
     enabled: bool = False
 
     lens_repo_url: str = ""
-    auto_update: str = "off"
     requested_version: str = ""
-    gated_update_pending: bool = False
-    gated_update_target_version: str = ""
-    gated_update_approved: bool = False
+    requested_from_commit: str = ""
     app_leader: bool = False
     dataset_repos: list[DatasetRepoConfig] = field(default_factory=list[DatasetRepoConfig])
 
@@ -72,11 +69,8 @@ def compute_release_status(project_root: Path) -> ReleaseStatus:
     status = ReleaseStatus(
         enabled=True,
         lens_repo_url=cfg.lens_repo_url,
-        auto_update=cfg.auto_update,
         requested_version=cfg.requested_version,
-        gated_update_pending=cfg.gated_update_pending,
-        gated_update_target_version=cfg.gated_update_target_version,
-        gated_update_approved=cfg.gated_update_approved,
+        requested_from_commit=cfg.requested_from_commit,
         app_leader=cfg.app_leader,
         dataset_repos=dataset_repos,
     )
