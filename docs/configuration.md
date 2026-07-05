@@ -16,12 +16,13 @@ This guide covers every supported configuration surface, environment variables, 
 8. [`[compress]`](#compress)
 9. [`[params]`](#params)
 10. [`[dataset]`](#dataset)
-11. [Narrative front matter](#narrative-front-matter)
-12. [Prompt packs](#prompt-packs)
-13. [Dataset bundles](#dataset-bundles)
-14. [Environment variables](#environment-variables)
-15. [Validation: `lens check`](#validation-lens-check)
-16. [Precedence reference](#precedence-reference)
+11. [`[release]` / `[[dataset_repo]]` / `[[dependent_project]]`](#release--dataset_repo--dependent_project)
+12. [Narrative front matter](#narrative-front-matter)
+13. [Prompt packs](#prompt-packs)
+14. [Dataset bundles](#dataset-bundles)
+15. [Environment variables](#environment-variables)
+16. [Validation: `lens check`](#validation-lens-check)
+17. [Precedence reference](#precedence-reference)
 
 ---
 
@@ -51,6 +52,8 @@ Select the active narrative with `lens use <slug>`, which sets `[project].narrat
 | `[compress]` | No | Auto-compress size thresholds |
 | `[params]` | No | Default operator invocation parameters |
 | `[dataset]` | No | Dataset-level flags (e.g. verbose LLM logging) |
+| `[release]` | No | Cloud release tracking policy (absent = disabled) |
+| `[[dataset_repo]]` | No | External dataset repos to clone on the server volume |
 | `[config-<name>]` | No | Dataset-specific configuration overrides (one section per loaded dataset) |
 
 Array sections (`[[llm]]`, `[[image]]`, `[[speech]]`) use the **first entry as the default** unless you pass `--llm`, `--model`, or an explicit `id` in the API.
@@ -449,6 +452,121 @@ Keys not listed in the dataset's defaults are silently ignored.  See individual 
 
 ---
 
+## `[release]` / `[[dataset_repo]]` / `[[dependent_project]]`
+
+Controls the **cloud release system**: Lens version tracking, external dataset
+repos cloned onto the server volume, and parent-hash-based CI deployment gate.
+
+The release system is **disabled** when `[release]` is absent from `lens.toml` —
+all release CLI commands and server routes return a clear "not enabled" message.
+Add the section to opt in.
+
+```toml
+[release]
+enabled               = true
+lens_repo_url         = "https://github.com/danielepagano/lens.git"
+requested_version     = ""
+requested_from_commit = ""
+app_leader            = false
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `enabled` | No | `false` | Enable the release system for this project |
+| `lens_repo_url` | Yes when enabled | `""` | SSH or HTTPS git URL of the Lens fork to track for version updates |
+| `requested_version` | No | `""` | Explicit version to target (e.g. `"v2.1.0"`); set by the UI's **Update** button and cleared via `POST /release/clear` or `lens release clear` |
+| `requested_from_commit` | No | `""` | Full commit hash that was `HEAD` when `requested_version` was requested; CI deploys only the next commit whose parent is this hash |
+| `app_leader` | No | `false` | Designate this project as the release leader in a multi-project Fly deployment |
+
+Only **five** fields total.  There is no `auto_update` field and no
+`gated_update_*` field — the system is stateless between CI runs.
+
+### `app_leader` (multi-project deployments)
+
+When a single Fly app serves **multiple** project repos, exactly one project
+must be designated the release leader by setting `[release] app_leader =
+true`. That project's `lens.toml` becomes the single source of truth for the
+Lens version of the whole Fly app — its CI pipeline runs
+`deploy/ci/release_secrets.py check-release`/`apply`, and every served
+project's UI reads/writes the leader's state transparently. Setting `app_leader = true` also moves where `lens
+deploy init` writes `fly.toml` — see [Multi-project
+deployments](../deploy/README.md#multi-project-deployments) in
+`deploy/README.md` for both supported directory layouts and how deploy/dev
+commands locate them.
+
+- **Single-project apps** trivially have one leader; `app_leader` is ignored.
+- No automatic election or failover — if the leader project is ever removed
+  from the deployment, an operator must re-flag a new leader by hand.
+- A non-leader project **must not** enable `[release]` at all (validated by
+  `lens deploy init`/`add`/`push`).
+
+### `[[dependent_project]]`
+
+Sibling projects served by the same Fly app in a multi-project deployment. The
+release leader declares them here — CI discovers the full topology at deploy
+time rather than assuming sibling directories on disk.
+
+```toml
+[[dependent_project]]
+name    = "campaign-b"
+git_url = "git@gitlab.com:org/campaign-b.git"
+ref     = "main"
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `name` | Yes | — | Project slug; used for secret naming (`GIT_REPO_DEPLOY_KEY_<NAME>`) and `LENS_PROJECT_SLUGS` |
+| `git_url` | Yes | — | SSH or HTTPS git URL of the sibling project repository |
+| `ref` | No | `"main"` | Git ref to clone at boot |
+
+Only the release leader declares `[[dependent_project]]` entries — siblings
+contain their own `lens.toml` with their own datasets and API keys but do not
+duplicate `[release]` or `[[dependent_project]]`.
+
+> **Deploy keys:** each project (leader + dependents) needs a
+> `GIT_REPO_DEPLOY_KEY_<SLUG>` CI env var (where `<SLUG>` is the project name
+> uppercased with hyphens→underscores) if the repo is private. CI pushes these
+> to Fly via `release_secrets.py sync` during deploy. See
+> [deploy/README.md](../deploy/README.md) for the full secrets table.
+
+### `[[dataset_repo]]`
+
+External dataset repos that are cloned onto the server volume (Fly) for
+runtime use, not baked into the Docker image.  Each entry is fetched and
+fast-forwarded independently during refresh.
+
+```toml
+[[dataset_repo]]
+name    = "lens-dnd"
+git_url = "git@gitlab.com:org/lens-dnd.git"
+ref     = "main"
+
+[[dataset_repo]]
+name    = "custom-rules"
+git_url = "https://github.com/org/custom-rules.git"
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `name` | Yes | — | Matches an entry in `[project].datasets`; `lens check` warns if it does not |
+| `git_url` | Yes | — | SSH or HTTPS git URL of the dataset repository |
+| `ref` | No | `"main"` | Git ref (branch, tag, or commit) to track |
+
+> **Deploy keys for private repos:** set the Fly secret `DATASET_REPO_DEPLOY_KEY_<NAME>`
+> (where `<NAME>` is the repo name uppercased with hyphens→underscores; e.g.
+> `lens-my-dataset` → `DATASET_REPO_DEPLOY_KEY_LENS_MY_DATASET`) if the
+> dataset repo is private and needs SSH authentication. In the **desktop deploy**
+> flow (`lens deploy push`), private datasets are bundled into the Docker image,
+> so the deploy key is optional — it's only needed for runtime updates via
+> `/refresh`. A **CI deploy** has no local checkout to copy from, making the
+> deploy key **required** for any private `[[dataset_repo]]`. See
+> [deploy/README.md](../deploy/README.md) for secret management.
+
+`lens check` validates each repo's `git_url` format and warns when `name`
+does not match any entry in `[project] datasets`.
+
+---
+
 ## Narrative front matter
 
 YAML at the top of node files (`---` … `---`). Not in `lens.toml` but central to behaviour.
@@ -566,6 +684,9 @@ lens check --skip-network
 | `prompt_pack` file exists | warn if missing |
 | Each `datasets` name has bundled dir | warn if missing |
 | Active `narrative` folder exists | warn if missing |
+| `[release]` configuration | ok / error | if present: `lens_repo_url` format, `[[dependent_project]]` entries |
+| `[[dataset_repo]]` entries | error / warn | if present: valid `git_url`, `name` matches `[project] datasets` |
+| `[[dependent_project]]` entries | error / warn | if present: valid `git_url`, duplicate name check |
 
 Image and speech backends are not fully probed here; missing keys surface when you run `lens media`.
 

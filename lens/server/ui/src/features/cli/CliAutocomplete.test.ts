@@ -368,6 +368,7 @@ function baseStats(over: Partial<Stats> = {}): Stats {
     active_session_operator: null,
     transaction: null,
     dataset_configs: {},
+    release: null,
     ...over,
   }
 }

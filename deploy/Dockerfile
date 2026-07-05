@@ -66,6 +66,9 @@ RUN chmod +x /app/deploy/start.sh
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 
+ARG LENS_VERSION=dev
+ENV LENS_VERSION=${LENS_VERSION}
+
 EXPOSE 8080
 
 ENTRYPOINT ["/app/deploy/start.sh"]

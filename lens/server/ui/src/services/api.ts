@@ -1,10 +1,33 @@
 import { get as storeGet } from 'svelte/store'
 import { currentProject } from '../stores/project'
+import { releaseInfo } from '../stores/release'
 
 function projectPath(path: string): string {
   const slug = storeGet(currentProject)
   if (!slug) throw new Error('No project selected')
   return `/${slug}${path}`
+}
+
+function _updateReleaseFromResponse(data: unknown): void {
+  if (data && typeof data === 'object' && 'release' in data) {
+    const rls = (data as { release: unknown }).release
+    if (rls && typeof rls === 'object') {
+      releaseInfo.update((prev) => ({
+        ...(prev ?? {
+          enabled: false,
+          lens_repo_url: '',
+          requested_version: '',
+          requested_from_commit: '',
+          app_leader: false,
+          dataset_repos: [],
+          installed_version: null,
+          latest_available: null,
+          update_available: false,
+        } as ReleaseInfo),
+        ...(rls as Partial<ReleaseInfo>),
+      }))
+    }
+  }
 }
 
 export function getMountFilePath(path: string): string {
@@ -21,7 +44,9 @@ export async function fetchMountFileText(path: string): Promise<string> {
 async function get(path: string): Promise<unknown> {
   const r = await fetch(path)
   if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`)
-  return r.json()
+  const data = await r.json()
+  _updateReleaseFromResponse(data)
+  return data
 }
 
 async function post(path: string, body: unknown): Promise<unknown> {
@@ -30,8 +55,10 @@ async function post(path: string, body: unknown): Promise<unknown> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!r.ok) throw new Error(await errorDetail(r))
-  return r.json()
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${path}`)
+  const data = await r.json()
+  _updateReleaseFromResponse(data)
+  return data
 }
 
 async function put(path: string, body: unknown): Promise<unknown> {
@@ -114,6 +141,30 @@ export interface Stats {
   active_session_operator: string | null
   transaction: TransactionState | null
   dataset_configs: Record<string, Record<string, unknown>>
+  /** Release system status (null when viewing a dataset or release not enabled). */
+  release: ReleaseStats | null
+}
+
+export interface ReleaseStats {
+  enabled: boolean
+  lens_repo_url: string
+  requested_version: string
+  requested_from_commit: string
+  app_leader: boolean
+  dataset_repos: { name: string; git_url: string; ref: string }[]
+  installed_version: string | null
+}
+
+export interface ReleaseInfo {
+  enabled: boolean
+  lens_repo_url: string
+  requested_version: string
+  requested_from_commit: string
+  app_leader: boolean
+  dataset_repos: { name: string; git_url: string; ref: string }[]
+  installed_version: string | null
+  latest_available: string | null
+  update_available: boolean
 }
 
 export interface TransactionState {
@@ -810,6 +861,7 @@ export interface TransactionActionResponse {
   detail?: string
   owner?: string | null
   is_mutation?: boolean
+  release?: ReleaseInfo | null
 }
 
 export const rollbackTransaction = (): Promise<TransactionActionResponse> =>
@@ -824,10 +876,25 @@ export const checkpointTransaction = (opts?: {
 }): Promise<TransactionActionResponse> =>
   post(projectPath('/checkpoint'), opts ?? {}) as Promise<TransactionActionResponse>
 
+export interface RefreshEntry {
+  name: string
+  status: string
+  action: string
+  detail: string
+}
+
+export interface RefreshResponse {
+  status: 'ok' | 'error'
+  entries?: RefreshEntry[]
+  any_changed?: boolean
+  detail?: string
+  release?: ReleaseInfo | null
+}
+
 export const refreshTransaction = (opts?: {
   reset?: boolean
-}): Promise<TransactionActionResponse> =>
-  post(projectPath('/refresh'), opts ?? {}) as Promise<TransactionActionResponse>
+}): Promise<RefreshResponse> =>
+  post(projectPath('/refresh'), opts ?? {}) as Promise<RefreshResponse>
 
 export interface TxStatusCommit {
   hash: string
@@ -843,10 +910,45 @@ export interface TxStatusResponse {
   incoming: TxStatusCommit[]
   unpushed: TxStatusCommit[]
   remote_head: TxStatusCommit | null
+  release?: ReleaseInfo | null
 }
 
 export const getTxStatus = (): Promise<TxStatusResponse> =>
   get(projectPath('/tx/status')) as Promise<TxStatusResponse>
+
+// ---- Release API ----
+
+export interface ReleaseLatestResponse {
+  latest_available: string | null
+  update_available: boolean
+}
+
+export const fetchLatestRelease = (): Promise<ReleaseLatestResponse> =>
+  get(projectPath('/release/latest')) as Promise<ReleaseLatestResponse>
+
+export const releaseRequest = (targetVersion: string): Promise<{
+  status: 'ok' | 'error'
+  requested_version?: string
+  requested_from_commit?: string
+  detail?: string
+}> =>
+  post(projectPath('/release/request'), {
+    target_version: targetVersion,
+  }) as Promise<{
+    status: 'ok' | 'error'
+    requested_version?: string
+    requested_from_commit?: string
+    detail?: string
+  }>
+
+export const releaseClear = (): Promise<{
+  status: 'ok' | 'error'
+  detail?: string
+}> =>
+  post(projectPath('/release/clear'), {}) as Promise<{
+    status: 'ok' | 'error'
+    detail?: string
+  }>
 
 // ---- Narrative API ----
 

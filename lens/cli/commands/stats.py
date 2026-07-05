@@ -6,6 +6,8 @@ from lens.cli.help_strings import CMD_STATS, HELP_OPTS, OPT_VERBOSE
 from lens.core.commands.stats import get_stats
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
+from lens.core.release.status import compute_latest_available
+from lens.core.release.version import compute_local_version, find_lens_repo_root
 
 app = typer.Typer(
     invoke_without_command=True,
@@ -31,6 +33,14 @@ def stats(
     except (RuntimeError, LensException) as e:
         typer.echo(f"lens stats: {e}", err=True)
         raise typer.Exit(1)
+
+    local_checkout_version: str | None = None
+    if result.release_enabled and result.dataset_name is None and find_lens_repo_root() is not None:
+        local_checkout_version = compute_local_version()
+
+    latest_available: str | None = None
+    if result.release_enabled and result.dataset_name is None and result.release_lens_repo_url:
+        latest_available = compute_latest_available(session.project_root)
 
     if result.dataset_name is not None:
         typer.echo(f"Dataset: {result.dataset_name}")
@@ -93,6 +103,33 @@ def stats(
                     typer.echo(f"Modality warning: {warning}")
         else:
             typer.echo("Active narrative cursor:  (no active narrative)")
+
+    if result.dataset_name is None and result.release_enabled:
+        typer.echo("Release:")
+        typer.echo(f"  Lens repo: {result.release_lens_repo_url}")
+        if result.release_requested_version:
+            typer.echo(f"  Requested version: {result.release_requested_version}")
+        if result.release_requested_from_commit:
+            typer.echo(f"  Requested from commit: {result.release_requested_from_commit}")
+        if result.release_installed_version:
+            typer.echo(f"  Installed: {result.release_installed_version}")
+        elif local_checkout_version:
+            typer.echo(f"  Local checkout: {local_checkout_version}")
+        else:
+            typer.echo("  Installed: (not deployed / LENS_VERSION unset)")
+        if latest_available:
+            typer.echo(f"  Latest available: {latest_available}")
+        if result.release_app_leader:
+            typer.echo("  App leader: yes (governs release for the whole Fly app)")
+        if result.release_dataset_repos:
+            for repo in result.release_dataset_repos:
+                line = f"  Dataset repo: {repo['name']} -> {repo['git_url']} ({repo['ref']})"
+                head_sha = repo.get("head_sha")
+                if head_sha:
+                    line = f"{line} @ {head_sha}"
+                typer.echo(line)
+    else:
+        typer.echo("Release: not configured")
 
     typer.echo(f"Open transaction: {'yes' if result.has_pending else 'no'}")
     if result.has_pending:

@@ -5,6 +5,7 @@ import {
   refreshTransaction,
   getTxStatus,
   type TxStatusCommit,
+  type RefreshEntry,
 } from '../services/api'
 import { transactionResult, treeRefreshTrigger, cliOutput } from '../stores/ui'
 import type {
@@ -92,6 +93,15 @@ function formatTxStatus(status: Awaited<ReturnType<typeof getTxStatus>>): string
   return lines.join('\n')
 }
 
+function formatRefreshResult(entries: RefreshEntry[]): string {
+  return entries
+    .map((e) => {
+      const icon = e.status === 'ok' ? '✓' : '✗'
+      return `${icon} ${e.name}: ${e.detail}`
+    })
+    .join('\n')
+}
+
 const handler: CommandHandler = async (
   command,
   _payload,
@@ -132,7 +142,22 @@ const handler: CommandHandler = async (
       }
       case 'tx-refresh': {
         const reset = ctx.args.options['reset'] === true
-        result = await refreshTransaction({ reset })
+        const refreshResult = await refreshTransaction({ reset })
+        if (refreshResult.status === 'ok') {
+          if (refreshResult.entries && refreshResult.any_changed) {
+            cliOutput.set({
+              output: formatRefreshResult(refreshResult.entries),
+              exitCode: 0,
+              streaming: false,
+            })
+          } else {
+            cliOutput.set(null)
+          }
+          if (ctx.onDone) await ctx.onDone()
+          treeRefreshTrigger.update((n) => n + 1)
+          return { clearInput: true }
+        }
+        result = refreshResult
         break
       }
       default:

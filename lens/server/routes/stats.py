@@ -52,5 +52,14 @@ def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> 
         "modalities_at_cursor": result.modalities_at_cursor,
         "modality_warnings_at_cursor": result.modality_warnings_at_cursor,
         "dataset_configs": result.dataset_configs,
+        "release": {
+            "enabled": result.release_enabled,
+            "lens_repo_url": result.release_lens_repo_url,
+            "requested_version": result.release_requested_version,
+            "requested_from_commit": result.release_requested_from_commit,
+            "app_leader": result.release_app_leader,
+            "dataset_repos": result.release_dataset_repos,
+            "installed_version": result.release_installed_version,
+        } if result.dataset_name is None else None,
         "transaction": transaction,
     }

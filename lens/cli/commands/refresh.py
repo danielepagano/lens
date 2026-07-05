@@ -32,8 +32,8 @@ def refresh(
         from lens.core.project import ProjectSession
 
         session = ProjectSession.from_cwd()
-        execute_refresh(session, reset=reset)
-        typer.echo("Refreshed." if not reset else "Reset to match remote.")
+        result = execute_refresh(session, reset=reset)
+        typer.echo(result.format_cli())
     except RuntimeError as e:
         typer.echo(f"lens refresh: {e}", err=True)
         raise typer.Exit(1)
