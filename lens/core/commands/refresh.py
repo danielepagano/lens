@@ -74,7 +74,7 @@ def _refresh_git_clone(
     if not (clone_dir / ".git").is_dir():
         try:
             subprocess.run(
-                ["git", "clone", "--depth", "1", git_url, str(clone_dir)],
+                ["git", "clone", "--depth", "1", "--branch", ref, git_url, str(clone_dir)],
                 capture_output=True,
                 text=True,
                 check=True,

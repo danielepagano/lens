@@ -39,7 +39,9 @@ class TestCloudDatasetRepoRefresh:
         _git("init", "--bare", str(bare_dir), cwd=tmp_path)
 
         work_dir = tmp_path / "work"
-        _git("clone", str(bare_dir), str(work_dir), cwd=tmp_path)
+        work_dir.mkdir()
+        _git("init", "-b", "main", str(work_dir), cwd=tmp_path)
+        _git("remote", "add", "origin", str(bare_dir), cwd=work_dir)
         (work_dir / "data.txt").write_text("initial\n")
         _git("add", "data.txt", cwd=work_dir)
         _git(
@@ -47,7 +49,7 @@ class TestCloudDatasetRepoRefresh:
             "commit", "-m", "initial",
             cwd=work_dir,
         )
-        _git("push", cwd=work_dir)
+        _git("push", "--set-upstream", "origin", "main", cwd=work_dir)
 
         # 2. Create a Lens project with [[dataset_repo]]
         project_dir = tmp_path / "project"
