@@ -134,6 +134,36 @@ The `slug=path` pairs in `--deploy-key` select which projects to include — no 
 | `AWS_*` | S3 credentials, if any project uses an S3 mount |
 | `DATASET_REPO_DEPLOY_KEY_<NAME>` | SSH deploy key for a private `[[dataset_repo]]` (optional in desktop flow — datasets are bundled into the image; needed for runtime `/refresh` updates) |
 
+#### Deploy keys
+
+Each project pushed to a SSH git remote needs an SSH deploy key so the Fly
+container can clone and push to the repo.
+
+**Create a key pair** (one per project or dataset repo):
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/my-campaign-deploy -N ""
+```
+
+**Register the public key** on your Git host with **write** access:
+
+| Host | Location |
+|------|----------|
+| GitHub | Repository → Settings → Deploy keys → Add deploy key. Check **Allow write access**. |
+| GitLab | Repository → Settings → Repository → Deploy keys → Add. Check **Grant write permissions**. |
+
+The **private** key (`~/.ssh/my-campaign-deploy`) is passed to
+`lens deploy init --deploy-key <path>` which stores it as
+`GIT_REPO_DEPLOY_KEY_<SLUG>` on Fly. The container uses it at boot to
+authenticate when cloning repos.
+
+**For dataset repos** (`[[dataset_repo]]`), same process — create a key,
+register its public half on the Git host, and either:
+- Pass it to `lens deploy init` (it reads deploy keys from the active project's
+  env or auto-discovers them), or
+- Set `DATASET_REPO_DEPLOY_KEY_<NAME>` directly on Fly (see
+  [Managing secrets](#managing-secrets)).
+
 #### Container environment (fly.toml `[env]`)
 
 | Variable | Purpose |
@@ -268,7 +298,7 @@ Fly app.
 
 | Secret | Required? | Purpose |
 |--------|-----------|---------|
-| `FLY_API_TOKEN` | Always | Authenticate `flyctl deploy` and `fly secrets set` |
+| `FLY_API_TOKEN` | Always | Authenticate `flyctl deploy` and `fly secrets set` — generate one with `fly tokens create` or from [fly.io/user/personal_access_tokens](https://fly.io/user/personal_access_tokens) |
 | `GIT_REPO_DEPLOY_KEY_<SLUG>` | Per project | SSH deploy key for the leader + each `[[dependent_project]]` repo |
 | `DATASET_REPO_DEPLOY_KEY_<NAME>` | Per private `[[dataset_repo]]` | SSH deploy key for a dataset repo that needs private access |
 | Any `api_key_env` from `lens.toml` | If provider used | LLM / image / speech API keys |
@@ -423,14 +453,44 @@ fly ssh console --app my-campaign
 fly logs --app my-campaign
 ```
 
+### Managing secrets
+
+Fly secrets persist across restarts and redeploys. You can set them directly
+without running `lens deploy init` or having env vars in your shell — just
+read the file at command time:
+
+```bash
+fly secrets set \
+  GIT_REPO_DEPLOY_KEY_CAMPAIGN_A="$(cat ~/.ssh/campaign-a-deploy)" \
+  --app my-campaign
+```
+
+If a `fly.toml` exists in the current directory, `--app` is optional:
+
+```bash
+cd projects/
+fly secrets set \
+  DATASET_REPO_DEPLOY_KEY_LENS_DND="$(cat ~/.ssh/lens-dnd-deploy)"
+```
+
+To get a Fly API token for CI setup:
+
+```bash
+fly tokens create
+```
+
+Or create one with a brief expiry at [fly.io/user/personal_access_tokens](https://fly.io/user/personal_access_tokens).
+
+`lens release secrets check --fly` shows which secrets are already on the Fly
+app and which are missing. The machine restarts automatically after any secret
+change.
+
 ### Changing the password
 
 ```bash
 python -c "import bcrypt; print(bcrypt.hashpw(b'new-password', bcrypt.gensalt()).decode())"
 fly secrets set CADDY_BASIC_AUTH_HASH='$2b$12$...' --app my-campaign
 ```
-
-The machine restarts automatically after secret changes.
 
 ### Scaling (should not be needed and may incur you cost)
 
