@@ -433,17 +433,34 @@ DEPLOY_REMOVE = (
 
 # release sub-commands
 RELEASE_INIT = (
-    "Install CI trigger files into the leader project.\n\n"
+    "Install CI trigger files and activate the release system.\n\n"
     "Copies the correct CI template (GitHub Actions or GitLab CI) and\n"
     "shared scripts (``release.sh``, ``release_secrets.py``) from\n"
-    "Lens's golden templates into the project.  Existing files are\n"
-    "overwritten.\n\n"
-    "Run ``lens release check`` first — if it reports a PROBLEM with\n"
-    "CI installation and suggests ``lens release init``, this is the\n"
-    "command to run.\n\n"
+    "Lens's golden templates into the project.  Enables the ``[release]``\n"
+    "section in lens.toml with the specified ``lens_repo_url``.  Scans\n"
+    "for sibling projects (``[[dependent_project]]``) and non-bundled\n"
+    "datasets (``[[dataset_repo]]``), validating that each has an SSH\n"
+    "git remote for CI cloning.\n\n"
+    "Use ``--leader`` to designate this project as the release leader\n"
+    "for a multi-project Fly app.  Run ``lens release check`` afterwards\n"
+    "to verify the setup.\n\n"
     "Requires an ``origin`` remote on the leader project and a local\n"
     "Lens checkout (golden templates are only available in-development;\n"
     "PyPI users should copy from the Lens repo manually)."
+)
+OPT_RELEASE_INIT_LENS_REPO_URL = (
+    "Lens repository URL (e.g. https://github.com/danielepagano/lens.git). "
+    "Auto-detected from the Lens checkout or leader's origin if omitted."
+)
+OPT_RELEASE_INIT_LEADER = (
+    "Designate this project as the release leader "
+    "([release] app_leader = true). Required for multi-project deployments. "
+    "From a parent deploy directory, use --as-leader <slug> instead."
+)
+OPT_RELEASE_INIT_AS_LEADER = (
+    "When running from a parent deploy directory (fly.toml parent), "
+    "specify which project slug becomes the release leader. "
+    "Implies --leader -- no need to pass both."
 )
 RELEASE_CHECK = (
     "Show release status and check whether CI should trigger a deploy.\n\n"

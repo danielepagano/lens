@@ -756,19 +756,262 @@ def _fly_secrets_set(fly_app: str, secrets: dict[str, str]) -> None:
         )
 
 
-def execute_release_init(project_root: Path) -> ReleaseInitResult:
-    """Install CI trigger files into the leader project from the golden templates.
+def _detect_lens_repo_url(project_root: Path) -> str | None:
+    """Try to auto-detect the Lens repo URL.
 
-    Copies the provider-specific CI template (``github-release.yml`` or
-    ``gitlab-release.yml``) and shared scripts (``release.sh``,
-    ``release_secrets.py``) into the project.  Existing files are
-    overwritten.
+    Checks the Lens package's own git remote (useful for Lens developers),
+    then falls back to the leader project's own remote.  Returns ``None``
+    when neither yields a usable URL.
+    """
+    from lens.core.release.version import find_lens_repo_root
 
-    Raises ``LensException`` if the golden templates are not available
-    (Lens installed from PyPI without a local checkout) or the CI system
-    cannot be determined.
+    lens_root = find_lens_repo_root()
+    if lens_root is not None:
+        try:
+            result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                cwd=lens_root, capture_output=True, text=True,
+            )
+            if result.returncode == 0:
+                url = result.stdout.strip()
+                if url:
+                    return url
+        except Exception:
+            pass
+
+    leader_url = _leader_git_remote_url(project_root)
+    if leader_url:
+        return leader_url
+
+    return None
+
+
+def _append_table_array_entry(text: str, table_name: str, fields: dict[str, str]) -> str:
+    """Append a ``[[table_name]]`` entry to *text*.
+
+    Each key-value pair from *fields* is written as ``key = "value"``.
+    The entry is appended at the end of the file, preserving all existing
+    content, formatting, and comments.  Returns the modified text.
+    """
+    if text and not text.endswith("\n"):
+        text += "\n"
+    text += f"\n[[{table_name}]]\n"
+    for key, value in fields.items():
+        text += f'{key} = "{value}"\n'
+    return text
+
+
+def _discover_dependent_projects(
+    project_root: Path,
+    leader_slug: str | None = None,
+) -> list[dict[str, str]]:
+    """Scan for sibling projects that could be ``[[dependent_project]]`` entries.
+
+    Looks in the parent of *project_root* for other directories containing
+    ``lens.toml`` that are valid git repos with an SSH remote.  The leader
+    project itself (matched by *leader_slug*, defaulting to
+    ``project_root.name``) is excluded.
+
+    Returns entries suitable for directly writing as
+    ``[[dependent_project]]``.  Returns an empty list when no parent
+    directory exists or no qualifying siblings are found.
     """
 
+    parent = project_root.parent
+    if leader_slug is None:
+        leader_slug = project_root.name
+
+    result: list[dict[str, str]] = []
+    if not parent.is_dir():
+        return result
+
+    for child in sorted(parent.iterdir()):
+        if not child.is_dir():
+            continue
+        if child.name == leader_slug:
+            continue
+        if not (child / "lens.toml").exists():
+            continue
+
+        try:
+            remote_url = _get_git_remote_url(child)
+        except LensException:
+            continue
+
+        try:
+            from lens.core.git_ssh_remote import parse_git_ssh_remote
+            parse_git_ssh_remote(remote_url)
+        except ValueError:
+            continue
+
+        result.append({
+            "name": child.name,
+            "git_url": remote_url,
+            "ref": "main",
+        })
+
+    return result
+
+
+def _discover_dataset_repos(
+    project_root: Path,
+    existing_names: set[str] | None = None,
+) -> list[dict[str, str]]:
+    """Find non-bundled datasets that are NOT yet configured and resolve them.
+
+    For each dataset declared in ``[project] datasets`` of *project_root*,
+    skips those already listed in *existing_names* (already present in
+    ``[[dataset_repo]]``) and skips datasets bundled with Lens (under
+    ``datasets/``).  Resolves the remainder to a local path and reads the
+    git remote URL.
+
+    The release system clones dataset repos at runtime (unlike the desktop
+    deploy flow which bundles them into the Docker image) — so every
+    non-bundled dataset must have a reachable git remote.  Both SSH and
+    HTTPS remotes are accepted; private repos additionally need a deploy
+    key configured separately via ``DATASET_REPO_DEPLOY_KEY_<NAME>``.
+
+    Returns entries suitable for ``[[dataset_repo]]``.  Raises
+    :class:`LensException` when a non-bundled dataset cannot be found on
+    disk or has no git remote.
+    """
+    skip_names: set[str] = existing_names if existing_names is not None else set()
+    from lens.core.project import datasets_root, get_selected_datasets, resolve_dataset_path
+
+    ds_root = datasets_root().resolve()
+    selected = get_selected_datasets(project_root)
+    result: list[dict[str, str]] = []
+
+    for name in selected:
+        if name in skip_names:
+            continue
+        bundled = ds_root / name
+        if bundled.is_dir():
+            continue
+
+        path = resolve_dataset_path(project_root, name)
+        if path is None:
+            raise LensException(
+                f"dataset '{name}' not found — cannot configure for release. "
+                f"Checked {ds_root / name}, sibling of Lens repo, and lens.local.toml"
+            )
+
+        remote_url = _get_git_remote_url(path)
+        if not remote_url:
+            raise LensException(
+                f"dataset '{name}' at {path} has no git remote 'origin' — "
+                "a remote is required for release deployment (dataset must be "
+                "clone-able at container boot time)"
+            )
+
+        from lens.core.release.config import validate_git_url
+        err = validate_git_url(remote_url)
+        if err:
+            raise LensException(
+                f"dataset '{name}' remote {remote_url} has an invalid git URL: {err}"
+            )
+
+        result.append({
+            "name": name,
+            "git_url": remote_url,
+            "ref": "main",
+        })
+
+    return result
+
+
+def execute_release_init(
+    project_root: Path,
+    *,
+    lens_repo_url: str | None = None,
+    leader: bool = False,
+) -> ReleaseInitResult:
+    """Install CI trigger files and activate the release system for *project_root*.
+
+    Performs a full release-system bootstrap:
+
+    1. **Configure** ``[release]`` — enables the section, sets
+       ``lens_repo_url``, and designates the leader (``app_leader = true``)
+       when requested.
+    2. **Discover dependent projects** — scans for sibling ``lens.toml``
+       directories, validates they have SSH git remotes, and writes
+       ``[[dependent_project]]`` entries (skipping already-configured ones).
+    3. **Discover dataset repos** — finds non-bundled datasets referenced
+       by the project, resolves their paths, validates they have SSH git
+       remotes, and writes ``[[dataset_repo]]`` entries (skipping
+       already-configured ones).
+    4. **Install CI files** — copies the provider-specific CI template
+       and shared scripts from Lens's golden templates.
+
+    Raises :class:`LensException` when any validation step fails or the
+    golden CI templates are not available (Lens installed from PyPI
+    without a local checkout).
+    """
+    raw = _read_lens_toml(project_root)
+    cfg = parse_release_config(raw)
+
+    effective_lens_repo_url: str = ""
+    if lens_repo_url:
+        effective_lens_repo_url = lens_repo_url.strip()
+    elif cfg.lens_repo_url.strip():
+        effective_lens_repo_url = cfg.lens_repo_url.strip()
+    else:
+        detected = _detect_lens_repo_url(project_root)
+        if detected:
+            effective_lens_repo_url = detected
+        else:
+            raise LensException(
+                "lens_repo_url is required — pass --lens-repo-url or "
+                "set [release] lens_repo_url in lens.toml"
+            )
+
+    # ---- 1. Write [release] config changes ----
+    lens_toml = project_root / "lens.toml"
+    text = lens_toml.read_text(encoding="utf-8") if lens_toml.exists() else ""
+    modified = False
+
+    if not cfg.enabled:
+        text = _set_release_field_text(text, "enabled", "true")
+        modified = True
+
+    if not cfg.lens_repo_url.strip() and effective_lens_repo_url:
+        text = _set_release_field_text(text, "lens_repo_url", effective_lens_repo_url)
+        modified = True
+
+    if leader and not cfg.app_leader:
+        text = _set_release_field_text(text, "app_leader", "true")
+        modified = True
+
+    # ---- 2. Write [[dependent_project]] entries ----
+    existing_deps = {d.name for d in parse_dependent_project_configs(raw)}
+    discovered_deps = _discover_dependent_projects(
+        project_root, leader_slug=project_root.name if leader else None,
+    )
+
+    for dep in discovered_deps:
+        if dep["name"] not in existing_deps:
+            text = _append_table_array_entry(text, "dependent_project", dep)
+            modified = True
+
+    # ---- 3. Write [[dataset_repo]] entries ----
+    existing_ds_config = {d.name: d for d in parse_dataset_repo_configs(raw)}
+    discovered_ds = _discover_dataset_repos(project_root)
+
+    new_ds: list[dict[str, str]] = []
+    for dse in discovered_ds:
+        if dse["name"] not in existing_ds_config:
+            text = _append_table_array_entry(text, "dataset_repo", dse)
+            new_ds.append(dse)
+            modified = True
+
+    # ---- Persist lens.toml changes ----
+    if modified:
+        from lens.core.storage import Storage
+
+        storage = Storage(project_root, owner=None)
+        storage.write_file_bytes(lens_toml, text.encode("utf-8"))
+
+    # ---- 4. Install CI files ----
     leader_repo_url = _leader_git_remote_url(project_root)
     if not leader_repo_url:
         raise LensException(
@@ -790,7 +1033,6 @@ def execute_release_init(project_root: Path) -> ReleaseInitResult:
         )
 
     files_written: list[str] = []
-
     file_map = _CI_GOLDEN_FILES[system]
     for golden_name, dest in file_map:
         src = golden_dir / golden_name
@@ -798,15 +1040,81 @@ def execute_release_init(project_root: Path) -> ReleaseInitResult:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
         files_written.append(str(dst.relative_to(project_root)))
-
     files_written.sort()
+
+    # ---- Gather all dataset repos for display ----
+    all_ds: list[dict[str, str]] = [
+        {"name": d.name, "git_url": d.git_url, "ref": d.ref}
+        for d in existing_ds_config.values()
+    ]
+    all_ds.extend(new_ds)
+
+    # ---- Check for fly.toml ----
+    fly_toml = project_root / "fly.toml"
+    has_fly_toml = fly_toml.is_file()
+    if not has_fly_toml:
+        has_fly_toml = (project_root.parent / "fly.toml").is_file()
+
+    # ---- Build summary ----
+    lines: list[str] = [
+        f"CI files installed for {system}:",
+    ]
+    for f in files_written:
+        lines.append(f"  ✓ {f}")
+    lines.append("")
+
+    # Topology
+    if leader:
+        lines.append(f"Project:   {project_root.name}  (release leader)")
+    else:
+        lines.append(f"Project:   {project_root.name}")
+    if discovered_deps:
+        lines.append("Dependents:")
+        for dep in discovered_deps:
+            lines.append(f"  • {dep['name']}  ({dep['git_url']})")
+
+    # Release config
+    lines.append("")
+    if modified and effective_lens_repo_url:
+        lines.append(f"[release] enabled  (repo: {effective_lens_repo_url})")
+    else:
+        lines.append("[release] already configured")
+
+    # Dataset repos
+    for dse in all_ds:
+        name = dse["name"]
+        url = dse["git_url"]
+        status = "new" if any(n["name"] == name for n in new_ds) else "existing"
+        lines.append("")
+        lines.append(f"Dataset repo:  {name}")
+        lines.append(f"  url: {url}")
+        lines.append(f"  ref: {dse['ref']}  ({status})")
+        if url.startswith("https://"):
+            lines.append(
+                "  ⚠ HTTPS — switch to SSH or confirm it's a public repo "
+                "(edit lens.toml [[dataset_repo]])"
+            )
+
+    # Deploy status
+    lines.append("")
+    if has_fly_toml:
+        lines.append("fly.toml:    found")
+    else:
+        lines.append("fly.toml:    not found  (run 'lens deploy init' first)")
+        lines.append("             The release system clones dataset repos at runtime without")
+        lines.append("             S3 — fly.toml and a Fly.io app are still needed for serving")
+
+    lines.append("")
+    lines.append("Next steps:")
+    if not has_fly_toml:
+        lines.append("  - lens deploy init  --app <name> --region <region> --user <user> --password")
+    lines.append("  - lens release check  (verify configuration)")
+    lines.append("  - lens release secrets check --fly (verify secrets)")
+
     return ReleaseInitResult(
         ci_system=system,
         files_written=tuple(files_written),
-        summary=(
-            f"CI files installed for {system}: "
-            + ", ".join(files_written)
-        ),
+        summary="\n".join(lines),
     )
 
 
@@ -1046,6 +1354,15 @@ def execute_release_secrets_check(
             source="flyctl deploy auth",
             set_in_env="FLY_API_TOKEN" in os.environ,
         ))
+
+        # 5. Caddy basic auth (set by lens deploy init)
+        for caddy_name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH"):
+            secrets.append(SecretRequirement(
+                name=caddy_name,
+                source="Caddy reverse-proxy auth",
+                set_in_env=caddy_name in os.environ,
+                set_on_fly=caddy_name in fly_secrets if check_fly else None,
+            ))
 
         project_slugs = [leader_slug] + [d.name for d in dependents]
 

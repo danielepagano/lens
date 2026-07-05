@@ -1,62 +1,85 @@
 # Deployment
 
-Lens deploys to [Fly.io](https://fly.io) as a single-machine app with a persistent volume.
+Lens deploys to [Fly.io](https://fly.io) as a single-machine app with a persistent volume. This deploy is designed to allow multiple projects for a single user and need under the $5/mo minimum required to be billed by fly... so it's a free server!
 
-## Two deployment systems
+## Table of contents
 
-| Path | Who runs it | Secrets source | Use case |
-|------|-------------|----------------|----------|
-| **Desktop** — ``lens deploy push`` | You (local machine) | Your shell env | First-time setup, daily iteration, quick fixes |
-| **CI-triggered** — ``lens release`` + CI pipeline | GitHub Actions / GitLab CI | CI repository secrets | Automated Lens version upgrades when users click **Update** in the web UI |
+- [Overview](#overview)
+- [Prerequisites](#prerequisites)
+- [Setup path: nothing → live app with CI releases](#setup-path)
+  1. [Desktop init — create the Fly app](#1-desktop-init--create-the-fly-app)
+  2. [Release init — configure the CI pipeline](#2-release-init--configure-the-ci-pipeline)
+  3. [Set CI secrets](#3-set-ci-secrets)
+- [Deploying](#deploying)
+  - [Desktop push](#desktop-push)
+  - [CI release pipeline](#ci-release-pipeline)
+- [Managing projects](#managing-projects)
+- [Operations](#operations)
+- [Tools reference](#tools-reference)
+- [Local deploy (Caddy on your machine)](#local-deploy-caddy-on-your-machine)
 
-**Desktop deploy** (`lens deploy push`) builds the Docker image locally,
-bundles API keys and deploy keys from your current shell, and runs
-``flyctl deploy``.  One-time ``lens deploy init`` creates the Fly app and
-volume.
+---
 
-**CI-triggered deploy** (``lens release``) is driven by ``deploy/ci/release.sh``.
-A user clicks **Update** in the Lens web UI, which writes
-``requested_version`` into ``lens.toml``; their next
-Checkpoint commits and pushes it; CI fires and
-runs the ``release.sh`` pipeline.
+## Overview
 
-``lens release check``/``apply`` emit the CI contract (parent-hash match
-gate + build parameters).  ``lens release secrets check``/``sync`` manage
-CI-side secrets (separate from the desktop flow — CI has no local shell to
-read from).  Both systems deploy to the same Fly app; they are alternatives
-for different workflows.
-
-Configuration (`lens.toml`, API keys, mounts): **[docs/configuration.md](../docs/configuration.md)**.
-
-## Architecture
+### Architecture
 
 ```
 Internet → Fly Edge (TLS) → Caddy (Basic Auth, :8080) → Lens Server (localhost:8000)
-                                                              ↓
-                                                     /data/repos/ (Fly volume)
-                                                         ↕ git pull/push
-                                                      Git remotes (SSH)
+                                                               ↓
+                                                      /data/repos/ (Fly volume)
+                                                          ↕ git pull/push
+                                                       Git remotes (SSH)
 ```
 
-- **Caddy** is the only listener — enforces Basic Auth and reverse-proxies to Lens.
+- **Caddy** is the only public listener — enforces Basic Auth and reverse-proxies to Lens.
 - **Lens** binds to `127.0.0.1` only; never exposed directly.
 - **Fly** terminates TLS at the edge; Caddy handles auth, not certificates.
 - Project repos live on a persistent Fly volume at `/data/repos/<slug>/`.
 - The Lens application (Python code, datasets, built UI) is baked into the Docker image.
+- One Fly app can serve one project or several — the setup is the same either way.
 
-One Fly app can serve one project or several — the setup is the same either way.
+### Two deployment paths
 
-## Prerequisites
+| Path | Who runs it | Secrets source | Use case |
+|------|-------------|----------------|----------|
+| **Desktop** — `lens deploy push` | You (local machine) | Your shell env | First-time setup, daily iteration, quick fixes |
+| **CI-triggered** — `lens release` + CI pipeline | GitHub Actions / GitLab CI | CI repository secrets | Automated Lens version upgrades when users click **Update** in the web UI |
 
-- [flyctl](https://fly.io/docs/flyctl/install/) installed and authenticated (`fly auth login`)
-- Each project's `origin` set to an **SSH** remote URL (e.g. `git@github.com:org/repo.git`) — HTTPS is not supported; the machine authenticates with deploy keys only
-- An SSH deploy key per project, registered on its Git host with read/write access
-- LLM (and optional image / speech) API keys in your environment (matching each `api_key_env` in `lens.toml`)
-- If any project uses an S3 mount: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION` in your environment; all projects must share the same S3 bucket
+Both systems deploy to the same Fly app; they are alternatives for different workflows. A one-time `lens deploy init` from desktop is always needed for initial Fly app creation and volume setup — after that, all routine upgrades can be done from CI.
 
-## Initial Setup
+---
 
-Run `lens deploy init` from the directory that will contain `fly.toml`:
+## Setup path
+
+The path from nothing to a live app with CI-based releases follows three steps:
+
+```
+[Your machine]                              [CI provider]
+     |                                           |
+     1. lens deploy init                          |
+     |   creates Fly app, volume, secrets         |
+     |   writes fly.toml                          |
+     |                                           |
+     2. lens release init                         |
+     |   enables [release]                        |
+     |   discovers dependents & dataset repos     |
+     |   installs CI pipeline templates           |
+     |                                           |
+     |                                 3. Set CI secrets |
+     |                                   (FLY_API_TOKEN,   |
+     |                                    deploy keys,     |
+     |                                    API keys)        |
+     |                                           |
+     +----> lens deploy push (once) --------------+
+     |                                           |
+                                          Next push triggers
+                                          automated release
+```
+
+### 1. Desktop init — create the Fly app
+
+Run `lens deploy init` from the directory that will contain `fly.toml`.
 
 **Single project** — run from inside the project directory (alongside `lens.toml`):
 
@@ -88,22 +111,25 @@ lens deploy init \
 
 The `slug=path` pairs in `--deploy-key` select which projects to include — no directory scanning. You will be prompted for the Basic Auth password in both cases.
 
-If you also use the release system, note that a Fly app serving multiple projects has only **one** deployed Lens version shared by all of them: exactly one project must be flagged `[release] app_leader = true` in its `lens.toml`, and only that project's `lens.toml`/CI governs upgrades for the whole app. `lens deploy init`/`add`/`push` validate this (and that sibling projects don't declare conflicting `[[dataset_repo]]` entries for the same name). See [Multi-project deployments](#multi-project-deployments) below for where `fly.toml` ends up and how commands find it.
-
 `init` will:
 1. Validate each project: SSH remote, S3-only mount (if any), same S3 bucket across all
-2. Collect LLM, image, and speech API keys (each ``api_key_env`` in ``[[llm]]`` / ``[[image]]`` / ``[[speech]]``) plus S3 credentials from your current environment
+2. Collect LLM, image, and speech API keys (each `api_key_env` in `[[llm]]` / `[[image]]` / `[[speech]]`) plus S3 credentials from your current environment
 3. Generate `fly.toml` in the current directory
 4. Create the Fly app and a 1 GB persistent volume
 5. Set all secrets on the Fly app
 
-### Fly regions
+#### Secrets set by `lens deploy init`
 
-Pick the region closest to you. Common choices: `lax` (Los Angeles), `ams` (Amsterdam), `lhr` (London), `fra` (Frankfurt), `iad` (Virginia). Full list: `fly platform regions`.
+| Secret | Value |
+|--------|-------|
+| `CADDY_BASIC_AUTH_USER` / `CADDY_BASIC_AUTH_HASH` | Basic Auth credential (you provide the password; `init` hashes it) |
+| `GIT_REPO_DEPLOY_KEY_<SLUG>` | SSH deploy key per project (slug uppercased, hyphens→underscores) |
+| `PROJECT_REPO_URL_<SLUG>` | Git remote URL per project |
+| LLM / image / speech keys (e.g. `OPEN_ROUTER_API_KEY`) | From each project's `api_key_env`; deduplicated across blocks and projects |
+| `AWS_*` | S3 credentials, if any project uses an S3 mount |
+| `DATASET_REPO_DEPLOY_KEY_<NAME>` | SSH deploy key for a private `[[dataset_repo]]` (optional in desktop flow — datasets are bundled into the image; needed for runtime `/refresh` updates) |
 
-### Container environment (`fly.toml` `[env]`)
-
-Set by `lens deploy init` (not secrets):
+#### Container environment (fly.toml `[env]`)
 
 | Variable | Purpose |
 |----------|---------|
@@ -113,88 +139,214 @@ Set by `lens deploy init` (not secrets):
 | `LENS_PORT` | Uvicorn bind port behind Caddy (default `8000`) |
 | `CADDY_PORT` | Caddy listen port (default `8080`) |
 
-### Secrets
+#### Fly regions
 
-| Secret | Value |
-|--------|-------|
-| `CADDY_BASIC_AUTH_USER` / `CADDY_BASIC_AUTH_HASH` | Basic Auth credential |
-| `GIT_REPO_DEPLOY_KEY_<SLUG>` | SSH deploy key per project (slug uppercased, hyphens→underscores) |
-| `PROJECT_REPO_URL_<SLUG>` | Git remote URL per project |
-| LLM / image / speech keys (e.g. `OPEN_ROUTER_API_KEY`, `A2E_TOKEN`, `XAI_API_KEY`) | From each project's ``[[llm]]`` / ``[[image]]`` / ``[[speech]]`` ``api_key_env``; deduplicated across blocks and projects |
-| `AWS_*` | S3 credentials, if any project uses an S3 mount |
-| `DATASET_REPO_DEPLOY_KEY_<NAME>` | SSH deploy key for a private ``[[dataset_repo]]`` (name uppercased, hyphens→underscores). E.g. a repo named ``lens-my-dataset`` uses env var ``DATASET_REPO_DEPLOY_KEY_LENS_MY_DATASET``. Optional in the desktop flow — external datasets are bundled into the Docker image, so the key is only needed for runtime ``/refresh`` updates. **Required** for private repos in a CI deploy where no local checkout exists to copy from. |
+Pick the region closest to you. Common choices: `lax` (Los Angeles), `ams` (Amsterdam), `lhr` (London), `fra` (Frankfurt), `iad` (Virginia). Full list: `fly platform regions`.
 
-## Multi-project deployments
+#### Multi-project deployments
 
 A Fly app serving several project repos needs exactly one `fly.toml`, and (if
-you use the release system) exactly one `[release] app_leader = true`
-project governing the shared Lens version. `fly.toml` can live in either of
-two places:
+you use the release system) exactly one `[release] app_leader = true` project
+governing the shared Lens version. `fly.toml` can live in either of two places:
 
 1. **Bare parent directory** — `fly.toml` sits in a plain directory above the
    project subdirectories (the directory itself has no `lens.toml`). This is
    what `lens deploy init` generates by default when no project sets
    `app_leader = true`.
-2. **Leader-colocated** — if exactly one of the projects passed to `lens
-   deploy init` sets `[release] app_leader = true`, `fly.toml` is generated
-   **inside that leader's own project directory** instead, so it's tracked
-   and versioned by the leader's own git repo (no bare, ungitted directory
-   holding your deployment config). Sibling projects stay where they are, as
-   siblings of the leader's directory — not nested under it.
+2. **Leader-colocated** — if exactly one of the projects passed to `lens deploy
+   init` sets `[release] app_leader = true`, `fly.toml` is generated **inside
+   that leader's own project directory** instead, so it's tracked and versioned
+   by the leader's own git repo (no bare, ungitted directory holding your
+   deployment config). Sibling projects stay where they are, as siblings of the
+   leader's directory — not nested under it.
 
-`lens deploy push` / `add` / `remove` (and `lens release check` / `apply`)
-locate `fly.toml` automatically, in this order, so the same commands work
-under either layout:
+`lens deploy push` / `add` / `remove` (and all `lens release` commands)
+locate `fly.toml` automatically:
 
 1. The current directory itself has `fly.toml`.
-2. The current directory is inside a project (`lens.toml` at an ancestor)
-   whose root also has `fly.toml`.
+2. The current directory is inside a project (`lens.toml` at an ancestor) whose
+   root also has `fly.toml`.
 3. An immediate child of the current directory colocates `lens.toml` +
-   `fly.toml` — this is what lets you run these commands from the
-   **grandparent** directory (the folder containing the leader project and
-   its siblings) in the leader-colocated layout, exactly like you would from
-   the bare parent directory in layout 1.
-
-Example: `~/projects/` contains `campaign-a/` (the release leader, holding
-`campaign-a/fly.toml`) and `campaign-b/` (a sibling with no remote-tracking
-requirement beyond being listed in `LENS_PROJECT_SLUGS`). Running `lens dev`,
-`lens serve`, or `lens deploy push` from `~/projects/` works the same as
-running them from inside `campaign-a/` — commands resolve the deployment
-automatically either way. Sibling directories that aren't a Fly-tracked
-project at all (no `lens.toml`, or a `lens.toml` never passed to `lens deploy
-init`/`add`) are simply not part of `LENS_PROJECT_SLUGS` and are ignored by
-`deploy`/`release`, even though `lens dev`/`serve` will still serve them
-locally alongside the deployed ones.
+   `fly.toml` — this lets you run commands from the **grandparent** directory
+   in the leader-colocated layout.
 
 Only the leader's own CI needs deployment access: a `FLY_API_TOKEN` secret to
 run `flyctl deploy`, plus whatever git access it already has to check out its
-own repo (which now includes `fly.toml`). It does not need credentials for
-sibling project repos — those repos' `GIT_REPO_DEPLOY_KEY_<SLUG>` /
-`PROJECT_REPO_URL_<SLUG>` secrets are already set on the Fly app itself (via
-`lens deploy init`/`add` from the desktop), and the running container uses
-them directly to clone/refresh each project on the volume. Sibling repos'
-own CI, if any, should only call their project's `/refresh` endpoint — never
-`flyctl deploy` — since only one project may control the shared Lens version.
+own repo (which now includes `fly.toml`). Sibling projects' repos are cloned
+at container boot via the `GIT_REPO_DEPLOY_KEY_<SLUG>` secrets already set on
+the Fly app. Sibling repos' own CI, if any, should only call their project's
+`/refresh` endpoint — never `flyctl deploy` — since only one project controls
+the shared Lens version.
+
+---
+
+### 2. Release init — configure the CI pipeline
+
+After `lens deploy init` has created the Fly app, run `lens release init` from
+the **release leader's project directory** (the project that will own the CI
+pipeline and the shared Lens version), or from the **parent deploy directory**
+(where `fly.toml` lives) with `--as-leader <slug>`:
+
+```bash
+# From the leader's project directory:
+lens release init --leader
+
+# Or from the parent deploy directory (fly.toml lives here):
+lens release init --as-leader campaign-a
+```
+
+Without `--leader`, the project is a participant with no CI ownership. When
+running from a parent deploy directory that has multiple projects, use
+`--as-leader <slug>` to specify which one becomes the leader — without it you
+get a helpful error listing the available slugs.
+
+`lens release init` does four things:
+
+1. **Enables `[release]`** — sets `enabled = true` and writes `lens_repo_url`
+   (auto-detected from your Lens checkout, or pass `--lens-repo-url`).
+2. **Discovers dependent projects** — scans for sibling `lens.toml` directories
+   with SSH git remotes and writes `[[dependent_project]]` entries in
+   `lens.toml` so CI knows the full topology.
+3. **Discovers dataset repos** — finds non-bundled datasets referenced by your
+   project, resolves their git remote URLs, and writes `[[dataset_repo]]`
+   entries (so CI can clone them at container boot time).
+4. **Installs CI pipeline files** — copies the provider-specific template
+   (`.github/workflows/release.yml` or `.gitlab-ci.yml`) and CI scripts into
+   your project.
+
+All changes are **uncommitted** — review them with `git diff`, then commit and
+push when ready.
+
+> **Already ran `lens release init` before?** Rerunning is safe — it skips
+> already-configured entries, re-installs CI files, and reports the current
+> state.
+
+#### Example output
+
+```
+CI files installed for github:
+  ✓ .github/workflows/release.yml
+
+[release] enabled  (repo: git@github.com:my/lens.git)
+
+Dataset repo:  lens-dnd-ext
+  url: https://github.com/user/lens-dnd-ext.git
+  ref: main  (new)
+  ⚠ HTTPS — switch to SSH or confirm it's a public repo (edit lens.toml [[dataset_repo]])
+
+fly.toml:    found
+
+Next steps:
+  1. lens release check  (verify configuration)
+  2. lens deploy push    (initial build and deploy)
+```
+
+---
+
+### 3. Set CI secrets
+
+With the Fly app running and `[release]` configured, the final setup step is to
+make sure the CI provider has the secrets it needs.
+
+**Audit what's needed:**
+
+```bash
+lens release secrets check --fly
+```
+
+This scans your topology (leader, `[[dependent_project]]` s, `[[dataset_repo]]`
+s, LLM/image/speech configs) and lists every secret the pipeline needs, whether
+it's available in your current shell env, and whether it already exists on the
+Fly app.
+
+**Secrets to set in your CI provider:**
+
+| Secret | Required? | Purpose |
+|--------|-----------|---------|
+| `FLY_API_TOKEN` | Always | Authenticate `flyctl deploy` and `fly secrets set` |
+| `GIT_REPO_DEPLOY_KEY_<SLUG>` | Per project | SSH deploy key for the leader + each `[[dependent_project]]` repo |
+| `DATASET_REPO_DEPLOY_KEY_<NAME>` | Per private `[[dataset_repo]]` | SSH deploy key for a dataset repo that needs private access |
+| Any `api_key_env` from `lens.toml` | If provider used | LLM / image / speech API keys |
+
+**Secrets that stay on Fly (never in CI):**
+
+| Secret | Purpose | Set by |
+|--------|---------|--------|
+| `CADDY_BASIC_AUTH_USER` / `CADDY_BASIC_AUTH_HASH` | Basic Auth for the deployed app | `lens deploy init` |
+| `PROJECT_REPO_URL_<SLUG>` | Git remote URL per project | `lens deploy init` |
+| AWS env vars | S3 credentials | `lens deploy init` |
+
+If `lens release secrets check --fly` reports "Deployment secrets missing from
+Fly app", it means `lens deploy init` was never run (or its secrets were
+cleared). Run it from your desktop to set them.
+
+> **Every secret already on Fly can be omitted from your CI env** — the
+> pipeline only pushes secrets that are present in the CI environment. Secrets
+> already set on Fly are left untouched.
+
+---
 
 ## Deploying
 
-Make sure all project repos are pushed to their remotes, then:
+### Desktop push
 
 ```bash
 lens deploy push
 ```
 
-Optional: `lens deploy push --mode fly` (default, Fly builder without Depot), `--mode depot`, or `--mode local` (build image on this machine with Docker, then push).
+Optional: `--mode fly` (default, Fly builder), `--mode depot`, or `--mode local`
+(build locally with Docker, then push).
 
-Run this from the directory containing `fly.toml`, from inside that project, or — in a multi-project deployment — from its parent directory; see [Multi-project deployments](#multi-project-deployments) for exactly how `fly.toml` is located. **`push` re-syncs all LLM, image, and speech `api_key_env` secrets** from your current shell into the Fly app (then deploys), so you can add a new ``[[image]]`` or ``[[speech]]`` block, export the key locally, and run `lens deploy push` without re-running `init`.
+Run from the directory containing `fly.toml`, from inside that project, or —
+in a multi-project deployment — from its parent directory.
 
-`push` also re-syncs any `DATASET_REPO_DEPLOY_KEY_<NAME>` secrets from your current environment, so adding a new ``[[dataset_repo]]`` entry (or rotating a deploy key) only requires setting the env var locally and running `lens deploy push` — no need to re-run `init`.
+`push` re-syncs all LLM, image, and speech `api_key_env` secrets from your
+current shell into the Fly app (then deploys). So you can add a new
+`[[image]]` block, export the key locally, and run `lens deploy push` without
+re-running `init`.
 
-On first boot, `start.sh` clones each repo onto the volume. On subsequent boots it fast-forwards from `origin`. The volume is never touched by a redeploy.
+On first boot, `start.sh` clones each repo onto the volume. On subsequent boots
+it fast-forwards from `origin`. The volume is never touched by a redeploy.
 
-## Managing Projects
+### CI release pipeline
 
-To add a project to an existing deployment (run from wherever `fly.toml` resolves — see [Multi-project deployments](#multi-project-deployments)):
+After the three setup steps above, every push that contains a Lens version
+update triggers the release pipeline automatically:
+
+1. A user clicks **Update** in the Lens UI, which writes `requested_version` +
+   `requested_from_commit` into `lens.toml` (uncommitted).
+2. Their next **Checkpoint** commits and pushes both fields to the remote.
+3. The push triggers the release leader's CI pipeline (`release.sh`), which:
+   a. Checks every required secret is present in the CI environment
+   b. Verifies the parent-hash match gate (ensures only authorised commits
+      trigger a release)
+   c. Syncs secrets from CI to Fly (additive — never deletes existing secrets)
+   d. Prints build parameters for the target Lens version
+   e. Runs `flyctl deploy --build-arg LENS_VERSION=<tag>`
+4. The new container boots, clones/fast-forwards all project and dataset repos,
+   and the app is live on the new version.
+
+CI **never writes to git** — the check + sync + deploy flow is read-only
+(except for `fly secrets set`, which writes to the Fly app's secret store).
+Deploy errors are surfaced in CI run logs.
+
+#### Pipeline templates
+
+| File | Purpose |
+|------|---------|
+| `deploy/ci/release.sh` | Shared shell script: secrets check → check-release → sync → apply → deploy |
+| `deploy/ci/release_secrets.py` | Standalone Python (zero deps outside Lens venv): check, sync, apply |
+| `deploy/ci/github-release.yml` | GitHub Actions pipeline template (calls `release.sh`) |
+| `deploy/ci/gitlab-release.yml` | GitLab CI pipeline template (calls `release.sh`) |
+
+These are installed into your project by `lens release init`. Edit the provider
+template to set the correct `--since` commit range for the parent-hash gate.
+
+---
+
+## Managing projects
+
+To add a project to an existing deployment:
 
 ```bash
 lens deploy add campaign-c --deploy-key ~/.ssh/key_c
@@ -208,9 +360,17 @@ lens deploy remove campaign-b
 lens deploy push
 ```
 
-`add` sets the new project's secrets and updates `fly.toml`. `remove` clears them. `push` redeploys with the new configuration. Shared provider keys (`api_key_env` values) are not cleared on remove — they may still be needed by remaining projects.
+`add` sets the new project's secrets and updates `fly.toml`. `remove` clears
+them. `push` redeploys with the new configuration. Shared provider keys
+(`api_key_env` values) are not cleared on remove — they may still be needed by
+remaining projects.
 
-## Operational Reference
+When adding a project in CI-release mode, also add it to the leader's
+`[[dependent_project]]` array so CI knows about it.
+
+---
+
+## Operations
 
 ### Updating Lens (code, datasets, UI)
 
@@ -221,22 +381,30 @@ lens deploy push
 ```
 
 This rebuilds the Docker image. Project repos on the volume are untouched.
-
-External datasets referenced in deployed projects (e.g. a private `lens-dnd` tree) are copied into the image under `datasets/<name>/` during `push`, including any Python extension package and `prompts/` declared in that dataset’s `lens.toml`. No separate pip install on the server.
+External datasets referenced in deployed projects are copied into the image
+under `datasets/<name>/` during `push`.
 
 ### Updating project content
 
-Push local changes to the Git remote, then use the **Refresh** button in the web UI (or `POST /refresh` on the API). The server does a `git fetch` + fast-forward merge. If there are uncommitted changes on the server, checkpoint first.
+Push local changes to the Git remote, then use the **Refresh** button in the
+web UI (or `POST /refresh` on the API). The server does a `git fetch` +
+fast-forward merge.
 
 ### Volume
 
-The Fly volume at `/data` persists across restarts, redeploys, and machine suspend/resume. It is tied to one machine in one region.
+The Fly volume at `/data` persists across restarts, redeploys, and machine
+suspend/resume. It is tied to one machine in one region.
 
-**Recovery**: The volume is not replicated. Your Git remotes are the durable copies. Use `lens checkpoint` (via the web UI) to push work off the server before doing anything risky. Fly volume snapshots provide additional disaster recovery (`fly volumes snapshots list`).
+**Recovery**: The volume is not replicated. Your Git remotes are the durable
+copies. Use `lens checkpoint` (via the web UI) to push work off the server
+before doing anything risky. Fly volume snapshots provide additional disaster
+recovery (`fly volumes snapshots list`).
 
 ### Machine lifecycle
 
-The default config suspends the machine after idle time and resumes it on the next request (a few seconds of wake latency). To keep it always on, set `min_machines_running = 1` in `fly.toml` and redeploy.
+The default config suspends the machine after idle time and resumes it on the
+next request (a few seconds of wake latency). To keep it always on, set
+`min_machines_running = 1` in `fly.toml` and redeploy.
 
 ### SSH into the machine
 
@@ -259,7 +427,7 @@ fly secrets set CADDY_BASIC_AUTH_HASH='$2b$12$...' --app my-campaign
 
 The machine restarts automatically after secret changes.
 
-### Scaling
+### Scaling (should not be needed and may incur you cost)
 
 Edit `[[vm]]` in `fly.toml` and redeploy:
 
@@ -276,91 +444,37 @@ fly certs add lens.example.com --app my-campaign
 # Point DNS: CNAME lens.example.com → my-campaign.fly.dev
 ```
 
-## CI-driven deploy (no desktop)
+### Configuring CI secrets (`lens release secrets`)
 
-A project using the release system (`[release] enabled = true`) can deploy new
-Lens versions entirely from CI — no local `lens deploy push` needed.
-
-### Topology: `[[dependent_project]]`
-
-In a multi-project Fly app, the release leader's `lens.toml` declares sibling
-projects via a `[[dependent_project]]` array (one entry per sibling). The
-leader's CI uses this to discover the full topology — no sibling directories
-on disk required:
-
-```toml
-[[dependent_project]]
-name    = "campaign-b"
-git_url = "git@gitlab.com:org/campaign-b.git"
-ref     = "main"
-
-[[dependent_project]]
-name    = "campaign-c"
-git_url = "git@github.com:org/campaign-c.git"
-ref     = "main"
+```bash
+lens release secrets check                       # audit what's needed
+lens release secrets check --fly                 # also check Fly app
+lens release secrets sync --fly-app my-campaign  # push CI env → Fly
 ```
 
-Adding a new sibling means editing this array, committing, and pushing — CI
-picks it up automatically.
+See [Tools reference](#tools-reference) for details.
 
-### How it works
+---
 
-1. A user clicks **Update** in the Lens UI, which writes `requested_version` +
-   `requested_from_commit` into `lens.toml` (uncommitted).
-2. Their next **Checkpoint** commits and pushes both fields to the remote.
-3. The push triggers the release leader's CI pipeline (`release.sh`), which:
-   a. Runs `deploy/ci/release_secrets.py check --json` — verifies every
-      required secret is present in the CI environment (blocks on any miss).
-   b. Runs `deploy/ci/release_secrets.py check-release --since <SHA> --json`
-      — parent-hash match (standalone, no lens package needed).
-   c. Runs `deploy/ci/release_secrets.py sync` — reads `[[dependent_project]]`
-      from the leader's `lens.toml`, clones each sibling to read its API keys
-      and dataset references, and pushes the needed Fly secrets (additive only
-      — never deletes; Fly app name auto-detected from `fly.toml`).
-   d. Runs `deploy/ci/release_secrets.py apply --to <tag> --json` — prints
-      build params (standalone, no lens package needed).
-   e. Runs `flyctl deploy --build-arg LENS_VERSION=<tag>`.
-4. The new container boots, `start.sh` clones/fast-forwards all project repos
-   and dataset repos from the freshly-synced secrets, and the app is live on
-   the new version.
+## Tools reference
 
-CI **never writes to git** — the check + sync + deploy flow is read-only
-(except for `fly secrets set`, which writes to the Fly app's secret store,
-not to any git repo). Deploy errors are surfaced in the CI run logs; checking
-them for the failure reason (missing `FLY_API_TOKEN`, build timeout, etc.)
-is the intended debugging workflow.
+| Command | What it does | When to use |
+|---------|-------------|-------------|
+| `lens deploy init` | Create Fly app, volume, secrets, `fly.toml` | First-time setup (desktop only) |
+| `lens deploy push` | Build and deploy Docker image | Desktop deploy, or initial deploy after setup |
+| `lens deploy add` | Add project to an existing deployment | Adding a project |
+| `lens deploy remove` | Remove project from a deployment | Removing a project |
+| `lens deploy push --mode local` | Build locally with Docker, then deploy | When Fly remote builder is slow |
+| `lens release init` | Enable `[release]`, discover topology, install CI files. `--leader` to designate this project as leader; from a parent deploy dir use `--as-leader <slug>` | After `lens deploy init`, one-time |
+| `lens release check` | Show release status (version, CI files, topology) | Verify configuration |
+| `lens release apply` | Set `requested_version` + `requested_from_commit` | Trigger a release (also done by UI) |
+| `lens release clear` | Cancel a pending release | Undo an accidental apply |
+| `lens release secrets check` | Audit required secrets vs CI env (+ `--fly`) | Before setting up CI, after deploys |
+| `lens release secrets sync` | Push CI-available secrets to Fly app | CI pipeline only |
+| `deploy/ci/release.sh` | CI pipeline driver (check → check-release → sync → apply → deploy) | Called by CI provider template |
+| `deploy/ci/release_secrets.py` | Standalone check / sync / apply (zero deps) | CI pipeline (no Lens package available) |
 
-### Prerequisites
-
-| Secret | Where | Purpose |
-|--------|-------|---------|
-| `FLY_API_TOKEN` | CI secret (required) | Authenticate `flyctl deploy` and `fly secrets set` |
-| `GIT_REPO_DEPLOY_KEY_<SLUG>` | CI secret (required, per project) | SSH deploy key for the leader + each `[[dependent_project]]` repo |
-| `DATASET_REPO_DEPLOY_KEY_<NAME>` | CI secret (optional, per dataset) | SSH deploy key for a `[[dataset_repo]]` |
-| Any `api_key_env` from `lens.toml` | CI secret (optional) | LLM / image / speech API keys |
-| Git checkout history | `fetch-depth: 0` | `release_secrets.py check-release` reads parent hashes |
-
-Secrets discovered by `release.sh` but without a matching CI env var are
-**left unchanged on Fly** — never deleted or overwritten with empty.
-
-No Basic Auth credentials for the deployed app are needed in CI — CI never
-talks to the running container.
-
-### Pipeline templates
-
-| File | Purpose |
-|------|---------|
-| `deploy/ci/release.sh` | Shared shell script: secrets check → check-release → sync → apply → deploy |
-| `deploy/ci/release_secrets.py` | Standalone Python (zero deps): secrets check and sync |
-| `deploy/ci/github-release.yml` | GitHub Actions: trigger, calls `release.sh` |
-| `deploy/ci/gitlab-release.yml` | GitLab CI: trigger, calls `release.sh` |
-
-Copy the relevant provider template into your project repository and set the
-required secrets. The desktop `lens deploy push` flow and CI-driven deploy
-are alternatives against the same Fly app — do not run both for the same
-build. A one-time `lens deploy init` from desktop is still needed for the
-initial Fly app creation and volume setup; after that, CI handles all
-routine upgrades and topology changes.
+---
 
 ## Files
 
@@ -373,11 +487,14 @@ routine upgrades and topology changes.
 | `deploy/ci/release_secrets.py` | Standalone Python (zero deps): secrets check and sync for CI |
 | `deploy/ci/github-release.yml` | GitHub Actions pipeline template (calls `release.sh`) |
 | `deploy/ci/gitlab-release.yml` | GitLab CI pipeline template (calls `release.sh`) |
-| `fly.toml` | Generated by `lens deploy init` — in the project directory (single-project), a bare parent directory, or the release leader's project directory (see [Multi-project deployments](#multi-project-deployments)) |
+| `fly.toml` | Generated by `lens deploy init` |
 
-## Local Deploy (Caddy on your machine)
+---
 
-Run Lens on your own machine and expose it safely via Caddy (HTTPS + Basic Auth). Lens must only bind to localhost; Caddy is the only public entrypoint.
+## Local deploy (Caddy on your machine)
+
+Run Lens on your own machine and expose it safely via Caddy (HTTPS + Basic
+Auth). Lens must only bind to localhost; Caddy is the only public entrypoint.
 
 **1. Run Lens:**
 
@@ -415,4 +532,6 @@ lens.example.com {
 caddy run --config ./Caddyfile --adapter caddyfile
 ```
 
-For external access, point `lens.example.com` to your machine's IP and forward TCP 443 from your router. For DNS-01 certificates or dynamic DNS, use a custom Caddy build with the appropriate provider module.
+For external access, point `lens.example.com` to your machine's IP and forward
+TCP 443 from your router. For DNS-01 certificates or dynamic DNS, use a custom
+Caddy build with the appropriate provider module.

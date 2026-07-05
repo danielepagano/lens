@@ -486,9 +486,6 @@ app_leader            = false
 | `requested_from_commit` | No | `""` | Full commit hash that was `HEAD` when `requested_version` was requested; CI deploys only the next commit whose parent is this hash |
 | `app_leader` | No | `false` | Designate this project as the release leader in a multi-project Fly deployment |
 
-Only **five** fields total.  There is no `auto_update` field and no
-`gated_update_*` field — the system is stateless between CI runs.
-
 ### `app_leader` (multi-project deployments)
 
 When a single Fly app serves **multiple** project repos, exactly one project

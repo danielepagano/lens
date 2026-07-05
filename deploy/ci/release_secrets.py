@@ -341,6 +341,14 @@ def execute_release_secrets_check(
             set_in_env="FLY_API_TOKEN" in os.environ,
         ))
 
+        for caddy_name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH"):
+            secrets.append(SecretRequirement(
+                name=caddy_name,
+                source="Caddy reverse-proxy auth",
+                set_in_env=caddy_name in os.environ,
+                set_on_fly=caddy_name in fly_secrets if check_fly else None,
+            ))
+
         project_slugs = [leader_slug] + [d.name for d in dependents]
 
         return ReleaseSecretsCheckResult(
@@ -626,6 +634,18 @@ def cmd_check(args: list[str]) -> None:
     print(f"  {env_count}/{len(result.secrets)} secrets set in environment")
     if fly_total:
         print(f"  {fly_ok}/{fly_total} checkable secrets set on Fly")
+    deploy_missing = [
+        s.name for s in result.secrets
+        if s.name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH")
+        and s.set_on_fly is False
+    ]
+    if deploy_missing:
+        print()
+        print("  Deployment secrets missing from Fly app:")
+        for n in deploy_missing:
+            print(f"    {n}")
+        print("  Run 'lens deploy init' to set them, or 'fly secrets set' manually.")
+
     if not fly:
         print()
         print("  Tip: pass --fly to also check which secrets are set on the Fly app.")

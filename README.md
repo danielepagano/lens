@@ -56,7 +56,7 @@ A **Lens project** is **your** Git repository — campaign, novel, or experiment
 | Goal | Next step |
 |------|-----------|
 | Write fiction | Follow steps 1–3 below |
-| USe companion chat | [Companion dataset guide](datasets/companion/README.md); `datasets = ["companion"]` in `lens.toml` |
+| Use companion chat | [Companion dataset guide](datasets/companion/README.md); `datasets = ["companion"]` in `lens.toml` |
 | Play tabletop RPGs | [RPG dataset guide](datasets/rpg/README.md); `datasets = ["rpg"]` in `lens.toml` |
 | Play D&D | [D&D dataset guide](datasets/lens-dnd/README.md); `datasets = ["rpg", "lens-dnd"]` in `lens.toml` |
 
@@ -144,12 +144,13 @@ The UI uses the project on disk (narrative tree, KB browser, operators, pending-
 
 Declare dataset **names** in `lens.toml` under `[project] datasets = [...]`. Lens merges each dataset’s `knowledge/` into your project (templates, rules, meta pins) without copying files into your repo. Later names in the list shadow earlier ones; edits you make in the project stay local (copy-on-write).
 
-**Shipped with this repo:** `rpg`, `companion` — see [datasets/README.md](datasets/README.md) for what a dataset is, how to author one, and how discovery works.
+**Shipped with this repo:** `rpg`, `companion`, `lens-dnd` — see [datasets/README.md](datasets/README.md) for what a dataset is, how to author one, and how discovery works.
 
 | Bundled | Guide |
 |---------|--------|
 | `companion` | [Companion](datasets/companion/README.md) — dyadic chat, memory, remember |
 | `rpg` | [RPG](datasets/rpg/README.md) — `play`, `advance`; default [system stub](datasets/rpg/knowledge/rules/system.md) (replace via another dataset) |
+| `lens-dnd` | [D&D](datasets/lens-dnd/README.md) — 5.5e SRD rules, stat blocks, spells, encounter design; requires `rpg` |
 
 **Your own datasets** (private repos, homebrew rules) live **outside** Lens — typically as a **sibling folder** next to your `lens` clone (e.g. `../my-ruleset/`, `../lens-dnd/` for D&D) or via `[dataset_paths]` in `lens.local.toml`. Folder name must match the string in `datasets`. Datasets may declare `[dataset] extension` to ship Python (CLI commands, LLM tools) alongside KB — see [datasets/README.md](datasets/README.md). You can run `lens kb` / `lens stats` from inside the dataset directory while editing it.
 

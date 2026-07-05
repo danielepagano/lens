@@ -23,6 +23,9 @@ from lens.cli.help_strings import (
     CMD_RELEASE,
     HELP_OPTS,
     OPT_JSON,
+    OPT_RELEASE_INIT_AS_LEADER,
+    OPT_RELEASE_INIT_LENS_REPO_URL,
+    OPT_RELEASE_INIT_LEADER,
     RELEASE_INIT,
 )
 from lens.core.commands.release import (
@@ -142,20 +145,85 @@ def check() -> None:
             typer.echo(f"    - {ds['name']}  ({ds['git_url']}, ref: {ds['ref']})")
 
 @app.command(name="init", help=RELEASE_INIT)
-def init() -> None:
+def init(
+    *,
+    lens_repo_url: str | None = typer.Option(
+        None, "--lens-repo-url", "-u", help=OPT_RELEASE_INIT_LENS_REPO_URL,
+    ),
+    leader: bool = typer.Option(
+        False, "--leader", "-l", help=OPT_RELEASE_INIT_LEADER,
+    ),
+    as_leader: str | None = typer.Option(
+        None, "--as-leader", help=OPT_RELEASE_INIT_AS_LEADER,
+    ),
+) -> None:
+    cwd = Path.cwd()
+    effective_leader = leader or (as_leader is not None)
+
+    # Standard resolution works from project dir or parent with existing leader
     try:
-        project_root = resolve_release_project_root(Path.cwd())
-    except (RuntimeError, LensException) as exc:
-        typer.echo(f"lens release init: {exc}", err=True)
-        raise typer.Exit(1)
+        project_root = resolve_release_project_root(cwd)
+    except LensException as exc:
+        if effective_leader and "no leader" in str(exc).lower():
+            project_root = _resolve_project_from_deploy_dir(cwd, as_leader)
+        else:
+            typer.echo(f"lens release init: {exc}", err=True)
+            raise typer.Exit(1)
 
     try:
-        result = execute_release_init(project_root)
+        result = execute_release_init(
+            project_root, lens_repo_url=lens_repo_url, leader=effective_leader,
+        )
     except LensException as exc:
         typer.echo(f"lens release init: {exc}", err=True)
         raise typer.Exit(1)
 
     typer.echo(result.summary)
+
+
+def _resolve_project_from_deploy_dir(cwd: Path, as_leader: str | None) -> Path:
+    """Pick a project from a parent deploy directory when no leader exists yet."""
+    from lens.core.commands.deploy import (
+        build_projects,
+        find_colocated_fly_toml,
+        get_slugs,
+    )
+
+    fly_toml = cwd / "fly.toml"
+    if not fly_toml.exists():
+        fly_toml = find_colocated_fly_toml(cwd)
+    if fly_toml is None:
+        raise LensException(
+            "no fly.toml found — run 'lens deploy init' first or run "
+            "'lens release init' from a project directory"
+        )
+
+    slugs = get_slugs(fly_toml)
+    if not slugs:
+        raise LensException(
+            f"{fly_toml} has no project slugs — run 'lens deploy init' first"
+        )
+
+    if as_leader:
+        if as_leader not in slugs:
+            raise LensException(
+                f"slug {as_leader!r} is not in {fly_toml} (slugs: {', '.join(slugs)})"
+            )
+        target_slug = as_leader
+    elif len(slugs) == 1:
+        target_slug = slugs[0]
+    else:
+        raise LensException(
+            f"multiple projects in {fly_toml}: {', '.join(slugs)}. "
+            "Run from the project directory directly, or pass "
+            "--as-leader <slug> to specify which becomes the release leader."
+        )
+
+    projects = build_projects(fly_toml.parent, [target_slug])
+    if not projects:
+        raise LensException(f"could not resolve project {target_slug!r} from {fly_toml}")
+    _slug, _git_root, proj_root = projects[0]
+    return proj_root
 
 
 @app.command(name="apply")
@@ -343,14 +411,19 @@ def secrets_check(
     typer.echo(f"  {'─'*44}  {'─'*28}  {'─'*3}  {'─'*3}")
 
     need_in_ci: list[str] = []
+    deploy_missing: list[str] = []
     for s in result.secrets:
         env_sym = "✓" if s.set_in_env else "✗"
         name = s.name
         source = s.source
         fly_sym = "✓" if s.set_on_fly else "✗" if s.set_on_fly is False else "—"
-        if not s.set_in_env:
-            if not (s.set_on_fly is True and name != "FLY_API_TOKEN"):
-                need_in_ci.append(name)
+        if name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH"):
+            if s.set_on_fly is False:
+                deploy_missing.append(name)
+        else:
+            if not s.set_in_env:
+                if not (s.set_on_fly is True and name != "FLY_API_TOKEN"):
+                    need_in_ci.append(name)
         typer.echo(f"  {name:<45} {source:<30} {env_sym:<5} {fly_sym:<5}")
 
     typer.echo()
@@ -361,8 +434,16 @@ def secrets_check(
                 typer.echo(f"    {n}  (always required — Fly auth)")
             else:
                 typer.echo(f"    {n}")
-    else:
-        typer.echo("  All secrets present in environment — CI is ready.")
+
+    if deploy_missing:
+        typer.echo("")
+        typer.echo("  Deployment secrets missing from Fly app:")
+        for n in deploy_missing:
+            typer.echo(f"    {n}")
+
+        typer.echo("  Run 'lens deploy init' to configure the deployment (it sets these).")
+    if not need_in_ci and not deploy_missing:
+        typer.echo("  All secrets present — deployment is ready.")
 
     if not check_fly:
         typer.echo()

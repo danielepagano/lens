@@ -41,7 +41,12 @@ def init(
     app_name: str = typer.Option(..., "--app", help=ARG_APP_NAME),
     region: str = typer.Option(..., "--region", help=ARG_REGION),
     username: str = typer.Option(..., "--user", help=ARG_USERNAME),
-    password: str = typer.Option(..., "--password", prompt=True, hide_input=True, help=ARG_PASSWORD),
+    password: str = typer.Option(
+        ..., "--password",
+        prompt="Basic Auth password for Caddy (used to log into the deployed Lens UI)",
+        hide_input=True,
+        help=ARG_PASSWORD,
+    ),
     deploy_key: list[str] = typer.Option(
         [],
         "--deploy-key",
