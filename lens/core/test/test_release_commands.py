@@ -29,7 +29,7 @@ from lens.core.exceptions import LensException
 
 def _init_bare_repo_with_tags(base: Path, tags: list[str]) -> Path:
     bare = base / f"lens_remote_{uuid.uuid4().hex}.git"
-    subprocess.run(["git", "init", "--bare", str(bare)], check=True, capture_output=True)
+    subprocess.run(["git", "init", "--bare", "-b", "main", str(bare)], check=True, capture_output=True)
 
     clone = base / f"lens_clone_{uuid.uuid4().hex}"
     subprocess.run(["git", "clone", str(bare), str(clone)], check=True, capture_output=True)
@@ -66,7 +66,7 @@ def _init_project_repo_at(project: Path, lens_toml: str) -> Path:
     subprocess.run(["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True)
 
     remote = project.parent / f"proj_remote_{uuid.uuid4().hex}.git"
-    subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+    subprocess.run(["git", "init", "--bare", "-b", "main", str(remote)], check=True, capture_output=True)
     subprocess.run(["git", "remote", "add", "origin", str(remote)], cwd=project, check=True)
     subprocess.run(["git", "push", "-u", "origin", "main"], cwd=project, check=True, capture_output=True)
 
@@ -560,7 +560,7 @@ class TestSecretsSync(unittest.TestCase):
         subprocess.run(["git", "add", "lens.toml"], cwd=project, check=True, capture_output=True)
         subprocess.run(["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True)
         remote = self._tmp_path / f"leader_remote_{uuid.uuid4().hex}.git"
-        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(remote)], check=True, capture_output=True)
         subprocess.run(["git", "remote", "add", "origin", str(remote)], cwd=project, check=True)
         subprocess.run(["git", "push", "-u", "origin", "main"], cwd=project, check=True, capture_output=True)
         return project
@@ -568,7 +568,7 @@ class TestSecretsSync(unittest.TestCase):
     def _init_dependent_bare(self, name: str) -> Path:
         """Create a bare repo that a dependent clone target can reference."""
         remote = self._tmp_path / f"{name}_remote_{uuid.uuid4().hex}.git"
-        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(remote)], check=True, capture_output=True)
         clone = self._tmp_path / f"{name}_clone_{uuid.uuid4().hex}"
         subprocess.run(["git", "clone", str(remote), str(clone)], check=True, capture_output=True)
         subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=clone, check=True)
@@ -759,7 +759,7 @@ class TestSecretsCheck(unittest.TestCase):
             ["git", "commit", "-m", "init"], cwd=project, check=True, capture_output=True
         )
         remote = self._tmp_path / f"leader_remote_{uuid.uuid4().hex}.git"
-        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(remote)], check=True, capture_output=True)
         subprocess.run(["git", "remote", "add", "origin", str(remote)], cwd=project, check=True)
         subprocess.run(
             ["git", "push", "-u", "origin", "main"], cwd=project, check=True, capture_output=True
@@ -768,7 +768,7 @@ class TestSecretsCheck(unittest.TestCase):
 
     def _init_dependent_bare(self, name: str, extra_toml: str = "") -> Path:
         remote = self._tmp_path / f"{name}_remote_{uuid.uuid4().hex}.git"
-        subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--bare", "-b", "main", str(remote)], check=True, capture_output=True)
         clone = self._tmp_path / f"{name}_clone_{uuid.uuid4().hex}"
         subprocess.run(["git", "clone", str(remote), str(clone)], check=True, capture_output=True)
         subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=clone, check=True)
