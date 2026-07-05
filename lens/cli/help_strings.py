@@ -49,9 +49,12 @@ CMD_DEV = "Start the Vite dev server and Lens API with hot reload."
 CMD_DEPLOY = "Manage Fly.io deployment."
 CMD_RELEASE = (
     "Trigger or inspect CI-driven Lens version releases.\n\n"
+    "Sub-commands: ``check``, ``init``, ``apply``, ``clear``,\n"
+    "``secrets check``, ``secrets sync``.\n\n"
     "Two systems: (1) CI-triggered release where ``check`` detects\n"
     "parent-hash matches and ``apply`` sets the target; (2) desktop\n"
-    "``lens deploy push``. ``check`` shows installed vs latest;\n"
+    "``lens deploy push``. ``init`` installs CI trigger files from\n"
+    "Lens golden templates.  ``check`` shows installed vs latest;\n"
     "``apply`` (no args) sets target to latest available.\n"
     "See deploy/README.md and docs/configuration.md."
 )
@@ -429,6 +432,19 @@ DEPLOY_REMOVE = (
 )
 
 # release sub-commands
+RELEASE_INIT = (
+    "Install CI trigger files into the leader project.\n\n"
+    "Copies the correct CI template (GitHub Actions or GitLab CI) and\n"
+    "shared scripts (``release.sh``, ``release_secrets.py``) from\n"
+    "Lens's golden templates into the project.  Existing files are\n"
+    "overwritten.\n\n"
+    "Run ``lens release check`` first — if it reports a PROBLEM with\n"
+    "CI installation and suggests ``lens release init``, this is the\n"
+    "command to run.\n\n"
+    "Requires an ``origin`` remote on the leader project and a local\n"
+    "Lens checkout (golden templates are only available in-development;\n"
+    "PyPI users should copy from the Lens repo manually)."
+)
 RELEASE_CHECK = (
     "Show release status and check whether CI should trigger a deploy.\n\n"
     "Without arguments, displays the current release status: whether\n"

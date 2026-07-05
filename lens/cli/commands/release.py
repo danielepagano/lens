@@ -23,11 +23,13 @@ from lens.cli.help_strings import (
     CMD_RELEASE,
     HELP_OPTS,
     OPT_JSON,
+    RELEASE_INIT,
 )
 from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
     execute_release_clear,
+    execute_release_init,
     execute_release_secrets_check,
     execute_release_secrets_sync,
     resolve_release_project_root,
@@ -107,6 +109,29 @@ def check() -> None:
         typer.echo(f"  Requested from:      {result.requested_from_commit[:12]}...")
     if result.remote_error:
         typer.echo(f"  Remote error:        {result.remote_error}")
+
+    ci = result.ci_installation
+    if ci.system:
+        has_missing = len(ci.files_present) < len(ci.files_expected)
+        is_problem = bool(ci.info) or has_missing or (ci.files_mismatched and ci.all_files_match is False)
+        typer.echo(f"  CI installation:     {'PROBLEM' if is_problem else 'OK'}")
+        typer.echo(f"    System:             {ci.system}")
+        if ci.info and not ci.files_expected:
+            typer.echo(f"    Config:             {ci.info}")
+        for f in ci.files_expected:
+            if f in ci.files_present:
+                if f in ci.files_mismatched:
+                    typer.echo(f"    Config:             {f}  (✗ - content differs)")
+                else:
+                    typer.echo(f"    Config:             {f}  (✓)")
+            else:
+                typer.echo(f"    Config:             {f}  (✗ — missing)")
+        if ci.system in ("github", "gitlab"):
+            if has_missing:
+                typer.echo("    Fix:                Run 'lens release init' to install CI files")
+            elif ci.files_mismatched:
+                typer.echo("    Fix:                Run 'lens release init' to update CI files")
+
     if result.dependent_projects:
         typer.echo("  Dependent projects:")
         for dep in result.dependent_projects:
@@ -115,6 +140,22 @@ def check() -> None:
         typer.echo("  Dataset repos:")
         for ds in result.dataset_repos:
             typer.echo(f"    - {ds['name']}  ({ds['git_url']}, ref: {ds['ref']})")
+
+@app.command(name="init", help=RELEASE_INIT)
+def init() -> None:
+    try:
+        project_root = resolve_release_project_root(Path.cwd())
+    except (RuntimeError, LensException) as exc:
+        typer.echo(f"lens release init: {exc}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        result = execute_release_init(project_root)
+    except LensException as exc:
+        typer.echo(f"lens release init: {exc}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(result.summary)
 
 
 @app.command(name="apply")

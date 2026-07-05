@@ -38,7 +38,19 @@ from lens.core.release.config import (
     parse_release_config,
     validate_deploy_topology,
 )
-from lens.core.release.version import parse_semver_tag
+from lens.core.release.version import find_lens_repo_root, parse_semver_tag
+
+
+@dataclass(frozen=True)
+class CiInstallationStatus:
+    """Whether CI trigger files are installed and up-to-date for the leader project."""
+
+    system: str = ""  # "github", "gitlab", "unknown"
+    files_expected: tuple[str, ...] = ()
+    files_present: tuple[str, ...] = ()
+    all_files_match: bool = True
+    files_mismatched: tuple[str, ...] = ()
+    info: str = ""
 
 
 @dataclass(frozen=True)
@@ -58,6 +70,9 @@ class ReleaseCheckResult:
     update_available: bool = False
     remote_error: str = ""
 
+    # CI installation status for the leader project (golden-file comparison)
+    ci_installation: CiInstallationStatus = field(default_factory=CiInstallationStatus)
+
     # Release topology: which repo is leading, its remote URL, which
     # other projects and dataset repos are part of the release.
     # Populated when enabled.
@@ -71,6 +86,13 @@ class ReleaseCheckResult:
 class ReleaseApplyResult:
     lens_repo_url: str
     tag: str
+    summary: str
+
+
+@dataclass(frozen=True)
+class ReleaseInitResult:
+    ci_system: str
+    files_written: tuple[str, ...]
     summary: str
 
 
@@ -181,6 +203,94 @@ def _git_rev_list_parents(project_root: Path, since: str | None) -> list[str]:
     return parents
 
 
+# Maps CI system → list of (golden_filename, dest_relative_path)
+_CI_GOLDEN_FILES: dict[str, list[tuple[str, str]]] = {
+    "github": [
+        ("github-release.yml", ".github/workflows/release.yml"),
+        ("release.sh", "deploy/ci/release.sh"),
+        ("release_secrets.py", "deploy/ci/release_secrets.py"),
+    ],
+    "gitlab": [
+        ("gitlab-release.yml", ".gitlab-ci.yml"),
+        ("release.sh", "deploy/ci/release.sh"),
+        ("release_secrets.py", "deploy/ci/release_secrets.py"),
+    ],
+}
+
+
+def _detect_ci_system(remote_url: str) -> str:
+    """Detect the CI system from a git remote URL.
+
+    Returns ``"github"``, ``"gitlab"``, or ``"unknown"``.
+    """
+    host = remote_url.lower()
+    if "github.com" in host or "github" in host:
+        return "github"
+    if "gitlab.com" in host or "gitlab" in host:
+        return "gitlab"
+    return "unknown"
+
+
+def _golden_ci_dir() -> Path | None:
+    """Return the path to ``deploy/ci/`` inside the Lens repo, or ``None``."""
+    root = find_lens_repo_root()
+    if root is None:
+        return None
+    ci_dir = root / "deploy" / "ci"
+    return ci_dir if ci_dir.is_dir() else None
+
+
+def _check_ci_installation(
+    project_root: Path,
+    leader_repo_url: str,
+) -> CiInstallationStatus:
+    """Check whether all CI files are installed for the leader project.
+
+    Three-part check:
+      1. Detect CI system from the leader's git remote URL.
+      2. Check all expected CI files (trigger + shared scripts) exist on disk.
+      3. Compare file hashes against the golden templates in ``deploy/ci/``
+         (only when the Lens repo is available locally).
+    """
+    import hashlib
+
+    if not leader_repo_url:
+        return CiInstallationStatus(info="no remote — cannot determine CI system")
+
+    system = _detect_ci_system(leader_repo_url)
+    file_map = _CI_GOLDEN_FILES.get(system)
+    if file_map is None:
+        return CiInstallationStatus(system=system, info="unsupported git host — CI system unknown")
+
+    files_expected = tuple(dest for _golden, dest in file_map)
+    files_present: list[str] = []
+    files_mismatched: list[str] = []
+    for golden_name, dest in file_map:
+        dest_path = project_root / dest
+        if dest_path.exists():
+            files_present.append(dest)
+
+    golden_dir = _golden_ci_dir()
+    if golden_dir is not None:
+        for golden_name, dest in file_map:
+            if (project_root / dest).exists():
+                golden_path = golden_dir / golden_name
+                if golden_path.exists():
+                    dest_path = project_root / dest
+                    golden_hash = hashlib.sha256(golden_path.read_bytes()).hexdigest()
+                    project_hash = hashlib.sha256(dest_path.read_bytes()).hexdigest()
+                    if golden_hash != project_hash:
+                        files_mismatched.append(dest)
+
+    return CiInstallationStatus(
+        system=system,
+        files_expected=files_expected,
+        files_present=tuple(files_present),
+        all_files_match=len(files_mismatched) == 0,
+        files_mismatched=tuple(files_mismatched),
+    )
+
+
 def _leader_git_remote_url(project_root: Path) -> str:
     """Return the git remote origin URL for *project_root*, or empty string."""
     try:
@@ -217,6 +327,8 @@ def _build_status_kwargs(
     if status_error:
         errors.append(status_error)
 
+    ci_installation = _check_ci_installation(project_root, leader_repo_url)
+
     return {
         "enabled": cfg.enabled,
         "lens_repo_url": cfg.lens_repo_url,
@@ -230,6 +342,7 @@ def _build_status_kwargs(
         "leader_repo_url": leader_repo_url,
         "dependent_projects": dependent_projects,
         "dataset_repos": dataset_repos,
+        "ci_installation": ci_installation,
     }
 
 
@@ -641,6 +754,60 @@ def _fly_secrets_set(fly_app: str, secrets: dict[str, str]) -> None:
         raise LensException(
             f"fly secrets set failed: {result.stderr.strip() or result.stdout.strip()}"
         )
+
+
+def execute_release_init(project_root: Path) -> ReleaseInitResult:
+    """Install CI trigger files into the leader project from the golden templates.
+
+    Copies the provider-specific CI template (``github-release.yml`` or
+    ``gitlab-release.yml``) and shared scripts (``release.sh``,
+    ``release_secrets.py``) into the project.  Existing files are
+    overwritten.
+
+    Raises ``LensException`` if the golden templates are not available
+    (Lens installed from PyPI without a local checkout) or the CI system
+    cannot be determined.
+    """
+
+    leader_repo_url = _leader_git_remote_url(project_root)
+    if not leader_repo_url:
+        raise LensException(
+            "cannot determine CI system — leader has no git remote 'origin'"
+        )
+
+    system = _detect_ci_system(leader_repo_url)
+    if system == "unknown":
+        raise LensException(
+            f"unsupported CI system for remote {leader_repo_url} — "
+            "cannot install CI files"
+        )
+
+    golden_dir = _golden_ci_dir()
+    if golden_dir is None:
+        raise LensException(
+            "golden CI templates not available — Lens must be installed "
+            "from a git checkout"
+        )
+
+    files_written: list[str] = []
+
+    file_map = _CI_GOLDEN_FILES[system]
+    for golden_name, dest in file_map:
+        src = golden_dir / golden_name
+        dst = project_root / dest
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        files_written.append(str(dst.relative_to(project_root)))
+
+    files_written.sort()
+    return ReleaseInitResult(
+        ci_system=system,
+        files_written=tuple(files_written),
+        summary=(
+            f"CI files installed for {system}: "
+            + ", ".join(files_written)
+        ),
+    )
 
 
 def execute_release_secrets_sync(
