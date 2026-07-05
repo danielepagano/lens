@@ -52,24 +52,29 @@ Both systems deploy to the same Fly app; they are alternatives for different wor
 
 ## Setup path
 
-The path from nothing to a live app with CI-based releases follows three steps:
+The path from nothing to a live app with CI-based releases:
 
 ```
-[Your machine]                              [CI provider]
+[Your machine]                              [Remote Git host]
+     |                                           |
+     0. lens init                                 |
+     |   creates project (lens.toml, narrative/)  |
+     |   git init && git add && git commit         |
+     |                                           |
+     +-----> git remote add origin <SSH URL> -----+
      |                                           |
      1. lens deploy init                          |
      |   creates Fly app, volume, secrets         |
      |   writes fly.toml                          |
      |                                           |
-     2. lens release init                         |
-     |   enables [release]                        |
-     |   discovers dependents & dataset repos     |
+     2. lens release init --leader               |
+     |   enables [release], discovers topology    |
      |   installs CI pipeline templates           |
      |                                           |
-     |                                 3. Set CI secrets |
-     |                                   (FLY_API_TOKEN,   |
-     |                                    deploy keys,     |
-     |                                    API keys)        |
+     |                                 3. Set CI secrets   |
+     |                                   (FLY_API_TOKEN,    |
+     |                                    GIT_REPO_DEPLOY_, |
+     |                                    API keys)          |
      |                                           |
      +----> lens deploy push (once) --------------+
      |                                           |
