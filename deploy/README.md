@@ -1,8 +1,32 @@
 # Deployment
 
-Lens deploys to [Fly.io](https://fly.io) as a single-machine app with a persistent volume. The `lens deploy` CLI command handles setup and deployment.
+Lens deploys to [Fly.io](https://fly.io) as a single-machine app with a persistent volume.
 
-Project configuration (`lens.toml`, API keys, mounts): **[docs/configuration.md](../docs/configuration.md)**.
+## Two deployment systems
+
+| Path | Who runs it | Secrets source | Use case |
+|------|-------------|----------------|----------|
+| **Desktop** — ``lens deploy push`` | You (local machine) | Your shell env | First-time setup, daily iteration, quick fixes |
+| **CI-triggered** — ``lens release`` + CI pipeline | GitHub Actions / GitLab CI | CI repository secrets | Automated Lens version upgrades when users click **Update** in the web UI |
+
+**Desktop deploy** (`lens deploy push`) builds the Docker image locally,
+bundles API keys and deploy keys from your current shell, and runs
+``flyctl deploy``.  One-time ``lens deploy init`` creates the Fly app and
+volume.
+
+**CI-triggered deploy** (``lens release``) is driven by ``deploy/ci/release.sh``.
+A user clicks **Update** in the Lens web UI, which writes
+``requested_version`` into ``lens.toml``; their next
+Checkpoint commits and pushes it; CI fires and
+runs the ``release.sh`` pipeline.
+
+``lens release check``/``apply`` emit the CI contract (parent-hash match
+gate + build parameters).  ``lens release secrets check``/``sync`` manage
+CI-side secrets (separate from the desktop flow — CI has no local shell to
+read from).  Both systems deploy to the same Fly app; they are alternatives
+for different workflows.
+
+Configuration (`lens.toml`, API keys, mounts): **[docs/configuration.md](../docs/configuration.md)**.
 
 ## Architecture
 

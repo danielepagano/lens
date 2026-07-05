@@ -1,13 +1,24 @@
-"""Core helpers for the release decision engine (`lens release`).
+"""Core helpers for the release system (`lens release`).
 
-CI's job is a single, stateless, read-only parent-hash check. 
-Nothing in this module writes to git, *except* ``execute_release_request`` 
-which the app uses to record a human's deploy request.
+Two systems live here:
+
+1. **CI-triggered release** — ``execute_release_check`` (parent-hash matching)
+   and ``execute_release_apply`` emit a CI contract for ``release.sh``.
+   No git writes occur; CI never writes back.
+
+2. **Human / desktop interactions** — ``execute_release_request`` and
+   ``execute_release_clear`` let a user (or the web UI) record or cancel a
+   version deployment request by writing ``requested_version`` /
+   ``requested_from_commit`` into ``lens.toml`` (one uncommitted write via
+   ``Storage`` — no ``.commit()``, no ``.push_or_raise()``).
+
+``execute_release_secrets_sync`` / ``execute_release_secrets_check`` inspect
+the **CI-side** secret inventory (not the desktop ``lens deploy push``
+secrets — see ``deploy/README.md`` for the distinction).
 """
 
 from __future__ import annotations
 
-import io
 import os
 import shutil
 import subprocess
@@ -16,7 +27,6 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
-import tomli_w
 
 from lens.core.exceptions import LensException
 from lens.core.release.config import (
@@ -36,6 +46,25 @@ class ReleaseCheckResult:
     action: str  # "none" | "apply"
     target: str | None = None
     summary: str = ""
+
+    # Human-readable status fields (populated by ``execute_release_check``
+    # when not running in CI-only mode — mirrors ``compute_release_status``)
+    enabled: bool = False
+    lens_repo_url: str = ""
+    requested_version: str = ""
+    requested_from_commit: str = ""
+    installed_version: str | None = None
+    latest_available: str | None = None
+    update_available: bool = False
+    remote_error: str = ""
+
+    # Release topology: which repo is leading, its remote URL, which
+    # other projects and dataset repos are part of the release.
+    # Populated when enabled.
+    leader_slug: str = ""
+    leader_repo_url: str = ""
+    dependent_projects: tuple[dict[str, str], ...] = ()
+    dataset_repos: tuple[dict[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -152,31 +181,122 @@ def _git_rev_list_parents(project_root: Path, since: str | None) -> list[str]:
     return parents
 
 
+def _leader_git_remote_url(project_root: Path) -> str:
+    """Return the git remote origin URL for *project_root*, or empty string."""
+    try:
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=project_root, capture_output=True, text=True,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
+def _build_status_kwargs(
+    cfg: ReleaseConfig,
+    status: Any,  # ReleaseStatus from compute_release_status
+    *,
+    project_root: Path,
+    leader_slug: str = "",
+    dependent_projects: tuple[dict[str, str], ...] = (),
+    dataset_repos: tuple[dict[str, str], ...] = (),
+) -> dict[str, Any]:
+    """Extract status and topology fields."""
+    leader_repo_url = _leader_git_remote_url(project_root)
+    errors: list[str] = []
+    if cfg.enabled and not leader_repo_url:
+        errors.append(
+            f"leader {leader_slug!r} has no git remote 'origin' — "
+            "CI cannot clone the project repository"
+        )
+
+    status_error = getattr(status, "remote_error", "")
+    if status_error:
+        errors.append(status_error)
+
+    return {
+        "enabled": cfg.enabled,
+        "lens_repo_url": cfg.lens_repo_url,
+        "requested_version": cfg.requested_version.strip(),
+        "requested_from_commit": cfg.requested_from_commit.strip(),
+        "installed_version": getattr(status, "installed_version_str", None),
+        "latest_available": getattr(status, "latest_available_str", None),
+        "update_available": getattr(status, "update_available", False),
+        "remote_error": " | ".join(errors),
+        "leader_slug": leader_slug,
+        "leader_repo_url": leader_repo_url,
+        "dependent_projects": dependent_projects,
+        "dataset_repos": dataset_repos,
+    }
+
+
 def execute_release_check(
     project_root: Path,
     since: str | None = None,
 ) -> ReleaseCheckResult:
-    """Check whether the push producing this commit should trigger a release.
+    """Check release status; with *since* also checks CI parent-hash match.
 
-    Reads ``requested_version`` and ``requested_from_commit`` from the
-    project's ``lens.toml``.  When *since* is provided (the commit before
-    the push range, e.g. ``${{ github.event.before }}``), checks every
-    commit in ``since..HEAD`` — if any of those commits has
-    ``requested_from_commit`` as its parent, the request is fulfilled and
-    the result says ``"apply"``.  Without *since* (standalone/local check),
-    only HEAD's first parent is compared.
+    Always computes and returns human-readable release status fields
+    (``enabled``, ``installed_version``, ``latest_available``,
+    ``update_available``, etc.) and release topology (``leader_slug``,
+    ``dependent_projects``, ``dataset_repos``) for CLI display — no
+    separate ``status`` call needed.
 
-    Returns ``{"action": "apply", "target": "<tag>"}`` or
-    ``{"action": "none"}``.  No git writes occur in any case.
+    When *since* is provided (the commit before the push range, e.g.
+    ``${{ github.event.before }}``), also checks every commit in
+    ``since..HEAD`` — if any of those commits has
+    ``requested_from_commit`` as its parent, the result says ``"apply"``.
+    Without *since* (standalone/local check), only HEAD's first parent is
+    compared for the CI check.
+
+    No git writes occur in any case.
     """
+    from lens.core.release.status import compute_release_status
+
     raw = _read_lens_toml(project_root)
     cfg = parse_release_config(raw)
+    status = compute_release_status(project_root)
+
+    leader_slug = project_root.name
+    dep_projs = tuple(
+        {"name": d.name, "git_url": d.git_url, "ref": d.ref}
+        for d in parse_dependent_project_configs(raw)
+    )
+    ds_repos = tuple(
+        {"name": d.name, "git_url": d.git_url, "ref": d.ref}
+        for d in parse_dataset_repo_configs(raw)
+    )
+
+    def _mk_kwargs() -> dict[str, Any]:
+        return _build_status_kwargs(
+            cfg, status,
+            project_root=project_root,
+            leader_slug=leader_slug,
+            dependent_projects=dep_projs,
+            dataset_repos=ds_repos,
+        )
+
     if not cfg.enabled:
-        return ReleaseCheckResult(action="none", summary="release system not enabled")
+        summary = (
+            "release system not enabled — add [release] enabled = true "
+            "and lens_repo_url to lens.toml (see docs/configuration.md)"
+        )
+        return ReleaseCheckResult(
+            action="none",
+            summary=summary,
+            **_mk_kwargs(),
+        )
 
     requested = cfg.requested_version.strip()
     if not requested:
-        return ReleaseCheckResult(action="none", summary="no version requested")
+        return ReleaseCheckResult(
+            action="none",
+            summary="no version requested",
+            **_mk_kwargs(),
+        )
 
     sanity = parse_semver_tag(requested)
     if sanity is None:
@@ -186,7 +306,11 @@ def execute_release_check(
 
     from_commit = cfg.requested_from_commit.strip()
     if not from_commit:
-        return ReleaseCheckResult(action="none", summary="requested_from_commit is empty")
+        return ReleaseCheckResult(
+            action="none",
+            summary="requested_from_commit is empty",
+            **_mk_kwargs(),
+        )
 
     parents = _git_rev_list_parents(project_root, since)
     if from_commit in parents:
@@ -194,19 +318,48 @@ def execute_release_check(
             action="apply",
             target=sanity.tag,
             summary=f"parent match on {from_commit}; deploy {sanity.tag}",
+            **_mk_kwargs(),
         )
 
     return ReleaseCheckResult(
         action="none",
         summary=f"no commit in range has {from_commit} as parent",
+        **_mk_kwargs(),
     )
 
 
-def execute_release_apply(project_root: Path, target_tag: str) -> ReleaseApplyResult:
-    """Print build parameters for the requested tag.
+def _resolve_latest_tag(project_root: Path, cfg: ReleaseConfig) -> str:
+    """Resolve the latest available tag from the remote Lens repo.
 
-    **No git writes occur** — this only validates config, parses the tag,
-    and returns the Lens repo URL + tag CI needs. CI never writes back to git.
+    Used when ``apply --to`` is omitted: runs a lightweight
+    ``git ls-remote`` on ``lens_repo_url``. Raises if the remote
+    has no reachable tags.
+    """
+    from lens.core.release.version import latest_overall, list_remote_tags
+
+    tags = list_remote_tags(cfg.lens_repo_url)
+    latest = latest_overall(tags)
+    if latest is None:
+        raise LensException(
+            f"no tags found on remote {cfg.lens_repo_url} — "
+            "cannot auto-resolve latest version"
+        )
+    return latest.tag
+
+
+def execute_release_apply(
+    project_root: Path,
+    target_tag: str | None = None,
+) -> ReleaseApplyResult:
+    """Set the target version for deployment (UI Apply button equivalent).
+
+    When *target_tag* is ``None`` (omitted), auto-resolves to the latest
+    available tag on the remote Lens repo — exactly what ``lens release
+    check`` reports as latest_available.
+
+    Writes ``requested_version`` and ``requested_from_commit`` (current
+    ``HEAD``) into ``lens.toml`` via ``Storage`` — one uncommitted write,
+    symmetric with :func:`execute_release_clear`.
     """
     raw = _read_lens_toml(project_root)
     cfg = parse_release_config(raw)
@@ -215,15 +368,21 @@ def execute_release_apply(project_root: Path, target_tag: str) -> ReleaseApplyRe
     url = cfg.lens_repo_url.strip()
     if not url:
         raise LensException("[release].lens_repo_url must be set")
+
+    if target_tag is None or not target_tag.strip():
+        target_tag = _resolve_latest_tag(project_root, cfg)
+
     normalized_tag = target_tag.strip()
     target_semver = parse_semver_tag(normalized_tag)
     if target_semver is None:
-        raise LensException("--to must be a valid vMAJOR.MINOR.PATCH tag")
+        raise LensException("--target must be a valid vMAJOR.MINOR.PATCH tag")
+
+    req_result = execute_release_request(project_root, normalized_tag)
 
     return ReleaseApplyResult(
         lens_repo_url=url,
         tag=normalized_tag,
-        summary=f"release apply target {normalized_tag}",
+        summary=req_result.summary,
     )
 
 
@@ -246,13 +405,81 @@ class ReleaseRequestResult:
     summary: str
 
 
+def _set_release_field_text(
+    text: str, field: str, value: str, section: str = "release",
+    *,
+    create_section: bool = True,
+) -> str:
+    """Update *field* = *value* inside the ``[section]`` block of *text*.
+
+    Preserves all formatting, comments, and table-array syntax — avoids
+    the TOML parse → modify → serialize round trip that mangles
+    ``[[dependent_project]]`` entries into inline arrays.
+
+    If the *field* line already exists inside the section it is replaced
+    in place.  If it does not exist it is appended after the last field in
+    the section (or immediately after the ``[section]`` header).
+
+    When *create_section* is ``True`` (default) and the section does not
+    exist, the section header + field line are appended at end of file.
+    """
+    lines = text.splitlines(keepends=True)
+    in_section = False
+    section_header = f"[{section}"
+    new_line = f'{field} = "{value}"\n'
+
+    last_field_line = -1
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if in_section:
+                if last_field_line >= 0:
+                    lines.insert(last_field_line + 1, new_line)
+                else:
+                    lines.insert(i, new_line)
+                return "".join(lines)
+            if stripped.startswith(section_header):
+                in_section = True
+            continue
+        if in_section:
+            if not stripped or stripped.startswith("#"):
+                continue
+            if stripped.startswith(f"{field} "):
+                lines[i] = new_line
+                return "".join(lines)
+            last_field_line = i
+
+    if in_section:
+        if last_field_line >= 0:
+            lines.insert(last_field_line + 1, new_line)
+        else:
+            # Section exists but has no fields yet — insert right after header
+            for j, ln in enumerate(lines):
+                if ln.strip().startswith(section_header):
+                    lines.insert(j + 1, new_line)
+                    break
+            else:
+                lines.append(new_line)
+        return "".join(lines)
+
+    if not create_section:
+        return text
+
+    # Section doesn't exist — append it
+    if text and not text.endswith("\n"):
+        text += "\n"
+    text += f"[{section}]\n{new_line}"
+    return text
+
+
 def execute_release_request(project_root: Path, target_version: str) -> ReleaseRequestResult:
     """Record a human's request to deploy *target_version*.
 
     Validates *target_version* is a well-formed ``vMAJOR.MINOR.PATCH`` tag,
-    reads the current ``lens.toml``, sets ``requested_version`` **and**
-    ``requested_from_commit`` (the current ``HEAD`` hash), and writes it
-    back via ``Storage`` — **no ``.commit()``, no ``.push_or_raise()``**.
+    then updates ``requested_version`` and ``requested_from_commit``
+    **in-place** in ``lens.toml`` (text-edits only those two lines, no
+    TOML round-trip).  Writes via ``Storage`` — **no ``.commit()``, no
+    ``.push_or_raise()``**.
 
     This is the sole app-side mechanism of one uncommitted
     write that rides along with whatever the user's next checkpoint turns
@@ -268,25 +495,14 @@ def execute_release_request(project_root: Path, target_version: str) -> ReleaseR
         )
 
     head = _get_head_sha(project_root)
-
-    raw: dict[str, Any] = {}
     lens_toml = project_root / "lens.toml"
-    if lens_toml.exists():
-        with lens_toml.open("rb") as f:
-            raw = tomllib.load(f)
 
-    release_section = raw.get("release")
-    if not isinstance(release_section, dict):
-        release_section = {}
-    release_section["requested_version"] = target
-    release_section["requested_from_commit"] = head
-    raw["release"] = release_section
-
-    buf = io.BytesIO()
-    tomli_w.dump(raw, buf)
+    text = lens_toml.read_text(encoding="utf-8") if lens_toml.exists() else ""
+    text = _set_release_field_text(text, "requested_version", target)
+    text = _set_release_field_text(text, "requested_from_commit", head)
 
     storage = Storage(project_root, owner=None)
-    storage.write_file_bytes(lens_toml, buf.getvalue())
+    storage.write_file_bytes(lens_toml, text.encode("utf-8"))
 
     return ReleaseRequestResult(
         requested_version=target,
@@ -300,39 +516,42 @@ class ReleaseClearResult:
     summary: str
 
 
+def _has_release_field_with_value(text: str, field: str) -> bool:
+    """Check whether *field* is set to a non-empty value in *text*."""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(f"{field} "):
+            _, _, raw = stripped.partition("=")
+            val = raw.strip().strip("\"'")
+            if val:
+                return True
+    return False
+
+
 def execute_release_clear(project_root: Path) -> ReleaseClearResult:
     """Clear ``requested_version`` and ``requested_from_commit`` from ``lens.toml``.
 
-    This is the inverse of :func:`execute_release_request` — it allows a user
-    to cancel a pending deploy request.  Like ``request``, this is one
-    uncommitted write via ``Storage`` (no ``.commit()``, no
-    ``.push_or_raise()``).
+    Text-edits only those two lines (no TOML round-trip); preserves all
+    formatting, comments, and table-array syntax.  This is the inverse
+    of :func:`execute_release_request` — one uncommitted write via
+    ``Storage`` (no ``.commit()``, no ``.push_or_raise()``).
     """
     from lens.core.storage import Storage
 
-    raw: dict[str, Any] = {}
     lens_toml = project_root / "lens.toml"
-    if lens_toml.exists():
-        with lens_toml.open("rb") as f:
-            raw = tomllib.load(f)
+    text = lens_toml.read_text(encoding="utf-8") if lens_toml.exists() else ""
 
-    release_section = raw.get("release")
-    if not isinstance(release_section, dict):
+    if "[release]" not in text:
         return ReleaseClearResult(summary="no [release] section to clear")
-    rs = cast("dict[str, Any]", release_section)
 
-    if not rs.get("requested_version") and not rs.get("requested_from_commit"):
+    if not _has_release_field_with_value(text, "requested_version") and not _has_release_field_with_value(text, "requested_from_commit"):
         return ReleaseClearResult(summary="nothing to clear — both fields already empty")
 
-    rs["requested_version"] = ""
-    rs["requested_from_commit"] = ""
-    raw["release"] = rs
-
-    buf = io.BytesIO()
-    tomli_w.dump(raw, buf)
+    text = _set_release_field_text(text, "requested_version", "", create_section=False)
+    text = _set_release_field_text(text, "requested_from_commit", "", create_section=False)
 
     storage = Storage(project_root, owner=None)
-    storage.write_file_bytes(lens_toml, buf.getvalue())
+    storage.write_file_bytes(lens_toml, text.encode("utf-8"))
 
     return ReleaseClearResult(summary="release request cleared")
 

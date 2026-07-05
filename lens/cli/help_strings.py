@@ -47,7 +47,14 @@ CMD_RENAME = "Rename a narrative node."
 CMD_SERVE = "Build the frontend and start the Lens API server."
 CMD_DEV = "Start the Vite dev server and Lens API with hot reload."
 CMD_DEPLOY = "Manage Fly.io deployment."
-CMD_RELEASE = "Coordinate CI-driven releases."
+CMD_RELEASE = (
+    "Trigger or inspect CI-driven Lens version releases.\n\n"
+    "Two systems: (1) CI-triggered release where ``check`` detects\n"
+    "parent-hash matches and ``apply`` sets the target; (2) desktop\n"
+    "``lens deploy push``. ``check`` shows installed vs latest;\n"
+    "``apply`` (no args) sets target to latest available.\n"
+    "See deploy/README.md and docs/configuration.md."
+)
 
 # ═══════════════════════════════════════════════════════════════════
 #  Operators  (lens <operator>)
@@ -311,7 +318,7 @@ ARG_USERNAME = "Basic Auth username"
 ARG_PASSWORD = "Basic Auth password"
 ARG_DEPLOY_KEY = "Path to SSH deploy key for the project repo"
 ARG_PROJECT_SLUG = "Project directory name (slug)"
-ARG_RELEASE_TAG = "Release tag (vMAJOR.MINOR.PATCH)"
+ARG_RELEASE_TAG = "Target version (vMAJOR.MINOR.PATCH); omit to auto-resolve latest from remote"
 ARG_RENAME_ADDR = (
     "Address of the node to rename (e.g. /chapter-1/design-old)"
 )
@@ -419,6 +426,32 @@ DEPLOY_ADD = (
 )
 DEPLOY_REMOVE = (
     "Remove a project from an existing multi-project deployment."
+)
+
+# release sub-commands
+RELEASE_CHECK = (
+    "Show release status and check whether CI should trigger a deploy.\n\n"
+    "Without arguments, displays the current release status: whether\n"
+    "[release] is enabled, the installed version, the latest available\n"
+    "version from the upstream Lens repo, whether an update is pending,\n"
+    "and any outstanding release request. This mirrors what ``lens\n"
+    "stats`` and the web UI release modal show."
+)
+RELEASE_APPLY = (
+    "Set the target version for deployment (UI Apply button equivalent).\n\n"
+    "Without --target, auto-resolves to the latest available tag on the\n"
+    "upstream Lens repo — exactly what ``lens release check`` reports\n"
+    "as latest_available. With an explicit ``--target <tag>``, uses\n"
+    "the given tag instead.\n\n"
+    "Writes ``requested_version`` and ``requested_from_commit`` (current\n"
+    "HEAD) into ``lens.toml`` — one uncommitted write, symmetric with\n"
+    "``lens release clear``."
+)
+RELEASE_CLEAR = (
+    "Cancel a pending release request (UI Clear button equivalent).\n\n"
+    "Sets ``requested_version`` and ``requested_from_commit`` to empty\n"
+    "strings in ``lens.toml`` (uncommitted) — the inverse of\n"
+    "``lens release apply`` and the UI's Update action."
 )
 
 # ═══════════════════════════════════════════════════════════════════

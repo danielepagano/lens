@@ -457,6 +457,14 @@ Keys not listed in the dataset's defaults are silently ignored.  See individual 
 Controls the **cloud release system**: Lens version tracking, external dataset
 repos cloned onto the server volume, and parent-hash-based CI deployment gate.
 
+> **Two deployment systems.**  ``lens deploy push`` builds & deploys the Docker
+> image from your **desktop** to Fly.io directly (secrets from your local
+> shell).  ``lens release`` (this section) enables a **CI-triggered** path
+> where a GitHub Actions / GitLab CI pipeline runs ``release.sh`` to deploy.
+> ``lens release check``/``apply`` emit the CI contract; ``lens deploy init``
+> is still needed for first-time Fly app/volume creation.  See
+> ``deploy/README.md`` for the full distinction.
+
 The release system is **disabled** when `[release]` is absent from `lens.toml` —
 all release CLI commands and server routes return a clear "not enabled" message.
 Add the section to opt in.
