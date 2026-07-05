@@ -287,12 +287,14 @@ picks it up automatically.
 3. The push triggers the release leader's CI pipeline (`release.sh`), which:
    a. Runs `deploy/ci/release_secrets.py check --json` — verifies every
       required secret is present in the CI environment (blocks on any miss).
-   b. Runs `lens release check --since <SHA> --json` — parent-hash match.
-   c. Runs `deploy/ci/release_secrets.py sync --fly-app <name>` — reads
-      `[[dependent_project]]` from the leader's `lens.toml`, clones each
-      sibling to read its API keys and dataset references, and pushes the
-      needed Fly secrets (additive only — never deletes).
-   d. Runs `lens release apply --to <tag> --json` — prints build params.
+   b. Runs `deploy/ci/release_secrets.py check-release --since <SHA> --json`
+      — parent-hash match (standalone, no lens package needed).
+   c. Runs `deploy/ci/release_secrets.py sync` — reads `[[dependent_project]]`
+      from the leader's `lens.toml`, clones each sibling to read its API keys
+      and dataset references, and pushes the needed Fly secrets (additive only
+      — never deletes; Fly app name auto-detected from `fly.toml`).
+   d. Runs `deploy/ci/release_secrets.py apply --to <tag> --json` — prints
+      build params (standalone, no lens package needed).
    e. Runs `flyctl deploy --build-arg LENS_VERSION=<tag>`.
 4. The new container boots, `start.sh` clones/fast-forwards all project repos
    and dataset repos from the freshly-synced secrets, and the app is live on
@@ -312,7 +314,7 @@ is the intended debugging workflow.
 | `GIT_REPO_DEPLOY_KEY_<SLUG>` | CI secret (required, per project) | SSH deploy key for the leader + each `[[dependent_project]]` repo |
 | `DATASET_REPO_DEPLOY_KEY_<NAME>` | CI secret (optional, per dataset) | SSH deploy key for a `[[dataset_repo]]` |
 | Any `api_key_env` from `lens.toml` | CI secret (optional) | LLM / image / speech API keys |
-| Git checkout history | `fetch-depth: 0` | `lens release check` reads parent hashes |
+| Git checkout history | `fetch-depth: 0` | `release_secrets.py check-release` reads parent hashes |
 
 Secrets discovered by `release.sh` but without a matching CI env var are
 **left unchanged on Fly** — never deleted or overwritten with empty.
@@ -324,7 +326,7 @@ talks to the running container.
 
 | File | Purpose |
 |------|---------|
-| `deploy/ci/release.sh` | Shared shell script: secrets check → release check → secrets sync → apply → deploy |
+| `deploy/ci/release.sh` | Shared shell script: secrets check → check-release → sync → apply → deploy |
 | `deploy/ci/release_secrets.py` | Standalone Python (zero deps): secrets check and sync |
 | `deploy/ci/github-release.yml` | GitHub Actions: trigger, calls `release.sh` |
 | `deploy/ci/gitlab-release.yml` | GitLab CI: trigger, calls `release.sh` |

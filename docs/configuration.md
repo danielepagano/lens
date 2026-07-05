@@ -486,9 +486,9 @@ Only **five** fields total.  There is no `auto_update` field and no
 When a single Fly app serves **multiple** project repos, exactly one project
 must be designated the release leader by setting `[release] app_leader =
 true`. That project's `lens.toml` becomes the single source of truth for the
-Lens version of the whole Fly app — its CI pipeline runs `lens release
-check`/`apply`, and every served project's UI reads/writes the leader's
-state transparently. Setting `app_leader = true` also moves where `lens
+Lens version of the whole Fly app — its CI pipeline runs
+`deploy/ci/release_secrets.py check-release`/`apply`, and every served
+project's UI reads/writes the leader's state transparently. Setting `app_leader = true` also moves where `lens
 deploy init` writes `fly.toml` — see [Multi-project
 deployments](../deploy/README.md#multi-project-deployments) in
 `deploy/README.md` for both supported directory layouts and how deploy/dev
