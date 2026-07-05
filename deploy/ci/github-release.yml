@@ -2,13 +2,14 @@
 # Copy into .github/workflows/release.yml in the release leader project repo.
 # Triggered on push to the tracked branch only — no schedule, no cron.
 #
-# Required secrets / vars:
-#   FLY_API_TOKEN  — flyctl deploy auth (secret)
-#   FLY_APP        — Fly app name (variable)
+# Required secrets:
+#   FLY_API_TOKEN  — flyctl deploy auth
 #
 # Any api_key_env from lens.toml and deploy key env vars the topology
-# requires must also be set as secrets — run ``deploy/ci/release_secrets.py check``
+# requires must also be set as secrets — run ``release_secrets.py check``
 # locally to see the full list for your project.
+#
+# The Fly app name is read automatically from fly.toml in the project root.
 
 name: Lens Release
 
@@ -17,7 +18,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: release-${{ vars.FLY_APP || 'lens' }}
+  group: release-${{ github.event.repository.name }}
 
 jobs:
   deploy:
@@ -35,6 +36,6 @@ jobs:
         run: curl -fsSL https://fly.io/install.sh | sh && echo "$HOME/.fly/bin" >> $GITHUB_PATH
 
       - name: Release check + deploy
-        run: bash deploy/ci/release.sh --since ${{ github.event.before }} --fly-app ${{ vars.FLY_APP }}
+        run: bash deploy/ci/release.sh --since ${{ github.event.before }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

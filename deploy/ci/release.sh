@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Common CI release logic — shared by all provider-specific pipeline wrappers.
 #
-# Usage: release.sh --since <commit> --fly-app <name>
+# Usage: release.sh --since <commit>
 #
 # Prerequisites (CI secrets / env vars — all required, checked every run):
 #   FLY_API_TOKEN                                  flyctl deploy auth
@@ -12,25 +12,22 @@ set -euo pipefail
 #   DATASET_REPO_DEPLOY_KEY_<NAME>                 per [[dataset_repo]]
 #   Any api_key_env from [[llm]] / [[image]] / [[speech]]
 #
+# The Fly app name is read automatically from fly.toml in the project root.
+#
 # Steps:
 #   1. release_secrets.py check --json   →  blocking pre-flight (every commit)
-#   2. lens release check --since <SHA> --json  →  decide apply or none
-#   3. release_secrets.py sync             →  discover topology, sync Fly secrets
-#   4. lens release apply --to <tag> --json      →  build params
+#   2. release_secrets.py check-release --since <SHA> --json  →  decide apply/none
+#   3. release_secrets.py sync [--fly-app <name>]  →  topology discovery + secret sync
+#   4. release_secrets.py apply --to <tag> --json  →  build params
 #   5. flyctl deploy --build-arg LENS_VERSION=<tag>
 #
 
 SINCE=""
-FLY_APP=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --since)
       SINCE="$2"
-      shift
-      ;;
-    --fly-app)
-      FLY_APP="$2"
       shift
       ;;
     *)
@@ -45,14 +42,19 @@ if [ -z "$SINCE" ]; then
   echo "release.sh: --since is required" >&2
   exit 1
 fi
-if [ -z "$FLY_APP" ]; then
-  echo "release.sh: --fly-app is required" >&2
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY="python3 "$SCRIPT_DIR/release_secrets.py""
+
+# Detect Fly app name from fly.toml (must exist in project root)
+if [ ! -f fly.toml ]; then
+  echo "release.sh: fly.toml not found in project root" >&2
   exit 1
 fi
+FLY_APP=$(python3 -c "import tomllib; print(tomllib.load(open('fly.toml','rb'))['app'])")
 
 # Step 1 — pre-flight secrets check (every commit, fail fast on drift)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-python3 "$SCRIPT_DIR/release_secrets.py" check --json | python3 -c "
+$PY check --json | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 missing_env = [s['name'] for s in data.get('secrets', []) if not s['set_in_env']]
@@ -66,11 +68,11 @@ else:
     print('release.sh: all secrets present in environment')
 "
 
-# Step 2 — check
-CHECK=$(lens release check --since "$SINCE" --json)
-ACTION=$(echo "$CHECK" | sed -n '1p' | python3 -c \
+# Step 2 — check whether a release was requested
+CHECK=$($PY check-release --since "$SINCE" --json)
+ACTION=$(echo "$CHECK" | python3 -c \
   "import sys,json; print(json.load(sys.stdin).get('action','none'))")
-TARGET=$(echo "$CHECK" | sed -n '1p' | python3 -c \
+TARGET=$(echo "$CHECK" | python3 -c \
   "import sys,json; print(json.load(sys.stdin).get('target','') or '')")
 
 if [ "$ACTION" != "apply" ]; then
@@ -85,10 +87,11 @@ echo "release.sh: deploying $TARGET"
 # sibling to collect API keys and dataset references, then calls
 # fly secrets set for every secret that has a CI env var available.
 # Secrets without a CI env var are left unchanged (additive only).
-python3 "$SCRIPT_DIR/release_secrets.py" sync --fly-app "$FLY_APP"
+# The Fly app name is auto-detected from fly.toml.
+$PY sync
 
 # Step 4 — build params
-lens release apply --to "$TARGET" --json
+APPLY=$($PY apply --to "$TARGET" --json)
 
 # Step 5 — deploy
 # On failure the flyctl error output (missing secret, build timeout, image

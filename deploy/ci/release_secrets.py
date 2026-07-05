@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Standalone secrets check/sync for CI release pipelines.
+"""Standalone check/sync for CI release pipelines.
 
 Usage:
-    python3 release_secrets.py check --json
-    python3 release_secrets.py sync --fly-app <name> [--dry-run]
+    python3 release_secrets.py check [--fly] [--json]
+    python3 release_secrets.py check-release --since <sha> [--json]
+    python3 release_secrets.py apply --to <tag> [--json]
+    python3 release_secrets.py sync [--fly-app <name>] [--dry-run]
 
 Zero dependencies beyond Python 3.11+ stdlib (uses ``tomllib``).
 Copy alongside ``release.sh`` in your project repo — nothing from the
@@ -14,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -24,106 +27,133 @@ from pathlib import Path
 from typing import Any, cast
 
 
-# ── config dataclasses (inlined from lens.core.release.config) ──────────
+# ── config dataclasses ──────────────────────────────────────────────────
+# Canonical source: lens.core.release.config.
+# When run inside the Lens venv (tests, UI), import from there.
+# When standalone in CI (no lens package), fall back to inline copies.
 
-@dataclass(frozen=True)
-class ReleaseConfig:
-    enabled: bool = False
-    lens_repo_url: str = ""
-    requested_version: str = ""
-    requested_from_commit: str = ""
-    app_leader: bool = False
+try:
+    from lens.core.release.config import (
+        DatasetRepoConfig,
+        DependentProjectConfig,
+        ReleaseConfig,
+        parse_dataset_repo_configs,
+        parse_dependent_project_configs,
+        parse_release_config,
+    )
+except ImportError:
 
+    @dataclass(frozen=True)
+    class ReleaseConfig:
+        enabled: bool = False
+        lens_repo_url: str = ""
+        requested_version: str = ""
+        requested_from_commit: str = ""
+        app_leader: bool = False
 
-@dataclass(frozen=True)
-class DatasetRepoConfig:
-    name: str
-    git_url: str
-    ref: str = "main"
+    @dataclass(frozen=True)
+    class DatasetRepoConfig:
+        name: str
+        git_url: str
+        ref: str = "main"
 
+    @dataclass(frozen=True)
+    class DependentProjectConfig:
+        name: str
+        git_url: str
+        ref: str = "main"
 
-@dataclass(frozen=True)
-class DependentProjectConfig:
-    name: str
-    git_url: str
-    ref: str = "main"
+    def parse_release_config(raw_config: dict[str, Any]) -> ReleaseConfig:
+        raw = raw_config.get("release")
+        if not isinstance(raw, dict):
+            return ReleaseConfig()
+        raw_dict = cast(dict[str, Any], raw)
+        kwargs: dict[str, Any] = {}
+        for field_name in (
+            "enabled", "lens_repo_url", "requested_version",
+            "requested_from_commit", "app_leader",
+        ):
+            val = raw_dict.get(field_name)
+            if val is not None:
+                kwargs[field_name] = val
+        return ReleaseConfig(**kwargs)
 
-
-def parse_release_config(raw_config: dict[str, Any]) -> ReleaseConfig:
-    raw = raw_config.get("release")
-    if not isinstance(raw, dict):
-        return ReleaseConfig()
-    raw_dict = cast(dict[str, Any], raw)
-    kwargs: dict[str, Any] = {}
-    for field_name in (
-        "enabled", "lens_repo_url", "requested_version",
-        "requested_from_commit", "app_leader",
-    ):
-        val = raw_dict.get(field_name)
-        if val is not None:
-            kwargs[field_name] = val
-    return ReleaseConfig(**kwargs)
-
-
-def parse_dependent_project_configs(raw_config: dict[str, Any]) -> list[DependentProjectConfig]:
-    raw_list = raw_config.get("dependent_project", [])
-    if not isinstance(raw_list, list):
-        return []
-    typed_list = cast(list[Any], raw_list)
-    result: list[DependentProjectConfig] = []
-    for raw_entry in typed_list:
-        if not isinstance(raw_entry, dict):
-            continue
-        entry = cast(dict[str, Any], raw_entry)
-        name = entry.get("name")
-        if not isinstance(name, str) or not name.strip():
-            continue
-        git_url = entry.get("git_url", "")
-        if not isinstance(git_url, str):
-            continue
-        ref = entry.get("ref", "main")
-        if not isinstance(ref, str):
-            ref = "main"
-        result.append(
-            DependentProjectConfig(
-                name=name.strip(),
-                git_url=git_url.strip(),
-                ref=ref.strip() if ref.strip() else "main",
+    def parse_dependent_project_configs(raw_config: dict[str, Any]) -> list[DependentProjectConfig]:
+        raw_list = raw_config.get("dependent_project", [])
+        if not isinstance(raw_list, list):
+            return []
+        typed_list = cast(list[Any], raw_list)
+        result: list[DependentProjectConfig] = []
+        for raw_entry in typed_list:
+            if not isinstance(raw_entry, dict):
+                continue
+            entry = cast(dict[str, Any], raw_entry)
+            name = entry.get("name")
+            if not isinstance(name, str) or not name.strip():
+                continue
+            git_url = entry.get("git_url", "")
+            if not isinstance(git_url, str):
+                continue
+            ref = entry.get("ref", "main")
+            if not isinstance(ref, str):
+                ref = "main"
+            result.append(
+                DependentProjectConfig(
+                    name=name.strip(),
+                    git_url=git_url.strip(),
+                    ref=ref.strip() if ref.strip() else "main",
+                )
             )
-        )
-    return result
+        return result
 
-
-def parse_dataset_repo_configs(raw_config: dict[str, Any]) -> list[DatasetRepoConfig]:
-    raw_list = raw_config.get("dataset_repo", [])
-    if not isinstance(raw_list, list):
-        return []
-    typed_list = cast(list[Any], raw_list)
-    result: list[DatasetRepoConfig] = []
-    for raw_entry in typed_list:
-        if not isinstance(raw_entry, dict):
-            continue
-        entry = cast(dict[str, Any], raw_entry)
-        name = entry.get("name")
-        if not isinstance(name, str) or not name.strip():
-            continue
-        git_url = entry.get("git_url", "")
-        if not isinstance(git_url, str):
-            continue
-        ref = entry.get("ref", "main")
-        if not isinstance(ref, str):
-            ref = "main"
-        result.append(
-            DatasetRepoConfig(
-                name=name.strip(),
-                git_url=git_url.strip(),
-                ref=ref.strip() if ref.strip() else "main",
+    def parse_dataset_repo_configs(raw_config: dict[str, Any]) -> list[DatasetRepoConfig]:
+        raw_list = raw_config.get("dataset_repo", [])
+        if not isinstance(raw_list, list):
+            return []
+        typed_list = cast(list[Any], raw_list)
+        result: list[DatasetRepoConfig] = []
+        for raw_entry in typed_list:
+            if not isinstance(raw_entry, dict):
+                continue
+            entry = cast(dict[str, Any], raw_entry)
+            name = entry.get("name")
+            if not isinstance(name, str) or not name.strip():
+                continue
+            git_url = entry.get("git_url", "")
+            if not isinstance(git_url, str):
+                continue
+            ref = entry.get("ref", "main")
+            if not isinstance(ref, str):
+                ref = "main"
+            result.append(
+                DatasetRepoConfig(
+                    name=name.strip(),
+                    git_url=git_url.strip(),
+                    ref=ref.strip() if ref.strip() else "main",
+                )
             )
-        )
-    return result
+        return result
+
+
+# ── semver ───────────────────────────────────────────────────────────────
+
+_SEMVER_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)(?:\+.*)?$")
+
+
+def _parse_semver_tag(ref: str) -> tuple[int, int, int] | None:
+    """Parse a vMAJOR.MINOR.PATCH tag into a (major, minor, patch) tuple.
+
+    Accepts with or without leading ``v``, strips build metadata.
+    Returns ``None`` on failure.
+    """
+    m = _SEMVER_RE.match(ref.strip())
+    if not m:
+        return None
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
 
 
 # ── helpers ─────────────────────────────────────────────────────────────
+
 
 def _slug_to_env_key(slug: str) -> str:
     return slug.upper().replace("-", "_")
@@ -157,6 +187,44 @@ def _read_fly_app(project_root: Path) -> str | None:
         return str(app) if isinstance(app, str) and app.strip() else None
     except Exception:
         return None
+
+
+def _git_rev_list_parents(project_root: Path, since: str | None) -> list[str]:
+    """Return the parent commit SHAs for the range ``since..HEAD``.
+
+    When *since* is ``None``, returns only HEAD's first parent.
+    """
+    if since is None:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=project_root, capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            print(f"git rev-parse HEAD failed: {result.stderr.strip()}", file=sys.stderr)
+            sys.exit(1)
+        head = result.stdout.strip()
+        result = subprocess.run(
+            ["git", "rev-parse", f"{head}^1"],
+            cwd=project_root, capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            return []
+        return [result.stdout.strip()]
+
+    cmd = ["git", "rev-list", "--parents", f"{since}..HEAD"]
+    result = subprocess.run(cmd, cwd=project_root, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"git rev-list --parents {since}..HEAD failed: {result.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+
+    parents: list[str] = []
+    for line in result.stdout.strip().splitlines():
+        if not line.strip():
+            continue
+        parts = line.strip().split()
+        if len(parts) >= 2:
+            parents.extend(parts[1:])
+    return parents
 
 
 def _list_fly_secrets(fly_app: str) -> set[str]:
@@ -288,6 +356,93 @@ def execute_release_secrets_check(
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+# ── check-release ────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class ReleaseCheckResult:
+    action: str  # "none" | "apply"
+    target: str | None = None
+    summary: str = ""
+
+
+def execute_release_check(project_root: Path, since: str | None = None) -> ReleaseCheckResult:
+    """Check whether the push should trigger a release.
+
+    Reads ``[release] requested_version`` and ``requested_from_commit``
+    from the project's ``lens.toml``.  When *since* is provided, checks
+    every commit in ``since..HEAD`` — if any has ``requested_from_commit``
+    as its parent, returns ``"apply"`` with the target tag.
+    """
+    raw = _read_lens_toml(project_root)
+    cfg = parse_release_config(raw)
+    if not cfg.enabled:
+        return ReleaseCheckResult(action="none", summary="release system not enabled")
+
+    requested = cfg.requested_version.strip()
+    if not requested:
+        return ReleaseCheckResult(action="none", summary="no version requested")
+
+    sanity = _parse_semver_tag(requested)
+    if sanity is None:
+        print(f"requested_version {requested!r} is not a valid vMAJOR.MINOR.PATCH tag", file=sys.stderr)
+        sys.exit(1)
+
+    from_commit = cfg.requested_from_commit.strip()
+    if not from_commit:
+        return ReleaseCheckResult(action="none", summary="requested_from_commit is empty")
+
+    parents = _git_rev_list_parents(project_root, since)
+    if from_commit in parents:
+        return ReleaseCheckResult(
+            action="apply",
+            target=f"v{sanity[0]}.{sanity[1]}.{sanity[2]}",
+            summary=f"parent match on {from_commit}; deploy v{sanity[0]}.{sanity[1]}.{sanity[2]}",
+        )
+
+    return ReleaseCheckResult(
+        action="none",
+        summary=f"no commit in range has {from_commit} as parent",
+    )
+
+
+# ── apply ────────────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class ReleaseApplyResult:
+    lens_repo_url: str
+    tag: str
+    summary: str
+
+
+def execute_release_apply(project_root: Path, target_tag: str) -> ReleaseApplyResult:
+    """Validate config and return build parameters for the requested tag.
+
+    **No git writes occur.**
+    """
+    raw = _read_lens_toml(project_root)
+    cfg = parse_release_config(raw)
+    if not cfg.enabled:
+        print("release system is not enabled", file=sys.stderr)
+        sys.exit(1)
+    url = cfg.lens_repo_url.strip()
+    if not url:
+        print("[release].lens_repo_url must be set", file=sys.stderr)
+        sys.exit(1)
+    normalized_tag = target_tag.strip()
+    target_semver = _parse_semver_tag(normalized_tag)
+    if target_semver is None:
+        print("--to must be a valid vMAJOR.MINOR.PATCH tag", file=sys.stderr)
+        sys.exit(1)
+
+    return ReleaseApplyResult(
+        lens_repo_url=url,
+        tag=normalized_tag,
+        summary=f"release apply target {normalized_tag}",
+    )
+
+
 # ── secrets sync ────────────────────────────────────────────────────────
 
 @dataclass(frozen=True)
@@ -416,7 +571,8 @@ def execute_release_secrets_sync(
             shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-# ── CLI entry point ─────────────────────────────────────────────────────
+# ── CLI subcommands ─────────────────────────────────────────────────────
+
 
 def cmd_check(args: list[str]) -> None:
     fly = "--fly" in args
@@ -443,7 +599,6 @@ def cmd_check(args: list[str]) -> None:
         print(json.dumps(payload))
         return
 
-    # Human-readable
     print(f"Release secrets check for app: {result.fly_app or '(unknown)'}")
     print()
     print(f"  Leader:     {result.leader_slug}")
@@ -491,17 +646,86 @@ def cmd_sync(args: list[str]) -> None:
             i += 1
 
     if not fly_app:
-        print("sync: --fly-app is required", file=sys.stderr)
-        sys.exit(1)
+        detected = _read_fly_app(Path.cwd())
+        if detected:
+            fly_app = detected
+        else:
+            print("sync: --fly-app is required (no fly.toml found)", file=sys.stderr)
+            sys.exit(1)
 
     result = execute_release_secrets_sync(Path.cwd(), fly_app, dry_run=dry_run)
     print(result.summary)
 
 
+def cmd_check_release(args: list[str]) -> None:
+    since: str | None = None
+    json_output = "--json" in args
+
+    i = 0
+    while i < len(args):
+        if args[i] == "--since" and i + 1 < len(args):
+            since = args[i + 1]
+            i += 2
+        elif args[i] == "--json":
+            i += 1
+        else:
+            i += 1
+
+    result = execute_release_check(Path.cwd(), since=since)
+    if json_output:
+        print(json.dumps({
+            "action": result.action,
+            "target": result.target,
+            "summary": result.summary,
+        }))
+    else:
+        print(f"action: {result.action}")
+        if result.target:
+            print(f"target: {result.target}")
+        print(f"summary: {result.summary}")
+
+
+def cmd_apply(args: list[str]) -> None:
+    target_tag = ""
+    json_output = "--json" in args
+
+    i = 0
+    while i < len(args):
+        if args[i] == "--to" and i + 1 < len(args):
+            target_tag = args[i + 1]
+            i += 2
+        elif args[i] == "--json":
+            i += 1
+        else:
+            i += 1
+
+    if not target_tag:
+        print("apply: --to <tag> is required", file=sys.stderr)
+        sys.exit(1)
+
+    result = execute_release_apply(Path.cwd(), target_tag)
+    if json_output:
+        print(json.dumps({
+            "lens_repo_url": result.lens_repo_url,
+            "tag": result.tag,
+            "summary": result.summary,
+        }))
+    else:
+        print(f"lens_repo_url: {result.lens_repo_url}")
+        print(f"tag: {result.tag}")
+        print(f"summary: {result.summary}")
+
+
+# ── entry point ─────────────────────────────────────────────────────────
+
+
 def main() -> None:
     args = sys.argv[1:]
     if not args:
-        print("Usage: release_secrets.py <check|sync> [options]", file=sys.stderr)
+        print(
+            "Usage: release_secrets.py <check|check-release|apply|sync> [options]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     command = args[0]
@@ -509,6 +733,10 @@ def main() -> None:
 
     if command == "check":
         cmd_check(rest)
+    elif command == "check-release":
+        cmd_check_release(rest)
+    elif command == "apply":
+        cmd_apply(rest)
     elif command == "sync":
         cmd_sync(rest)
     else:

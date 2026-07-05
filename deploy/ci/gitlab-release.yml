@@ -4,11 +4,12 @@
 #
 # Required CI/CD variables:
 #   FLY_API_TOKEN  — flyctl deploy auth
-#   FLY_APP        — Fly app name
 #
 # Any api_key_env from lens.toml and deploy key env vars the topology
-# requires must also be set — run `lens release secrets check` locally to
+# requires must also be set — run ``release_secrets.py check`` locally to
 # see the full list for your project.
+#
+# The Fly app name is read automatically from fly.toml in the project root.
 
 release:
   stage: deploy
@@ -21,6 +22,6 @@ release:
   script:
     - curl -fsSL https://fly.io/install.sh | sh
     - export PATH="$HOME/.fly/bin:$PATH"
-    - bash deploy/ci/release.sh --since "$CI_COMMIT_BEFORE_SHA" --fly-app "$FLY_APP"
+    - bash deploy/ci/release.sh --since "$CI_COMMIT_BEFORE_SHA"
   environment:
     name: production
