@@ -121,6 +121,25 @@ for entry in cfg.get('dataset_repo', []):
             DS_SSH_CMD="ssh -i $DS_KEY_FILE -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/root/.ssh/known_hosts"
         fi
 
+        # Scan SSH host key for this dataset repo
+        DS_SSH_LINE=$(/app/.venv/bin/python -c "
+from lens.core.git_ssh_remote import parse_git_ssh_remote
+try:
+    h, p = parse_git_ssh_remote('$DS_URL')
+    print(f'{h}\t{p}')
+except ValueError:
+    pass
+" 2>/dev/null)
+        if [ -n "$DS_SSH_LINE" ]; then
+            DS_SSH_HOST="${DS_SSH_LINE%%	*}"
+            DS_SSH_PORT="${DS_SSH_LINE##*	}"
+            if [ "$DS_SSH_PORT" = "22" ]; then
+                ssh-keyscan -t ed25519,rsa "$DS_SSH_HOST" >> /root/.ssh/known_hosts 2>/dev/null
+            else
+                ssh-keyscan -t ed25519,rsa -p "$DS_SSH_PORT" "$DS_SSH_HOST" >> /root/.ssh/known_hosts 2>/dev/null
+            fi
+        fi
+
         if [ ! -d "$DS_DIR/.git" ]; then
             echo "Cloning dataset $DS_NAME…"
             GIT_SSH_COMMAND="$DS_SSH_CMD" git clone --depth 1 "$DS_URL" "$DS_DIR" 2>/dev/null \

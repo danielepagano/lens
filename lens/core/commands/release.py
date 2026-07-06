@@ -1184,21 +1184,12 @@ def execute_release_secrets_sync(
             _collect_ci_available_api_keys(proj_raw, "image", seen_api_keys, secrets)
             _collect_ci_available_api_keys(proj_raw, "speech", seen_api_keys, secrets)
 
-        for slug, proj_root, _proj_raw in all_projects:
+        for slug, _proj_root, _proj_raw in all_projects:
             env_key = _slug_to_env_key(slug)
             deploy_key_var = f"GIT_REPO_DEPLOY_KEY_{env_key}"
             val = os.environ.get(deploy_key_var)
             if val:
                 secrets[deploy_key_var] = val
-
-        for slug, proj_root, _proj_raw in all_projects:
-            env_key = _slug_to_env_key(slug)
-            if slug == leader_slug:
-                url = _get_git_remote_url(proj_root)
-            else:
-                dep = next(d for d in dependents if d.name == slug)
-                url = dep.git_url
-            secrets[f"PROJECT_REPO_URL_{env_key}"] = url
 
         seen_datasets: set[str] = set()
         for _slug, _proj_root, proj_raw in all_projects:

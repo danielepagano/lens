@@ -9,9 +9,11 @@
 # — CI does not need them.  See deploy/README.md for details.
 #
 # The Fly app name is read automatically from fly.toml in the project root.
+# The Lens repo is cloned at deploy time via HTTPS (no SSH key needed).
 
 release:
   stage: deploy
+  image: python:3.12
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
       changes:

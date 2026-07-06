@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -295,89 +294,72 @@ def execute_release_secrets_check(
     secrets: list[SecretRequirement] = []
     seen_api_keys: set[str] = set()
     all_configs: list[tuple[str, dict[str, Any]]] = [(leader_slug, raw)]
-    temp_clone_dirs: list[Path] = []
 
-    try:
-        for dep in dependents:
-            clone_dir = Path(tempfile.mkdtemp(prefix=f"lens-secrets-{dep.name}-")) / dep.name
-            temp_clone_dirs.append(clone_dir.parent)
-            deploy_key = os.environ.get(f"GIT_REPO_DEPLOY_KEY_{_slug_to_env_key(dep.name)}")
-            try:
-                _git_clone(dep.git_url, clone_dir, dep.ref, deploy_key=deploy_key)
-            except RuntimeError:
-                print(f"  [skipped] could not clone dependent '{dep.name}' — deploy key not in CI env", file=sys.stderr)
-                continue
-            dep_raw = _read_lens_toml(clone_dir)
-            all_configs.append((dep.name, dep_raw))
+    for slug, config in all_configs:
+        for table_key in ("llm", "image", "speech"):
+            raw_list = config.get(table_key, [])
+            entries = cast(list[Any], raw_list) if isinstance(raw_list, list) else []
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                entry_cfg = cast(dict[str, Any], entry)
+                env_name = cast(str | None, entry_cfg.get("api_key_env"))
+                if not isinstance(env_name, str) or env_name in seen_api_keys:
+                    continue
+                seen_api_keys.add(env_name)
+                provider = cast(str | None, entry_cfg.get("provider", "?"))
+                secrets.append(SecretRequirement(
+                    name=env_name,
+                    source=f"{table_key}: {provider}" + (f" ({slug})" if slug != leader_slug else ""),
+                    set_in_env=env_name in os.environ,
+                    set_on_fly=env_name in fly_secrets if check_fly else None,
+                ))
 
-        for slug, config in all_configs:
-            for table_key in ("llm", "image", "speech"):
-                raw_list = config.get(table_key, [])
-                entries = cast(list[Any], raw_list) if isinstance(raw_list, list) else []
-                for entry in entries:
-                    if not isinstance(entry, dict):
-                        continue
-                    entry_cfg = cast(dict[str, Any], entry)
-                    env_name = cast(str | None, entry_cfg.get("api_key_env"))
-                    if not isinstance(env_name, str) or env_name in seen_api_keys:
-                        continue
-                    seen_api_keys.add(env_name)
-                    provider = cast(str | None, entry_cfg.get("provider", "?"))
-                    secrets.append(SecretRequirement(
-                        name=env_name,
-                        source=f"{table_key}: {provider}" + (f" ({slug})" if slug != leader_slug else ""),
-                        set_in_env=env_name in os.environ,
-                        set_on_fly=env_name in fly_secrets if check_fly else None,
-                    ))
-
-        for slug, _config in all_configs:
-            env_key = _slug_to_env_key(slug)
-            key_var = f"GIT_REPO_DEPLOY_KEY_{env_key}"
-            tag = "project" if slug == leader_slug else "dependent_project"
-            secrets.append(SecretRequirement(
-                name=key_var,
-                source=f"{tag}: {slug}",
-                set_in_env=key_var in os.environ,
-                set_on_fly=key_var in fly_secrets if check_fly else None,
-            ))
-
-        for repo in dataset_repos:
-            ds_env_key = repo.name.upper().replace("-", "_")
-            ds_key_var = f"DATASET_REPO_DEPLOY_KEY_{ds_env_key}"
-            secrets.append(SecretRequirement(
-                name=ds_key_var,
-                source=f"dataset_repo: {repo.name}",
-                set_in_env=ds_key_var in os.environ,
-                set_on_fly=ds_key_var in fly_secrets if check_fly else None,
-            ))
-
+    for slug, _config in all_configs:
+        env_key = _slug_to_env_key(slug)
+        key_var = f"GIT_REPO_DEPLOY_KEY_{env_key}"
+        tag = "project" if slug == leader_slug else "dependent_project"
         secrets.append(SecretRequirement(
-            name="FLY_API_TOKEN",
-            source="flyctl deploy auth",
-            set_in_env="FLY_API_TOKEN" in os.environ,
+            name=key_var,
+            source=f"{tag}: {slug}",
+            set_in_env=key_var in os.environ,
+            set_on_fly=key_var in fly_secrets if check_fly else None,
         ))
 
-        for caddy_name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH"):
-            secrets.append(SecretRequirement(
-                name=caddy_name,
-                source="Caddy reverse-proxy auth",
-                set_in_env=caddy_name in os.environ,
-                set_on_fly=caddy_name in fly_secrets if check_fly else None,
-            ))
+    for repo in dataset_repos:
+        ds_env_key = repo.name.upper().replace("-", "_")
+        ds_key_var = f"DATASET_REPO_DEPLOY_KEY_{ds_env_key}"
+        secrets.append(SecretRequirement(
+            name=ds_key_var,
+            source=f"dataset_repo: {repo.name}",
+            set_in_env=ds_key_var in os.environ,
+            set_on_fly=ds_key_var in fly_secrets if check_fly else None,
+        ))
 
-        project_slugs = [leader_slug] + [d.name for d in dependents]
+    secrets.append(SecretRequirement(
+        name="FLY_API_TOKEN",
+        source="flyctl deploy auth",
+        set_in_env="FLY_API_TOKEN" in os.environ,
+    ))
 
-        return ReleaseSecretsCheckResult(
-            leader_slug=leader_slug,
-            fly_app=fly_app,
-            project_slugs=project_slugs,
-            dependent_projects=dependents,
-            dataset_repos=dataset_repos,
-            secrets=secrets,
-        )
-    finally:
-        for tmp_dir in temp_clone_dirs:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+    for caddy_name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH"):
+        secrets.append(SecretRequirement(
+            name=caddy_name,
+            source="Caddy reverse-proxy auth",
+            set_in_env=caddy_name in os.environ,
+            set_on_fly=caddy_name in fly_secrets if check_fly else None,
+        ))
+
+    project_slugs = [leader_slug] + [d.name for d in dependents]
+
+    return ReleaseSecretsCheckResult(
+        leader_slug=leader_slug,
+        fly_app=fly_app,
+        project_slugs=project_slugs,
+        dependent_projects=dependents,
+        dataset_repos=dataset_repos,
+        secrets=secrets,
+    )
 
 
 # ── check-release ────────────────────────────────────────────────────────
@@ -495,17 +477,6 @@ def _collect_ci_available_api_keys(
             into[env_name] = value
 
 
-def _get_git_remote_url(project_root: Path) -> str:
-    result = subprocess.run(
-        ["git", "remote", "get-url", "origin"],
-        cwd=project_root, capture_output=True, text=True,
-    )
-    if result.returncode != 0:
-        print(f"failed to get git remote URL: {result.stderr.strip()}", file=sys.stderr)
-        sys.exit(1)
-    return result.stdout.strip()
-
-
 def _fly_secrets_set(fly_app: str, secrets: dict[str, str]) -> None:
     args = ["flyctl", "secrets", "set", "--app", fly_app]
     for key, value in secrets.items():
@@ -532,72 +503,46 @@ def execute_release_secrets_sync(
     leader_slug = project_root.name
 
     all_projects: list[tuple[str, Path, dict[str, Any]]] = [(leader_slug, project_root, raw)]
-    temp_clone_dirs: list[Path] = []
 
-    try:
-        for dep in dependents:
-            clone_dir = Path(tempfile.mkdtemp(prefix=f"lens-secrets-{dep.name}-")) / dep.name
-            temp_clone_dirs.append(clone_dir.parent)
-            deploy_key = os.environ.get(f"GIT_REPO_DEPLOY_KEY_{_slug_to_env_key(dep.name)}")
-            try:
-                _git_clone(dep.git_url, clone_dir, dep.ref, deploy_key=deploy_key)
-            except RuntimeError:
-                print(f"  [skipped] could not clone dependent '{dep.name}' — deploy key not in CI env", file=sys.stderr)
+    secrets: dict[str, str] = {}
+    seen_api_keys: set[str] = set()
+
+    for _slug, _proj_root, proj_raw in all_projects:
+        _collect_ci_available_api_keys(proj_raw, "llm", seen_api_keys, secrets)
+        _collect_ci_available_api_keys(proj_raw, "image", seen_api_keys, secrets)
+        _collect_ci_available_api_keys(proj_raw, "speech", seen_api_keys, secrets)
+
+    for slug, _proj_root, _proj_raw in all_projects:
+        env_key = _slug_to_env_key(slug)
+        deploy_key_var = f"GIT_REPO_DEPLOY_KEY_{env_key}"
+        val = os.environ.get(deploy_key_var)
+        if val:
+            secrets[deploy_key_var] = val
+
+    seen_datasets: set[str] = set()
+    for _slug, _proj_root, proj_raw in all_projects:
+        for repo in parse_dataset_repo_configs(proj_raw):
+            if repo.name in seen_datasets:
                 continue
-            dep_raw = _read_lens_toml(clone_dir)
-            all_projects.append((dep.name, clone_dir, dep_raw))
-
-        secrets: dict[str, str] = {}
-        seen_api_keys: set[str] = set()
-
-        for _slug, _proj_root, proj_raw in all_projects:
-            _collect_ci_available_api_keys(proj_raw, "llm", seen_api_keys, secrets)
-            _collect_ci_available_api_keys(proj_raw, "image", seen_api_keys, secrets)
-            _collect_ci_available_api_keys(proj_raw, "speech", seen_api_keys, secrets)
-
-        for slug, proj_root, _proj_raw in all_projects:
-            env_key = _slug_to_env_key(slug)
-            deploy_key_var = f"GIT_REPO_DEPLOY_KEY_{env_key}"
-            val = os.environ.get(deploy_key_var)
+            seen_datasets.add(repo.name)
+            env_key = repo.name.upper().replace("-", "_")
+            var_name = f"DATASET_REPO_DEPLOY_KEY_{env_key}"
+            val = os.environ.get(var_name)
             if val:
-                secrets[deploy_key_var] = val
+                secrets[var_name] = val
 
-        for slug, proj_root, _proj_raw in all_projects:
-            env_key = _slug_to_env_key(slug)
-            if slug == leader_slug:
-                url = _get_git_remote_url(proj_root)
-            else:
-                dep = next(d for d in dependents if d.name == slug)
-                url = dep.git_url
-            secrets[f"PROJECT_REPO_URL_{env_key}"] = url
+    slugs = [leader_slug] + [d.name for d in dependents]
+    secrets["LENS_PROJECT_SLUGS"] = ",".join(slugs)
 
-        seen_datasets: set[str] = set()
-        for _slug, _proj_root, proj_raw in all_projects:
-            for repo in parse_dataset_repo_configs(proj_raw):
-                if repo.name in seen_datasets:
-                    continue
-                seen_datasets.add(repo.name)
-                env_key = repo.name.upper().replace("-", "_")
-                var_name = f"DATASET_REPO_DEPLOY_KEY_{env_key}"
-                val = os.environ.get(var_name)
-                if val:
-                    secrets[var_name] = val
+    if not dry_run and secrets:
+        _fly_secrets_set(fly_app, secrets)
 
-        slugs = [leader_slug] + [d.name for d in dependents]
-        secrets["LENS_PROJECT_SLUGS"] = ",".join(slugs)
-
-        if not dry_run and secrets:
-            _fly_secrets_set(fly_app, secrets)
-
-        return ReleaseSecretsSyncResult(
-            status="ok",
-            secrets_set=len(secrets),
-            summary=f"synced {len(secrets)} secrets to Fly app {fly_app}",
-            collected_secrets=secrets,
-        )
-    finally:
-        for tmp_dir in temp_clone_dirs:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+    return ReleaseSecretsSyncResult(
+        status="ok",
+        secrets_set=len(secrets),
+        summary=f"synced {len(secrets)} secrets to Fly app {fly_app}",
+        collected_secrets=secrets,
+    )
 
 
 # ── CLI subcommands ─────────────────────────────────────────────────────
