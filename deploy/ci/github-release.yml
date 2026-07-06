@@ -27,14 +27,11 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    container: python:3.12
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
 
       - name: Install flyctl
         run: curl -fsSL https://fly.io/install.sh | sh && echo "$HOME/.fly/bin" >> $GITHUB_PATH

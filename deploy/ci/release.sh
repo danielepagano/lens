@@ -19,7 +19,7 @@ set -euo pipefail
 #   2. release_secrets.py check-release --since <SHA> --json  →  decide apply/none
 #   3. release_secrets.py sync [--fly-app <name>]  →  topology discovery + secret sync
 #   4. release_secrets.py apply --to <tag> --json  →  build params
-#   5. flyctl deploy --build-arg LENS_VERSION=<tag>
+#   5. git clone Lens repo → flyctl deploy --build-arg LENS_VERSION=<tag>
 #
 
 SINCE=""
@@ -99,10 +99,23 @@ $PY sync
 # Step 4 — build params
 APPLY=$($PY apply --to "$TARGET" --json)
 
+LENS_REPO_URL=$(echo "$APPLY" | python3 -c \
+  "import sys,json; print(json.load(sys.stdin)['lens_repo_url'])")
+LENS_CLONE_DIR=$(mktemp -d)
+LENS_CLONE="$LENS_CLONE_DIR/lens"
+trap 'rm -rf "$LENS_CLONE_DIR"' EXIT
+
+echo "release.sh: cloning Lens repo from $LENS_REPO_URL (tag: $TARGET)"
+git clone --depth 1 --branch "$TARGET" "$LENS_REPO_URL" "$LENS_CLONE"
+
 # Step 5 — deploy
-# On failure the flyctl error output (missing secret, build timeout, image
-# issue, infra error) is captured in CI logs.  The exit code propagates and
-# fails the pipeline step — no automated retry or webhook.
-flyctl deploy --app "$FLY_APP" --build-arg LENS_VERSION="$TARGET" --remote-only
+# Uses the cloned Lens repo as the Docker build context so deploy/Dockerfile
+# has access to the full source tree (pyproject.toml, lens/, datasets/, UI).
+flyctl deploy \
+  --app "$FLY_APP" \
+  --build-arg "LENS_VERSION=$TARGET" \
+  "$LENS_CLONE" \
+  --config fly.toml \
+  --dockerfile "$LENS_CLONE/deploy/Dockerfile"
 
 echo "release.sh: deploy of $TARGET succeeded"

@@ -597,14 +597,15 @@ class TestSecretsSync(unittest.TestCase):
         with self.assertRaises(LensException):
             execute_release_secrets_sync(project, "my-app", dry_run=True)
 
-    def test_leader_only_sets_repo_url_and_slugs(self) -> None:
+    def test_leader_only_sets_slugs(self) -> None:
         leader = self._init_leader()
         result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
         self.assertEqual(result.status, "ok")
-        env_key = leader.name.upper().replace("-", "_")
-        self.assertIn(f"PROJECT_REPO_URL_{env_key}", result.collected_secrets)
         self.assertIn("LENS_PROJECT_SLUGS", result.collected_secrets)
         self.assertEqual(result.collected_secrets["LENS_PROJECT_SLUGS"], leader.name)
+        # PROJECT_REPO_URL_* is set once by lens deploy init, not synced by CI
+        env_key = leader.name.upper().replace("-", "_")
+        self.assertNotIn(f"PROJECT_REPO_URL_{env_key}", result.collected_secrets)
 
     def test_additive_api_keys_collected_when_set(self) -> None:
         leader = self._init_leader()
@@ -726,9 +727,9 @@ class TestSecretsSync(unittest.TestCase):
             self.assertIn("DEPENDENT_OPENAI_KEY", result.collected_secrets)
             self.assertEqual(result.collected_secrets["DEPENDENT_OPENAI_KEY"], "sk-dependent")
 
-            # Dependent's repo URL should be set
+            # PROJECT_REPO_URL_* is set once by lens deploy init, not synced by CI
             dep_env_key = dep_name.upper().replace("-", "_")
-            self.assertIn(f"PROJECT_REPO_URL_{dep_env_key}", result.collected_secrets)
+            self.assertNotIn(f"PROJECT_REPO_URL_{dep_env_key}", result.collected_secrets)
         finally:
             os.environ.pop("DEPENDENT_OPENAI_KEY", None)
 
