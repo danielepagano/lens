@@ -817,6 +817,37 @@ def _append_table_array_entry(text: str, table_name: str, fields: dict[str, str]
     return text
 
 
+def _remove_table_array_entry(text: str, table_name: str, key: str, value: str) -> str:
+    """Remove the ``[[table_name]]`` entry whose *key* equals *value*.
+
+    Finds the entry block matching ``[[table_name]]`` followed by
+    ``key = "value"`` on any subsequent line and removes it, along with
+    any preceding blank lines.  Returns the modified text, preserving
+    all other content.
+    """
+    lines = text.splitlines(keepends=True)
+    result: list[str] = []
+    i = 0
+    while i < len(lines):
+        if lines[i].strip().startswith(f"[[{table_name}]]"):
+            entry_lines: list[str] = [lines[i]]
+            j = i + 1
+            while j < len(lines) and not lines[j].strip().startswith("["):
+                entry_lines.append(lines[j])
+                j += 1
+            if any(f'{key} = "{value}"' in ln for ln in entry_lines):
+                i = j
+                if result and result[-1].strip() == "":
+                    result.pop()
+                continue
+            result.extend(entry_lines)
+            i = j
+        else:
+            result.append(lines[i])
+            i += 1
+    return "".join(result).rstrip("\n") + "\n"
+
+
 def _discover_dependent_projects(
     project_root: Path,
     leader_slug: str | None = None,
@@ -941,15 +972,27 @@ def execute_release_init(
     *,
     lens_repo_url: str | None = None,
     leader: bool = False,
+    app_name: str | None = None,
+    region: str | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    deploy_keys: dict[str, Path] | None = None,
 ) -> ReleaseInitResult:
     """Install CI trigger files and activate the release system for *project_root*.
+
+    When **fly.toml** does not exist, *app_name*, *region*, *username*,
+    *password*, and *deploy_keys* are required to bootstrap the Fly app
+    (same as ``lens deploy init``).  When fly.toml already exists, these
+    are ignored.
 
     Performs a full release-system bootstrap:
 
     1. **Configure** ``[release]`` — enables the section, sets
        ``lens_repo_url``, and designates the leader (``app_leader = true``)
        when requested.
-    2. **Discover dependent projects** — scans for sibling ``lens.toml``
+    2. **Bootstrap Fly app** — if no ``fly.toml`` exists and deploy
+       parameters are provided, creates the Fly app, volume, and secrets.
+    3. **Discover dependent projects** — scans for sibling ``lens.toml``
        directories, validates they have SSH git remotes, and writes
        ``[[dependent_project]]`` entries (skipping already-configured ones).
     3. **Discover dataset repos** — finds non-bundled datasets referenced
@@ -997,6 +1040,25 @@ def execute_release_init(
     if leader and not cfg.app_leader:
         text = _set_release_field_text(text, "app_leader", "true")
         modified = True
+
+    # ---- Persist lens.toml changes so far before bootstrapping ----
+    if modified:
+        from lens.core.storage import Storage
+
+        storage = Storage(project_root, owner=None)
+        storage.write_file_bytes(lens_toml, text.encode("utf-8"))
+        # Re-read for downstream steps
+        raw = _read_lens_toml(project_root)
+
+    # ---- 1b. Bootstrap Fly app if needed (no fly.toml yet) ----
+    has_fly_toml = (project_root / "fly.toml").is_file()
+    if not has_fly_toml:
+        has_fly_toml = (project_root.parent / "fly.toml").is_file()
+    if not has_fly_toml and app_name and region and username and password and deploy_keys:
+        from lens.core.commands.deploy import init_deploy
+
+        init_deploy(project_root, app_name, region, username, password, deploy_keys)
+        has_fly_toml = True
 
     # ---- 2. Write [[dependent_project]] entries ----
     existing_deps = {d.name for d in parse_dependent_project_configs(raw)}
@@ -1134,6 +1196,125 @@ def execute_release_init(
     )
 
 
+# ── Release-layer delegation (lens release add / remove / push) ────────────
+
+
+def release_push_deploy(
+    deploy_dir: Path,
+    *,
+    build_mode: str = "fly",
+) -> None:
+    """Deploy (or redeploy) from a release-managed project.
+
+    Identical to ``lens deploy push`` — topology is handled the same way.
+    Provided so users of release-managed deployments use ``lens release push``
+    consistently.
+    *build_mode* is ``"fly"``, ``"depot"``, or ``"local"``.
+    """
+    from lens.core.commands.deploy import FlyDeployBuildMode, push_deploy
+
+    push_deploy(deploy_dir, build_mode=FlyDeployBuildMode(build_mode))
+
+
+def release_add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
+    """Add a project to a release-managed deployment.
+
+    Sets Fly secrets, updates ``fly.toml``, and writes a
+    ``[[dependent_project]]`` entry in the release leader's ``lens.toml``
+    so CI knows the full topology.
+    """
+    from lens.core.commands.deploy import (
+        resolve_project_root_for_slug,
+        add_project as _deploy_add_project,
+        build_projects,
+        get_slugs,
+        read_lens_toml as read_deploy_toml,
+    )
+    from lens.core.project import find_git_root_from
+    from lens.core.storage import Storage
+
+    # 1. Deploy layer: Fly secrets + fly.toml
+    _deploy_add_project(deploy_dir, slug, deploy_key_path)
+
+    # 2. Find the release leader
+    fly_toml = deploy_dir / "fly.toml"
+    current_slugs = get_slugs(fly_toml)
+    projects = build_projects(deploy_dir, current_slugs)
+    leader_root: Path | None = None
+    for _s, _g, pr in projects:
+        raw = read_deploy_toml(pr)
+        cfg = parse_release_config(raw)
+        if cfg.app_leader or cfg.enabled:
+            leader_root = pr
+            break
+    if leader_root is None or leader_root == resolve_project_root_for_slug(deploy_dir, slug):
+        return
+
+    # 3. Write [[dependent_project]] entry
+    new_project_root = resolve_project_root_for_slug(deploy_dir, slug)
+    new_git_root = find_git_root_from(new_project_root)
+    remote_url = _get_git_remote_url(new_git_root)
+
+    leader_toml_path = leader_root / "lens.toml"
+    leader_text = leader_toml_path.read_text(encoding="utf-8")
+    existing = {d.name for d in parse_dependent_project_configs(read_deploy_toml(leader_root))}
+    if slug not in existing:
+        leader_text = _append_table_array_entry(leader_text, "dependent_project", {
+            "name": slug,
+            "git_url": remote_url,
+            "ref": "main",
+        })
+        Storage(leader_root, owner=None).write_file_bytes(
+            leader_toml_path, leader_text.encode("utf-8"),
+        )
+
+
+def release_remove_project(deploy_dir: Path, slug: str) -> None:
+    """Remove a project from a release-managed deployment.
+
+    Removes the ``[[dependent_project]]`` entry from the release leader's
+    ``lens.toml``, then unsets Fly secrets and updates ``fly.toml``.
+    """
+    from lens.core.commands.deploy import (
+        resolve_project_root_for_slug,
+        build_projects,
+        get_slugs,
+        read_lens_toml as read_deploy_toml,
+        remove_project as _deploy_remove_project,
+    )
+    from lens.core.storage import Storage
+
+    # 1. Find the release leader
+    fly_toml = deploy_dir / "fly.toml"
+    current_slugs = get_slugs(fly_toml)
+
+    # Check that this slug is actually in the deployment
+    if slug not in current_slugs:
+        raise LensException(f"project '{slug}' is not in this deployment")
+
+    projects = build_projects(deploy_dir, current_slugs)
+    leader_root: Path | None = None
+    for _s, _g, pr in projects:
+        raw = read_deploy_toml(pr)
+        cfg = parse_release_config(raw)
+        if cfg.app_leader or cfg.enabled:
+            leader_root = pr
+            break
+
+    # 2. Remove [[dependent_project]] entry if present
+    if leader_root is not None and leader_root != resolve_project_root_for_slug(deploy_dir, slug):
+        leader_toml_path = leader_root / "lens.toml"
+        leader_text = leader_toml_path.read_text(encoding="utf-8")
+        new_text = _remove_table_array_entry(leader_text, "dependent_project", "name", slug)
+        if new_text != leader_text:
+            Storage(leader_root, owner=None).write_file_bytes(
+                leader_toml_path, new_text.encode("utf-8"),
+            )
+
+    # 3. Deploy layer: unset Fly secrets + update fly.toml
+    _deploy_remove_project(deploy_dir, slug)
+
+
 def execute_release_secrets_sync(
     project_root: Path,
     fly_app: str,
@@ -1204,9 +1385,6 @@ def execute_release_secrets_sync(
                 val = os.environ.get(var_name)
                 if val:
                     secrets[var_name] = val
-
-        slugs = [leader_slug] + [d.name for d in dependents]
-        secrets["LENS_PROJECT_SLUGS"] = ",".join(slugs)
 
         if not dry_run and secrets:
             _fly_secrets_set(fly_app, secrets)

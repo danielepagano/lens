@@ -36,6 +36,35 @@ app = typer.Typer(
 )
 
 
+def release_gate(ctx: typer.Context) -> None:
+    """Block non-init deploy commands when the topology declares [release]."""
+    if ctx.invoked_subcommand == "init":
+        return
+    try:
+        deploy_dir = resolve_deploy_dir(Path.cwd())
+    except (RuntimeError, LensException):
+        return
+
+    fly_toml = deploy_dir / "fly.toml"
+    from lens.core.commands.deploy import read_lens_toml, build_projects, get_slugs
+    from lens.core.release.config import parse_release_config
+
+    slugs = get_slugs(fly_toml)
+    projects = build_projects(deploy_dir, slugs)
+    for slug, _git_root, project_root in projects:
+        raw = read_lens_toml(project_root)
+        cfg = parse_release_config(raw)
+        if cfg.enabled:
+            typer.echo(
+                f"Project '{slug}' has [release] enabled — use 'lens release' commands instead",
+                err=True,
+            )
+            raise typer.Exit(1)
+
+
+release_gate = app.callback()(release_gate)
+
+
 @app.command()
 def init(
     app_name: str = typer.Option(..., "--app", help=ARG_APP_NAME),

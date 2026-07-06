@@ -1,15 +1,18 @@
-"""lens release — CI-triggered release decision commands.
+"""lens release — release-managed deployments orchestrated by CI.
 
-Two deployment systems exist:
-  - ``lens deploy push`` — desktop build & deploy to Fly.io directly.
-  - ``lens release`` — emit a CI contract so GitHub Actions / GitLab CI
-    can deploy the Lens codebase itself.  This group inspects the project's
-    ``[release]`` config, checks the upstream Lens repo for available
-    versions, and drives the parent-hash gate for CI pipelines.
+Once a project opts into `[release] enabled`, the CI-triggered workflow takes
+over: `lens release check` emits the parent-hash gate, `lens release apply`
+sets the target version, and `lens release secrets sync` keeps Fly secrets
+in sync. `lens release init` installs the CI trigger files and (if no
+`fly.toml` exists yet) bootstraps the Fly app with the same options as
+`lens deploy init`. `lens release add` / `remove` manage the shared topology
+(Fly secrets and `[[dependent_project]]`) and `lens release push` redeploys the
+image from the release perspective. Use `lens deploy` commands for desktop-only
+deployments that never opt into `[release] enabled`.
 
-``lens release secrets check`` / ``sync`` manage the **CI-side** secret
-inventory (different from desktop ``lens deploy push`` secrets — see
-``deploy/README.md``)."""
+See [deploy/README.md](../../deploy/README.md) and
+[docs/configuration.md](../../docs/configuration.md) for the full split
+between desktop and release modes."""
 
 from __future__ import annotations
 
@@ -19,8 +22,14 @@ from pathlib import Path
 import typer
 
 from lens.cli.help_strings import (
+    ARG_APP_NAME,
+    ARG_DEPLOY_KEY,
+    ARG_PROJECT_SLUG,
+    ARG_REGION,
     ARG_RELEASE_TAG,
     CMD_RELEASE,
+    DEPLOY_KEY_HELP,
+    DEPLOY_MODE,
     HELP_OPTS,
     OPT_JSON,
     OPT_RELEASE_INIT_AS_LEADER,
@@ -35,6 +44,9 @@ from lens.core.commands.release import (
     execute_release_init,
     execute_release_secrets_check,
     execute_release_secrets_sync,
+    release_add_project,
+    release_push_deploy,
+    release_remove_project,
     resolve_release_project_root,
 )
 from lens.core.exceptions import LensException
@@ -156,6 +168,24 @@ def init(
     as_leader: str | None = typer.Option(
         None, "--as-leader", help=OPT_RELEASE_INIT_AS_LEADER,
     ),
+    # Bootstrap options (when no fly.toml exists)
+    app_name: str | None = typer.Option(
+        None, "--app", help=ARG_APP_NAME,
+    ),
+    region: str | None = typer.Option(
+        None, "--region", help=ARG_REGION,
+    ),
+    username: str | None = typer.Option(
+        None, "--user", help="Basic Auth username for Caddy",
+    ),
+    password: str | None = typer.Option(
+        None, "--password", help="Basic Auth password for Caddy",
+    ),
+    deploy_key: list[str] = typer.Option(
+        [],
+        "--deploy-key",
+        help=DEPLOY_KEY_HELP,
+    ),
 ) -> None:
     cwd = Path.cwd()
     effective_leader = leader or (as_leader is not None)
@@ -170,9 +200,46 @@ def init(
             typer.echo(f"lens release init: {exc}", err=True)
             raise typer.Exit(1)
 
+    # Parse deploy_keys if provided
+    fly_toml = project_root / "fly.toml"
+    if not fly_toml.exists():
+        fly_toml = (project_root.parent / "fly.toml")
+    has_fly_toml = fly_toml.exists()
+    bootstrap = not has_fly_toml
+
+    parsed_keys: dict[str, Path] | None = None
+    if bootstrap:
+        missing: list[str] = []
+        if not app_name:
+            missing.append("--app")
+        if not region:
+            missing.append("--region")
+        if not deploy_key:
+            missing.append("--deploy-key")
+        if missing:
+            typer.echo(
+                "This project has no fly.toml yet. Run `lens deploy init --app <name> --region <region> "
+                "--user <user> --password <pw> --deploy-key <slug=path>` first, or rerun `lens release init` "
+                f"with the missing flags ({', '.join(missing)}).",
+                err=True,
+            )
+            raise typer.Exit(1)
+        if not username:
+            username = typer.prompt("Basic Auth username for Caddy")
+        if not password:
+            password = typer.prompt("Basic Auth password for Caddy", hide_input=True)
+        parsed_keys = _parse_deploy_keys(cwd, project_root, deploy_key)
+
     try:
         result = execute_release_init(
-            project_root, lens_repo_url=lens_repo_url, leader=effective_leader,
+            project_root,
+            lens_repo_url=lens_repo_url,
+            leader=effective_leader,
+            app_name=app_name if bootstrap else None,
+            region=region if bootstrap else None,
+            username=username if bootstrap else None,
+            password=password if bootstrap else None,
+            deploy_keys=parsed_keys,
         )
     except LensException as exc:
         typer.echo(f"lens release init: {exc}", err=True)
@@ -224,6 +291,106 @@ def _resolve_project_from_deploy_dir(cwd: Path, as_leader: str | None) -> Path:
         raise LensException(f"could not resolve project {target_slug!r} from {fly_toml}")
     _slug, _git_root, proj_root = projects[0]
     return proj_root
+
+
+def _parse_deploy_keys(cwd: Path, project_root: Path, deploy_key: list[str]) -> dict[str, Path]:
+    """Parse --deploy-key arguments into slug → path mapping.
+
+    Supports both single-project (plain path → slug from project_root.name)
+    and multi-project (slug=path) formats.
+    """
+    is_single = (project_root / "lens.toml").exists() and (cwd == project_root or cwd == project_root.parent)
+    if is_single:
+        if len(deploy_key) != 1:
+            raise LensException("single-project mode requires exactly one --deploy-key <path>")
+        raw = deploy_key[0]
+        if "=" in raw:
+            raise LensException("single-project mode: --deploy-key should be a file path, not slug=path")
+        return {project_root.name: Path(raw).expanduser()}
+    parsed: dict[str, Path] = {}
+    for entry in deploy_key:
+        if "=" not in entry:
+            raise LensException(
+                "multi-project mode: --deploy-key must be slug=path, got: {entry!r}"
+            )
+        slug, _, raw_path = entry.partition("=")
+        slug = slug.strip()
+        if not slug:
+            raise LensException(f"empty slug in --deploy-key: {entry!r}")
+        parsed[slug] = Path(raw_path.strip()).expanduser()
+    return parsed
+
+
+@app.command(name="push")
+def push(
+    mode: str = typer.Option(
+        "fly",
+        "--mode",
+        help=DEPLOY_MODE,
+    ),
+) -> None:
+    """Deploy (or redeploy) the Lens application image to Fly.io.
+
+    Identical to ``lens deploy push``.  Run from the directory containing
+    ``fly.toml`` or from an ancestor project directory (``fly.toml`` is
+    located automatically).
+    """
+    from lens.core.commands.deploy import resolve_deploy_dir
+
+    try:
+        deploy_dir = resolve_deploy_dir(Path.cwd())
+        release_push_deploy(deploy_dir, build_mode=mode)
+    except (RuntimeError, LensException) as exc:
+        typer.echo(f"lens release push: {exc}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(name="add")
+def add(
+    slug: str = typer.Argument(..., help=ARG_PROJECT_SLUG),
+    deploy_key: Path = typer.Option(..., "--deploy-key", help=ARG_DEPLOY_KEY),
+) -> None:
+    """Add a project to an existing release-managed deployment.
+
+    Sets Fly secrets, updates ``fly.toml``, and adds a
+    ``[[dependent_project]]`` entry to the release leader's ``lens.toml``
+    so CI discovers the new project.  Run ``lens release push`` afterwards
+    to apply.
+    """
+    from lens.core.commands.deploy import resolve_deploy_dir
+
+    try:
+        deploy_dir = resolve_deploy_dir(Path.cwd())
+        release_add_project(
+            deploy_dir, slug=slug, deploy_key_path=deploy_key.expanduser(),
+        )
+        typer.echo(f"Added '{slug}' to the deployment.")
+        typer.echo("Run 'lens release push' to apply.")
+    except (RuntimeError, LensException) as exc:
+        typer.echo(f"lens release add: {exc}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(name="remove")
+def remove(
+    slug: str = typer.Argument(..., help=ARG_PROJECT_SLUG),
+) -> None:
+    """Remove a project from an existing release-managed deployment.
+
+    Removes the ``[[dependent_project]]`` entry from the release leader's
+    ``lens.toml``, unsets Fly secrets, and updates ``fly.toml``.
+    Run ``lens release push`` afterwards to apply.
+    """
+    from lens.core.commands.deploy import resolve_deploy_dir
+
+    try:
+        deploy_dir = resolve_deploy_dir(Path.cwd())
+        release_remove_project(deploy_dir, slug=slug)
+        typer.echo(f"Removed '{slug}' from the deployment.")
+        typer.echo("Run 'lens release push' to apply.")
+    except (RuntimeError, LensException) as exc:
+        typer.echo(f"lens release remove: {exc}", err=True)
+        raise typer.Exit(1)
 
 
 @app.command(name="apply")

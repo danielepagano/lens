@@ -4,7 +4,7 @@ Covers the "leader-colocated" topology (see "Multi-project deployments" in
 ``deploy/README.md``), where ``fly.toml`` lives inside the release leader's
 own project directory instead of a separate bare parent-of-projects
 directory, and the tiered slug -> project-root resolution
-(:func:`_resolve_project_root_for_slug` / :func:`build_projects`) that makes
+(:func:`resolve_project_root_for_slug` / :func:`build_projects`) that makes
 both topologies work interchangeably.
 """
 
