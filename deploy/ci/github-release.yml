@@ -5,9 +5,8 @@
 # Required secrets:
 #   FLY_API_TOKEN  — flyctl deploy auth
 #
-# Any api_key_env from lens.toml and deploy key env vars the topology
-# requires must also be set as secrets — run ``release_secrets.py check``
-# locally to see the full list for your project.
+# Deploy keys and API key secrets are already on Fly from ``lens deploy init``
+# — CI does not need them.  See deploy/README.md for details.
 #
 # The Fly app name is read automatically from fly.toml in the project root.
 
@@ -16,6 +15,11 @@ name: Lens Release
 on:
   push:
     branches: [main]
+    paths:
+      - .github/workflows/*
+      - lens.toml
+      - fly.toml
+      - deploy/ci/*
 
 concurrency:
   group: release-${{ github.event.repository.name }}

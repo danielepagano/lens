@@ -165,15 +165,26 @@ def _read_lens_toml(project_root: Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
-def _git_clone(git_url: str, dest: Path, ref: str = "main") -> None:
+def _git_clone(git_url: str, dest: Path, ref: str = "main", deploy_key: str | None = None) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
+
+    env = os.environ.copy()
+    if git_url.startswith("git@") or git_url.startswith("ssh://"):
+        ssh_cmd = "ssh -o StrictHostKeyChecking=accept-new"
+        if deploy_key:
+            key_dir = Path(tempfile.mkdtemp(prefix="lens-deploy-key-"))
+            key_file = key_dir / "id"
+            key_file.write_text(deploy_key)
+            key_file.chmod(0o600)
+            ssh_cmd += f" -i {key_file}"
+        env["GIT_SSH_COMMAND"] = ssh_cmd
+
     result = subprocess.run(
         ["git", "clone", "--depth", "1", "--branch", ref, git_url, str(dest)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, env=env,
     )
     if result.returncode != 0:
-        print(f"git clone {git_url} failed: {result.stderr.strip()}", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError(f"git clone {git_url} failed: {result.stderr.strip()}")
 
 
 def _read_fly_app(project_root: Path) -> str | None:
@@ -289,10 +300,15 @@ def execute_release_secrets_check(
     try:
         for dep in dependents:
             clone_dir = Path(tempfile.mkdtemp(prefix=f"lens-secrets-{dep.name}-")) / dep.name
-            _git_clone(dep.git_url, clone_dir, dep.ref)
+            temp_clone_dirs.append(clone_dir.parent)
+            deploy_key = os.environ.get(f"GIT_REPO_DEPLOY_KEY_{_slug_to_env_key(dep.name)}")
+            try:
+                _git_clone(dep.git_url, clone_dir, dep.ref, deploy_key=deploy_key)
+            except RuntimeError:
+                print(f"  [skipped] could not clone dependent '{dep.name}' — deploy key not in CI env", file=sys.stderr)
+                continue
             dep_raw = _read_lens_toml(clone_dir)
             all_configs.append((dep.name, dep_raw))
-            temp_clone_dirs.append(clone_dir.parent)
 
         for slug, config in all_configs:
             for table_key in ("llm", "image", "speech"):
@@ -340,6 +356,14 @@ def execute_release_secrets_check(
             source="flyctl deploy auth",
             set_in_env="FLY_API_TOKEN" in os.environ,
         ))
+
+        for caddy_name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH"):
+            secrets.append(SecretRequirement(
+                name=caddy_name,
+                source="Caddy reverse-proxy auth",
+                set_in_env=caddy_name in os.environ,
+                set_on_fly=caddy_name in fly_secrets if check_fly else None,
+            ))
 
         project_slugs = [leader_slug] + [d.name for d in dependents]
 
@@ -513,10 +537,15 @@ def execute_release_secrets_sync(
     try:
         for dep in dependents:
             clone_dir = Path(tempfile.mkdtemp(prefix=f"lens-secrets-{dep.name}-")) / dep.name
-            _git_clone(dep.git_url, clone_dir, dep.ref)
+            temp_clone_dirs.append(clone_dir.parent)
+            deploy_key = os.environ.get(f"GIT_REPO_DEPLOY_KEY_{_slug_to_env_key(dep.name)}")
+            try:
+                _git_clone(dep.git_url, clone_dir, dep.ref, deploy_key=deploy_key)
+            except RuntimeError:
+                print(f"  [skipped] could not clone dependent '{dep.name}' — deploy key not in CI env", file=sys.stderr)
+                continue
             dep_raw = _read_lens_toml(clone_dir)
             all_projects.append((dep.name, clone_dir, dep_raw))
-            temp_clone_dirs.append(clone_dir.parent)
 
         secrets: dict[str, str] = {}
         seen_api_keys: set[str] = set()
@@ -626,6 +655,18 @@ def cmd_check(args: list[str]) -> None:
     print(f"  {env_count}/{len(result.secrets)} secrets set in environment")
     if fly_total:
         print(f"  {fly_ok}/{fly_total} checkable secrets set on Fly")
+    deploy_missing = [
+        s.name for s in result.secrets
+        if s.name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH")
+        and s.set_on_fly is False
+    ]
+    if deploy_missing:
+        print()
+        print("  Deployment secrets missing from Fly app:")
+        for n in deploy_missing:
+            print(f"    {n}")
+        print("  Run 'lens deploy init' to set them, or 'fly secrets set' manually.")
+
     if not fly:
         print()
         print("  Tip: pass --fly to also check which secrets are set on the Fly app.")

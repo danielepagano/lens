@@ -5,9 +5,8 @@
 # Required CI/CD variables:
 #   FLY_API_TOKEN  — flyctl deploy auth
 #
-# Any api_key_env from lens.toml and deploy key env vars the topology
-# requires must also be set — run ``release_secrets.py check`` locally to
-# see the full list for your project.
+# Deploy keys and API key secrets are already on Fly from ``lens deploy init``
+# — CI does not need them.  See deploy/README.md for details.
 #
 # The Fly app name is read automatically from fly.toml in the project root.
 
@@ -16,7 +15,10 @@ release:
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
       changes:
+        - .gitlab-ci.yml
         - lens.toml
+        - fly.toml
+        - deploy/ci/*
   variables:
     GIT_DEPTH: 0
   script:

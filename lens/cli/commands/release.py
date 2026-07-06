@@ -1,4 +1,15 @@
-"""lens release — CI-friendly release decision commands."""
+"""lens release — CI-triggered release decision commands.
+
+Two deployment systems exist:
+  - ``lens deploy push`` — desktop build & deploy to Fly.io directly.
+  - ``lens release`` — emit a CI contract so GitHub Actions / GitLab CI
+    can deploy the Lens codebase itself.  This group inspects the project's
+    ``[release]`` config, checks the upstream Lens repo for available
+    versions, and drives the parent-hash gate for CI pipelines.
+
+``lens release secrets check`` / ``sync`` manage the **CI-side** secret
+inventory (different from desktop ``lens deploy push`` secrets — see
+``deploy/README.md``)."""
 
 from __future__ import annotations
 
@@ -8,15 +19,20 @@ from pathlib import Path
 import typer
 
 from lens.cli.help_strings import (
+    ARG_RELEASE_TAG,
     CMD_RELEASE,
     HELP_OPTS,
     OPT_JSON,
-    ARG_RELEASE_TAG,
+    OPT_RELEASE_INIT_AS_LEADER,
+    OPT_RELEASE_INIT_LENS_REPO_URL,
+    OPT_RELEASE_INIT_LEADER,
+    RELEASE_INIT,
 )
 from lens.core.commands.release import (
     execute_release_apply,
     execute_release_check,
     execute_release_clear,
+    execute_release_init,
     execute_release_secrets_check,
     execute_release_secrets_sync,
     resolve_release_project_root,
@@ -33,38 +49,36 @@ app = typer.Typer(
 
 secrets_app = typer.Typer(
     no_args_is_help=True,
-    help="Manage Fly secrets for release deployment",
+    help=(
+        "Audit and sync secrets needed for CI release deployment.\n\n"
+        "``check`` scans your project topology (leader, dependent projects,\n"
+        "dataset repos) and lists every secret the CI pipeline needs:\n"
+        "``api_key_env`` from ``[[llm]]``/``[[image]]``/``[[speech]]``,\n"
+        "git deploy keys per project, and ``FLY_API_TOKEN`` (always required).\n\n"
+        "Use this **before** setting up CI** to know exactly which repo-level\n"
+        "secrets to create in your CI provider (GitHub Actions secrets,\n"
+        "GitLab CI variables, etc.).  ``check`` also tells you whether each\n"
+        "secret is already set on the Fly app (``--fly``), so you can skip\n"
+        "redundant CI env vars for secrets Fly already has.\n\n"
+        "``sync`` pushes whatever IS available in the CI env to Fly at deploy\n"
+        "time — the CI counterpart of ``lens deploy push``'s secret step."
+    ),
     add_completion=False,
     context_settings={"help_option_names": HELP_OPTS},
 )
 app.add_typer(secrets_app, name="secrets")
 
 
-def _print_json(data: dict[str, str | None], summary: str, *, use_json: bool) -> None:
-    if use_json:
-        typer.echo(json.dumps(data))
-        if summary:
-            typer.echo(summary, err=True)
-    else:
-        if summary:
-            typer.echo(summary)
-
-
-_OPT_SINCE = "Commit SHA of the parent of the push range (e.g. `github.event.before`); checks every commit in `since..HEAD` for a parent match."
-
-
 @app.command(name="check")
-def check(
-    *,
-    since: str | None = typer.Option(None, "--since", help=_OPT_SINCE),
-    json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
-) -> None:
-    """Check for releases and emit the CI contract.
+def check() -> None:
+    """Show the current release configuration and available versions.
 
-    Runs from inside a project directory, or from a multi-project deploy
-    directory (parent of several projects sharing one ``fly.toml``) — in
-    the latter case this resolves to whichever served project is the
-    release leader (``[release] app_leader = true``).
+    Displays which version is deployed, which is latest, and any
+    pending deployment request.  The same information ``lens stats``
+    and the web UI release modal show.
+
+    Run from inside a project directory or a multi-project deploy
+    directory (resolves to the release leader automatically).
     """
     try:
         project_root = resolve_release_project_root(Path.cwd())
@@ -73,25 +87,158 @@ def check(
         raise typer.Exit(1)
 
     try:
-        result = execute_release_check(project_root, since=since)
+        result = execute_release_check(project_root)
     except LensException as exc:
         typer.echo(f"lens release check: {exc}", err=True)
         raise typer.Exit(1)
 
-    payload: dict[str, str | None] = {"action": result.action, "target": result.target}
-    _print_json(payload, result.summary, use_json=json_output)
+    if not result.enabled:
+        typer.echo("CI release not configured — add [release] enabled = true to lens.toml")
+        return
+
+    typer.echo("Release status:")
+    typer.echo(f"  Lens repo:           {result.lens_repo_url}")
+    if result.leader_repo_url:
+        typer.echo(f"  Leader:              {result.leader_slug}  ({result.leader_repo_url})")
+    else:
+        typer.echo(f"  Leader:              {result.leader_slug}")
+    typer.echo(f"  Installed version:   {result.installed_version or '(desktop checkout)'}")
+    typer.echo(f"  Latest available:    {result.latest_available or '(unknown)'}")
+    if result.update_available:
+        typer.echo("  Update available:    Yes")
+    if result.requested_version:
+        typer.echo(f"  Requested version:   {result.requested_version}")
+    if result.requested_from_commit:
+        typer.echo(f"  Requested from:      {result.requested_from_commit[:12]}...")
+    if result.remote_error:
+        typer.echo(f"  Remote error:        {result.remote_error}")
+
+    ci = result.ci_installation
+    if ci.system:
+        has_missing = len(ci.files_present) < len(ci.files_expected)
+        is_problem = bool(ci.info) or has_missing or (ci.files_mismatched and ci.all_files_match is False)
+        typer.echo(f"  CI installation:     {'PROBLEM' if is_problem else 'OK'}")
+        typer.echo(f"    System:             {ci.system}")
+        if ci.info and not ci.files_expected:
+            typer.echo(f"    Config:             {ci.info}")
+        for f in ci.files_expected:
+            if f in ci.files_present:
+                if f in ci.files_mismatched:
+                    typer.echo(f"    Config:             {f}  (✗ - content differs)")
+                else:
+                    typer.echo(f"    Config:             {f}  (✓)")
+            else:
+                typer.echo(f"    Config:             {f}  (✗ — missing)")
+        if ci.system in ("github", "gitlab"):
+            if has_missing:
+                typer.echo("    Fix:                Run 'lens release init' to install CI files")
+            elif ci.files_mismatched:
+                typer.echo("    Fix:                Run 'lens release init' to update CI files")
+
+    if result.dependent_projects:
+        typer.echo("  Dependent projects:")
+        for dep in result.dependent_projects:
+            typer.echo(f"    - {dep['name']}  ({dep['git_url']}, ref: {dep['ref']})")
+    if result.dataset_repos:
+        typer.echo("  Dataset repos:")
+        for ds in result.dataset_repos:
+            typer.echo(f"    - {ds['name']}  ({ds['git_url']}, ref: {ds['ref']})")
+
+@app.command(name="init", help=RELEASE_INIT)
+def init(
+    *,
+    lens_repo_url: str | None = typer.Option(
+        None, "--lens-repo-url", "-u", help=OPT_RELEASE_INIT_LENS_REPO_URL,
+    ),
+    leader: bool = typer.Option(
+        False, "--leader", "-l", help=OPT_RELEASE_INIT_LEADER,
+    ),
+    as_leader: str | None = typer.Option(
+        None, "--as-leader", help=OPT_RELEASE_INIT_AS_LEADER,
+    ),
+) -> None:
+    cwd = Path.cwd()
+    effective_leader = leader or (as_leader is not None)
+
+    # Standard resolution works from project dir or parent with existing leader
+    try:
+        project_root = resolve_release_project_root(cwd)
+    except LensException as exc:
+        if effective_leader and "no leader" in str(exc).lower():
+            project_root = _resolve_project_from_deploy_dir(cwd, as_leader)
+        else:
+            typer.echo(f"lens release init: {exc}", err=True)
+            raise typer.Exit(1)
+
+    try:
+        result = execute_release_init(
+            project_root, lens_repo_url=lens_repo_url, leader=effective_leader,
+        )
+    except LensException as exc:
+        typer.echo(f"lens release init: {exc}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(result.summary)
+
+
+def _resolve_project_from_deploy_dir(cwd: Path, as_leader: str | None) -> Path:
+    """Pick a project from a parent deploy directory when no leader exists yet."""
+    from lens.core.commands.deploy import (
+        build_projects,
+        find_colocated_fly_toml,
+        get_slugs,
+    )
+
+    fly_toml = cwd / "fly.toml"
+    if not fly_toml.exists():
+        fly_toml = find_colocated_fly_toml(cwd)
+    if fly_toml is None:
+        raise LensException(
+            "no fly.toml found — run 'lens deploy init' first or run "
+            "'lens release init' from a project directory"
+        )
+
+    slugs = get_slugs(fly_toml)
+    if not slugs:
+        raise LensException(
+            f"{fly_toml} has no project slugs — run 'lens deploy init' first"
+        )
+
+    if as_leader:
+        if as_leader not in slugs:
+            raise LensException(
+                f"slug {as_leader!r} is not in {fly_toml} (slugs: {', '.join(slugs)})"
+            )
+        target_slug = as_leader
+    elif len(slugs) == 1:
+        target_slug = slugs[0]
+    else:
+        raise LensException(
+            f"multiple projects in {fly_toml}: {', '.join(slugs)}. "
+            "Run from the project directory directly, or pass "
+            "--as-leader <slug> to specify which becomes the release leader."
+        )
+
+    projects = build_projects(fly_toml.parent, [target_slug])
+    if not projects:
+        raise LensException(f"could not resolve project {target_slug!r} from {fly_toml}")
+    _slug, _git_root, proj_root = projects[0]
+    return proj_root
 
 
 @app.command(name="apply")
 def apply(
     *,
-    to: str = typer.Option(..., "--to", help=ARG_RELEASE_TAG),
-    json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
+    target: str | None = typer.Option(None, "--target", "-t", help=ARG_RELEASE_TAG),
 ) -> None:
-    """Print build parameters for the requested tag.
+    """Set the target version for deployment (UI Apply button equivalent).
 
-    Runs from inside a project directory, or from a multi-project deploy
-    directory — see ``lens release check``.
+    Without ``--target``, auto-resolves to the latest available tag on
+    the upstream Lens repo.  With an explicit tag, validates and writes
+    it to ``lens.toml``.  Symmetric with ``lens release clear``.
+
+    Run from inside a project directory or a multi-project deploy
+    directory (resolves to the release leader automatically).
     """
     try:
         project_root = resolve_release_project_root(Path.cwd())
@@ -100,28 +247,21 @@ def apply(
         raise typer.Exit(1)
 
     try:
-        result = execute_release_apply(project_root, to)
+        result = execute_release_apply(project_root, target)
     except LensException as exc:
         typer.echo(f"lens release apply: {exc}", err=True)
         raise typer.Exit(1)
 
-    payload: dict[str, str | None] = {
-        "lens_repo_url": result.lens_repo_url,
-        "tag": result.tag,
-    }
-    _print_json(payload, result.summary, use_json=json_output)
+    typer.echo(result.summary)
 
 
 @app.command(name="clear")
-def clear_cmd(
-    *,
-    json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
-) -> None:
-    """Clear a pending release request.
+def clear_cmd() -> None:
+    """Cancel a pending release request (UI Clear button equivalent).
 
-    Sets ``requested_version`` and ``requested_from_commit`` back to empty
-    strings in ``lens.toml`` (uncommitted).  This is the inverse of the
-    UI's *Update* action.
+    Sets ``requested_version`` and ``requested_from_commit`` to empty
+    strings in ``lens.toml`` (uncommitted).  Inverse of ``lens release apply``
+    and the UI's Update action.
     """
     try:
         project_root = resolve_release_project_root(Path.cwd())
@@ -135,8 +275,7 @@ def clear_cmd(
         typer.echo(f"lens release clear: {exc}", err=True)
         raise typer.Exit(1)
 
-    payload: dict[str, str | None] = {"status": "ok"}
-    _print_json(payload, result.summary, use_json=json_output)
+    typer.echo(result.summary)
 
 
 @secrets_app.command(name="sync")
@@ -145,14 +284,20 @@ def secrets_sync(
     fly_app: str = typer.Option(..., "--fly-app", help="Fly app name to push secrets to"),
     json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
 ) -> None:
-    """Synchronize CI-available secrets to the Fly app.
+    """Push whatever CI secrets are available to the Fly app (additive-only).
 
-    Reads the project's ``lens.toml``, discovers ``[[dependent_project]]``
-    topology, clones each dependent to read its API key config, collects all
-    secrets that are set in the CI environment, and pushes them to Fly.
+    Discovers topology (leader, ``[[dependent_project]]`` s,
+    ``[[dataset_repo]]`` s), collects every secret whose env var is
+    actually set in CI, and pushes them to Fly.  **Additive-only**:
+    existing Fly secrets not present in the CI env are never touched.
 
-    Additive-only: existing Fly secrets not present in CI env are left
-    untouched.
+    Only secrets that are actually set in the CI environment are pushed
+    — see ``lens release secrets check`` for an audit of what's needed
+    vs what's available.
+
+    This is the CI counterpart of ``lens deploy push``'s secret step
+    (which reads from your local shell instead).  Called by
+    ``release.sh`` as part of the CI pipeline.
     """
     try:
         project_root = resolve_release_project_root(Path.cwd())
@@ -170,7 +315,13 @@ def secrets_sync(
         "status": result.status,
         "secrets_set": str(result.secrets_set),
     }
-    _print_json(payload, result.summary, use_json=json_output)
+    if json_output:
+        typer.echo(json.dumps(payload))
+        if result.summary:
+            typer.echo(result.summary, err=True)
+    else:
+        if result.summary:
+            typer.echo(result.summary)
 
 
 @secrets_app.command(name="check")
@@ -179,14 +330,36 @@ def secrets_check(
     check_fly: bool = typer.Option(False, "--fly", help="Check which secrets are already set on Fly app"),
     json_output: bool = typer.Option(False, "--json", help=OPT_JSON),
 ) -> None:
-    """List every secret the release system needs and its status.
+    """List every secret the CI pipeline needs and whether each is set.
 
-    Scans the project's ``lens.toml``, discovers ``[[dependent_project]]``
-    topology, clones each dependent to read its API key config, then lists
-    every environment variable the release pipeline needs.
+    Scans your project topology (leader, ``[[dependent_project]]`` s,
+    ``[[dataset_repo]]`` s, ``[[llm]]``/``[[image]]``/``[[speech]]``
+    configs) and lists each secret with its source, whether it's
+    available in the current CI environment (env var set), and optionally
+    whether it's already on Fly (``--fly``).
 
-    With ``--fly``, also checks which secrets are already set on the Fly app
-    (requires ``fly.toml`` in the project root and ``fly`` CLI on PATH).
+    **Required in CI (always):** ``FLY_API_TOKEN`` — needed to authenticate
+    ``flyctl deploy``.  Without this, the pipeline cannot deploy.
+
+    **Required per project:** ``GIT_REPO_DEPLOY_KEY_<SLUG>`` for the leader
+    and each ``[[dependent_project]]`` — SSH deploy keys that let the CI
+    container clone private repos at boot time.
+
+    **Required per API key:** the env var named in each ``api_key_env`` in
+    ``[[llm]]``, ``[[image]]``, ``[[speech]]`` — if your project uses a
+    remote model provider, its key must be available in CI.
+
+    **Required per dataset repo:** ``DATASET_REPO_DEPLOY_KEY_<NAME>`` for
+    each ``[[dataset_repo]]`` that needs private access.
+
+    Use ``--fly`` to also check which of these already exist on the Fly
+    app (from a previous deploy or manual ``fly secrets set``).  Secrets
+    already present on Fly can be omitted from your CI env — only missing
+    ones need adding.
+
+    This is **not** the desktop deploy path — ``lens deploy push`` bundles
+    secrets from your local shell automatically.  This check is for CI
+    setup, where no interactive shell is available.
     """
     try:
         project_root = resolve_release_project_root(Path.cwd())
@@ -237,28 +410,41 @@ def secrets_check(
     typer.echo(f"  {'NAME':<45} {'SOURCE':<30} {'ENV':<5} {'FLY':<5}")
     typer.echo(f"  {'─'*44}  {'─'*28}  {'─'*3}  {'─'*3}")
 
-    env_count = 0
-    fly_ok = 0
-    fly_total = 0
+    need_in_ci: list[str] = []
+    deploy_missing: list[str] = []
     for s in result.secrets:
         env_sym = "✓" if s.set_in_env else "✗"
-        if s.set_in_env:
-            env_count += 1
-        fly_sym = "✓" if s.set_on_fly else "✗" if s.set_on_fly is False else "—"
-        if s.set_on_fly is not None:
-            fly_total += 1
-            if s.set_on_fly:
-                fly_ok += 1
         name = s.name
         source = s.source
+        fly_sym = "✓" if s.set_on_fly else "✗" if s.set_on_fly is False else "—"
+        if name in ("CADDY_BASIC_AUTH_USER", "CADDY_BASIC_AUTH_HASH"):
+            if s.set_on_fly is False:
+                deploy_missing.append(name)
+        else:
+            if not s.set_in_env:
+                if not (s.set_on_fly is True and name != "FLY_API_TOKEN"):
+                    need_in_ci.append(name)
         typer.echo(f"  {name:<45} {source:<30} {env_sym:<5} {fly_sym:<5}")
 
     typer.echo()
-    typer.echo(
-        f"  {env_count}/{len(result.secrets)} secrets set in environment",
-    )
-    if fly_total:
-        typer.echo(f"  {fly_ok}/{fly_total} checkable secrets set on Fly")
+    if need_in_ci:
+        typer.echo("  Secrets to set in your CI provider:")
+        for n in need_in_ci:
+            if n == "FLY_API_TOKEN":
+                typer.echo(f"    {n}  (always required — Fly auth)")
+            else:
+                typer.echo(f"    {n}")
+
+    if deploy_missing:
+        typer.echo("")
+        typer.echo("  Deployment secrets missing from Fly app:")
+        for n in deploy_missing:
+            typer.echo(f"    {n}")
+
+        typer.echo("  Run 'lens deploy init' to configure the deployment (it sets these).")
+    if not need_in_ci and not deploy_missing:
+        typer.echo("  All secrets present — deployment is ready.")
+
     if not check_fly:
         typer.echo()
-        typer.echo("  Tip: pass --fly to also check which secrets are set on the Fly app.")
+        typer.echo("  Tip: pass --fly to check which secrets are already set on the Fly app.")

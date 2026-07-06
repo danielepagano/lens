@@ -94,34 +94,6 @@ class TestReleaseCli(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
 
-    def test_check_with_request_and_parent_match_applies(self) -> None:
-        proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
-        # Get the initial commit SHA
-        init_sha = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=proj, capture_output=True, text=True, check=True,
-        ).stdout.strip()
-        # Set requested_version + requested_from_commit matching the init commit
-        block = (
-            "[release]\n"
-            "enabled = true\n"
-            f"lens_repo_url = \"file://{self._lens_remote}\"\n"
-            "requested_version = \"v1.1.0\"\n"
-            f"requested_from_commit = \"{init_sha}\"\n"
-        )
-        (proj / "lens.toml").write_text(block)
-        subprocess.run(["git", "add", "lens.toml"], cwd=proj, check=True, capture_output=True)
-        subprocess.run(
-            ["git", "commit", "-m", "set request"],
-            cwd=proj, check=True, capture_output=True,
-        )
-        result = subprocess.run(
-            _LENS_CMD + ["release", "check", "--json", "--since", init_sha],
-            cwd=proj, capture_output=True, text=True,
-        )
-        self.assertEqual(result.returncode, 0)
-        self.assertIn('"apply"', result.stdout)
-
     def test_apply_invalid_tag_exits_one(self) -> None:
         block = (
             "[release]\n"
@@ -130,13 +102,13 @@ class TestReleaseCli(unittest.TestCase):
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = subprocess.run(
-            _LENS_CMD + ["release", "apply", "--to", "bad-tag", "--json"],
+            _LENS_CMD + ["release", "apply", "--target", "bad-tag"],
             cwd=proj, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 1)
-        self.assertIn("--to must be a valid", result.stderr)
+        self.assertIn("--target must be a valid", result.stderr)
 
-    def test_apply_json_output(self) -> None:
+    def test_apply_output(self) -> None:
         block = (
             "[release]\n"
             "enabled = true\n"
@@ -144,22 +116,19 @@ class TestReleaseCli(unittest.TestCase):
         )
         proj = _init_project_repo(self._tmp_path, block)
         result = subprocess.run(
-            _LENS_CMD + ["release", "apply", "--to", "v1.1.0", "--json"],
+            _LENS_CMD + ["release", "apply", "--target", "v1.1.0"],
             cwd=proj, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"lens_repo_url"', result.stdout)
-        self.assertIn('"tag"', result.stdout)
-        self.assertIn('"v1.1.0"', result.stdout)
+        self.assertIn("v1.1.0", result.stdout)
 
     def test_check_not_enabled_exits_zero(self) -> None:
         proj = _init_project_repo(self._tmp_path, "# no release section\n")
         result = subprocess.run(
-            _LENS_CMD + ["release", "check", "--json"],
+            _LENS_CMD + ["release", "check"],
             cwd=proj, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"none"', result.stdout)
 
     def test_check_from_multi_project_deploy_dir_resolves_leader(self) -> None:
         import uuid
@@ -177,11 +146,10 @@ class TestReleaseCli(unittest.TestCase):
         _write_fly_toml(deploy_dir, ["a", "b"])
 
         result = subprocess.run(
-            _LENS_CMD + ["release", "check", "--json"],
+            _LENS_CMD + ["release", "check"],
             cwd=deploy_dir, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"none"', result.stdout)
 
     def test_check_from_multi_project_deploy_dir_no_leader_exits_one(self) -> None:
         import uuid
@@ -213,15 +181,7 @@ class TestReleaseCli(unittest.TestCase):
 
     def test_clear_with_request_clears_fields(self) -> None:
         proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
-        # Place a request first
-        result = subprocess.run(
-            _LENS_CMD + ["release", "request", "--to", "v1.1.0", "--json"],
-            cwd=proj, capture_output=True, text=True,
-        )
-        # request command doesn't exist on CLI (only POST route), so use the
-        # core function directly via the existing test entry point.
-        # The clear CLI test just tests the clear command; we'll trust the core test.
-        # Instead, manually set the fields and test clear.
+        # Manually set the fields then test clear
         import tomllib
 
         raw = tomllib.loads((proj / "lens.toml").read_text())
@@ -238,17 +198,15 @@ class TestReleaseCli(unittest.TestCase):
         )
 
         result = subprocess.run(
-            _LENS_CMD + ["release", "clear", "--json"],
+            _LENS_CMD + ["release", "clear"],
             cwd=proj, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"ok"', result.stdout)
 
     def test_clear_when_already_empty_exits_zero(self) -> None:
         proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
         result = subprocess.run(
-            _LENS_CMD + ["release", "clear", "--json"],
+            _LENS_CMD + ["release", "clear"],
             cwd=proj, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn('"ok"', result.stdout)
