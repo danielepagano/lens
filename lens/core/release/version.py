@@ -20,7 +20,7 @@ class SemverTag:
 
     @property
     def tag(self) -> str:
-        return f"v{self.major}.{self.minor}.{self.patch}"
+        return f"{self.major}.{self.minor}.{self.patch}"
 
     @classmethod
     def from_str(cls, s: str) -> SemverTag:
@@ -31,11 +31,13 @@ class SemverTag:
 
 
 def parse_semver_tag(ref: str) -> SemverTag | None:
-    """Parse a ``vMAJOR.MINOR.PATCH`` tag string into a ``SemverTag``.
+    """Parse a ``MAJOR.MINOR.PATCH`` tag string into a ``SemverTag``.
 
-    Strips build metadata (everything after ``+``) before matching — per
-    semver spec, build metadata does not affect version precedence, so
-    ``v0.1.0`` and ``v0.1.0+0999fc3`` resolve to the same ``SemverTag``.
+    Accepts an optional leading ``v`` (stripped before parsing). Build
+    metadata (everything after ``+``) is also stripped before matching —
+    per semver spec, build metadata does not affect version precedence, so
+    ``0.1.0``, ``v0.1.0`` and ``v0.1.0+0999fc3`` all resolve to the same
+    ``SemverTag``.
 
     Returns ``None`` for tags that don't match (prereleases, non-semver, etc.).
     """
@@ -63,8 +65,9 @@ def list_remote_tags(
     """Fetch and parse semver tags from a remote git repository.
 
     Runs ``git ls-remote --tags <url>`` and filters to valid
-    ``vMAJOR.MINOR.PATCH`` tags.  Non-zero exit (network failure, bad URL)
-    returns an empty list — callers should treat this as non-fatal.
+    ``MAJOR.MINOR.PATCH`` tags (with or without ``v`` prefix).  Non-zero
+    exit (network failure, bad URL) returns an empty list — callers should
+    treat this as non-fatal.
 
     Args:
         git_url: Remote git repository URL (SSH or HTTPS).
@@ -218,7 +221,7 @@ def _fetch_tags_quiet(repo_root: Path) -> None:
 def compute_local_version(repo_root: Path | None = None) -> str:
     """Compute ``LENS_VERSION`` from the local Lens repo checkout.
 
-    * HEAD matches the latest release tag → ``<tag>`` (e.g. ``v1.4.2``).
+    * HEAD matches the latest release tag → ``<tag>`` (e.g. ``1.4.2``).
     * HEAD is ahead of the latest tag → ``<tag>+<short-hash>``.
     * No tags in the checkout → ``0.0.0+<short-hash>``.
     * Can't locate the Lens repo → ``0.0.0+unknown``.
@@ -265,8 +268,7 @@ def _head_is_at_tag(repo_root: Path, target: SemverTag) -> bool:
 
     Tags at HEAD are compared by parsed semver value, not literal string,
     since a repo's actual tag names may or may not carry the ``v`` prefix
-    (e.g. a tag named ``0.1.0`` still matches ``SemverTag(0, 1, 0)``, whose
-    normalized ``.tag`` property is ``v0.1.0``).
+    (e.g. a tag named ``v0.1.0`` still matches ``SemverTag(0, 1, 0)``).
     """
     env = os.environ.copy()
     env["GIT_TERMINAL_PROMPT"] = "0"

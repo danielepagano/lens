@@ -51,7 +51,7 @@ def release_request(
         if sanity is None:
             return {
                 "status": "error",
-                "detail": f"target_version {target!r} is not a valid vMAJOR.MINOR.PATCH tag",
+                "detail": f"target_version {target!r} is not a valid MAJOR.MINOR.PATCH tag",
             }
 
         inst = installed_version()

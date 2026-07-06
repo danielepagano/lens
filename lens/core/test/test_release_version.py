@@ -96,7 +96,7 @@ class TestParseSemverTag(unittest.TestCase):
 
     def test_tag_property(self) -> None:
         t = SemverTag(1, 2, 3)
-        self.assertEqual(t.tag, "v1.2.3")
+        self.assertEqual(t.tag, "1.2.3")
 
     def test_no_v_prefix_accepted(self) -> None:
         self.assertEqual(parse_semver_tag("1.0.0"), SemverTag(1, 0, 0))
@@ -366,7 +366,7 @@ class TestComputeReleaseStatus(unittest.TestCase):
         )
         status = compute_release_status(self._root)
         self.assertTrue(status.enabled)
-        self.assertEqual(status.latest_available_str, "v2.0.0")
+        self.assertEqual(status.latest_available_str, "2.0.0")
         self.assertEqual(status.latest_available, SemverTag(2, 0, 0))
         self.assertEqual(status.tag_count, 3)
 
@@ -505,7 +505,7 @@ class TestComputeLocalVersion(unittest.TestCase):
     def test_head_at_latest_tag_returns_clean_tag(self) -> None:
         repo = _init_local_repo(self._repo, ["v1.0.0"])
         version = compute_local_version(repo_root=repo)
-        self.assertEqual(version, "v1.0.0")
+        self.assertEqual(version, "1.0.0")
 
     def test_head_ahead_of_tag_returns_tag_plus_hash(self) -> None:
         repo = _init_local_repo(self._repo, ["v1.0.0"])
@@ -520,10 +520,10 @@ class TestComputeLocalVersion(unittest.TestCase):
             cwd=repo, check=True, capture_output=True,
         )
         version = compute_local_version(repo_root=repo)
-        self.assertTrue(version.startswith("v1.0.0+"))
-        self.assertGreater(len(version), len("v1.0.0+"))
+        self.assertTrue(version.startswith("1.0.0+"))
+        self.assertGreater(len(version), len("1.0.0+"))
 
     def test_multiple_tags_picks_latest(self) -> None:
         repo = _init_local_repo(self._repo, ["v1.0.0", "v2.0.0"])
         version = compute_local_version(repo_root=repo)
-        self.assertEqual(version, "v2.0.0")
+        self.assertEqual(version, "2.0.0")

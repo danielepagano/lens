@@ -321,7 +321,7 @@ ARG_USERNAME = "Basic Auth username"
 ARG_PASSWORD = "Basic Auth password"
 ARG_DEPLOY_KEY = "Path to SSH deploy key for the project repo"
 ARG_PROJECT_SLUG = "Project directory name (slug)"
-ARG_RELEASE_TAG = "Target version (vMAJOR.MINOR.PATCH); omit to auto-resolve latest from remote"
+ARG_RELEASE_TAG = "Target version (MAJOR.MINOR.PATCH); omit to auto-resolve latest from remote"
 ARG_RENAME_ADDR = (
     "Address of the node to rename (e.g. /chapter-1/design-old)"
 )

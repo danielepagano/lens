@@ -155,7 +155,7 @@ class TestReleaseCommands(unittest.TestCase):
         # The committed change has `before` as its parent → match
         result = execute_release_check(proj, since=before)
         self.assertEqual(result.action, "apply")
-        self.assertEqual(result.target, "v1.1.0")
+        self.assertEqual(result.target, "1.1.0")
 
     def test_check_parent_does_not_match_returns_none(self) -> None:
         proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
@@ -207,7 +207,7 @@ class TestReleaseCommands(unittest.TestCase):
         # Parents of commits in range: [C1_sha, before] — before matches
         result = execute_release_check(proj, since=before)
         self.assertEqual(result.action, "apply")
-        self.assertEqual(result.target, "v1.1.0")
+        self.assertEqual(result.target, "1.1.0")
 
         # Simulate second push: another commit on top (carrying stale request forward)
         after_c2 = _make_commit(proj, "unrelated work after deploy")
@@ -316,7 +316,7 @@ class TestReleaseCommands(unittest.TestCase):
         proj = _init_project_repo(self._tmp_path, block)
         before = _get_head_sha(proj)
         result = execute_release_apply(proj, "v1.1.0")
-        self.assertEqual(result.tag, "v1.1.0")
+        self.assertEqual(result.tag, "1.1.0")
         after = _get_head_sha(proj)
         self.assertEqual(before, after, "apply should not create a commit")
 
@@ -330,7 +330,7 @@ class TestReleaseCommands(unittest.TestCase):
         proj = _init_project_repo(self._tmp_path, block)
         result = execute_release_apply(proj, "v1.1.0")
         self.assertEqual(result.lens_repo_url, url)
-        self.assertEqual(result.tag, "v1.1.0")
+        self.assertEqual(result.tag, "1.1.0")
 
 
 class TestResolveReleaseProjectRoot(unittest.TestCase):
@@ -416,12 +416,12 @@ class TestExecuteReleaseRequest(unittest.TestCase):
     def test_request_writes_both_fields(self) -> None:
         proj = _init_project_repo(self._tmp_path, "[project]\ndatasets = ['testing']\n")
         result = execute_release_request(proj, "v1.1.0")
-        self.assertEqual(result.requested_version, "v1.1.0")
+        self.assertEqual(result.requested_version, "1.1.0")
         self.assertTrue(len(result.requested_from_commit) > 0)
 
         parsed = tomllib.loads((proj / "lens.toml").read_text())
         release = parsed.get("release", {})
-        self.assertEqual(release.get("requested_version"), "v1.1.0")
+        self.assertEqual(release.get("requested_version"), "1.1.0")
         self.assertEqual(release.get("requested_from_commit"), result.requested_from_commit)
 
     def test_request_never_commits(self) -> None:
@@ -441,7 +441,7 @@ class TestExecuteReleaseRequest(unittest.TestCase):
         execute_release_request(proj, "v1.0.0")
         parsed = tomllib.loads((proj / "lens.toml").read_text())
         self.assertIn("release", parsed)
-        self.assertEqual(parsed["release"]["requested_version"], "v1.0.0")
+        self.assertEqual(parsed["release"]["requested_version"], "1.0.0")
 
     def test_request_preserves_existing_release_fields(self) -> None:
         block = (
@@ -454,7 +454,7 @@ class TestExecuteReleaseRequest(unittest.TestCase):
         result = execute_release_request(proj, "v2.0.0")
         parsed = tomllib.loads((proj / "lens.toml").read_text())
         release = parsed["release"]
-        self.assertEqual(release["requested_version"], "v2.0.0")
+        self.assertEqual(release["requested_version"], "2.0.0")
         self.assertEqual(release["requested_from_commit"], result.requested_from_commit)
         # Existing fields are preserved
         self.assertTrue(release["enabled"])
