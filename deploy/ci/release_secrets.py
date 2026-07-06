@@ -19,7 +19,6 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -162,28 +161,6 @@ def _read_lens_toml(project_root: Path) -> dict[str, Any]:
     path = project_root / "lens.toml"
     with path.open("rb") as f:
         return tomllib.load(f)
-
-
-def _git_clone(git_url: str, dest: Path, ref: str = "main", deploy_key: str | None = None) -> None:
-    dest.parent.mkdir(parents=True, exist_ok=True)
-
-    env = os.environ.copy()
-    if git_url.startswith("git@") or git_url.startswith("ssh://"):
-        ssh_cmd = "ssh -o StrictHostKeyChecking=accept-new"
-        if deploy_key:
-            key_dir = Path(tempfile.mkdtemp(prefix="lens-deploy-key-"))
-            key_file = key_dir / "id"
-            key_file.write_text(deploy_key)
-            key_file.chmod(0o600)
-            ssh_cmd += f" -i {key_file}"
-        env["GIT_SSH_COMMAND"] = ssh_cmd
-
-    result = subprocess.run(
-        ["git", "clone", "--depth", "1", "--branch", ref, git_url, str(dest)],
-        capture_output=True, text=True, env=env,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"git clone {git_url} failed: {result.stderr.strip()}")
 
 
 def _read_fly_app(project_root: Path) -> str | None:
@@ -394,16 +371,18 @@ def execute_release_check(project_root: Path, since: str | None = None) -> Relea
         print(f"requested_version {requested!r} is not a valid vMAJOR.MINOR.PATCH tag", file=sys.stderr)
         sys.exit(1)
 
+    prefix = "v" if requested.startswith("v") else ""
     from_commit = cfg.requested_from_commit.strip()
     if not from_commit:
         return ReleaseCheckResult(action="none", summary="requested_from_commit is empty")
 
     parents = _git_rev_list_parents(project_root, since)
     if from_commit in parents:
+        tag = f"{prefix}{sanity[0]}.{sanity[1]}.{sanity[2]}"
         return ReleaseCheckResult(
             action="apply",
-            target=f"v{sanity[0]}.{sanity[1]}.{sanity[2]}",
-            summary=f"parent match on {from_commit}; deploy v{sanity[0]}.{sanity[1]}.{sanity[2]}",
+            target=tag,
+            summary=f"parent match on {from_commit}; deploy {tag}",
         )
 
     return ReleaseCheckResult(
