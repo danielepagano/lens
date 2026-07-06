@@ -108,7 +108,7 @@ trap 'rm -rf "$LENS_CLONE_DIR"' EXIT
 echo "release.sh: cloning Lens repo from $LENS_REPO_URL (tag: $TARGET)"
 git init "$LENS_CLONE"
 git -C "$LENS_CLONE" remote add origin "$LENS_REPO_URL"
-git -C "$LENS_CLONE" fetch --depth 1 origin refs/tags/"$TARGET"
+git -C "$LENS_CLONE" fetch --depth 1 origin "refs/tags/$TARGET"
 git -C "$LENS_CLONE" checkout FETCH_HEAD
 
 # Step 5 — deploy

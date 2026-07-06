@@ -139,7 +139,7 @@ _SEMVER_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)(?:\+.*)?$")
 
 
 def _parse_semver_tag(ref: str) -> tuple[int, int, int] | None:
-    """Parse a vMAJOR.MINOR.PATCH tag into a (major, minor, patch) tuple.
+    """Parse a MAJOR.MINOR.PATCH tag into a (major, minor, patch) tuple.
 
     Accepts with or without leading ``v``, strips build metadata.
     Returns ``None`` on failure.
@@ -368,17 +368,16 @@ def execute_release_check(project_root: Path, since: str | None = None) -> Relea
 
     sanity = _parse_semver_tag(requested)
     if sanity is None:
-        print(f"requested_version {requested!r} is not a valid vMAJOR.MINOR.PATCH tag", file=sys.stderr)
+        print(f"requested_version {requested!r} is not a valid MAJOR.MINOR.PATCH tag", file=sys.stderr)
         sys.exit(1)
 
-    prefix = "v" if requested.startswith("v") else ""
     from_commit = cfg.requested_from_commit.strip()
     if not from_commit:
         return ReleaseCheckResult(action="none", summary="requested_from_commit is empty")
 
     parents = _git_rev_list_parents(project_root, since)
     if from_commit in parents:
-        tag = f"{prefix}{sanity[0]}.{sanity[1]}.{sanity[2]}"
+        tag = f"{sanity[0]}.{sanity[1]}.{sanity[2]}"
         return ReleaseCheckResult(
             action="apply",
             target=tag,
@@ -418,7 +417,7 @@ def execute_release_apply(project_root: Path, target_tag: str) -> ReleaseApplyRe
     normalized_tag = target_tag.strip()
     target_semver = _parse_semver_tag(normalized_tag)
     if target_semver is None:
-        print("--to must be a valid vMAJOR.MINOR.PATCH tag", file=sys.stderr)
+        print("--to must be a valid MAJOR.MINOR.PATCH tag", file=sys.stderr)
         sys.exit(1)
 
     return ReleaseApplyResult(

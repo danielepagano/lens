@@ -168,7 +168,7 @@ class ReleaseCheckReleaseTests(unittest.TestCase):
             self.assertEqual(rp.returncode, 0, msg=rp.stderr)
             data = json.loads(rp.stdout)
             self.assertEqual(data["action"], "apply")
-            self.assertEqual(data["target"], "v1.0.0")
+            self.assertEqual(data["target"], "1.0.0")
 
     def test_no_parent_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

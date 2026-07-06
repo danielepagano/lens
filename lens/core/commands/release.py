@@ -415,7 +415,7 @@ def execute_release_check(
     sanity = parse_semver_tag(requested)
     if sanity is None:
         raise LensException(
-            f"requested_version {requested!r} is not a valid vMAJOR.MINOR.PATCH tag"
+            f"requested_version {requested!r} is not a valid MAJOR.MINOR.PATCH tag"
         )
 
     from_commit = cfg.requested_from_commit.strip()
@@ -489,13 +489,14 @@ def execute_release_apply(
     normalized_tag = target_tag.strip()
     target_semver = parse_semver_tag(normalized_tag)
     if target_semver is None:
-        raise LensException("--target must be a valid vMAJOR.MINOR.PATCH tag")
+        raise LensException("--target must be a valid MAJOR.MINOR.PATCH tag")
 
-    req_result = execute_release_request(project_root, normalized_tag)
+    tag = target_semver.tag
+    req_result = execute_release_request(project_root, tag)
 
     return ReleaseApplyResult(
         lens_repo_url=url,
-        tag=normalized_tag,
+        tag=tag,
         summary=req_result.summary,
     )
 
@@ -589,7 +590,7 @@ def _set_release_field_text(
 def execute_release_request(project_root: Path, target_version: str) -> ReleaseRequestResult:
     """Record a human's request to deploy *target_version*.
 
-    Validates *target_version* is a well-formed ``vMAJOR.MINOR.PATCH`` tag,
+    Validates *target_version* is a well-formed ``MAJOR.MINOR.PATCH`` tag,
     then updates ``requested_version`` and ``requested_from_commit``
     **in-place** in ``lens.toml`` (text-edits only those two lines, no
     TOML round-trip).  Writes via ``Storage`` — **no ``.commit()``, no
@@ -605,23 +606,24 @@ def execute_release_request(project_root: Path, target_version: str) -> ReleaseR
     semver = parse_semver_tag(target)
     if semver is None:
         raise LensException(
-            f"target_version {target!r} is not a valid vMAJOR.MINOR.PATCH tag"
+            f"target_version {target!r} is not a valid MAJOR.MINOR.PATCH tag"
         )
+    normalized = semver.tag
 
     head = _get_head_sha(project_root)
     lens_toml = project_root / "lens.toml"
 
     text = lens_toml.read_text(encoding="utf-8") if lens_toml.exists() else ""
-    text = _set_release_field_text(text, "requested_version", target)
+    text = _set_release_field_text(text, "requested_version", normalized)
     text = _set_release_field_text(text, "requested_from_commit", head)
 
     storage = Storage(project_root, owner=None)
     storage.write_file_bytes(lens_toml, text.encode("utf-8"))
 
     return ReleaseRequestResult(
-        requested_version=target,
+        requested_version=normalized,
         requested_from_commit=head,
-        summary=f"release request for {target} recorded (HEAD={head[:12]})",
+        summary=f"release request for {normalized} recorded (HEAD={head[:12]})",
     )
 
 

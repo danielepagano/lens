@@ -120,7 +120,7 @@ class TestReleaseCli(unittest.TestCase):
             cwd=proj, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0)
-        self.assertIn("v1.1.0", result.stdout)
+        self.assertIn("1.1.0", result.stdout)
 
     def test_check_not_enabled_exits_zero(self) -> None:
         proj = _init_project_repo(self._tmp_path, "# no release section\n")

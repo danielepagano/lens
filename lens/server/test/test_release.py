@@ -20,7 +20,7 @@ class TestReleaseRequest:
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "ok"
-        assert data["requested_version"] == "v99.0.0"
+        assert data["requested_version"] == "99.0.0"
         assert len(data["requested_from_commit"]) > 0
 
     def test_request_invalid_tag(self, test_client: TestClient) -> None:
@@ -49,7 +49,7 @@ class TestReleaseRequest:
 
         after = tomllib.loads((test_project_dir / "lens.toml").read_text())
         release = after.get("release", {})
-        assert release.get("requested_version") == "v99.0.0"
+        assert release.get("requested_version") == "99.0.0"
         assert len(release.get("requested_from_commit", "")) > 0
 
     def test_request_never_commits(
