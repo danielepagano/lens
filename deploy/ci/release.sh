@@ -54,18 +54,24 @@ fi
 FLY_APP=$(python3 -c "import tomllib; print(tomllib.load(open('fly.toml','rb'))['app'])")
 
 # Step 1 — pre-flight secrets check (every commit, fail fast on drift)
+# Most secrets (deploy keys, API keys, Caddy auth) are already on Fly from
+# `lens deploy init` — CI only needs FLY_API_TOKEN for `flyctl deploy`.
 $PY check --json | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 missing_env = [s['name'] for s in data.get('secrets', []) if not s['set_in_env']]
-if missing_env:
-    print('release.sh: FATAL — the following secrets are not set in CI environment:')
-    for n in missing_env:
-        print(f'  {n}')
-    print('release.sh: set them as CI env vars and retry.')
+required = {'FLY_API_TOKEN'}
+missing_required = [n for n in missing_env if n in required]
+missing_optional = [n for n in missing_env if n not in required]
+if missing_required:
+    print('release.sh: FATAL — FLY_API_TOKEN is not set in CI environment')
     sys.exit(1)
-else:
-    print('release.sh: all secrets present in environment')
+if missing_optional:
+    print('release.sh: WARNING — the following are not in CI environment:')
+    for n in missing_optional:
+        print(f'  {n}')
+    print('release.sh: these are already on Fly from lens deploy init — skipping')
+print('release.sh: CI secrets check passed')
 "
 
 # Step 2 — check whether a release was requested

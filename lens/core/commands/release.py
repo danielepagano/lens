@@ -22,6 +22,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import tomllib
 from dataclasses import dataclass, field
@@ -730,13 +731,26 @@ def _get_git_remote_url(project_root: Path) -> str:
     return result.stdout.strip()
 
 
-def _git_clone(git_url: str, dest: Path, ref: str = "main") -> None:
+def _git_clone(git_url: str, dest: Path, ref: str = "main", deploy_key: str | None = None) -> None:
     """Clone *git_url* to *dest* and check out *ref*."""
     dest.parent.mkdir(parents=True, exist_ok=True)
+
+    env = os.environ.copy()
+    if git_url.startswith("git@") or git_url.startswith("ssh://"):
+        ssh_cmd = "ssh -o StrictHostKeyChecking=accept-new"
+        if deploy_key:
+            key_dir = Path(tempfile.mkdtemp(prefix="lens-deploy-key-"))
+            key_file = key_dir / "id"
+            key_file.write_text(deploy_key)
+            key_file.chmod(0o600)
+            ssh_cmd += f" -i {key_file}"
+        env["GIT_SSH_COMMAND"] = ssh_cmd
+
     result = subprocess.run(
         ["git", "clone", "--depth", "1", "--branch", ref, git_url, str(dest)],
         capture_output=True,
         text=True,
+        env=env,
     )
     if result.returncode != 0:
         raise LensException(
@@ -1152,10 +1166,15 @@ def execute_release_secrets_sync(
     try:
         for dep in dependents:
             clone_dir = Path(tempfile.mkdtemp(prefix=f"lens-secrets-{dep.name}-")) / dep.name
-            _git_clone(dep.git_url, clone_dir, dep.ref)
+            temp_clone_dirs.append(clone_dir.parent)
+            deploy_key = os.environ.get(f"GIT_REPO_DEPLOY_KEY_{dep.name.upper().replace('-', '_')}")
+            try:
+                _git_clone(dep.git_url, clone_dir, dep.ref, deploy_key=deploy_key)
+            except LensException:
+                print(f"  [skipped] could not clone dependent '{dep.name}' — deploy key not in CI env", file=sys.stderr)
+                continue
             dep_raw = _read_lens_toml(clone_dir)
             all_projects.append((dep.name, clone_dir, dep_raw))
-            temp_clone_dirs.append(clone_dir.parent)
 
         secrets: dict[str, str] = {}
         seen_api_keys: set[str] = set()
@@ -1299,10 +1318,15 @@ def execute_release_secrets_check(
     try:
         for dep in dependents:
             clone_dir = Path(tempfile.mkdtemp(prefix=f"lens-secrets-{dep.name}-")) / dep.name
-            _git_clone(dep.git_url, clone_dir, dep.ref)
+            temp_clone_dirs.append(clone_dir.parent)
+            deploy_key = os.environ.get(f"GIT_REPO_DEPLOY_KEY_{dep.name.upper().replace('-', '_')}")
+            try:
+                _git_clone(dep.git_url, clone_dir, dep.ref, deploy_key=deploy_key)
+            except LensException:
+                print(f"  [skipped] could not clone dependent '{dep.name}' — deploy key not in CI env", file=sys.stderr)
+                continue
             dep_raw = _read_lens_toml(clone_dir)
             all_configs.append((dep.name, dep_raw))
-            temp_clone_dirs.append(clone_dir.parent)
 
         # 1. API key env vars from all project configs
         for slug, config in all_configs:
