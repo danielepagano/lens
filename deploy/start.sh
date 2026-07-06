@@ -2,14 +2,9 @@
 set -euo pipefail
 
 # All deployments (single and multi-project) use the same boot sequence.
-# LENS_PROJECT_SLUGS lists the projects to clone; each has its own deploy
-# key and repo URL stored as Fly secrets (GIT_REPO_DEPLOY_KEY_<SLUG> /
-# PROJECT_REPO_URL_<SLUG>).  Single-project is the multi case with one slug.
-
-if [ -z "${LENS_PROJECT_SLUGS:-}" ]; then
-    echo "ERROR: LENS_PROJECT_SLUGS is not set" >&2
-    exit 1
-fi
+# Project slugs are derived from PROJECT_REPO_URL_<SLUG_KEY> Fly secrets;
+# each slug also needs GIT_REPO_DEPLOY_KEY_<SLUG_KEY> (optional for public
+# repos) and PROJECT_REPO_URL_<SLUG_KEY> (always set by lens deploy init/add).
 
 REPOS_DIR="${LENS_PROJECT_DIR:-/data/repos}"
 
@@ -26,7 +21,16 @@ git config --global user.email "lens@fly.io"
 mkdir -p "$REPOS_DIR"
 
 # ---- 3. Clone or update each project repo ----
-IFS=',' read -ra SLUGS <<< "$LENS_PROJECT_SLUGS"
+SLUGS=()
+for VAR in "${!PROJECT_REPO_URL_@}"; do
+    KEY="${VAR#PROJECT_REPO_URL_}"
+    SLUG=$(echo "$KEY" | tr '[:upper:]_' '[:lower:]-')
+    SLUGS+=("$SLUG")
+done
+if [ ${#SLUGS[@]} -eq 0 ]; then
+    echo "ERROR: no PROJECT_REPO_URL_* secrets found" >&2
+    exit 1
+fi
 for SLUG in "${SLUGS[@]}"; do
     SLUG_KEY=$(echo "$SLUG" | tr '[:lower:]-' '[:upper:]_')
     DEPLOY_KEY_VAR="GIT_REPO_DEPLOY_KEY_${SLUG_KEY}"

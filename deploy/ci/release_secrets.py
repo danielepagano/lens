@@ -477,7 +477,6 @@ def execute_release_secrets_sync(
         print("release is not enabled in lens.toml", file=sys.stderr)
         sys.exit(1)
 
-    dependents = parse_dependent_project_configs(raw)
     leader_slug = project_root.name
 
     all_projects: list[tuple[str, Path, dict[str, Any]]] = [(leader_slug, project_root, raw)]
@@ -508,9 +507,6 @@ def execute_release_secrets_sync(
             val = os.environ.get(var_name)
             if val:
                 secrets[var_name] = val
-
-    slugs = [leader_slug] + [d.name for d in dependents]
-    secrets["LENS_PROJECT_SLUGS"] = ",".join(slugs)
 
     if not dry_run and secrets:
         _fly_secrets_set(fly_app, secrets)

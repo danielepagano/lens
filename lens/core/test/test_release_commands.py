@@ -597,12 +597,11 @@ class TestSecretsSync(unittest.TestCase):
         with self.assertRaises(LensException):
             execute_release_secrets_sync(project, "my-app", dry_run=True)
 
-    def test_leader_only_sets_slugs(self) -> None:
+    def test_leader_only_no_lens_project_slugs_in_sync(self) -> None:
         leader = self._init_leader()
         result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
         self.assertEqual(result.status, "ok")
-        self.assertIn("LENS_PROJECT_SLUGS", result.collected_secrets)
-        self.assertEqual(result.collected_secrets["LENS_PROJECT_SLUGS"], leader.name)
+        self.assertNotIn("LENS_PROJECT_SLUGS", result.collected_secrets)
         # PROJECT_REPO_URL_* is set once by lens deploy init, not synced by CI
         env_key = leader.name.upper().replace("-", "_")
         self.assertNotIn(f"PROJECT_REPO_URL_{env_key}", result.collected_secrets)
@@ -718,10 +717,7 @@ class TestSecretsSync(unittest.TestCase):
         os.environ["DEPENDENT_OPENAI_KEY"] = "sk-dependent"
         try:
             result = execute_release_secrets_sync(leader, "my-app", dry_run=True)
-            # Expected slugs: leader + dependent
-            slugs = result.collected_secrets.get("LENS_PROJECT_SLUGS", "")
-            self.assertIn(leader.name, slugs)
-            self.assertIn(dep_name, slugs)
+            self.assertNotIn("LENS_PROJECT_SLUGS", result.collected_secrets)
 
             # Dependent's API key from its lens.toml should be collected
             self.assertIn("DEPENDENT_OPENAI_KEY", result.collected_secrets)

@@ -244,7 +244,7 @@ def _validate_project_for_deploy(slug: str, project_root: Path, git_root: Path) 
     return remote_url
 
 
-def _resolve_project_root_for_slug(deploy_dir: Path, slug: str) -> Path:
+def resolve_project_root_for_slug(deploy_dir: Path, slug: str) -> Path:
     """Resolve a single project's root directory for *slug* relative to ``deploy_dir``.
 
     Tries, in order:
@@ -283,7 +283,7 @@ def build_projects(deploy_dir: Path, slugs: list[str]) -> list[tuple[str, Path, 
     """Return ``[(slug, git_root, project_root), ...]`` for the given slugs.
 
     Each slug's project root is resolved via
-    :func:`_resolve_project_root_for_slug`, which supports both the bare
+    :func:`resolve_project_root_for_slug`, which supports both the bare
     parent-of-projects ``fly.toml`` topology and the leader-colocated
     topology (fly.toml inside the release leader's own project directory,
     siblings resolved as ``deploy_dir.parent / slug``).
@@ -292,7 +292,7 @@ def build_projects(deploy_dir: Path, slugs: list[str]) -> list[tuple[str, Path, 
 
     projects: list[tuple[str, Path, Path]] = []
     for slug in slugs:
-        project_root = _resolve_project_root_for_slug(deploy_dir, slug)
+        project_root = resolve_project_root_for_slug(deploy_dir, slug)
         try:
             git_root = find_git_root_from(project_root)
         except RuntimeError as exc:
@@ -597,12 +597,16 @@ def init_deploy(
     return fly_toml
 
 
+
 def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
     """Add a project to an existing deployment.
 
     Updates ``fly.toml`` (adds slug to ``LENS_PROJECT_SLUGS``) and sets
     the per-project secrets on the Fly app.  Run ``lens deploy push``
     afterwards to apply.
+
+    Raises :class:`LensException` if any project in the deployment has
+    ``[release] enabled`` — use ``lens release add`` instead.
     """
     fly_toml = deploy_dir / "fly.toml"
     app_name = get_fly_app_name(fly_toml)
@@ -613,14 +617,15 @@ def add_project(deploy_dir: Path, slug: str, deploy_key_path: Path) -> None:
 
     from lens.core.project import find_git_root_from
 
-    project_root = _resolve_project_root_for_slug(deploy_dir, slug)
+    project_root = resolve_project_root_for_slug(deploy_dir, slug)
     try:
         git_root = find_git_root_from(project_root)
     except RuntimeError as exc:
         raise LensException(f"project '{slug}': {exc}") from exc
 
     remote_url = _validate_project_for_deploy(slug, project_root, git_root)
-    _validate_release_topology(build_projects(deploy_dir, current_slugs + [slug]))
+    all_projects = build_projects(deploy_dir, current_slugs + [slug])
+    _validate_release_topology(all_projects)
 
     env_key = _slug_to_env_key(slug)
     if not deploy_key_path.exists():
@@ -649,6 +654,9 @@ def remove_project(deploy_dir: Path, slug: str) -> None:
     Updates ``fly.toml`` (removes slug from ``LENS_PROJECT_SLUGS``) and
     unsets the per-project secrets on the Fly app.  Run ``lens deploy push``
     afterwards to apply.
+
+    Raises :class:`LensException` if any project in the deployment has
+    ``[release] enabled`` — use ``lens release remove`` instead.
     """
     fly_toml = deploy_dir / "fly.toml"
     app_name = get_fly_app_name(fly_toml)

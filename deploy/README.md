@@ -43,8 +43,8 @@ Internet → Fly Edge (TLS) → Caddy (Basic Auth, :8080) → Lens Server (local
 
 | Path | Who runs it | Secrets source | Use case |
 |------|-------------|----------------|----------|
-| **Desktop** — `lens deploy push` | You (local machine) | Your shell env | First-time setup, daily iteration, quick fixes |
-| **CI-triggered** — `lens release` + CI pipeline | GitHub Actions / GitLab CI | CI repository secrets | Automated Lens version upgrades when users click **Update** in the web UI |
+| **Desktop mode** — `lens deploy` | You (local machine) | Your shell env | All non-release deployments; single-project or multi-project without `[release]` enabled |
+| **Release mode** — `lens release` + CI pipeline | GitHub Actions / GitLab CI | CI repository secrets | Shared deployments where `[release]` is enabled, automated Lens version upgrades after users click **Update** |
 
 Both systems deploy to the same Fly app; they are alternatives for different workflows. A one-time `lens deploy init` from desktop is always needed for initial Fly app creation and volume setup — after that, all routine upgrades can be done from CI.
 
@@ -114,7 +114,7 @@ lens deploy init \
   --deploy-key campaign-b=~/.ssh/key_b
 ```
 
-The `slug=path` pairs in `--deploy-key` select which projects to include — no directory scanning. You will be prompted for the Basic Auth password in both cases.
+The `slug=path` pairs in `--deploy-key` select which projects to include — no directory scanning. You are prompted for the Basic Auth password in both cases. When `[release] enabled` is true on any project, any `lens deploy` subcommand besides `init` now refuses to run and instructs you to use the equivalent `lens release` command (e.g., `lens release add`, `lens release remove`, `lens release push`).
 
 `init` will:
 1. Validate each project: SSH remote, S3-only mount (if any), same S3 bucket across all
@@ -400,8 +400,7 @@ them. `push` redeploys with the new configuration. Shared provider keys
 (`api_key_env` values) are not cleared on remove — they may still be needed by
 remaining projects.
 
-When adding a project in CI-release mode, also add it to the leader's
-`[[dependent_project]]` array so CI knows about it.
+When adding a project in CI-release mode, use `lens release add` instead; it handles the Fly secrets plus the leader's `[[dependent_project]]` entry. `lens release remove` does the inverse. Desktop-mode deployments (no `[release]` section) continue to use `lens deploy add/remove`.
 
 ---
 
@@ -530,6 +529,9 @@ See [Tools reference](#tools-reference) for details.
 | `lens deploy add` | Add project to an existing deployment | Adding a project |
 | `lens deploy remove` | Remove project from a deployment | Removing a project |
 | `lens deploy push --mode local` | Build locally with Docker, then deploy | When Fly remote builder is slow |
+| `lens release push` | Same as `lens deploy push`, but required when `[release]` is enabled | Release-managed deployments |
+| `lens release add` | Adds a project’s secrets and `[[dependent_project]]` entry | Multi-project release deployments |
+| `lens release remove` | Removes a project from the release topology | Multi-project release deployments |
 | `lens release init` | Enable `[release]`, discover topology, install CI files. `--leader` to designate this project as leader; from a parent deploy dir use `--as-leader <slug>` | After `lens deploy init`, one-time |
 | `lens release check` | Show release status (version, CI files, topology) | Verify configuration |
 | `lens release apply` | Set `requested_version` + `requested_from_commit` | Trigger a release (also done by UI) |
