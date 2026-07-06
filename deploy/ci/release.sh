@@ -106,7 +106,10 @@ LENS_CLONE="$LENS_CLONE_DIR/lens"
 trap 'rm -rf "$LENS_CLONE_DIR"' EXIT
 
 echo "release.sh: cloning Lens repo from $LENS_REPO_URL (tag: $TARGET)"
-git clone --depth 1 --branch "$TARGET" "$LENS_REPO_URL" "$LENS_CLONE"
+git init "$LENS_CLONE"
+git -C "$LENS_CLONE" remote add origin "$LENS_REPO_URL"
+git -C "$LENS_CLONE" fetch --depth 1 origin refs/tags/"$TARGET"
+git -C "$LENS_CLONE" checkout FETCH_HEAD
 
 # Step 5 — deploy
 # Uses the cloned Lens repo as the Docker build context so deploy/Dockerfile
