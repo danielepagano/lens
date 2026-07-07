@@ -2,6 +2,7 @@
   import { releaseModalOpen } from '../../stores/ui'
   import { releaseInfo } from '../../stores/release'
   import { releaseClear, releaseRequest } from '../../services/api'
+  import { formatVersionLabel, shouldShowPendingReleaseRequest } from '../../utils/versions'
   let dialog: HTMLDialogElement | undefined
 
   let updating = $state(false)
@@ -13,7 +14,9 @@
   const installed = $derived(rls?.installed_version ?? null)
   const latest = $derived(rls?.latest_available ?? null)
   const requested = $derived(rls?.requested_version ?? '')
-  const hasPendingRequest = $derived(!!requested && !!installed && requested !== installed)
+  const hasPendingRequest = $derived(
+    shouldShowPendingReleaseRequest(requested, installed)
+  )
 
   $effect(() => {
     if (!dialog) return
@@ -91,8 +94,8 @@
     }
   }
 
-  const currentMsg = $derived(installed ? `v${installed.replace(/^v/, '')}` : '—')
-  const latestMsg = $derived(latest ? `v${latest.replace(/^v/, '')}` : '—')
+  const currentMsg = $derived(formatVersionLabel(installed))
+  const latestMsg = $derived(formatVersionLabel(latest))
   const newerAvailable = $derived(rls?.update_available ?? false)
 </script>
 

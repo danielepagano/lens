@@ -6,6 +6,7 @@ import {
   getTxStatus,
   type TxStatusCommit,
   type RefreshEntry,
+  type ReleaseInfo,
 } from '../services/api'
 import { transactionResult, treeRefreshTrigger, cliOutput } from '../stores/ui'
 import type {
@@ -14,6 +15,7 @@ import type {
   CommandHandler,
   CommandModule,
 } from './common'
+import { formatVersionLabel, shouldShowPendingReleaseRequest } from '../utils/versions'
 
 const commands: CommandDefinition[] = [
   { trigger: 'tx-commit', group: 'transactions', cursorTargeting: 'never' },
@@ -90,7 +92,33 @@ function formatTxStatus(status: Awaited<ReturnType<typeof getTxStatus>>): string
     }
   }
 
+  const releaseLines = formatReleaseSection(status.release ?? null)
+  if (releaseLines.length) {
+    lines.push(...releaseLines)
+  }
+
   return lines.join('\n')
+}
+
+function formatReleaseSection(release: ReleaseInfo | null | undefined): string[] {
+  if (!release || !release.enabled) return []
+  const parts: string[] = [
+    `installed ${formatVersionLabel(release.installed_version)}`,
+  ]
+  if (release.latest_available) {
+    parts.push(`latest ${formatVersionLabel(release.latest_available)}`)
+  }
+  const requestedTrimmed = release.requested_version?.trim()
+  if (requestedTrimmed) {
+    const pending = shouldShowPendingReleaseRequest(
+      requestedTrimmed,
+      release.installed_version
+    )
+    const label = pending ? 'requested' : 'applied'
+    parts.push(`${label} ${formatVersionLabel(requestedTrimmed)}`)
+  }
+  parts.push(release.update_available ? 'update available' : 'up to date')
+  return ['', `Release: ${parts.join(' | ')}`]
 }
 
 function formatRefreshResult(entries: RefreshEntry[]): string {
@@ -143,7 +171,20 @@ const handler: CommandHandler = async (
       case 'tx-refresh': {
         const reset = ctx.args.options['reset'] === true
         const refreshResult = await refreshTransaction({ reset })
+        const errorEntries = refreshResult.entries
+          ? refreshResult.entries.filter((entry) => entry.status !== 'ok')
+          : []
         if (refreshResult.status === 'ok') {
+          if (errorEntries.length > 0) {
+            transactionResult.set({
+              title: 'Refresh error',
+              message: errorEntries
+                .map((entry) => `${entry.name}: ${entry.detail}`)
+                .join('\n'),
+              theme: 'error',
+            })
+            return { clearInput: false }
+          }
           if (refreshResult.entries && refreshResult.any_changed) {
             cliOutput.set({
               output: formatRefreshResult(refreshResult.entries),

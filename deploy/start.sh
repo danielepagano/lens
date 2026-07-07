@@ -155,6 +155,8 @@ except ValueError:
             git -C "$DS_DIR" merge --ff-only "origin/$DS_REF" \
                 || echo "Warning: could not fast-forward dataset '$DS_NAME'"
         fi
+
+        git -C "$DS_DIR" config core.sshCommand "$DS_SSH_CMD"
     done
 done
 
