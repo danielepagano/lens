@@ -1062,7 +1062,7 @@ details[open]>summary {
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
   color: #dfe;
-  line-height: 1.3;
+  line-height: 1;
   background-color: #010;
   white-space: pre-wrap;
   word-break: break-word;
