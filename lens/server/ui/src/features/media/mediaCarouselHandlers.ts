@@ -25,6 +25,7 @@ export type MediaCarouselHandlerCtx = {
   close: () => void
   onDone?: () => void
   loadDir: () => Promise<void>
+  navigateTo: (dir: string) => Promise<void>
 }
 
 export async function attachFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<void> {
@@ -145,7 +146,18 @@ export async function confirmRenameInCarousel(
     if (result.status === 'ok') {
       ctx.setRenaming(false)
       mountCacheRefreshTrigger.update((n) => n + 1)
-      await ctx.loadDir()
+      const newFileName = newPath.split('/').pop() ?? newPath
+      const lastSlash = newPath.lastIndexOf('/')
+      const newDir = lastSlash >= 0 ? newPath.slice(0, lastSlash) : ''
+      const currentDir = ctx.getCurrentDir()
+      if (newDir !== currentDir) {
+        await ctx.navigateTo(newDir)
+      } else {
+        await ctx.loadDir()
+      }
+      const entries = ctx.getEntries()
+      const idx = entries.findIndex((en) => en.name === newFileName)
+      if (idx >= 0) ctx.setSelectedIndex(idx)
       return
     }
     ctx.setError(result.detail ?? 'Rename failed')
