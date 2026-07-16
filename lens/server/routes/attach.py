@@ -9,7 +9,12 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from lens.core.commands.attach import attach as attach_core
+from lens.core.commands.attach import (
+    attach as attach_core,
+    get_mount_ref_line_numbers,
+    remove_media_references,
+    update_media_references,
+)
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession, get_mount_backend
 from lens.server.dependencies import get_session
@@ -170,15 +175,37 @@ async def upload_mount_file(
 @router.delete("/mount/file/{path:path}")
 def delete_mount_file(
     path: str,
+    request: Request,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
-    """Delete a mount-relative file or empty directory."""
+    """Delete a mount-relative file or empty directory.
+
+    When references exist in narrative/knowledge files and ``confirmed`` is not
+    ``true``, returns a 409-like response listing the references.  The client
+    may then re-send with ``?confirmed=true`` to perform the actual deletion
+    plus reference cleanup.
+    """
     try:
         backend = get_mount_backend(session.project_root)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
     if backend is None:
         raise HTTPException(status_code=404, detail="no mount configured")
+
+    confirmed = request.query_params.get("confirmed", "false").lower() == "true"
+
+    refs = get_mount_ref_line_numbers(session.project_root, path)
+    if refs and not confirmed:
+        ref_list = [
+            {"file": file_path, "line_numbers": line_numbers}
+            for file_path, line_numbers in sorted(refs.items())
+        ]
+        return {"status": "confirm_required", "path": path, "refs": ref_list}
+
+    refs_cleaned = 0
+    if refs:
+        refs_cleaned = remove_media_references(session.project_root, path)
+
     try:
         backend.delete(path)
     except FileNotFoundError:
@@ -189,7 +216,7 @@ def delete_mount_file(
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         _raise_mount_storage_error(e)
-    return {"status": "ok", "path": path}
+    return {"status": "ok", "path": path, "refs_cleaned": refs_cleaned}
 
 
 class MoveMountRequest(BaseModel):
@@ -202,7 +229,7 @@ def move_mount_file(
     body: MoveMountRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
-    """Move/rename a mount-relative file."""
+    """Move/rename a mount-relative file and update embed references in narrative/knowledge."""
     try:
         backend = get_mount_backend(session.project_root)
     except Exception as e:
@@ -217,7 +244,8 @@ def move_mount_file(
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         _raise_mount_storage_error(e)
-    return {"status": "ok", "path": new_path}
+    refs_updated = update_media_references(session.project_root, path, body.to)
+    return {"status": "ok", "path": new_path, "refs_updated": refs_updated}
 
 
 class AttachRequest(BaseModel):

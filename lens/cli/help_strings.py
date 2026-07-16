@@ -415,6 +415,11 @@ MEDIA_ATTACH = (
     "Attach a media embed after the given line in the given node "
     "(defaults: cursor, end of file)."
 )
+MEDIA_DELETE = (
+    "Delete a media file from the mount, cleaning up any "
+    "references in narrative and knowledge files."
+)
+MEDIA_DELETE_YES = "Skip confirmation prompt and proceed with deletion."
 
 # deploy sub-commands
 DEPLOY_INIT = (

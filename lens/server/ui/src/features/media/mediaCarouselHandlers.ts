@@ -3,12 +3,14 @@ import { mountCacheRefreshTrigger } from '../../stores/ui'
 import {
   attachFile,
   deleteMountPath,
+  deleteMountPathConfirmed,
   moveMountFile,
   uploadMountFile,
   getMountFilePath,
   runEdit,
   StreamBusyError,
   type MountEntry,
+  type DeleteMountConfirmRequired,
 } from '../../services/api'
 import { buildMountEmbedLine } from '../../utils/mountEmbed'
 
@@ -22,6 +24,8 @@ export type MediaCarouselHandlerCtx = {
   setSelectedIndex: (index: number) => void
   setRemoving: (value: boolean) => void
   setUploading: (value: boolean) => void
+  getPendingDeleteConfirm: () => boolean
+  setPendingDeleteConfirm: (value: boolean) => void
   close: () => void
   onDone?: () => void
   loadDir: () => Promise<void>
@@ -171,8 +175,34 @@ export async function deleteFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<
   const selectedPath = ctx.getSelectedPath()
   if (!selectedPath) return
   ctx.setError(null)
+
+  if (ctx.getPendingDeleteConfirm()) {
+    ctx.setPendingDeleteConfirm(false)
+    try {
+      await deleteMountPathConfirmed(selectedPath)
+      ctx.setSelectedIndex(-1)
+      mountCacheRefreshTrigger.update((n) => n + 1)
+      await ctx.loadDir()
+    } catch (e) {
+      ctx.setError(e instanceof Error ? e.message : String(e))
+    }
+    return
+  }
+
   try {
-    await deleteMountPath(selectedPath)
+    const result = await deleteMountPath(selectedPath)
+    if (result.status === 'confirm_required') {
+      const confirmData = result as DeleteMountConfirmRequired
+      const refCount = confirmData.refs.reduce((n, r) => n + r.line_numbers.length, 0)
+      const fileList = confirmData.refs
+        .map((r) => `  ${r.file} (line${r.line_numbers.length > 1 ? 's' : ''} ${r.line_numbers.join(', ')})`)
+        .join('\n')
+      ctx.setError(
+        `${refCount} reference(s) in ${confirmData.refs.length} file(s):\n${fileList}\nClick Delete again to confirm removal.`,
+      )
+      ctx.setPendingDeleteConfirm(true)
+      return
+    }
     ctx.setSelectedIndex(-1)
     mountCacheRefreshTrigger.update((n) => n + 1)
     await ctx.loadDir()

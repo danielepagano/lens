@@ -33,6 +33,7 @@
   let removing = $state(false)
   let dragActive = $state(false)
   let uploadInput = $state<HTMLInputElement | null>(null)
+  let pendingDeleteConfirm = $state(false)
 
   let request = $derived($mediaCarouselRequest)
   let mode = $derived(request?.mode ?? 'manage')
@@ -57,6 +58,7 @@
     selectedIndex = -1
     renaming = false
     error = null
+    pendingDeleteConfirm = false
     await loadDir()
   }
 
@@ -91,6 +93,7 @@
     currentDir = dir
     selectedIndex = -1
     renaming = false
+    pendingDeleteConfirm = false
     await loadDir()
   }
 
@@ -131,6 +134,10 @@
       },
       setUploading: (value) => {
         uploading = value
+      },
+      getPendingDeleteConfirm: () => pendingDeleteConfirm,
+      setPendingDeleteConfirm: (value) => {
+        pendingDeleteConfirm = value
       },
       close,
       onDone,
@@ -194,6 +201,7 @@
           onSelect={(index) => {
             selectedIndex = index
             renaming = false
+            pendingDeleteConfirm = false
           }}
           onNavigate={(name) => void navigateTo(currentDir ? `${currentDir}/${name}` : name)}
           onPreview={(index) => {
