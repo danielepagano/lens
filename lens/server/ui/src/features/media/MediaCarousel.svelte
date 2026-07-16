@@ -135,6 +135,7 @@
       close,
       onDone,
       loadDir,
+      navigateTo,
     }
   }
 

@@ -152,8 +152,9 @@
     }
   }
 
+  const ttsAvailable = $derived(vnTts.speak || ttsCached === true)
   const manuallyPlayable = $derived(
-    Boolean(nodeAddress) && !buttonBusy && (vnTts.speak || ttsCached === true),
+    Boolean(nodeAddress) && !buttonBusy && ttsAvailable,
   )
   const chunkIdentity = $derived(`${line}:${chunkId}:${nodeAddress}:${vnTts.speak}`)
   const playbackGate = $derived(`${vnTts.renderNew}:${ttsCached}:${ttsEnabled}`)
@@ -220,7 +221,7 @@
   })
 </script>
 
-<div class="vn-tts-vcr">
+<div class={['vn-tts-vcr', { hidden: !ttsAvailable }]}>
   <button
     type="button"
     class={['vn-vcr-btn', { 'vn-vcr-btn--cached': ttsCached === true }]}
@@ -250,6 +251,10 @@
 </div>
 
 <style>
+  .vn-tts-vcr.hidden {
+    display: none;
+  }
+
   .vn-tts-vcr {
     display: flex;
     flex-direction: row;
