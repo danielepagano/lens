@@ -1,4 +1,4 @@
-"""CLI adapter for media commands: generate, attach, and TTS."""
+"""CLI adapter for media commands: generate, attach, move, and TTS."""
 
 from __future__ import annotations
 
@@ -27,10 +27,11 @@ from lens.cli.help_strings import (
     TTS_SILENT,
 )
 from lens.core.address import NarrativeAddress
+from lens.core.commands.attach import update_media_references
 from lens.core.commands.generate import generate as generate_core
 from lens.core.commands.media_tts import iter_node_tts_playback
 from lens.core.exceptions import LensException
-from lens.core.project import ProjectSession, resolve_address
+from lens.core.project import ProjectSession, get_mount_backend, resolve_address
 
 from .attach import attach_app
 
@@ -194,6 +195,42 @@ def tts(
                 )
     except LensException as e:
         typer.echo(f"lens media tts: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(no_args_is_help=True)
+def move(
+    source: str = typer.Argument(
+        ...,
+        help="Current mount-relative path of the file to move.",
+    ),
+    destination: str = typer.Argument(
+        ...,
+        help="New mount-relative path (same directory = rename).",
+    ),
+) -> None:
+    """Move or rename a media file and update its embed references in narrative/knowledge."""
+    try:
+        session = ProjectSession.from_cwd()
+        backend = get_mount_backend(session.project_root)
+        if backend is None:
+            raise LensException("no mount_point configured in lens.toml")
+        new_path = backend.move(source, destination)
+        refs_updated = update_media_references(session.project_root, source, destination)
+        typer.echo(f"moved: {source} -> {new_path}")
+        if refs_updated:
+            typer.echo(f"updated {refs_updated} file(s) with new references")
+    except LensException as e:
+        typer.echo(f"lens media move: {e}", err=True)
+        raise typer.Exit(1)
+    except FileNotFoundError:
+        typer.echo(f"lens media move: not found: {source}", err=True)
+        raise typer.Exit(1)
+    except FileExistsError as e:
+        typer.echo(f"lens media move: {e}", err=True)
+        raise typer.Exit(1)
+    except ValueError as e:
+        typer.echo(f"lens media move: {e}", err=True)
         raise typer.Exit(1)
 
 

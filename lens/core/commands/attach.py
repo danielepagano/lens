@@ -10,6 +10,7 @@ from lens.core.annotations import find_front_matter_span, parse_annotations
 from lens.core.exceptions import LensException
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession, get_mount_backend, resolve_address
+from lens.core.storage import Storage
 
 SUPPORTED_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".webp", ".gif",
@@ -196,3 +197,87 @@ def attach(
     storage = session.new_storage(owner=None)
     storage.write_file(node_path, new_text)
     return {"path": relative_path, "type": mtype, "embed": embed}
+
+
+# ---------------------------------------------------------------------------
+# Media reference update on move/rename
+# ---------------------------------------------------------------------------
+
+
+def _mount_ref_search_variants(old_path: str) -> list[str]:
+    """Return the raw and URL-encoded forms of *old_path* that may appear in embed URLs."""
+    stripped = old_path.lstrip("/")
+    encoded = quote(stripped, safe="/")
+    variants = [stripped]
+    if encoded != stripped:
+        variants.append(encoded)
+    return variants
+
+
+def _scan_md_files(project_root: Path) -> list[Path]:
+    """Collect all ``.md`` files under ``narrative/`` and ``knowledge/`` in *project_root*."""
+    dirs = [project_root / "narrative", project_root / "knowledge"]
+    result: list[Path] = []
+    for d in dirs:
+        if d.is_dir():
+            result.extend(d.rglob("*.md"))
+    return result
+
+
+def find_files_with_mount_refs(project_root: Path, old_path: str) -> list[Path]:
+    """Return ``.md`` files that reference *old_path* in a mount embed URL.
+
+    Scans ``narrative/`` and ``knowledge/`` directories.  Matches both raw and
+    URL-encoded path forms.  Read-only — does not modify any files.
+    """
+    variants = _mount_ref_search_variants(old_path)
+    hits: list[Path] = []
+    for md_path in _scan_md_files(project_root):
+        try:
+            text = md_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if any(variant in text for variant in variants):
+            hits.append(md_path)
+    return hits
+
+
+def update_media_references(
+    project_root: Path, old_path: str, new_path: str
+) -> int:
+    """Replace mount embed references from *old_path* to *new_path* in project files.
+
+    Walks ``narrative/`` and ``knowledge/`` directories and rewrites any
+    ``.md`` file that embeds *old_path* via ``/mount/file/`` or
+    ``/mount/preview/``.
+
+    Returns the number of files that were updated.
+    """
+    old_variants = _mount_ref_search_variants(old_path)
+    new_stripped = new_path.lstrip("/")
+    new_encoded = quote(new_stripped, safe="/")
+
+    storage = Storage(project_root, owner=None)
+    updated = 0
+
+    for md_path in _scan_md_files(project_root):
+        try:
+            text = md_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        new_text = text
+        for old_variant in old_variants:
+            # Build the replacement: map each old variant to the matching new form.
+            # Raw old → raw new; URL-encoded old → URL-encoded new.
+            if old_variant == old_path.lstrip("/"):
+                replacement = new_stripped
+            else:
+                replacement = new_encoded
+            new_text = new_text.replace(old_variant, replacement)
+
+        if new_text != text:
+            storage.write_file(md_path, new_text)
+            updated += 1
+
+    return updated

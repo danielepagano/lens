@@ -1081,6 +1081,7 @@ export interface MoveMountFileResponse {
   status: string
   path?: string
   detail?: string
+  refs_updated?: number
 }
 
 export const moveMountFile = (src: string, dst: string): Promise<MoveMountFileResponse> =>

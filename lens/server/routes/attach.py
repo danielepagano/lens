@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from lens.core.commands.attach import attach as attach_core
+from lens.core.commands.attach import attach as attach_core, update_media_references
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession, get_mount_backend
 from lens.server.dependencies import get_session
@@ -202,7 +202,7 @@ def move_mount_file(
     body: MoveMountRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
-    """Move/rename a mount-relative file."""
+    """Move/rename a mount-relative file and update embed references in narrative/knowledge."""
     try:
         backend = get_mount_backend(session.project_root)
     except Exception as e:
@@ -217,7 +217,8 @@ def move_mount_file(
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         _raise_mount_storage_error(e)
-    return {"status": "ok", "path": new_path}
+    refs_updated = update_media_references(session.project_root, path, body.to)
+    return {"status": "ok", "path": new_path, "refs_updated": refs_updated}
 
 
 class AttachRequest(BaseModel):

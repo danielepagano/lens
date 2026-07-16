@@ -11,8 +11,10 @@ from lens.core.commands.attach import (
     SUPPORTED_EXTENSIONS,
     attach,
     build_embed,
+    find_files_with_mount_refs,
     insert_embed_at_line,
     media_type,
+    update_media_references,
     validate_attach_insertion_point,
 )
 from lens.core.exceptions import LensException
@@ -376,3 +378,242 @@ class TestAttachValidateAndInsert(unittest.TestCase):
     def test_validate_allows_first_line_of_annotation(self) -> None:
         text = "Body.\n[write\n  prompt: x\n]: #\nMore.\n"
         validate_attach_insertion_point(text, 2)
+
+
+# ---------------------------------------------------------------------------
+# find_files_with_mount_refs / update_media_references
+# ---------------------------------------------------------------------------
+
+
+class TestFindFilesWithMountRefs(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self.root = Path(self._tmp)
+        _init_repo(self.root)
+        (self.root / "lens.toml").write_text(
+            '[project]\nnarrative = "story"\nmount_point = "media"\n'
+        )
+        self.narrative = self.root / "narrative" / "story"
+        self.narrative.mkdir(parents=True)
+        (self.root / "knowledge").mkdir()
+
+    def _write_narrative(self, name: str, content: str) -> Path:
+        p = self.narrative / name
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def _write_knowledge(self, type_name: str, key: str, content: str) -> Path:
+        d = self.root / "knowledge" / type_name
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / f"{key}.md"
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def test_detects_image_embed(self) -> None:
+        self._write_narrative(
+            "ch1.md", "# Ch1\n\n![hero.jpg](/mount/file/images/hero.jpg)\n\nText.\n"
+        )
+        hits = find_files_with_mount_refs(self.root, "images/hero.jpg")
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0].name, "ch1.md")
+
+    def test_detects_video_embed(self) -> None:
+        self._write_narrative(
+            "ch1.md",
+            "# Ch1\n\n"
+            '<video src="/mount/file/clips/intro.mp4" controls></video>\n\n'
+            "Text.\n",
+        )
+        hits = find_files_with_mount_refs(self.root, "clips/intro.mp4")
+        self.assertEqual(len(hits), 1)
+
+    def test_detects_link_embed(self) -> None:
+        self._write_narrative(
+            "ch1.md", "# Ch1\n\n[readme.txt](/mount/preview/notes/readme.txt)\n\nText.\n"
+        )
+        hits = find_files_with_mount_refs(self.root, "notes/readme.txt")
+        self.assertEqual(len(hits), 1)
+
+    def test_handles_url_encoded_path(self) -> None:
+        self._write_narrative(
+            "ch1.md",
+            "# Ch1\n\n![my%20file.jpg](/mount/file/images/my%20file.jpg)\n\nText.\n",
+        )
+        hits = find_files_with_mount_refs(self.root, "images/my file.jpg")
+        self.assertEqual(len(hits), 1)
+
+    def test_returns_empty_when_no_match(self) -> None:
+        self._write_narrative("ch1.md", "# Ch1\n\nJust text.\n")
+        hits = find_files_with_mount_refs(self.root, "images/hero.jpg")
+        self.assertEqual(len(hits), 0)
+
+    def test_scans_knowledge_dir(self) -> None:
+        self._write_knowledge(
+            "person",
+            "amy",
+            "# Amy\n\n![portrait](/mount/file/portraits/amy.jpg)\n",
+        )
+        hits = find_files_with_mount_refs(self.root, "portraits/amy.jpg")
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0].name, "amy.md")
+
+    def test_finds_multiple_files(self) -> None:
+        self._write_narrative(
+            "ch1.md", "# Ch1\n\n![hero.jpg](/mount/file/images/hero.jpg)\n"
+        )
+        self._write_narrative(
+            "ch2.md", "# Ch2\n\n![hero.jpg](/mount/file/images/hero.jpg)\n"
+        )
+        hits = find_files_with_mount_refs(self.root, "images/hero.jpg")
+        self.assertEqual(len(hits), 2)
+
+    def test_skips_nonexistent_dirs(self) -> None:
+        import shutil as _shutil
+
+        _shutil.rmtree(self.narrative)
+        hits = find_files_with_mount_refs(self.root, "images/hero.jpg")
+        self.assertEqual(len(hits), 0)
+
+
+class TestUpdateMediaReferences(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self.root = Path(self._tmp)
+        _init_repo(self.root)
+        (self.root / "lens.toml").write_text(
+            '[project]\nnarrative = "story"\nmount_point = "media"\n'
+        )
+        self.narrative = self.root / "narrative" / "story"
+        self.narrative.mkdir(parents=True)
+        (self.root / "knowledge").mkdir()
+
+    def _write_narrative(self, name: str, content: str) -> Path:
+        p = self.narrative / name
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def _write_knowledge(self, type_name: str, key: str, content: str) -> Path:
+        d = self.root / "knowledge" / type_name
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / f"{key}.md"
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def test_replaces_in_narrative(self) -> None:
+        p = self._write_narrative(
+            "ch1.md", "# Ch1\n\n![hero.jpg](/mount/file/images/hero.jpg)\n"
+        )
+        count = update_media_references(
+            self.root, "images/hero.jpg", "portraits/hero.jpg"
+        )
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertIn("/mount/file/portraits/hero.jpg", text)
+        self.assertNotIn("/mount/file/images/hero.jpg", text)
+
+    def test_replaces_in_knowledge(self) -> None:
+        p = self._write_knowledge(
+            "person",
+            "amy",
+            "# Amy\n\n![amy](/mount/file/portraits/amy.jpg)\n",
+        )
+        count = update_media_references(
+            self.root, "portraits/amy.jpg", "avatars/amy.jpg"
+        )
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertIn("/mount/file/avatars/amy.jpg", text)
+        self.assertNotIn("/mount/file/portraits/amy.jpg", text)
+
+    def test_replaces_video_embed(self) -> None:
+        p = self._write_narrative(
+            "ch1.md",
+            "# Ch1\n\n"
+            '<video src="/mount/file/clips/old.mp4" controls></video>\n',
+        )
+        count = update_media_references(
+            self.root, "clips/old.mp4", "clips/new.mp4"
+        )
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertIn("/mount/file/clips/new.mp4", text)
+        self.assertNotIn("/mount/file/clips/old.mp4", text)
+
+    def test_replaces_preview_embed(self) -> None:
+        p = self._write_narrative(
+            "ch1.md",
+            "# Ch1\n\n[readme.txt](/mount/preview/notes/readme.txt)\n",
+        )
+        count = update_media_references(
+            self.root, "notes/readme.txt", "docs/readme.txt"
+        )
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertIn("/mount/preview/docs/readme.txt", text)
+        self.assertNotIn("/mount/preview/notes/readme.txt", text)
+
+    def test_replaces_url_encoded_path(self) -> None:
+        p = self._write_narrative(
+            "ch1.md",
+            "# Ch1\n\n![my%20file.jpg](/mount/file/images/my%20file.jpg)\n",
+        )
+        count = update_media_references(
+            self.root, "images/my file.jpg", "images/renamed.jpg"
+        )
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertIn("/mount/file/images/renamed.jpg", text)
+
+    def test_returns_correct_count(self) -> None:
+        self._write_narrative(
+            "ch1.md", "# Ch1\n\n![h](/mount/file/images/h.jpg)\n"
+        )
+        self._write_narrative(
+            "ch2.md", "# Ch2\n\n![h](/mount/file/images/h.jpg)\n"
+        )
+        self._write_narrative(
+            "ch3.md", "# Ch3\n\nNo media here.\n"
+        )
+        count = update_media_references(
+            self.root, "images/h.jpg", "images/new-h.jpg"
+        )
+        self.assertEqual(count, 2)
+
+    def test_noop_when_no_refs(self) -> None:
+        p = self._write_narrative("ch1.md", "# Ch1\n\nJust text.\n")
+        original = p.read_text()
+        count = update_media_references(
+            self.root, "images/hero.jpg", "images/new.jpg"
+        )
+        self.assertEqual(count, 0)
+        self.assertEqual(p.read_text(), original)
+
+    def test_preserves_surrounding_content(self) -> None:
+        content = "# Ch1\n\nSome intro.\n\n![hero.jpg](/mount/file/images/hero.jpg)\n\nMore text.\n"
+        p = self._write_narrative("ch1.md", content)
+        update_media_references(
+            self.root, "images/hero.jpg", "portraits/hero.jpg"
+        )
+        text = p.read_text()
+        self.assertIn("# Ch1", text)
+        self.assertIn("Some intro.", text)
+        self.assertIn("More text.", text)
+        self.assertIn("![hero.jpg](/mount/file/portraits/hero.jpg)", text)
+
+    def test_multiple_embed_types_in_same_file(self) -> None:
+        content = (
+            "# Ch1\n\n"
+            "![img](/mount/file/old.jpg)\n\n"
+            '<video src="/mount/file/old.mp4" controls></video>\n\n'
+            "[doc](/mount/preview/old.md)\n"
+        )
+        p = self._write_narrative("ch1.md", content)
+        count = update_media_references(self.root, "old.jpg", "new.jpg")
+        # Only the image should be updated (old.mp4 and old.md are different paths)
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertIn("/mount/file/new.jpg", text)
+        self.assertIn("/mount/file/old.mp4", text)
+        self.assertIn("/mount/preview/old.md", text)
