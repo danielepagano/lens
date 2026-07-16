@@ -242,6 +242,94 @@ def find_files_with_mount_refs(project_root: Path, old_path: str) -> list[Path]:
     return hits
 
 
+def get_mount_ref_line_numbers(
+    project_root: Path, old_path: str
+) -> dict[str, list[int]]:
+    """Return ``{file_path: [line_numbers]}`` for all references to *old_path*.
+
+    Scans ``narrative/`` and ``knowledge/`` directories.  Line numbers are 1-based.
+    """
+
+    variants = _mount_ref_search_variants(old_path)
+    result: dict[str, list[int]] = {}
+    for md_path in _scan_md_files(project_root):
+        try:
+            lines = md_path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        hits = [
+            i for i, line in enumerate(lines, start=1)
+            if any(variant in line for variant in variants)
+        ]
+        if hits:
+            result[str(md_path.relative_to(project_root))] = hits
+    return result
+
+
+def remove_media_references(project_root: Path, old_path: str) -> int:
+    """Remove mount embed references to *old_path* from project files.
+
+    For standalone embed lines (the normal case), the entire line plus its
+    trailing blank line is deleted to avoid double-blanks.  For inline
+    (non-standalone) embeds, only the URL portion is removed via plain
+    string replacement.
+
+    Returns the number of files that were modified.
+    """
+    from lens.core.mount_embed_strip import line_is_standalone_lens_mount_attachment
+
+    old_variants = _mount_ref_search_variants(old_path)
+    storage = Storage(project_root, owner=None)
+    updated = 0
+
+    for md_path in _scan_md_files(project_root):
+        try:
+            text = md_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        lines = text.split("\n")
+        new_lines: list[str] = []
+        i = 0
+        changed = False
+        while i < len(lines):
+            line = lines[i]
+            has_ref = any(variant in line for variant in old_variants)
+            if not has_ref:
+                new_lines.append(line)
+                i += 1
+                continue
+
+            changed = True
+            if line_is_standalone_lens_mount_attachment(line):
+                # Remove the embed line.
+                i += 1
+            else:
+                # Inline embed: remove only the URL portions
+                inline_cleaned = line
+                for variant in old_variants:
+                    inline_cleaned = inline_cleaned.replace(variant, "")
+                new_lines.append(inline_cleaned)
+                i += 1
+
+        if changed:
+            # Collapse runs of 3+ blank lines down to 2 (one visual blank).
+            result_lines: list[str] = []
+            blank_run = 0
+            for ln in new_lines:
+                if ln == "":
+                    blank_run += 1
+                    if blank_run <= 1:
+                        result_lines.append(ln)
+                else:
+                    blank_run = 0
+                    result_lines.append(ln)
+            storage.write_file(md_path, "\n".join(result_lines))
+            updated += 1
+
+    return updated
+
+
 def update_media_references(
     project_root: Path, old_path: str, new_path: str
 ) -> int:

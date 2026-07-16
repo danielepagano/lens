@@ -12,8 +12,10 @@ from lens.core.commands.attach import (
     attach,
     build_embed,
     find_files_with_mount_refs,
+    get_mount_ref_line_numbers,
     insert_embed_at_line,
     media_type,
+    remove_media_references,
     update_media_references,
     validate_attach_insertion_point,
 )
@@ -617,3 +619,206 @@ class TestUpdateMediaReferences(unittest.TestCase):
         self.assertIn("/mount/file/new.jpg", text)
         self.assertIn("/mount/file/old.mp4", text)
         self.assertIn("/mount/preview/old.md", text)
+
+
+# ---------------------------------------------------------------------------
+# get_mount_ref_line_numbers / remove_media_references
+# ---------------------------------------------------------------------------
+
+
+class TestGetMountRefLineNumbers(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self.root = Path(self._tmp)
+        _init_repo(self.root)
+        (self.root / "lens.toml").write_text(
+            '[project]\nnarrative = "story"\nmount_point = "media"\n'
+        )
+        self.narrative = self.root / "narrative" / "story"
+        self.narrative.mkdir(parents=True)
+        (self.root / "knowledge").mkdir()
+
+    def _write_narrative(self, name: str, content: str) -> Path:
+        p = self.narrative / name
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def _write_knowledge(self, type_name: str, key: str, content: str) -> Path:
+        d = self.root / "knowledge" / type_name
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / f"{key}.md"
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def test_returns_line_numbers_for_single_ref(self) -> None:
+        self._write_narrative(
+            "ch1.md", "# Ch1\n\n![hero.jpg](/mount/file/images/hero.jpg)\n\nText.\n"
+        )
+        refs = get_mount_ref_line_numbers(self.root, "images/hero.jpg")
+        self.assertIn("narrative/story/ch1.md", refs)
+        self.assertEqual(refs["narrative/story/ch1.md"], [3])
+
+    def test_returns_multiple_line_numbers(self) -> None:
+        content = (
+            "# Ch1\n\n"
+            "![hero.jpg](/mount/file/images/hero.jpg)\n\n"
+            "Some text.\n\n"
+            "![hero.jpg](/mount/file/images/hero.jpg)\n"
+        )
+        self._write_narrative("ch1.md", content)
+        refs = get_mount_ref_line_numbers(self.root, "images/hero.jpg")
+        self.assertEqual(refs["narrative/story/ch1.md"], [3, 7])
+
+    def test_returns_empty_when_no_refs(self) -> None:
+        self._write_narrative("ch1.md", "# Ch1\n\nJust text.\n")
+        refs = get_mount_ref_line_numbers(self.root, "images/hero.jpg")
+        self.assertEqual(refs, {})
+
+    def test_includes_knowledge_files(self) -> None:
+        self._write_knowledge(
+            "person", "amy", "# Amy\n\n![amy](/mount/file/portraits/amy.jpg)\n"
+        )
+        refs = get_mount_ref_line_numbers(self.root, "portraits/amy.jpg")
+        self.assertIn("knowledge/person/amy.md", refs)
+        self.assertEqual(refs["knowledge/person/amy.md"], [3])
+
+    def test_handles_url_encoded_paths(self) -> None:
+        self._write_narrative(
+            "ch1.md",
+            "# Ch1\n\n![my%20file.jpg](/mount/file/images/my%20file.jpg)\n",
+        )
+        refs = get_mount_ref_line_numbers(self.root, "images/my file.jpg")
+        self.assertIn("narrative/story/ch1.md", refs)
+
+
+class TestRemoveMediaReferences(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self.root = Path(self._tmp)
+        _init_repo(self.root)
+        (self.root / "lens.toml").write_text(
+            '[project]\nnarrative = "story"\nmount_point = "media"\n'
+        )
+        self.narrative = self.root / "narrative" / "story"
+        self.narrative.mkdir(parents=True)
+        (self.root / "knowledge").mkdir()
+
+    def _write_narrative(self, name: str, content: str) -> Path:
+        p = self.narrative / name
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def _write_knowledge(self, type_name: str, key: str, content: str) -> Path:
+        d = self.root / "knowledge" / type_name
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / f"{key}.md"
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def test_removes_standalone_image_embed(self) -> None:
+        content = "# Ch1\n\n![hero.jpg](/mount/file/images/hero.jpg)\n\nText.\n"
+        p = self._write_narrative("ch1.md", content)
+        count = remove_media_references(self.root, "images/hero.jpg")
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertNotIn("/mount/file/images/hero.jpg", text)
+        self.assertIn("# Ch1", text)
+        self.assertIn("Text.", text)
+
+    def test_removes_standalone_video_embed(self) -> None:
+        content = (
+            "# Ch1\n\n"
+            '<video src="/mount/file/clips/intro.mp4" controls></video>\n\n'
+            "Text.\n"
+        )
+        p = self._write_narrative("ch1.md", content)
+        count = remove_media_references(self.root, "clips/intro.mp4")
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertNotIn("/mount/file/clips/intro.mp4", text)
+        self.assertIn("# Ch1", text)
+        self.assertIn("Text.", text)
+
+    def test_removes_standalone_link_embed(self) -> None:
+        content = "# Ch1\n\n[readme.txt](/mount/preview/notes/readme.txt)\n\nText.\n"
+        p = self._write_narrative("ch1.md", content)
+        count = remove_media_references(self.root, "notes/readme.txt")
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertNotIn("/mount/preview/notes/readme.txt", text)
+        self.assertIn("# Ch1", text)
+        self.assertIn("Text.", text)
+
+    def test_cleans_trailing_blank_line(self) -> None:
+        content = "# Ch1\n\n![hero.jpg](/mount/file/images/hero.jpg)\n\n\nText.\n"
+        p = self._write_narrative("ch1.md", content)
+        remove_media_references(self.root, "images/hero.jpg")
+        text = p.read_text()
+        # Should not have double blank line after removal
+        self.assertNotIn("\n\n\n", text)
+
+    def test_noop_when_no_refs(self) -> None:
+        content = "# Ch1\n\nJust text.\n"
+        p = self._write_narrative("ch1.md", content)
+        original = p.read_text()
+        count = remove_media_references(self.root, "images/hero.jpg")
+        self.assertEqual(count, 0)
+        self.assertEqual(p.read_text(), original)
+
+    def test_removes_from_multiple_files(self) -> None:
+        self._write_narrative(
+            "ch1.md", "# Ch1\n\n![hero.jpg](/mount/file/images/hero.jpg)\n"
+        )
+        self._write_narrative(
+            "ch2.md", "# Ch2\n\n![hero.jpg](/mount/file/images/hero.jpg)\n"
+        )
+        count = remove_media_references(self.root, "images/hero.jpg")
+        self.assertEqual(count, 2)
+
+    def test_removes_from_knowledge(self) -> None:
+        self._write_knowledge(
+            "person", "amy", "# Amy\n\n![amy](/mount/file/portraits/amy.jpg)\n"
+        )
+        count = remove_media_references(self.root, "portraits/amy.jpg")
+        self.assertEqual(count, 1)
+
+    def test_handles_url_encoded_paths(self) -> None:
+        content = "# Ch1\n\n![my%20file.jpg](/mount/file/images/my%20file.jpg)\n\nText.\n"
+        p = self._write_narrative("ch1.md", content)
+        count = remove_media_references(self.root, "images/my file.jpg")
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertNotIn("/mount/file/images/my%20file.jpg", text)
+        self.assertIn("Text.", text)
+
+    def test_multiple_embeds_in_same_file(self) -> None:
+        content = (
+            "# Ch1\n\n"
+            "![hero.jpg](/mount/file/images/hero.jpg)\n\n"
+            "Some text.\n\n"
+            "![hero.jpg](/mount/file/images/hero.jpg)\n"
+        )
+        p = self._write_narrative("ch1.md", content)
+        count = remove_media_references(self.root, "images/hero.jpg")
+        self.assertEqual(count, 1)
+        text = p.read_text()
+        self.assertNotIn("/mount/file/images/hero.jpg", text)
+        self.assertIn("# Ch1", text)
+        self.assertIn("Some text.", text)
+
+    def test_preserves_surrounding_content(self) -> None:
+        content = "# Ch1\n\nFirst paragraph.\n\n![hero.jpg](/mount/file/images/hero.jpg)\n\nLast paragraph.\n"
+        p = self._write_narrative("ch1.md", content)
+        remove_media_references(self.root, "images/hero.jpg")
+        text = p.read_text()
+        self.assertIn("# Ch1", text)
+        self.assertIn("First paragraph.", text)
+        self.assertIn("Last paragraph.", text)
+
+    def test_handles_empty_file(self) -> None:
+        p = self._write_narrative("ch1.md", "")
+        count = remove_media_references(self.root, "images/hero.jpg")
+        self.assertEqual(count, 0)
+        self.assertEqual(p.read_text(), "")

@@ -1067,14 +1067,35 @@ export const uploadMountFile = withStats((dir: string, file: File): Promise<Uplo
   return postFormData(projectPath('/mount/upload'), form) as Promise<UploadMountFileResponse>
 })
 
-export interface DeleteMountPathResponse {
-  status: string
-  path?: string
-  detail?: string
+export interface DeleteMountRefsFile {
+  file: string
+  line_numbers: number[]
 }
+
+export interface DeleteMountConfirmRequired {
+  status: 'confirm_required'
+  path: string
+  refs: DeleteMountRefsFile[]
+}
+
+export interface DeleteMountOk {
+  status: 'ok'
+  path: string
+  refs_cleaned?: number
+}
+
+export type DeleteMountPathResponse =
+  | DeleteMountConfirmRequired
+  | DeleteMountOk
+  | { status: 'error'; detail?: string }
 
 export const deleteMountPath = withStats((path: string): Promise<DeleteMountPathResponse> =>
   del(projectPath(`/mount/file/${path}`)) as Promise<DeleteMountPathResponse>
+)
+
+export const deleteMountPathConfirmed = withStats(
+  (path: string): Promise<DeleteMountOk> =>
+    del(projectPath(`/mount/file/${encodeURIComponent(path)}?confirmed=true`)) as Promise<DeleteMountOk>
 )
 
 export interface MoveMountFileResponse {

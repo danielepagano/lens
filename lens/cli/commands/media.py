@@ -13,6 +13,7 @@ from lens.cli.help_strings import (
     ARG_PROMPT_OPT as ARG_MEDIA_PROMPT,
     CMD_MEDIA,
     HELP_OPTS,
+    MEDIA_DELETE_YES,
     MEDIA_MODEL,
     MEDIA_ASPECT,
     MEDIA_SIZE,
@@ -27,7 +28,11 @@ from lens.cli.help_strings import (
     TTS_SILENT,
 )
 from lens.core.address import NarrativeAddress
-from lens.core.commands.attach import update_media_references
+from lens.core.commands.attach import (
+    get_mount_ref_line_numbers,
+    remove_media_references,
+    update_media_references,
+)
 from lens.core.commands.generate import generate as generate_core
 from lens.core.commands.media_tts import iter_node_tts_playback
 from lens.core.exceptions import LensException
@@ -231,6 +236,65 @@ def move(
         raise typer.Exit(1)
     except ValueError as e:
         typer.echo(f"lens media move: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command(no_args_is_help=True)
+def delete(
+    path: str = typer.Argument(
+        ...,
+        help="Mount-relative path of the file to delete.",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help=MEDIA_DELETE_YES,
+    ),
+) -> None:
+    """Delete a media file from the mount, cleaning up references in narrative/knowledge."""
+    try:
+        session = ProjectSession.from_cwd()
+        backend = get_mount_backend(session.project_root)
+        if backend is None:
+            raise LensException("no mount_point configured in lens.toml")
+
+        refs = get_mount_ref_line_numbers(session.project_root, path)
+        if not refs:
+            backend.delete(path)
+            typer.echo(f"deleted: {path}")
+            return
+
+        total_refs = sum(len(lines) for lines in refs.values())
+        typer.echo(f"Found reference(s) in {len(refs)} file(s):")
+        for file_path, line_numbers in sorted(refs.items()):
+            lines_str = ", ".join(str(n) for n in line_numbers)
+            typer.echo(f"  {file_path} (line{'s' if len(line_numbers) > 1 else ''} {lines_str})")
+        typer.echo()
+
+        if not yes:
+            confirm = typer.confirm(
+                f"Delete file and {total_refs} reference(s)?",
+                default=False,
+            )
+            if not confirm:
+                typer.echo("Delete cancelled.")
+                return
+
+        refs_cleaned = remove_media_references(session.project_root, path)
+        backend.delete(path)
+        typer.echo(f"deleted: {path} (cleaned {refs_cleaned} file(s))")
+    except LensException as e:
+        typer.echo(f"lens media delete: {e}", err=True)
+        raise typer.Exit(1)
+    except FileNotFoundError:
+        typer.echo(f"lens media delete: not found: {path}", err=True)
+        raise typer.Exit(1)
+    except PermissionError as e:
+        typer.echo(f"lens media delete: {e}", err=True)
+        raise typer.Exit(1)
+    except ValueError as e:
+        typer.echo(f"lens media delete: {e}", err=True)
         raise typer.Exit(1)
 
 
