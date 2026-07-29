@@ -17,6 +17,7 @@
   import type { MetadataFieldRow, MetadataValueKind, ReservedMetadata } from './mediaMetadataTypes'
   import MediaMetadataListEditor from './MediaMetadataListEditor.svelte'
   import MediaMetadataKvEditor from './MediaMetadataKvEditor.svelte'
+  import type { CompositeRole } from '../../utils/mediaComposite'
 
   type Props = {
     path?: string | null
@@ -33,6 +34,7 @@
   let reserved = $state<ReservedMetadata | null>(null)
   let rows = $state<MetadataFieldRow[]>([])
   let savedKeys = $state<Set<string>>(new Set())
+  let compositeValue = $state<CompositeRole | null | undefined>(undefined)
 
   let lastLoadedPath: string | null = null
   // Bumped on every new load() so a slow, superseded request (opened file A,
@@ -68,11 +70,13 @@
       reserved = result.reserved
       rows = result.rows
       savedKeys = result.savedKeys
+      compositeValue = result.compositeValue
     } catch (e) {
       if (token !== requestToken) return
       error = e instanceof Error ? e.message : String(e)
       reserved = null
       rows = []
+      compositeValue = undefined
     } finally {
       if (token === requestToken) loading = false
     }
@@ -92,7 +96,7 @@
     saving = true
     error = null
     try {
-      const newKeys = await saveMetadataRows(path, rows, savedKeys)
+      const newKeys = await saveMetadataRows(path, rows, savedKeys, compositeValue)
       if (token === requestToken) {
         savedKeys = newKeys
         handleClose()
@@ -177,6 +181,25 @@
               <span class="meta-ro-label">Type</span>
               <span class="meta-ro-value">{reserved.type}</span>
             </div>
+          </div>
+        {/if}
+
+        {#if compositeValue !== undefined}
+          <div class="meta-composite-row">
+            <span class="meta-composite-label">Composite</span>
+            <select
+              class="meta-composite-select"
+              aria-label="Composite role"
+              value={compositeValue ?? ''}
+              onchange={(e) => {
+                const v = (e.currentTarget as HTMLSelectElement).value
+                compositeValue = v === '' ? null : (v as CompositeRole)
+              }}
+            >
+              <option value="">Unset</option>
+              <option value="background">Background</option>
+              <option value="foreground">Foreground</option>
+            </select>
           </div>
         {/if}
 
@@ -307,6 +330,27 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  .meta-composite-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+    margin-bottom: 0.35rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+  }
+  .meta-composite-label {
+    flex: 0 0 4.5rem;
+    font-size: 0.82rem;
+    opacity: 0.85;
+  }
+  .meta-composite-select {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0;
+    padding: 0.2rem 2rem 0.2rem 0.4rem;
+    font-size: 0.82rem;
+    height: 32px;
   }
   .meta-grid {
     display: flex;

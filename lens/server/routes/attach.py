@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from lens.core.commands.attach import (
     attach as attach_core,
+    attach_layered as attach_layered_core,
     get_mount_ref_line_numbers,
     remove_media_references,
     update_media_references,
@@ -233,6 +234,7 @@ def move_mount_file(
 
 class AttachRequest(BaseModel):
     path: str
+    fg_path: str | None = None
     address: str | None = None
     line: int | None = None
 
@@ -242,9 +244,18 @@ def attach(
     body: AttachRequest,
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
-    """Attach a mount-relative media file after a line in a narrative node."""
+    """Attach a mount-relative media file after a line in a narrative node.
+
+    When ``fg_path`` is given, ``path`` is the background layer and ``fg_path`` the
+    foreground layer of a composite (background+foreground) attachment.
+    """
     try:
-        result = attach_core(session, body.path, address=body.address, line=body.line)
+        if body.fg_path is not None:
+            result = attach_layered_core(
+                session, body.path, body.fg_path, address=body.address, line=body.line
+            )
+        else:
+            result = attach_core(session, body.path, address=body.address, line=body.line)
         return {"status": "ok", "type": result["type"], "embed": result["embed"]}
     except LensException as e:
         return {"status": "error", "detail": str(e)}

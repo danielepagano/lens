@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
 from urllib.parse import quote
 
@@ -46,6 +47,31 @@ def build_embed(relative_path: str, ext: str) -> str:
     if ext in PREVIEW_EXTS:
         return f"[{fname}](/mount/preview/{url_path})"
     return f"[{fname}](/mount/file/{url_path})"
+
+
+# Composite (background + foreground) attachment: single-line HTML so it round-trips through
+# markdown editors intact and renders sensibly in plain (non-VN) reading mode. VN playback
+# parses it back out via ``lens.core.speech.playback_sequence.parse_composite_line`` — the
+# attribute order/quoting here must match that regex (and its TS mirror in ``mountEmbed.ts``).
+COMPOSITE_CLASS = "lens-vn-composite"
+COMPOSITE_BG_CLASS = "lens-vn-bg"
+COMPOSITE_FG_CLASS = "lens-vn-fg"
+
+
+def build_layered_embed(bg_relative_path: str, fg_relative_path: str) -> str:
+    """Build the single-line HTML embed for a background+foreground composite attachment."""
+    bg_path = bg_relative_path.lstrip("/")
+    fg_path = fg_relative_path.lstrip("/")
+    bg_name = escape(Path(bg_relative_path).name, quote=True)
+    fg_name = escape(Path(fg_relative_path).name, quote=True)
+    bg_url = quote(bg_path, safe="/")
+    fg_url = quote(fg_path, safe="/")
+    return (
+        f'<div class="{COMPOSITE_CLASS}">'
+        f'<img src="/mount/file/{bg_url}" alt="{bg_name}" class="{COMPOSITE_BG_CLASS}">'
+        f'<img src="/mount/file/{fg_url}" alt="{fg_name}" class="{COMPOSITE_FG_CLASS}">'
+        f"</div>"
+    )
 
 
 def _trailing_empty_line_count(lines: list[str]) -> int:
@@ -197,6 +223,56 @@ def attach(
     storage = session.new_storage(owner=None)
     storage.write_file(node_path, new_text)
     return {"path": relative_path, "type": mtype, "embed": embed}
+
+
+def attach_layered(
+    session: ProjectSession,
+    bg_relative_path: str,
+    fg_relative_path: str,
+    *,
+    address: str | None = None,
+    line: int | None = None,
+) -> dict[str, str]:
+    """Attach a background+foreground composite image pair as a single embed.
+
+    Both paths must resolve to supported image extensions and exist on the mount.
+    See :func:`build_layered_embed` for the emitted markup and
+    ``lens.core.speech.playback_sequence`` for how VN playback parses it back out.
+    """
+    backend = get_mount_backend(session.project_root)
+    if backend is None:
+        raise LensException("no mount_point configured in lens.toml")
+
+    for rel in (bg_relative_path, fg_relative_path):
+        ext = Path(rel).suffix.lower()
+        if ext not in IMAGE_EXTS:
+            raise LensException(
+                f"layered attach requires images — '{rel}' has unsupported extension '{ext}'"
+            )
+        try:
+            exists = backend.file_exists(rel)
+        except ValueError as e:
+            raise LensException(str(e))
+        if not exists:
+            raise LensException(f"file not found in mount: {rel}")
+
+    target = _resolve_attach_target(session, address)
+    node_path = target.md_path()
+    content = node_path.read_text()
+    embed = build_layered_embed(bg_relative_path, fg_relative_path)
+    if line is not None:
+        new_text = insert_embed_at_line(content, line, embed)
+    else:
+        new_text = _join_with_embed(content.split("\n"), embed, [])
+
+    storage = session.new_storage(owner=None)
+    storage.write_file(node_path, new_text)
+    return {
+        "bg_path": bg_relative_path,
+        "fg_path": fg_relative_path,
+        "type": "image",
+        "embed": embed,
+    }
 
 
 # ---------------------------------------------------------------------------

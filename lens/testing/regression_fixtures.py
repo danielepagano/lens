@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -170,6 +171,60 @@ def setup_advance_minimal(project_dir: Path, llm_base_url: str) -> ProjectSessio
         os.chdir(orig_cwd)
     _clear_kb_registry()
     return session
+
+
+_COMPOSITE_MEDIA_ASSETS_DIR = _REPO_ROOT / "e2e" / "assets" / "composite_media"
+_COMPOSITE_MEDIA_ASSET_NAMES = (
+    "test_bg.jpg",
+    "test_bg.jpg.yml",
+    "test_bg_wide.jpg",
+    "test_bg_wide.jpg.yml",
+    "test_fg.png",
+    "test_fg.png.yml",
+)
+
+
+def setup_composite_media_project(project_dir: Path, llm_base_url: str) -> ProjectSession:
+    """Project with a media mount + two bg/fg composite scenes (issue #99 layered rendering).
+
+    Reuses three real photos (``e2e/assets/composite_media/``) in two pairings so both
+    orientation-mismatch directions are covered without needing extra binary fixtures:
+
+    * ``vn-combo-a``: landscape bg (``test_bg_wide.jpg``) + portrait fg (``test_fg.png``)
+    * ``vn-combo-b``: portrait bg (``test_bg.jpg``) + landscape fg (``test_bg_wide.jpg`` reused —
+      its ``composite: background`` sidecar is irrelevant here since the embed line is written
+      directly rather than through the metadata-driven carousel pairing flow)
+    """
+    from lens.core.commands.attach import build_layered_embed
+
+    setup_test_project(project_dir, llm_base_url, narrative_name="story")
+
+    lens_toml = project_dir / "lens.toml"
+    with lens_toml.open("rb") as fh:
+        cfg = tomllib.load(fh)
+    cfg["project"]["mount_point"] = "media"
+    with open(lens_toml, "wb") as fh:
+        tomli_w.dump(cfg, fh)
+
+    media_dir = project_dir / "media"
+    media_dir.mkdir(exist_ok=True)
+    for name in _COMPOSITE_MEDIA_ASSET_NAMES:
+        shutil.copy(_COMPOSITE_MEDIA_ASSETS_DIR / name, media_dir / name)
+
+    # Content is *only* the composite embed line (no heading/prose) so it is
+    # unambiguously the first (and only) VN playback item — vn_i=0 always lands
+    # on the layered scene, with no dependency on TTS text-chunking behavior.
+    narrative_dir = project_dir / "narrative" / "story"
+    combo_a = build_layered_embed("test_bg_wide.jpg", "test_fg.png")
+    combo_b = build_layered_embed("test_bg.jpg", "test_bg_wide.jpg")
+    (narrative_dir / "vn-combo-a.md").write_text(f"{combo_a}\n", encoding="utf-8")
+    (narrative_dir / "vn-combo-b.md").write_text(f"{combo_b}\n", encoding="utf-8")
+
+    Storage(project_dir).stage_all()
+    _git(project_dir, "add", "-A")
+    _git(project_dir, "commit", "-m", "fixture: composite_media")
+    _clear_kb_registry()
+    return ProjectSession(project_dir, project_dir)
 
 
 def setup_rpg_play_pins(project_dir: Path, llm_base_url: str) -> ProjectSession:

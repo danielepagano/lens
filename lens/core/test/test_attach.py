@@ -10,7 +10,9 @@ from pathlib import Path
 from lens.core.commands.attach import (
     SUPPORTED_EXTENSIONS,
     attach,
+    attach_layered,
     build_embed,
+    build_layered_embed,
     find_files_with_mount_refs,
     get_mount_ref_line_numbers,
     insert_embed_at_line,
@@ -151,6 +153,32 @@ class TestBuildEmbed(unittest.TestCase):
         for ext in SUPPORTED_EXTENSIONS:
             t = media_type(ext)
             self.assertIn(t, ("image", "video", "document"))
+
+
+class TestBuildLayeredEmbed(unittest.TestCase):
+
+    def test_contains_both_urls_and_composite_class(self) -> None:
+        embed = build_layered_embed("bg/scene.jpg", "fg/amy.png")
+        self.assertIn('class="lens-vn-composite"', embed)
+        self.assertIn("/mount/file/bg/scene.jpg", embed)
+        self.assertIn("/mount/file/fg/amy.png", embed)
+        self.assertIn('class="lens-vn-bg"', embed)
+        self.assertIn('class="lens-vn-fg"', embed)
+
+    def test_is_single_line(self) -> None:
+        embed = build_layered_embed("bg/scene.jpg", "fg/amy.png")
+        self.assertNotIn("\n", embed)
+
+    def test_leading_slash_stripped_from_urls(self) -> None:
+        embed = build_layered_embed("/bg/scene.jpg", "/fg/amy.png")
+        self.assertIn("/mount/file/bg/scene.jpg", embed)
+        self.assertIn("/mount/file/fg/amy.png", embed)
+        self.assertNotIn("file//bg", embed)
+
+    def test_escapes_filename_with_quotes(self) -> None:
+        embed = build_layered_embed('bg/we"ird.jpg', "fg/amy.png")
+        self.assertNotIn('"we"ird.jpg"', embed)
+        self.assertIn("&quot;", embed)
 
 
 # ---------------------------------------------------------------------------
@@ -296,6 +324,79 @@ class TestAttachInsert(unittest.TestCase):
         attach(session, "hero.jpg", address="/", line=6)
         after = path.read_text()
         self.assertIn("/mount/file/hero.jpg", after)
+
+
+class TestAttachLayered(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        tmp = Path(self._tmp)
+        _init_repo(tmp)
+        self.root, self.node = _make_project(tmp, mount_subdir="media")
+        mount = tmp / "media"
+        (mount / "bg.jpg").write_bytes(b"\xff\xd8\xff\xe0")
+        (mount / "fg.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        (mount / "clip.mp4").write_bytes(b"\x00\x00\x00\x18")
+
+    def test_inserts_composite_embed_at_cursor_node(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        before = self.node.md_path().read_text()
+        result = attach_layered(session, "bg.jpg", "fg.png")
+        after = self.node.md_path().read_text()
+        self.assertEqual(result["type"], "image")
+        self.assertEqual(result["bg_path"], "bg.jpg")
+        self.assertEqual(result["fg_path"], "fg.png")
+        self.assertIn(result["embed"], after)
+        self.assertTrue(after.startswith(before.rstrip("\n")))
+        self.assertIn("/mount/file/bg.jpg", after)
+        self.assertIn("/mount/file/fg.png", after)
+
+    def test_leaves_pending_change_in_storage(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        attach_layered(session, "bg.jpg", "fg.png")
+        storage = Storage(self.root, owner=None)
+        self.assertTrue(storage.has_pending())
+
+    def test_non_image_bg_raises(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        with self.assertRaises(LensException) as ctx:
+            attach_layered(session, "clip.mp4", "fg.png")
+        self.assertIn("requires images", str(ctx.exception))
+
+    def test_non_image_fg_raises(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        with self.assertRaises(LensException) as ctx:
+            attach_layered(session, "bg.jpg", "clip.mp4")
+        self.assertIn("requires images", str(ctx.exception))
+
+    def test_missing_bg_file_raises(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        with self.assertRaises(LensException) as ctx:
+            attach_layered(session, "nope.jpg", "fg.png")
+        self.assertIn("file not found", str(ctx.exception))
+
+    def test_missing_fg_file_raises(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        with self.assertRaises(LensException) as ctx:
+            attach_layered(session, "bg.jpg", "nope.png")
+        self.assertIn("file not found", str(ctx.exception))
+
+    def test_no_mount_point_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp2:
+            p = Path(tmp2)
+            _init_repo(p)
+            _make_project(p)  # no mount_subdir
+            session = ProjectSession(p, p)
+            with self.assertRaises(LensException) as ctx:
+                attach_layered(session, "bg.jpg", "fg.png")
+            self.assertIn("no mount_point", str(ctx.exception))
+
+    def test_insert_at_line_pushes_existing_content_down(self) -> None:
+        session = ProjectSession(self.root, self.root)
+        attach_layered(session, "bg.jpg", "fg.png", address="/", line=3)
+        after = self.node.md_path().read_text()
+        self.assertIn("Some content.", after)
+        self.assertLess(after.index("lens-vn-composite"), after.index("Some content."))
 
 
 class TestAttachValidateAndInsert(unittest.TestCase):

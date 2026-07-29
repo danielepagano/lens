@@ -35,3 +35,23 @@ export function buildMountEmbedLine(relativePath: string): string {
   }
   return `[${fname}](/mount/file/${urlPath})`
 }
+
+function escapeHtmlAttr(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+}
+
+/** Mirrors `lens.core.commands.attach.build_layered_embed`. */
+export function buildLayeredMountEmbedLine(bgRelativePath: string, fgRelativePath: string): string {
+  const bgPath = bgRelativePath.replace(/^\//, '')
+  const fgPath = fgRelativePath.replace(/^\//, '')
+  const bgName = escapeHtmlAttr(bgPath.split('/').pop() ?? bgPath)
+  const fgName = escapeHtmlAttr(fgPath.split('/').pop() ?? fgPath)
+  const bgUrl = encodeMountPath(bgPath)
+  const fgUrl = encodeMountPath(fgPath)
+  return (
+    `<div class="lens-vn-composite">` +
+    `<img src="/mount/file/${bgUrl}" alt="${bgName}" class="lens-vn-bg">` +
+    `<img src="/mount/file/${fgUrl}" alt="${fgName}" class="lens-vn-fg">` +
+    `</div>`
+  )
+}

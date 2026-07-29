@@ -406,6 +406,40 @@ ul.tree-list li {
   display: contents;
 }
 
+/* Background+foreground composite attachment (see attach.build_layered_embed). Stacks the
+   foreground centered over the background in plain reading mode; VN mode renders this pair
+   from the structured playback API instead, ignoring this markup entirely.
+   The box takes the background's own natural aspect ratio (normal image flow, no forced
+   crop). The foreground is scaled to the same height as the background (never cropped
+   top/bottom — a character's head/feet must stay in frame) and centered horizontally;
+   only the sides may crop or gap if its aspect ratio doesn't exactly match the background's. */
+.lens-vn-composite {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  background: #0a0a0a;
+}
+
+.lens-vn-composite .lens-vn-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.lens-vn-composite .lens-vn-fg {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%);
+}
+
 .content code {  
   padding: 0.1rem 0.25rem;  
   font-family: monospace;

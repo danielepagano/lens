@@ -66,6 +66,13 @@ class MediaMetadata:
         d.update(self.extra)
         return d
 
+    def composite_role(self) -> str | None:
+        """Return ``"foreground"``/``"background"`` if the ``composite`` sidecar key is set, else ``None``."""
+        value = self.extra.get("composite")
+        if isinstance(value, str) and value.strip().lower() in ("foreground", "background"):
+            return value.strip().lower()
+        return None
+
 
 # ---------------------------------------------------------------------------
 # Path-based metadata resolver (no sidecar)

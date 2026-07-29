@@ -307,6 +307,10 @@ ARG_MEDIA_LINE = (
     "1-based line to insert after "
     "(default: append after last line of the node)."
 )
+ARG_MEDIA_FG = (
+    "Mount-relative path of a foreground image to layer over PATH "
+    "(background), creating a composite attachment."
+)
 ARG_TTS_ADDR = (
     "Narrative node address (e.g. /@cursor, /chapter-1). "
     "Optional line slice @N or @N:M (physical lines in the node file)."

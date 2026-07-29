@@ -4,6 +4,7 @@ import {
   attachFile,
   deleteMountPath,
   deleteMountPathConfirmed,
+  getMountMetadata,
   moveMountFile,
   uploadMountFile,
   getMountFilePath,
@@ -12,7 +13,13 @@ import {
   type MountEntry,
   type DeleteMountConfirmRequired,
 } from '../../services/api'
-import { buildMountEmbedLine } from '../../utils/mountEmbed'
+import { buildLayeredMountEmbedLine, buildMountEmbedLine } from '../../utils/mountEmbed'
+import { compositeRole, type CompositeRole } from '../../utils/mediaComposite'
+
+export interface PendingLayer {
+  path: string
+  role: CompositeRole
+}
 
 export type MediaCarouselHandlerCtx = {
   getRequest: () => MediaCarouselRequest | null
@@ -26,10 +33,83 @@ export type MediaCarouselHandlerCtx = {
   setUploading: (value: boolean) => void
   getPendingDeleteConfirm: () => boolean
   setPendingDeleteConfirm: (value: boolean) => void
+  getPendingLayer: () => PendingLayer | null
+  setPendingLayer: (value: PendingLayer | null) => void
   close: () => void
   onDone?: () => void
   loadDir: () => Promise<void>
   navigateTo: (dir: string) => Promise<void>
+}
+
+function orderLayers(pending: PendingLayer, selectedPath: string): { bgPath: string; fgPath: string } {
+  return pending.role === 'background'
+    ? { bgPath: pending.path, fgPath: selectedPath }
+    : { bgPath: selectedPath, fgPath: pending.path }
+}
+
+async function completeLayeredAttach(
+  ctx: MediaCarouselHandlerCtx,
+  request: MediaCarouselRequest,
+  pending: PendingLayer,
+  selectedPath: string,
+): Promise<void> {
+  const { bgPath, fgPath } = orderLayers(pending, selectedPath)
+  try {
+    const result = await attachFile(bgPath, {
+      fgPath,
+      ...(request.attachAddress ? { address: request.attachAddress } : {}),
+      ...(request.attachLine !== undefined ? { line: request.attachLine } : {}),
+    })
+    if (result.status === 'ok') {
+      ctx.setPendingLayer(null)
+      ctx.close()
+      ctx.onDone?.()
+      return
+    }
+    ctx.setError(result.detail ?? 'Attach failed')
+  } catch (e) {
+    ctx.setError(e instanceof Error ? e.message : String(e))
+  }
+}
+
+async function completeLayeredReplace(
+  ctx: MediaCarouselHandlerCtx,
+  addr: string,
+  ln: number,
+  pending: PendingLayer,
+  selectedPath: string,
+): Promise<void> {
+  const { bgPath, fgPath } = orderLayers(pending, selectedPath)
+  try {
+    const replacement = buildLayeredMountEmbedLine(bgPath, fgPath)
+    const result = await runEdit(
+      { address: addr, start_line: ln, end_line: ln, prompt: replacement, replace: true },
+      () => {},
+    )
+    if (result.type === 'error') {
+      ctx.setError(result.message)
+      return
+    }
+    ctx.setPendingLayer(null)
+    ctx.close()
+    ctx.onDone?.()
+  } catch (e) {
+    if (e instanceof StreamBusyError) {
+      ctx.setError(e.message)
+      return
+    }
+    ctx.setError(e instanceof Error ? e.message : String(e))
+  }
+}
+
+/** Composite role of *path*, or `null` on lookup failure (never blocks a plain attach/replace). */
+async function lookupCompositeRole(path: string): Promise<CompositeRole | null> {
+  try {
+    const meta = await getMountMetadata(path)
+    return compositeRole(meta)
+  } catch {
+    return null
+  }
 }
 
 export async function attachFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<void> {
@@ -37,20 +117,33 @@ export async function attachFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<
   const request = ctx.getRequest()
   if (!selectedPath || !request) return
   ctx.setError(null)
+
+  const pending = ctx.getPendingLayer()
+  if (pending && pending.path === selectedPath) {
+    ctx.setError('Pick a different file for the other layer.')
+    return
+  }
+
   if (request.mode === 'replace') {
     const addr = request.attachAddress
     const ln = request.replaceImageLine
     if (addr === undefined || ln === undefined) return
+
+    if (pending) {
+      await completeLayeredReplace(ctx, addr, ln, pending, selectedPath)
+      return
+    }
+
+    const role = await lookupCompositeRole(selectedPath)
+    if (role) {
+      ctx.setPendingLayer({ path: selectedPath, role })
+      return
+    }
+
     try {
       const replacement = buildMountEmbedLine(selectedPath)
       const result = await runEdit(
-        {
-          address: addr,
-          start_line: ln,
-          end_line: ln,
-          prompt: replacement,
-          replace: true,
-        },
+        { address: addr, start_line: ln, end_line: ln, prompt: replacement, replace: true },
         () => {},
       )
       if (result.type === 'error') {
@@ -68,6 +161,19 @@ export async function attachFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<
     }
     return
   }
+
+  if (pending) {
+    await completeLayeredAttach(ctx, request, pending, selectedPath)
+    return
+  }
+
+  // A background/foreground-tagged image pairs with its complementary layer before attaching.
+  const role = await lookupCompositeRole(selectedPath)
+  if (role) {
+    ctx.setPendingLayer({ path: selectedPath, role })
+    return
+  }
+
   try {
     const result = await attachFile(selectedPath, {
       ...(request.attachAddress ? { address: request.attachAddress } : {}),

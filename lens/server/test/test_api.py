@@ -439,6 +439,27 @@ class TestAttachEndpoint:
         assert "hero.jpg" in after
         assert after.index("hero.jpg") < after.index("Opening.")
 
+    def test_layered_attach_returns_ok(self, attach_client: TestClient) -> None:
+        r = attach_client.post(
+            "/test/attach", json={"path": "hero.jpg", "fg_path": "sub/photo.png"}
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "ok"
+        assert data["type"] == "image"
+        assert "hero.jpg" in data["embed"]
+        assert "sub/photo.png" in data["embed"]
+        assert "lens-vn-composite" in data["embed"]
+
+    def test_layered_attach_non_image_fg_returns_error(self, attach_client: TestClient) -> None:
+        r = attach_client.post(
+            "/test/attach", json={"path": "hero.jpg", "fg_path": "clip.mp4"}
+        )
+        assert r.status_code == 200
+        data = r.json()
+        assert data["status"] == "error"
+        assert "requires images" in data["detail"]
+
 
 class TestStatsHasMount:
     def test_has_mount_false_without_config(self, test_client: TestClient) -> None:

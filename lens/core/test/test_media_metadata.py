@@ -136,6 +136,52 @@ class TestResolvePathMetadata:
 
 
 # ---------------------------------------------------------------------------
+# composite_role
+# ---------------------------------------------------------------------------
+
+
+class TestCompositeRole:
+    def test_background(self) -> None:
+        meta = MediaMetadata(
+            relative_path="bg/scene.jpg", name="scene.jpg", extension=".jpg", type="image",
+            extra={"composite": "background"},
+        )
+        assert meta.composite_role() == "background"
+
+    def test_foreground(self) -> None:
+        meta = MediaMetadata(
+            relative_path="fg/amy.png", name="amy.png", extension=".png", type="image",
+            extra={"composite": "foreground"},
+        )
+        assert meta.composite_role() == "foreground"
+
+    def test_case_insensitive_and_trimmed(self) -> None:
+        meta = MediaMetadata(
+            relative_path="x.jpg", name="x.jpg", extension=".jpg", type="image",
+            extra={"composite": "  Foreground  "},
+        )
+        assert meta.composite_role() == "foreground"
+
+    def test_missing_key_returns_none(self) -> None:
+        meta = resolve_path_metadata("plain.jpg")
+        assert meta.composite_role() is None
+
+    def test_invalid_value_returns_none(self) -> None:
+        meta = MediaMetadata(
+            relative_path="x.jpg", name="x.jpg", extension=".jpg", type="image",
+            extra={"composite": "subject"},
+        )
+        assert meta.composite_role() is None
+
+    def test_non_string_value_returns_none(self) -> None:
+        meta = MediaMetadata(
+            relative_path="x.jpg", name="x.jpg", extension=".jpg", type="image",
+            extra={"composite": {"type": "foreground"}},
+        )
+        assert meta.composite_role() is None
+
+
+# ---------------------------------------------------------------------------
 # _sidecar_path and sidecar filtering
 # ---------------------------------------------------------------------------
 

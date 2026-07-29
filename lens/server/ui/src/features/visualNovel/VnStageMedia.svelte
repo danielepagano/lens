@@ -2,7 +2,9 @@
   type Props = {
     resolvedSrc?: string
     alt?: string
-    backdrop?: 'image' | 'video'
+    backdrop?: 'image' | 'video' | 'layered'
+    resolvedFgSrc?: string
+    fgAlt?: string
     explore?: boolean
     fitScroll?: boolean
     coarsePointer?: boolean
@@ -13,6 +15,8 @@
     resolvedSrc = '',
     alt = '',
     backdrop = 'image',
+    resolvedFgSrc = '',
+    fgAlt = '',
     explore = false,
     fitScroll = false,
     coarsePointer = false,
@@ -21,9 +25,9 @@
 </script>
 
 {#if explore}
-  {#if coarsePointer || backdrop === 'video'}
+  {#if coarsePointer || backdrop === 'video' || backdrop === 'layered'}
     <div class="vn-image-hit vn-image-hit--coarse-explore">
-      {#key resolvedSrc}
+      {#key resolvedSrc + resolvedFgSrc}
         {#if backdrop === 'video'}
           <!-- svelte-ignore a11y_media_has_caption -->
           <video
@@ -34,6 +38,11 @@
             preload="metadata"
             aria-label={alt}
           ></video>
+        {:else if backdrop === 'layered'}
+          <div class="vn-layered-wrap contain">
+            <img src={resolvedSrc} alt={alt} class="vn-layer-bg contain" draggable="false" />
+            <img src={resolvedFgSrc} alt={fgAlt} class="vn-layer-fg contain" draggable="false" />
+          </div>
         {:else}
           <img src={resolvedSrc} {alt} class="vn-scene-img contain" draggable="false" />
         {/if}
@@ -56,7 +65,7 @@
   {/if}
 {:else}
   <div class="vn-image-hit">
-    {#key resolvedSrc}
+    {#key resolvedSrc + resolvedFgSrc}
       {#if backdrop === 'video'}
         <video
           src={resolvedSrc}
@@ -68,6 +77,11 @@
           preload="metadata"
           aria-label={alt}
         ></video>
+      {:else if backdrop === 'layered'}
+        <div class="vn-layered-wrap">
+          <img src={resolvedSrc} alt={alt} class="vn-layer-bg cover" draggable="false" />
+          <img src={resolvedFgSrc} alt={fgAlt} class="vn-layer-fg cover" draggable="false" />
+        </div>
       {:else}
         <img src={resolvedSrc} {alt} class={['vn-scene-img', 'cover']} draggable="false" />
       {/if}
@@ -92,6 +106,7 @@
     font: inherit;
     color: inherit;
     cursor: default;
+    position: relative;
   }
   :global(.vn-image-stage.explore) .vn-image-hit:not(.fit-scroll) {
     position: relative;
@@ -171,5 +186,47 @@
     display: block;
     pointer-events: none;
     user-select: none;
+  }
+
+  /* Background+foreground composite scene. Both layers are scaled to the same height
+     (never cropped top/bottom — a character's head/feet must stay in frame) and
+     centered horizontally; only the sides may crop or gap. Matches the height:100%/
+     width:auto technique `.vn-scene-img.cover` already uses for plain single images,
+     applied to a stack (grid, not flex, so bg and fg overlap in the same cell). */
+  .vn-layered-wrap {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 100%;
+    grid-template-rows: 100%;
+    place-items: center;
+    overflow: hidden;
+  }
+  .vn-layer-bg,
+  .vn-layer-fg {
+    grid-area: 1 / 1;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+  }
+  .vn-layer-bg.cover,
+  .vn-layer-fg.cover {
+    width: auto;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+  }
+  /* Explore (zoomed) view: fully visible, letterboxed — no crop possible either way. */
+  .vn-layer-bg.contain,
+  .vn-layer-fg.contain {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+  .vn-layer-bg.contain {
+    background: #000;
   }
 </style>

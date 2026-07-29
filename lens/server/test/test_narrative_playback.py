@@ -171,6 +171,49 @@ def test_playback_manifest_includes_attach_video_embed(tmp_path: Path) -> None:
     assert items[2]["text"] == "Tail."
 
 
+def test_playback_manifest_includes_composite_embed(tmp_path: Path) -> None:
+    from lens.core.commands.attach import build_layered_embed
+    from lens.core.project import ProjectSession
+    from lens.server.main import create_app
+
+    _git_init(tmp_path)
+    (tmp_path / "lens.toml").write_text(
+        '[project]\nnarrative = "story"\nmount_point = "media"\n'
+    )
+    (tmp_path / "media").mkdir()
+    narrative_dir = tmp_path / "narrative" / "story"
+    narrative_dir.mkdir(parents=True)
+    embed = build_layered_embed("bg/scene.jpg", "fg/amy.png")
+    (narrative_dir / "_node.md").write_text(
+        f"Lead.\n\n{embed}\n\nTail.\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "n"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
+    )
+
+    session = ProjectSession(tmp_path, tmp_path)
+    app = create_app({"test": session})
+    with TestClient(app) as client:
+        r = client.get("/test/narrative/node/story/playback")
+    assert r.status_code == 200
+    items = r.json()["items"]
+    assert len(items) == 3
+    assert items[0]["type"] == "text"
+    assert items[0]["text"] == "Lead."
+    assert items[1]["type"] == "layered"
+    assert items[1]["bg_url"] == "bg/scene.jpg"
+    assert items[1]["bg_alt"] == "scene.jpg"
+    assert items[1]["fg_url"] == "fg/amy.png"
+    assert items[1]["fg_alt"] == "amy.png"
+    assert items[2]["type"] == "text"
+    assert items[2]["text"] == "Tail."
+
+
 def test_playback_adds_tts_front_matter_before_chunking_when_mount_configured(
     vn_client: TestClient, tmp_path: Path
 ) -> None:

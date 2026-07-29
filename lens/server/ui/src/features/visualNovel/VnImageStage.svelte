@@ -10,7 +10,9 @@
   type Props = {
     url: string | null
     alt: string
-    backdrop?: 'image' | 'video'
+    backdrop?: 'image' | 'video' | 'layered'
+    fgUrl?: string
+    fgAlt?: string
     blockBackgroundPointer?: boolean
     onPrev?: () => void
     onNext?: () => void
@@ -22,6 +24,8 @@
     url,
     alt,
     backdrop = 'image',
+    fgUrl = undefined,
+    fgAlt = '',
     blockBackgroundPointer = false,
     onPrev,
     onNext,
@@ -39,6 +43,7 @@
   )
 
   let resolvedSrc = $derived(url ? getMountFilePath(normalizeMountRelativePath(url)) : '')
+  let resolvedFgSrc = $derived(fgUrl ? getMountFilePath(normalizeMountRelativePath(fgUrl)) : '')
   let explore = $derived($vnImageExplore)
   let fitScroll = $derived(explore && $vnImageFitStep === 1 && !coarsePointer)
 
@@ -108,6 +113,8 @@
       {resolvedSrc}
       {alt}
       {backdrop}
+      {resolvedFgSrc}
+      {fgAlt}
       {explore}
       {fitScroll}
       {coarsePointer}

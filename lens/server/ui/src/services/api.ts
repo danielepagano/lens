@@ -1036,13 +1036,16 @@ export interface AttachResponse {
 export interface AttachParams {
   address?: string
   line?: number
+  /** Foreground layer path; when set, `path` is the background of a composite attachment. */
+  fgPath?: string
 }
 
 export const browseMountDir = (path = ''): Promise<MountEntry[]> =>
   get(projectPath(`/mount/browse?path=${encodeURIComponent(path)}`)) as Promise<MountEntry[]>
 
 export const attachFile = withStats((path: string, params?: AttachParams): Promise<AttachResponse> => {
-  const body: { path: string; address?: string; line?: number } = { path }
+  const body: { path: string; fg_path?: string; address?: string; line?: number } = { path }
+  if (params?.fgPath !== undefined) body.fg_path = params.fgPath
   if (params?.address !== undefined) body.address = params.address
   if (params?.line !== undefined) body.line = params.line
   return post(projectPath('/attach'), body) as Promise<AttachResponse>
@@ -1177,18 +1180,32 @@ export interface PlaybackVideoItem {
   url: string
 }
 
+/** Background+foreground composite scene (see `attach.build_layered_embed`). */
+export interface PlaybackLayeredItem {
+  type: 'layered'
+  line: number
+  bg_url: string
+  bg_alt: string
+  fg_url: string
+  fg_alt: string
+}
+
 export interface PlaybackChatSession {
   ai_label?: string
   human_label?: string
 }
 
-export type PlaybackItem = PlaybackTextItem | PlaybackImageItem | PlaybackVideoItem
+export type PlaybackItem =
+  | PlaybackTextItem
+  | PlaybackImageItem
+  | PlaybackVideoItem
+  | PlaybackLayeredItem
 
-/** Standalone scene layer in VN playback (image markdown or attach HTML video). */
+/** Standalone scene layer in VN playback (image/video markdown or a composite embed). */
 export function isVNBackdropItem(
   it: PlaybackItem,
-): it is PlaybackImageItem | PlaybackVideoItem {
-  return it.type === 'image' || it.type === 'video'
+): it is PlaybackImageItem | PlaybackVideoItem | PlaybackLayeredItem {
+  return it.type === 'image' || it.type === 'video' || it.type === 'layered'
 }
 
 export interface PlaybackResponse {
