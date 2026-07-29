@@ -410,8 +410,9 @@ ul.tree-list li {
    foreground centered over the background in plain reading mode; VN mode renders this pair
    from the structured playback API instead, ignoring this markup entirely.
    The box takes the background's own natural aspect ratio (normal image flow, no forced
-   crop) rather than a fixed shape — the two layers are expected to share the same canvas
-   dimensions, so the foreground lines up without needing to crop either one. */
+   crop). The foreground is scaled to the same height as the background (never cropped
+   top/bottom — a character's head/feet must stay in frame) and centered horizontally;
+   only the sides may crop or gap if its aspect ratio doesn't exactly match the background's. */
 .lens-vn-composite {
   position: relative;
   display: block;
@@ -431,11 +432,12 @@ ul.tree-list li {
 
 .lens-vn-composite .lens-vn-fg {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  top: 0;
+  left: 50%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%);
 }
 
 .content code {  

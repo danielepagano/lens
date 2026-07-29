@@ -188,34 +188,43 @@
     user-select: none;
   }
 
-  /* Background+foreground composite scene. */
+  /* Background+foreground composite scene. Both layers are scaled to the same height
+     (never cropped top/bottom — a character's head/feet must stay in frame) and
+     centered horizontally; only the sides may crop or gap. Matches the height:100%/
+     width:auto technique `.vn-scene-img.cover` already uses for plain single images,
+     applied to a stack (grid, not flex, so bg and fg overlap in the same cell). */
   .vn-layered-wrap {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+    display: grid;
+    grid-template-columns: 100%;
+    grid-template-rows: 100%;
+    place-items: center;
+    overflow: hidden;
   }
-  /* fg always mirrors bg's fit mode so the two layers scale/crop identically as the
-     viewport reshapes — they're expected to share the same canvas dimensions (see
-     attach.build_layered_embed), so a matching object-fit keeps them in registration. */
   .vn-layer-bg,
   .vn-layer-fg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+    grid-area: 1 / 1;
     display: block;
-    object-position: center;
     pointer-events: none;
     user-select: none;
   }
   .vn-layer-bg.cover,
   .vn-layer-fg.cover {
-    object-fit: cover;
+    width: auto;
+    height: 100%;
+    max-width: none;
+    max-height: none;
   }
+  /* Explore (zoomed) view: fully visible, letterboxed — no crop possible either way. */
   .vn-layer-bg.contain,
   .vn-layer-fg.contain {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
+    object-position: center;
   }
   .vn-layer-bg.contain {
     background: #000;
