@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+
 from lens.core.media.cache import MediaCache
 
 
@@ -120,3 +122,88 @@ class TestMediaCache:
     def test_maxsize_property(self) -> None:
         c = MediaCache(maxsize=500)
         assert c.maxsize == 500
+
+    def test_warmed_defaults_false(self) -> None:
+        c = MediaCache(maxsize=10)
+        assert c.warmed is False
+
+    def test_invalidate_all_resets_warmed(self) -> None:
+        c = MediaCache(maxsize=10)
+        c.warmed = True
+        c.invalidate_all()
+        assert c.warmed is False
+
+    def test_ensure_capacity_raises_maxsize_when_smaller(self) -> None:
+        c = MediaCache(maxsize=10)
+        c.ensure_capacity(50)
+        assert c.maxsize == 50
+
+    def test_ensure_capacity_is_noop_when_already_larger(self) -> None:
+        c = MediaCache(maxsize=100)
+        c.ensure_capacity(10)
+        assert c.maxsize == 100
+
+    def test_claim_warm_first_caller_wins_then_stays_claimed(self) -> None:
+        c = MediaCache(maxsize=10)
+        assert c.claim_warm() is True
+        assert c.warmed is True
+        assert c.claim_warm() is False
+        assert c.claim_warm() is False
+
+    def test_claim_warm_can_be_reclaimed_after_invalidate_all(self) -> None:
+        c = MediaCache(maxsize=10)
+        assert c.claim_warm() is True
+        c.invalidate_all()
+        assert c.claim_warm() is True
+
+
+class TestMediaCacheConcurrency:
+    """Regression coverage for the fact that this cache is genuinely shared
+    across real OS threads (FastAPI dispatches sync route handlers onto a
+    thread pool) rather than being a single-request, single-thread object."""
+
+    def test_concurrent_set_and_invalidate_prefix_does_not_raise(self) -> None:
+        c = MediaCache(maxsize=10_000)
+        errors: list[BaseException] = []
+
+        def writer(tid: int) -> None:
+            try:
+                for i in range(500):
+                    c.set(f"list:{tid}:{i}", i)
+            except BaseException as e:  # noqa: BLE001
+                errors.append(e)
+
+        def invalidator() -> None:
+            try:
+                for _ in range(500):
+                    c.invalidate_prefix("list:")
+            except BaseException as e:  # noqa: BLE001
+                errors.append(e)
+
+        threads = [threading.Thread(target=writer, args=(t,)) for t in range(6)]
+        threads += [threading.Thread(target=invalidator) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert errors == []
+
+    def test_claim_warm_only_one_thread_wins_under_a_real_race(self) -> None:
+        c = MediaCache(maxsize=10)
+        results: list[bool] = []
+        results_lock = threading.Lock()
+
+        def attempt() -> None:
+            won = c.claim_warm()
+            with results_lock:
+                results.append(won)
+
+        threads = [threading.Thread(target=attempt) for _ in range(20)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert results.count(True) == 1
+        assert results.count(False) == 19

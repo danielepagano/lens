@@ -10,6 +10,7 @@
     removeKvItem,
     removeListItem,
     removeRow,
+    RESERVED_KEYS,
     resetRowForKind,
     saveMetadataRows,
   } from './mediaMetadataHandlers'
@@ -34,6 +35,11 @@
   let savedKeys = $state<Set<string>>(new Set())
 
   let lastLoadedPath: string | null = null
+  // Bumped on every new load() so a slow, superseded request (opened file A,
+  // then quickly switched to file B before A's response landed) can detect
+  // it's stale and discard itself instead of overwriting B's state — or,
+  // for a save, closing B's dialog / applying A's savedKeys onto it.
+  let requestToken = 0
 
   $effect(() => {
     if (!dialog) return
@@ -53,19 +59,22 @@
   })
 
   async function load(p: string) {
+    const token = ++requestToken
     loading = true
     error = null
     try {
       const result = await loadMetadataRows(p)
+      if (token !== requestToken) return
       reserved = result.reserved
       rows = result.rows
       savedKeys = result.savedKeys
     } catch (e) {
+      if (token !== requestToken) return
       error = e instanceof Error ? e.message : String(e)
       reserved = null
       rows = []
     } finally {
-      loading = false
+      if (token === requestToken) loading = false
     }
   }
 
@@ -79,13 +88,17 @@
 
   async function handleSave() {
     if (!path) return
+    const token = requestToken
     saving = true
     error = null
     try {
-      await saveMetadataRows(path, rows, savedKeys)
-      handleClose()
+      const newKeys = await saveMetadataRows(path, rows, savedKeys)
+      if (token === requestToken) {
+        savedKeys = newKeys
+        handleClose()
+      }
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e)
+      if (token === requestToken) error = e instanceof Error ? e.message : String(e)
     } finally {
       saving = false
     }
@@ -197,6 +210,11 @@
                   aria-label="Remove field"
                 >✕</button>
               </div>
+              {#if RESERVED_KEYS.has(row.key.trim())}
+                <p class="meta-key-warning" role="alert">
+                  "{row.key.trim()}" is a reserved name — this field won't be saved.
+                </p>
+              {/if}
 
               <div class="meta-field-row2">
                 {#if row.kind === 'text' || row.kind === 'number'}
@@ -353,5 +371,10 @@
     color: var(--pico-del-color, #e05c5c);
     font-size: 0.82rem;
     margin: 0.4rem 0 0 0;
+  }
+  .meta-key-warning {
+    color: var(--pico-del-color, #e05c5c);
+    font-size: 0.75rem;
+    margin: 0;
   }
 </style>

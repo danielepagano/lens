@@ -94,13 +94,13 @@ class MediaService:
 
     def put_file(self, dir_path: str, filename: str, data: BinaryIO) -> str:
         result = self._backend.put_file(dir_path, filename, data)
-        self._cache.invalidate_prefix(f"list:{dir_path}")
+        _invalidate_listing_chain(self._cache, dir_path)
         return result
 
     def delete(self, subpath: str) -> str:
         result = self._backend.delete(subpath)
         dir_path = _parent_dir(subpath)
-        self._cache.invalidate_prefix(f"list:{dir_path}")
+        _invalidate_listing_chain(self._cache, dir_path)
         self._cache.invalidate(f"info:{subpath}")
         self._cache.invalidate(f"exists:{subpath}")
         self._cache.invalidate(f"meta:{subpath}")
@@ -111,8 +111,8 @@ class MediaService:
         result = self._backend.move(src, dst)
         src_dir = _parent_dir(src)
         dst_dir = _parent_dir(dst)
-        self._cache.invalidate_prefix(f"list:{src_dir}")
-        self._cache.invalidate_prefix(f"list:{dst_dir}")
+        _invalidate_listing_chain(self._cache, src_dir)
+        _invalidate_listing_chain(self._cache, dst_dir)
         self._cache.invalidate(f"info:{src}")
         self._cache.invalidate(f"exists:{src}")
         self._cache.invalidate(f"meta:{src}")
@@ -123,7 +123,7 @@ class MediaService:
     def delete_tree(self, subpath: str) -> None:
         self._backend.delete_tree(subpath)
         parent = _parent_dir(subpath)
-        self._cache.invalidate_prefix(f"list:{parent}")
+        _invalidate_listing_chain(self._cache, parent)
         self._cache.invalidate(f"info:{subpath}")
         self._cache.invalidate(f"exists:{subpath}")
         self._cache.invalidate(f"meta:{subpath}")
@@ -133,8 +133,8 @@ class MediaService:
         self._backend.move_tree(src, dst)
         src_dir = _parent_dir(src)
         dst_dir = _parent_dir(dst)
-        self._cache.invalidate_prefix(f"list:{src_dir}")
-        self._cache.invalidate_prefix(f"list:{dst_dir}")
+        _invalidate_listing_chain(self._cache, src_dir)
+        _invalidate_listing_chain(self._cache, dst_dir)
         # move sidecar
         self._move_sidecar(src, dst)
 
@@ -148,13 +148,15 @@ class MediaService:
         key = f"meta:{relative_path}"
         # Cache the now-current (sidecar-less) metadata rather than just
         # invalidating, so the next get_metadata() is a hit instead of a
-        # forced round-trip to confirm the sidecar is gone. If the media
-        # file itself doesn't exist there's nothing valid to cache.
-        try:
-            meta = self._store.get_metadata(relative_path)
-        except FileNotFoundError:
+        # forced round-trip to confirm the sidecar is gone. Reuse the
+        # cached (rather than raw) file_info existence check, and build the
+        # metadata locally — resolve_path_metadata is pure path parsing, no
+        # I/O — instead of paying MediaStore.get_metadata()'s existence
+        # check *and* a re-read of the sidecar we just deleted ourselves.
+        if self.get_file_info(relative_path) is None:
             self._cache.invalidate(key)
             return
+        meta = resolve_path_metadata(relative_path)
         self._cache.set(key, meta)
 
     # ------------------------------------------------------------------
@@ -178,9 +180,13 @@ class MediaService:
     # ------------------------------------------------------------------
 
     def _ensure_warmed(self) -> None:
-        """Trigger a bulk cache warm-up on first use."""
-        if not self._warmed:
-            self._warmed = True
+        """Trigger a bulk cache warm-up on first use.
+
+        ``claim_warm()`` is an atomic check-and-set on the shared MediaCache,
+        so two concurrent requests racing in cold can't both kick off a
+        redundant full ``warm_cache()`` mount scan.
+        """
+        if self._cache.claim_warm():
             self.warm_cache()
 
     def warm_cache(self) -> None:
@@ -193,6 +199,12 @@ class MediaService:
         all_files = self._backend.walk_all("")
         if not all_files:
             return
+
+        # One `list:` entry per directory plus one `meta:` entry per file —
+        # size the cache to hold the whole pass so it doesn't evict its own
+        # freshly-warmed entries mid-pass (which would silently leave
+        # `warmed` claiming full coverage the cache no longer has).
+        self._cache.ensure_capacity(len(all_files) * 2 + 16)
 
         file_set = set(all_files)
 
@@ -339,3 +351,21 @@ def _parent_dir(subpath: str) -> str:
     if "/" in clean:
         return clean.rsplit("/", 1)[0]
     return ""
+
+
+def _invalidate_listing_chain(cache: MediaCache, dir_path: str) -> None:
+    """Invalidate ``list:`` entries for *dir_path* and every ancestor up to root.
+
+    A write into *dir_path* only becomes visible if *dir_path* was already
+    present in its parent's cached listing — and that parent may itself be
+    newly created (or, on prefix-style backends like S3, a directory can
+    vanish from its parent's listing once its last file is deleted). Either
+    way, invalidating only the directory itself isn't enough; walk the whole
+    ancestor chain.
+    """
+    dir_path = dir_path.rstrip("/")
+    cache.invalidate_prefix(f"list:{dir_path}")
+    parent = dir_path
+    while parent:
+        parent = _parent_dir(parent)
+        cache.invalidate_prefix(f"list:{parent}")

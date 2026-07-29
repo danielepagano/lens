@@ -6,7 +6,7 @@ import type {
   ReservedMetadata,
 } from './mediaMetadataTypes'
 
-const RESERVED_KEYS = new Set(['relative_path', 'name', 'extension', 'type'])
+export const RESERVED_KEYS = new Set(['relative_path', 'name', 'extension', 'type'])
 
 let nextId = 0
 function newId(prefix: string): string {
@@ -101,7 +101,7 @@ function rowValue(row: MetadataFieldRow): unknown {
   }
 }
 
-function rowsToExtra(rows: MetadataFieldRow[]): Record<string, unknown> {
+export function rowsToExtra(rows: MetadataFieldRow[]): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const row of rows) {
     const key = row.key.trim()
@@ -139,7 +139,19 @@ export async function saveMetadataRows(
     await deleteMountMetadata(path)
   }
   if (newKeys.size > 0) {
-    await updateMountMetadata(path, extra)
+    try {
+      await updateMountMetadata(path, extra)
+    } catch (e) {
+      // The wipe above already landed — retrying is safe (delete is a no-op
+      // the second time) and will re-send every current field, so make that
+      // explicit rather than leaving the user to guess what state it's in.
+      const msg = e instanceof Error ? e.message : String(e)
+      throw new Error(
+        removedKey
+          ? `Cleared the old fields but failed to save the new ones (${msg}). Click Save again to retry.`
+          : msg,
+      )
+    }
   }
   return newKeys
 }

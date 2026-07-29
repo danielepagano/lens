@@ -34,6 +34,20 @@ def _touch(svc: MediaService, rel: str) -> None:
     svc.put_file(dir_part, name, io.BytesIO(b"hello"))
 
 
+class _CountingBackend(LocalMountBackend):
+    """LocalMountBackend that counts raw get_file_info calls, to assert a
+    fix actually avoids a redundant backend round-trip rather than just
+    happening to return the right answer."""
+
+    def __init__(self, root: Path) -> None:
+        super().__init__(root)
+        self.get_file_info_calls = 0
+
+    def get_file_info(self, subpath: str) -> tuple[int, str] | None:
+        self.get_file_info_calls += 1
+        return super().get_file_info(subpath)
+
+
 # ---------------------------------------------------------------------------
 # list_dir — caching + sidecar filtering
 # ---------------------------------------------------------------------------
@@ -198,6 +212,40 @@ class TestCacheInvalidation:
         svc.move("amy.jpg", "bob.jpg")
         assert svc.cache.get("list:") is None
 
+    def test_put_file_into_new_subdirectory_updates_parent_listing(self) -> None:
+        # Regression: put_file used to invalidate only the directory it
+        # wrote into, never its parent — so uploading into a brand-new
+        # (not-yet-listed) subfolder left that subfolder invisible in the
+        # root listing until something unrelated forced a full reset.
+        svc, _ = _make_service()
+        _touch(svc, "root.jpg")
+        svc.list_dir("")  # warm root, "characters" doesn't exist yet
+        svc.put_file("characters", "amy.jpg", io.BytesIO(b"hi"))
+        root = svc.list_dir("")
+        assert root is not None
+        names = {e["name"] for e in root}
+        assert "characters" in names
+
+    def test_put_file_into_deeply_new_path_updates_every_ancestor(self) -> None:
+        svc, _ = _make_service()
+        svc.list_dir("")  # warm root (empty)
+        svc.put_file("a/b/c", "deep.jpg", io.BytesIO(b"hi"))
+        root = svc.list_dir("")
+        a = svc.list_dir("a")
+        a_b = svc.list_dir("a/b")
+        assert root is not None and {e["name"] for e in root} == {"a"}
+        assert a is not None and {e["name"] for e in a} == {"b"}
+        assert a_b is not None and {e["name"] for e in a_b} == {"c"}
+
+    def test_move_into_new_subdirectory_updates_destination_ancestors(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "amy.jpg")
+        svc.list_dir("")  # warm root, "characters" doesn't exist yet
+        svc.move("amy.jpg", "characters/amy.jpg")
+        root = svc.list_dir("")
+        assert root is not None
+        assert {e["name"] for e in root} == {"characters"}
+
     def test_move_also_moves_sidecar(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "amy.jpg")
@@ -219,6 +267,22 @@ class TestCacheInvalidation:
         cached = svc.cache.get("meta:amy.jpg")
         assert cached is not None
         assert cached.extra.get("character") == "amy"
+
+    def test_delete_metadata_reuses_cached_file_info(self) -> None:
+        # delete_metadata should confirm the file still exists via the
+        # *cached* get_file_info, not a fresh raw backend round-trip —
+        # and shouldn't re-read the sidecar it just deleted either.
+        tmp = Path(tempfile.mkdtemp(prefix="lens_test_svc_"))
+        backend = _CountingBackend(tmp)
+        svc = MediaService(backend, cache=MediaCache(maxsize=100))
+        _touch(svc, "amy.jpg")
+        svc.update_metadata("amy.jpg", {"character": "amy"})
+        svc.get_file_info("amy.jpg")  # warm the info: cache, as a real GET would
+
+        backend.get_file_info_calls = 0
+        svc.delete_metadata("amy.jpg")
+        assert backend.get_file_info_calls == 0
+        assert svc.get_metadata("amy.jpg").extra == {}
 
     def test_delete_metadata_caches_fresh_empty_result(self) -> None:
         # delete_metadata caches the now-current (sidecar-less) metadata
