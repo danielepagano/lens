@@ -1112,6 +1112,33 @@ export function getMountPreviewPath(path: string): string {
   return projectPath(`/mount/preview/${path}`)
 }
 
+/** Flat metadata for a mount file: reserved path-derived keys + sidecar keys. */
+export interface MountMetadata {
+  relative_path: string
+  name: string
+  extension: string
+  type: string
+  [key: string]: unknown
+}
+
+export const getMountMetadata = (path: string): Promise<MountMetadata> =>
+  get(projectPath(`/mount/metadata/${path}`)) as Promise<MountMetadata>
+
+export const updateMountMetadata = withStats(
+  (path: string, metadata: Record<string, unknown>): Promise<MountMetadata> =>
+    put(projectPath(`/mount/metadata/${path}`), { metadata }) as Promise<MountMetadata>
+)
+
+export interface DeleteMountMetadataResponse {
+  status: string
+  path: string
+}
+
+export const deleteMountMetadata = withStats(
+  (path: string): Promise<DeleteMountMetadataResponse> =>
+    del(projectPath(`/mount/metadata/${path}`)) as Promise<DeleteMountMetadataResponse>
+)
+
 export const getNodeAddresses = async (): Promise<string[]> => {
   const tree = await getTree()
   function flatten(nodes: TreeNode[]): string[] {

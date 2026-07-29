@@ -50,6 +50,7 @@ def create_app(sessions: dict[str, ProjectSession]) -> FastAPI:
     app.state.projects = sessions       # dict[str, ProjectSession]
     app.state.stream_locks = {}         # dict[str, StreamLock] — lazily created per project
     app.state.tts_coordinator = TtsChunkCoordinator()
+    app.state.media_caches = {}  # dict[str, MediaCache]
     for _importer, modname, _ispkg in sorted(
         pkgutil.iter_modules(routes_pkg.__path__), key=lambda m: m[1]
     ):

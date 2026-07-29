@@ -29,6 +29,7 @@
     renaming?: boolean
     renameValue?: string
     chromeless?: boolean
+    onOpenMetadata?: () => void
   } & MediaSpotlightCallbacks
 
   let {
@@ -41,6 +42,7 @@
     renaming = false,
     renameValue = '',
     chromeless = false,
+    onOpenMetadata,
     onAttach,
     onDownload,
     onStartRename,
@@ -64,6 +66,7 @@
   )
   let spotlightFill = $derived(isPlainPre || isMarkdownPreview || isVideo || isAudio)
   let imageSrc = $derived(previewSrc ?? (path ? getMountFilePath(path) : ''))
+  let showInfoButton = $derived(path !== null && !isDir && !(chromeless && isImage))
 
   let plainPreview = $state.raw<PlainPreviewState>(createPlainPreviewState())
 
@@ -123,6 +126,14 @@
           plainPreviewText={plainPreview.text}
         />
       {/if}
+      {#if showInfoButton}
+        <button
+          type="button"
+          class="spotlight-info-btn"
+          aria-label="Show metadata"
+          onclick={() => onOpenMetadata?.()}
+        >i</button>
+      {/if}
     {/if}
   </div>
 
@@ -171,6 +182,30 @@
     opacity: 0.75;
   }
   .spotlight-close:hover {
+    opacity: 1;
+  }
+  .spotlight-info-btn {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.45);
+    border: none;
+    color: #fff;
+    font-size: 0.85rem;
+    font-style: italic;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    opacity: 0.75;
+  }
+  .spotlight-info-btn:hover {
     opacity: 1;
   }
 </style>

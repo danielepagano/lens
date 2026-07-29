@@ -16,8 +16,9 @@ from lens.core.commands.attach import (
     update_media_references,
 )
 from lens.core.exceptions import LensException
-from lens.core.project import ProjectSession, get_mount_backend
-from lens.server.dependencies import get_session
+from lens.core.media import MediaService
+from lens.core.project import ProjectSession
+from lens.server.dependencies import get_media_service, get_session
 
 router = APIRouter(prefix="/{project_slug}")
 
@@ -44,21 +45,17 @@ def preview_mount_file(project_slug: str, path: str) -> StreamingResponse:  # no
 @router.get("/mount/browse")
 def browse_mount(
     path: str = "",
-    session: ProjectSession = Depends(get_session),
+    media: MediaService | None = Depends(get_media_service),
 ) -> list[dict[str, Any]]:
     """List entries in a mount-relative directory.
 
     Returns [{name, is_dir}] sorted: dirs first, then files.
     Returns [] if mount is not configured or path points to a file.
     """
-    try:
-        backend = get_mount_backend(session.project_root)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
-    if backend is None:
+    if media is None:
         return []
     try:
-        entries = backend.list_dir(path)
+        entries = media.list_dir(path)
     except Exception as e:
         _raise_mount_storage_error(e)
     if entries is None:
@@ -70,7 +67,7 @@ def browse_mount(
 def proxy_mount_file(
     path: str,
     request: Request,
-    session: ProjectSession = Depends(get_session),
+    media: MediaService | None = Depends(get_media_service),
 ) -> StreamingResponse:
     """Proxy a mount-relative file, serving it with the appropriate MIME type.
 
@@ -79,15 +76,11 @@ def proxy_mount_file(
     - Local mount backend (via Starlette's FileResponse which handles Range).
     - S3 mount backend (via ``Range`` on GetObject).
     """
-    try:
-        backend = get_mount_backend(session.project_root)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
-    if backend is None:
+    if media is None:
         raise HTTPException(status_code=404, detail="no mount configured")
 
     try:
-        info = backend.get_file_info(path)
+        info = media.get_file_info(path)
     except Exception as e:
         _raise_mount_storage_error(e)
     if info is None:
@@ -97,7 +90,7 @@ def proxy_mount_file(
     range_hdr = request.headers.get("range")
     if not range_hdr:
         try:
-            stream = backend.stream_file_range(path, start=None, end=None)
+            stream = media.stream_file_range(path, start=None, end=None)
         except Exception as e:
             _raise_mount_storage_error(e)
         if stream is None:
@@ -136,7 +129,7 @@ def proxy_mount_file(
     length = end - start + 1
 
     try:
-        stream = backend.stream_file_range(path, start=start, end=end)
+        stream = media.stream_file_range(path, start=start, end=end)
     except Exception as e:
         _raise_mount_storage_error(e)
     if stream is None:
@@ -153,18 +146,14 @@ def proxy_mount_file(
 async def upload_mount_file(
     dir: str = Form(...),
     file: UploadFile = File(...),
-    session: ProjectSession = Depends(get_session),
+    media: MediaService | None = Depends(get_media_service),
 ) -> dict[str, Any]:
     """Upload a file to a mount-relative directory, creating it if needed."""
-    try:
-        backend = get_mount_backend(session.project_root)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
-    if backend is None:
+    if media is None:
         raise HTTPException(status_code=400, detail="no mount configured")
     filename = Path(file.filename or "upload").name
     try:
-        rel_path = backend.put_file(dir, filename, file.file)
+        rel_path = media.put_file(dir, filename, file.file)
     except FileExistsError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
@@ -176,6 +165,7 @@ async def upload_mount_file(
 def delete_mount_file(
     path: str,
     request: Request,
+    media: MediaService | None = Depends(get_media_service),
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
     """Delete a mount-relative file or empty directory.
@@ -185,11 +175,7 @@ def delete_mount_file(
     may then re-send with ``?confirmed=true`` to perform the actual deletion
     plus reference cleanup.
     """
-    try:
-        backend = get_mount_backend(session.project_root)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
-    if backend is None:
+    if media is None:
         raise HTTPException(status_code=404, detail="no mount configured")
 
     confirmed = request.query_params.get("confirmed", "false").lower() == "true"
@@ -207,7 +193,7 @@ def delete_mount_file(
         refs_cleaned = remove_media_references(session.project_root, path)
 
     try:
-        backend.delete(path)
+        media.delete(path)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"not found: {path}")
     except PermissionError as e:
@@ -227,17 +213,14 @@ class MoveMountRequest(BaseModel):
 def move_mount_file(
     path: str,
     body: MoveMountRequest,
+    media: MediaService | None = Depends(get_media_service),
     session: ProjectSession = Depends(get_session),
 ) -> dict[str, Any]:
     """Move/rename a mount-relative file and update embed references in narrative/knowledge."""
-    try:
-        backend = get_mount_backend(session.project_root)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"mount backend error: {e}")
-    if backend is None:
+    if media is None:
         raise HTTPException(status_code=404, detail="no mount configured")
     try:
-        new_path = backend.move(path, body.to)
+        new_path = media.move(path, body.to)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"not found: {path}")
     except FileExistsError as e:

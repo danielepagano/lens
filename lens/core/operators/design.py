@@ -32,6 +32,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Any, ClassVar
 
 from lens.core.annotations import ParsedAnnotation
@@ -39,7 +40,8 @@ from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import crawl
 from lens.core.exceptions import ValidationError, OperatorError
 from lens.core.generation_artifacts import GenerationArtifacts
-from lens.core.llm import LLMError
+from lens.core.command_tools import build_media_search_tool_entry
+from lens.core.llm import CommandToolsBundle, LLMError, build_command_tools_bundle
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import extract_annotation_content, build_feedback_messages
@@ -63,6 +65,20 @@ class DesignOperator(SessionOperator):
     required_modalities: ClassVar[frozenset[str]] = frozenset(
         {"kb_fence", "tool_fence_awareness"}
     )
+
+    @classmethod
+    def _inline_command_tools_bundle(
+        cls,
+        project_root: Path,
+        ann_params: dict[str, Any],
+    ) -> CommandToolsBundle | None:
+        base = build_command_tools_bundle(project_root)
+        tool_spec, handler = build_media_search_tool_entry()
+        tools = list(base.tools) if base.tools else []
+        handlers = dict(base.handlers) if base.handlers else {}
+        tools.append(tool_spec)
+        handlers["media_search"] = handler
+        return CommandToolsBundle(tools=tools, handlers=handlers)
 
     @property
     def system_prompt(self) -> str:

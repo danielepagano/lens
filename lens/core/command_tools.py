@@ -1,4 +1,5 @@
-"""Command tools: lightweight KB lookup tools callable mid-LLM-generation.
+"""Command tools: lightweight KB lookup and media search tools callable
+mid-LLM-generation.
 
 Command tools execute *inline* within the generation loop.  After each handler
 returns a string result, the assistant turn + tool results are appended to the
@@ -366,3 +367,114 @@ register_command_tool(
     ),
     _kb_with_tag,
 )
+
+# ---------------------------------------------------------------------------
+# media_search handler — searches the project's media mount
+# ---------------------------------------------------------------------------
+
+
+def _format_search_result(relative_path: str, score: int) -> str:
+    return f"  [{score}] {relative_path}"
+
+
+async def _media_search(args: dict[str, Any], project_root: Path) -> str:
+    from lens.core.media import MediaCache, MediaService, SearchPage
+    from lens.core.project import get_mount_backend
+
+    query: str = (args.get("query") or "").strip()
+    if not query:
+        return "(error: query is required)"
+
+    raw_page = args.get("page")
+    page: int = 1
+    if raw_page is not None:
+        try:
+            page = int(raw_page)
+        except (ValueError, TypeError):
+            return f"(error: invalid page number: {raw_page})"
+
+    backend = get_mount_backend(project_root)
+    if backend is None:
+        return "(no media mount configured — set [project] mount_point in lens.toml)"
+
+    svc = MediaService(backend, cache=MediaCache())
+    result: SearchPage = svc.search(query, page=page)
+
+    if not result.items:
+        if result.total_items == 0:
+            return "(no results found for query)"
+        return f"(page {result.current_page} is empty — query has {result.total_items} total results across {result.total_pages} pages)"
+
+    lines: list[str] = [
+        f"Media search results (page {result.current_page}/{result.total_pages}, "
+        f"{len(result.items)} of {result.total_items} total):"
+    ]
+    for r in result.items:
+        lines.append(_format_search_result(r.relative_path, r.score))
+
+    if result.current_page < result.total_pages:
+        lines.append(
+            f"\n[Use media_search with page={result.current_page + 1} to see the next page.]"
+        )
+
+    lines.append(
+        "\n---\nTo refine your search: use required terms (word!) to narrow, "
+        "key:value to filter by metadata (e.g. type:image), "
+        "and optional terms to rank results."
+    )
+    return "\n".join(lines)
+
+
+MEDIA_SEARCH_TOOL_DEF = CommandToolDef(
+    description=(
+        "Search media files on the project's mount (images, videos, audio, documents). "
+        "Query syntax — space-separated tokens:\n"
+        "  word!       — required term (must appear somewhere in the file path or metadata)\n"
+        "  key:value   — filter by metadata key=value (e.g. type:image, character:amy)\n"
+        "  path/sub:val — nested metadata filter (e.g. composite/type:subject)\n"
+        "  word        — optional keyword (helps rank results; at least one must match)\n\n"
+        "ALWAYS use required terms (word!) when you know what you need. "
+        "Use optional keywords to disambiguate between similar results. "
+        "Examples:\n"
+        '  - "amy!" → find anything related to "amy"\n'
+        '  - "type:image character:amy" → all images tagged with character=amy\n'
+        '  - "house! bed couch" → files containing "house" (required), ranked by "bed" and "couch"\n\n'
+        "Results are returned 20 per page.  Use the page parameter to navigate."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": (
+                    "Search query string. Space-separated tokens: "
+                    "word! for required terms, key:value for metadata filters, "
+                    "word for optional ranking keywords. "
+                    "Examples: 'amy!', 'type:image character:amy', 'house! bed couch'."
+                ),
+            },
+            "page": {
+                "type": "integer",
+                "description": "Page number (1-indexed, default 1, max 20 results per page).",
+            },
+        },
+        "required": ["query"],
+    },
+)
+
+
+def build_media_search_tool_entry() -> tuple[dict[str, Any], CommandToolFn]:
+    """Build a single tool-entry for media_search.
+
+    Returns (openai_tool_dict, handler) for manual wiring into an operator's
+    ``_inline_command_tools_bundle``.
+    """
+    tool_spec = {
+        "type": "function",
+        "function": {
+            "name": "media_search",
+            "description": MEDIA_SEARCH_TOOL_DEF.description,
+            "parameters": MEDIA_SEARCH_TOOL_DEF.parameters,
+        },
+    }
+    return tool_spec, _media_search

@@ -329,6 +329,31 @@ class TestLocalMountBackend(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             self._backend.move_tree("t1", "t2")
 
+    # --- walk_all ---
+
+    def test_walk_all_returns_all_files(self) -> None:
+        files = self._backend.walk_all("")
+        self.assertIn("hero.jpg", files)
+        self.assertIn("clip.mp4", files)
+        self.assertIn("doc.pdf", files)
+        self.assertIn("notes.txt", files)
+        self.assertIn("sub/photo.png", files)
+        # hidden and unsupported are excluded
+        self.assertNotIn(".hidden", files)
+        self.assertNotIn("script.sh", files)
+
+    def test_walk_all_empty_dir(self) -> None:
+        empty = Path(tempfile.mkdtemp())
+        backend = LocalMountBackend(empty)
+        self.assertEqual(backend.walk_all(""), [])
+
+    def test_walk_all_subpath(self) -> None:
+        files = self._backend.walk_all("sub")
+        self.assertEqual(files, ["sub/photo.png"])
+
+    def test_walk_all_file_path_returns_empty(self) -> None:
+        self.assertEqual(self._backend.walk_all("hero.jpg"), [])
+
 
 # ---------------------------------------------------------------------------
 # S3MountBackend
@@ -491,6 +516,23 @@ class TestS3MountBackend(UsesMotoS3Env):
         self.assertFalse(self._backend.file_exists("old/x.mp3"))
         self.assertTrue(self._backend.file_exists("new/x.mp3"))
 
+    # --- walk_all ---
+
+    def test_walk_all_returns_all_files(self) -> None:
+        files = self._backend.walk_all("")
+        self.assertIn("hero.jpg", files)
+        self.assertIn("clip.mp4", files)
+        self.assertIn("sub/photo.png", files)
+        self.assertNotIn(".hidden", files)
+        self.assertNotIn("script.sh", files)
+
+    def test_walk_all_subpath(self) -> None:
+        files = self._backend.walk_all("sub")
+        self.assertEqual(files, ["sub/photo.png"])
+
+    def test_walk_all_file_path_returns_empty(self) -> None:
+        self.assertEqual(self._backend.walk_all("hero.jpg"), [])
+
 
 # ---------------------------------------------------------------------------
 # S3MountBackend with prefix
@@ -522,6 +564,10 @@ class TestS3MountBackendWithPrefix(UsesMotoS3Env):
         data = io.BytesIO(b"x")
         self._backend.put_file("", "new.png", data)
         self._s3.head_object(Bucket=_BUCKET, Key="media/new.png")
+
+    def test_walk_all_respects_prefix(self) -> None:
+        files = self._backend.walk_all("")
+        self.assertEqual(files, ["hero.jpg"])
 
 
 # ---------------------------------------------------------------------------

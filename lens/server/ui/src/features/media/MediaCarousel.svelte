@@ -6,6 +6,7 @@
   import MediaSpotlight from './MediaSpotlight.svelte'
   import MediaCarouselHeader from './MediaCarouselHeader.svelte'
   import MediaCarouselStripToolbar from './MediaCarouselStripToolbar.svelte'
+  import MediaMetadataPanel from './MediaMetadataPanel.svelte'
   import {
     attachFromCarousel,
     confirmRenameInCarousel,
@@ -106,11 +107,13 @@
   let selectedIsImage = $derived(!!(selectedPath && isMountImagePath(selectedPath)))
 
   let imageChromeless = $state(false)
+  let metadataOpen = $state(false)
   let prevSpotlightPath: string | null = null
   $effect(() => {
     if (selectedPath !== prevSpotlightPath) {
       prevSpotlightPath = selectedPath
       imageChromeless = false
+      metadataOpen = false
     }
   })
 
@@ -225,6 +228,9 @@
           {renaming}
           {renameValue}
           chromeless={imageChromeless}
+          onOpenMetadata={() => {
+            metadataOpen = true
+          }}
           onAttach={() => void attachFromCarousel(handlerCtx())}
           onDownload={() => downloadFromCarousel(handlerCtx())}
           onStartRename={handleStartRename}
@@ -241,6 +247,14 @@
           }}
         />
       {/if}
+
+      <MediaMetadataPanel
+        path={selectedPath}
+        open={metadataOpen}
+        onClose={() => {
+          metadataOpen = false
+        }}
+      />
 
       {#if uploading}
         <div class="carousel-uploading">Uploading…</div>
