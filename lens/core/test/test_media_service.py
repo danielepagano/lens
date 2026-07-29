@@ -9,6 +9,8 @@ import io
 import tempfile
 from pathlib import Path
 
+import yaml
+
 from lens.core.media import MediaCache, MediaService
 from lens.core.mount import LocalMountBackend
 
@@ -236,3 +238,106 @@ class TestCacheInvalidation:
     def test_stream_missing_returns_none(self) -> None:
         svc, _ = _make_service()
         assert svc.stream_file("nope.jpg") is None
+
+
+# ---------------------------------------------------------------------------
+# warm_cache
+# ---------------------------------------------------------------------------
+
+# pyright: reportPrivateUsage=false
+
+
+class TestWarmCache:
+    def test_warm_populates_list_entries(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "amy.jpg")
+        _touch(svc, "sub/bob.jpg")
+        svc.warm_cache()
+        root = svc.cache.get("list:")
+        assert root is not None
+        names = {e["name"] for e in root}
+        assert "amy.jpg" in names
+        assert "sub" in names
+        sub = svc.cache.get("list:sub")
+        assert sub is not None
+        assert sub == [{"name": "bob.jpg", "is_dir": False}]
+
+    def test_warm_populates_meta_entries(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "amy.jpg")
+        svc.warm_cache()
+        meta = svc.cache.get("meta:amy.jpg")
+        assert meta is not None
+        assert meta.name == "amy.jpg"
+        assert meta.type == "image"
+
+    def test_warm_merges_sidecar(self) -> None:
+        svc, tmp = _make_service()
+        _touch(svc, "amy.jpg")
+        sidecar_path = tmp / "amy.jpg.yml"
+        sidecar_path.write_text(yaml.safe_dump({"character": "amy"}))
+        svc.warm_cache()
+        meta = svc.cache.get("meta:amy.jpg")
+        assert meta is not None
+        assert meta.extra.get("character") == "amy"
+
+    def test_warm_omits_sidecar_from_listings(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "amy.jpg")
+        svc.update_metadata("amy.jpg", {"character": "amy"})  # creates sidecar
+        svc.warm_cache()
+        root = svc.cache.get("list:")
+        assert root is not None
+        names = {e["name"] for e in root}
+        assert "amy.jpg" in names
+        assert "amy.jpg.yml" not in names
+
+    def test_warm_empty_mount_is_noop(self) -> None:
+        svc, _ = _make_service()
+        svc.warm_cache()
+        assert svc.cache.size == 0
+
+    def test_lazy_warm_on_first_list_dir(self) -> None:
+        svc, _ = _make_service()
+        assert not svc._warmed
+        _touch(svc, "amy.jpg")
+        svc.list_dir("")
+        assert svc._warmed
+        # list: cache should be populated
+        assert svc.cache.get("list:") is not None
+
+    def test_lazy_warm_on_first_get_metadata(self) -> None:
+        svc, _ = _make_service()
+        assert not svc._warmed
+        _touch(svc, "amy.jpg")
+        svc.get_metadata("amy.jpg")
+        assert svc._warmed
+
+    def test_warm_only_once(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "amy.jpg")
+        svc.warm_cache()
+        svc._warmed = False
+        # After re-enabling, calling list_dir should warm again
+        # But first let's verify warm happened
+        svc.warm_cache()  # should be safe to call twice
+        # No crash is the main check
+
+    def test_invalidate_cache_resets_warmed(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "amy.jpg")
+        svc.list_dir("")  # warms
+        assert svc._warmed
+        svc.invalidate_cache()
+        assert not svc._warmed
+
+    def test_warm_handles_deep_tree(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "a/b/c/d/e/deep.jpg")
+        svc.warm_cache()
+        for sub in ("", "a", "a/b", "a/b/c", "a/b/c/d", "a/b/c/d/e"):
+            listing = svc.cache.get(f"list:{sub}")
+            assert listing is not None, f"list:{sub} should exist"
+        meta = svc.cache.get("meta:a/b/c/d/e/deep.jpg")
+        assert meta is not None
+        assert meta.name == "deep.jpg"

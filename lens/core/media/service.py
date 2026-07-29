@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from typing import Any, BinaryIO, Iterable
 
+import yaml
+
 from lens.core.media.cache import MediaCache
 from lens.core.media.metadata import (
     MediaMetadata,
     MediaStore,
     filter_sidecars,
+    resolve_path_metadata,
 )
+from lens.core.media.search import SearchResult, parse_query, score_query
 from lens.core.mount import MountBackend
 
 
@@ -26,12 +30,14 @@ class MediaService:
         self._backend = backend
         self._cache = cache if cache is not None else MediaCache()
         self._store = MediaStore(backend)
+        self._warmed = False
 
     # ------------------------------------------------------------------
     # Cached read operations
     # ------------------------------------------------------------------
 
     def list_dir(self, subpath: str) -> list[dict[str, Any]] | None:
+        self._ensure_warmed()
         key = f"list:{subpath}"
         cached = self._cache.get(key)
         if cached is not None:
@@ -63,6 +69,7 @@ class MediaService:
         return exists
 
     def get_metadata(self, relative_path: str) -> MediaMetadata:
+        self._ensure_warmed()
         key = f"meta:{relative_path}"
         cached = self._cache.get(key)
         if cached is not None:
@@ -147,6 +154,118 @@ class MediaService:
         return fn(subpath, expires_in=expires_in)  # pyright: ignore[reportUnknownMemberType]
 
     # ------------------------------------------------------------------
+    # Cache warm-up (bulk, lazy)
+    # ------------------------------------------------------------------
+
+    def _ensure_warmed(self) -> None:
+        """Trigger a bulk cache warm-up on first use."""
+        if not self._warmed:
+            self._warmed = True
+            self.warm_cache()
+
+    def warm_cache(self) -> None:
+        """Populate all ``list:`` and ``meta:`` cache entries in a single pass.
+
+        Uses ``backend.walk_all`` for a bulk listing (one round-trip on S3,
+        one ``os.walk`` on local) and batch-reads sidecar files so that
+        subsequent calls to ``list_dir`` / ``get_metadata`` hit the cache.
+        """
+        all_files = self._backend.walk_all("")
+        if not all_files:
+            return
+
+        file_set = set(all_files)
+
+        # Build directory tree from file paths
+        #   dir_entries[parent_dir] = set of (name, is_dir)
+        dir_entries: dict[str, set[tuple[str, bool]]] = {}
+
+        for fpath in all_files:
+            parts = fpath.split("/")
+            # parent dir entries
+            for i in range(len(parts) - 1):
+                parent = "/".join(parts[:i]) if i > 0 else ""
+                dir_entries.setdefault(parent, set()).add((parts[i], True))
+            # leaf entry (file or orphan sidecar)
+            parent = "/".join(parts[:-1]) if len(parts) > 1 else ""
+            child = parts[-1]
+            if child.endswith(".yml") and fpath[:-4] in file_set:
+                continue  # sidecar — omitted from listings
+            dir_entries.setdefault(parent, set()).add((child, False))
+
+        # Write list: cache entries
+        for parent_dir, entries in dir_entries.items():
+            listing = [
+                {"name": name, "is_dir": is_dir}
+                for name, is_dir in sorted(
+                    entries, key=lambda x: (not x[1], x[0].lower())
+                )
+            ]
+            self._cache.set(f"list:{parent_dir}", listing)
+
+        # Populate meta: cache (path-derived + sidecar merge)
+        for fpath in all_files:
+            if fpath.endswith(".yml"):
+                continue
+            meta = resolve_path_metadata(fpath)
+            sidecar_path = fpath + ".yml"
+            if sidecar_path in file_set:
+                stream = self._backend.stream_file(sidecar_path)
+                if stream is not None:
+                    raw = b"".join(stream[0])
+                    parsed = yaml.safe_load(raw)
+                    if isinstance(parsed, dict):
+                        meta = MediaMetadata(
+                            relative_path=meta.relative_path,
+                            name=meta.name,
+                            extension=meta.extension,
+                            type=meta.type,
+                            extra=parsed,  # pyright: ignore[reportUnknownArgumentType]
+                        )
+            self._cache.set(f"meta:{fpath}", meta)
+
+    # ------------------------------------------------------------------
+    # Search
+    # ------------------------------------------------------------------
+
+    def search(self, query_str: str) -> list[SearchResult]:
+        """Return all media files matching *query_str*, sorted by relevance.
+
+        Performance comes from the cached ``list_dir`` and ``get_metadata``
+        calls used internally — search results themselves are not cached.
+        """
+        query = parse_query(query_str)
+        results: list[SearchResult] = []
+
+        for file_path in self._walk_files(""):
+            try:
+                meta = self.get_metadata(file_path)
+            except FileNotFoundError:
+                continue
+
+            score = score_query(meta.flattened(), meta.extra, query)
+            if score is not None:
+                results.append(SearchResult(relative_path=file_path, score=score))
+
+        results.sort(key=lambda r: (-r.score, r.relative_path))
+        return results
+
+    def _walk_files(self, subpath: str) -> list[str]:
+        """Recursively enumerate all files under *subpath* using cached listings."""
+        entries = self.list_dir(subpath)
+        if entries is None:
+            return []
+        files: list[str] = []
+        for entry in entries:
+            name = entry["name"]
+            path = f"{subpath}/{name}" if subpath else name
+            if entry.get("is_dir"):
+                files.extend(self._walk_files(path))
+            else:
+                files.append(path)
+        return files
+
+    # ------------------------------------------------------------------
     # cache management
     # ------------------------------------------------------------------
 
@@ -156,6 +275,7 @@ class MediaService:
 
     def invalidate_cache(self) -> None:
         self._cache.invalidate_all()
+        self._warmed = False
 
     # ------------------------------------------------------------------
     # internal helpers

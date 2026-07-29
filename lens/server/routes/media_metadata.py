@@ -4,13 +4,46 @@ from __future__ import annotations
 
 from typing import Any, Never
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from lens.core.media import MediaService
 from lens.server.dependencies import get_media_service
 
 router = APIRouter(prefix="/{project_slug}/mount")
+
+
+@router.get("/search")
+def search_media(
+    q: str = Query(..., description="Search query string"),
+    media: MediaService | None = Depends(get_media_service),
+) -> list[dict[str, Any]]:
+    """Search media files by keyword, KV, and nested KV filters.
+
+    Query syntax (space-separated tokens):
+    - ``word!``        — required term (must appear somewhere)
+    - ``key:value``    — top-level KV pair match
+    - ``path/sub:val`` — nested KV pair match
+    - ``word``         — optional keyword (scores hits, at least one needed)
+
+    Example: ``amy! house! type:image composite/type:subject couch bed``
+    """
+    if media is None:
+        raise HTTPException(status_code=404, detail="no mount configured")
+    try:
+        results = media.search(q)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"search error: {e}")
+    output: list[dict[str, Any]] = []
+    for r in results:
+        try:
+            meta = media.get_metadata(r.relative_path)
+        except Exception:
+            continue
+        entry = meta.flattened()
+        entry["_score"] = r.score
+        output.append(entry)
+    return output
 
 
 class UpdateMetadataRequest(BaseModel):

@@ -15,6 +15,7 @@ Supports two backends selected by the ``mount_point`` value in ``lens.toml``:
 from __future__ import annotations
 
 import mimetypes
+import os
 import shutil
 import urllib.parse
 from abc import ABC, abstractmethod
@@ -98,6 +99,17 @@ class MountBackend(ABC):
 
         No-op if *src* does not exist. Raises :exc:`FileExistsError` if *dst*
         exists. Source and destination must be non-empty after normalization.
+        """
+
+    @abstractmethod
+    def walk_all(self, subpath: str = "") -> list[str]:
+        """Return all file paths under *subpath* in a single bulk pass.
+
+        Unlike ``list_dir`` this should make as few backend round-trips as
+        possible (e.g. a flat S3 listing without ``delimiter="/"``, or a
+        single ``os.walk`` on the local filesystem).
+        Returns an empty list if *subpath* does not exist or is not a
+        directory.
         """
 
 
@@ -273,6 +285,23 @@ class LocalMountBackend(MountBackend):
             raise FileExistsError(f"destination already exists: {dst}")
         dst_full.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(src_full), str(dst_full))
+
+    def walk_all(self, subpath: str = "") -> list[str]:
+        """Return all file paths under *subpath* via a single ``os.walk`` pass."""
+        target = self._resolve(subpath)
+        if not target.is_dir():
+            return []
+        files: list[str] = []
+        for dirpath, _dirnames, filenames in os.walk(target):
+            for fn in filenames:
+                if fn.startswith("."):
+                    continue
+                fp = Path(dirpath) / fn
+                ext = fp.suffix.lower()
+                if ext in _SUPPORTED_EXTENSIONS:
+                    rel = str(fp.relative_to(self._root))
+                    files.append(rel)
+        return files
 
 
 # ---------------------------------------------------------------------------
@@ -600,6 +629,23 @@ class S3MountBackend(MountBackend):
             Params={"Bucket": self.bucket, "Key": key},
             ExpiresIn=expires_in,
         )
+
+    def walk_all(self, subpath: str = "") -> list[str]:
+        """Return all file paths under *subpath* via a flat S3 listing (no delimiter)."""
+        prefix = self._dir_prefix(subpath)
+        keys: list[str] = []
+        paginator = self._s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            for obj in page.get("Contents") or []:
+                key: str = obj.get("Key", "")
+                name = key.rsplit("/", 1)[-1]
+                if not name or name.startswith("."):
+                    continue
+                ext = ("." + name.rsplit(".", 1)[-1].lower()) if "." in name else ""
+                if ext in _SUPPORTED_EXTENSIONS:
+                    rel = key[len(self.prefix):] if self.prefix else key
+                    keys.append(rel)
+        return keys
 
 
 # ---------------------------------------------------------------------------

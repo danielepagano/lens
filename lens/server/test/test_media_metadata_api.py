@@ -178,3 +178,39 @@ class TestDeleteMetadata:
     def test_no_mount_returns_404(self, test_client: TestClient) -> None:
         r = test_client.delete("/test/mount/metadata/hero.jpg")
         assert r.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# GET /mount/search
+# ---------------------------------------------------------------------------
+
+
+class TestSearchMedia:
+    def test_search_by_required_term(self, mount_client: TestClient) -> None:
+        r = mount_client.get("/test/mount/search", params={"q": "hero!"})
+        assert r.status_code == 200
+        data = r.json()
+        assert len(data) == 1
+        assert data[0]["relative_path"] == "hero.jpg"
+
+    def test_search_by_type(self, mount_client: TestClient) -> None:
+        r = mount_client.get("/test/mount/search", params={"q": "type:image"})
+        assert r.status_code == 200
+        data = r.json()
+        paths = {d["relative_path"] for d in data}
+        assert "hero.jpg" in paths
+        assert "sub/photo.png" in paths
+        assert "clip.mp4" not in paths
+
+    def test_search_no_match(self, mount_client: TestClient) -> None:
+        r = mount_client.get("/test/mount/search", params={"q": "zebra!"})
+        assert r.status_code == 200
+        assert r.json() == []
+
+    def test_search_q_required(self, mount_client: TestClient) -> None:
+        r = mount_client.get("/test/mount/search")
+        assert r.status_code == 422  # missing required query param
+
+    def test_search_no_mount_returns_404(self, test_client: TestClient) -> None:
+        r = test_client.get("/test/mount/search", params={"q": "hero!"})
+        assert r.status_code == 404
