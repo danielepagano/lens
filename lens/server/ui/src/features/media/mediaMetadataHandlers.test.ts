@@ -68,13 +68,13 @@ describe('rowsToExtra', () => {
       textRow('character', 'amy'),
       numberRow('layer', '2'),
       listRow('tags', ['house', 'couch']),
-      kvRow('composite', [['type', 'subject']]),
+      kvRow('expression', [['mood', 'happy']]),
     ]
     expect(rowsToExtra(rows)).toEqual({
       character: 'amy',
       layer: 2,
       tags: ['house', 'couch'],
-      composite: { type: 'subject' },
+      expression: { mood: 'happy' },
     })
   })
 
@@ -96,8 +96,8 @@ describe('rowsToExtra', () => {
   })
 
   it('drops kv pairs with an empty key but keeps the row', () => {
-    const rows = [kvRow('composite', [['', 'dropped'], ['type', 'kept']])]
-    expect(rowsToExtra(rows)).toEqual({ composite: { type: 'kept' } })
+    const rows = [kvRow('expression', [['', 'dropped'], ['mood', 'kept']])]
+    expect(rowsToExtra(rows)).toEqual({ expression: { mood: 'kept' } })
   })
 })
 
@@ -111,7 +111,7 @@ describe('loadMetadataRows', () => {
       character: 'amy',
       layer: 2,
       tags: ['house', 'couch'],
-      composite: { type: 'subject' },
+      expression: { mood: 'happy' },
     })
 
     const result = await loadMetadataRows('characters/amy.jpg')
@@ -122,13 +122,13 @@ describe('loadMetadataRows', () => {
       extension: '.jpg',
       type: 'image',
     })
-    expect(result.savedKeys).toEqual(new Set(['character', 'layer', 'tags', 'composite']))
+    expect(result.savedKeys).toEqual(new Set(['character', 'layer', 'tags', 'expression']))
 
     const byKey = Object.fromEntries(result.rows.map((r) => [r.key, r]))
     expect(byKey.character).toMatchObject({ kind: 'text', text: 'amy' })
     expect(byKey.layer).toMatchObject({ kind: 'number', text: '2' })
     expect(byKey.tags).toMatchObject({ kind: 'list', list: [{ value: 'house' }, { value: 'couch' }] })
-    expect(byKey.composite).toMatchObject({ kind: 'kv', kv: [{ key: 'type', value: 'subject' }] })
+    expect(byKey.expression).toMatchObject({ kind: 'kv', kv: [{ key: 'mood', value: 'happy' }] })
   })
 
   it('returns no rows when there is no sidecar', async () => {
@@ -141,6 +141,55 @@ describe('loadMetadataRows', () => {
     const result = await loadMetadataRows('hero.jpg')
     expect(result.rows).toEqual([])
     expect(result.savedKeys.size).toBe(0)
+    expect(result.compositeValue).toBeNull()
+  })
+
+  it('extracts a valid composite role for images and excludes it from the generic rows', async () => {
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'bg/forest.jpg',
+      name: 'forest.jpg',
+      extension: '.jpg',
+      type: 'image',
+      composite: 'background',
+      character: 'amy',
+    })
+
+    const result = await loadMetadataRows('bg/forest.jpg')
+
+    expect(result.compositeValue).toBe('background')
+    expect(result.rows.map((r) => r.key)).toEqual(['character'])
+    // composite still counts as a saved key so removing it triggers the wipe-then-remerge save path
+    expect(result.savedKeys).toEqual(new Set(['composite', 'character']))
+  })
+
+  it('normalizes an invalid composite value to null for images', async () => {
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'bg/forest.jpg',
+      name: 'forest.jpg',
+      extension: '.jpg',
+      type: 'image',
+      composite: 'sideways',
+    })
+
+    const result = await loadMetadataRows('bg/forest.jpg')
+
+    expect(result.compositeValue).toBeNull()
+    expect(result.rows).toEqual([])
+  })
+
+  it('leaves composite as a regular row for non-image types', async () => {
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'clip.mp4',
+      name: 'clip.mp4',
+      extension: '.mp4',
+      type: 'video',
+      composite: 'background',
+    })
+
+    const result = await loadMetadataRows('clip.mp4')
+
+    expect(result.compositeValue).toBeUndefined()
+    expect(result.rows.map((r) => r.key)).toEqual(['composite'])
   })
 })
 
@@ -194,6 +243,41 @@ describe('saveMetadataRows', () => {
     const rows = [textRow('character', 'amy')]
 
     await expect(saveMetadataRows('hero.jpg', rows, new Set())).rejects.toThrow('network blip')
+  })
+
+  it('merges a set composite value into the saved extra dict', async () => {
+    mockUpdateMountMetadata.mockResolvedValue({
+      relative_path: 'bg.jpg', name: 'bg.jpg', extension: '.jpg', type: 'image',
+    })
+    const rows = [textRow('character', 'amy')]
+
+    await saveMetadataRows('bg.jpg', rows, new Set(), 'background')
+
+    expect(mockUpdateMountMetadata).toHaveBeenCalledWith('bg.jpg', {
+      character: 'amy',
+      composite: 'background',
+    })
+  })
+
+  it('wipes composite when set back to null (unset)', async () => {
+    const savedKeys = new Set(['composite'])
+
+    const newKeys = await saveMetadataRows('bg.jpg', [], savedKeys, null)
+
+    expect(mockDeleteMountMetadata).toHaveBeenCalledWith('bg.jpg')
+    expect(mockUpdateMountMetadata).not.toHaveBeenCalled()
+    expect(newKeys).toEqual(new Set())
+  })
+
+  it('leaves composite untouched when compositeValue is undefined (non-image types)', async () => {
+    mockUpdateMountMetadata.mockResolvedValue({
+      relative_path: 'clip.mp4', name: 'clip.mp4', extension: '.mp4', type: 'video',
+    })
+    const rows = [textRow('composite', 'background')]
+
+    await saveMetadataRows('clip.mp4', rows, new Set())
+
+    expect(mockUpdateMountMetadata).toHaveBeenCalledWith('clip.mp4', { composite: 'background' })
   })
 })
 

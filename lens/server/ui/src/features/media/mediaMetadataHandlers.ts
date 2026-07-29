@@ -1,10 +1,14 @@
 import { deleteMountMetadata, getMountMetadata, updateMountMetadata } from '../../services/api'
+import { compositeRole, type CompositeRole } from '../../utils/mediaComposite'
 import type {
   MetadataFieldRow,
   MetadataKvItem,
   MetadataListItem,
   ReservedMetadata,
 } from './mediaMetadataTypes'
+
+/** Reserved for images: drives the VN background/foreground pairing flow, not a free-form field. */
+const COMPOSITE_KEY = 'composite'
 
 export const RESERVED_KEYS = new Set(['relative_path', 'name', 'extension', 'type'])
 
@@ -65,16 +69,24 @@ export interface LoadedMetadata {
   reserved: ReservedMetadata
   rows: MetadataFieldRow[]
   savedKeys: Set<string>
+  /** Image-only. `undefined` for non-image types, where `composite` (if any) is just a regular row. */
+  compositeValue: CompositeRole | null | undefined
 }
 
 export async function loadMetadataRows(path: string): Promise<LoadedMetadata> {
   const meta = await getMountMetadata(path)
   const { relative_path, name, extension, type, ...extra } = meta
-  const rows = Object.entries(extra).map(([key, value]) => valueToRow(key, value))
+  const isImage = type === 'image'
+  const compositeValue = isImage ? compositeRole(meta) : undefined
+  const rowEntries = isImage
+    ? Object.entries(extra).filter(([key]) => key !== COMPOSITE_KEY)
+    : Object.entries(extra)
+  const rows = rowEntries.map(([key, value]) => valueToRow(key, value))
   return {
     reserved: { relative_path, name, extension, type },
     rows,
     savedKeys: new Set(Object.keys(extra)),
+    compositeValue,
   }
 }
 
@@ -118,13 +130,22 @@ export function rowsToExtra(rows: MetadataFieldRow[]): Record<string, unknown> {
  * a key present in `savedKeys` is no longer in the computed extra dict
  * (deleted row, or a row's key was renamed), the sidecar is wiped first and
  * then re-merged with whatever remains.
+ *
+ * `compositeValue` (image type only) is merged in alongside the generic
+ * rows; pass `undefined` for non-image types to leave `composite` to the
+ * regular row-based flow untouched.
  */
 export async function saveMetadataRows(
   path: string,
   rows: MetadataFieldRow[],
   savedKeys: Set<string>,
+  compositeValue?: CompositeRole | null,
 ): Promise<Set<string>> {
   const extra = rowsToExtra(rows)
+  if (compositeValue !== undefined) {
+    if (compositeValue) extra[COMPOSITE_KEY] = compositeValue
+    else delete extra[COMPOSITE_KEY]
+  }
   const newKeys = new Set(Object.keys(extra))
 
   let removedKey = false
