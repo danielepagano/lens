@@ -408,13 +408,15 @@ ul.tree-list li {
 
 /* Background+foreground composite attachment (see attach.build_layered_embed). Stacks the
    foreground centered over the background in plain reading mode; VN mode renders this pair
-   from the structured playback API instead, ignoring this markup entirely. */
+   from the structured playback API instead, ignoring this markup entirely.
+   The box takes the background's own natural aspect ratio (normal image flow, no forced
+   crop) rather than a fixed shape — the two layers are expected to share the same canvas
+   dimensions, so the foreground lines up without needing to crop either one. */
 .lens-vn-composite {
   position: relative;
   display: block;
   width: 100%;
   max-width: 480px;
-  aspect-ratio: 3 / 4;
   overflow: hidden;
   border-radius: 6px;
   margin: 0.5rem 0;
@@ -422,12 +424,9 @@ ul.tree-list li {
 }
 
 .lens-vn-composite .lens-vn-bg {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+  height: auto;
 }
 
 .lens-vn-composite .lens-vn-fg {
@@ -435,7 +434,7 @@ ul.tree-list li {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
 }
 

@@ -41,7 +41,7 @@
         {:else if backdrop === 'layered'}
           <div class="vn-layered-wrap contain">
             <img src={resolvedSrc} alt={alt} class="vn-layer-bg contain" draggable="false" />
-            <img src={resolvedFgSrc} alt={fgAlt} class="vn-layer-fg" draggable="false" />
+            <img src={resolvedFgSrc} alt={fgAlt} class="vn-layer-fg contain" draggable="false" />
           </div>
         {:else}
           <img src={resolvedSrc} {alt} class="vn-scene-img contain" draggable="false" />
@@ -80,7 +80,7 @@
       {:else if backdrop === 'layered'}
         <div class="vn-layered-wrap">
           <img src={resolvedSrc} alt={alt} class="vn-layer-bg cover" draggable="false" />
-          <img src={resolvedFgSrc} alt={fgAlt} class="vn-layer-fg" draggable="false" />
+          <img src={resolvedFgSrc} alt={fgAlt} class="vn-layer-fg cover" draggable="false" />
         </div>
       {:else}
         <img src={resolvedSrc} {alt} class={['vn-scene-img', 'cover']} draggable="false" />
@@ -195,7 +195,11 @@
     width: 100%;
     height: 100%;
   }
-  .vn-layer-bg {
+  /* fg always mirrors bg's fit mode so the two layers scale/crop identically as the
+     viewport reshapes — they're expected to share the same canvas dimensions (see
+     attach.build_layered_embed), so a matching object-fit keeps them in registration. */
+  .vn-layer-bg,
+  .vn-layer-fg {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -205,21 +209,15 @@
     pointer-events: none;
     user-select: none;
   }
-  .vn-layer-bg.cover {
+  .vn-layer-bg.cover,
+  .vn-layer-fg.cover {
     object-fit: cover;
   }
-  .vn-layer-bg.contain {
+  .vn-layer-bg.contain,
+  .vn-layer-fg.contain {
     object-fit: contain;
-    background: #000;
   }
-  .vn-layer-fg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center;
-    pointer-events: none;
-    user-select: none;
+  .vn-layer-bg.contain {
+    background: #000;
   }
 </style>
