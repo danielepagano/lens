@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from html import unescape
 from pathlib import Path
 from typing import Literal
 from urllib.parse import unquote
@@ -11,6 +12,7 @@ from urllib.parse import unquote
 from lens.core.narrative import NarrativeNode
 from lens.core.project import get_mount_backend
 from lens.core.annotations import iter_kept_storage_lines, parse_annotations, strip_html_comments
+from lens.core.commands.attach import COMPOSITE_BG_CLASS, COMPOSITE_CLASS, COMPOSITE_FG_CLASS
 from lens.core.speech.chunks import (
     is_eligible_tts_line,
     iter_raw_storage_text,
@@ -27,6 +29,15 @@ _STANDALONE_IMAGE_LINE_RE = re.compile(
 # Must match ``lens.core.commands.attach.build_embed`` for video (single-line, double-quoted src).
 _ATTACH_VIDEO_LINE_RE = re.compile(
     r'^\s*<video\s+src="/mount/file/(?P<rel>[^"]+)"[^>]*>\s*</video>\s*$',
+    re.IGNORECASE,
+)
+
+# Must match ``lens.core.commands.attach.build_layered_embed``.
+_ATTACH_COMPOSITE_LINE_RE = re.compile(
+    r'^\s*<div class="' + re.escape(COMPOSITE_CLASS) + r'">'
+    r'<img src="/mount/file/(?P<bg>[^"]+)" alt="(?P<bg_alt>[^"]*)" class="' + re.escape(COMPOSITE_BG_CLASS) + r'">'
+    r'<img src="/mount/file/(?P<fg>[^"]+)" alt="(?P<fg_alt>[^"]*)" class="' + re.escape(COMPOSITE_FG_CLASS) + r'">'
+    r"</div>\s*$",
     re.IGNORECASE,
 )
 
@@ -47,6 +58,18 @@ def parse_attach_video_line(line: str) -> tuple[str, str] | None:
     rel = unquote(m.group("rel").lstrip("/"))
     alt = Path(rel).name
     return (alt, rel)
+
+
+def parse_composite_line(line: str) -> tuple[str, str, str, str] | None:
+    """If *line* is only the attach composite embed, return ``(bg_url, bg_alt, fg_url, fg_alt)``."""
+    m = _ATTACH_COMPOSITE_LINE_RE.match(line)
+    if m is None:
+        return None
+    bg = unquote(m.group("bg").lstrip("/"))
+    fg = unquote(m.group("fg").lstrip("/"))
+    bg_alt = unescape(m.group("bg_alt"))
+    fg_alt = unescape(m.group("fg_alt"))
+    return (bg, bg_alt, fg, fg_alt)
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,7 +99,19 @@ class PlaybackVideoItem:
     url: str
 
 
-PlaybackItem = PlaybackTextItem | PlaybackImageItem | PlaybackVideoItem
+@dataclass(frozen=True, slots=True)
+class PlaybackLayeredItem:
+    """Background+foreground composite scene (see ``attach.build_layered_embed``)."""
+
+    type: Literal["layered"]
+    line: int
+    bg_url: str
+    bg_alt: str
+    fg_url: str
+    fg_alt: str
+
+
+PlaybackItem = PlaybackTextItem | PlaybackImageItem | PlaybackVideoItem | PlaybackLayeredItem
 
 
 def _tts_cached_chunk_ids(node: NarrativeNode, project_root: Path) -> frozenset[str] | None:
@@ -157,6 +192,15 @@ def playback_items_for_node(node: NarrativeNode, project_root: Path) -> list[Pla
 
     out: list[PlaybackItem] = []
     for line, disk in kept:
+        composite = parse_composite_line(line)
+        if composite is not None:
+            bg_url, bg_alt, fg_url, fg_alt = composite
+            out.append(
+                PlaybackLayeredItem(
+                    type="layered", line=disk, bg_url=bg_url, bg_alt=bg_alt, fg_url=fg_url, fg_alt=fg_alt
+                )
+            )
+            continue
         img = parse_standalone_image_line(line)
         if img is not None:
             alt, url = img

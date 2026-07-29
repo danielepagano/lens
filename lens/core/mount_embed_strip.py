@@ -1,7 +1,8 @@
 """Detect and strip Lens mount attachment embeds from LLM-visible text.
 
-``lens.core.commands.attach.build_embed`` inserts markdown image/links or a
-single-line HTML ``<video>`` that reference ``/mount/file/`` or
+``lens.core.commands.attach.build_embed``/``build_layered_embed`` insert markdown
+image/links, a single-line HTML ``<video>``, or a single-line HTML composite
+(background+foreground) ``<div>`` that reference ``/mount/file/`` or
 ``/mount/preview``. Those lines are stripped from prompts so models do not
 imitate bogus media URLs.
 """
@@ -21,6 +22,14 @@ _ATTACH_VIDEO_FULL_LINE_RE = re.compile(
     r'^\s*<video\s+src="/mount/file/[^"]+"[^>]*>\s*</video>\s*$',
     re.IGNORECASE,
 )
+# Mirrors ``attach.build_layered_embed`` / ``speech.playback_sequence._ATTACH_COMPOSITE_LINE_RE``.
+_ATTACH_COMPOSITE_FULL_LINE_RE = re.compile(
+    r'^\s*<div class="lens-vn-composite">'
+    r'<img src="/mount/file/[^"]+" alt="[^"]*" class="lens-vn-bg">'
+    r'<img src="/mount/file/[^"]+" alt="[^"]*" class="lens-vn-fg">'
+    r"</div>\s*$",
+    re.IGNORECASE,
+)
 
 
 def line_is_standalone_lens_mount_attachment(line: str) -> bool:
@@ -32,6 +41,7 @@ def line_is_standalone_lens_mount_attachment(line: str) -> bool:
         _STANDALONE_MOUNT_IMAGE_MD.match(s)
         or _STANDALONE_MOUNT_LINK_MD.match(s)
         or _ATTACH_VIDEO_FULL_LINE_RE.match(s)
+        or _ATTACH_COMPOSITE_FULL_LINE_RE.match(s)
     )
 
 

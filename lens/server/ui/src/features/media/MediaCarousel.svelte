@@ -15,6 +15,7 @@
     removeFromScene,
     uploadToCarousel,
     type MediaCarouselHandlerCtx,
+    type PendingLayer,
   } from './mediaCarouselHandlers'
 
   type MediaCarouselProps = {
@@ -35,11 +36,18 @@
   let dragActive = $state(false)
   let uploadInput = $state<HTMLInputElement | null>(null)
   let pendingDeleteConfirm = $state(false)
+  let pendingLayer = $state<PendingLayer | null>(null)
 
   let request = $derived($mediaCarouselRequest)
   let mode = $derived(request?.mode ?? 'manage')
   let title = $derived(
-    mode === 'attach' ? 'Attach Media' : mode === 'replace' ? 'Replace Media' : 'Manage Media',
+    pendingLayer
+      ? `Pick the ${pendingLayer.role === 'background' ? 'foreground' : 'background'} layer`
+      : mode === 'attach'
+        ? 'Attach Media'
+        : mode === 'replace'
+          ? 'Replace Media'
+          : 'Manage Media',
   )
 
   let lastRequest: MediaCarouselRequest | null = null
@@ -50,6 +58,7 @@
     }
     if (request !== lastRequest) {
       lastRequest = request
+      pendingLayer = null
       void open(request.dir)
     }
   })
@@ -142,6 +151,10 @@
       setPendingDeleteConfirm: (value) => {
         pendingDeleteConfirm = value
       },
+      getPendingLayer: () => pendingLayer,
+      setPendingLayer: (value) => {
+        pendingLayer = value
+      },
       close,
       onDone,
       loadDir,
@@ -185,6 +198,12 @@
     <MediaCarouselHeader {title} {breadcrumbs} onClose={close} onNavigate={navigateTo} />
 
     <div class="carousel-body">
+      {#if pendingLayer}
+        <div class="carousel-pairing-banner">
+          <span>Pairing with <strong>{pendingLayer.path.split('/').pop()}</strong> ({pendingLayer.role})</span>
+          <button type="button" onclick={() => (pendingLayer = null)}>Cancel</button>
+        </div>
+      {/if}
       {#if loading}
         <div class="carousel-loading">Loading…</div>
       {:else}
@@ -281,5 +300,21 @@
     color: var(--pico-del-color, #e05c5c);
     font-size: 0.85rem;
     flex-shrink: 0;
+  }
+  .carousel-pairing-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.85rem;
+    background: var(--pico-mark-background-color, rgba(255, 200, 0, 0.15));
+    flex-shrink: 0;
+  }
+  .carousel-pairing-banner button {
+    flex-shrink: 0;
+    font-size: 0.75rem !important;
+    padding: 0.2rem 0.5rem !important;
+    min-height: 28px !important;
   }
 </style>

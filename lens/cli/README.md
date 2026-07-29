@@ -741,13 +741,17 @@ lens media attach hero.jpg                 # embed image at cursor
 lens media attach sub/clip.mp4             # embed video from a subdirectory
 lens media attach docs/brief.pdf           # embed document link
 lens media attach hero.jpg --preview       # validate only — print type without writing
+lens media attach bg.jpg --fg amy.png      # embed a background+foreground composite (see below)
 ```
 
 Arguments: `PATH`
 
 - `PATH` — path relative to `mount_point`. Subdirectories are allowed (e.g. `photos/hero.jpg`).
 
-Options: `--preview` — validate the file exists and report its type without inserting anything.
+Options:
+
+- `--preview` — validate the file exists and report its type without inserting anything.
+- `--fg PATH` — path (relative to `mount_point`) of a foreground image to layer over `PATH` (the background), creating a composite attachment. Both files must be images; not compatible with `--preview`.
 
 Supported file types:
 
@@ -756,6 +760,8 @@ Supported file types:
 | image    | `.jpg` `.jpeg` `.png` `.webp` `.gif` | `![name](url)`      |
 | video    | `.mp4` `.webm` `.mov` `.avi`        | `<video>` tag       |
 | document | `.pdf` `.txt` `.md`                 | `[name](url)` link  |
+
+**Compositing (Visual Novel mode):** tag a media file's sidecar metadata with a top-level `composite: background` or `composite: foreground` key (see the web UI's media metadata panel, or `lens media` metadata routes) to mark it as one layer of a scene. `lens media attach BG --fg FG` embeds both as a single composite attachment (`<div class="lens-vn-composite">…</div>`, containing both images) — VN playback renders the background full-bleed with the foreground centered on top; plain reading mode renders the same pair stacked via CSS. In the web UI, attaching a composite-tagged image from the media carousel prompts you to pick its complementary layer before attaching. CLI direct selection (as above) never prompts — pass `--fg` explicitly or it attaches a single plain file.
 
 ### `lens media generate`
 

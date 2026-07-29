@@ -148,19 +148,36 @@
   function sceneMeta(
     list: PlaybackItem[],
     index: number,
-  ): { url: string | null; alt: string; backdrop: 'image' | 'video' } {
+  ): {
+    url: string | null
+    alt: string
+    backdrop: 'image' | 'video' | 'layered'
+    fgUrl?: string
+    fgAlt?: string
+  } {
     let url: string | null = null
     let alt = ''
-    let backdrop: 'image' | 'video' = 'image'
+    let backdrop: 'image' | 'video' | 'layered' = 'image'
+    let fgUrl: string | undefined
+    let fgAlt: string | undefined
     for (let i = 0; i <= index && i < list.length; i++) {
       const it = list[i]
-      if (it && isVNBackdropItem(it)) {
+      if (!it || !isVNBackdropItem(it)) continue
+      if (it.type === 'layered') {
+        url = it.bg_url
+        alt = it.bg_alt
+        backdrop = 'layered'
+        fgUrl = it.fg_url
+        fgAlt = it.fg_alt
+      } else {
         url = it.url
         alt = it.alt
         backdrop = it.type
+        fgUrl = undefined
+        fgAlt = undefined
       }
     }
-    return { url, alt, backdrop }
+    return { url, alt, backdrop, fgUrl, fgAlt }
   }
 
   const scene = $derived(sceneMeta(items, sceneIx))
@@ -257,6 +274,8 @@
       url={scene.url}
       alt={scene.alt || 'Scene'}
       backdrop={scene.backdrop}
+      fgUrl={scene.fgUrl}
+      fgAlt={scene.fgAlt || 'Character'}
       blockBackgroundPointer={cursorCliSlot && playbackIx === items.length}
       onPrev={() => bump(-1)}
       onNext={() => bump(1)}

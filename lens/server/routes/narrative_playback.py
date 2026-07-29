@@ -16,6 +16,7 @@ from lens.core.project import ProjectSession, has_mount_config
 from lens.core.speech import registry as speech_registry
 from lens.core.speech.playback_sequence import (
     PlaybackImageItem,
+    PlaybackLayeredItem,
     PlaybackTextItem,
     PlaybackVideoItem,
     playback_items_for_node,
@@ -46,7 +47,9 @@ def resolve_narrative_node_or_404(
     return addr, node_obj
 
 
-def playback_item_to_json(item: PlaybackTextItem | PlaybackImageItem | PlaybackVideoItem) -> dict[str, Any]:
+def playback_item_to_json(
+    item: PlaybackTextItem | PlaybackImageItem | PlaybackVideoItem | PlaybackLayeredItem,
+) -> dict[str, Any]:
     if isinstance(item, PlaybackTextItem):
         row: dict[str, Any] = {
             "type": "text",
@@ -64,6 +67,15 @@ def playback_item_to_json(item: PlaybackTextItem | PlaybackImageItem | PlaybackV
             "line": item.line,
             "alt": item.alt,
             "url": item.url,
+        }
+    if isinstance(item, PlaybackLayeredItem):
+        return {
+            "type": "layered",
+            "line": item.line,
+            "bg_url": item.bg_url,
+            "bg_alt": item.bg_alt,
+            "fg_url": item.fg_url,
+            "fg_alt": item.fg_alt,
         }
     return {
         "type": "image",

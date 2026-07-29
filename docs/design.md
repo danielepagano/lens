@@ -128,6 +128,8 @@ Binary assets (images, video, audio, any files) live **outside git**. The repo s
 
 **Layout (conventional, not enforced):** user files anywhere on the mount; Lens writes `generated/<slug>/` (image batches + sidecars) and `tts-cache/…` (speech chunks keyed by text). Attach paths are always **mount-relative**, not repo-root paths.
 
+**Metadata:** each media file may have a flat YAML sidecar (`photo.jpg.yml`) alongside it on the mount, holding arbitrary key/value facts (character, expression, generation prompt, …) plus path-derived reserved keys. A `composite: background` or `composite: foreground` key marks a file as one layer of a Visual Novel scene; `lens media attach BG --fg FG` (or the web UI's media carousel, which prompts for the complementary layer automatically) embeds both as a single composite attachment that VN playback renders as background-plus-centered-foreground.
+
 Details: [README](../README.md) (`mount_point`, `[[image]]`, `[[speech]]`); commands in [lens/cli/README.md](../lens/cli/README.md).
 
 ## Fractal narrative

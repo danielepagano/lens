@@ -8,12 +8,14 @@ from pathlib import Path
 
 from lens.core.narrative import NarrativeNode
 from lens.core.speech.chunks import chunks_for_node_text
-from lens.core.commands.attach import build_embed
+from lens.core.commands.attach import build_embed, build_layered_embed
 from lens.core.speech.playback_sequence import (
     PlaybackImageItem,
+    PlaybackLayeredItem,
     PlaybackTextItem,
     PlaybackVideoItem,
     parse_attach_video_line,
+    parse_composite_line,
     parse_standalone_image_line,
     playback_items_for_node,
 )
@@ -38,6 +40,20 @@ class TestAttachVideoPlaybackLine(unittest.TestCase):
     def test_parse_rejects_non_attach_shapes(self) -> None:
         self.assertIsNone(parse_attach_video_line("not a tag"))
         self.assertIsNone(parse_attach_video_line('<video src="/wrong/x.mp4" controls playsinline></video>'))
+
+
+class TestCompositePlaybackLine(unittest.TestCase):
+    def test_parse_matches_build_layered_embed_output(self) -> None:
+        line = build_layered_embed("bg/scene.jpg", "fg/amy.png")
+        self.assertEqual(
+            parse_composite_line(line),
+            ("bg/scene.jpg", "scene.jpg", "fg/amy.png", "amy.png"),
+        )
+
+    def test_parse_rejects_non_composite_shapes(self) -> None:
+        self.assertIsNone(parse_composite_line("not a tag"))
+        self.assertIsNone(parse_composite_line('<div class="other"><img src="x"></div>'))
+        self.assertIsNone(parse_composite_line(build_embed("p/clip.mp4", ".mp4")))
 
 
 def _node(tmp: Path, rel_md: str, body: str) -> NarrativeNode:
@@ -214,6 +230,27 @@ class TestPlaybackOrdering(unittest.TestCase):
             self.assertEqual(it_text.line, 4)
             self.assertEqual(it_image.line, 6)
             self.assertEqual(it_tail.line, 8)
+
+    def test_prose_composite_embed_prose_order(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            (tmp / "lens.toml").write_text('[project]\nnarrative = "story"\nmount_point = "m"\n')
+            (tmp / "m").mkdir()
+            composite = build_layered_embed("bg/scene.jpg", "fg/amy.png")
+            body = "First line.\n\n" + composite + "\n\nSecond line.\n"
+            node = _node(tmp, "scene.md", body)
+            items = playback_items_for_node(node, tmp)
+            self.assertEqual(len(items), 3)
+            it0, it1, it2 = items
+            assert isinstance(it0, PlaybackTextItem)
+            assert isinstance(it1, PlaybackLayeredItem)
+            assert isinstance(it2, PlaybackTextItem)
+            self.assertEqual(it0.text, "First line.")
+            self.assertEqual(it1.bg_url, "bg/scene.jpg")
+            self.assertEqual(it1.bg_alt, "scene.jpg")
+            self.assertEqual(it1.fg_url, "fg/amy.png")
+            self.assertEqual(it1.fg_alt, "amy.png")
+            self.assertEqual(it2.text, "Second line.")
 
     def test_ai_gen_true_inside_operator_block(self) -> None:
         with tempfile.TemporaryDirectory() as td:

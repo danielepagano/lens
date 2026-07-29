@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 
+from lens.core.commands.attach import build_layered_embed
 from lens.core.mount_embed_strip import (
     line_is_standalone_lens_mount_attachment,
     strip_standalone_lens_mount_attachment_lines,
@@ -28,6 +29,10 @@ class TestStandaloneMountAttachment(unittest.TestCase):
             '<video src="/mount/file/clips/x.mp4" controls playsinline '
             'webkit-playsinline preload="metadata" style="max-width:100%"></video>'
         )
+        self.assertTrue(line_is_standalone_lens_mount_attachment(s))
+
+    def test_composite_line_matches_attach_html(self) -> None:
+        s = build_layered_embed("bg/scene.jpg", "fg/amy.png")
         self.assertTrue(line_is_standalone_lens_mount_attachment(s))
 
     def test_padded_line_still_matches(self) -> None:

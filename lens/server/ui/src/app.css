@@ -406,6 +406,39 @@ ul.tree-list li {
   display: contents;
 }
 
+/* Background+foreground composite attachment (see attach.build_layered_embed). Stacks the
+   foreground centered over the background in plain reading mode; VN mode renders this pair
+   from the structured playback API instead, ignoring this markup entirely. */
+.lens-vn-composite {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  background: #0a0a0a;
+}
+
+.lens-vn-composite .lens-vn-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.lens-vn-composite .lens-vn-fg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
 .content code {  
   padding: 0.1rem 0.25rem;  
   font-family: monospace;
