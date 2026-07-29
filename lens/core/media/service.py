@@ -11,7 +11,7 @@ from lens.core.media.metadata import (
     filter_sidecars,
     resolve_path_metadata,
 )
-from lens.core.media.search import SearchResult, parse_query, score_query
+from lens.core.media.search import PAGE_SIZE, SearchPage, SearchResult, parse_query, score_query
 from lens.core.mount import MountBackend
 
 
@@ -228,11 +228,15 @@ class MediaService:
     # Search
     # ------------------------------------------------------------------
 
-    def search(self, query_str: str) -> list[SearchResult]:
-        """Return all media files matching *query_str*, sorted by relevance.
+    def search(self, query_str: str, page: int = 1) -> SearchPage:
+        """Return a paginated slice of matching media files.
 
         Performance comes from the cached ``list_dir`` and ``get_metadata``
         calls used internally — search results themselves are not cached.
+
+        *page* is 1-indexed. Values below 1 are clamped to 1, values above
+        the last page return an empty items list.
+        The page size is always ``_PAGE_SIZE`` (20).
         """
         query = parse_query(query_str)
         results: list[SearchResult] = []
@@ -248,7 +252,25 @@ class MediaService:
                 results.append(SearchResult(relative_path=file_path, score=score))
 
         results.sort(key=lambda r: (-r.score, r.relative_path))
-        return results
+        total_items = len(results)
+        total_pages = max(1, (total_items + PAGE_SIZE - 1) // PAGE_SIZE)
+
+        if page < 1:
+            page = 1
+        if page > total_pages:
+            page = total_pages
+
+        start = (page - 1) * PAGE_SIZE
+        end = start + PAGE_SIZE
+        items = tuple(results[start:end])
+
+        return SearchPage(
+            items=items,
+            total_items=total_items,
+            total_pages=total_pages,
+            page_size=PAGE_SIZE,
+            current_page=page,
+        )
 
     def _walk_files(self, subpath: str) -> list[str]:
         """Recursively enumerate all files under *subpath* using cached listings."""

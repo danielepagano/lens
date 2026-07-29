@@ -186,42 +186,44 @@ class TestScoreQuery:
 class TestMediaServiceSearch:
     def test_search_empty_mount(self) -> None:
         svc, _ = _make_service()
-        assert svc.search("") == []
+        result = svc.search("")
+        assert result.items == ()
+        assert result.total_items == 0
+        assert result.total_pages == 1
+        assert result.current_page == 1
 
     def test_search_no_match(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "amy.jpg")
-        assert svc.search("bob!") == []
+        result = svc.search("bob!")
+        assert result.items == ()
+        assert result.total_items == 0
 
     def test_search_required_term_matches_path(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "amy/house/couch.jpg")
-        results = svc.search("amy!")
-        assert len(results) == 1
-        assert results[0].relative_path == "amy/house/couch.jpg"
+        page = svc.search("amy!")
+        assert len(page.items) == 1
+        assert page.items[0].relative_path == "amy/house/couch.jpg"
 
     def test_search_kv_match_type(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "photo.jpg")
         _touch(svc, "video.mp4")
-        results = svc.search("type:image")
-        assert len(results) == 1
-        assert results[0].relative_path == "photo.jpg"
+        page = svc.search("type:image")
+        assert len(page.items) == 1
+        assert page.items[0].relative_path == "photo.jpg"
 
     def test_search_optional_terms_ranked(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "amy/house/couch.jpg")  # matches "couch"
         _touch(svc, "amy/house/bed.jpg")  # matches "bed"
         _touch(svc, "bob/apt/table.jpg")  # matches nothing
-        results = svc.search("amy! couch bed")
-        assert len(results) == 2
-        # Both match "amy!", but couch.jpg scores 1, bed.jpg scores 0
-        # Wait: "bed" is an optional term, so "bed.jpg" would match "bed".
-        # Actually: path is "amy/house/bed.jpg", so "bed" is in the relative_path.
-        # So both score 1. Then sorted by score desc, then path asc.
-        assert results[0].score == 1
-        assert results[1].score == 1
-        assert {r.relative_path for r in results} == {
+        page = svc.search("amy! couch bed")
+        assert len(page.items) == 2
+        assert page.items[0].score == 1
+        assert page.items[1].score == 1
+        assert {r.relative_path for r in page.items} == {
             "amy/house/bed.jpg",
             "amy/house/couch.jpg",
         }
@@ -232,9 +234,9 @@ class TestMediaServiceSearch:
         svc.update_metadata("amy.jpg", {"character": "amy", "expression": "happy"})
         _touch(svc, "bob.jpg")
         svc.update_metadata("bob.jpg", {"character": "bob"})
-        results = svc.search("character:amy")
-        assert len(results) == 1
-        assert results[0].relative_path == "amy.jpg"
+        page = svc.search("character:amy")
+        assert len(page.items) == 1
+        assert page.items[0].relative_path == "amy.jpg"
 
     def test_search_nested_kv(self) -> None:
         svc, _ = _make_service()
@@ -242,9 +244,9 @@ class TestMediaServiceSearch:
         svc.update_metadata("subject.png", {"composite": {"type": "subject"}})
         _touch(svc, "bg.png")
         svc.update_metadata("bg.png", {"composite": {"type": "background"}})
-        results = svc.search("composite/type:subject")
-        assert len(results) == 1
-        assert results[0].relative_path == "subject.png"
+        page = svc.search("composite/type:subject")
+        assert len(page.items) == 1
+        assert page.items[0].relative_path == "subject.png"
 
     def test_search_mixed_query(self) -> None:
         svc, _ = _make_service()
@@ -254,19 +256,19 @@ class TestMediaServiceSearch:
         svc.update_metadata("chars/bob/portrait.jpg", {"character": "bob", "style": "portrait"})
         _touch(svc, "chars/amy/fullbody.jpg")
         svc.update_metadata("chars/amy/fullbody.jpg", {"character": "amy", "style": "fullbody"})
-        results = svc.search("amy! style:portrait")
-        assert len(results) == 1
-        assert results[0].relative_path == "chars/amy/portrait.jpg"
+        page = svc.search("amy! style:portrait")
+        assert len(page.items) == 1
+        assert page.items[0].relative_path == "chars/amy/portrait.jpg"
 
     def test_search_returns_sorted_by_score_then_path(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "z/both.jpg")
         _touch(svc, "a/both.jpg")
         _touch(svc, "m/no.jpg")
-        results = svc.search("both!")
-        assert len(results) == 2
-        assert results[0].relative_path == "a/both.jpg"
-        assert results[1].relative_path == "z/both.jpg"
+        page = svc.search("both!")
+        assert len(page.items) == 2
+        assert page.items[0].relative_path == "a/both.jpg"
+        assert page.items[1].relative_path == "z/both.jpg"
 
     def test_search_uses_cached_listings(self) -> None:
         svc, _ = _make_service()
@@ -281,21 +283,21 @@ class TestMediaServiceSearch:
         svc, _ = _make_service()
         _touch(svc, "amy/house/couch.jpg")  # matches: amy, house, couch
         _touch(svc, "amy/house/table.jpg")  # matches: amy, house
-        results = svc.search("amy! house couch bed")
+        page = svc.search("amy! house couch bed")
         # amy/house/couch.jpg: score=2 (house, couch)
         # amy/house/table.jpg: score=1 (house)
-        assert len(results) == 2
-        assert results[0].score == 2
-        assert results[0].relative_path == "amy/house/couch.jpg"
-        assert results[1].score == 1
-        assert results[1].relative_path == "amy/house/table.jpg"
+        assert len(page.items) == 2
+        assert page.items[0].score == 2
+        assert page.items[0].relative_path == "amy/house/couch.jpg"
+        assert page.items[1].score == 1
+        assert page.items[1].relative_path == "amy/house/table.jpg"
 
     def test_deeply_nested_directory_structure(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "a/b/c/d/e/deep.jpg")
-        results = svc.search("deep!")
-        assert len(results) == 1
-        assert results[0].relative_path == "a/b/c/d/e/deep.jpg"
+        page = svc.search("deep!")
+        assert len(page.items) == 1
+        assert page.items[0].relative_path == "a/b/c/d/e/deep.jpg"
 
     def test_search_multiple_kv_pairs(self) -> None:
         svc, _ = _make_service()
@@ -303,9 +305,99 @@ class TestMediaServiceSearch:
         svc.update_metadata("amy.jpg", {"character": "amy", "expression": "happy"})
         _touch(svc, "bob.jpg")
         svc.update_metadata("bob.jpg", {"character": "bob", "expression": "happy"})
-        results = svc.search("expression:happy character:amy")
-        assert len(results) == 1
-        assert results[0].relative_path == "amy.jpg"
+        page = svc.search("expression:happy character:amy")
+        assert len(page.items) == 1
+        assert page.items[0].relative_path == "amy.jpg"
+
+
+# ---------------------------------------------------------------------------
+# Pagination
+# ---------------------------------------------------------------------------
+
+
+class TestSearchPagination:
+    def test_default_page_is_first(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "a.jpg")
+        _touch(svc, "b.jpg")
+        _touch(svc, "c.jpg")
+        page = svc.search("!")
+        assert page.current_page == 1
+        assert len(page.items) == 3
+        assert page.total_pages == 1
+        assert page.total_items == 3
+
+    def test_page_size_is_20(self) -> None:
+        svc, _ = _make_service()
+        for i in range(25):
+            _touch(svc, f"img_{i:02d}.jpg")
+        page1 = svc.search("!")
+        assert len(page1.items) == 20
+        assert page1.total_pages == 2
+        assert page1.total_items == 25
+        assert page1.current_page == 1
+
+    def test_second_page(self) -> None:
+        svc, _ = _make_service()
+        for i in range(25):
+            _touch(svc, f"img_{i:02d}.jpg")
+        page2 = svc.search("!", page=2)
+        assert len(page2.items) == 5
+        assert page2.current_page == 2
+        assert page2.total_pages == 2
+        assert page2.total_items == 25
+
+    def test_page_too_high_clamps_to_last_page(self) -> None:
+        svc, _ = _make_service()
+        for i in range(5):
+            _touch(svc, f"img_{i:02d}.jpg")
+        page = svc.search("!", page=10)
+        assert len(page.items) == 5
+        assert page.current_page == 1
+        assert page.total_pages == 1
+
+    def test_page_below_one_is_clamped(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "a.jpg")
+        page = svc.search("!", page=0)
+        assert page.current_page == 1
+        assert len(page.items) == 1
+
+    def test_page_keeps_items_in_correct_order(self) -> None:
+        svc, _ = _make_service()
+        for i in range(22):
+            _touch(svc, f"img_{i:02d}.jpg")
+        page1 = svc.search("!")
+        page2 = svc.search("!", page=2)
+        assert len(page1.items) == 20
+        assert len(page2.items) == 2
+        assert page1.items[0].relative_path < page1.items[-1].relative_path
+
+    def test_exact_page_boundary(self) -> None:
+        svc, _ = _make_service()
+        for i in range(20):
+            _touch(svc, f"img_{i:02d}.jpg")
+        page = svc.search("!")
+        assert len(page.items) == 20
+        assert page.total_pages == 1
+        assert page.total_items == 20
+
+    def test_page_size_constant(self) -> None:
+        svc, _ = _make_service()
+        for i in range(40):
+            _touch(svc, f"img_{i:02d}.jpg")
+        page = svc.search("!")
+        assert page.page_size == 20
+        assert page.total_pages == 2
+
+    def test_single_result_pagination(self) -> None:
+        svc, _ = _make_service()
+        _touch(svc, "only.jpg")
+        page = svc.search("only!")
+        assert len(page.items) == 1
+        assert page.total_items == 1
+        assert page.total_pages == 1
+        assert page.current_page == 1
 
 
 # ---------------------------------------------------------------------------
@@ -316,32 +408,35 @@ class TestMediaServiceSearch:
 class TestSearchEdgeCases:
     def test_no_files_on_mount(self) -> None:
         svc, _ = _make_service()
-        assert svc.search("anything") == []
+        result = svc.search("anything")
+        assert result.items == ()
+        assert result.total_items == 0
 
     def test_only_directories_no_files(self) -> None:
         svc, _ = _make_service()
         # Create an empty directory
         svc._backend.put_file("subdir", ".gitkeep", io.BytesIO(b""))  # pyright: ignore[reportPrivateUsage]
         svc.delete("subdir/.gitkeep")
-        assert svc.search("anything") == []
+        result = svc.search("anything")
+        assert result.items == ()
 
     def test_hidden_files_skipped(self) -> None:
         svc, _ = _make_service()
         _touch(svc, ".hidden.jpg")
-        assert svc.search("hidden!") == []
+        assert svc.search("hidden!").items == ()
 
     def test_unsupported_extension_skipped(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "data.bin")
-        assert svc.search("data!") == []
+        assert svc.search("data!").items == ()
 
     def test_search_cursor_does_not_raise(self) -> None:
         """Missing or deleted files during walk should be skipped."""
         svc, _ = _make_service()
         _touch(svc, "amy.jpg")
-        results = svc.search("amy!")
-        assert len(results) == 1
+        page = svc.search("amy!")
+        assert len(page.items) == 1
         # If a file is deleted between walk and metadata fetch, we skip
         svc.delete("amy.jpg")
-        results2 = svc.search("amy!")
-        assert results2 == []
+        page2 = svc.search("amy!")
+        assert page2.items == ()

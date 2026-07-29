@@ -38,6 +38,20 @@ class SearchResult:
     score: int
 
 
+PAGE_SIZE = 20
+
+
+@dataclass(frozen=True)
+class SearchPage:
+    """A paginated slice of search results."""
+
+    items: tuple[SearchResult, ...]
+    total_items: int
+    total_pages: int
+    page_size: int = PAGE_SIZE
+    current_page: int = 1
+
+
 # ---------------------------------------------------------------------------
 # Query parsing
 # ---------------------------------------------------------------------------

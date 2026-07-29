@@ -7,7 +7,7 @@ from typing import Any, Never
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from lens.core.media import MediaService
+from lens.core.media import MediaService, SearchPage
 from lens.server.dependencies import get_media_service
 
 router = APIRouter(prefix="/{project_slug}/mount")
@@ -16,8 +16,9 @@ router = APIRouter(prefix="/{project_slug}/mount")
 @router.get("/search")
 def search_media(
     q: str = Query(..., description="Search query string"),
+    page: int = Query(1, ge=1, description="Page number (1-indexed, 20 results per page)"),
     media: MediaService | None = Depends(get_media_service),
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     """Search media files by keyword, KV, and nested KV filters.
 
     Query syntax (space-separated tokens):
@@ -31,19 +32,25 @@ def search_media(
     if media is None:
         raise HTTPException(status_code=404, detail="no mount configured")
     try:
-        results = media.search(q)
+        result: SearchPage = media.search(q, page=page)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"search error: {e}")
-    output: list[dict[str, Any]] = []
-    for r in results:
+    items: list[dict[str, Any]] = []
+    for r in result.items:
         try:
             meta = media.get_metadata(r.relative_path)
         except Exception:
             continue
         entry = meta.flattened()
         entry["_score"] = r.score
-        output.append(entry)
-    return output
+        items.append(entry)
+    return {
+        "items": items,
+        "total_items": result.total_items,
+        "total_pages": result.total_pages,
+        "page_size": result.page_size,
+        "current_page": result.current_page,
+    }
 
 
 class UpdateMetadataRequest(BaseModel):
