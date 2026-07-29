@@ -18,13 +18,18 @@ class MediaCache:
       ``exists:{subpath}`` — ``bool``
     """
 
-    __slots__ = ("_cache", "_maxsize", "_hits", "_misses")
+    __slots__ = ("_cache", "_maxsize", "_hits", "_misses", "warmed")
 
     def __init__(self, maxsize: int = 1000) -> None:
         self._cache: OrderedDict[str, Any] = OrderedDict()
         self._maxsize = maxsize
         self._hits = 0
         self._misses = 0
+        # Tracks whether a bulk `MediaService.warm_cache()` pass has already
+        # populated this cache. Lives here (not on MediaService) because the
+        # server constructs a fresh MediaService per request but reuses one
+        # MediaCache per project — see lens/server/dependencies.py.
+        self.warmed = False
 
     def get(self, key: str) -> Any | None:
         try:
@@ -50,6 +55,7 @@ class MediaCache:
 
     def invalidate_all(self) -> None:
         self._cache.clear()
+        self.warmed = False
 
     # ------------------------------------------------------------------
     # introspection / stats

@@ -148,6 +148,29 @@ class TestPutMetadata:
         r = test_client.put("/test/mount/metadata/hero.jpg", json={"metadata": {"character": "amy"}})
         assert r.status_code == 404
 
+    def test_empty_metadata_creates_no_sidecar(self, mount_client: TestClient, tmp_path: Path) -> None:
+        r = mount_client.put("/test/mount/metadata/hero.jpg", json={"metadata": {}})
+        assert r.status_code == 200
+        assert not (tmp_path / "media" / "hero.jpg.yml").exists()
+
+    def test_only_reserved_keys_creates_no_sidecar(self, mount_client: TestClient, tmp_path: Path) -> None:
+        r = mount_client.put(
+            "/test/mount/metadata/hero.jpg",
+            json={"metadata": {"name": "evil.jpg", "type": "video"}},
+        )
+        assert r.status_code == 200
+        assert not (tmp_path / "media" / "hero.jpg.yml").exists()
+
+    def test_updates_that_empty_out_sidecar_delete_it(self, mount_client: TestClient, tmp_path: Path) -> None:
+        # Not reachable from a single PUT (merge is additive-only), but confirm
+        # an existing sidecar survives a no-op empty PUT rather than being wiped.
+        mount_client.put("/test/mount/metadata/hero.jpg", json={"metadata": {"character": "amy"}})
+        assert (tmp_path / "media" / "hero.jpg.yml").exists()
+        r = mount_client.put("/test/mount/metadata/hero.jpg", json={"metadata": {}})
+        assert r.status_code == 200
+        assert r.json()["character"] == "amy"
+        assert (tmp_path / "media" / "hero.jpg.yml").exists()
+
 
 # ---------------------------------------------------------------------------
 # DELETE /mount/metadata/{path}

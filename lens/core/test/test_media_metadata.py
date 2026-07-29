@@ -271,3 +271,19 @@ class TestMediaStore:
         assert meta.name == "amy.jpg"  # not overwritten
         assert meta.type == "image"  # not overwritten
         assert meta.extra == {"extra_data": "ok"}
+
+    def test_update_metadata_empty_updates_creates_no_sidecar(self) -> None:
+        backend = _make_backend()
+        _touch(backend, "amy.jpg")
+        store = MediaStore(backend)
+        meta = store.update_metadata("amy.jpg", {})
+        assert meta.extra == {}
+        assert backend.file_exists("amy.jpg.yml") is False
+
+    def test_update_metadata_only_reserved_keys_creates_no_sidecar(self) -> None:
+        backend = _make_backend()
+        _touch(backend, "amy.jpg")
+        store = MediaStore(backend)
+        meta = store.update_metadata("amy.jpg", {"name": "evil-name", "type": "video"})
+        assert meta.extra == {}
+        assert backend.file_exists("amy.jpg.yml") is False

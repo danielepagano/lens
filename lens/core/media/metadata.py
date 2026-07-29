@@ -198,12 +198,16 @@ class MediaStore:
         """Merge *updates* into the sidecar and return the new full metadata.
 
         Reserved keys (``relative_path``, ``name``, ``extension``, ``type``)
-        in *updates* are silently ignored.
+        in *updates* are silently ignored. If the merged result is empty,
+        the sidecar is deleted (if present) instead of writing an empty file.
         """
         existing = self.load_sidecar(relative_path)
         reserved = {"relative_path", "name", "extension", "type"}
         for k, v in updates.items():
             if k not in reserved:
                 existing[k] = v
-        self.save_sidecar(relative_path, existing)
+        if existing:
+            self.save_sidecar(relative_path, existing)
+        else:
+            self.delete_sidecar(relative_path)
         return self.get_metadata(relative_path)

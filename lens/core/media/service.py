@@ -30,7 +30,17 @@ class MediaService:
         self._backend = backend
         self._cache = cache if cache is not None else MediaCache()
         self._store = MediaStore(backend)
-        self._warmed = False
+
+    @property
+    def _warmed(self) -> bool:
+        # Backed by the (project-lifetime) MediaCache rather than this
+        # instance, since the server constructs a fresh MediaService per
+        # request — see MediaCache.warmed.
+        return self._cache.warmed
+
+    @_warmed.setter
+    def _warmed(self, value: bool) -> None:
+        self._cache.warmed = value
 
     # ------------------------------------------------------------------
     # Cached read operations
@@ -135,7 +145,17 @@ class MediaService:
 
     def delete_metadata(self, relative_path: str) -> None:
         self._store.delete_sidecar(relative_path)
-        self._cache.invalidate(f"meta:{relative_path}")
+        key = f"meta:{relative_path}"
+        # Cache the now-current (sidecar-less) metadata rather than just
+        # invalidating, so the next get_metadata() is a hit instead of a
+        # forced round-trip to confirm the sidecar is gone. If the media
+        # file itself doesn't exist there's nothing valid to cache.
+        try:
+            meta = self._store.get_metadata(relative_path)
+        except FileNotFoundError:
+            self._cache.invalidate(key)
+            return
+        self._cache.set(key, meta)
 
     # ------------------------------------------------------------------
     # Passthrough (no caching — content streaming)

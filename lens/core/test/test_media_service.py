@@ -220,12 +220,26 @@ class TestCacheInvalidation:
         assert cached is not None
         assert cached.extra.get("character") == "amy"
 
-    def test_delete_metadata_invalidates_cache(self) -> None:
+    def test_delete_metadata_caches_fresh_empty_result(self) -> None:
+        # delete_metadata caches the now-current (sidecar-less) metadata
+        # rather than just invalidating, so a reopen right after doesn't
+        # pay a round-trip to confirm the sidecar is gone.
         svc, _ = _make_service()
         _touch(svc, "amy.jpg")
         svc.update_metadata("amy.jpg", {"character": "amy"})
         svc.delete_metadata("amy.jpg")
-        assert svc.cache.get("meta:amy.jpg") is None
+        cached = svc.cache.get("meta:amy.jpg")
+        assert cached is not None
+        assert cached.extra == {}
+        assert svc.get_metadata("amy.jpg").extra == {}
+
+    def test_delete_metadata_missing_file_does_not_raise(self) -> None:
+        # No underlying media file at all — nothing valid to cache, but
+        # this must stay a safe no-op (mirrors the DELETE route's 200-OK
+        # "already gone" contract).
+        svc, _ = _make_service()
+        svc.delete_metadata("nope.jpg")
+        assert svc.cache.get("meta:nope.jpg") is None
 
     def test_stream_file_passthrough(self) -> None:
         svc, _ = _make_service()
