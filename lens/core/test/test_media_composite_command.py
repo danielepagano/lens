@@ -13,7 +13,7 @@ import cv2
 import numpy as np
 import yaml
 
-from lens.core.commands.media_composite import chromakey
+from lens.core.commands.media_composite import chromakey, chromakey_preview
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
@@ -188,6 +188,57 @@ class ChromakeyCommandTests(unittest.TestCase):
             session = ProjectSession(root, root)
             with self.assertRaises(LensException):
                 chromakey(session, "hero.png", key="not-a-color")
+
+
+class ChromakeyPreviewTests(unittest.TestCase):
+    def test_preview_does_not_touch_the_mount(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "hero.png").write_bytes(_synthetic_magenta_png())
+            session = ProjectSession(root, root)
+
+            preview = chromakey_preview(session, "hero.png")
+
+            self.assertEqual(preview.key_hex, "#FF00FF")
+            self.assertGreater(len(preview.png_bytes), 0)
+            self.assertEqual(preview.png_bytes[:8], b"\x89PNG\r\n\x1a\n")
+            self.assertFalse((root / "media" / "hero_fg.png").exists())
+            self.assertFalse((root / "media" / "hero_fg.png.yml").exists())
+
+    def test_preview_reflects_manual_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "hero.png").write_bytes(_synthetic_magenta_png())
+            session = ProjectSession(root, root)
+
+            preview = chromakey_preview(session, "hero.png", key="FF00FF", core_tol=60)
+
+            self.assertEqual(preview.core_tol, 60)
+            self.assertEqual(preview.n_corners_used, 0)
+
+    def test_preview_no_mount_configured_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project_no_mount(root)
+            session = ProjectSession(root, root)
+            with self.assertRaises(LensException) as ctx:
+                chromakey_preview(session, "hero.png")
+            self.assertIn("mount_point", str(ctx.exception))
+
+    def test_preview_then_save_produces_same_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "hero.png").write_bytes(_synthetic_magenta_png())
+            session = ProjectSession(root, root)
+
+            preview = chromakey_preview(session, "hero.png", core_tol=45)
+            saved = chromakey(session, "hero.png", core_tol=45)
+
+            self.assertEqual(preview.key_hex, saved.key_hex)
+            self.assertEqual(preview.core_tol, saved.core_tol)
 
 
 if __name__ == "__main__":

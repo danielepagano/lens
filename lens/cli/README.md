@@ -826,7 +826,7 @@ Options:
 - `--dilate-px` — edge zone width in pixels around the background core; auto-scaled to resolution if omitted.
 - `--out PATH` — mount-relative destination `.png` path for the saved foreground (default: `<input-stem>_fg.png` next to the source). Re-running with the same destination overwrites it.
 
-The web UI's `/media-composite` view offers a separate preview-tweak-save loop before committing to the mount; the CLI skips that since you can just open the saved file.
+**Web UI:** the in-app command bar's `/media-composite <path>` (with `--key`/`--core-tol`/`--residual-thresh`/`--dilate-px` options, same meanings as above) opens a preview panel instead of saving immediately — it renders the keyed-out image, lets you retune tolerance and re-preview live, and only writes to the mount (tagging `composite: foreground`) when you click Save. The CLI skips that extra step since you can just open the saved file directly.
 
 ### Configuring `mount_point`
 

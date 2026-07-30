@@ -113,6 +113,32 @@ export const mediaPreviewSession = writable<MediaPreviewState | null>(null)
 export const cliInputRequest = writable<string | null>(null)
 export const cliInputAppend = writable<string | null>(null)
 
+/** Overrides the user has typed for a chromakey preview/save request (blank = auto). */
+export interface MediaCompositeParams {
+  path: string
+  key?: string
+  coreTol?: number
+  residualThresh?: number
+  dilatePx?: number
+}
+
+export interface MediaCompositeState {
+  path: string
+  status: 'previewing' | 'ready' | 'error' | 'saving' | 'saved'
+  /** Params that produced the current `previewSrc` (also what Save re-submits). */
+  lastParams: MediaCompositeParams | null
+  previewSrc: string | null
+  keyHex: string | null
+  coreTol: number | null
+  residualThresh: number | null
+  dilatePx: number | null
+  nCornersUsed: number | null
+  error: string | null
+  savedPath: string | null
+}
+
+export const mediaCompositeSession = writable<MediaCompositeState | null>(null)
+
 /** Increment to force the mount directory autocomplete cache to reload. */
 export const mountCacheRefreshTrigger = writable(0)
 
