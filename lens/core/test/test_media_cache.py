@@ -1,10 +1,10 @@
-"""Unit tests for MediaCache (LRU, size-bound)."""
+"""Unit tests for MediaCache (LRU, size-bound) and MediaSearchIndex."""
 
 from __future__ import annotations
 
 import threading
 
-from lens.core.media.cache import MediaCache
+from lens.core.media.cache import MediaCache, MediaSearchIndex
 
 
 class TestMediaCache:
@@ -155,6 +155,129 @@ class TestMediaCache:
         assert c.claim_warm() is True
         c.invalidate_all()
         assert c.claim_warm() is True
+
+    def test_has_a_search_index(self) -> None:
+        c = MediaCache(maxsize=10)
+        assert isinstance(c.search_index, MediaSearchIndex)
+
+    def test_search_index_limit_is_configurable(self) -> None:
+        c = MediaCache(maxsize=10, search_index_limit=3)
+        assert c.search_index.limit == 3
+
+    def test_invalidate_all_clears_search_index(self) -> None:
+        c = MediaCache(maxsize=10)
+        c.search_index.set("a.jpg", {"relative_path": "a.jpg"})
+        c.invalidate_all()
+        assert len(c.search_index) == 0
+        assert c.search_index.locked is False
+
+
+class TestMediaSearchIndex:
+    def test_set_and_get(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        idx.set("a.jpg", {"relative_path": "a.jpg", "name": "a.jpg"})
+        record = idx.get("a.jpg")
+        assert record is not None
+        assert record.flattened["name"] == "a.jpg"
+
+    def test_get_missing_returns_none(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        assert idx.get("nope") is None
+
+    def test_remove(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        idx.remove("a.jpg")
+        assert idx.get("a.jpg") is None
+        assert len(idx) == 0
+
+    def test_remove_missing_does_not_raise(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        idx.remove("nope")
+
+    def test_rename_carries_over_extra_derived_fields(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        idx.set("old.jpg", {"relative_path": "old.jpg", "name": "old.jpg", "character": "amy"})
+        idx.rename("old.jpg", "new.jpg", {"relative_path": "new.jpg", "name": "new.jpg"})
+        assert idx.get("old.jpg") is None
+        record = idx.get("new.jpg")
+        assert record is not None
+        assert record.flattened["character"] == "amy"
+        assert record.flattened["name"] == "new.jpg"
+
+    def test_rename_missing_source_is_noop(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        idx.rename("nope.jpg", "new.jpg", {"relative_path": "new.jpg"})
+        assert len(idx) == 0
+
+    def test_set_within_limit_stays_unlocked(self) -> None:
+        idx = MediaSearchIndex(limit=2)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        idx.set("b.jpg", {"relative_path": "b.jpg"})
+        assert idx.locked is False
+        assert len(idx) == 2
+
+    def test_set_replacing_existing_key_does_not_count_against_limit(self) -> None:
+        idx = MediaSearchIndex(limit=1)
+        idx.set("a.jpg", {"relative_path": "a.jpg", "v": 1})
+        idx.set("a.jpg", {"relative_path": "a.jpg", "v": 2})
+        assert idx.locked is False
+        record = idx.get("a.jpg")
+        assert record is not None
+        assert record.flattened["v"] == 2
+
+    def test_exceeding_limit_locks_and_clears(self) -> None:
+        idx = MediaSearchIndex(limit=2)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        idx.set("b.jpg", {"relative_path": "b.jpg"})
+        idx.set("c.jpg", {"relative_path": "c.jpg"})
+        assert idx.locked is True
+        assert len(idx) == 0
+
+    def test_locked_index_ignores_further_writes(self) -> None:
+        idx = MediaSearchIndex(limit=1)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        idx.set("b.jpg", {"relative_path": "b.jpg"})  # locks
+        assert idx.locked is True
+        idx.set("c.jpg", {"relative_path": "c.jpg"})
+        idx.remove("a.jpg")
+        idx.rename("a.jpg", "z.jpg", {"relative_path": "z.jpg"})
+        assert idx.locked is True
+        assert idx.items() == []
+        assert idx.get("a.jpg") is None
+
+    def test_begin_bulk_load_within_limit_unlocks_and_clears(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        assert idx.begin_bulk_load(5) is True
+        assert idx.locked is False
+        assert len(idx) == 0  # caller repopulates after this
+
+    def test_begin_bulk_load_over_limit_locks(self) -> None:
+        idx = MediaSearchIndex(limit=5)
+        assert idx.begin_bulk_load(6) is False
+        assert idx.locked is True
+
+    def test_clear_unlocks(self) -> None:
+        idx = MediaSearchIndex(limit=1)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        idx.set("b.jpg", {"relative_path": "b.jpg"})  # locks
+        assert idx.locked is True
+        idx.clear()
+        assert idx.locked is False
+        assert len(idx) == 0
+
+    def test_items_empty_while_locked(self) -> None:
+        idx = MediaSearchIndex(limit=1)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        idx.set("b.jpg", {"relative_path": "b.jpg"})
+        assert idx.items() == []
+
+    def test_contains(self) -> None:
+        idx = MediaSearchIndex(limit=10)
+        idx.set("a.jpg", {"relative_path": "a.jpg"})
+        assert "a.jpg" in idx
+        assert "b.jpg" not in idx
 
 
 class TestMediaCacheConcurrency:

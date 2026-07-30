@@ -7,6 +7,7 @@ from typing import Any, Never
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from lens.core.exceptions import MediaSearchCapacityExceeded
 from lens.core.media import MediaService, SearchPage
 from lens.server.dependencies import get_media_service
 
@@ -33,6 +34,8 @@ def search_media(
         raise HTTPException(status_code=404, detail="no mount configured")
     try:
         result: SearchPage = media.search(q, page=page)
+    except MediaSearchCapacityExceeded as e:
+        raise HTTPException(status_code=507, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"search error: {e}")
     items: list[dict[str, Any]] = []

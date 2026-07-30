@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import Depends, HTTPException, Request
 
 from lens.core.media import MediaCache, MediaService
-from lens.core.project import ProjectSession, get_mount_backend
+from lens.core.project import ProjectSession, get_media_search_index_limit, get_mount_backend
 from lens.server.streaming import StreamLock
 from lens.server.tts_chunk_coordinator import TtsChunkCoordinator
 
@@ -36,5 +36,6 @@ def get_media_service(
         return None
     caches: dict[str, MediaCache] = request.app.state.media_caches
     if project_slug not in caches:
-        caches[project_slug] = MediaCache()
+        limit = get_media_search_index_limit(session.project_root)
+        caches[project_slug] = MediaCache(search_index_limit=limit)
     return MediaService(backend, cache=caches[project_slug])

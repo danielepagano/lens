@@ -220,3 +220,83 @@ def score_query(
     if query.optional_terms and score == 0:
         return None
     return score
+
+
+# ---------------------------------------------------------------------------
+# Precomputed search records
+# ---------------------------------------------------------------------------
+#
+# ``score_query`` above rebuilds the searchable string list from scratch on
+# every call, which is fine for a one-off check but wasteful when scanning
+# many files per search. ``SearchRecord`` precomputes the searchable text
+# once (at write time) as a single lowercase ``haystack`` string, joined
+# with a control character that never appears in real query terms — so a
+# substring check against one string replaces walking a list of strings, and
+# (unlike a plain "".join) a term still can never match across the boundary
+# between two unrelated field values.
+#
+# This is a placeholder scoring engine (plain substring matching). The
+# design for its replacement — denormalized key:value phrase matching,
+# boundary-delimited terms, quoted literal phrases, and weighted-interval-
+# scheduling scoring so phrase hits beat their own sub-word decomposition —
+# is written up on https://github.com/danielepagano/lens/issues/103.
+# MediaSearchIndex (cache.py) and everything that keeps it in sync
+# (MediaService in service.py) are NOT placeholders; only SearchRecord /
+# build_search_record / score_record here, and parse_query's lack of quoted-
+# phrase support, are in scope for that redesign.
+
+_HAYSTACK_SEP = "\x1f"
+
+
+@dataclass(frozen=True, slots=True)
+class SearchRecord:
+    """Precomputed, cacheable search state for a single media file.
+
+    Deliberately holds only ``flattened`` (never a separate ``extra`` copy):
+    ``flattened`` already *is* the reserved path-derived fields plus
+    ``extra`` merged on top (see ``MediaMetadata.flattened()``), including
+    the same nested dict objects nested KV lookups need to navigate — extra
+    keys never collide with the 4 reserved names, so a second copy would add
+    nothing but memory. ``haystack`` is the one field that's a genuinely
+    different representation (a single precomputed lowercase string for
+    substring checks, vs. ``flattened``'s exact-key-lookup shape) and the
+    only thing actually expensive to keep re-deriving per query.
+    """
+
+    flattened: dict[str, Any]
+    haystack: str
+
+
+def build_search_record(flattened: dict[str, Any]) -> SearchRecord:
+    """Precompute a ``SearchRecord`` from a file's flattened metadata dict."""
+    haystack = _HAYSTACK_SEP.join(_collect_strings(flattened))
+    return SearchRecord(flattened=flattened, haystack=haystack)
+
+
+def _matches_required_haystack(haystack: str, terms: tuple[str, ...]) -> bool:
+    if not terms:
+        return True
+    return all(term.lower() in haystack for term in terms)
+
+
+def _score_optional_haystack(haystack: str, terms: tuple[str, ...]) -> int:
+    if not terms:
+        return 0
+    return sum(1 for term in terms if term.lower() in haystack)
+
+
+def score_record(record: SearchRecord, query: SearchQuery) -> int | None:
+    """Same semantics as ``score_query``, against a precomputed ``SearchRecord``."""
+    if not _matches_required_haystack(record.haystack, query.required_terms):
+        return None
+    if not _matches_kv(record.flattened, query.kv_pairs):
+        return None
+    # Nested KV paths navigate into `flattened` itself: extra's nested dicts
+    # are merged into it by identity (see SearchRecord docstring), and extra
+    # keys never collide with the 4 reserved top-level fields.
+    if not _matches_nested_kv(record.flattened, query.nested_kv_pairs):
+        return None
+    score = _score_optional_haystack(record.haystack, query.optional_terms)
+    if query.optional_terms and score == 0:
+        return None
+    return score

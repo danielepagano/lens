@@ -6,6 +6,9 @@ import io
 import tempfile
 from pathlib import Path
 
+import pytest
+
+from lens.core.exceptions import MediaSearchCapacityExceeded
 from lens.core.media import MediaCache, MediaService
 from lens.core.media.search import (
     SearchQuery,
@@ -20,10 +23,10 @@ from lens.core.mount import LocalMountBackend
 # ---------------------------------------------------------------------------
 
 
-def _make_service(maxsize: int = 100) -> tuple[MediaService, Path]:
+def _make_service(maxsize: int = 100, search_index_limit: int = 10_000) -> tuple[MediaService, Path]:
     tmp = Path(tempfile.mkdtemp(prefix="lens_test_search_"))
     backend = LocalMountBackend(tmp)
-    cache = MediaCache(maxsize=maxsize)
+    cache = MediaCache(maxsize=maxsize, search_index_limit=search_index_limit)
     svc = MediaService(backend, cache=cache)
     return svc, tmp
 
@@ -270,13 +273,18 @@ class TestMediaServiceSearch:
         assert page.items[0].relative_path == "a/both.jpg"
         assert page.items[1].relative_path == "z/both.jpg"
 
-    def test_search_uses_cached_listings(self) -> None:
+    def test_search_never_touches_backend_after_warm(self) -> None:
+        """Once warmed, search scans only the precomputed search index —
+        it never calls into MediaCache's LRU (list:/meta:), let alone the
+        backend, so hits/misses on that cache stay flat across searches."""
         svc, _ = _make_service()
         _touch(svc, "amy.jpg")
-        svc.search("amy!")  # primes list + meta cache
-        hits_before = svc.cache.hits
-        svc.search("amy!")
-        assert svc.cache.hits > hits_before
+        svc.search("amy!")  # triggers warm
+        stats_before = svc.cache.stats()
+        page = svc.search("amy!")
+        assert len(page.items) == 1
+        assert svc.cache.stats()["hits"] == stats_before["hits"]
+        assert svc.cache.stats()["misses"] == stats_before["misses"]
 
     def test_search_multiple_files_different_scores(self) -> None:
         """Files with more matching optional terms rank higher."""
@@ -430,13 +438,72 @@ class TestSearchEdgeCases:
         _touch(svc, "data.bin")
         assert svc.search("data!").items == ()
 
-    def test_search_cursor_does_not_raise(self) -> None:
-        """Missing or deleted files during walk should be skipped."""
+    def test_search_reflects_delete(self) -> None:
         svc, _ = _make_service()
         _touch(svc, "amy.jpg")
         page = svc.search("amy!")
         assert len(page.items) == 1
-        # If a file is deleted between walk and metadata fetch, we skip
         svc.delete("amy.jpg")
         page2 = svc.search("amy!")
         assert page2.items == ()
+
+
+# ---------------------------------------------------------------------------
+# Search index capacity: locked-empty semantics
+# ---------------------------------------------------------------------------
+
+
+class TestSearchCapacity:
+    def test_search_raises_when_file_count_exceeds_limit(self) -> None:
+        svc, _ = _make_service(search_index_limit=2)
+        _touch(svc, "a.jpg")
+        _touch(svc, "b.jpg")
+        _touch(svc, "c.jpg")
+        with pytest.raises(MediaSearchCapacityExceeded):
+            svc.search("a!")
+
+    def test_search_works_at_exactly_the_limit(self) -> None:
+        svc, _ = _make_service(search_index_limit=2)
+        _touch(svc, "a.jpg")
+        _touch(svc, "b.jpg")
+        page = svc.search("a.jpg!")
+        assert len(page.items) == 1
+
+    def test_over_capacity_index_stays_locked_after_a_delete(self) -> None:
+        """Dropping back under the limit doesn't silently recover — that's
+        an explicit config/invalidate decision, not automatic."""
+        svc, _ = _make_service(search_index_limit=2)
+        _touch(svc, "a.jpg")
+        _touch(svc, "b.jpg")
+        _touch(svc, "c.jpg")
+        with pytest.raises(MediaSearchCapacityExceeded):
+            svc.search("a!")
+        svc.delete("c.jpg")
+        with pytest.raises(MediaSearchCapacityExceeded):
+            svc.search("a!")
+
+    def test_recovers_once_reconstructed_with_a_higher_limit(self) -> None:
+        """The realistic recovery path: [project] media_search_index_limit
+        is raised in lens.toml and the process picks up a fresh MediaCache
+        (new server process, or a new project_slug cache entry) — modeled
+        here by pointing a new MediaService at the same backend."""
+        svc, tmp = _make_service(search_index_limit=2)
+        _touch(svc, "a.jpg")
+        _touch(svc, "b.jpg")
+        _touch(svc, "c.jpg")
+        with pytest.raises(MediaSearchCapacityExceeded):
+            svc.search("a!")
+
+        backend = LocalMountBackend(tmp)
+        svc2 = MediaService(backend, cache=MediaCache(search_index_limit=10))
+        page = svc2.search("a!")
+        assert len(page.items) == 3
+
+    def test_capacity_error_message_names_the_limit(self) -> None:
+        svc, _ = _make_service(search_index_limit=1)
+        _touch(svc, "a.jpg")
+        _touch(svc, "b.jpg")
+        with pytest.raises(MediaSearchCapacityExceeded) as exc_info:
+            svc.search("a!")
+        assert "1" in str(exc_info.value)
+        assert "media_search_index_limit" in str(exc_info.value)

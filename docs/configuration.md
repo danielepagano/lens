@@ -108,6 +108,10 @@ mount_point = "s3://lens/assets"
 
 `lens media attach photo.jpg` resolves `photo.jpg` relative to the mount root. Presigned URLs in the web UI require an `s3://` mount.
 
+### `media_search_index_limit`
+
+Caps how many mount files `lens media search` (and the `media_search` LLM tool) keeps a precomputed search record for, in-memory, per project. Default `10000`. Files beyond the cap still appear in results — they're just matched on demand instead of via the fast path, so the cap only trades off search latency at very large scales, never correctness.
+
 ### `verbose_llm`
 
 When `true`, each LLM call logs `[SYSTEM]` / `[USER]` / `[ASSISTANT]` blocks at INFO (no raw SSE noise).
