@@ -2,6 +2,11 @@ import { get } from 'svelte/store'
 import { mediaCompositeSession, type MediaCompositeParams } from '../../stores/ui'
 import { previewChromakey, saveChromakey } from '../../services/api'
 
+/** Display rounding for resolved float stats (e.g. auto-calibrated `core_tol`). */
+export function round2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
 export function parseNumberInput(raw: string): number | undefined {
   const t = raw.trim()
   if (!t) return undefined
