@@ -16,6 +16,7 @@ from lens.core.media.search import (
     PAGE_SIZE,
     SearchPage,
     SearchResult,
+    compile_query,
     parse_query,
     score_record,
 )
@@ -330,7 +331,9 @@ class MediaService:
         if self._cache.search_index.locked:
             raise MediaSearchCapacityExceeded(self._cache.search_index.limit)
 
-        query = parse_query(query_str)
+        # Compiled once per search, not once per file: run expansion and
+        # term tokenization depend only on the query.
+        query = compile_query(parse_query(query_str))
         results: list[SearchResult] = []
 
         for relative_path, record in self._cache.search_index.items():
