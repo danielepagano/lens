@@ -181,20 +181,86 @@ class TestMediaCompositeChromakeyBrowser:
 
         # Preview loaded: image visible, auto-resolved core tolerance echoed into the input box.
         page.wait_for_selector(".carousel-spotlight img", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
-        core_tol_input = overlay.locator("label.composite-field", has_text="Core tol").locator("input")  # type: ignore[union-attr]
+        core_tol_input = page.locator('[data-testid="composite-core-tol-input"]')  # type: ignore[union-attr]
         page.wait_for_function(  # type: ignore[union-attr]
-            "() => document.querySelector('.composite-controls')?.querySelectorAll('input')[1]?.value !== ''",
+            "() => document.querySelector('[data-testid=\"composite-core-tol-input\"]')?.value !== ''",
             timeout=_PAGE_TIMEOUT_MS,
         )
         assert core_tol_input.input_value() != ""  # type: ignore[union-attr]
+
+        # Chromeless toggle: same click-to-focus behavior on desktop and mobile
+        # (no separate in-app zoom -- users zoom with native gestures from
+        # here). Entering it hides the controls/actions rows, and there must
+        # be a tap-friendly close button since Escape doesn't work on touch.
+        overlay.locator(".composite-image-toggle").click()  # type: ignore[union-attr]
+        page.wait_for_function(  # type: ignore[union-attr]
+            "() => getComputedStyle(document.querySelector('.composite-controls')).display === 'none'",
+            timeout=_PAGE_TIMEOUT_MS,
+        )
+        # Original pixel size, not scaled to fit -- a scaled-down image just
+        # magnifies interpolated pixels once the user zooms, useless for
+        # judging a chroma-key edge.
+        img_max_width = page.locator(".carousel-spotlight img").evaluate(  # type: ignore[union-attr]
+            "el => getComputedStyle(el).maxWidth"
+        )
+        assert img_max_width == "none"
+        close_btn = overlay.locator(".composite-chromeless-close")  # type: ignore[union-attr]
+        close_btn.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        # `fixed`, not `absolute` -- the latter scrolls away with the
+        # now-oversized, natively-sized image inside .carousel-spotlight.
+        assert close_btn.evaluate("el => getComputedStyle(el).position") == "fixed"  # type: ignore[union-attr]
+        close_btn.click()  # type: ignore[union-attr]
+        page.wait_for_function(  # type: ignore[union-attr]
+            "() => getComputedStyle(document.querySelector('.composite-controls')).display !== 'none'",
+            timeout=_PAGE_TIMEOUT_MS,
+        )
 
         # Tweak tolerance and re-preview: the box should keep exactly what was typed, not an auto value.
         core_tol_input.fill("30")  # type: ignore[union-attr]
         page.get_by_role("button", name="Preview").click()  # type: ignore[union-attr]
         page.wait_for_function(  # type: ignore[union-attr]
-            "() => document.querySelector('.composite-controls')?.querySelectorAll('input')[1]?.value === '30'",
+            "() => document.querySelector('[data-testid=\"composite-core-tol-input\"]')?.value === '30'",
             timeout=_PAGE_TIMEOUT_MS,
         )
+
+        # The Key box is populated from the auto-detected result too (not left blank).
+        key_input = overlay.locator('input[aria-label="Key"]')  # type: ignore[union-attr]
+        assert key_input.input_value() == "#FF00FF"  # type: ignore[union-attr]
+
+        # Tooltips are tap/click-toggled (not hover-only, which doesn't fire on touch):
+        # clicking the label reveals it, clicking elsewhere dismisses it.
+        # Portaled to document.body (see InfoTooltip.svelte), so it's not a
+        # descendant of `overlay` -- scope from `page`, not `overlay`.
+        tip = page.locator(".info-tip")  # type: ignore[union-attr]
+        assert tip.count() == 0  # type: ignore[union-attr]
+        overlay.get_by_role("button", name="Core tol").click()  # type: ignore[union-attr]
+        tip.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+
+        # Regression: flex items paint as an implicit DOM-order stack, so a
+        # non-portaled tooltip nested in an *earlier* field (Core tol) would
+        # render fine but be visually painted UNDER a *later* sibling field's
+        # plain input (Residual thresh), even at high z-index. Confirm the
+        # tip -- not an input -- is topmost where they overlap.
+        tip_box = tip.bounding_box()  # type: ignore[union-attr]
+        overlap_point = [tip_box["x"] + tip_box["width"] - 10, tip_box["y"] + 5]  # type: ignore[index]
+        topmost_class = page.evaluate(  # type: ignore[union-attr]
+            "([x, y]) => document.elementFromPoint(x, y)?.className", overlap_point
+        )
+        assert "info-tip" in topmost_class
+
+        # Opening a second tooltip closes the first -- they must not stack up.
+        overlay.get_by_role("button", name="Residual thresh").click()  # type: ignore[union-attr]
+        page.wait_for_function(  # type: ignore[union-attr]
+            "() => document.querySelectorAll('.info-tip').length === 1",
+            timeout=_PAGE_TIMEOUT_MS,
+        )
+        assert "alpha-blend" in tip.inner_text()  # type: ignore[union-attr]
+
+        overlay.locator(".carousel-title").click()  # type: ignore[union-attr]
+        assert tip.count() == 0  # type: ignore[union-attr]
+
+        # Dilate px is hidden entirely -- a large value can peg the server CPU.
+        assert overlay.get_by_role("button", name="Dilate px").count() == 0  # type: ignore[union-attr]
 
         # The destination filename is shown before saving.
         assert "hero_fg.png" in page.locator(".composite-saved-path").inner_text()  # type: ignore[union-attr]
