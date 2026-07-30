@@ -430,7 +430,7 @@ MEDIA_DELETE = (
 )
 MEDIA_DELETE_YES = "Skip confirmation prompt and proceed with deletion."
 
-# media-composite sub-commands
+# media composite sub-commands
 MEDIA_COMPOSITE_CHROMAKEY = (
     "Remove a chroma-keyed background from an image and save a "
     "foreground PNG with alpha (tagged composite: foreground)."
@@ -450,13 +450,10 @@ MEDIA_COMPOSITE_DILATE_PX = (
     "Edge zone width in pixels around the background core "
     "(auto-scaled to resolution if omitted)."
 )
-MEDIA_COMPOSITE_PREVIEW = (
-    "Write the result to this local filesystem path for inspection "
-    "instead of saving to the mount (no composite metadata is set)."
-)
 MEDIA_COMPOSITE_OUT = (
     "Mount-relative destination .png path for the saved foreground "
-    "(default: '<input-stem>_fg.png' next to the source)."
+    "(default: '<input-stem>_fg.png' next to the source). Re-running with "
+    "the same destination overwrites it."
 )
 
 # deploy sub-commands

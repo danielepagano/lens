@@ -1,4 +1,4 @@
-"""Tests for the ``media-composite chromakey`` core command."""
+"""Tests for the ``media composite chromakey`` core command."""
 
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false
 
@@ -97,7 +97,6 @@ class ChromakeyCommandTests(unittest.TestCase):
 
             result = chromakey(session, "hero.png")
 
-            self.assertTrue(result.saved)
             self.assertEqual(result.output_path, "hero_fg.png")
             out_file = root / "media" / "hero_fg.png"
             self.assertTrue(out_file.exists())
@@ -134,33 +133,40 @@ class ChromakeyCommandTests(unittest.TestCase):
                 chromakey(session, "hero.png", out_path="hero_fg.jpg")
             self.assertIn(".png", str(ctx.exception))
 
-    def test_save_fails_if_destination_already_exists(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = _init_repo(Path(tmp))
-            _make_project(root)
-            (root / "media" / "hero.png").write_bytes(_synthetic_magenta_png())
-            (root / "media" / "hero_fg.png").write_bytes(b"existing")
-            session = ProjectSession(root, root)
-            with self.assertRaises(LensException):
-                chromakey(session, "hero.png")
-
-    def test_preview_writes_local_file_without_touching_mount(self) -> None:
+    def test_rerun_overwrites_previous_output(self) -> None:
+        """The tune-and-rerun flow: same destination, different tolerance, overwritten in place."""
         with tempfile.TemporaryDirectory() as tmp:
             root = _init_repo(Path(tmp))
             _make_project(root)
             (root / "media" / "hero.png").write_bytes(_synthetic_magenta_png())
             session = ProjectSession(root, root)
 
-            with tempfile.TemporaryDirectory() as preview_dir:
-                preview_path = Path(preview_dir) / "preview.png"
-                result = chromakey(session, "hero.png", preview_path=preview_path)
+            first = chromakey(session, "hero.png", key="FF00FF", core_tol=10)
+            self.assertEqual(first.output_path, "hero_fg.png")
 
-                self.assertFalse(result.saved)
-                self.assertEqual(result.output_path, str(preview_path))
-                self.assertTrue(preview_path.exists())
+            second = chromakey(session, "hero.png", key="FF00FF", core_tol=60)
+            self.assertEqual(second.output_path, "hero_fg.png")
+            self.assertEqual(second.core_tol, 60)
 
-            self.assertFalse((root / "media" / "hero_fg.png").exists())
-            self.assertFalse((root / "media" / "hero_fg.png.yml").exists())
+            sidecar = yaml.safe_load((root / "media" / "hero_fg.png.yml").read_text())
+            self.assertEqual(sidecar["composite"], "foreground")
+
+    def test_preexisting_unrelated_file_at_destination_is_overwritten(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "hero.png").write_bytes(_synthetic_magenta_png())
+            (root / "media" / "hero_fg.png").write_bytes(b"not a real png")
+            session = ProjectSession(root, root)
+
+            result = chromakey(session, "hero.png")
+
+            self.assertEqual(result.output_path, "hero_fg.png")
+            decoded = cv2.imdecode(
+                np.frombuffer((root / "media" / "hero_fg.png").read_bytes(), dtype=np.uint8),
+                cv2.IMREAD_UNCHANGED,
+            )
+            assert decoded is not None
 
     def test_manual_key_hex_used(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -182,22 +188,6 @@ class ChromakeyCommandTests(unittest.TestCase):
             session = ProjectSession(root, root)
             with self.assertRaises(LensException):
                 chromakey(session, "hero.png", key="not-a-color")
-
-    def test_preview_and_out_mutually_exclusive(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = _init_repo(Path(tmp))
-            _make_project(root)
-            (root / "media" / "hero.png").write_bytes(_synthetic_magenta_png())
-            session = ProjectSession(root, root)
-            with tempfile.TemporaryDirectory() as preview_dir:
-                preview_path = Path(preview_dir) / "preview.png"
-                with self.assertRaises(LensException):
-                    chromakey(
-                        session,
-                        "hero.png",
-                        preview_path=preview_path,
-                        out_path="other.png",
-                    )
 
 
 if __name__ == "__main__":

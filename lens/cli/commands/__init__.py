@@ -19,7 +19,7 @@ def _discover_commands() -> Iterator[tuple[str, Typer, str | None]]:
         mod = importlib.import_module(modname)
         app = getattr(mod, "app", None)
         if app is not None and isinstance(app, typer.Typer):
-            name = getattr(mod, "cli_name", None) or modname.split(".")[-1]
+            name = modname.split(".")[-1]
             required_dataset: str | None = getattr(mod, "required_dataset", None)
             yield name, app, required_dataset
 
@@ -37,7 +37,7 @@ def register_commands(main_app: typer.Typer) -> None:
     for name, app, required_dataset in _discover_commands():
         if required_dataset is not None and required_dataset not in selected:
             continue
-        if name in ("media", "media-composite") and (
+        if name == "media" and (
             project_root is None or not has_mount_config(project_root)
         ):
             continue

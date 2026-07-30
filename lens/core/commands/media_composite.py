@@ -1,11 +1,10 @@
-"""Core implementation of ``media-composite chromakey``.
+"""Core implementation of ``media composite chromakey``.
 
-Removes a chroma-keyed background from a mount image and either:
-
-- previews the result to a local filesystem path (no mount write, no
-  metadata -- for inspecting the cut before committing to a tolerance), or
-- saves the result back to the mount and tags its sidecar with
-  ``composite: foreground`` (see issue #99 / ``lens.core.media.metadata``).
+Removes a chroma-keyed background from a mount image and saves the result
+back to the mount, tagging its sidecar ``composite: foreground`` (see issue
+#99 / ``lens.core.media.metadata``). Re-running on the same output path
+overwrites it, since the point of the CLI is to look at the saved file and
+retune ``--core-tol`` (and re-run) until the cut is clean.
 """
 
 from __future__ import annotations
@@ -30,15 +29,14 @@ from lens.core.project import ProjectSession, get_mount_backend
 
 @dataclass(frozen=True, slots=True)
 class ChromakeyResult:
-    """Outcome of a single ``media-composite chromakey`` call."""
+    """Outcome of a single ``media composite chromakey`` call."""
 
-    saved: bool                # False for --preview (local file, no metadata)
-    output_path: str           # mount-relative path (saved) or local path (preview)
-    key_hex: str                # "#RRGGBB" background color used (detected or given)
+    output_path: str            # mount-relative path of the saved foreground
+    key_hex: str                 # "#RRGGBB" background color used (detected or given)
     core_tol: float
     residual_thresh: float
     dilate_px: int
-    n_corners_used: int         # 0 if key was supplied manually (no calibration ran)
+    n_corners_used: int          # 0 if key was supplied manually (no calibration ran)
 
 
 def _default_output_path(relative_path: str) -> str:
@@ -62,23 +60,18 @@ def chromakey(
     core_tol: float | None = None,
     residual_thresh: float = 10.0,
     dilate_px: int | None = None,
-    preview_path: Path | str | None = None,
     out_path: str | None = None,
 ) -> ChromakeyResult:
-    """Run chroma-key background removal on a mount image.
+    """Run chroma-key background removal on a mount image and save the result.
 
-    When *preview_path* is given, the result is written to that local
-    filesystem path only -- the mount is untouched and no composite
-    metadata is set. Otherwise the result is saved back to the mount at
-    *out_path* (default: ``<input-stem>_fg.png`` next to *relative_path*)
-    and tagged ``composite: foreground``.
+    Saves to *out_path* (default: ``<input-stem>_fg.png`` next to
+    *relative_path*), tagged ``composite: foreground``. If the destination
+    already exists it is overwritten -- this is the tune-and-rerun path for
+    ``--core-tol`` and friends.
 
-    Raises :class:`LensException` for configuration, validation, or
-    keying errors.
+    Raises :class:`LensException` for configuration, validation, or keying
+    errors.
     """
-    if preview_path is not None and out_path is not None:
-        raise LensException("--preview and --out are mutually exclusive")
-
     backend = get_mount_backend(session.project_root)
     if backend is None:
         raise LensException("no mount_point configured in lens.toml")
@@ -116,22 +109,6 @@ def chromakey(
 
     png_bytes = encode_png(result.bgra)
 
-    if preview_path is not None:
-        local = Path(preview_path)
-        try:
-            local.write_bytes(png_bytes)
-        except OSError as e:
-            raise LensException(f"cannot write preview: {e}") from e
-        return ChromakeyResult(
-            saved=False,
-            output_path=str(local),
-            key_hex=_key_hex(result.key_bgr),
-            core_tol=result.core_tol,
-            residual_thresh=result.residual_thresh,
-            dilate_px=result.dilate_px,
-            n_corners_used=result.n_corners_used,
-        )
-
     dest = out_path or _default_output_path(relative_path)
     if Path(dest).suffix.lower() != ".png":
         raise LensException(f"--out must be a .png path (got {dest!r}) -- chromakey output has alpha")
@@ -140,13 +117,14 @@ def chromakey(
     filename = Path(dest).name
     try:
         saved_path = backend.put_file(dir_path, filename, io.BytesIO(png_bytes))
-    except FileExistsError as e:
-        raise LensException(str(e)) from e
+    except FileExistsError:
+        # Overwrite: this is the retune-and-rerun path, not an accidental clash.
+        backend.delete(dest.lstrip("/"))
+        saved_path = backend.put_file(dir_path, filename, io.BytesIO(png_bytes))
 
     MediaStore(backend).update_metadata(saved_path, {"composite": "foreground"})
 
     return ChromakeyResult(
-        saved=True,
         output_path=saved_path,
         key_hex=_key_hex(result.key_bgr),
         core_tol=result.core_tol,
