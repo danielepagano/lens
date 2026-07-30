@@ -11,8 +11,9 @@ from pydantic import BaseModel
 from lens.core.commands.media_composite import chromakey as chromakey_core
 from lens.core.commands.media_composite import chromakey_preview
 from lens.core.exceptions import LensException
+from lens.core.media import MediaService
 from lens.core.project import ProjectSession
-from lens.server.dependencies import get_session
+from lens.server.dependencies import get_media_service, get_session
 
 router = APIRouter(prefix="/{project_slug}/mount")
 
@@ -67,6 +68,7 @@ def save_chromakey(
     project_slug: str,
     body: ChromakeySaveRequestBody,
     session: ProjectSession = Depends(get_session),
+    media: MediaService | None = Depends(get_media_service),
 ) -> dict[str, Any]:
     """Re-run chroma-key background removal and save the result to the mount.
 
@@ -83,6 +85,7 @@ def save_chromakey(
             residual_thresh=body.residual_thresh,
             dilate_px=body.dilate_px,
             out_path=body.out_path,
+            media=media,
         )
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

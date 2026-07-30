@@ -167,32 +167,87 @@ class TestMediaCompositeChromakeyBrowser:
     ) -> None:
         page.goto(f"{chromakey_server_url}#{chromakey_slug}/story")  # type: ignore[union-attr]
         page.wait_for_selector('[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        # The command bar's known-command list only settles once /stats resolves,
+        # slightly after markdown-view mounts — wait it out before typing a short command.
+        page.wait_for_load_state("networkidle")  # type: ignore[union-attr]
 
         cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
         cli.click()  # type: ignore[union-attr]
-        cli.press_sequentially("/media-composite hero.png")  # type: ignore[union-attr]
+        cli.press_sequentially("/media-composite chromakey hero.png")  # type: ignore[union-attr]
         page.keyboard.press("Enter")  # type: ignore[union-attr]
 
         overlay = page.locator('[role="dialog"][aria-label="Chromakey preview"]')  # type: ignore[union-attr]
         overlay.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
 
-        # Preview loaded: image visible, resolved stats echoed (auto key = magenta).
+        # Preview loaded: image visible, auto-resolved core tolerance echoed into the input box.
         page.wait_for_selector(".carousel-spotlight img", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
-        resolved = page.locator(".composite-resolved")  # type: ignore[union-attr]
-        resolved.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
-        assert "#FF00FF" in resolved.inner_text()  # type: ignore[union-attr]
+        core_tol_input = overlay.locator("label.composite-field", has_text="Core tol").locator("input")  # type: ignore[union-attr]
+        page.wait_for_function(  # type: ignore[union-attr]
+            "() => document.querySelector('.composite-controls')?.querySelectorAll('input')[1]?.value !== ''",
+            timeout=_PAGE_TIMEOUT_MS,
+        )
+        assert core_tol_input.input_value() != ""  # type: ignore[union-attr]
 
-        # Tweak tolerance and re-preview.
-        core_tol_input = overlay.locator("label", has_text="Core tol").locator("input")  # type: ignore[union-attr]
+        # Tweak tolerance and re-preview: the box should keep exactly what was typed, not an auto value.
         core_tol_input.fill("30")  # type: ignore[union-attr]
         page.get_by_role("button", name="Preview").click()  # type: ignore[union-attr]
         page.wait_for_function(  # type: ignore[union-attr]
-            "() => document.querySelector('.composite-resolved')?.textContent?.includes('core_tol 30.0')",
+            "() => document.querySelector('.composite-controls')?.querySelectorAll('input')[1]?.value === '30'",
             timeout=_PAGE_TIMEOUT_MS,
         )
 
-        # Save: button reflects saving -> saved, and the saved path is echoed.
-        save_button = page.get_by_role("button", name="Save")  # type: ignore[union-attr]
-        save_button.click()  # type: ignore[union-attr]
-        page.wait_for_selector('button:has-text("Saved")', timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        # The destination filename is shown before saving.
         assert "hero_fg.png" in page.locator(".composite-saved-path").inner_text()  # type: ignore[union-attr]
+
+        # Save: closes the whole panel once done -- nothing left to interact with.
+        page.get_by_role("button", name="Save").click()  # type: ignore[union-attr]
+        overlay.wait_for(state="hidden", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+
+        # And the saved file is immediately visible when browsing -- the save route's
+        # write must invalidate the same cache /mount/browse reads from.
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/media-composite chromakey")  # type: ignore[union-attr]
+        page.keyboard.press("Enter")  # type: ignore[union-attr]
+        carousel = page.locator('[role="dialog"][aria-label="Chromakey Source"]')  # type: ignore[union-attr]
+        carousel.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        carousel.locator('.carousel-tile img[alt="hero_fg.png"]').wait_for(  # type: ignore[union-attr]
+            state="visible", timeout=_PAGE_TIMEOUT_MS
+        )
+
+    def test_folder_browse_opens_carousel_and_closing_preview_returns_to_it(
+        self,
+        page: "Page",
+        chromakey_server_url: str,
+        chromakey_slug: str,
+    ) -> None:
+        """No image path (or a folder): browse for a source, exactly like media-attach.
+
+        Selecting a file starts the preview instead of attaching it; closing the
+        preview goes back to the carousel at the folder it was opened from.
+        """
+        page.goto(f"{chromakey_server_url}#{chromakey_slug}/story")  # type: ignore[union-attr]
+        page.wait_for_selector('[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        # See test_preview_tweak_save_loop: the known-command list settles slightly
+        # after markdown-view mounts, and this short command types fast enough to race it.
+        page.wait_for_load_state("networkidle")  # type: ignore[union-attr]
+
+        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/media-composite chromakey")  # type: ignore[union-attr]
+        page.keyboard.press("Enter")  # type: ignore[union-attr]
+
+        carousel = page.locator('[role="dialog"][aria-label="Chromakey Source"]')  # type: ignore[union-attr]
+        carousel.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+
+        # Image tiles render only the thumbnail (no visible filename text), so match on alt text.
+        carousel.locator('.carousel-tile img[alt="hero.png"]').click()  # type: ignore[union-attr]
+        page.get_by_role("button", name="Chromakey").click()  # type: ignore[union-attr]
+
+        overlay = page.locator('[role="dialog"][aria-label="Chromakey preview"]')  # type: ignore[union-attr]
+        overlay.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        assert carousel.count() == 0
+        assert "hero.png" in overlay.locator(".carousel-title").inner_text()  # type: ignore[union-attr]
+
+        overlay.get_by_role("button", name="Close").click()  # type: ignore[union-attr]
+        carousel.wait_for(state="visible", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+        assert overlay.count() == 0

@@ -129,6 +129,11 @@
         Replace
       </button>
     {/if}
+    {#if mode === 'chromakey'}
+      <button type="button" class="action-primary" disabled={!path || isDir} onclick={() => onAttach?.()}>
+        Chromakey
+      </button>
+    {/if}
     {#if mode === 'preview'}
       <button
         type="button"

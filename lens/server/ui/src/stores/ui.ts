@@ -77,7 +77,7 @@ export const scrollContentToBottom = writable(0)
 export const scrollCodeMirrorToBottom = writable(0)
 
 export interface MediaCarouselRequest {
-  mode: 'attach' | 'manage' | 'replace'
+  mode: 'attach' | 'manage' | 'replace' | 'chromakey'
   dir: string
   attachAddress?: string
   attachLine?: number
@@ -135,6 +135,10 @@ export interface MediaCompositeState {
   nCornersUsed: number | null
   error: string | null
   savedPath: string | null
+  /** Incremented on every successful preview -- lets the panel resync input boxes once per preview. */
+  previewSeq: number
+  /** Set when opened by picking a file in the media carousel; closing returns there instead of exiting. */
+  returnToDir: string | null
 }
 
 export const mediaCompositeSession = writable<MediaCompositeState | null>(null)

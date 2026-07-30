@@ -28,7 +28,7 @@ from lens.core.media.chromakey import (
     parse_hex_key,
     remove_background,
 )
-from lens.core.media.metadata import MediaStore
+from lens.core.media import MediaService
 from lens.core.mount import MountBackend
 from lens.core.project import ProjectSession, get_mount_backend
 
@@ -160,6 +160,7 @@ def chromakey(
     residual_thresh: float = 10.0,
     dilate_px: int | None = None,
     out_path: str | None = None,
+    media: MediaService | None = None,
 ) -> ChromakeyResult:
     """Run chroma-key background removal on a mount image and save the result.
 
@@ -167,6 +168,10 @@ def chromakey(
     *relative_path*), tagged ``composite: foreground``. If the destination
     already exists it is overwritten -- this is the tune-and-rerun path for
     ``--core-tol`` and friends.
+
+    *media* is the caller's cached ``MediaService`` (the server passes its
+    per-project instance so the write invalidates the same cache ``/mount/browse``
+    reads from); when omitted (CLI, tests) a throwaway one is built here.
 
     Raises :class:`LensException` for configuration, validation, or keying
     errors.
@@ -179,6 +184,8 @@ def chromakey(
         residual_thresh=residual_thresh,
         dilate_px=dilate_px,
     )
+    if media is None:
+        media = MediaService(backend)
 
     dest = out_path or _default_output_path(relative_path)
     if Path(dest).suffix.lower() != ".png":
@@ -187,13 +194,13 @@ def chromakey(
     dir_path = str(Path(dest).parent) if str(Path(dest).parent) != "." else ""
     filename = Path(dest).name
     try:
-        saved_path = backend.put_file(dir_path, filename, io.BytesIO(png_bytes))
+        saved_path = media.put_file(dir_path, filename, io.BytesIO(png_bytes))
     except FileExistsError:
         # Overwrite: this is the retune-and-rerun path, not an accidental clash.
-        backend.delete(dest.lstrip("/"))
-        saved_path = backend.put_file(dir_path, filename, io.BytesIO(png_bytes))
+        media.delete(dest.lstrip("/"))
+        saved_path = media.put_file(dir_path, filename, io.BytesIO(png_bytes))
 
-    MediaStore(backend).update_metadata(saved_path, {"composite": "foreground"})
+    media.update_metadata(saved_path, {"composite": "foreground"})
 
     return ChromakeyResult(
         output_path=saved_path,

@@ -9,6 +9,7 @@
   import MediaMetadataPanel from './MediaMetadataPanel.svelte'
   import {
     attachFromCarousel,
+    chromakeyFromCarousel,
     confirmRenameInCarousel,
     deleteFromCarousel,
     downloadFromCarousel,
@@ -47,7 +48,9 @@
         ? 'Attach Media'
         : mode === 'replace'
           ? 'Replace Media'
-          : 'Manage Media',
+          : mode === 'chromakey'
+            ? 'Chromakey Source'
+            : 'Manage Media',
   )
 
   let lastRequest: MediaCarouselRequest | null = null
@@ -250,7 +253,10 @@
           onOpenMetadata={() => {
             metadataOpen = true
           }}
-          onAttach={() => void attachFromCarousel(handlerCtx())}
+          onAttach={() =>
+            mode === 'chromakey'
+              ? chromakeyFromCarousel(handlerCtx())
+              : void attachFromCarousel(handlerCtx())}
           onDownload={() => downloadFromCarousel(handlerCtx())}
           onStartRename={handleStartRename}
           onConfirmRename={(value) => void confirmRenameInCarousel(handlerCtx(), value)}

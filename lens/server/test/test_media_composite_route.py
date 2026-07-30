@@ -135,3 +135,17 @@ class TestSaveChromakey:
         )
         assert r.status_code == 400
         assert ".png" in r.json()["detail"]
+
+    def test_saved_file_appears_in_browse_without_restart(self, mount_client: TestClient) -> None:
+        """Regression: saving used to write via the raw mount backend, bypassing
+        the MediaService cache that /mount/browse reads from -- the new _fg.png
+        wouldn't show up in the carousel until the cache separately expired."""
+        # Prime the listing cache before the file exists.
+        before = mount_client.get("/test/mount/browse").json()
+        assert "hero_fg.png" not in [e["name"] for e in before]
+
+        r = mount_client.post("/test/mount/composite/chromakey/save", json={"path": "hero.png"})
+        assert r.status_code == 200
+
+        after = mount_client.get("/test/mount/browse").json()
+        assert "hero_fg.png" in [e["name"] for e in after]

@@ -33,7 +33,17 @@ export function buildChromakeyParams(
   }
 }
 
-export function startChromakeySession(path: string): void {
+/** Mirrors `_default_output_path` in `lens.core.commands.media_composite` — `chars/hero.png` -> `chars/hero_fg.png`. */
+export function defaultChromakeyOutputPath(path: string): string {
+  const slash = path.lastIndexOf('/')
+  const dir = slash >= 0 ? path.slice(0, slash + 1) : ''
+  const base = slash >= 0 ? path.slice(slash + 1) : path
+  const dot = base.lastIndexOf('.')
+  const stem = dot > 0 ? base.slice(0, dot) : base
+  return `${dir}${stem}_fg.png`
+}
+
+export function startChromakeySession(path: string, opts: { returnToDir?: string } = {}): void {
   mediaCompositeSession.set({
     path,
     status: 'previewing',
@@ -46,6 +56,8 @@ export function startChromakeySession(path: string): void {
     nCornersUsed: null,
     error: null,
     savedPath: null,
+    previewSeq: 0,
+    returnToDir: opts.returnToDir ?? null,
   })
 }
 
@@ -66,6 +78,7 @@ export async function runChromakeyPreview(params: MediaCompositeParams): Promise
             dilatePx: result.dilate_px,
             nCornersUsed: result.n_corners_used,
             savedPath: null,
+            previewSeq: s.previewSeq + 1,
           }
         : s
     )

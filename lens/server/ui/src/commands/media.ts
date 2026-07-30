@@ -118,32 +118,37 @@ const mediaHandler = async (
   }
 
   if (command === 'media-composite') {
+    const action = ctx.args.positional['action'] as string | undefined
+    if (action !== 'chromakey') {
+      cliOutput.set({
+        output: 'media-composite: expected action "chromakey"',
+        exitCode: 1,
+        streaming: false,
+      })
+      return { clearInput: false }
+    }
     const rawPath = ((ctx.args.positional['path'] as string | undefined) ?? '').trim()
-    if (!rawPath) {
-      cliOutput.set({
-        output: 'media-composite requires a path to a chroma-keyed image under the mount',
-        exitCode: 1,
-        streaming: false,
-      })
-      return { clearInput: false }
+    const ext = rawPath ? mountPathFileExtension(rawPath) : ''
+    if (rawPath && CHROMAKEY_IMAGE_EXTENSIONS.has(ext)) {
+      const key = (ctx.args.options['key'] as string | undefined) ?? ''
+      const coreTol = (ctx.args.options['core-tol'] as string | undefined) ?? ''
+      const residualThresh = (ctx.args.options['residual-thresh'] as string | undefined) ?? ''
+      const dilatePx = (ctx.args.options['dilate-px'] as string | undefined) ?? ''
+      startChromakeySession(rawPath)
+      await runChromakeyPreview(
+        buildChromakeyParams(rawPath, { key, coreTol, residualThresh, dilatePx })
+      )
+      return { clearInput: true }
     }
-    const ext = mountPathFileExtension(rawPath)
-    if (!CHROMAKEY_IMAGE_EXTENSIONS.has(ext)) {
-      cliOutput.set({
-        output: `media-composite: unsupported extension '${ext}' — expected an image`,
-        exitCode: 1,
-        streaming: false,
-      })
-      return { clearInput: false }
+    let dir = rawPath
+    if (dir) {
+      const lastSegment = dir.split('/').pop() ?? ''
+      if (lastSegment.includes('.')) {
+        const slashIdx = dir.lastIndexOf('/')
+        dir = slashIdx >= 0 ? dir.slice(0, slashIdx) : ''
+      }
     }
-    const key = (ctx.args.options['key'] as string | undefined) ?? ''
-    const coreTol = (ctx.args.options['core-tol'] as string | undefined) ?? ''
-    const residualThresh = (ctx.args.options['residual-thresh'] as string | undefined) ?? ''
-    const dilatePx = (ctx.args.options['dilate-px'] as string | undefined) ?? ''
-    startChromakeySession(rawPath)
-    await runChromakeyPreview(
-      buildChromakeyParams(rawPath, { key, coreTol, residualThresh, dilatePx })
-    )
+    mediaCarouselRequest.set({ mode: 'chromakey', dir })
     return { clearInput: true }
   }
 
@@ -444,10 +449,17 @@ export const mediaModule: CommandModule = {
         hint: 'remove a chroma-keyed background — preview, tweak tolerance, then save',
         positional: [
           {
+            name: 'action',
+            valueType: 'slug',
+            required: true,
+            slugSource: 'chromakey',
+            hint: 'operation (more coming later)',
+          },
+          {
             name: 'path',
             valueType: 'file-path',
-            required: true,
-            hint: 'chroma-keyed source image under the mount',
+            required: false,
+            hint: 'chroma-keyed source image, or a folder to browse',
           },
         ],
         options: [

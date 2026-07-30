@@ -77,7 +77,15 @@ describe('startChromakeySession', () => {
       status: 'previewing',
       previewSrc: null,
       error: null,
+      previewSeq: 0,
+      returnToDir: null,
     })
+  })
+
+  it('records returnToDir when opened from the carousel', () => {
+    startChromakeySession('chars/hero.png', { returnToDir: 'chars' })
+    const s = get(mediaCompositeSession)
+    expect(s?.returnToDir).toBe('chars')
   })
 })
 
@@ -102,6 +110,28 @@ describe('runChromakeyPreview', () => {
     expect(s?.coreTol).toBe(15)
     expect(s?.nCornersUsed).toBe(4)
     expect(s?.lastParams).toEqual({ path: 'hero.png' })
+  })
+
+  it('increments previewSeq on each successful preview, not on failure', async () => {
+    startChromakeySession('hero.png')
+    mockPreviewChromakey.mockResolvedValue({
+      png_b64: 'ZmFrZQ==',
+      key_hex: '#FF00FF',
+      core_tol: 15,
+      residual_thresh: 10,
+      dilate_px: 20,
+      n_corners_used: 4,
+    })
+
+    await runChromakeyPreview({ path: 'hero.png' })
+    expect(get(mediaCompositeSession)?.previewSeq).toBe(1)
+
+    mockPreviewChromakey.mockRejectedValueOnce(new Error('boom'))
+    await runChromakeyPreview({ path: 'hero.png' })
+    expect(get(mediaCompositeSession)?.previewSeq).toBe(1)
+
+    await runChromakeyPreview({ path: 'hero.png' })
+    expect(get(mediaCompositeSession)?.previewSeq).toBe(2)
   })
 
   it('sets an error status on failure', async () => {
