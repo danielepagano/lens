@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { get } from 'svelte/store'
 import type { MediaCarouselRequest } from '../../stores/ui'
+import { mediaCompositeSession } from '../../stores/ui'
 
 vi.mock('../../services/api', () => ({
   attachFile: vi.fn(),
@@ -10,18 +12,27 @@ vi.mock('../../services/api', () => ({
   uploadMountFile: vi.fn(),
   getMountFilePath: vi.fn((p: string) => `/mount/file/${p}`),
   runEdit: vi.fn(),
+  previewChromakey: vi.fn(),
+  saveChromakey: vi.fn(),
   StreamBusyError: class StreamBusyError extends Error {},
 }))
 
-import { attachFile, getMountMetadata, runEdit } from '../../services/api'
-import { attachFromCarousel, type MediaCarouselHandlerCtx, type PendingLayer } from './mediaCarouselHandlers'
+import { attachFile, getMountMetadata, previewChromakey, runEdit } from '../../services/api'
+import {
+  attachFromCarousel,
+  chromakeyFromCarousel,
+  type MediaCarouselHandlerCtx,
+  type PendingLayer,
+} from './mediaCarouselHandlers'
 
 const mockAttachFile = vi.mocked(attachFile)
 const mockGetMountMetadata = vi.mocked(getMountMetadata)
 const mockRunEdit = vi.mocked(runEdit)
+const mockPreviewChromakey = vi.mocked(previewChromakey)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mediaCompositeSession.set(null)
 })
 
 function makeCtx(overrides: Partial<MediaCarouselHandlerCtx> = {}): {
@@ -240,5 +251,36 @@ describe('attachFromCarousel — replace mode composite pairing', () => {
     expect(call?.prompt).toContain('fg/amy.png')
     expect(state.pendingLayer).toBeNull()
     expect(state.closed).toBe(true)
+  })
+})
+
+describe('chromakeyFromCarousel', () => {
+  it('does nothing without a selected file', () => {
+    const { ctx, state } = makeCtx({ getSelectedPath: () => null })
+    chromakeyFromCarousel(ctx)
+    expect(state.closed).toBe(false)
+    expect(mockPreviewChromakey).not.toHaveBeenCalled()
+  })
+
+  it('closes the carousel and starts a chromakey session at the selected file, remembering the dir', () => {
+    const { ctx, state } = makeCtx({
+      getSelectedPath: () => 'chars/hero.png',
+      getCurrentDir: () => 'chars',
+    })
+    mockPreviewChromakey.mockResolvedValue({
+      png_b64: 'ZmFrZQ==',
+      key_hex: '#FF00FF',
+      core_tol: 15,
+      residual_thresh: 10,
+      dilate_px: 20,
+      n_corners_used: 4,
+    })
+
+    chromakeyFromCarousel(ctx)
+
+    expect(state.closed).toBe(true)
+    const s = get(mediaCompositeSession)
+    expect(s).toMatchObject({ path: 'chars/hero.png', returnToDir: 'chars' })
+    expect(mockPreviewChromakey).toHaveBeenCalledWith({ path: 'chars/hero.png' })
   })
 })

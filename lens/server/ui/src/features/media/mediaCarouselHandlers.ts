@@ -15,6 +15,7 @@ import {
 } from '../../services/api'
 import { buildLayeredMountEmbedLine, buildMountEmbedLine } from '../../utils/mountEmbed'
 import { compositeRole, type CompositeRole } from '../../utils/mediaComposite'
+import { runChromakeyPreview, startChromakeySession } from './mediaCompositeHandlers'
 
 export interface PendingLayer {
   path: string
@@ -188,6 +189,16 @@ export async function attachFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<
   } catch (e) {
     ctx.setError(e instanceof Error ? e.message : String(e))
   }
+}
+
+/** Picking an image in 'chromakey' mode starts a preview instead of attaching it. */
+export function chromakeyFromCarousel(ctx: MediaCarouselHandlerCtx): void {
+  const selectedPath = ctx.getSelectedPath()
+  if (!selectedPath) return
+  const returnToDir = ctx.getCurrentDir()
+  ctx.close()
+  startChromakeySession(selectedPath, { returnToDir })
+  void runChromakeyPreview({ path: selectedPath })
 }
 
 export async function removeFromScene(ctx: MediaCarouselHandlerCtx): Promise<void> {

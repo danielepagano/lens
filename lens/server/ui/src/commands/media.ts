@@ -14,6 +14,11 @@ import {
 import type { ImageBackendStats, Stats } from '../services/api'
 import type { CliPayload, CommandContext, CommandDefinition, CommandModule } from './common'
 import { normalizeAddress, normalizePromptNodeSliceMentions } from './common'
+import {
+  buildChromakeyParams,
+  runChromakeyPreview,
+  startChromakeySession,
+} from '../features/media/mediaCompositeHandlers'
 
 /** Mirrors `lens.core.commands.attach.SUPPORTED_EXTENSIONS` — attachable mount file suffixes. */
 const ATTACH_MOUNT_EXTENSIONS = new Set([
@@ -30,6 +35,9 @@ const ATTACH_MOUNT_EXTENSIONS = new Set([
   '.txt',
   '.md',
 ])
+
+/** Mirrors `lens.core.commands.attach.IMAGE_EXTS` — chromakey only accepts images. */
+const CHROMAKEY_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif'])
 
 function mountPathFileExtension(path: string): string {
   const seg = path.split('/').pop() ?? path
@@ -106,6 +114,41 @@ const mediaHandler = async (
       }
     }
     mediaCarouselRequest.set({ mode: 'manage', dir })
+    return { clearInput: true }
+  }
+
+  if (command === 'media-composite') {
+    const action = ctx.args.positional['action'] as string | undefined
+    if (action !== 'chromakey') {
+      cliOutput.set({
+        output: 'media-composite: expected action "chromakey"',
+        exitCode: 1,
+        streaming: false,
+      })
+      return { clearInput: false }
+    }
+    const rawPath = ((ctx.args.positional['path'] as string | undefined) ?? '').trim()
+    const ext = rawPath ? mountPathFileExtension(rawPath) : ''
+    if (rawPath && CHROMAKEY_IMAGE_EXTENSIONS.has(ext)) {
+      const key = (ctx.args.options['key'] as string | undefined) ?? ''
+      const coreTol = (ctx.args.options['core-tol'] as string | undefined) ?? ''
+      const residualThresh = (ctx.args.options['residual-thresh'] as string | undefined) ?? ''
+      const dilatePx = (ctx.args.options['dilate-px'] as string | undefined) ?? ''
+      startChromakeySession(rawPath)
+      await runChromakeyPreview(
+        buildChromakeyParams(rawPath, { key, coreTol, residualThresh, dilatePx })
+      )
+      return { clearInput: true }
+    }
+    let dir = rawPath
+    if (dir) {
+      const lastSegment = dir.split('/').pop() ?? ''
+      if (lastSegment.includes('.')) {
+        const slashIdx = dir.lastIndexOf('/')
+        dir = slashIdx >= 0 ? dir.slice(0, slashIdx) : ''
+      }
+    }
+    mediaCarouselRequest.set({ mode: 'chromakey', dir })
     return { clearInput: true }
   }
 
@@ -396,6 +439,49 @@ export const mediaModule: CommandModule = {
             valueType: 'file-path',
             required: false,
             hint: 'starting folder',
+          },
+        ],
+      },
+      {
+        trigger: 'media-composite',
+        group: 'narrative',
+        cursorTargeting: 'never',
+        hint: 'remove a chroma-keyed background — preview, tweak tolerance, then save',
+        positional: [
+          {
+            name: 'action',
+            valueType: 'slug',
+            required: true,
+            slugSource: 'chromakey',
+            hint: 'operation (more coming later)',
+          },
+          {
+            name: 'path',
+            valueType: 'file-path',
+            required: false,
+            hint: 'chroma-keyed source image, or a folder to browse',
+          },
+        ],
+        options: [
+          {
+            name: 'key',
+            valueType: 'string',
+            hint: 'hex background color, e.g. FF00FF (auto-detected if omitted)',
+          },
+          {
+            name: 'core-tol',
+            valueType: 'string',
+            hint: 'tolerance override (auto-calibrated if omitted; the one worth tuning)',
+          },
+          {
+            name: 'residual-thresh',
+            valueType: 'string',
+            hint: 'edge alpha-blend fit tolerance (default 10.0)',
+          },
+          {
+            name: 'dilate-px',
+            valueType: 'int',
+            hint: 'edge zone width in pixels (auto-scaled if omitted)',
           },
         ],
       },

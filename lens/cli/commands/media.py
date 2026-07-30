@@ -39,6 +39,7 @@ from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession, get_mount_backend, resolve_address
 
 from .attach import attach_app
+from .media_composite import composite_app
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -299,3 +300,4 @@ def delete(
 
 
 app.add_typer(attach_app, name="attach")
+app.add_typer(composite_app, name="composite")

@@ -1,4 +1,4 @@
-export type MediaSpotlightMode = 'attach' | 'manage' | 'preview' | 'replace'
+export type MediaSpotlightMode = 'attach' | 'manage' | 'preview' | 'replace' | 'chromakey'
 
 export type MediaSpotlightCallbacks = {
   onAttach?: () => void

@@ -396,6 +396,66 @@ export interface SaveGeneratedItemResult {
 export const saveGeneratedItem = (body: SaveGeneratedItemBody): Promise<SaveGeneratedItemResult> =>
   post(projectPath('/generate/save'), body) as Promise<SaveGeneratedItemResult>
 
+// ---- Media composite (chromakey) preview + save ----
+
+export interface ChromakeyParams {
+  path: string
+  key?: string
+  coreTol?: number
+  residualThresh?: number
+  dilatePx?: number
+}
+
+export interface ChromakeyPreviewResult {
+  png_b64: string
+  key_hex: string
+  core_tol: number
+  residual_thresh: number
+  dilate_px: number
+  n_corners_used: number
+}
+
+export interface ChromakeySaveResult {
+  output_path: string
+  key_hex: string
+  core_tol: number
+  residual_thresh: number
+  dilate_px: number
+  n_corners_used: number
+}
+
+function chromakeyRequestBody(params: ChromakeyParams): Record<string, unknown> {
+  return {
+    path: params.path,
+    key: params.key,
+    core_tol: params.coreTol,
+    residual_thresh: params.residualThresh,
+    dilate_px: params.dilatePx,
+  }
+}
+
+export async function previewChromakey(params: ChromakeyParams): Promise<ChromakeyPreviewResult> {
+  const r = await fetch(projectPath('/mount/composite/chromakey/preview'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(chromakeyRequestBody(params)),
+  })
+  if (!r.ok) throw new Error(await errorDetail(r))
+  return r.json() as Promise<ChromakeyPreviewResult>
+}
+
+export async function saveChromakey(
+  params: ChromakeyParams & { outPath?: string }
+): Promise<ChromakeySaveResult> {
+  const r = await fetch(projectPath('/mount/composite/chromakey/save'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...chromakeyRequestBody(params), out_path: params.outPath }),
+  })
+  if (!r.ok) throw new Error(await errorDetail(r))
+  return r.json() as Promise<ChromakeySaveResult>
+}
+
 // ---- Operator streaming API ----
 
 export interface OperatorTargetEvent {

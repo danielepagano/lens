@@ -11,6 +11,7 @@
   import StreamingPreviewPanel from './features/streaming/StreamingPreviewPanel.svelte'
   import MediaCarousel from './features/media/MediaCarousel.svelte'
   import MediaPreviewCarousel from './features/media/MediaPreviewCarousel.svelte'
+  import MediaCompositeChromakey from './features/media/MediaCompositeChromakey.svelte'
   import KbDiffModal from './features/kb/KbDiffModal.svelte'
   import GuideModal from './features/cli/GuideModal.svelte'
   import ReleaseModal from './features/release/ReleaseModal.svelte'
@@ -326,6 +327,7 @@
   <TransactionResultPanel />
   <StreamingPreviewPanel />
   <MediaPreviewCarousel />
+  <MediaCompositeChromakey />
   <MediaCarousel onDone={handleCarouselDone} />
   <KbDiffModal />
   <GuideModal />
