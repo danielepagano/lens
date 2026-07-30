@@ -43,6 +43,7 @@ CMD_PIN = (
 )
 CMD_PROMPT = "Manage operator prompts and project-local prompt overrides."
 CMD_MEDIA = "Image generation, TTS, attachment, and related commands."
+CMD_MEDIA_COMPOSITE = "Background-removal / layering tools for Visual Novel compositing."
 CMD_RENAME = "Rename a narrative node."
 CMD_SERVE = "Build the frontend and start the Lens API server."
 CMD_DEV = "Start the Vite dev server and Lens API with hot reload."
@@ -311,6 +312,10 @@ ARG_MEDIA_FG = (
     "Mount-relative path of a foreground image to layer over PATH "
     "(background), creating a composite attachment."
 )
+ARG_CHROMAKEY_PATH = (
+    "Mount-relative path of the chroma-keyed source image "
+    "(e.g. 'chars/hero.png')."
+)
 ARG_TTS_ADDR = (
     "Narrative node address (e.g. /@cursor, /chapter-1). "
     "Optional line slice @N or @N:M (physical lines in the node file)."
@@ -424,6 +429,35 @@ MEDIA_DELETE = (
     "references in narrative and knowledge files."
 )
 MEDIA_DELETE_YES = "Skip confirmation prompt and proceed with deletion."
+
+# media-composite sub-commands
+MEDIA_COMPOSITE_CHROMAKEY = (
+    "Remove a chroma-keyed background from an image and save a "
+    "foreground PNG with alpha (tagged composite: foreground)."
+)
+MEDIA_COMPOSITE_KEY = (
+    "Hex background color to key out, e.g. FF00FF (auto-detected from "
+    "the image corners if omitted)."
+)
+MEDIA_COMPOSITE_CORE_TOL = (
+    "Color-distance tolerance for the confident background core "
+    "(auto-calibrated if omitted; the one worth hand-tuning)."
+)
+MEDIA_COMPOSITE_RESIDUAL_THRESH = (
+    "Edge alpha-blend fit tolerance; rarely needs changing."
+)
+MEDIA_COMPOSITE_DILATE_PX = (
+    "Edge zone width in pixels around the background core "
+    "(auto-scaled to resolution if omitted)."
+)
+MEDIA_COMPOSITE_PREVIEW = (
+    "Write the result to this local filesystem path for inspection "
+    "instead of saving to the mount (no composite metadata is set)."
+)
+MEDIA_COMPOSITE_OUT = (
+    "Mount-relative destination .png path for the saved foreground "
+    "(default: '<input-stem>_fg.png' next to the source)."
+)
 
 # deploy sub-commands
 DEPLOY_INIT = (

@@ -803,6 +803,37 @@ After each chunk is ready, if `ffplay` is on your `PATH` and `--silent` was not 
 
 Requires **`[project] mount_point`** and at least one `[[speech]]` block in `lens.toml` (see **[docs/configuration.md](../../docs/configuration.md)**).
 
+## Media Composite (`lens media-composite`)
+
+Like `lens media`, this group is only registered when `mount_point` is set in `lens.toml`.
+
+### `lens media-composite chromakey`
+
+Removes a chroma-keyed background from an illustration (bordered characters like anime — not photos or semi-transparent subjects) and saves a foreground PNG with an alpha channel, tagged `composite: foreground` (see the `composite` sidecar key documented under [`lens media attach`](#lens-media-attach)). Works best with a flat magenta (`#FF00FF`) background.
+
+The keying math auto-detects the background color and tolerance from the image's corners, but tolerance is the one parameter worth hand-tuning per image. The typical flow is: preview locally, adjust `--core-tol`, repeat, then save.
+
+```bash
+lens media-composite chromakey chars/hero.png --preview /tmp/hero-preview.png   # inspect, no mount write
+lens media-composite chromakey chars/hero.png --preview /tmp/hero-preview.png --core-tol 30  # retune, repeat as needed
+lens media-composite chromakey chars/hero.png                                  # save chars/hero_fg.png, tag composite: foreground
+lens media-composite chromakey chars/hero.png --out chars/hero_cut.png         # custom destination
+lens media-composite chromakey chars/hero.png --key FF00FF --core-tol 30       # skip auto-detection entirely
+```
+
+**Positional:** `PATH` — mount-relative path of the chroma-keyed source image.
+
+Options:
+
+- `--key` / `-k` — hex background color to key out (e.g. `FF00FF`); auto-detected from the image corners if omitted.
+- `--core-tol` — color-distance tolerance for the confident background core; auto-calibrated if omitted. The one worth hand-tuning on a noisy or unusual input.
+- `--residual-thresh` — edge alpha-blend fit tolerance (default `10.0`); rarely needs changing.
+- `--dilate-px` — edge zone width in pixels around the background core; auto-scaled to resolution if omitted.
+- `--preview PATH` — write the result to this **local filesystem path** instead of the mount. Nothing is written to the mount and no composite metadata is set — use this to inspect the cut and retune `--core-tol` before committing.
+- `--out PATH` — mount-relative destination `.png` path for the saved foreground (default: `<input-stem>_fg.png` next to the source). Not compatible with `--preview`.
+
+Without `--preview`, the result is saved to the mount and its sidecar is tagged `composite: foreground`, ready for `lens media attach BG --fg FG`.
+
 ### Configuring `mount_point`
 
 See **[Configuration — `[project].mount_point`](../../docs/configuration.md#project)** (local vs `s3://`, env vars, attach paths, `--ref` on S3). Use `lens check` to validate.
