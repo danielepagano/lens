@@ -85,7 +85,7 @@
           Dilate px
           <input type="text" inputmode="numeric" placeholder="auto" bind:value={dilatePxInput} disabled={busy} />
         </label>
-        <button type="button" onclick={handlePreview} disabled={busy}>
+        <button type="button" class="composite-preview-btn" onclick={handlePreview} disabled={busy}>
           {session.status === 'previewing' ? 'Previewing…' : 'Preview'}
         </button>
       </div>
@@ -127,31 +127,64 @@
 {/if}
 
 <style>
+  /* Not global (app.css) — Svelte scopes <style> per component, so this mirrors
+     MediaCarouselHeader.svelte's rule rather than inheriting it. */
+  .carousel-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    opacity: 0.7;
+    min-height: 34px;
+  }
+  .carousel-close:hover {
+    opacity: 1;
+  }
   .composite-controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.6rem;
+    gap: 0.5rem;
     align-items: flex-end;
-    padding: 0.6rem 0.9rem;
+    padding: 0.5rem 0.9rem;
     border-bottom: 1px solid var(--pico-muted-border-color);
   }
   .composite-controls label {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
-    font-size: 0.72rem;
+    gap: 0.1rem;
+    font-size: 0.7rem;
     opacity: 0.85;
     margin: 0;
   }
   .composite-controls input {
-    width: 8rem;
-    font-size: 0.85rem;
-    padding: 0.2rem 0.4rem;
+    width: 7rem;
+    height: 32px;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.5rem;
     margin: 0;
   }
+  .composite-preview-btn {
+    height: 32px;
+    padding: 0.2rem 0.6rem;
+    margin: 0;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid var(--pico-muted-border-color);
+    background: transparent;
+    color: inherit;
+  }
+  .composite-preview-btn:hover:not(:disabled) {
+    background: var(--pico-secondary-background, #333);
+  }
+  .composite-preview-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
   .composite-resolved {
-    padding: 0.35rem 0.9rem 0;
-    font-size: 0.75rem;
+    padding: 0.3rem 0.9rem 0;
+    font-size: 0.72rem;
     opacity: 0.7;
   }
   .composite-saved-path {
