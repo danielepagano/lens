@@ -14,8 +14,9 @@ import {
   type DeleteMountConfirmRequired,
 } from '../../services/api'
 import { buildLayeredMountEmbedLine, buildMountEmbedLine } from '../../utils/mountEmbed'
-import { compositeRole, type CompositeRole } from '../../utils/mediaComposite'
+import { compositeRole, otherCompositeRole, type CompositeRole } from '../../utils/mediaComposite'
 import { runChromakeyPreview, startChromakeySession } from './mediaCompositeHandlers'
+import { dirnameOfPath, requiredKeywordsForDir } from './mediaSearchHandlers'
 
 export interface PendingLayer {
   path: string
@@ -36,16 +37,53 @@ export type MediaCarouselHandlerCtx = {
   setPendingDeleteConfirm: (value: boolean) => void
   getPendingLayer: () => PendingLayer | null
   setPendingLayer: (value: PendingLayer | null) => void
+  openSearchWithQuery: (query: string) => void
   close: () => void
   onDone?: () => void
   loadDir: () => Promise<void>
   navigateTo: (dir: string) => Promise<void>
 }
 
-function orderLayers(pending: PendingLayer, selectedPath: string): { bgPath: string; fgPath: string } {
-  return pending.role === 'background'
-    ? { bgPath: pending.path, fgPath: selectedPath }
-    : { bgPath: selectedPath, fgPath: pending.path }
+/**
+ * Pre-filled search query for finding the complementary composite layer:
+ * requires an image tagged with the opposite role, plus the folder the
+ * first pick came from as freely editable/removable terms (same convention
+ * as `requiredKeywordsForDir`).
+ */
+function pairingSearchQuery(pickedPath: string, role: CompositeRole): string {
+  const base = `image! composite! ${otherCompositeRole(role)}!`
+  const dirTerms = requiredKeywordsForDir(dirnameOfPath(pickedPath))
+  return dirTerms ? `${base} ${dirTerms}` : `${base} `
+}
+
+/**
+ * Resolve which of the two picked files is the background and which is the
+ * foreground from their own composite metadata, not pick order. Exactly
+ * one of the pair must be tagged `foreground` — a background can be any
+ * image, tagged or not, since (unlike the foreground's chromakey alpha)
+ * the `composite: background` tag is purely a search convenience, not a
+ * functional requirement.
+ */
+async function resolveLayers(
+  pending: PendingLayer,
+  selectedPath: string,
+): Promise<{ bgPath: string; fgPath: string } | { error: string }> {
+  const selectedRole = await lookupCompositeRole(selectedPath)
+  const pendingIsFg = pending.role === 'foreground'
+  const selectedIsFg = selectedRole === 'foreground'
+
+  if (pendingIsFg && selectedIsFg) {
+    return { error: 'Both files are tagged foreground — pick a background instead.' }
+  }
+  if (!pendingIsFg && !selectedIsFg) {
+    return {
+      error:
+        'Neither file is tagged foreground — a composite needs one image tagged composite: foreground.',
+    }
+  }
+  return pendingIsFg
+    ? { bgPath: selectedPath, fgPath: pending.path }
+    : { bgPath: pending.path, fgPath: selectedPath }
 }
 
 async function completeLayeredAttach(
@@ -54,7 +92,12 @@ async function completeLayeredAttach(
   pending: PendingLayer,
   selectedPath: string,
 ): Promise<void> {
-  const { bgPath, fgPath } = orderLayers(pending, selectedPath)
+  const layers = await resolveLayers(pending, selectedPath)
+  if ('error' in layers) {
+    ctx.setError(layers.error)
+    return
+  }
+  const { bgPath, fgPath } = layers
   try {
     const result = await attachFile(bgPath, {
       fgPath,
@@ -80,7 +123,12 @@ async function completeLayeredReplace(
   pending: PendingLayer,
   selectedPath: string,
 ): Promise<void> {
-  const { bgPath, fgPath } = orderLayers(pending, selectedPath)
+  const layers = await resolveLayers(pending, selectedPath)
+  if ('error' in layers) {
+    ctx.setError(layers.error)
+    return
+  }
+  const { bgPath, fgPath } = layers
   try {
     const replacement = buildLayeredMountEmbedLine(bgPath, fgPath)
     const result = await runEdit(
@@ -138,6 +186,7 @@ export async function attachFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<
     const role = await lookupCompositeRole(selectedPath)
     if (role) {
       ctx.setPendingLayer({ path: selectedPath, role })
+      ctx.openSearchWithQuery(pairingSearchQuery(selectedPath, role))
       return
     }
 
@@ -172,6 +221,7 @@ export async function attachFromCarousel(ctx: MediaCarouselHandlerCtx): Promise<
   const role = await lookupCompositeRole(selectedPath)
   if (role) {
     ctx.setPendingLayer({ path: selectedPath, role })
+    ctx.openSearchWithQuery(pairingSearchQuery(selectedPath, role))
     return
   }
 

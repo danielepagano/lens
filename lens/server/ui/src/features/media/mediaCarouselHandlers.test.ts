@@ -37,13 +37,20 @@ beforeEach(() => {
 
 function makeCtx(overrides: Partial<MediaCarouselHandlerCtx> = {}): {
   ctx: MediaCarouselHandlerCtx
-  state: { error: string | null; pendingLayer: PendingLayer | null; closed: boolean; done: boolean }
+  state: {
+    error: string | null
+    pendingLayer: PendingLayer | null
+    closed: boolean
+    done: boolean
+    searchQuery: string | null
+  }
 } {
   const state = {
     error: null as string | null,
     pendingLayer: null as PendingLayer | null,
     closed: false,
     done: false,
+    searchQuery: null as string | null,
   }
   const ctx: MediaCarouselHandlerCtx = {
     getRequest: () => ({ mode: 'attach', dir: '' }) as MediaCarouselRequest,
@@ -62,6 +69,9 @@ function makeCtx(overrides: Partial<MediaCarouselHandlerCtx> = {}): {
     getPendingLayer: () => state.pendingLayer,
     setPendingLayer: (v) => {
       state.pendingLayer = v
+    },
+    openSearchWithQuery: (q) => {
+      state.searchQuery = q
     },
     close: () => {
       state.closed = true
@@ -92,7 +102,7 @@ describe('attachFromCarousel — composite pairing', () => {
     expect(state.pendingLayer).toBeNull()
   })
 
-  it('enters pairing mode instead of attaching when the file is tagged background', async () => {
+  it('enters pairing mode instead of attaching when the file is tagged background, and pre-fills a search for a foreground in the same folder', async () => {
     mockGetMountMetadata.mockResolvedValue({
       relative_path: 'bg/scene.jpg', name: 'scene.jpg', extension: '.jpg', type: 'image',
       composite: 'background',
@@ -104,9 +114,10 @@ describe('attachFromCarousel — composite pairing', () => {
     expect(mockAttachFile).not.toHaveBeenCalled()
     expect(state.pendingLayer).toEqual({ path: 'bg/scene.jpg', role: 'background' })
     expect(state.closed).toBe(false)
+    expect(state.searchQuery).toBe('image! composite! foreground! bg! ')
   })
 
-  it('enters pairing mode when the file is tagged foreground', async () => {
+  it('enters pairing mode when the file is tagged foreground, and pre-fills a search for a background', async () => {
     mockGetMountMetadata.mockResolvedValue({
       relative_path: 'fg/amy.png', name: 'amy.png', extension: '.png', type: 'image',
       composite: 'foreground',
@@ -116,10 +127,15 @@ describe('attachFromCarousel — composite pairing', () => {
     await attachFromCarousel(ctx)
 
     expect(state.pendingLayer).toEqual({ path: 'fg/amy.png', role: 'foreground' })
+    expect(state.searchQuery).toBe('image! composite! background! fg! ')
   })
 
   it('completes a layered attach with bg as path and fg as fgPath, background picked first', async () => {
     mockAttachFile.mockResolvedValue({ status: 'ok', type: 'image', embed: '<div>x</div>' })
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'fg/amy.png', name: 'amy.png', extension: '.png', type: 'image',
+      composite: 'foreground',
+    })
     const { ctx, state } = makeCtx({
       getSelectedPath: () => 'fg/amy.png',
       getPendingLayer: () => ({ path: 'bg/scene.jpg', role: 'background' }),
@@ -133,8 +149,11 @@ describe('attachFromCarousel — composite pairing', () => {
     expect(state.done).toBe(true)
   })
 
-  it('completes a layered attach with bg as path and fg as fgPath, foreground picked first', async () => {
+  it('completes a layered attach with bg as path and fg as fgPath, foreground picked first, and an untagged file is accepted as background', async () => {
     mockAttachFile.mockResolvedValue({ status: 'ok', type: 'image', embed: '<div>x</div>' })
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'bg/scene.jpg', name: 'scene.jpg', extension: '.jpg', type: 'image',
+    })
     const { ctx } = makeCtx({
       getSelectedPath: () => 'bg/scene.jpg',
       getPendingLayer: () => ({ path: 'fg/amy.png', role: 'foreground' }),
@@ -143,6 +162,35 @@ describe('attachFromCarousel — composite pairing', () => {
     await attachFromCarousel(ctx)
 
     expect(mockAttachFile).toHaveBeenCalledWith('bg/scene.jpg', { fgPath: 'fg/amy.png' })
+  })
+
+  it('rejects completing the pair when both files are tagged foreground', async () => {
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'fg2/other.png', name: 'other.png', extension: '.png', type: 'image',
+      composite: 'foreground',
+    })
+    const { ctx, state } = makeCtx({ getSelectedPath: () => 'fg2/other.png' })
+    ctx.setPendingLayer({ path: 'fg/amy.png', role: 'foreground' })
+
+    await attachFromCarousel(ctx)
+
+    expect(mockAttachFile).not.toHaveBeenCalled()
+    expect(state.error).toMatch(/both.*foreground/i)
+    expect(state.pendingLayer).toEqual({ path: 'fg/amy.png', role: 'foreground' })
+  })
+
+  it('rejects completing the pair when neither file is tagged foreground', async () => {
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'bg2/other.jpg', name: 'other.jpg', extension: '.jpg', type: 'image',
+    })
+    const { ctx, state } = makeCtx({ getSelectedPath: () => 'bg2/other.jpg' })
+    ctx.setPendingLayer({ path: 'bg/scene.jpg', role: 'background' })
+
+    await attachFromCarousel(ctx)
+
+    expect(mockAttachFile).not.toHaveBeenCalled()
+    expect(state.error).toMatch(/neither.*foreground/i)
+    expect(state.pendingLayer).toEqual({ path: 'bg/scene.jpg', role: 'background' })
   })
 
   it('rejects picking the same file for both layers', async () => {
@@ -159,6 +207,10 @@ describe('attachFromCarousel — composite pairing', () => {
 
   it('surfaces an error status from the layered attach without closing', async () => {
     mockAttachFile.mockResolvedValue({ status: 'error', detail: 'boom' })
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'fg/amy.png', name: 'amy.png', extension: '.png', type: 'image',
+      composite: 'foreground',
+    })
     const { ctx, state } = makeCtx({
       getSelectedPath: () => 'fg/amy.png',
       getPendingLayer: () => ({ path: 'bg/scene.jpg', role: 'background' }),
@@ -232,10 +284,15 @@ describe('attachFromCarousel — replace mode composite pairing', () => {
     expect(mockRunEdit).not.toHaveBeenCalled()
     expect(state.pendingLayer).toEqual({ path: 'bg/scene.jpg', role: 'background' })
     expect(state.closed).toBe(false)
+    expect(state.searchQuery).toBe('image! composite! foreground! bg! ')
   })
 
   it('completes a layered replace with a composite embed once the pair is picked', async () => {
     mockRunEdit.mockResolvedValue({ type: 'done', operator: 'edit', node: '/ch1', interrupted: false })
+    mockGetMountMetadata.mockResolvedValue({
+      relative_path: 'fg/amy.png', name: 'amy.png', extension: '.png', type: 'image',
+      composite: 'foreground',
+    })
 
     const { ctx, state } = makeCtx({
       getRequest: () => replaceRequest,

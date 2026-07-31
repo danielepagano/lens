@@ -66,6 +66,19 @@
     search.open = true
   }
 
+  // Used when the composite-pairing flow (mediaCarouselHandlers.ts) needs to
+  // jump straight to search results filtered to the complementary layer —
+  // unlike openSearch(), this always replaces the query rather than only
+  // filling in an empty box, and runs the search immediately.
+  function openSearchWithQuery(query: string) {
+    selectedIndex = -1
+    renaming = false
+    pendingDeleteConfirm = false
+    search.query = query
+    search.open = true
+    search.run(query)
+  }
+
   function closeSearch() {
     // Only clear the selection if it pointed into search results — a
     // browse-mode selection made while the (unused) search bar was open
@@ -233,6 +246,7 @@
       setPendingLayer: (value) => {
         pendingLayer = value
       },
+      openSearchWithQuery,
       close,
       onDone,
       loadDir,
@@ -367,6 +381,7 @@
           {renaming}
           {renameValue}
           chromeless={imageChromeless}
+          pairingWith={pendingLayer}
           onOpenMetadata={() => {
             metadataOpen = true
           }}
