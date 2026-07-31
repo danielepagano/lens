@@ -45,6 +45,18 @@ export default defineConfig([
     },
   },
   {
+    // Svelte 5 rune state modules (plain .ts files using $state/$derived
+    // outside a component). eslint-plugin-svelte parses these with
+    // svelte-eslint-parser same as .svelte files, which needs the same
+    // TS-aware delegate parser or it falls back to parsing as plain JS.
+    files: ["src/**/*.svelte.ts"],
+    languageOptions: {
+      parserOptions: {
+        parser: tseslint.parser,
+      },
+    },
+  },
+  {
     ignores: ["dist/", "node_modules/"],
   },
 ]);

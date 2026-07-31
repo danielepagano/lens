@@ -480,6 +480,40 @@ media-manage [dir]
 
 Opens a file browser carousel for managing media files.
 `,
+  'media-search': `## Media search
+
+Search matches file paths and metadata (prompts, tags, any sidecar field)
+across the whole mount, ranked by relevance — not just the current folder.
+
+### Query syntax
+
+| Token | Meaning |
+|-------|---------|
+| \`word\` | Scored keyword — files containing it rank higher |
+| \`"two words"\` | Exact phrase, kept together |
+| \`key:value\` | Metadata match, e.g. \`type:image\` (ranked highest) |
+| \`path/sub:value\` | Nested metadata match, e.g. \`composite/type:subject\` |
+| trailing \`!\` | Required — hard-filters instead of just scoring |
+
+Words next to each other score higher when they appear together in that
+order, so word order matters. A bare key (like \`prompt\`) finds files that
+have that field at all.
+
+### Example
+
+\`\`\`
+amy! type:image! composite/type:subject "brown hair" couch
+\`\`\`
+
+Only images tagged \`amy\` with a \`subject\` composite layer, ranked by how
+well they match "brown hair" and "couch".
+
+### Notes
+
+- Whole-word matches only — no partial/prefix matching.
+- Results update automatically as you finish typing each word; press
+  **Enter** to re-run a search after editing a word in place.
+`,
   'media-generate': `## media-generate
 
 Generate images via the configured backend and save them to the mount.

@@ -30,6 +30,10 @@
     autocapitalize?: HTMLTextareaAttributes['autocapitalize']
     spellcheck?: boolean
     attachInputEl?: Attachment<HTMLTextAreaElement>
+    /** Distinguishes multiple concurrently-mounted CommandBar instances (e.g. the
+     * main CLI bar vs. a feature-local search bar) — must stay unique per instance. */
+    inputId?: string
+    testId?: string
     onInput?: (event: Event) => void
     onKeydown?: (event: KeyboardEvent) => void
     onKeyup?: (event: KeyboardEvent) => void
@@ -59,6 +63,8 @@
     autocapitalize = 'off',
     spellcheck = false,
     attachInputEl = undefined,
+    inputId = 'lens-cli',
+    testId = 'cli-input',
     onInput = undefined,
     onKeydown = undefined,
     onKeyup = undefined,
@@ -101,6 +107,8 @@
         {autocapitalize}
         {spellcheck}
         {attachInputEl}
+        {inputId}
+        {testId}
         {onInput}
         {onKeydown}
         {onKeyup}
