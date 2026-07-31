@@ -5,9 +5,8 @@
   import type { CommandDefinition } from '../../commands/common'
   import type { ParseState } from '../../commands/parser'
   import type { Suggestion } from './CliAutocomplete'
-  import CliSuggestions from './CliSuggestions.svelte'
   import CliHistoryDrawer from './CliHistoryDrawer.svelte'
-  import CliInputField from './CliInputField.svelte'
+  import CommandBar from '../../components/CommandBar.svelte'
   import { CliDataSources } from './cliDataSources'
   import { runCliCommandState } from './cliStateRunner'
   import {
@@ -271,132 +270,65 @@
 
 <svelte:window onkeydowncapture={globalKeydownFocusCli} />
 
-<div class="bottom-bar" data-testid="bottom-bar">
-  <CliSuggestions
-    {suggestions}
-    noWrap={$cliOutput !== null}
-    onBeforeSelect={snapshotCaretBeforeChipPointer}
-    onSelect={(suggestion) => handleCliSuggestionChipClick(suggestion, createRefs())}
-  />
-  <CliHistoryDrawer
-    open={historyOpen}
-    history={$cliHistory}
-    onSelect={(entry) => {
-      input = entry
-      historyOpen = false
-      updateCommandState()
-      focusCliInput()
-    }}
-    onClear={() => {
-      input = ''
-      historyOpen = false
-      updateCommandState()
-      focusCliInput()
-    }}
-    onClose={() => historyOpen = false}
-  />
-  <div class="cli-bar-row">
-    <button
-      type="button"
-      class={['cli-history-btn', { active: historyOpen }]}
-      onclick={() => historyOpen = !historyOpen}
-      aria-label="Command history"
-      title="History"
-    >↓</button>
-    <div class="cli-bar-input-wrap">
-      <CliInputField
-      bind:input
-      {showInvalid}
-      {flashInvalid}
-      {busy}
-      {busyMessage}
-      {showHint}
-      {computedHint}
-      autocomplete={inputAttrs.autocomplete}
-      autocorrect={inputAttrs.autocorrect}
-      autocapitalize={inputAttrs.autocapitalize}
-      spellcheck={inputAttrs.spellcheck}
-      attachInputEl={attachCliInputEl}
-      onInput={(event) => handleCliTextInput(event, createRefs())}
-      onKeydown={(event) => handleCliInputKeydown(event, createRefs())}
-      onKeyup={(event) => handleCliInputKeyup(event, createRefs())}
-      onSelectionRefresh={() => {
-        if (!busy) updateCommandState()
-      }}
-      onBeforeInput={(event) => handleCliBeforeInput(event, createRefs())}
-      onFocus={() => {
+<CommandBar
+  {suggestions}
+  noWrapSuggestions={$cliOutput !== null}
+  onSuggestionBeforeSelect={snapshotCaretBeforeChipPointer}
+  onSuggestionSelect={(suggestion) => handleCliSuggestionChipClick(suggestion, createRefs())}
+  leftButton={{
+    icon: '↓',
+    label: 'History',
+    ariaLabel: 'Command history',
+    active: historyOpen,
+    onClick: () => historyOpen = !historyOpen,
+  }}
+  rightButton={{ icon: '?', label: 'Guide', ariaLabel: 'Show guide', onClick: openGuide }}
+  bind:input
+  {showInvalid}
+  {flashInvalid}
+  {busy}
+  {busyMessage}
+  {showHint}
+  {computedHint}
+  autocomplete={inputAttrs.autocomplete}
+  autocorrect={inputAttrs.autocorrect}
+  autocapitalize={inputAttrs.autocapitalize}
+  spellcheck={inputAttrs.spellcheck}
+  attachInputEl={attachCliInputEl}
+  onInput={(event) => handleCliTextInput(event, createRefs())}
+  onKeydown={(event) => handleCliInputKeydown(event, createRefs())}
+  onKeyup={(event) => handleCliInputKeyup(event, createRefs())}
+  onSelectionRefresh={() => {
+    if (!busy) updateCommandState()
+  }}
+  onBeforeInput={(event) => handleCliBeforeInput(event, createRefs())}
+  onFocus={() => {
+    historyOpen = false
+    handleCliFocus(createRefs(), (value) => {
+      isFocused = value
+    })
+  }}
+  onBlur={(event) => handleCliBlur(event, createRefs(), (value) => {
+    isFocused = value
+  })}
+>
+  {#snippet overlay()}
+    <CliHistoryDrawer
+      open={historyOpen}
+      history={$cliHistory}
+      onSelect={(entry) => {
+        input = entry
         historyOpen = false
-        handleCliFocus(createRefs(), (value) => {
-          isFocused = value
-        })
+        updateCommandState()
+        focusCliInput()
       }}
-      onBlur={(event) => handleCliBlur(event, createRefs(), (value) => {
-        isFocused = value
-      })}
-    /></div>
-    <button
-      type="button"
-      class="cli-guide-btn"
-      onclick={openGuide}
-      aria-label="Show guide"
-      title="Guide"
-    >?</button>
-  </div>
-</div>
-
-<style>
-  .cli-bar-row {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .cli-bar-input-wrap {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .cli-history-btn,
-  .cli-guide-btn {
-    flex-shrink: 0;
-    background: none;
-    border: 1px solid var(--pico-muted-border-color);
-    font-size: 0.85rem;
-    font-weight: 600;
-    line-height: 1;
-    cursor: pointer;
-    color: var(--pico-muted-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: color 0.15s, border-color 0.15s;
-  }
-
-  .cli-guide-btn {
-    border-radius: 50%;
-    width: 1.6rem;
-    height: 1.6rem;
-    margin-bottom: 0.3rem;
-  }
-
-  .cli-history-btn {
-    margin-top: 0rem;
-    margin-bottom: 0.4rem;    
-    width: 1.6rem;
-    height: 1.6rem;
-    border-radius: 4px;
-  }
-
-  .cli-history-btn:hover,
-  .cli-guide-btn:hover {
-    color: var(--pico-color);
-    border-color: var(--pico-color);
-  }
-
-  .cli-history-btn.active {
-    color: var(--pico-color);
-    border-color: var(--pico-color);
-    background: var(--pico-muted-border-color);
-  }
-</style>
+      onClear={() => {
+        input = ''
+        historyOpen = false
+        updateCommandState()
+        focusCliInput()
+      }}
+      onClose={() => historyOpen = false}
+    />
+  {/snippet}
+</CommandBar>

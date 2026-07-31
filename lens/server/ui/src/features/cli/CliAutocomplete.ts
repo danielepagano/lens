@@ -7,33 +7,9 @@ import type {
 } from '../../commands/common'
 import type { ParseState } from '../../commands/parser'
 import type { TreeNode, Stats, MountEntry, ImageBackendStats } from '../../services/api'
+import type { Suggestion } from '../../components/commandBarTypes'
 
-export interface Suggestion {
-  label: string
-  value: string
-  kind:
-    | 'command'
-    | 'slug'
-    | 'kb-type'
-    | 'kb-key'
-    | 'flag'
-    | 'node'
-    | 'dice-roll'
-    | 'time-now'
-    | 'go-cursor'
-    | 'var-prefix'
-    | 'var-key'
-  group: string
-  nodeHasChildren?: boolean
-  /** Mount browse only: directory row (yellow dashed chip like prefix groups) */
-  isMountDirectory?: boolean
-  /** Appended after `value` on Tab/select: `' '` finishes token, `'-'` continues dashed segments */
-  completionSuffix?: string
-  /** From active command: chips that target the narrative cursor vs explicit node */
-  cursorTargeting?: CliCommandCursorTarget
-  /** ``--`` flag matches merged pinned params when viewing the narrative cursor */
-  effectiveParamPin?: boolean
-}
+export type { Suggestion }
 
 /** Hard cap on CLI suggestion chips (display + Tab cycle use the same list). */
 export const MAX_CLI_SUGGESTIONS = 32
