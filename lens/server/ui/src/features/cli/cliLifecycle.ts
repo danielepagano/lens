@@ -79,6 +79,12 @@ export function setupCliLifecycle(ctx: CliLifecycleCtx): () => void {
     currentProject.subscribe((project) => {
       const lastProject = ctx.getLastProject()
       if (project !== lastProject) {
+        // Suggestion caches (mount dirs, KB keys, node tree) are keyed by
+        // path/type, not by project — a stale entry from the old project
+        // would otherwise be returned as-is instead of refetched, even
+        // though every path in it points at the wrong backend now.
+        ctx.dataSources.resetTreeCaches()
+        ctx.dataSources.resetMountCaches()
         if (lastProject !== null) {
           ctx.setInput('')
           ctx.setSessionFillSuppressed(false)

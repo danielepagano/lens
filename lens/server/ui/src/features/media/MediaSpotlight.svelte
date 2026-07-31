@@ -9,6 +9,7 @@
     isMountVideoPath,
   } from '../../utils/mountFileTypes'
   import SpotlightImageStage from './SpotlightImageStage.svelte'
+  import SpotlightCompositeStage from './SpotlightCompositeStage.svelte'
   import SpotlightMediaBody from './SpotlightMediaBody.svelte'
   import MediaSpotlightActions from './MediaSpotlightActions.svelte'
   import {
@@ -18,6 +19,8 @@
     type PlainPreviewState,
   } from './plainPreview'
   import type { MediaSpotlightCallbacks, MediaSpotlightMode } from './mediaSpotlightTypes'
+  import { otherCompositeRole } from '../../utils/mediaComposite'
+  import type { PendingLayer } from './mediaCarouselHandlers'
 
   type MediaSpotlightProps = {
     path?: string | null
@@ -29,6 +32,8 @@
     renaming?: boolean
     renameValue?: string
     chromeless?: boolean
+    /** The already-picked composite layer, if `path` is being chosen as its pair. */
+    pairingWith?: PendingLayer | null
     onOpenMetadata?: () => void
   } & MediaSpotlightCallbacks
 
@@ -42,6 +47,7 @@
     renaming = false,
     renameValue = '',
     chromeless = false,
+    pairingWith = null,
     onOpenMetadata,
     onAttach,
     onDownload,
@@ -67,6 +73,18 @@
   let spotlightFill = $derived(isPlainPre || isMarkdownPreview || isVideo || isAudio)
   let imageSrc = $derived(previewSrc ?? (path ? getMountFilePath(path) : ''))
   let showInfoButton = $derived(path !== null && !isDir && !(chromeless && isImage))
+
+  // While picking the complementary layer of a composite, show the two
+  // images overlaid as they'd actually render, rather than just the
+  // candidate alone — the ordering comes from the picked-first layer's
+  // role, not from which one is `path` vs `pairingWith.path`.
+  let compositeSrcs = $derived.by(() => {
+    if (!pairingWith || !isImage || !path) return null
+    const candidateRole = otherCompositeRole(pairingWith.role)
+    const bgPath = candidateRole === 'background' ? path : pairingWith.path
+    const fgPath = candidateRole === 'background' ? pairingWith.path : path
+    return { bgSrc: getMountFilePath(bgPath), fgSrc: getMountFilePath(fgPath) }
+  })
 
   let plainPreview = $state.raw<PlainPreviewState>(createPlainPreviewState())
 
@@ -104,7 +122,9 @@
         aria-label={chromeless && isImage ? 'Show carousel' : 'Deselect'}
         onclick={handleSpotlightCloseClick}
       >✕</button>
-      {#if isImage}
+      {#if compositeSrcs}
+        <SpotlightCompositeStage bgSrc={compositeSrcs.bgSrc} fgSrc={compositeSrcs.fgSrc} />
+      {:else if isImage}
         <SpotlightImageStage
           {imageSrc}
           {filename}

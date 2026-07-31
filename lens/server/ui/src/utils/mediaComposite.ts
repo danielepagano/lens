@@ -9,3 +9,7 @@ export function compositeRole(meta: MountMetadata): CompositeRole | null {
   const trimmed = value.trim().toLowerCase()
   return trimmed === 'foreground' || trimmed === 'background' ? trimmed : null
 }
+
+export function otherCompositeRole(role: CompositeRole): CompositeRole {
+  return role === 'foreground' ? 'background' : 'foreground'
+}
