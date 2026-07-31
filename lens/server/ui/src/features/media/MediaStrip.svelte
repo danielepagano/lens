@@ -16,9 +16,13 @@
     compact?: boolean
     getDataUrl?: (name: string) => string | undefined
     savedNames?: ReadonlySet<string>
+    /** Appends a trailing "load more results" tile, e.g. for a paginated search strip. */
+    hasMore?: boolean
+    loadingMore?: boolean
     onSelect?: (index: number) => void
     onNavigate?: (name: string) => void
     onPreview?: (index: number) => void
+    onLoadMore?: () => void
   }
 
   let {
@@ -28,9 +32,12 @@
     compact = false,
     getDataUrl,
     savedNames,
+    hasMore = false,
+    loadingMore = false,
     onSelect,
     onNavigate,
     onPreview,
+    onLoadMore,
   }: MediaStripProps = $props()
 
   function isImage(entry: MountEntry): boolean {
@@ -187,8 +194,20 @@
       {/if}
     </div>
   {/each}
-  {#if entries.length === 0}
+  {#if entries.length === 0 && !hasMore}
     <span class="carousel-empty">Empty folder</span>
+  {/if}
+  {#if hasMore}
+    <button
+      type="button"
+      class="carousel-tile tile-load-more"
+      disabled={loadingMore}
+      aria-label="Load more results"
+      onclick={() => onLoadMore?.()}
+    >
+      <span class="tile-icon" aria-hidden="true">{loadingMore ? '…' : '+'}</span>
+      <span class="tile-name">{loadingMore ? 'Loading' : 'Load more'}</span>
+    </button>
   {/if}
 </div>
 
@@ -236,5 +255,15 @@
     opacity: 0.4;
     font-size: 0.85rem;
     padding: 1rem;
+  }
+  .tile-load-more {
+    background: none;
+    border: 2px solid var(--pico-muted-border-color);
+    color: inherit;
+    font: inherit;
+  }
+  .tile-load-more:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 </style>

@@ -1,12 +1,18 @@
 <script lang="ts">
   import type { MediaCarouselRequest } from '../../stores/ui'
   import { mediaCarouselRequest } from '../../stores/ui'
+  import { currentProject } from '../../stores/project'
   import { browseMountDir, type MountEntry } from '../../services/api'
   import { isMountImagePath } from '../../utils/mountFileTypes'
   import MediaSpotlight from './MediaSpotlight.svelte'
   import MediaCarouselHeader from './MediaCarouselHeader.svelte'
   import MediaCarouselStripToolbar from './MediaCarouselStripToolbar.svelte'
+  import MediaSearchBar from './MediaSearchBar.svelte'
+  import MediaSearchResultsList from './MediaSearchResultsList.svelte'
+  import MediaStrip from './MediaStrip.svelte'
   import MediaMetadataPanel from './MediaMetadataPanel.svelte'
+  import { dirnameOfPath, requiredKeywordsForDir } from './mediaSearchHandlers'
+  import { MediaSearchState } from './mediaSearchState.svelte'
   import {
     attachFromCarousel,
     chromakeyFromCarousel,
@@ -39,6 +45,52 @@
   let pendingDeleteConfirm = $state(false)
   let pendingLayer = $state<PendingLayer | null>(null)
 
+  // Search mode. See MediaSearchState for the remembered-until-reload /
+  // cleared-on-project-switch lifecycle (#103).
+  const search = new MediaSearchState()
+
+  function openSearch() {
+    // Opening the search bar changes nothing else — the current folder
+    // grid (and whatever's selected in it) stays exactly as it was. The
+    // content pane only switches to search results once a search actually
+    // runs (see `showingSearchContent`).
+    // Search box is empty (nothing typed, nothing remembered) and we're in
+    // a subfolder: pre-fill required terms for the folder path, so
+    // pressing Enter reproduces roughly the same files, and typing more
+    // just narrows further instead of starting from scratch. Gated on
+    // emptiness alone, not on whether a search has run before — a
+    // previously-searched-then-cleared box should default the same way.
+    if (!search.query.trim() && currentDir) {
+      search.query = requiredKeywordsForDir(currentDir)
+    }
+    search.open = true
+  }
+
+  function closeSearch() {
+    // Only clear the selection if it pointed into search results — a
+    // browse-mode selection made while the (unused) search bar was open
+    // should survive closing it.
+    if (showingSearchContent) selectedIndex = -1
+    search.open = false
+  }
+
+  // Switching projects points the mount at a different backend entirely —
+  // a remembered query/results/browse listing from the old project is not
+  // just stale, every path in it 404s. This component is a persistent
+  // singleton (see App.svelte) so nothing else would ever clear it out.
+  let lastProject: string | null | undefined = undefined
+  $effect(() => {
+    const project = $currentProject
+    if (lastProject !== undefined && project !== lastProject) {
+      mediaCarouselRequest.set(null)
+      search.resetForProjectSwitch()
+      currentDir = ''
+      entries = []
+      selectedIndex = -1
+    }
+    lastProject = project
+  })
+
   let request = $derived($mediaCarouselRequest)
   let mode = $derived(request?.mode ?? 'manage')
   let title = $derived(
@@ -62,17 +114,23 @@
     if (request !== lastRequest) {
       lastRequest = request
       pendingLayer = null
-      void open(request.dir)
+      void open(request)
     }
   })
 
-  async function open(dir: string) {
-    currentDir = dir
+  async function open(req: MediaCarouselRequest) {
+    currentDir = req.dir
     selectedIndex = -1
     renaming = false
     error = null
     pendingDeleteConfirm = false
+    search.open = false
     await loadDir()
+    if (req.searchQuery !== undefined) {
+      search.query = req.searchQuery
+      openSearch()
+      void search.performSearch(search.query, 1)
+    }
   }
 
   async function loadDir() {
@@ -85,6 +143,11 @@
       entries = []
     } finally {
       loading = false
+    }
+    // Keep search results in sync with browse-mode mutations (upload, delete,
+    // rename) that route through this same function.
+    if (search.open && search.query.trim()) {
+      await search.performSearch(search.query, 1)
     }
   }
 
@@ -110,11 +173,23 @@
     await loadDir()
   }
 
-  let selectedEntry = $derived(selectedIndex >= 0 ? entries[selectedIndex] ?? null : null)
+  // The content pane only switches from the folder grid to search results
+  // once a search has actually run — merely opening the search bar (#103
+  // follow-up) must not touch what's currently on screen.
+  let showingSearchContent = $derived(search.open && search.hasRun)
+
+  let selectedEntry = $derived(
+    !showingSearchContent && selectedIndex >= 0 ? entries[selectedIndex] ?? null : null,
+  )
+  let selectedSearchItem = $derived(
+    showingSearchContent && selectedIndex >= 0 ? search.results[selectedIndex] ?? null : null,
+  )
   let selectedPath = $derived(
-    selectedEntry && !selectedEntry.is_dir
-      ? (currentDir ? `${currentDir}/${selectedEntry.name}` : selectedEntry.name)
-      : null,
+    selectedSearchItem
+      ? selectedSearchItem.relative_path
+      : selectedEntry && !selectedEntry.is_dir
+        ? (currentDir ? `${currentDir}/${selectedEntry.name}` : selectedEntry.name)
+        : null,
   )
   let selectedIsImage = $derived(!!(selectedPath && isMountImagePath(selectedPath)))
 
@@ -133,7 +208,7 @@
     return {
       getRequest: () => request,
       getSelectedPath: () => selectedPath,
-      getCurrentDir: () => currentDir,
+      getCurrentDir: () => (showingSearchContent && selectedPath ? dirnameOfPath(selectedPath) : currentDir),
       getEntries: () => entries,
       setError: (message) => {
         error = message
@@ -198,7 +273,13 @@
     aria-modal="true"
     aria-label={title}
   >
-    <MediaCarouselHeader {title} {breadcrumbs} onClose={close} onNavigate={navigateTo} />
+    <MediaCarouselHeader
+      {title}
+      {breadcrumbs}
+      showPath={!showingSearchContent}
+      onClose={close}
+      onNavigate={navigateTo}
+    />
 
     <div class="carousel-body">
       {#if pendingLayer}
@@ -209,6 +290,40 @@
       {/if}
       {#if loading}
         <div class="carousel-loading">Loading…</div>
+      {:else if showingSearchContent}
+        {#if selectedPath === null}
+          <MediaSearchResultsList
+            results={search.results}
+            loading={search.loading}
+            loadingMore={search.loadingMore}
+            error={search.error}
+            hasMore={search.hasMore}
+            onSelect={(index) => {
+              selectedIndex = index
+              renaming = false
+              pendingDeleteConfirm = false
+            }}
+            onLoadMore={() => search.loadMore()}
+          />
+        {:else}
+          <div class="carousel-strip-wrap" style="flex: 0 0 auto">
+            <MediaStrip
+              entries={search.results.map((r) => ({ name: r.relative_path, is_dir: false }))}
+              {selectedIndex}
+              currentDir=""
+              compact={true}
+              hasMore={search.hasMore}
+              loadingMore={search.loadingMore}
+              onSelect={(index) => {
+                selectedIndex = index
+              }}
+              onPreview={(index) => {
+                selectedIndex = index
+              }}
+              onLoadMore={() => search.loadMore()}
+            />
+          </div>
+        {/if}
       {:else}
         <MediaCarouselStripToolbar
           {entries}
@@ -240,6 +355,8 @@
             void uploadToCarousel(handlerCtx(), file)
             ;(e.currentTarget as HTMLInputElement).value = ''
           }}
+          onOpenSearch={openSearch}
+          searchOpen={search.open}
         />
       {/if}
 
@@ -270,6 +387,15 @@
           onToggleChromeless={() => {
             if (selectedIsImage) imageChromeless = !imageChromeless
           }}
+        />
+      {/if}
+
+      {#if search.open && selectedPath === null}
+        <MediaSearchBar
+          bind:input={search.query}
+          onSearch={(query) => search.run(query)}
+          onClear={() => search.clear()}
+          onClose={closeSearch}
         />
       {/if}
 

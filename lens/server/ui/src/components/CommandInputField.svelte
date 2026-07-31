@@ -15,6 +15,10 @@
     autocapitalize?: HTMLTextareaAttributes['autocapitalize']
     spellcheck?: boolean
     attachInputEl?: Attachment<HTMLTextAreaElement>
+    /** Distinguishes multiple concurrently-mounted CommandBar instances (e.g. the
+     * main CLI bar vs. a feature-local search bar) — must stay unique per instance. */
+    inputId?: string
+    testId?: string
     onInput?: (event: Event) => void
     onKeydown?: (event: KeyboardEvent) => void
     onKeyup?: (event: KeyboardEvent) => void
@@ -37,6 +41,8 @@
     autocapitalize = 'off',
     spellcheck = false,
     attachInputEl = undefined,
+    inputId = 'lens-cli',
+    testId = 'cli-input',
     onInput = undefined,
     onKeydown = undefined,
     onKeyup = undefined,
@@ -50,7 +56,7 @@
 <div class="cli-input-row">
   <div class="cli-input-wrapper">
     <textarea
-      id="lens-cli"
+      id={inputId}
       {@attach attachInputEl}
       class={['cli-input', { invalid: showInvalid, 'flash-invalid': flashInvalid }]}
       bind:value={input}
@@ -68,7 +74,7 @@
       {autocorrect}
       {autocapitalize}
       {spellcheck}
-      data-testid="cli-input"
+      data-testid={testId}
     ></textarea>
     {#if showHint}
       <div class="cli-input-ghost" aria-hidden="true">

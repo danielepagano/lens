@@ -230,6 +230,38 @@ class TestSearchMedia:
         assert "clip.mp4" not in paths
         assert data["total_items"] >= 2
 
+    def test_search_exposes_a_score_and_ranks_by_it(self, mount_client: TestClient) -> None:
+        r = mount_client.get("/test/mount/search", params={"q": "type:image jpg"})
+        assert r.status_code == 200
+        items = r.json()["items"]
+        scores = [i["_score"] for i in items]
+        assert scores == sorted(scores, reverse=True)
+        # hero.jpg satisfies both terms; sub/photo.png only the first.
+        assert items[0]["relative_path"] == "hero.jpg"
+        assert scores[0] > scores[1]
+
+    def test_search_required_term_hard_filters(self, mount_client: TestClient) -> None:
+        r = mount_client.get("/test/mount/search", params={"q": "type:video! clip"})
+        assert r.status_code == 200
+        paths = [i["relative_path"] for i in r.json()["items"]]
+        assert paths == ["clip.mp4"]
+
+    def test_search_quoted_phrase_matches_path_segments_in_order(
+        self, mount_client: TestClient
+    ) -> None:
+        assert (
+            mount_client.get("/test/mount/search", params={"q": '"sub photo"!'}).json()[
+                "total_items"
+            ]
+            == 1
+        )
+        assert (
+            mount_client.get("/test/mount/search", params={"q": '"photo sub"!'}).json()[
+                "total_items"
+            ]
+            == 0
+        )
+
     def test_search_no_match(self, mount_client: TestClient) -> None:
         r = mount_client.get("/test/mount/search", params={"q": "zebra!"})
         assert r.status_code == 200

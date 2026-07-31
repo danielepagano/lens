@@ -17,6 +17,9 @@
     onClearScene?: () => void
     onUploadClick?: () => void
     onUploadChange?: (event: Event) => void
+    onOpenSearch?: () => void
+    /** Hides the floating search button once the search bar itself is open (it has its own close button). */
+    searchOpen?: boolean
   }
 
   let {
@@ -34,6 +37,8 @@
     onClearScene = undefined,
     onUploadClick = undefined,
     onUploadChange = undefined,
+    onOpenSearch = undefined,
+    searchOpen = false,
   }: Props = $props()
 </script>
 
@@ -61,6 +66,16 @@
         disabled={uploading || removing}
         onclick={() => onClearScene?.()}
       >Clear Media</button>
+    {/if}
+    {#if !searchOpen}
+      <button
+        type="button"
+        class={['carousel-search-btn', showClearScene && 'stacked']}
+        aria-label="Search media"
+        title="Search media"
+        disabled={uploading || removing}
+        onclick={() => onOpenSearch?.()}
+      >🔍</button>
     {/if}
     <button
       type="button"
@@ -116,6 +131,41 @@
   }
   .carousel-remove-scene-btn:focus-visible {
     outline: 2px solid var(--pico-del-color, #e05c5c);
+    outline-offset: 2px;
+  }
+  .carousel-search-btn {
+    position: absolute;
+    left: 0.65rem;
+    bottom: 0.65rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--pico-muted-border-color);
+    background: var(--pico-card-background-color);
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    z-index: 5;
+  }
+  .carousel-search-btn.stacked {
+    bottom: 3.35rem;
+  }
+  .carousel-search-btn:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+  .carousel-search-btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .carousel-search-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .carousel-search-btn:focus-visible {
+    outline: 2px solid var(--pico-primary);
     outline-offset: 2px;
   }
   .carousel-upload-btn {

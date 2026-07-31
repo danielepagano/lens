@@ -1103,6 +1103,29 @@ export interface AttachParams {
 export const browseMountDir = (path = ''): Promise<MountEntry[]> =>
   get(projectPath(`/mount/browse?path=${encodeURIComponent(path)}`)) as Promise<MountEntry[]>
 
+/** One search hit: flattened metadata (reserved path-derived keys + sidecar keys) plus its relevance score. */
+export interface SearchMediaItem {
+  relative_path: string
+  name: string
+  extension: string
+  type: string
+  _score: number
+  [key: string]: unknown
+}
+
+export interface SearchMediaPage {
+  items: SearchMediaItem[]
+  total_items: number
+  total_pages: number
+  page_size: number
+  current_page: number
+}
+
+export const searchMedia = (query: string, page = 1): Promise<SearchMediaPage> =>
+  get(
+    projectPath(`/mount/search?q=${encodeURIComponent(query)}&page=${page}`),
+  ) as Promise<SearchMediaPage>
+
 export const attachFile = withStats((path: string, params?: AttachParams): Promise<AttachResponse> => {
   const body: { path: string; fg_path?: string; address?: string; line?: number } = { path }
   if (params?.fgPath !== undefined) body.fg_path = params.fgPath

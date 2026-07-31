@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Suggestion } from './CliAutocomplete'
+  import type { Suggestion } from './commandBarTypes'
 
   type Props = {
     suggestions?: Suggestion[]

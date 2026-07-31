@@ -4,6 +4,7 @@ from typing import Any, BinaryIO, Iterable
 
 import yaml
 
+from lens.core.exceptions import MediaSearchCapacityExceeded
 from lens.core.media.cache import MediaCache
 from lens.core.media.metadata import (
     MediaMetadata,
@@ -11,7 +12,14 @@ from lens.core.media.metadata import (
     filter_sidecars,
     resolve_path_metadata,
 )
-from lens.core.media.search import PAGE_SIZE, SearchPage, SearchResult, parse_query, score_query
+from lens.core.media.search import (
+    PAGE_SIZE,
+    SearchPage,
+    SearchResult,
+    compile_query,
+    parse_query,
+    score_record,
+)
 from lens.core.mount import MountBackend
 
 
@@ -95,6 +103,21 @@ class MediaService:
     def put_file(self, dir_path: str, filename: str, data: BinaryIO) -> str:
         result = self._backend.put_file(dir_path, filename, data)
         _invalidate_listing_chain(self._cache, dir_path)
+        # Index immediately from the path alone (no I/O beyond this raw
+        # listing check, no sidecar yet) so a just-put file is searchable
+        # right away rather than only after the next warm pass or an
+        # explicit update_metadata call — but only if the backend's own
+        # listing rules (hidden-file / supported extension filtering, which
+        # live per-backend, not here) actually consider it visible.
+        # Otherwise a hidden or unsupported file would show up in search
+        # despite never appearing in any listing. Goes straight to the
+        # backend (not self.list_dir) so this doesn't undo the cache
+        # invalidation just above.
+        name = result.rsplit("/", 1)[-1]
+        entries = self._backend.list_dir(dir_path) or []
+        if any(e["name"] == name and not e.get("is_dir") for e in entries):
+            path_meta = resolve_path_metadata(result)
+            self._cache.search_index.set(result, path_meta.flattened())
         return result
 
     def delete(self, subpath: str) -> str:
@@ -104,6 +127,7 @@ class MediaService:
         self._cache.invalidate(f"info:{subpath}")
         self._cache.invalidate(f"exists:{subpath}")
         self._cache.invalidate(f"meta:{subpath}")
+        self._cache.search_index.remove(subpath)
         self._store.delete_sidecar(subpath)
         return result
 
@@ -116,31 +140,49 @@ class MediaService:
         self._cache.invalidate(f"info:{src}")
         self._cache.invalidate(f"exists:{src}")
         self._cache.invalidate(f"meta:{src}")
+        # Rename in place rather than dropping + relying on the next search
+        # to re-derive it: extra (sidecar content) is unaffected by a move,
+        # so only the path-derived fields need recomputing, and that's pure
+        # string parsing — no I/O.
+        self._cache.search_index.rename(src, dst, resolve_path_metadata(dst).flattened())
         # move sidecar if present
         self._move_sidecar(src, dst)
         return result
 
     def delete_tree(self, subpath: str) -> None:
+        # Capture the file list under subpath *before* the backend delete —
+        # afterwards there's nothing left to walk.
+        descendants = self._walk_files(subpath)
         self._backend.delete_tree(subpath)
         parent = _parent_dir(subpath)
         _invalidate_listing_chain(self._cache, parent)
         self._cache.invalidate(f"info:{subpath}")
         self._cache.invalidate(f"exists:{subpath}")
         self._cache.invalidate(f"meta:{subpath}")
+        for fpath in descendants:
+            self._cache.search_index.remove(fpath)
         self._store.delete_sidecar(subpath)
 
     def move_tree(self, src: str, dst: str) -> None:
+        # Same reasoning as delete_tree: enumerate before the backend move.
+        descendants = self._walk_files(src)
         self._backend.move_tree(src, dst)
         src_dir = _parent_dir(src)
         dst_dir = _parent_dir(dst)
         _invalidate_listing_chain(self._cache, src_dir)
         _invalidate_listing_chain(self._cache, dst_dir)
+        src_prefix = src.rstrip("/")
+        dst_prefix = dst.rstrip("/")
+        for fpath in descendants:
+            new_path = dst_prefix + fpath[len(src_prefix) :]
+            self._cache.search_index.rename(fpath, new_path, resolve_path_metadata(new_path).flattened())
         # move sidecar
         self._move_sidecar(src, dst)
 
     def update_metadata(self, relative_path: str, updates: dict[str, Any]) -> MediaMetadata:
         meta = self._store.update_metadata(relative_path, updates)
         self._cache.set(f"meta:{relative_path}", meta)
+        self._cache.search_index.set(relative_path, meta.flattened())
         return meta
 
     def delete_metadata(self, relative_path: str) -> None:
@@ -155,9 +197,11 @@ class MediaService:
         # check *and* a re-read of the sidecar we just deleted ourselves.
         if self.get_file_info(relative_path) is None:
             self._cache.invalidate(key)
+            self._cache.search_index.remove(relative_path)
             return
         meta = resolve_path_metadata(relative_path)
         self._cache.set(key, meta)
+        self._cache.search_index.set(relative_path, meta.flattened())
 
     # ------------------------------------------------------------------
     # Passthrough (no caching — content streaming)
@@ -198,6 +242,9 @@ class MediaService:
         """
         all_files = self._backend.walk_all("")
         if not all_files:
+            # Still establish ground truth for the search index (there may
+            # be stale entries from put_file calls before this warm ran).
+            self._cache.search_index.begin_bulk_load(0)
             return
 
         # One `list:` entry per directory plus one `meta:` entry per file —
@@ -207,6 +254,10 @@ class MediaService:
         self._cache.ensure_capacity(len(all_files) * 2 + 16)
 
         file_set = set(all_files)
+        media_files = [f for f in all_files if not f.endswith(".yml")]
+        # Decide once, from the authoritative full-mount count, whether the
+        # search index can hold everything — see MediaSearchIndex.
+        should_index = self._cache.search_index.begin_bulk_load(len(media_files))
 
         # Build directory tree from file paths
         #   dir_entries[parent_dir] = set of (name, is_dir)
@@ -236,9 +287,7 @@ class MediaService:
             self._cache.set(f"list:{parent_dir}", listing)
 
         # Populate meta: cache (path-derived + sidecar merge)
-        for fpath in all_files:
-            if fpath.endswith(".yml"):
-                continue
+        for fpath in media_files:
             meta = resolve_path_metadata(fpath)
             sidecar_path = fpath + ".yml"
             if sidecar_path in file_set:
@@ -255,6 +304,8 @@ class MediaService:
                             extra=parsed,  # pyright: ignore[reportUnknownArgumentType]
                         )
             self._cache.set(f"meta:{fpath}", meta)
+            if should_index:
+                self._cache.search_index.set(fpath, meta.flattened())
 
     # ------------------------------------------------------------------
     # Search
@@ -263,25 +314,32 @@ class MediaService:
     def search(self, query_str: str, page: int = 1) -> SearchPage:
         """Return a paginated slice of matching media files.
 
-        Performance comes from the cached ``list_dir`` and ``get_metadata``
-        calls used internally — search results themselves are not cached.
+        Scans only the precomputed ``MediaCache.search_index`` — populated
+        by ``warm_cache()`` and kept in sync incrementally by every write
+        path — never the mount backend directly. If the project's file
+        count exceeds the index's configured cap
+        (``[project] media_search_index_limit``), the index is locked empty
+        rather than partially populated or filled in on demand per query, so
+        this raises ``MediaSearchCapacityExceeded`` instead of silently
+        paying per-file backend reads or returning an incomplete result set.
 
         *page* is 1-indexed. Values below 1 are clamped to 1, values above
         the last page return an empty items list.
         The page size is always ``_PAGE_SIZE`` (20).
         """
-        query = parse_query(query_str)
+        self._ensure_warmed()
+        if self._cache.search_index.locked:
+            raise MediaSearchCapacityExceeded(self._cache.search_index.limit)
+
+        # Compiled once per search, not once per file: run expansion and
+        # term tokenization depend only on the query.
+        query = compile_query(parse_query(query_str))
         results: list[SearchResult] = []
 
-        for file_path in self._walk_files(""):
-            try:
-                meta = self.get_metadata(file_path)
-            except FileNotFoundError:
-                continue
-
-            score = score_query(meta.flattened(), meta.extra, query)
+        for relative_path, record in self._cache.search_index.items():
+            score = score_record(record, query)
             if score is not None:
-                results.append(SearchResult(relative_path=file_path, score=score))
+                results.append(SearchResult(relative_path=relative_path, score=score))
 
         results.sort(key=lambda r: (-r.score, r.relative_path))
         total_items = len(results)

@@ -7,6 +7,7 @@ from typing import Any, Never
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from lens.core.exceptions import MediaSearchCapacityExceeded
 from lens.core.media import MediaService, SearchPage
 from lens.server.dependencies import get_media_service
 
@@ -19,20 +20,26 @@ def search_media(
     page: int = Query(1, ge=1, description="Page number (1-indexed, 20 results per page)"),
     media: MediaService | None = Depends(get_media_service),
 ) -> dict[str, Any]:
-    """Search media files by keyword, KV, and nested KV filters.
+    """Search media files by keyword, metadata, and quoted phrase.
 
-    Query syntax (space-separated tokens):
-    - ``word!``        — required term (must appear somewhere)
-    - ``key:value``    — top-level KV pair match
-    - ``path/sub:val`` — nested KV pair match
-    - ``word``         — optional keyword (scores hits, at least one needed)
+    Query syntax (space-separated tokens, matched as whole words):
+    - ``word``         — ranking keyword (at least one token must match)
+    - ``key:value``    — metadata match (ranked highest)
+    - ``path/sub:val`` — nested metadata match
+    - ``"two words"``  — exact phrase, kept together
+    - trailing ``!``   — required: hard-filters on that term
 
-    Example: ``amy! house! type:image composite/type:subject couch bed``
+    Adjacent terms score much higher when they occur together in that
+    order, so word order is meaningful.
+
+    Example: ``amy! type:image! composite/type:subject "brown hair" couch``
     """
     if media is None:
         raise HTTPException(status_code=404, detail="no mount configured")
     try:
         result: SearchPage = media.search(q, page=page)
+    except MediaSearchCapacityExceeded as e:
+        raise HTTPException(status_code=507, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"search error: {e}")
     items: list[dict[str, Any]] = []

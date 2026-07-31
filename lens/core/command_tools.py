@@ -373,13 +373,14 @@ register_command_tool(
 # ---------------------------------------------------------------------------
 
 
-def _format_search_result(relative_path: str, score: int) -> str:
-    return f"  [{score}] {relative_path}"
+def _format_search_result(relative_path: str, score: float) -> str:
+    return f"  [{score:g}] {relative_path}"
 
 
 async def _media_search(args: dict[str, Any], project_root: Path) -> str:
+    from lens.core.exceptions import MediaSearchCapacityExceeded
     from lens.core.media import MediaCache, MediaService, SearchPage
-    from lens.core.project import get_mount_backend
+    from lens.core.project import get_media_search_index_limit, get_mount_backend
 
     query: str = (args.get("query") or "").strip()
     if not query:
@@ -397,8 +398,12 @@ async def _media_search(args: dict[str, Any], project_root: Path) -> str:
     if backend is None:
         return "(no media mount configured — set [project] mount_point in lens.toml)"
 
-    svc = MediaService(backend, cache=MediaCache())
-    result: SearchPage = svc.search(query, page=page)
+    limit = get_media_search_index_limit(project_root)
+    svc = MediaService(backend, cache=MediaCache(search_index_limit=limit))
+    try:
+        result: SearchPage = svc.search(query, page=page)
+    except MediaSearchCapacityExceeded as e:
+        return f"(error: {e})"
 
     if not result.items:
         if result.total_items == 0:
@@ -418,9 +423,9 @@ async def _media_search(args: dict[str, Any], project_root: Path) -> str:
         )
 
     lines.append(
-        "\n---\nTo refine your search: use required terms (word!) to narrow, "
-        "key:value to filter by metadata (e.g. type:image), "
-        "and optional terms to rank results."
+        "\n---\nTo refine your search: append ! to a term to require it "
+        "(e.g. type:image! to hard-filter), quote a phrase to keep it "
+        'intact (e.g. "brown hair"), and add plain terms to rank results.'
     )
     return "\n".join(lines)
 
@@ -428,17 +433,23 @@ async def _media_search(args: dict[str, Any], project_root: Path) -> str:
 MEDIA_SEARCH_TOOL_DEF = CommandToolDef(
     description=(
         "Search media files on the project's mount (images, videos, audio, documents). "
+        "A file's path and all of its metadata are searched as whole words — "
+        "no prefix/substring matching, so 'wor' does not find 'world'.\n"
         "Query syntax — space-separated tokens:\n"
-        "  word!       — required term (must appear somewhere in the file path or metadata)\n"
-        "  key:value   — filter by metadata key=value (e.g. type:image, character:amy)\n"
-        "  path/sub:val — nested metadata filter (e.g. composite/type:subject)\n"
-        "  word        — optional keyword (helps rank results; at least one must match)\n\n"
-        "ALWAYS use required terms (word!) when you know what you need. "
-        "Use optional keywords to disambiguate between similar results. "
+        "  word         — ranking keyword (at least one token must match to be listed)\n"
+        "  key:value    — metadata match, e.g. type:image, character:amy (ranked highest)\n"
+        "  path/sub:val — nested metadata match, e.g. composite/type:subject\n"
+        '  "two words"  — exact phrase, kept together\n'
+        "  anything!    — required: append ! to hard-filter on it (word!, type:image!, "
+        '"brown hair"!)\n\n'
+        "Terms typed next to each other score much higher when they appear together in "
+        "that order, so word order matters: put related words adjacent. "
+        "ALWAYS append ! to what you actually require; use plain terms to disambiguate. "
         "Examples:\n"
-        '  - "amy!" → find anything related to "amy"\n'
-        '  - "type:image character:amy" → all images tagged with character=amy\n'
-        '  - "house! bed couch" → files containing "house" (required), ranked by "bed" and "couch"\n\n'
+        '  - "amy!" → anything related to "amy"\n'
+        '  - "type:image! character:amy" → images, ranked by whether character=amy\n'
+        '  - "house! bed couch" → files containing "house", ranked by "bed" and "couch"\n'
+        '  - "amy house office" → prefers amy/house/office.jpg over three scattered hits\n\n'
         "Results are returned 20 per page.  Use the page parameter to navigate."
     ),
     parameters={
@@ -448,9 +459,10 @@ MEDIA_SEARCH_TOOL_DEF = CommandToolDef(
                 "type": "string",
                 "description": (
                     "Search query string. Space-separated tokens: "
-                    "word! for required terms, key:value for metadata filters, "
-                    "word for optional ranking keywords. "
-                    "Examples: 'amy!', 'type:image character:amy', 'house! bed couch'."
+                    "word for ranking keywords, key:value for metadata, "
+                    'quotes for exact phrases, trailing ! to require a term. '
+                    "Examples: 'amy!', 'type:image! character:amy', "
+                    '\'house! bed couch\', \'"brown hair"! amy\'.'
                 ),
             },
             "page": {

@@ -149,6 +149,27 @@ def get_project_locale(project_root: Path) -> str:
     return "en-US"
 
 
+def get_media_search_index_limit(project_root: Path, default: int = 10_000) -> int:
+    """Return ``[project] media_search_index_limit`` from lens.toml, or *default*.
+
+    Caps how many files ``MediaService``'s full-scan search index will hold
+    per project (see ``lens.core.media.cache.MediaSearchIndex``). Files
+    beyond the cap still show up in search results, just without the
+    precomputed fast path.
+    """
+    lens_toml = project_root / "lens.toml"
+    if not lens_toml.exists():
+        return default
+    with lens_toml.open("rb") as f:
+        config: dict[str, Any] = tomllib.load(f)
+    raw_project = config.get("project", {})
+    project: dict[str, Any] = cast(dict[str, Any], raw_project) if isinstance(raw_project, dict) else {}
+    raw_limit = project.get("media_search_index_limit")
+    if isinstance(raw_limit, int) and not isinstance(raw_limit, bool) and raw_limit > 0:
+        return raw_limit
+    return default
+
+
 def get_selected_prompt_pack(project_root: Path) -> str | None:
     """Return prompt pack name from ``[project] prompt_pack``, or ``None``."""
     lens_toml = project_root / "lens.toml"

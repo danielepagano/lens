@@ -4,6 +4,7 @@
   type Props = {
     title?: string
     breadcrumbs?: Crumb[]
+    showPath?: boolean
     onClose?: () => void
     onNavigate?: (path: string) => void
   }
@@ -11,6 +12,7 @@
   let {
     title = '',
     breadcrumbs = [],
+    showPath = true,
     onClose = undefined,
     onNavigate = undefined,
   }: Props = $props()
@@ -21,13 +23,15 @@
     <span class="carousel-title">{title}</span>
     <button type="button" class="carousel-close" aria-label="Close" onclick={() => onClose?.()}>✕</button>
   </div>
-  <nav class="carousel-path" aria-label="Folder path">
-    <button type="button" onclick={() => onNavigate?.('')}>Root</button>
-    {#each breadcrumbs as crumb (crumb.path)}
-      <span aria-hidden="true"> / </span>
-      <button type="button" onclick={() => onNavigate?.(crumb.path)}>{crumb.label}</button>
-    {/each}
-  </nav>
+  {#if showPath}
+    <nav class="carousel-path" aria-label="Folder path">
+      <button type="button" onclick={() => onNavigate?.('')}>Root</button>
+      {#each breadcrumbs as crumb (crumb.path)}
+        <span aria-hidden="true"> / </span>
+        <button type="button" onclick={() => onNavigate?.(crumb.path)}>{crumb.label}</button>
+      {/each}
+    </nav>
+  {/if}
 </div>
 
 <style>

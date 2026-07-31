@@ -23,3 +23,21 @@ class OperatorError(LensException):
     tree modified).  Callers should consider rolling back the pending
     transaction before surfacing the error.
     """
+
+
+class MediaSearchCapacityExceeded(LensException):
+    """Raised when a project's media file count exceeds the search index cap.
+
+    The index (``lens.core.media.cache.MediaSearchIndex``) is deliberately
+    all-or-nothing: rather than partially index the project or fall back to
+    per-file backend reads during search, it locks itself empty once file
+    count passes the configured limit. Raise ``[project]
+    media_search_index_limit`` in ``lens.toml`` and retry.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self.limit = limit
+        super().__init__(
+            f"media search index is over capacity (limit={limit} files) — "
+            f"increase [project] media_search_index_limit in lens.toml"
+        )

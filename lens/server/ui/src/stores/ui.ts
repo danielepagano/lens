@@ -83,6 +83,8 @@ export interface MediaCarouselRequest {
   attachLine?: number
   /** 1-based disk line of a standalone image markdown row (`edit --replace`). */
   replaceImageLine?: number
+  /** Opens straight into search mode with this query pre-run, instead of browsing `dir`. */
+  searchQuery?: string
 }
 export const mediaCarouselRequest = writable<MediaCarouselRequest | null>(null)
 
