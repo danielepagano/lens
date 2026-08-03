@@ -26,6 +26,7 @@ _AI_SECRET_RE = re.compile(
     r"<!--\s*ai:secret:\s*([\s\S]*?)\s*-->",
     re.MULTILINE,
 )
+_AI_SECRET_OPEN_RE = re.compile(r"<!--\s*ai:secret:\s*")
 
 @dataclass
 class ParsedAnnotation:
@@ -281,7 +282,25 @@ def _rot13(s: str) -> str:
 
 
 def encode_ai_secrets(text: str) -> str:
-    """ROT13-encode the content inside each <!-- ai:secret:...--> block."""
+    """ROT13-encode the content inside each ``<!-- ai:secret: ... -->`` block.
+
+    **The transform is an involution** — :func:`decode_ai_secrets` *is* this
+    function — so applying it an even number of times yields plaintext.  That
+    makes the direction of every call site load-bearing.  The system-wide
+    contract is:
+
+    *  **Storage form** (narrative files, KB objects): secrets encoded.
+    *  **Model form** (anything sent to or received from an LLM): decoded.
+
+    Text therefore crosses the boundary exactly once per direction.  Decoding
+    happens in :class:`~lens.core.crawl_transforms.SecretDecodeTransform` for
+    the crawl graph and in ``lens.core.command_tools`` for inline command-tool
+    results; encoding happens in :func:`encode_ai_secrets_for_persist` on LLM
+    output and on model-authored ``kb_patch`` content.  Adding a new path that
+    shows stored KB text to a model, or writes model text to storage, means
+    adding the matching conversion — a missing *or* duplicated one silently
+    leaks plaintext (issue #74).
+    """
 
     def repl(match: re.Match[str]) -> str:
         content = match.group(1)
@@ -290,6 +309,82 @@ def encode_ai_secrets(text: str) -> str:
     return _AI_SECRET_RE.sub(repl, text)
 
 
+def encode_ai_secrets_for_persist(text: str, *, inside_secret: bool = False) -> str:
+    """Encode *text* for storage, including a half of a block split across chunks.
+
+    Use this on LLM-authored text.  A generation can be cut in half between the
+    opening ``<!-- ai:secret:`` and its ``-->`` — by a command-tool round
+    boundary, a stop sequence, or an interrupt — and neither half matches
+    :func:`encode_ai_secrets`, so the plaintext would survive to disk.  Both
+    halves are handled, and they need different treatment:
+
+    *  A **dangling opener** encodes to end of text.
+    *  *inside_secret* says this text *begins* mid-block, because the opener
+       arrived in an earlier chunk.  Everything up to the first ``-->``
+       encodes, and the remainder is ordinary text again.
+
+    Callers that chunk a single generation must therefore thread the flag
+    forward — :func:`ends_inside_ai_secret` computes it.  Rewrites are in place
+    (no whitespace normalisation) so both branches stay length-preserving like
+    the paired form.  ``-->`` survives ROT13 unchanged and cannot be created by
+    it, so the marker positions are the same before and after encoding.
+
+    :func:`decode_ai_secrets` deliberately does *not* mirror this: stored text
+    with a dangling opener is malformed, and decoding it to end of file would
+    garble whole nodes.  :func:`decode_ai_secrets_for_model` is the mirror for
+    the one caller that legitimately holds a split block.
+    """
+    if inside_secret:
+        close = text.find("-->")
+        if close < 0:
+            return _rot13(text)
+        return _rot13(text[:close]) + encode_ai_secrets_for_persist(text[close:])
+    encoded = encode_ai_secrets(text)
+    last_open: re.Match[str] | None = None
+    for match in _AI_SECRET_OPEN_RE.finditer(encoded):
+        last_open = match
+    if last_open is None:
+        return encoded
+    tail = encoded[last_open.end() :]
+    if "-->" in tail:
+        return encoded
+    return encoded[: last_open.end()] + _rot13(tail)
+
+
+def ends_inside_ai_secret(text: str, *, inside_secret: bool = False) -> bool:
+    """Report whether *text* ends inside an ``ai:secret`` block that never closed.
+
+    Feed the result back as *inside_secret* for the next chunk of the same
+    generation; see :func:`encode_ai_secrets_for_persist`.  Safe to call on
+    either the raw or the encoded form of a chunk — encoding leaves every
+    marker this scans byte-identical, except in the case that returns ``True``
+    on both forms anyway (a whole chunk swallowed by an open block).
+    """
+    if inside_secret:
+        close = text.find("-->")
+        if close < 0:
+            return True
+        return ends_inside_ai_secret(text[close + len("-->") :])
+    last_open: re.Match[str] | None = None
+    for match in _AI_SECRET_OPEN_RE.finditer(text):
+        last_open = match
+    return last_open is not None and "-->" not in text[last_open.end() :]
+
+
 def decode_ai_secrets(text: str) -> str:
-    """ROT13-decode the content inside each <!-- ai:secret:...--> block."""
+    """ROT13-decode the content inside each ``<!-- ai:secret: ... -->`` block.
+
+    See :func:`encode_ai_secrets` for the storage-form/model-form contract.
+    """
     return encode_ai_secrets(text)
+
+
+def decode_ai_secrets_for_model(text: str, *, inside_secret: bool = False) -> str:
+    """Decode LLM-authored text back to model form, split blocks included.
+
+    The mirror of :func:`encode_ai_secrets_for_persist`, for the one caller that
+    holds a legitimately split block: an assistant turn being replayed to the
+    model that wrote it.  Everywhere else a dangling opener means malformed
+    storage, so use :func:`decode_ai_secrets` and leave it alone.
+    """
+    return encode_ai_secrets_for_persist(text, inside_secret=inside_secret)

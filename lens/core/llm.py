@@ -25,7 +25,12 @@ from urllib.parse import urlparse
 import httpx
 import yaml
 
-from lens.core.annotations import encode_ai_secrets
+from lens.core.annotations import (
+    decode_ai_secrets_for_model,
+    encode_ai_secrets,
+    encode_ai_secrets_for_persist,
+    ends_inside_ai_secret,
+)
 from lens.core.generation_artifacts import (
     ComposePolicy,
     GenerationArtifacts,
@@ -546,6 +551,7 @@ async def _stream_once(
     cancel_event: asyncio.Event,
     enable_thinking: bool = False,
     round_index: int = 0,
+    inside_secret: bool = False,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Execute one HTTP streaming request, retrying once on quick provider failures."""
     for attempt in range(_HTTP_QUICK_FAIL_RETRIES + 1):
@@ -561,6 +567,7 @@ async def _stream_once(
                 cancel_event=cancel_event,
                 enable_thinking=enable_thinking,
                 round_index=round_index,
+                inside_secret=inside_secret,
             ):
                 if event.preview:
                     yielded_to_consumer = True
@@ -617,6 +624,7 @@ async def _stream_once_http(
     cancel_event: asyncio.Event,
     enable_thinking: bool = False,
     round_index: int = 0,
+    inside_secret: bool = False,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Execute one HTTP streaming request.
 
@@ -909,7 +917,9 @@ async def _stream_once_http(
     )
 
     full_text = "".join(chunks)
-    encoded_text = encode_ai_secrets(full_text)
+    # A secret block can straddle two rounds of a command-tool generation, so
+    # encode the half-blocks at either edge rather than letting them through.
+    encoded_text = encode_ai_secrets_for_persist(full_text, inside_secret=inside_secret)
 
     parsed_tool_calls: list[ToolCall] = []
     for idx in sorted(tool_calls_by_index):
@@ -1032,6 +1042,10 @@ async def generate_stream(
     )
     half_limit = max(1, command_tool_limit // 2)
     warned_at_half = False
+    # One logical generation is chopped into rounds by command-tool calls, so a
+    # secret block can open in one round and close in a later one. Each round
+    # encodes on its own and needs to know it started mid-block.
+    inside_secret = False
 
     for iteration in range(command_tool_limit + 1):
         final: FinalPayload | None = None
@@ -1049,6 +1063,7 @@ async def generate_stream(
             cancel_event=_cancel,
             enable_thinking=eff_thinking,
             round_index=iteration,
+            inside_secret=inside_secret,
         ):
             if event.preview:
                 yield event
@@ -1091,6 +1106,11 @@ async def generate_stream(
         )
         if command_tcs:
             assert command_tool_handlers is not None
+            # When the round ends mid-secret, everything appended after it —
+            # the tool-call fences, then the next round's prose — sits between
+            # the opener and its ``-->``, so it is stored encoded too and the
+            # decoded view reads back clean.
+            open_secret = ends_inside_ai_secret(final.text, inside_secret=inside_secret)
             assistant_tool_calls: list[dict[str, Any]] = []
             tool_results: list[dict[str, Any]] = []
             tool_markdowns: list[str] = []
@@ -1107,12 +1127,16 @@ async def generate_stream(
                     result = result + warning
                     yield StreamEvent(preview=warning)
                 # Persist always gets an encoded fence (independent of stream policy).
-                persist_fence = encode_ai_secrets(
+                persist_fence = encode_ai_secrets_for_persist(
                     format_tool_call_fence(
                         tc.name, tc.arguments, response_char_len=len(result),
-                    )
+                    ),
+                    inside_secret=open_secret,
                 )
                 tool_markdowns.append(persist_fence)
+                open_secret = ends_inside_ai_secret(
+                    persist_fence, inside_secret=open_secret
+                )
                 # Stream preview uses the stream composer.
                 stream_kind, stream_content = compose_tool_call_for_stream(
                     tc.name, tc.arguments,
@@ -1145,11 +1169,18 @@ async def generate_stream(
             working_messages.append(
                 {
                     "role": "assistant",
-                    "content": final.text or None,
+                    # Replaying the round to the model that wrote it: model form,
+                    # or it reads back its own secret as ROT13 and re-emitting
+                    # that into a kb fence would encode it a second time.
+                    "content": decode_ai_secrets_for_model(
+                        final.text, inside_secret=inside_secret
+                    )
+                    or None,
                     "tool_calls": assistant_tool_calls,
                 }
             )
             working_messages.extend(tool_results)
+            inside_secret = open_secret
             continue
 
         # ── Normal end (no tool calls or unknown tools) ───────────────

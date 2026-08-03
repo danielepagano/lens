@@ -94,10 +94,24 @@ def substitute_inline_kb(
 
 
 class SecretDecodeTransform:
+    """Turn stored ``ai:secret`` blocks into the model form, exactly once.
+
+    :func:`~lens.core.annotations.decode_ai_secrets` is ROT13, an involution, so
+    a second pass over the same component *re-encodes* it and the model is shown
+    ciphertext.  It then copies that ciphertext back verbatim, persist encodes it
+    once more, and the plaintext lands on disk — issue #74.  A graph does get
+    transformed twice in the normal flow (``crawl`` builds it, then
+    ``_prepare_render_graph`` re-runs the defaults over the render-time
+    components it just added), so ``transform_history`` is the guard: components
+    already decoded are skipped, newly added ones still get their single pass.
+    """
+
     name = "secret-decode"
 
     def apply(self, graph: CrawlGraph) -> CrawlGraph:
         for component in graph.components:
+            if self.name in component.transform_history:
+                continue
             decoded = decode_ai_secrets(component.text)
             if decoded != component.text:
                 component.text = decoded

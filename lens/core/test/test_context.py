@@ -934,3 +934,59 @@ class TestCrawlWithAnchor(unittest.TestCase):
             result = crawl(narrative, anchor=anchor)
             # KB should still be resolved
             self.assertIn("person.alice", result.pinned_ids)
+
+
+class TestAssembledKbSecretsAreModelForm(unittest.TestCase):
+    """The KB block a model is shown must be decoded — see issue #74.
+
+    ``crawl`` decodes the graph, then ``assemble_prompt`` re-runs the default
+    transforms over the render-time components it adds. Because the decode is
+    ROT13 — an involution — a second pass over the KB components used to hand
+    the model ciphertext. Models copy that back verbatim into a ``kb`` block,
+    persist encodes it once more, and the plaintext lands on disk.
+    """
+
+    def _project_with_secret(self, tmp: Path) -> NarrativeNode:
+        root, node = _make_project(_init_repo(tmp))
+        _add_kb(
+            root,
+            "front",
+            "blight",
+            "# The Spreading Blight\n\n"
+            "- Problem: a grey rot\n\n"
+            "<!-- ai:secret:\ngur oyvtug vf zntvpny\n-->\n",
+        )
+        root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+        root_node.md_path().write_text(
+            "[\n  kb_pin:\n    - front.blight\n]: #\n\n# test\n"
+        )
+        subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "pin"], cwd=root, capture_output=True, check=True
+        )
+        from lens.core.knowledge import KnowledgeStore
+
+        KnowledgeStore.clear_registry()
+        return node
+
+    def test_relevant_knowledge_block_is_decoded(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project_with_secret(Path(tmp))
+            result = crawl(node)
+            messages = assemble_prompt(
+                result, system_prompt="sys", instruction="advance a day"
+            )
+
+        user = messages[1]["content"]
+        self.assertIn("the blight is magical", user)
+        self.assertNotIn("gur oyvtug vf zntvpny", user)
+
+    def test_decoded_once_even_when_assembled_twice(self) -> None:
+        """Retry/regeneration re-assembles from the same CrawlResult."""
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project_with_secret(Path(tmp))
+            result = crawl(node)
+            assemble_prompt(result, system_prompt="sys", instruction="first")
+            messages = assemble_prompt(result, system_prompt="sys", instruction="again")
+
+        self.assertIn("the blight is magical", messages[1]["content"])
