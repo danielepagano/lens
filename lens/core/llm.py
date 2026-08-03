@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 import httpx
 import yaml
 
-from lens.core.annotations import encode_ai_secrets
+from lens.core.annotations import encode_ai_secrets, encode_ai_secrets_for_persist
 from lens.core.generation_artifacts import (
     ComposePolicy,
     GenerationArtifacts,
@@ -909,7 +909,9 @@ async def _stream_once_http(
     )
 
     full_text = "".join(chunks)
-    encoded_text = encode_ai_secrets(full_text)
+    # A secret block can straddle two rounds of a command-tool generation, so
+    # encode a dangling opener too rather than letting the half-block through.
+    encoded_text = encode_ai_secrets_for_persist(full_text)
 
     parsed_tool_calls: list[ToolCall] = []
     for idx in sorted(tool_calls_by_index):

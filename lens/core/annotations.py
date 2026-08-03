@@ -26,6 +26,7 @@ _AI_SECRET_RE = re.compile(
     r"<!--\s*ai:secret:\s*([\s\S]*?)\s*-->",
     re.MULTILINE,
 )
+_AI_SECRET_OPEN_RE = re.compile(r"<!--\s*ai:secret:\s*")
 
 @dataclass
 class ParsedAnnotation:
@@ -281,7 +282,25 @@ def _rot13(s: str) -> str:
 
 
 def encode_ai_secrets(text: str) -> str:
-    """ROT13-encode the content inside each <!-- ai:secret:...--> block."""
+    """ROT13-encode the content inside each ``<!-- ai:secret: ... -->`` block.
+
+    **The transform is an involution** — :func:`decode_ai_secrets` *is* this
+    function — so applying it an even number of times yields plaintext.  That
+    makes the direction of every call site load-bearing.  The system-wide
+    contract is:
+
+    *  **Storage form** (narrative files, KB objects): secrets encoded.
+    *  **Model form** (anything sent to or received from an LLM): decoded.
+
+    Text therefore crosses the boundary exactly once per direction.  Decoding
+    happens in :class:`~lens.core.crawl_transforms.SecretDecodeTransform` for
+    the crawl graph and in ``lens.core.command_tools`` for inline command-tool
+    results; encoding happens in :func:`encode_ai_secrets_for_persist` on LLM
+    output and on model-authored ``kb_patch`` content.  Adding a new path that
+    shows stored KB text to a model, or writes model text to storage, means
+    adding the matching conversion — a missing *or* duplicated one silently
+    leaks plaintext (issue #74).
+    """
 
     def repl(match: re.Match[str]) -> str:
         content = match.group(1)
@@ -290,6 +309,36 @@ def encode_ai_secrets(text: str) -> str:
     return _AI_SECRET_RE.sub(repl, text)
 
 
+def encode_ai_secrets_for_persist(text: str) -> str:
+    """Encode *text* for storage, including a trailing unterminated block.
+
+    Use this on LLM-authored text.  A generation can be cut in half between the
+    opening ``<!-- ai:secret:`` and its ``-->`` — by a command-tool round
+    boundary, a stop sequence, or an interrupt — and a half-block matches
+    neither :func:`encode_ai_secrets` call, so the plaintext would survive to
+    disk.  Any dangling opener therefore encodes to end of text.
+
+    Only the last opener can be unterminated (an earlier one would have been
+    closed by the later ``-->``), and the tail is rewritten in place, so this
+    stays length-preserving like the paired form.  :func:`decode_ai_secrets`
+    deliberately does *not* mirror this: stored text with a dangling opener is
+    malformed, and decoding it to end of file would garble whole nodes.
+    """
+    encoded = encode_ai_secrets(text)
+    last_open: re.Match[str] | None = None
+    for match in _AI_SECRET_OPEN_RE.finditer(encoded):
+        last_open = match
+    if last_open is None:
+        return encoded
+    tail = encoded[last_open.end() :]
+    if "-->" in tail:
+        return encoded
+    return encoded[: last_open.end()] + _rot13(tail)
+
+
 def decode_ai_secrets(text: str) -> str:
-    """ROT13-decode the content inside each <!-- ai:secret:...--> block."""
+    """ROT13-decode the content inside each ``<!-- ai:secret: ... -->`` block.
+
+    See :func:`encode_ai_secrets` for the storage-form/model-form contract.
+    """
     return encode_ai_secrets(text)

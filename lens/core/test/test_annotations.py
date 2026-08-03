@@ -7,6 +7,7 @@ import unittest
 from lens.core.annotations import (
     decode_ai_secrets,
     encode_ai_secrets,
+    encode_ai_secrets_for_persist,
     find_front_matter_span,
     iter_kept_storage_lines,
     parse_annotations,
@@ -377,3 +378,49 @@ class TestAiSecrets(unittest.TestCase):
         self.assertIn("first", result)
         self.assertIn("second", result)
         self.assertIn("between", result)
+
+
+class TestEncodeAiSecretsForPersist(unittest.TestCase):
+    def test_matches_plain_encode_when_all_blocks_closed(self) -> None:
+        text = "Before\n<!-- ai:secret:\nthe content is secret\n-->\nAfter"
+        self.assertEqual(
+            encode_ai_secrets_for_persist(text), encode_ai_secrets(text)
+        )
+
+    def test_unterminated_block_encoded_to_end_of_text(self) -> None:
+        text = "Before\n<!-- ai:secret:\nthe content is secret"
+        result = encode_ai_secrets_for_persist(text)
+        self.assertIn("gur pbagrag vf frperg", result)
+        self.assertNotIn("the content is secret", result)
+        self.assertTrue(result.startswith("Before\n<!-- ai:secret:\n"))
+
+    def test_unterminated_block_encoding_preserves_length(self) -> None:
+        # storage_text.normalize_storage_text maps anchors by byte offset and
+        # raises when a secret pass changes length.
+        text = "Before\n<!-- ai:secret:\nthe content is secret\n\nand more"
+        self.assertEqual(len(encode_ai_secrets_for_persist(text)), len(text))
+
+    def test_unterminated_block_survives_a_decode_roundtrip(self) -> None:
+        # The closing marker arrives in a later round, so the composed text is a
+        # normal paired block by the time anything decodes it.
+        first_round = encode_ai_secrets_for_persist(
+            "<!-- ai:secret:\nthe content is secret"
+        )
+        composed = first_round + "\n-->\n"
+        self.assertNotIn("the content is secret", composed)
+        self.assertIn("the content is secret", decode_ai_secrets(composed))
+
+    def test_earlier_closed_block_untouched_by_unterminated_tail(self) -> None:
+        text = (
+            "<!-- ai:secret:\nfirst secret\n-->\n"
+            "visible prose\n"
+            "<!-- ai:secret:\nsecond secret"
+        )
+        result = encode_ai_secrets_for_persist(text)
+        self.assertIn("svefg frperg", result)
+        self.assertIn("frpbaq frperg", result)
+        self.assertIn("visible prose", result)
+
+    def test_text_without_secrets_unchanged(self) -> None:
+        text = "Plain prose\n<!-- ai: a courtesy annotation -->\nMore prose"
+        self.assertEqual(encode_ai_secrets_for_persist(text), text)

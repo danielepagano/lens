@@ -14,6 +14,15 @@ the default of ``False``.
 ``kb_add`` is intentionally excluded: KB mutations belong only to planning
 operators (design, advance) whose outputs go through ``lens kb extract``.
 This keeps narrative writes predictable.
+
+Secrets
+-------
+Command tools are a second model-facing boundary alongside the crawl graph, and
+they carry the same obligation: KB text handed to the model is decoded, and
+model-authored text written back to the KB is encoded.  The crawl graph gets
+this from :class:`~lens.core.crawl_transforms.SecretDecodeTransform`; nothing
+applies to handlers, so they convert explicitly.  See
+:func:`~lens.core.annotations.encode_ai_secrets` for the full contract.
 """
 
 from __future__ import annotations
@@ -23,6 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
+from lens.core.annotations import decode_ai_secrets, encode_ai_secrets_for_persist
 from lens.core.commands.kb import kb_patch as _cmd_kb_patch
 from lens.core.commands.kb import kb_with_tag as _cmd_kb_with_tag
 from lens.core.exceptions import LensException
@@ -80,8 +90,14 @@ def get_command_registry(
 
 
 def _format_objects(objects: dict[str, KnowledgeObject]) -> str:
+    """Render KB objects for the model — decoded, matching RELEVANT KNOWLEDGE.
+
+    ``KnowledgeObject.format`` returns storage form.  Handing that to the model
+    would show it ROT13 gibberish where crawl shows plaintext, and anything it
+    echoed back would be encoded a second time on persist — i.e. leaked.
+    """
     parts = [obj.format() for obj in objects.values()]
-    return "\n\n".join(parts) if parts else ""
+    return decode_ai_secrets("\n\n".join(parts)) if parts else ""
 
 
 # ---------------------------------------------------------------------------
@@ -228,6 +244,25 @@ register_command_tool(
 # ---------------------------------------------------------------------------
 
 
+def _encode_patch_contents(patches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert model-authored patch bodies to storage form.
+
+    Patch *targets* need no conversion: they are resolved against the decoded
+    LLM view of the object (see
+    :func:`~lens.core.text_select.apply_patches_to_storage_text_via_llm_view`),
+    which is the text the model was shown.  Only ``content`` is spliced into
+    storage text, so only ``content`` is encoded.
+    """
+    encoded: list[dict[str, Any]] = []
+    for patch in patches:
+        content = patch.get("content")
+        if isinstance(content, str) and content:
+            encoded.append({**patch, "content": encode_ai_secrets_for_persist(content)})
+        else:
+            encoded.append(patch)
+    return encoded
+
+
 async def kb_patch_handler(args: dict[str, Any], project_root: Path) -> str:
     raw_id = args.get("id")
     patches = args.get("patches")
@@ -236,13 +271,13 @@ async def kb_patch_handler(args: dict[str, Any], project_root: Path) -> str:
     if not isinstance(patches, list) or not patches:
         return "(error: 'patches' must be a non-empty array)"
     store = KnowledgeStore.for_project(project_root)
-    patches_list: list[dict[str, Any]] = cast(list[dict[str, Any]], patches)
+    patches_list = _encode_patch_contents(cast(list[dict[str, Any]], patches))
     try:
         result = _cmd_kb_patch(raw_id, patches_list, store=store)
     except LensException as e:
         return f"(error: {e})"
     if result.kind == "patched":
-        return f"OK: patched {result.obj.id}\n\n{result.obj.format()}"
+        return f"OK: patched {result.obj.id}\n\n{decode_ai_secrets(result.obj.format())}"
     if result.kind == "no_changes":
         return f"OK: no changes for {result.obj.id}"
     return f"OK: already present for {result.obj.id}"

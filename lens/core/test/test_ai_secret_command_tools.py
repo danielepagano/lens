@@ -1,26 +1,20 @@
-"""Repro for issue #74 — ``ai:secret`` blocks persisted un-encoded by design/advance.
+"""Regression tests for issue #74 — ``ai:secret`` leaked by design/advance.
 
-``encode_ai_secrets`` is ROT13, which is an involution: applying it twice returns
-plaintext.  The only encode point is :func:`lens.core.llm._stream_once`, which
-encodes the text of *one* LLM round; the only decode point is
-:class:`~lens.core.crawl_transforms.SecretDecodeTransform`, which runs on the
-crawl graph.  The command-tool KB paths (``kb_get``, ``kb_with_tag``,
-``kb_patch``) sit outside both, so:
+``encode_ai_secrets`` is ROT13, an involution, so the direction of every call
+site is load-bearing: storage holds encoded secrets, anything model-facing holds
+decoded ones.  Encoding used to happen only on the text of one LLM round and
+decoding only on the crawl graph, which left the command-tool KB paths outside
+both.  Three ways plaintext reached disk:
 
-* ``kb_get`` hands the model a KB body with the secret still ROT13-encoded.
-  When the model echoes that body back inside a ``kb`` fence — the normal
-  update loop for a front — persist ROT13s it a second time and the plaintext
-  lands on disk.
-* ``kb_patch`` writes its ``content`` straight to the KB with no encode step.
-* A secret comment that straddles a command-tool round boundary matches the
-  encode regex in neither round, so it is never encoded at all.
+* ``kb_get`` / ``kb_with_tag`` handed the model a KB body with the secret still
+  ROT13-encoded.  When the model echoed that body back inside a ``kb`` fence —
+  the normal update loop for a front — persist ROT13'd it a second time.
+* ``kb_patch`` wrote its ``content`` straight to the KB with no encode step.
+* A secret comment straddling a command-tool round boundary matched the encode
+  regex in neither round.
 
 Only ``design`` and ``advance`` set ``use_command_tools = True``, which is why
-those two operators are the ones that leak.
-
-The tests below assert the *intended* behaviour and are marked
-``expectedFailure`` while the bug is open; they turn into unexpected successes
-once it is fixed.
+those two operators were the ones that leaked.
 """
 
 from __future__ import annotations
@@ -179,7 +173,6 @@ def _run_two_rounds(
 class TestKbGetSecretParity(unittest.TestCase):
     """``kb_get`` must show the model the same decoded text crawl shows it."""
 
-    @unittest.expectedFailure  # issue #74
     def test_kb_get_decodes_secrets_like_crawl(self) -> None:
         from lens.core.command_tools import _kb_get  # pyright: ignore[reportPrivateUsage]
 
@@ -195,7 +188,6 @@ class TestKbGetSecretParity(unittest.TestCase):
 class TestEchoedKbGetResult(unittest.TestCase):
     """The model echoing a ``kb_get`` body into a ``kb`` fence must stay encoded."""
 
-    @unittest.expectedFailure  # issue #74
     def test_echoed_kb_get_result_persists_encoded(self) -> None:
         from lens.core.command_tools import _kb_get  # pyright: ignore[reportPrivateUsage]
 
@@ -226,7 +218,6 @@ class TestEchoedKbGetResult(unittest.TestCase):
 class TestSecretSplitAcrossToolRounds(unittest.TestCase):
     """A secret straddling a command-tool round boundary must still be encoded."""
 
-    @unittest.expectedFailure  # issue #74
     def test_secret_split_across_tool_rounds_persists_encoded(self) -> None:
         async def handler(_args: dict[str, Any], _root: Path) -> str:
             return "some kb content"
@@ -246,7 +237,6 @@ class TestSecretSplitAcrossToolRounds(unittest.TestCase):
 class TestKbPatchSecretEncoding(unittest.TestCase):
     """``kb_patch`` content is written straight through with no encode step."""
 
-    @unittest.expectedFailure  # issue #74
     def test_kb_patch_content_persisted_encoded(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = _init_project(Path(tmp))

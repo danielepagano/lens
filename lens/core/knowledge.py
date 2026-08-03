@@ -87,9 +87,11 @@ class KnowledgeObject:
         is :func:`strip_markdown_comments` applied to ``self.text`` — the same
         prose the crawl shows after stripping markdown comment blocks, not a
         byte-for-byte copy of storage. Optional ``strip_html_comments`` removes
-        ``<!-- ... -->`` from that body string. Crawl may still run
-        ``decode_ai_secrets`` on assembled prompts; that step is not applied
-        here.
+        ``<!-- ... -->`` from that body string. The result is **storage form**:
+        ``ai:secret`` blocks stay encoded. Callers rendering this for an LLM
+        must decode first — crawl does so via its graph transform, command-tool
+        handlers via :func:`~lens.core.annotations.decode_ai_secrets`. See
+        :func:`~lens.core.annotations.encode_ai_secrets` for the contract.
 
         Multiple formatted objects are typically joined with ``"\\n\\n"`` so
         readers can tell where one KB body ends and the next header begins.
