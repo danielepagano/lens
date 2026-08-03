@@ -17,8 +17,13 @@ datasets:
 ## Setup
 
 Create a timeline, two fronts (one with a chance mechanic, one on a hard
-schedule), tag them both to the timeline, then pin everything and establish
-the narrative context.
+schedule), tag **the timeline** with both front IDs, then pin the timeline with
+the `+` suffix and establish the narrative context.
+
+The tag direction and the `+` are both load-bearing: the timeline is the hub,
+and `timeline.vale+` follows its dot-tags one hop to pull the active fronts into
+the crawl. Without them the fronts never reach the model, it reports "no fronts
+are active", and every step scores against an empty world.
 
 **Implementation:** `bench/scenarios/advance_fronts_setup.sh` (canonical — edit
 there first, then keep this prose aligned). From the **repo root** after

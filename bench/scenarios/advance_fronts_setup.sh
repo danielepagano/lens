@@ -42,14 +42,16 @@ lens kb add front.courier "# The Overdue Courier
 
 <!-- ai:secret: Gur pbhevre vf orvat uryq ol gur fnzr tebhc gung ohevrq gur negvsnpg — gurl qba'g jnag gur jneavat ernpuvat gur cnegl. -->"
 
-lens kb tag front.blight --add timeline.vale
-lens kb tag front.courier --add timeline.vale
+# The timeline is the hub: its dot-tags name the active fronts, and the `+`
+# suffix on the pin below follows them one hop into context. Tagging the other
+# direction (fronts -> timeline) leaves the fronts out of the crawl entirely.
+lens kb tag timeline.vale --add front.blight --add front.courier
 
 N=$(wc -l < narrative/default/_node.md | tr -d ' ')
 lens edit / 1 "$N" --replace -- "$(cat <<'EOF'
 [
   kb_pin:
-    - timeline.vale
+    - timeline.vale+
 ]: #
 
 # default
