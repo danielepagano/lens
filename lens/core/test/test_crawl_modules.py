@@ -123,6 +123,54 @@ class TestCrawlTransforms(unittest.TestCase):
         self.assertIn("the secret", graph.components[0].text)
         self.assertIn("secret-decode", graph.components[0].transform_history)
 
+    def test_secret_decode_transform_is_idempotent(self) -> None:
+        # ROT13 is an involution, and the normal flow runs the default
+        # transforms twice: once in crawl(), again in _prepare_render_graph over
+        # the render-time components it adds. Without a guard the second pass
+        # re-encodes, the model is shown ciphertext, and copying it back leaks
+        # plaintext on persist (issue #74).
+        graph = CrawlGraph()
+        graph.add_component(
+            CrawlComponent(
+                id="kb:front.blight",
+                kind="knowledge",
+                text="Visible <!-- ai:secret:\ngur frperg\n-->",
+            )
+        )
+
+        for _ in range(3):
+            SecretDecodeTransform().apply(graph)
+
+        self.assertIn("the secret", graph.components[0].text)
+        self.assertNotIn("gur frperg", graph.components[0].text)
+        self.assertEqual(
+            graph.components[0].transform_history.count("secret-decode"), 1
+        )
+
+    def test_secret_decode_transform_still_reaches_later_components(self) -> None:
+        """A second pass must skip decoded components without skipping new ones."""
+        graph = CrawlGraph()
+        graph.add_component(
+            CrawlComponent(
+                id="kb:front.blight",
+                kind="knowledge",
+                text="Visible <!-- ai:secret:\ngur frperg\n-->",
+            )
+        )
+        SecretDecodeTransform().apply(graph)
+        graph.add_component(
+            CrawlComponent(
+                id="render-task",
+                kind="task",
+                text="Task <!-- ai:secret:\nnabgure bar\n-->",
+            )
+        )
+
+        SecretDecodeTransform().apply(graph)
+
+        self.assertIn("the secret", graph.components[0].text)
+        self.assertIn("another one", graph.components[1].text)
+
     def test_strip_mount_embeds_removes_standalone_attachment_lines(self) -> None:
         graph = CrawlGraph()
         graph.add_component(

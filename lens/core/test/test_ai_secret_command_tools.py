@@ -25,10 +25,10 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
-from lens.core.annotations import encode_ai_secrets
+from lens.core.annotations import decode_ai_secrets, encode_ai_secrets
 from lens.core.command_tools import kb_patch_handler
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import FinalPayload, generate_stream
@@ -102,11 +102,13 @@ def _run_two_rounds(
     round1: dict[str, Any],
     round2_content: "Any",
     handler: Any,
+    requests: list[dict[str, Any]] | None = None,
 ) -> FinalPayload:
     """Drive ``generate_stream`` through one command-tool round and a final round.
 
     *round2_content* is a zero-arg callable so the second round can echo what the
-    tool handler returned in the first.
+    tool handler returned in the first.  *requests*, when given, collects each
+    round's request payload so tests can assert on what the model was sent.
     """
     call_count = 0
 
@@ -136,7 +138,9 @@ def _run_two_rounds(
             pass
 
     class _Client:
-        def build_request(self, _m: str, _u: str, **_kw: Any) -> object:
+        def build_request(self, _m: str, _u: str, **kw: Any) -> object:
+            if requests is not None:
+                requests.append(cast(dict[str, Any], kw.get("json", {})))
             return object()
 
         async def send(self, _req: object, *, stream: bool = False) -> _Resp:
@@ -218,20 +222,126 @@ class TestEchoedKbGetResult(unittest.TestCase):
 class TestSecretSplitAcrossToolRounds(unittest.TestCase):
     """A secret straddling a command-tool round boundary must still be encoded."""
 
-    def test_secret_split_across_tool_rounds_persists_encoded(self) -> None:
-        async def handler(_args: dict[str, Any], _root: Path) -> str:
-            return "some kb content"
+    @staticmethod
+    async def _handler(_args: dict[str, Any], _root: Path) -> str:
+        return "some kb content"
 
+    def _fence_head(self, opening_half: str) -> dict[str, Any]:
+        return _tool_call_delta(
+            "```kb\n---\nid: front.goblins\n---\nGoblin bake-off\n\n"
+            f"<!-- ai:secret:\n{opening_half}"
+        )
+
+    def test_closing_marker_alone_in_second_round(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = _init_project(Path(tmp))
             _store_front(root)
-            round1 = _tool_call_delta(
-                "```kb\n---\nid: front.goblins\n---\nGoblin bake-off\n\n"
-                f"<!-- ai:secret:\n{SECRET_PLAINTEXT}"
+            final = _run_two_rounds(
+                root,
+                self._fence_head(SECRET_PLAINTEXT),
+                lambda: "\n-->\n```\n",
+                self._handler,
             )
-            final = _run_two_rounds(root, round1, lambda: "\n-->\n```\n", handler)
 
         self.assertNotIn(SECRET_PLAINTEXT, final.text)
+        self.assertIn(SECRET_ROT13, final.text)
+
+    def test_second_round_carries_the_rest_of_the_secret(self) -> None:
+        # The realistic split: the tool call interrupts mid-sentence, so the
+        # closing round carries secret content of its own.  Encoding each round
+        # in isolation leaves that half in plaintext — the round after the
+        # boundary has no opener to match.
+        head, tail = SECRET_PLAINTEXT.split(" ", 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_project(Path(tmp))
+            _store_front(root)
+            final = _run_two_rounds(
+                root,
+                self._fence_head(head),
+                lambda: f" {tail}\n-->\n```\n",
+                self._handler,
+            )
+
+        self.assertNotIn(tail, final.text)
+        self.assertNotIn(SECRET_PLAINTEXT, final.text)
+        # The tool-call fence is appended between the two halves, so the block
+        # reads back as the secret with the audit fence spliced into it — both
+        # decoded, neither left as ROT13.
+        decoded = decode_ai_secrets(final.text)
+        self.assertIn(head, decoded)
+        self.assertIn(tail, decoded)
+        self.assertIn("kb_get", decoded)
+
+    def test_prose_after_the_close_is_left_alone(self) -> None:
+        head, tail = SECRET_PLAINTEXT.split(" ", 1)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_project(Path(tmp))
+            _store_front(root)
+            final = _run_two_rounds(
+                root,
+                self._fence_head(head),
+                lambda: f" {tail}\n-->\n```\n\nAnd the town is safe.\n",
+                self._handler,
+            )
+
+        self.assertIn("And the town is safe.", final.text)
+
+
+class TestAssistantReplayIsModelForm(unittest.TestCase):
+    """Rounds replayed to their author must be decoded, or the model re-encodes them."""
+
+    def test_assistant_turn_sent_back_decoded(self) -> None:
+        async def handler(_args: dict[str, Any], _root: Path) -> str:
+            return "some kb content"
+
+        requests: list[dict[str, Any]] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_project(Path(tmp))
+            _store_front(root)
+            _run_two_rounds(
+                root,
+                _tool_call_delta(
+                    f"Noting it down.\n<!-- ai:secret:\n{SECRET_PLAINTEXT}\n-->\n"
+                ),
+                lambda: "Done.\n",
+                handler,
+                requests=requests,
+            )
+
+        assistant = [
+            m
+            for m in requests[-1]["messages"]
+            if m.get("role") == "assistant" and m.get("content")
+        ]
+        self.assertTrue(assistant, "expected the first round replayed as assistant")
+        content = assistant[-1]["content"]
+        self.assertIn(SECRET_PLAINTEXT, content)
+        self.assertNotIn(SECRET_ROT13, content)
+
+    def test_split_assistant_turn_sent_back_decoded(self) -> None:
+        head, tail = SECRET_PLAINTEXT.split(" ", 1)
+
+        async def handler(_args: dict[str, Any], _root: Path) -> str:
+            return "some kb content"
+
+        requests: list[dict[str, Any]] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_project(Path(tmp))
+            _store_front(root)
+            _run_two_rounds(
+                root,
+                _tool_call_delta(f"Noting it down.\n<!-- ai:secret:\n{head}"),
+                lambda: f" {tail}\n-->\n",
+                handler,
+                requests=requests,
+            )
+
+        content = [
+            m["content"]
+            for m in requests[-1]["messages"]
+            if m.get("role") == "assistant" and m.get("content")
+        ][-1]
+        self.assertTrue(content.endswith(head), content)
 
 
 class TestKbPatchSecretEncoding(unittest.TestCase):

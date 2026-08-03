@@ -8,6 +8,7 @@ from lens.core.annotations import (
     decode_ai_secrets,
     encode_ai_secrets,
     encode_ai_secrets_for_persist,
+    ends_inside_ai_secret,
     find_front_matter_span,
     iter_kept_storage_lines,
     parse_annotations,
@@ -424,3 +425,83 @@ class TestEncodeAiSecretsForPersist(unittest.TestCase):
     def test_text_without_secrets_unchanged(self) -> None:
         text = "Plain prose\n<!-- ai: a courtesy annotation -->\nMore prose"
         self.assertEqual(encode_ai_secrets_for_persist(text), text)
+
+
+class TestEncodeAiSecretsContinuation(unittest.TestCase):
+    """The second half of a block split across chunks — ``inside_secret=True``."""
+
+    def test_continuation_before_close_is_encoded(self) -> None:
+        text = " the content is secret\n-->\nAfter"
+        result = encode_ai_secrets_for_persist(text, inside_secret=True)
+        self.assertIn("gur pbagrag vf frperg", result)
+        self.assertNotIn("the content is secret", result)
+        self.assertTrue(result.endswith("-->\nAfter"))
+
+    def test_continuation_without_close_encodes_whole_chunk(self) -> None:
+        result = encode_ai_secrets_for_persist(
+            "the content is secret", inside_secret=True
+        )
+        self.assertEqual(result, "gur pbagrag vf frperg")
+
+    def test_continuation_still_encodes_a_later_block(self) -> None:
+        text = " tail of first\n-->\nvisible\n<!-- ai:secret:\nsecond secret\n-->"
+        result = encode_ai_secrets_for_persist(text, inside_secret=True)
+        self.assertIn("gnvy bs svefg", result)
+        self.assertIn("frpbaq frperg", result)
+        self.assertIn("visible", result)
+
+    def test_split_block_reassembles_to_one_encoded_block(self) -> None:
+        # The realistic shape of issue #74: a command-tool call lands mid-secret,
+        # so the closing half carries content, not just the ``-->``.
+        first = encode_ai_secrets_for_persist("prose\n<!-- ai:secret:\nthe king")
+        self.assertTrue(ends_inside_ai_secret(first))
+        second = encode_ai_secrets_for_persist(
+            " betrayed everyone\n-->\ntail", inside_secret=True
+        )
+        composed = first + second
+        self.assertNotIn("the king", composed)
+        self.assertNotIn("betrayed everyone", composed)
+        self.assertEqual(
+            decode_ai_secrets(composed),
+            "prose\n<!-- ai:secret:\nthe king betrayed everyone\n-->\ntail",
+        )
+
+    def test_continuation_preserves_length(self) -> None:
+        text = " the content is secret\n-->\nAfter"
+        self.assertEqual(
+            len(encode_ai_secrets_for_persist(text, inside_secret=True)), len(text)
+        )
+
+
+class TestEndsInsideAiSecret(unittest.TestCase):
+    def test_false_without_any_block(self) -> None:
+        self.assertFalse(ends_inside_ai_secret("just prose"))
+
+    def test_false_when_block_closed(self) -> None:
+        self.assertFalse(
+            ends_inside_ai_secret("<!-- ai:secret:\nsecret\n-->\nafter")
+        )
+
+    def test_true_on_dangling_opener(self) -> None:
+        self.assertTrue(ends_inside_ai_secret("prose\n<!-- ai:secret:\nsecret"))
+
+    def test_continuation_closes_the_carried_block(self) -> None:
+        self.assertFalse(ends_inside_ai_secret(" rest\n-->\nafter", inside_secret=True))
+
+    def test_continuation_stays_open_without_a_close(self) -> None:
+        self.assertTrue(ends_inside_ai_secret(" still going", inside_secret=True))
+
+    def test_continuation_reopens_on_a_later_dangling_block(self) -> None:
+        self.assertTrue(
+            ends_inside_ai_secret(
+                " rest\n-->\nvisible\n<!-- ai:secret:\nmore", inside_secret=True
+            )
+        )
+
+    def test_agrees_on_raw_and_encoded_forms(self) -> None:
+        # generate_stream computes the flag from the already-encoded round text.
+        raw = "prose\n<!-- ai:secret:\nthe king"
+        self.assertEqual(
+            ends_inside_ai_secret(raw),
+            ends_inside_ai_secret(encode_ai_secrets_for_persist(raw)),
+        )
