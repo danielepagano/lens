@@ -327,7 +327,7 @@ timeout_seconds  = 120
 | `api_key_env` | Yes | — | Env var for API key |
 | `id` | No | `[default]` | Select with `lens media tts --model` |
 | `grammar` | No* | — | TTS tag grammar: `xai` or `gemini` (required for `speech_markup` modality; invalid ids fail at load) |
-| `refine_llm_id` | No | — | LLM id for `workflow_refine` (speech markup); defaults to operator LLM when unset |
+| `refine_llm_id` | No | — | LLM id for `workflow_refine:speech_markup`; defaults to operator LLM when unset |
 | `default_voice` | No | — | Voice when `--voice` omitted (xAI fallback: `eve`) |
 | `base_url` | No | provider default | API root |
 | `model` | Yes for `openrouter` | `""` | TTS model id (OpenRouter) |
@@ -352,7 +352,7 @@ modalities:
 - Uses the **default** (first) `[[speech]]` block’s `grammar` for generation and refine. The grammar must match that block’s engine (e.g. `grammar = "gemini"` with an OpenRouter/Gemini TTS model). `lens media tts --model` selects which block is used for **playback** only; markup always follows the default block’s `grammar` today.
 - Prompt text is in the project/pack (`speech.markup.generate`, `speech.markup.refine`, `speech.grammar.<id>.rules`) — not KB pins. Grammars registered in Python may optionally override the three markup template keys (`generate_prompt_key`, `refine_prompt_key`, `refine_system_prompt_key`); bundled `xai` and `gemini` use the defaults above.
 - Independent from **`attributed_dialogue`** (blockquote formatting); both can be active.
-- After generate, **`workflow_refine`** runs a separate minimal LLM call (refine prompt only — no KB or passage crawl) on eligible dialogue lines; speech markup uses JSON input/output.
+- After generate, **`workflow_refine:speech_markup`** runs a separate minimal LLM call (refine prompt only — no KB or passage crawl) on eligible dialogue lines; speech markup uses JSON input/output. Each modality that wants a refine pass gets its own step under this `workflow_refine:<modality_id>` id and can be skipped on its own.
 
 ### TTS playback
 

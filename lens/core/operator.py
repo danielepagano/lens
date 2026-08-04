@@ -167,7 +167,7 @@ from lens.core.modalities import (
     resolve_modalities,
     apply_modality_post_refine_to_artifacts,
     run_workflow_post_step,
-    run_workflow_refine_step,
+    build_refine_step_defs,
 )
 from lens.core.workflow_runner import (
     StepResult,
@@ -1280,10 +1280,12 @@ class Operator(ABC):
                 runner.clear_inline_modality_state()
                 return StepResult(ok=False, cancelled=True)
             if gen.pending is not None:
-                from lens.core.modalities.workflow import cache_refine_pass_spec_on_pending
+                from lens.core.modalities.workflow import (
+                    cache_refine_modality_ids_on_pending,
+                )
 
                 if gen.resolved is not None and gen.modality_context is not None:
-                    cache_refine_pass_spec_on_pending(
+                    cache_refine_modality_ids_on_pending(
                         gen.pending, gen.resolved, gen.modality_context
                     )
                 runner.set_inline_modality_state(
@@ -1306,22 +1308,6 @@ class Operator(ABC):
                 pending=runner.pending_inline,
                 resolved=runner.resolved_modalities,
                 ctx=runner.modality_context,
-            )
-
-        def workflow_refine_should_run() -> bool:
-            pending = runner.pending_inline
-            if pending is None:
-                return False
-            return pending.refine_pass_spec is not None
-
-        async def run_workflow_refine() -> StepResult:
-            return await run_workflow_refine_step(
-                session,
-                pending=runner.pending_inline,
-                resolved=runner.resolved_modalities,
-                ctx=runner.modality_context,
-                on_token=on_token,
-                cancel_event=cancel_event,
             )
 
         def persist_should_run() -> bool:
@@ -1394,13 +1380,13 @@ class Operator(ABC):
                 failure_policy="warn",
                 skippable=True,
             ),
-            WorkflowStepDef(
-                id="workflow_refine",
-                label="Refining…",
-                run=run_workflow_refine,
-                should_run=workflow_refine_should_run,
-                failure_policy="warn",
-                skippable=True,
+            *build_refine_step_defs(
+                session,
+                get_pending=lambda: runner.pending_inline,
+                get_resolved=lambda: runner.resolved_modalities,
+                get_ctx=lambda: runner.modality_context,
+                on_token=on_token,
+                cancel_event=cancel_event,
             ),
             WorkflowStepDef(
                 id="persist",
