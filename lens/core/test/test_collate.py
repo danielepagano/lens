@@ -14,6 +14,7 @@ from typing import Any, cast
 from unittest.mock import AsyncMock, patch
 
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.exceptions import OperatorError
 from lens.core.operators.collate import CollateOperator
@@ -879,6 +880,8 @@ class TestCollateRememberAtChatChild(unittest.TestCase):
             )
 
             KnowledgeStore.clear_registry()
+
+            MediaService.clear_registry()
             store = KnowledgeStore.for_project(root)
             self.assertIsNone(store.add_tags("lore.alice", ["remember.note"]))
 

@@ -11,6 +11,7 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.operators.chat import ChatOperator
@@ -91,9 +92,11 @@ class TestChatOneShot(unittest.TestCase):
         self.root, self.narrative = _make_chat_project(tmp)
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmp.cleanup()
 
     def _narrative_md(self) -> str:
@@ -239,6 +242,7 @@ class TestChatOneShotInPlayContext(unittest.TestCase):
         self.root, self.narrative = _make_chat_project(tmp)
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         # Simulate a play sub-node: create a child node and write an unclosed
         # play annotation in the parent so the cursor points to the child.
@@ -246,6 +250,7 @@ class TestChatOneShotInPlayContext(unittest.TestCase):
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmp.cleanup()
 
     def _create_play_child(self) -> NarrativeNode:
@@ -353,9 +358,11 @@ class TestChatSession(unittest.TestCase):
         self.root, self.narrative = _make_chat_project(tmp)
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmp.cleanup()
 
     def _narrative_md(self) -> str:
@@ -725,6 +732,7 @@ class TestChatSession(unittest.TestCase):
         """Sending a message inside a session appends it as the --with character."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         with patch(
             "lens.core.operators.chat.run_llm",
@@ -748,6 +756,7 @@ class TestChatSession(unittest.TestCase):
         """--narrate --wait appends one blockquote run (no [Name]) and no new [chat] pair."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         asyncio.run(
             ChatOperator.run_session(
@@ -777,6 +786,7 @@ class TestChatSession(unittest.TestCase):
         """Two --wait turns: bare ``>`` line between user quote lines (whole tail)."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         asyncio.run(
             ChatOperator.run_session(
@@ -821,6 +831,7 @@ class TestChatSession(unittest.TestCase):
         """Dialogue / narrate / dialogue: full blockquote tail with ``>`` between each."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         asyncio.run(
             ChatOperator.run_session(
@@ -883,6 +894,7 @@ class TestChatSession(unittest.TestCase):
         """--narrate without --wait: one plain blockquote user run then a full [chat] turn."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         with patch(
             "lens.core.operators.chat.run_llm",
@@ -915,6 +927,7 @@ class TestChatSession(unittest.TestCase):
         """After appending the user line, the AI generates a new response."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         with patch(
             "lens.core.operators.chat.run_llm",
@@ -939,6 +952,7 @@ class TestChatSession(unittest.TestCase):
         """Rollback drops the user's line and the new AI block in one transaction."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         with patch(
             "lens.core.operators.chat.run_llm",
@@ -966,6 +980,7 @@ class TestChatSession(unittest.TestCase):
         """--retry after a direct continuation re-runs the last AI block."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         seq = {"n": 0}
 
@@ -1017,6 +1032,7 @@ class TestChatSession(unittest.TestCase):
         """Omitting --as in continuation derives it from the parent annotation."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         with patch(
             "lens.core.operators.chat.run_llm",
@@ -1041,6 +1057,7 @@ class TestChatSession(unittest.TestCase):
         """Passing a different --as in continuation overrides the derived character."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         captured_messages: list[dict[str, str]] = []
 
@@ -1093,6 +1110,7 @@ class TestChatSession(unittest.TestCase):
         """--end appends a close tag to the parent node."""
         self._start_session()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         async def _mock_summary(*_args: Any, **_kwargs: Any) -> str:
             return "A brief exchange at the inn."
@@ -1129,6 +1147,7 @@ class TestChatSession(unittest.TestCase):
             check=True,
         )
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         store = KnowledgeStore.for_project(self.root)
         self.assertIsNone(store.add_tags("lore.alice", ["remember.note"]))
 

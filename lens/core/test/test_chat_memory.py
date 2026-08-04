@@ -14,6 +14,7 @@ from lens.core.command_tools import CommandToolFn
 from lens.core.llm_run import LlmRunRequest
 from lens.core.test.llm_run_mock import prose_artifacts
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.chat import ChatOperator
 from lens.core.project import ProjectSession
@@ -82,9 +83,11 @@ class TestChatMemory(unittest.TestCase):
         self.root, self.narrative = _make_chat_project(tmp)
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmp.cleanup()
 
     def test_oneshot_no_memory_no_tools(self) -> None:

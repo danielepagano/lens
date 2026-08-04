@@ -13,6 +13,7 @@ from lens.core.command_tools import KB_PATCH_TOOL, kb_patch_handler  # noqa: F40
 from lens.core.commands.kb import kb_patch
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.text_select import (
     END_ANCHOR,
     START_ANCHOR,
@@ -72,10 +73,12 @@ class _KbPatchTestBase(unittest.TestCase):
         self._tmpdir = tempfile.TemporaryDirectory()
         self.root = _init_repo(Path(self._tmpdir.name))
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self.store = KnowledgeStore.for_project(self.root)
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmpdir.cleanup()
 
 

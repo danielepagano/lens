@@ -10,6 +10,7 @@ from typing import cast
 from unittest.mock import AsyncMock, patch
 
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.section import SectionOperator
 from lens.core.operators.write import WriteOperator
@@ -26,10 +27,12 @@ class TestRegressionWorkflowAw02(unittest.IsolatedAsyncioTestCase):
         self._tmp = Path(tempfile.mkdtemp())
         setup_remember_section(self._tmp, self._fake.base_url)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         self._fake.stop()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     async def test_aw02_skip_remember_keeps_kb_and_writes_summary(self) -> None:
         from lens.core.project import ProjectSession
@@ -98,10 +101,12 @@ class TestRegressionWorkflowAw03(unittest.IsolatedAsyncioTestCase):
         self._tmp = Path(tempfile.mkdtemp())
         setup_auto_compress_low_threshold(self._tmp, self._fake.base_url)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         self._fake.stop()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     async def test_aw03_skip_auto_compress_keeps_generation_only(self) -> None:
         from lens.core.project import ProjectSession
@@ -169,10 +174,12 @@ class TestRegressionWorkflowAw04(unittest.IsolatedAsyncioTestCase):
         self._tmp = Path(tempfile.mkdtemp())
         setup_remember_section(self._tmp, self._fake.base_url)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         self._fake.stop()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     async def test_aw04_cancel_mid_remember_rolls_back(self) -> None:
         from lens.core.project import ProjectSession

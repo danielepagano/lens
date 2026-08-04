@@ -31,6 +31,7 @@ from unittest.mock import patch
 from lens.core.commands.kb import kb_edit
 from lens.core.commands.rollback import execute_rollback
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.exceptions import OperatorError
 from lens.core.operators.collate import CollateOperator
@@ -334,6 +335,7 @@ class TestHappyPath(unittest.TestCase):
     def test_10_dataset_copy_on_write(self) -> None:
         """Mutating a dataset-only item materialises a local copy."""
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._rebuild_session()
         kb = self._session.kb
 

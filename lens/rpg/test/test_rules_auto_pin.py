@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 from lens.core.context import CrawlResult
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.modalities import (
     apply_modality_crawl,
     collect_modality_crawl_contribution,
@@ -87,9 +88,11 @@ class TestInjectRulesCompanions(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmp.cleanup()
 
     def test_injects_rules_for_pinned_encounter(self) -> None:

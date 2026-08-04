@@ -12,6 +12,7 @@ from typing import Any
 from unittest.mock import patch
 
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession
 from lens.core.test.llm_run_mock import mock_run_llm
@@ -84,9 +85,11 @@ class TestPlayAppend(unittest.TestCase):
         self.root, self.narrative = _make_play_project(tmp)
         self.session = ProjectSession(git_root=self.root, project_root=self.root)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmp.cleanup()
 
     def _play_child_md(self) -> str:
@@ -134,6 +137,7 @@ class TestPlayAppend(unittest.TestCase):
             check=True,
         )
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         with patch(
             "lens.core.operator.run_llm",
@@ -163,6 +167,7 @@ class TestPlayAppend(unittest.TestCase):
         subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
         subprocess.run(["git", "commit", "-m", "spell"], cwd=self.root, capture_output=True, check=True)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         with patch(
             "lens.core.operator.run_llm",

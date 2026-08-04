@@ -12,6 +12,7 @@ import tomllib
 import tomli_w
 
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.testing.project import setup_test_project
@@ -28,6 +29,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 def _clear_kb_registry() -> None:
     KnowledgeStore.clear_registry()
+    MediaService.clear_registry()
 
 
 def _write_lens_toml(

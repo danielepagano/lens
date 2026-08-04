@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from lens.core.annotations import parse_annotations
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator
 from lens.core.project import ProjectSession
@@ -626,6 +627,7 @@ class TestKnowledgeStoreExists(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             store = KnowledgeStore(root)
             store.store_object("person.amy", "Amy Pond")
             self.assertTrue(store.exists("person.amy"))
@@ -634,6 +636,7 @@ class TestKnowledgeStoreExists(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             store = KnowledgeStore(root)
             self.assertFalse(store.exists("person.nobody"))
 
@@ -641,6 +644,7 @@ class TestKnowledgeStoreExists(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             store = KnowledgeStore(root)
             self.assertFalse(store.exists("notanid"))
             self.assertFalse(store.exists(""))
@@ -654,6 +658,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
             pins = Operator.mention_pins(
                 "Write a scene with @person.amy in the market.", root
@@ -664,6 +669,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             pins = Operator.mention_pins(
                 "Mention @person.ghost who does not exist.", root
             )
@@ -673,6 +679,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
             pins = Operator.mention_pins(
                 "Email @notype about something.", root
@@ -683,6 +690,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
             pins = Operator.mention_pins(
                 "@person.amy talks to @person.amy again.", root
@@ -693,6 +701,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
             _make_kb_object(root, "place.market")
             pins = Operator.mention_pins(
@@ -704,6 +713,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
             pins = Operator.mention_pins(
                 "Focus on @person.amy", root
@@ -714,6 +724,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
             pins = Operator.mention_pins(
                 "Focus on @person.amy\nAnd continue.", root
@@ -724,6 +735,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             pins = Operator.mention_pins(None, root)
             self.assertEqual(pins, [])
 
@@ -731,6 +743,7 @@ class TestMentionPins(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
             # comma after mention — not whitespace or EOL, should not match
             pins = Operator.mention_pins(

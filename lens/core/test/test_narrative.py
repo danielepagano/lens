@@ -747,8 +747,10 @@ class TestSectionOperator(unittest.TestCase):
                 check=True,
             )
             from lens.core.knowledge import KnowledgeStore
+            from lens.core.media import MediaService
 
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             store = KnowledgeStore.for_project(p)
             self.assertIsNone(store.add_tags("lore.alice", ["remember.note"]))
 

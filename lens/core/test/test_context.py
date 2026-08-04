@@ -100,8 +100,10 @@ class TestCrawlPinOrder(unittest.TestCase):
             root, node = _make_project(_init_repo(Path(tmp)))
             _add_kb(root, "lore", "alice", "Alice")
             from lens.core.knowledge import KnowledgeStore
+            from lens.core.media import MediaService
 
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             kb = KnowledgeStore.for_project(root)
             self.assertIsNone(kb.add_tags("lore.alice", ["remember.session-notes", "other"]))
             root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
@@ -116,6 +118,7 @@ class TestCrawlPinOrder(unittest.TestCase):
                 check=True,
             )
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             r = crawl(node, include_narrative=False)
             self.assertEqual(r.pinned_ids, ["lore.alice"])
             self.assertEqual(
@@ -378,8 +381,10 @@ class TestChatParticipantPinExpansion(unittest.TestCase):
             _add_kb(root, "memory", "x-psyche", "Psyche profile.")
             _add_kb(root, "human", "y", "Human sheet.")
             from lens.core.knowledge import KnowledgeStore
+            from lens.core.media import MediaService
 
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             kb = KnowledgeStore.for_project(root)
             self.assertIsNone(kb.add_tags("companion.x", ["memory.x-psyche"]))
             slug = "chat-sess"
@@ -401,6 +406,7 @@ class TestChatParticipantPinExpansion(unittest.TestCase):
                 check=True,
             )
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             child = node.child_node(slug)
             r = crawl(child, include_narrative=False)
             self.assertIn("companion.x", r.pinned_ids)
@@ -418,8 +424,10 @@ class TestChatParticipantPinExpansion(unittest.TestCase):
             _add_kb(root, "memory", "x-deep", "Deep link.")
             _add_kb(root, "human", "y", "Human.")
             from lens.core.knowledge import KnowledgeStore
+            from lens.core.media import MediaService
 
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             kb = KnowledgeStore.for_project(root)
             self.assertIsNone(kb.add_tags("companion.x", ["memory.x-psyche"]))
             self.assertIsNone(kb.add_tags("memory.x-psyche", ["memory.x-deep"]))
@@ -442,6 +450,7 @@ class TestChatParticipantPinExpansion(unittest.TestCase):
                 check=True,
             )
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             child = node.child_node(slug)
             r = crawl(child, include_narrative=False)
             self.assertIn("companion.x", r.pinned_ids)
@@ -543,12 +552,15 @@ class TestCrawlGraphExpansion(unittest.TestCase):
             root, node = _make_project(_init_repo(Path(tmp)))
             _add_kb(root, "visual", "person-amy", "red cloak, silver hair")
             from lens.core.knowledge import KnowledgeStore
+            from lens.core.media import MediaService
 
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             kb = KnowledgeStore.for_project(root)
             self.assertIsNone(kb.add_tags("visual.person-amy", ["inline"]))
             _commit(root, "tag inline")
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
 
             result = crawl(node, include_narrative=False)
             msgs = assemble_prompt(
@@ -965,8 +977,10 @@ class TestAssembledKbSecretsAreModelForm(unittest.TestCase):
             ["git", "commit", "-m", "pin"], cwd=root, capture_output=True, check=True
         )
         from lens.core.knowledge import KnowledgeStore
+        from lens.core.media import MediaService
 
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         return node
 
     def test_relevant_knowledge_block_is_decoded(self) -> None:

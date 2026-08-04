@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -419,3 +420,103 @@ class TestWarmCache:
         meta = svc.cache.get("meta:a/b/c/d/e/deep.jpg")
         assert meta is not None
         assert meta.name == "deep.jpg"
+
+
+# ---------------------------------------------------------------------------
+# MediaService.for_project — single owner keyed by project root (issue #114)
+# ---------------------------------------------------------------------------
+
+
+def _make_project_with_mount() -> Path:
+    tmp = Path(tempfile.mkdtemp(prefix="lens_test_svc_project_"))
+    (tmp / "lens.toml").write_text('[project]\nmount_point = "media"\n')
+    (tmp / "media").mkdir()
+    return tmp
+
+
+class TestForProject:
+    def setup_method(self) -> None:
+        MediaService.clear_registry()
+
+    def teardown_method(self) -> None:
+        MediaService.clear_registry()
+
+    def test_returns_none_without_mount_point(self) -> None:
+        tmp = Path(tempfile.mkdtemp(prefix="lens_test_svc_project_"))
+        (tmp / "lens.toml").write_text("[project]\n")
+        assert MediaService.for_project(tmp) is None
+
+    def test_two_calls_share_one_cache(self) -> None:
+        root = _make_project_with_mount()
+        svc1 = MediaService.for_project(root)
+        svc2 = MediaService.for_project(root)
+        assert svc1 is not None
+        assert svc2 is not None
+        assert svc1.cache is svc2.cache
+
+    def test_two_calls_warm_only_once(self) -> None:
+        # _CountingBackend can't be injected through for_project (it builds its
+        # own LocalMountBackend from lens.toml), so count at the class level
+        # instead — the shared MediaCache is what should prevent the second
+        # for_project's search() from triggering a second mount walk.
+        root = _make_project_with_mount()
+        (root / "media" / "amy.jpg").write_bytes(b"hello")
+        original_walk_all = LocalMountBackend.walk_all
+        calls: list[str] = []
+
+        def counting_walk_all(self: LocalMountBackend, subpath: str = "") -> list[str]:
+            calls.append(subpath)
+            return original_walk_all(self, subpath)
+
+        with patch.object(LocalMountBackend, "walk_all", counting_walk_all):
+            svc1 = MediaService.for_project(root)
+            svc2 = MediaService.for_project(root)
+            assert svc1 is not None
+            assert svc2 is not None
+            svc1.search("amy")
+            svc2.search("amy")
+
+        assert len(calls) == 1
+
+    def test_write_through_one_handle_visible_via_another(self) -> None:
+        # The coherence property issue #114 restores: a write made through
+        # one for_project() handle (e.g. a CLI composite command or a tool
+        # call) must be visible to search() through a different handle in
+        # the same process (e.g. the server's warm index), without either
+        # side rebuilding its own cache.
+        root = _make_project_with_mount()
+        writer = MediaService.for_project(root)
+        reader = MediaService.for_project(root)
+        assert writer is not None
+        assert reader is not None
+        assert writer is not reader
+
+        # Warm the reader *before* the write. If the two handles didn't
+        # share a cache, this pre-warm would lock in an empty result and the
+        # write below would only ever reach the writer's own (independent)
+        # index — silently passing this test for the wrong reason.
+        assert reader.search("amy").total_items == 0
+
+        writer.put_file("", "amy.jpg", io.BytesIO(b"hello"))
+        result = reader.search("amy")
+
+        assert result.total_items == 1
+        assert result.items[0].relative_path == "amy.jpg"
+
+    def test_clear_registry_drops_the_shared_cache(self) -> None:
+        root = _make_project_with_mount()
+        svc1 = MediaService.for_project(root)
+        assert svc1 is not None
+        MediaService.clear_registry()
+        svc2 = MediaService.for_project(root)
+        assert svc2 is not None
+        assert svc1.cache is not svc2.cache
+
+    def test_respects_media_search_index_limit_from_lens_toml(self) -> None:
+        root = _make_project_with_mount()
+        (root / "lens.toml").write_text(
+            '[project]\nmount_point = "media"\nmedia_search_index_limit = 3\n'
+        )
+        svc = MediaService.for_project(root)
+        assert svc is not None
+        assert svc.cache.search_index.limit == 3
