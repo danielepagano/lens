@@ -10,6 +10,7 @@ from pathlib import Path
 from lens.core.context import collect_vars
 from lens.core.dice import DiceError
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.prompt_transforms import (
     PromptTransformContext,
     PromptTransformTarget,
@@ -111,6 +112,7 @@ class TestTransformPromptStorable(unittest.TestCase):
             root, _root_node = _make_narrative(_init_repo(Path(tmp)))
             _add_kb(root, "visual", "amy", "red hair")
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             kb = KnowledgeStore.for_project(root)
             kb.add_tags("visual.amy", ["inline"])
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
@@ -167,6 +169,7 @@ class TestTransformPromptFlat(unittest.TestCase):
             root, _ = _make_narrative(_init_repo(Path(tmp)))
             _add_kb(root, "person", "amy", "silver cloak")
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             storage = Storage(root)
             out = transform_prompt(
                 "@person.amy at dusk",

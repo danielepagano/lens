@@ -20,6 +20,7 @@ from lens.core.dataset_extensions import (
     read_dataset_extension,
 )
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.prompts import PromptStore, tool_prompt_key
 
 _LENS_CMD = [sys.executable, "-W", "ignore::SyntaxWarning:pysbd", "-m", "lens.cli.main"]
@@ -66,6 +67,7 @@ class TestDatasetExtensions(unittest.TestCase):
     def tearDown(self) -> None:
         clear_extension_state_for_tests()
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_read_extension_from_testing_dataset(self) -> None:

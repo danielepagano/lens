@@ -16,6 +16,7 @@ from collections.abc import Awaitable, Callable
 from lens.core.annotations import parse_annotations, parse_front_matter
 from lens.core.context import CrawlResult
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.llm import LLMError, StreamEvent, final_payload_from_text
 from lens.core.narrative import NarrativeNode
 from lens.core.exceptions import OperatorError
@@ -468,6 +469,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             kb_dir = root / "knowledge" / "person"
             kb_dir.mkdir(parents=True, exist_ok=True)
             (kb_dir / "amy.md").write_text("Amy the merchant.\n", encoding="utf-8")
@@ -500,6 +502,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
             kb_dir = root / "knowledge" / "person"
             kb_dir.mkdir(parents=True, exist_ok=True)
             (kb_dir / "amy.md").write_text("Amy the merchant.\n", encoding="utf-8")

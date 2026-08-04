@@ -158,6 +158,7 @@ class TestStatsEffectivePins(unittest.TestCase):
 
   def test_remember_pins_at_cursor_maps_remember_dot_tags(self) -> None:
     from lens.core.knowledge import KnowledgeStore
+    from lens.core.media import MediaService
 
     with tempfile.TemporaryDirectory() as tmpdir:
       root = _init_repo(Path(tmpdir))
@@ -215,6 +216,7 @@ class TestStatsEffectivePins(unittest.TestCase):
           {"place.b": ["remember.session-notes", "featured"]},
       )
       KnowledgeStore.clear_registry()
+      MediaService.clear_registry()
 
       result = get_stats(session)
       self.assertEqual(result.remember_pins_at_cursor, {"place.b": ["remember.session-notes"]})

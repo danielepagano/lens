@@ -24,6 +24,7 @@ from lens.core.crawl_transforms import (
     expansion_policy_from_tags,
 )
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.storage import Storage
 
 
@@ -56,6 +57,7 @@ def _make_project(tmp: Path) -> Path:
     subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
     subprocess.run(["git", "commit", "-m", "project"], cwd=tmp, capture_output=True, check=True)
     KnowledgeStore.clear_registry()
+    MediaService.clear_registry()
     return tmp
 
 
@@ -67,6 +69,7 @@ def _add_kb(root: Path, canonical_id: str, text: str) -> None:
     subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
     subprocess.run(["git", "commit", "-m", f"kb {canonical_id}"], cwd=root, capture_output=True, check=True)
     KnowledgeStore.clear_registry()
+    MediaService.clear_registry()
 
 
 class TestCrawlGraphPrimitives(unittest.TestCase):
@@ -191,6 +194,7 @@ class TestCrawlTransforms(unittest.TestCase):
             kb = KnowledgeStore.for_project(root)
             self.assertIsNone(kb.add_tags("visual.palette", ["inline"]))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
 
             graph = CrawlGraph(project_root=root, vars={"color": "blue"})
             graph.add_component(
@@ -277,6 +281,7 @@ class TestCrawlTransforms(unittest.TestCase):
             self.assertIsNone(kb.add_tags("lore.alpha", ["inline"]))
             self.assertIsNone(kb.add_tags("lore.beta", ["inline"]))
             KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
 
             graph = CrawlGraph(project_root=root)
             graph.add_component(

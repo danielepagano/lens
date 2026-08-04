@@ -12,6 +12,7 @@ from pathlib import Path
 from lens.core.commands.kb import KbExtractEntry, parse_kb_fences, kb_extract
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 
 
 def _make_project(tmp: Path) -> None:
@@ -252,6 +253,7 @@ class TestKbExtract(unittest.TestCase):
         self.root = Path(self.tmp)
         _make_project(self.root)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._orig_dir = os.getcwd()
         os.chdir(self.tmp)
 
@@ -259,6 +261,7 @@ class TestKbExtract(unittest.TestCase):
         os.chdir(self._orig_dir)
         shutil.rmtree(self.tmp, ignore_errors=True)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
     def _write_md(self, name: str, content: str) -> str:
         p = self.root / name
@@ -366,6 +369,7 @@ Bob.
         subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
         subprocess.run(["git", "commit", "-m", "add alice"], cwd=self.root, capture_output=True, check=True)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         path = self._write_md("update.md", """\
 ```kb
@@ -409,6 +413,7 @@ The hero.
         subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
         subprocess.run(["git", "commit", "-m", "add hero"], cwd=self.root, capture_output=True, check=True)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         path = self._write_md("update_tags.md", """\
 ```kb
@@ -540,6 +545,7 @@ Second version.
             check=True,
         )
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         path = self._write_md("tag_only.md", """\
 ```kb
@@ -611,6 +617,7 @@ tags:
             cwd=self.root, capture_output=True, check=True,
         )
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         result = kb_extract([path])
         self.assertEqual(result.errors, [])
@@ -661,6 +668,7 @@ tags:
             check=True,
         )
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
 
         path = self._write_md("ws.md", """\
 ```kb

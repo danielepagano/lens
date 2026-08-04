@@ -169,14 +169,15 @@ def chromakey(
     already exists it is overwritten -- this is the tune-and-rerun path for
     ``--core-tol`` and friends.
 
-    *media* is the caller's cached ``MediaService`` (the server passes its
-    per-project instance so the write invalidates the same cache ``/mount/browse``
-    reads from); when omitted (CLI, tests) a throwaway one is built here.
+    *media* is the caller's ``MediaService`` (the server passes its
+    per-request instance so the write invalidates the same shared cache
+    ``/mount/browse`` reads from); when omitted (CLI, tests) the one
+    per-project instance is looked up via ``session.media``.
 
     Raises :class:`LensException` for configuration, validation, or keying
     errors.
     """
-    backend, png_bytes, result = _run_chromakey(
+    _backend, png_bytes, result = _run_chromakey(
         session,
         relative_path,
         key=key,
@@ -185,7 +186,9 @@ def chromakey(
         dilate_px=dilate_px,
     )
     if media is None:
-        media = MediaService(backend)
+        media = session.media
+        if media is None:
+            raise LensException("no mount_point configured in lens.toml")
 
     dest = out_path or _default_output_path(relative_path)
     if Path(dest).suffix.lower() != ".png":

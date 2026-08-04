@@ -414,8 +414,7 @@ def _format_search_result(relative_path: str, score: float) -> str:
 
 async def _media_search(args: dict[str, Any], project_root: Path) -> str:
     from lens.core.exceptions import MediaSearchCapacityExceeded
-    from lens.core.media import MediaCache, MediaService, SearchPage
-    from lens.core.project import get_media_search_index_limit, get_mount_backend
+    from lens.core.media import MediaService, SearchPage
 
     query: str = (args.get("query") or "").strip()
     if not query:
@@ -429,12 +428,10 @@ async def _media_search(args: dict[str, Any], project_root: Path) -> str:
         except (ValueError, TypeError):
             return f"(error: invalid page number: {raw_page})"
 
-    backend = get_mount_backend(project_root)
-    if backend is None:
+    svc = MediaService.for_project(project_root)
+    if svc is None:
         return "(no media mount configured — set [project] mount_point in lens.toml)"
 
-    limit = get_media_search_index_limit(project_root)
-    svc = MediaService(backend, cache=MediaCache(search_index_limit=limit))
     try:
         result: SearchPage = svc.search(query, page=page)
     except MediaSearchCapacityExceeded as e:

@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, patch
 
 from lens.core.context import CrawlResult
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.llm import (
     DEFAULT_REMEMBER_COMMAND_TOOL_ITERATIONS,
     LLMError,
@@ -107,12 +108,14 @@ class TestApplyRememberPatches(unittest.TestCase):
         _init_repo(self.root)
         _make_remember_project(self.root)
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         store = KnowledgeStore.for_project(self.root)
         err = store.add_tags("lore.alice", ["remember.core-memories"])
         self.assertIsNone(err)
 
     def tearDown(self) -> None:
         KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
         self._tmp.cleanup()
 
     def test_returns_empty_when_no_pins(self) -> None:

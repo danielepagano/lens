@@ -9,6 +9,7 @@ from typing import Any, cast
 
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.project import (
     ProjectSession,
     is_cloud_deployed,
@@ -308,4 +309,5 @@ def execute_refresh(
 
     session.kb.evict_tag_cache()
     KnowledgeStore.clear_registry()
+    MediaService.clear_registry()
     return result

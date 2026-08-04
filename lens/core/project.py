@@ -14,6 +14,7 @@ from lens.core.narrative import NarrativeNode
 
 if TYPE_CHECKING:
     from lens.core.knowledge import KnowledgeStore
+    from lens.core.media import MediaService
     from lens.core.mount import MountBackend
     from lens.core.storage import Storage
 
@@ -557,8 +558,10 @@ class ProjectSession:
     """Single source of truth for a Lens project's shared state.
 
     Holds (git_root, project_root) and provides:
-    - .kb  — the singleton KnowledgeStore (tags cache persists for the lifetime
-             of this process)
+    - .kb     — the singleton KnowledgeStore (tags cache persists for the lifetime
+                of this process)
+    - .media  — the singleton MediaService (warm search index persists for the
+                lifetime of this process), or None if no mount is configured
     - .new_storage(owner)  — factory for per-operation Storage instances
     """
 
@@ -576,6 +579,11 @@ class ProjectSession:
     def kb(self) -> KnowledgeStore:
         from lens.core.knowledge import KnowledgeStore
         return KnowledgeStore.for_project(self.project_root)
+
+    @property
+    def media(self) -> "MediaService | None":
+        from lens.core.media import MediaService
+        return MediaService.for_project(self.project_root)
 
     def new_storage(self, owner: NarrativeAddress | None = None) -> Storage:
         """Create a fresh Storage for one operation."""

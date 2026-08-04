@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, BinaryIO, Iterable
+from pathlib import Path
+from typing import Any, BinaryIO, ClassVar, Iterable
 
 import yaml
 
@@ -34,10 +35,48 @@ class MediaService:
     sidecars).
     """
 
+    # Keyed by resolved project root -> the one warm MediaCache for that
+    # project. Mirrors KnowledgeStore._registry (lens/core/knowledge.py) —
+    # same problem (a cache that must be shared by every caller in the
+    # process, not rebuilt per call), same fix.
+    _registry: ClassVar[dict[Path, MediaCache]] = {}
+
     def __init__(self, backend: MountBackend, cache: MediaCache | None = None) -> None:
         self._backend = backend
         self._cache = cache if cache is not None else MediaCache()
         self._store = MediaStore(backend)
+
+    @classmethod
+    def for_project(cls, project_root: Path) -> MediaService | None:
+        """Return the shared, per-project ``MediaService``, or ``None`` if unconfigured.
+
+        Resolves the mount backend and reuses (or creates) the one
+        ``MediaCache`` registered for *project_root*, so every caller —
+        server routes, the ``media_search`` command tool, the CLI composite
+        commands — searches and writes through the same warm index instead
+        of each building its own (issue #114).
+
+        Imports ``get_mount_backend`` / ``get_media_search_index_limit``
+        inside the method rather than at module level, matching
+        ``knowledge.py``'s ``KnowledgeStore.for_project`` — ``project.py``
+        doesn't import this module today, but keeping the dependency local
+        avoids introducing one as ``project.py`` grows.
+        """
+        from lens.core.project import get_media_search_index_limit, get_mount_backend
+
+        backend = get_mount_backend(project_root)
+        if backend is None:
+            return None
+        key = project_root.resolve()
+        if key not in cls._registry:
+            limit = get_media_search_index_limit(project_root)
+            cls._registry[key] = MediaCache(search_index_limit=limit)
+        return cls(backend, cache=cls._registry[key])
+
+    @classmethod
+    def clear_registry(cls) -> None:
+        """Clear all cached per-project ``MediaCache`` instances. Intended for tests."""
+        cls._registry.clear()
 
     @property
     def _warmed(self) -> bool:

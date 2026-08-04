@@ -13,6 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from lens.core.knowledge import KnowledgeStore
+from lens.core.media import MediaService
 from lens.core.test.llm_run_mock import mock_run_llm
 from lens.testing.regression_fixtures import setup_auto_compress_low_threshold
 
@@ -33,6 +34,7 @@ def compress_client(tmp_path: Path) -> Generator[TestClient, None, None]:
         raise
 
     KnowledgeStore.clear_registry()
+    MediaService.clear_registry()
     slug = tmp_path.name
     session = ProjectSession(tmp_path, tmp_path)
     app = create_app({slug: session})
@@ -40,6 +42,7 @@ def compress_client(tmp_path: Path) -> Generator[TestClient, None, None]:
         yield client
     fake.stop()
     KnowledgeStore.clear_registry()
+    MediaService.clear_registry()
 
 
 def _collect_stream_with_action(

@@ -358,6 +358,7 @@ refs:
     def test_resolved_prompt_too_long_rejected(self) -> None:
         """@-expansion blowing past max_prompt_chars must reject post-resolution."""
         from lens.core.knowledge import KnowledgeStore
+        from lens.core.media import MediaService
 
         with FakeImageServer() as server:
             with tempfile.TemporaryDirectory() as tmp:
@@ -372,6 +373,7 @@ refs:
                     'tags = { inline = ["person.amy"] }\n'
                 )
                 KnowledgeStore.clear_registry()
+                MediaService.clear_registry()
                 subprocess.run(
                     ["git", "add", "-A"], cwd=root, check=True, capture_output=True
                 )
