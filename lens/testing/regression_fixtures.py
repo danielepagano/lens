@@ -229,6 +229,65 @@ def setup_composite_media_project(project_dir: Path, llm_base_url: str) -> Proje
     return ProjectSession(project_dir, project_dir)
 
 
+def setup_media_attach_project(project_dir: Path, llm_base_url: str) -> ProjectSession:
+    """Media mount + one anchor with two same-facet foreground variants (issue #51).
+
+    Reuses ``test_fg.png``/``test_bg.jpg`` (``e2e/assets/composite_media/``) under new
+    names so the ``amy!`` anchor has an undecided ``emotion`` facet (happy vs sad) to
+    classify. The root node is seeded with one composite attachment (``bg.jpg`` +
+    ``amy_happy.png``) — the modality needs an existing composite to build a
+    foreground-only pick on top of (issue #51, "composition awareness") — plus front
+    matter enabling ``media_attach`` with that anchor.
+    """
+    from lens.core.commands.attach import build_layered_embed
+    from lens.core.pinning import set_media_attach, set_modality
+
+    session = setup_test_project(
+        project_dir, llm_base_url, narrative_name="story", opening_write=False
+    )
+
+    lens_toml = project_dir / "lens.toml"
+    with lens_toml.open("rb") as fh:
+        cfg = tomllib.load(fh)
+    cfg["project"]["mount_point"] = "media"
+    with open(lens_toml, "wb") as fh:
+        tomli_w.dump(cfg, fh)
+
+    media_dir = project_dir / "media"
+    media_dir.mkdir(exist_ok=True)
+    shutil.copy(_COMPOSITE_MEDIA_ASSETS_DIR / "test_bg.jpg", media_dir / "bg.jpg")
+    shutil.copy(_COMPOSITE_MEDIA_ASSETS_DIR / "test_fg.png", media_dir / "amy_happy.png")
+    shutil.copy(_COMPOSITE_MEDIA_ASSETS_DIR / "test_fg.png", media_dir / "amy_sad.png")
+    (media_dir / "amy_happy.png.yml").write_text(
+        "composite: foreground\nfacets:\n  emotion: happy\n", encoding="utf-8"
+    )
+    (media_dir / "amy_sad.png.yml").write_text(
+        "composite: foreground\nfacets:\n  emotion: sad\n", encoding="utf-8"
+    )
+
+    orig_cwd = Path.cwd()
+    os.chdir(project_dir)
+    try:
+        narrative = session.active_narrative
+        assert narrative is not None
+        storage = session.new_storage(owner=None)
+        set_media_attach(narrative, "anchor", "amy!", storage)
+        set_modality(narrative, "media_attach", True, storage)
+
+        node_path = narrative.md_path()
+        seed_embed = build_layered_embed("bg.jpg", "amy_happy.png")
+        current = node_path.read_text(encoding="utf-8")
+        storage.write_file(node_path, current.rstrip("\n") + f"\n\n{seed_embed}\n")
+    finally:
+        os.chdir(orig_cwd)
+
+    Storage(project_dir).stage_all()
+    _git(project_dir, "add", "-A")
+    _git(project_dir, "commit", "-m", "fixture: media_attach")
+    _clear_kb_registry()
+    return ProjectSession(project_dir, project_dir)
+
+
 def setup_rpg_play_pins(project_dir: Path, llm_base_url: str) -> ProjectSession:
     """RPG dataset + pc pin for play regression (AC-13 / SH-05)."""
     from lens.core.commands.kb import kb_add

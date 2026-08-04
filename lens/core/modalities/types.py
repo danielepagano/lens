@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any, Literal
 from collections.abc import Callable
 
 if TYPE_CHECKING:
+    from lens.core.media.attach_config import MediaAttachConfig
+    from lens.core.media.facets import FacetVocabulary
     from lens.core.speech.grammars import TtsGrammar
     from lens.core.speech.spec import SpeechDescriptor
 
@@ -72,6 +74,18 @@ class SpeechMarkupCache:
 
 
 @dataclass(frozen=True)
+class MediaAttachCache:
+    config: MediaAttachConfig
+    anchor: str | None
+    mount_configured: bool
+    vocabulary: FacetVocabulary | None
+    capacity_exceeded: bool
+    all_matches_foreground: bool
+    previous_facets: dict[str, str]
+    previous_bg: str | None
+
+
+@dataclass(frozen=True)
 class ModalityContext:
     session: ProjectSession | None
     narrative: NarrativeNode
@@ -81,6 +95,7 @@ class ModalityContext:
     params: dict[str, Any]
     project_root: Path
     speech_markup: SpeechMarkupCache | None = None
+    media_attach: MediaAttachCache | None = None
 
 
 @dataclass(frozen=True)

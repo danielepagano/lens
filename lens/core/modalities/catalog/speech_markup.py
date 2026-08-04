@@ -6,12 +6,12 @@ import json
 import logging
 import re
 from dataclasses import dataclass, replace
-from json import JSONDecoder
 from pathlib import Path
 from typing import cast
 
 from lens.core.modalities.base import Modality
 from lens.core.modalities.catalog.attributed_dialogue import split_attributed_dialogue_line
+from lens.core.modalities.json_output import find_json_object
 from lens.core.modalities.registry import register_modality
 from lens.core.modalities.types import (
     ModalityContext,
@@ -72,40 +72,21 @@ def encode_refine_lines_json(bodies: list[str]) -> str:
     return json.dumps({"lines": bodies}, ensure_ascii=False)
 
 
-def _strip_markdown_json_fence(text: str) -> str:
-    stripped = text.strip()
-    if not stripped.startswith("```"):
-        return stripped
-    lines = stripped.splitlines()
-    if len(lines) >= 2 and lines[0].startswith("```") and lines[-1].strip() == "```":
-        return "\n".join(lines[1:-1]).strip()
-    return stripped
-
-
 def parse_refine_lines_json(raw: str) -> list[str] | None:
     """Parse ``{"lines": ["…", …]}``; tolerate fences or a short preamble before JSON."""
-    text = _strip_markdown_json_fence(raw)
-    decoder = JSONDecoder()
-    for i, ch in enumerate(text):
-        if ch != "{":
-            continue
-        try:
-            data, _end = decoder.raw_decode(text, i)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(data, dict):
-            continue
-        payload = cast(dict[str, object], data)
-        lines_val = payload.get("lines")
-        if not isinstance(lines_val, list):
-            continue
-        out: list[str] = []
-        for item in cast(list[object], lines_val):
-            if not isinstance(item, str):
-                return None
-            out.append(item)
-        return out
-    return None
+    data = find_json_object(raw)
+    if data is None:
+        return None
+    payload = cast(dict[str, object], data)
+    lines_val = payload.get("lines")
+    if not isinstance(lines_val, list):
+        return None
+    out: list[str] = []
+    for item in cast(list[object], lines_val):
+        if not isinstance(item, str):
+            return None
+        out.append(item)
+    return out
 
 
 def apply_refined_speech_markup(
