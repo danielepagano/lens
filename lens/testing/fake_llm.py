@@ -46,7 +46,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any
+from typing import Any, cast
 
 from lens.testing.stream_controls import (
     StreamControls,
@@ -66,6 +66,10 @@ _SUMMARY_REQUEST_MARKER = "TEXT TO SUMMARIZE:"
 
 # Distinctive line from ``remember.instruction_template`` in ``lens/prompts/default.toml``.
 _REMEMBER_TASK_MARKER = "You may call kb_patch only for these targets"
+
+# Distinctive lines from ``modalities.media_attach.classify`` in ``lens/prompts/default.toml``.
+_MEDIA_ATTACH_OPTIONS_MARKER = "Facet options (JSON: facet name -> closed list of allowed values"
+_MEDIA_ATTACH_CURRENT_MARKER = "Currently selected facets"
 
 # Secret-encoding test support.
 FAKE_SECRET_TRIGGER = "EMIT_FAKE_SECRET"
@@ -113,6 +117,44 @@ def _words_for_controls(controls: StreamControls, *, tail: str = "") -> list[str
     return list(tail.split()) if tail else []
 
 
+def _extract_json_after(text: str, marker: str) -> dict[str, Any]:
+    start = text.find(marker)
+    if start == -1:
+        return {}
+    brace = text.find("{", start)
+    if brace == -1:
+        return {}
+    try:
+        data, _end = json.JSONDecoder().raw_decode(text, brace)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return cast(dict[str, Any], data)
+
+
+def _media_attach_facets_response(msg_text: str) -> str:
+    """Canned ``{"facets": {...}}`` for the ``media_attach`` classify prompt.
+
+    Picks, for each facet, the alphabetically first allowed value that differs
+    from the currently-selected one (echoed back in the prompt) — so a second
+    beat against the same anchor deterministically swaps the pick, exercising
+    hysteresis without any project-specific wiring in the fake server.
+    """
+    options = _extract_json_after(msg_text, _MEDIA_ATTACH_OPTIONS_MARKER)
+    current = _extract_json_after(msg_text, _MEDIA_ATTACH_CURRENT_MARKER)
+    chosen: dict[str, str] = {}
+    for key, values in options.items():
+        if not isinstance(values, list) or not values:
+            continue
+        values_list = cast("list[Any]", values)
+        values_sorted = sorted(str(v) for v in values_list)
+        cur = current.get(key)
+        pick = next((v for v in values_sorted if v != cur), values_sorted[0])
+        chosen[key] = pick
+    return json.dumps({"facets": chosen})
+
+
 def _server_defaults(handler: BaseHTTPRequestHandler) -> tuple[float, int | None, float | None]:
     srv = handler.server
     chunk_delay = float(getattr(srv, "stream_chunk_delay", 0.0))
@@ -145,6 +187,10 @@ def _plan_stream(
         if controls is None:
             return "", [], 0.0, True, ""
         return "", _words_for_controls(controls), delay, False, ""
+
+    if _MEDIA_ATTACH_OPTIONS_MARKER in msg_text:
+        body = _media_attach_facets_response(msg_text)
+        return "", list(body.split()), delay, False, ""
 
     if FAKE_SECRET_TRIGGER in msg_text:
         secret_tail = f"\n\n<!-- ai:secret:\n{FAKE_SECRET_PLAINTEXT}\n-->"

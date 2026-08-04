@@ -39,6 +39,31 @@ modalities.tool_fence_awareness.hint = '''
 
 TOOL-CALL FENCES: Prior turns may include fenced blocks tagged ``tool-call`` showing command-tool invocations and results. That metadata is not narrative prose — do not imitate those fences in new output. Emit KB blocks and discussion prose separately from tool-call fences.'''
 
+modalities.media_attach.classify_system = '''
+You select image facets for a visual novel scene. Respond with only valid JSON exactly as instructed — no markdown fences, preamble, or commentary.
+'''
+
+modalities.media_attach.classify = '''
+
+Choose the best value for each undecided facet below, based on the passage text and its recent context. These facets pick which image to attach to the scene.
+
+Facet options (JSON: facet name -> closed list of allowed values; choose exactly one value per facet from its list):
+{facet_options_json}
+
+Currently selected facets (the prior choice — your pick must be at least as good a fit as this, or repeat it; do not flicker to an equally-good alternative):
+{current_facets_json}
+
+Recent context (preceding prose, for grounding only — do not classify this):
+{context_text}
+
+Passage to classify:
+{target_text}
+
+Output contract (strict):
+- Respond with ONLY a JSON object: ``{{"facets": {{"facet_name": "value", …}}}}`` — one entry per facet listed above, each value taken verbatim from that facet's allowed list.
+- No markdown fences, preamble, commentary, or extra keys.
+'''
+
 speech.markup.generate = '''
 
 SPEECH MARKUP RULES

@@ -47,6 +47,13 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "speech.markup.refine": PromptSpec(
         "speech.markup.refine", frozenset({"grammar_rules", "lines_json"})
     ),
+    "modalities.media_attach.classify_system": PromptSpec(
+        "modalities.media_attach.classify_system", frozenset()
+    ),
+    "modalities.media_attach.classify": PromptSpec(
+        "modalities.media_attach.classify",
+        frozenset({"facet_options_json", "current_facets_json", "context_text", "target_text"}),
+    ),
     "speech.grammar.xai.rules": PromptSpec("speech.grammar.xai.rules", frozenset()),
     "speech.grammar.gemini.rules": PromptSpec("speech.grammar.gemini.rules", frozenset()),
     "shared.retry_feedback_template": PromptSpec("shared.retry_feedback_template", frozenset({"feedback"})),

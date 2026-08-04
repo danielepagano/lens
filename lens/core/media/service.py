@@ -7,6 +7,7 @@ import yaml
 
 from lens.core.exceptions import MediaSearchCapacityExceeded
 from lens.core.media.cache import MediaCache
+from lens.core.media.facets import FacetVocabulary, collect_facet_values
 from lens.core.media.metadata import (
     MediaMetadata,
     MediaStore,
@@ -399,6 +400,35 @@ class MediaService:
             total_pages=total_pages,
             page_size=PAGE_SIZE,
             current_page=page,
+        )
+
+    def facet_vocabulary(self, query_str: str) -> FacetVocabulary:
+        """Union ``facets`` values over every record matching *query_str*.
+
+        A distinct call rather than metadata bolted onto ``SearchResult``:
+        ``search()`` paginates at ``PAGE_SIZE``, but the facet label set has to be
+        unioned over the *whole* match set, not just one page. Same preamble as
+        ``search()`` — warm the cache, honor the capacity lock, compile the query
+        once — then one pass over the index calling the same ``score_record``.
+        """
+        self._ensure_warmed()
+        if self._cache.search_index.locked:
+            raise MediaSearchCapacityExceeded(self._cache.search_index.limit)
+
+        query = compile_query(parse_query(query_str))
+        match_count = 0
+        values: dict[str, set[str]] = {}
+
+        for _relative_path, record in self._cache.search_index.items():
+            score = score_record(record, query)
+            if score is None:
+                continue
+            match_count += 1
+            collect_facet_values(record.flattened, values)
+
+        return FacetVocabulary(
+            match_count=match_count,
+            values={key: frozenset(vals) for key, vals in values.items()},
         )
 
     def _walk_files(self, subpath: str) -> list[str]:

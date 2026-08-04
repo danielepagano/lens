@@ -24,6 +24,7 @@ from lens.testing.regression_fixtures import (
     setup_advance_minimal,
     setup_auto_compress_disabled_node,
     setup_auto_compress_low_threshold,
+    setup_media_attach_project,
     setup_remember_section,
     setup_rpg_play_pins,
 )
@@ -240,3 +241,56 @@ class TestRegressionCliAdvanceFixture:
         timeline = tmp_project / "knowledge" / "timeline" / "vale.md"
         assert timeline.is_file()
         assert "Thornvale" in timeline.read_text(encoding="utf-8")
+
+
+class TestRegressionCliMediaAttach:
+    """Issue #51: media_attach modality end-to-end (real FakeLLMServer, real refine pass)."""
+
+    def test_facets_annotation_and_foreground_swap(
+        self, tmp_project: Path, fake_llm: FakeLLMServer
+    ) -> None:
+        from lens.core.commands.attach import build_layered_embed
+
+        session = setup_media_attach_project(tmp_project, fake_llm.base_url)
+        narrative = session.active_narrative
+        assert narrative is not None
+        node_path = narrative.find_cursor().md_path()
+
+        _quiet_async(
+            WriteOperator.run_inline(
+                session=session,
+                narrative=narrative,
+                prompt="Amy smiles warmly.",
+                pins=[],
+                unpins=[],
+                llm_id="mock",
+                retry=False,
+            )
+        )
+
+        text = node_path.read_text(encoding="utf-8")
+        assert "[facets: emotion=happy]: #" in text
+        happy_embed = build_layered_embed("bg.jpg", "amy_happy.png")
+        assert happy_embed in text
+
+        lines = [ln for ln in text.split("\n") if ln.strip()]
+        facets_idx = next(i for i, ln in enumerate(lines) if ln.startswith("[facets:"))
+        assert "lens-vn-composite" in lines[facets_idx + 1]
+
+        _quiet_async(
+            WriteOperator.run_inline(
+                session=session,
+                narrative=narrative,
+                prompt="Amy's smile fades.",
+                pins=[],
+                unpins=[],
+                llm_id="mock",
+                retry=False,
+            )
+        )
+
+        text2 = node_path.read_text(encoding="utf-8")
+        assert "[facets: emotion=sad]: #" in text2
+        # Foreground swaps to the sad variant; background carries over unchanged.
+        sad_embed = build_layered_embed("bg.jpg", "amy_sad.png")
+        assert sad_embed in text2

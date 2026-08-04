@@ -13,16 +13,17 @@ This guide covers every supported configuration surface, environment variables, 
 5. [`[operator.<name>]`](#operatorname)
 6. [`[[image]]`](#image)
 7. [`[[speech]]`](#speech)
-8. [`[compress]`](#compress)
-9. [`[params]`](#params)
-10. [`[dataset]`](#dataset)
-11. [`[release]` / `[[dataset_repo]]` / `[[dependent_project]]`](#release--dataset_repo--dependent_project)
-12. [Narrative front matter](#narrative-front-matter)
-13. [Prompt packs](#prompt-packs)
-14. [Dataset bundles](#dataset-bundles)
-15. [Environment variables](#environment-variables)
-16. [Validation: `lens check`](#validation-lens-check)
-17. [Precedence reference](#precedence-reference)
+8. [`[modality.media_attach]`](#modalitymedia_attach)
+9. [`[compress]`](#compress)
+10. [`[params]`](#params)
+11. [`[dataset]`](#dataset)
+12. [`[release]` / `[[dataset_repo]]` / `[[dependent_project]]`](#release--dataset_repo--dependent_project)
+13. [Narrative front matter](#narrative-front-matter)
+14. [Prompt packs](#prompt-packs)
+15. [Dataset bundles](#dataset-bundles)
+16. [Environment variables](#environment-variables)
+17. [Validation: `lens check`](#validation-lens-check)
+18. [Precedence reference](#precedence-reference)
 
 ---
 
@@ -49,6 +50,7 @@ Select the active narrative with `lens use <slug>`, which sets `[project].narrat
 | `[operator.<name>]` | No | Per-operator LLM defaults |
 | `[[image]]` | For `lens media generate` | Image generation backends |
 | `[[speech]]` | For `lens media tts` | Text-to-speech backends |
+| `[modality.media_attach]` | No | `media_attach` modality: classify LLM, context window |
 | `[compress]` | No | Auto-compress size thresholds |
 | `[params]` | No | Default operator invocation parameters |
 | `[dataset]` | No | Dataset-level flags (e.g. verbose LLM logging) |
@@ -365,6 +367,55 @@ lens media tts my-story/act-2@16:80
 - Node address + optional `@N` or `@N:M` line slice (same rules as other commands)
 - `--silent` — skip `ffplay` playback
 - xAI voices: `eve`, `ara`, `rex`, `sal`, `leo`; OpenRouter voices depend on the chosen `model`
+
+---
+
+## `[modality.media_attach]`
+
+Picks images to attach to the narrative from what was just written — a small library of media tagged with **facets** (a `facets:` key in the sidecar), narrowed by a per-node **anchor** media search, with an undecided facet (pose, expression, …) resolved by a separate, small, fast classify LLM. See [design.md](design.md#modalities-cross-cutting-contracts-applied-consistently) for the modality contract and the full selection loop in issue #51.
+
+Requires `[project].mount_point`. Configure the classify LLM as its own `[[llm]]` block, then point this section at its `id`:
+
+```toml
+[[llm]]
+id          = "tiny"
+base_url    = "https://api.example.com/v1"
+api_key_env = "TINY_API_KEY"
+model       = "qwen3-1.7b"
+temperature = 0.2
+
+[modality.media_attach]
+llm           = "tiny"  # [[llm]] id for the classify pass; falls back to the operator LLM when unset
+context_beats = 2       # preceding beats of prose sent as context to the classify pass
+```
+
+### Fields
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `llm` | No | operator LLM | `[[llm]]` id used for `workflow_refine:media_attach` |
+| `context_beats` | No | `2` | Preceding prose paragraphs sent to the classify pass for grounding |
+
+### Enabling and anchoring (front matter)
+
+Opt in on a node (or ancestor, merged root → cursor) and set the anchor query — a media search string (`word!` required, `key:value` metadata match, `"quoted phrase"`; see `lens/core/media/search.py`) that narrows the library to a subject:
+
+```yaml
+---
+media_attach:
+  anchor: "image! foreground! amy! home! pajamas!"
+modalities:
+  media_attach: true
+---
+```
+
+- The anchor is mutable mid-session: rewrite it on the cursor node (e.g. `pajamas!` → `work!` after a costume change) and the new baseline applies to future beats only — earlier attachments are untouched, since resolution walks root → cursor and the deepest node wins.
+- Any sidecar facet with more than one distinct value across the anchor's matches (e.g. `pose`, `expression`) is undecided and offered to the classify LLM as a closed label set; a facet with only one value across the matches is already pinned by the anchor and needs no decision. If the anchor pins a single image outright (no undecided facets), no classify call is made and no attach happens — treat that as a manual attach.
+- The classify pass sees the current selection and is asked to match or beat it, which gives hysteresis (less flicker) between beats. When the pick comes back identical to the current selection, nothing is re-attached — re-emitting the same image and facets annotation would just be noise with no visual change.
+- The winning image's chosen facet values are recorded immediately above its embed as a `[facets: emotion=happy pose=standing]: #` annotation — a markdown comment stripped from LLM context (unlike an HTML comment), so it never reaches the main model and cannot be mistaken for an operator tag or move the cursor.
+- A `composite: foreground` winner reuses the most recent composite's background (`lens.core.commands.attach.build_layered_embed`); a plain image is attached on its own. Swapping backgrounds is a manual attach for now.
+- If refine cannot select or attach safely (unparseable output, out-of-vocabulary values, a foreground winner with no prior background), Lens keeps the pre-refine text and surfaces a warning rather than failing the invocation — same failure discipline as `speech_markup`.
+- Gate reasons (no mount, no anchor, anchor matches nothing, …) surface via `lens stats`.
 
 ---
 

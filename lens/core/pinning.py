@@ -15,6 +15,7 @@ KB_PIN = "kb_pin"
 KB_UNPIN = "kb_unpin"
 TTS_CACHED = "tts_cached"
 MODALITIES = "modalities"
+MEDIA_ATTACH = "media_attach"
 
 
 def _render_front_matter(data: dict[str, Any]) -> str:
@@ -282,6 +283,66 @@ def collect_modalities_fm(node: NarrativeNode) -> dict[str, bool]:
             if flag is not None:
                 merged[key] = flag
     return merged
+
+
+def collect_media_attach_fm(node: NarrativeNode) -> dict[str, Any]:
+    """Merged ``media_attach:`` sub-keys from root → *node* (deeper node wins).
+
+    This is what makes the anchor mutable mid-run: rewriting the cursor node's
+    front matter shifts the baseline for future beats without touching earlier
+    ones, since resolution always walks root → cursor and lets the deepest
+    ancestor's value win.
+    """
+    from lens.core.context import ancestor_chain
+
+    merged: dict[str, Any] = {}
+    for anc in ancestor_chain(node):
+        if not anc.exists():
+            continue
+        raw = anc.front_matter().get(MEDIA_ATTACH)
+        if not isinstance(raw, dict):
+            continue
+        rd = cast(dict[Any, Any], raw)
+        for key_raw, value in rd.items():
+            key = str(key_raw).strip()
+            if not key:
+                continue
+            merged[key] = value
+    return merged
+
+
+def set_media_attach(node: NarrativeNode, key: str, value: str, storage: Storage) -> None:
+    """Set (or, given an empty value, clear) one key in top-level ``media_attach``.
+
+    An empty *value* removes *key* rather than persisting an empty string, so
+    that clearing the last sub-key (e.g. the anchor) drops the whole
+    ``media_attach`` block instead of leaving ``media_attach: {key: ''}`` in
+    front matter — ``_render_front_matter`` only filters falsy *top-level*
+    keys, not nested ones.
+    """
+
+    def _set(d: dict[str, Any]) -> dict[str, Any]:
+        out = dict(d)
+        raw = out.get(MEDIA_ATTACH)
+        media_attach: dict[str, str] = {}
+        if isinstance(raw, dict):
+            rd = cast(dict[Any, Any], raw)
+            for k_raw, v_raw in rd.items():
+                k = str(k_raw).strip()
+                if not k:
+                    continue
+                media_attach[k] = v_raw if isinstance(v_raw, str) else str(v_raw)
+        if value:
+            media_attach[key] = value
+        else:
+            media_attach.pop(key, None)
+        if media_attach:
+            out[MEDIA_ATTACH] = media_attach
+        else:
+            out.pop(MEDIA_ATTACH, None)
+        return out
+
+    _mutate_front_matter(node, storage, _set)
 
 
 def set_modality(
