@@ -54,6 +54,19 @@ class Modality(ABC):
         """
         return False
 
+    @property
+    def contributes_workflow_refine(self) -> bool:
+        """Whether this modality may contribute a refine pass, and so earn its own step.
+
+        Unlike :attr:`contributes_workflow_post`, this defaults to "does this class
+        override :meth:`workflow_refine_pass`", so implementing the hook is enough —
+        there is no separate flag to forget. Override to force it on or off.
+
+        This only decides whether a ``workflow_refine:<id>`` step is *offered*; the
+        step still runs only when :meth:`workflow_refine_pass` returns a spec.
+        """
+        return type(self).workflow_refine_pass is not Modality.workflow_refine_pass
+
     def dependencies(self) -> frozenset[str]:
         """Other modality ids that must be active whenever this one is.
 
@@ -126,11 +139,20 @@ class Modality(ABC):
         """Optional second LLM pass after post-processing.
 
         Return a spec to run :func:`~lens.core.modalities.workflow.run_refine_pass`
-        during ``workflow_refine`` (first non-``None`` spec among active modalities wins).
-        The refine LLM sees only ``RefinePassSpec.instruction`` — not crawl context.
-        Also consulted when deciding whether ``workflow_refine`` should appear in the
-        plan, so this method may run even if the user skips that step. Return ``None``
-        to decline a refine pass.
+        during this modality's own ``workflow_refine:<id>`` step. The refine LLM sees
+        only ``RefinePassSpec.instruction`` — not crawl context. Return ``None`` to
+        decline a pass.
+
+        **Every** active modality that returns a spec gets its own step, each
+        independently skippable. Passes are independent: no result is fed to the next,
+        and nothing may depend on running before or after another modality.
+
+        This method is called more than once per generation — once after generate to
+        decide which steps to offer, then again immediately before each step runs, so
+        that *text* reflects any edit an earlier pass already made. It must therefore
+        be side-effect free, and any state captured in ``RefinePassSpec.apply`` (line
+        indices in particular) must come from the *text* argument rather than from a
+        snapshot taken earlier.
         """
         del ctx, text
         return None

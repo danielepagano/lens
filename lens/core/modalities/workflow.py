@@ -34,33 +34,88 @@ def modality_workflow_post_needed(resolved: ResolvedModalities) -> bool:
     return False
 
 
-def resolve_first_refine_spec(
+REFINE_STEP_PREFIX = "workflow_refine"
+
+
+def refine_step_id(modality_id: str) -> str:
+    """Workflow step id for *modality_id*'s refine pass."""
+    return f"{REFINE_STEP_PREFIX}:{modality_id}"
+
+
+def registered_refine_modality_ids() -> tuple[str, ...]:
+    """Every registered modality that may contribute a refine pass, in a stable order.
+
+    Used to build the step list *before* generate has run, so the active set is not
+    known yet; each step's ``should_run`` narrows it to what actually wants a pass.
+    """
+    from lens.core.modalities.bootstrap import ensure_modalities_registered
+    from lens.core.modalities.registry import registered_ids
+
+    ensure_modalities_registered()
+    return tuple(
+        sorted(
+            mid
+            for mid in registered_ids()
+            if get_modality_or_raise(mid).contributes_workflow_refine
+        )
+    )
+
+
+def resolve_refine_modality_ids(
+    resolved: ResolvedModalities,
+    ctx: ModalityContext,
+    text: str,
+) -> tuple[str, ...]:
+    """Active modalities that want a refine pass over *text*.
+
+    Passes are independent, so this collects *all* of them rather than stopping at
+    the first. Order follows ``active_ids`` and carries no meaning.
+    """
+    out: list[str] = []
+    for mid in resolved.active_ids:
+        mod = get_modality_or_raise(mid)
+        if not mod.contributes_workflow_refine:
+            continue
+        if mod.workflow_refine_pass(ctx, text) is not None:
+            out.append(mid)
+    return tuple(out)
+
+
+def refine_spec_for_modality(
+    modality_id: str,
     resolved: ResolvedModalities,
     ctx: ModalityContext,
     text: str,
 ) -> RefinePassSpec | None:
-    for mid in resolved.active_ids:
-        mod = get_modality_or_raise(mid)
-        spec = mod.workflow_refine_pass(ctx, text)
-        if spec is not None:
-            return spec
-    return None
+    """Recompute one modality's spec against the *current* text, just before it runs.
+
+    Deliberately not cached: an earlier pass may have rewritten *text*, and a spec's
+    ``apply`` closure is only valid against the text it was built from.
+    """
+    from lens.core.modalities.apply import prepare_modality_context
+
+    ctx = prepare_modality_context(ctx, resolved)
+    return get_modality_or_raise(modality_id).workflow_refine_pass(ctx, text)
 
 
-def cache_refine_pass_spec_on_pending(
+def cache_refine_modality_ids_on_pending(
     pending: PendingInlinePersist,
     resolved: ResolvedModalities,
     ctx: ModalityContext,
 ) -> None:
-    """Compute refine spec once after generate; reuse for scheduling and execution."""
-    if pending.refine_spec_cached:
+    """Record which modalities want a refine pass, to decide which steps to offer.
+
+    Only the *ids* are kept. Each spec is rebuilt in
+    :func:`refine_spec_for_modality` when its own step runs.
+    """
+    if pending.refine_ids_cached:
         return
     from lens.core.modalities.apply import prepare_modality_context
 
     ctx = prepare_modality_context(ctx, resolved)
     text = compose_for_operator(pending.artifacts, pending.operator_name)
-    pending.refine_pass_spec = resolve_first_refine_spec(resolved, ctx, text)
-    pending.refine_spec_cached = True
+    pending.refine_modality_ids = resolve_refine_modality_ids(resolved, ctx, text)
+    pending.refine_ids_cached = True
 
 
 def apply_workflow_post_to_artifacts(
@@ -198,7 +253,7 @@ async def run_modality_post_refine_workflow(
         narrative=ctx.narrative,
         operator_name=operator_name,
     )
-    cache_refine_pass_spec_on_pending(pending, resolved, ctx)
+    cache_refine_modality_ids_on_pending(pending, resolved, ctx)
     all_warnings: list[str] = []
 
     if workflow is None:
@@ -206,17 +261,18 @@ async def run_modality_post_refine_workflow(
             apply_workflow_post_to_artifacts(
                 pending.artifacts, operator_name, resolved, ctx
             )
-        if pending.refine_pass_spec is not None:
-            pending.artifacts, w = await apply_workflow_refine_to_artifacts(
+        for mid in pending.refine_modality_ids:
+            w = await run_workflow_refine_on_artifacts(
                 session,
-                pending.artifacts,
-                operator_name,
-                pending.refine_pass_spec,
+                pending,
+                resolved,
+                ctx,
+                modality_id=mid,
                 on_token=on_token,
                 cancel_event=cancel_event,
             )
-            pending.refine_warnings = w
-            all_warnings.extend(w)
+            if w:
+                all_warnings.extend(w)
         return pending.artifacts, tuple(all_warnings)
 
     workflow.set_inline_modality_state(
@@ -232,16 +288,6 @@ async def run_modality_post_refine_workflow(
             ctx=workflow.modality_context,
         )
 
-    async def run_refine() -> StepResult:
-        return await run_workflow_refine_step(
-            session,
-            pending=workflow.pending_inline,
-            resolved=workflow.resolved_modalities,
-            ctx=workflow.modality_context,
-            on_token=on_token,
-            cancel_event=cancel_event,
-        )
-
     steps = [
         WorkflowStepDef(
             id="workflow_post",
@@ -251,13 +297,13 @@ async def run_modality_post_refine_workflow(
             failure_policy="warn",
             skippable=True,
         ),
-        WorkflowStepDef(
-            id="workflow_refine",
-            label="Refining…",
-            run=run_refine,
-            should_run=lambda: pending.refine_pass_spec is not None,
-            failure_policy="warn",
-            skippable=True,
+        *build_refine_step_defs(
+            session,
+            get_pending=lambda: workflow.pending_inline,
+            get_resolved=lambda: workflow.resolved_modalities,
+            get_ctx=lambda: workflow.modality_context,
+            on_token=on_token,
+            cancel_event=cancel_event,
         ),
     ]
     outcome = await workflow.run(steps, emit_plan=False)
@@ -302,20 +348,24 @@ async def run_workflow_refine_on_artifacts(
     resolved: ResolvedModalities,
     ctx: ModalityContext,
     *,
+    modality_id: str,
     on_token: Callable[[str], Awaitable[None]] | None = None,
     cancel_event: asyncio.Event | None = None,
-) -> tuple[str, ...]:
-    if pending.refine_pass_spec is None:
-        return ()
+) -> tuple[str, ...] | None:
+    """Run *modality_id*'s refine pass. ``None`` means it declined on second look."""
+    text = compose_for_operator(pending.artifacts, pending.operator_name)
+    spec = refine_spec_for_modality(modality_id, resolved, ctx, text)
+    if spec is None:
+        return None
     pending.artifacts, warnings = await apply_workflow_refine_to_artifacts(
         session,
         pending.artifacts,
         pending.operator_name,
-        pending.refine_pass_spec,
+        spec,
         on_token=on_token,
         cancel_event=cancel_event,
     )
-    pending.refine_warnings = warnings
+    pending.refine_warnings = pending.refine_warnings + warnings
     return warnings
 
 
@@ -339,6 +389,7 @@ async def run_workflow_post_step(
 async def run_workflow_refine_step(
     session: ProjectSession,
     *,
+    modality_id: str,
     pending: PendingInlinePersist | None,
     resolved: ResolvedModalities | None,
     ctx: ModalityContext | None,
@@ -347,7 +398,7 @@ async def run_workflow_refine_step(
 ) -> StepResult:
     if pending is None or resolved is None or ctx is None:
         return StepResult(ok=True, skipped=True)
-    if pending.refine_pass_spec is None:
+    if modality_id not in pending.refine_modality_ids:
         return StepResult(ok=True, skipped=True)
     try:
         warnings = await run_workflow_refine_on_artifacts(
@@ -355,11 +406,59 @@ async def run_workflow_refine_step(
             pending,
             resolved,
             ctx,
+            modality_id=modality_id,
             on_token=on_token,
             cancel_event=cancel_event,
         )
+        if warnings is None:
+            return StepResult(ok=True, skipped=True)
         if warnings:
             return StepResult(ok=True, warnings=tuple(warnings))
         return StepResult(ok=True)
     except Exception as e:
         return StepResult(ok=False, error=str(e))
+
+
+def build_refine_step_defs(
+    session: ProjectSession,
+    *,
+    get_pending: Callable[[], PendingInlinePersist | None],
+    get_resolved: Callable[[], ResolvedModalities | None],
+    get_ctx: Callable[[], ModalityContext | None],
+    on_token: Callable[[str], Awaitable[None]] | None = None,
+    cancel_event: asyncio.Event | None = None,
+) -> list[WorkflowStepDef]:
+    """One independently skippable ``workflow_refine:<id>`` step per refine-capable modality.
+
+    Built before generate runs, so the candidate set comes from the registry and each
+    step's ``should_run`` narrows it once ``pending.refine_modality_ids`` is known.
+    The runner re-checks ``should_run`` as it iterates, so steps that only become
+    eligible after generate still appear in the plan.
+    """
+
+    def _make(modality_id: str) -> WorkflowStepDef:
+        def should_run() -> bool:
+            pending = get_pending()
+            return pending is not None and modality_id in pending.refine_modality_ids
+
+        async def run() -> StepResult:
+            return await run_workflow_refine_step(
+                session,
+                modality_id=modality_id,
+                pending=get_pending(),
+                resolved=get_resolved(),
+                ctx=get_ctx(),
+                on_token=on_token,
+                cancel_event=cancel_event,
+            )
+
+        return WorkflowStepDef(
+            id=refine_step_id(modality_id),
+            label=f"Refining ({modality_id.replace('_', ' ')})…",
+            run=run,
+            should_run=should_run,
+            failure_policy="warn",
+            skippable=True,
+        )
+
+    return [_make(mid) for mid in registered_refine_modality_ids()]

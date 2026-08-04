@@ -103,9 +103,11 @@ class PendingInlinePersist:
     owner: NarrativeAddress
     narrative: NarrativeNode
     operator_name: str
-    refine_pass_spec: RefinePassSpec | None = None
-    refine_spec_cached: bool = False
+    refine_modality_ids: tuple[str, ...] = ()
+    """Active modalities that wanted a refine pass when the step plan was built."""
+    refine_ids_cached: bool = False
     refine_warnings: tuple[str, ...] = ()
+    """Accumulated across every refine pass that ran."""
 
 
 @dataclass

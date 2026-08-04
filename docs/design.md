@@ -285,7 +285,7 @@ Operators stay **thin**: they declare prompts, session shape, tools, and `CrawlS
 
 Most operator invocations follow the same execution order:
 
-**Invocation** → **Gather (crawl)** → **Assemble messages** → **Generate (LLM + tool loop)** → **Compose artifacts** → **Post/refine** (`workflow_post` / `workflow_refine`) → **Persist** → **Optional tail steps** (e.g. `auto_compress`, session-end `remember`)
+**Invocation** → **Gather (crawl)** → **Assemble messages** → **Generate (LLM + tool loop)** → **Compose artifacts** → **Post/refine** (`workflow_post`, then one `workflow_refine:<modality_id>` per contributing modality) → **Persist** → **Optional tail steps** (e.g. `auto_compress`, session-end `remember`)
 
 Each stage is independently visible in the preview (as a workflow step), and optional tail work can be skipped without discarding the successful earlier steps.
 
@@ -351,6 +351,8 @@ The engine resolves the active set by merging built-in defaults, front matter al
 
 **Speech markup** is one example of a modality: when enabled, it guides the model to emit TTS-oriented control tags according to a selected `[[speech]]` grammar, and it can run a lightweight post-generation refine pass to improve tag quality without changing the meaning of the text. If refine cannot be applied safely, Lens keeps the pre-refine text and surfaces a warning rather than failing the whole invocation.
 
+**Refine passes are plural and independent.** Every active modality that wants one gets its own `workflow_refine:<modality_id>` step, each separately skippable — declining the sprite swap should not also decline TTS markup. Nothing flows from one pass to the next and no modality may depend on running before or after another, so the execution order is not part of the contract. Because the passes do share one body of text, each spec is rebuilt immediately before its own step runs rather than all up front: a pass that captured line positions earlier would otherwise be merging into text another pass had already shifted.
+
 ### Hooks and workflows: scheduling follow-up steps without turning operators into agents
 
 **Orchestration hooks** fire from core operator entry points only (`post_inline` → auto-compress; `summarize_close` → remember). Hooks may spawn follow-up `LlmRun` passes or collate work. **WorkflowRunner** is the thin scheduler that wraps those sequences — it does not replace `LlmRun` or turn operators into agents. Operators and hooks still declare *what* runs; the runner owns *when*, *in what order*, and *how skip, retry, and abort propagate*.
@@ -359,7 +361,7 @@ Typical workflows (each step is one or more `LlmRun` calls, exposed under a stab
 
 | Flow | Steps (examples) |
 |------|------------------|
-| Inline `write` / `play` / `chat` | `generate` → optional `workflow_post` / `workflow_refine` → `persist` → optional `auto_compress` |
+| Inline `write` / `play` / `chat` | `generate` → optional `workflow_post` → optional `workflow_refine:<modality_id>` (one per contributing modality) → `persist` → optional `auto_compress` |
 | Session `--end`, section close, collate | `summarize` → `remember` → structural close |
 | Manual compress | `compress_select` → collate chain |
 

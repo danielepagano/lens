@@ -27,6 +27,7 @@ from lens.core.modalities import (
     get_modality,
     merge_modality_command_tools,
     merge_modality_crawl_spec,
+    refine_step_id,
     register_modality,
     resolve_modalities,
 )
@@ -486,8 +487,8 @@ class _PostOnlyModality(Modality):
 
 
 class TestRefineSpecCache(_RegistryCleanTestCase):
-    def test_cache_refine_spec_only_once(self) -> None:
-        from lens.core.modalities.workflow import cache_refine_pass_spec_on_pending
+    def test_cache_refine_ids_only_once(self) -> None:
+        from lens.core.modalities.workflow import cache_refine_modality_ids_on_pending
         from lens.core.modalities.types import PendingInlinePersist
         register_modality(_RefineModality())
         with tempfile.TemporaryDirectory() as tmp:
@@ -519,10 +520,10 @@ class TestRefineSpecCache(_RegistryCleanTestCase):
             mod = get_modality(REFINE_MODALITY_ID)
             assert isinstance(mod, _RefineModality)
             mod.counts.workflow_refine_pass = 0
-            cache_refine_pass_spec_on_pending(pending, resolved, ctx)
-            cache_refine_pass_spec_on_pending(pending, resolved, ctx)
+            cache_refine_modality_ids_on_pending(pending, resolved, ctx)
+            cache_refine_modality_ids_on_pending(pending, resolved, ctx)
             self.assertEqual(mod.counts.workflow_refine_pass, 1)
-            self.assertIsNotNone(pending.refine_pass_spec)
+            self.assertEqual(pending.refine_modality_ids, (REFINE_MODALITY_ID,))
 
 
 class TestModalityPostRefineApply(unittest.IsolatedAsyncioTestCase, _RegistryCleanTestCase):
@@ -740,8 +741,9 @@ class TestModalityInlineIntegration(_SpyIntegrationTestCase):
                         ]
                     else:
                         step_dicts = []
-                    if any(s.get("id") == "workflow_refine" for s in step_dicts):
-                        runner.signal_action("workflow_refine", "skip")
+                    step_id = refine_step_id(REFINE_MODALITY_ID)
+                    if any(s.get("id") == step_id for s in step_dicts):
+                        runner.signal_action(step_id, "skip")
                         skip_sent = True
 
             runner = WorkflowRunner(on_event=on_event)
