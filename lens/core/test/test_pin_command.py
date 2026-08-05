@@ -6,8 +6,12 @@ from pathlib import Path
 
 from lens.core.commands.pin import (
     coerce_param_pin_value,
+    modality_config_set,
+    modality_config_unset,
     param_set,
     validate_ids,
+    validate_modality_id,
+    validate_modality_key,
     validate_param_scope,
     var_set,
     var_value_to_parts,
@@ -73,4 +77,66 @@ class TestVarParamCommandIntegration(unittest.TestCase):
             )
             text = node.md_path().read_text()
             self.assertIn("reasoning: true", text)
+
+
+class TestModalityConfigValidation(unittest.TestCase):
+    def test_rejects_empty_modality_id(self) -> None:
+        with self.assertRaises(LensException):
+            validate_modality_id("   ")
+
+    def test_rejects_empty_key(self) -> None:
+        with self.assertRaises(LensException):
+            validate_modality_key("")
+
+
+class TestModalityConfigCommandIntegration(unittest.TestCase):
+    def test_set_enabled_writes_front_matter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = make_pin_test_project(init_git_repo(Path(tmp)))
+            session = ProjectSession(root, root)
+            _, _path = modality_config_set(session, "speech_markup", "enabled", True, None, None)
+            text = node.md_path().read_text()
+            self.assertIn("speech_markup", text)
+            self.assertIn("enabled: true", text)
+
+    def test_set_modality_specific_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = make_pin_test_project(init_git_repo(Path(tmp)))
+            session = ProjectSession(root, root)
+            _, _path = modality_config_set(
+                session, "media_attach", "anchor", "amy!", None, None
+            )
+            text = node.md_path().read_text()
+            self.assertIn("anchor: amy!", text)
+
+    def test_set_merges_with_existing_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = make_pin_test_project(init_git_repo(Path(tmp)))
+            session = ProjectSession(root, root)
+            modality_config_set(session, "media_attach", "anchor", "amy!", None, None)
+            modality_config_set(session, "media_attach", "enabled", False, None, None)
+            text = node.md_path().read_text()
+            self.assertIn("anchor: amy!", text)
+            self.assertIn("enabled: false", text)
+
+    def test_unset_clears_only_that_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = make_pin_test_project(init_git_repo(Path(tmp)))
+            session = ProjectSession(root, root)
+            modality_config_set(session, "media_attach", "anchor", "amy!", None, None)
+            modality_config_set(session, "media_attach", "enabled", True, None, None)
+            modality_config_unset(session, "media_attach", "anchor", None, None)
+            text = node.md_path().read_text()
+            self.assertNotIn("anchor", text)
+            self.assertIn("enabled: true", text)
+
+    def test_unset_last_key_drops_modality_block(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = make_pin_test_project(init_git_repo(Path(tmp)))
+            session = ProjectSession(root, root)
+            modality_config_set(session, "media_attach", "anchor", "amy!", None, None)
+            modality_config_unset(session, "media_attach", "anchor", None, None)
+            text = node.md_path().read_text()
+            self.assertNotIn("media_attach", text)
+            self.assertNotIn("modalities", text)
 

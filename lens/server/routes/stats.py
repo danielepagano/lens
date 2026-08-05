@@ -51,6 +51,7 @@ def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> 
         "registered_modality_ids": result.registered_modality_ids,
         "modalities_at_cursor": result.modalities_at_cursor,
         "modality_warnings_at_cursor": result.modality_warnings_at_cursor,
+        "effective_modalities_at_cursor": result.effective_modalities_at_cursor,
         "dataset_configs": result.dataset_configs,
         "release": {
             "enabled": result.release_enabled,

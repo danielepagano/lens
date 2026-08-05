@@ -118,6 +118,48 @@ class TestStats:
         assert isinstance(data["registered_modality_ids"], list)
         assert isinstance(data["modalities_at_cursor"], list)
         assert isinstance(data["modality_warnings_at_cursor"], list)
+        assert isinstance(data["effective_modalities_at_cursor"], dict)
+
+    def test_effective_modalities_at_cursor_reflects_pin_writes(
+        self, test_client: TestClient
+    ) -> None:
+        r = test_client.post(
+            "/test/narrative/pin",
+            json={
+                "kind": "modality",
+                "operation": "set",
+                "modality_id": "media_attach",
+                "key": "anchor",
+                "value": "amy!",
+            },
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "ok"
+
+        data = test_client.get("/test/stats").json()
+        assert data["effective_modalities_at_cursor"]["media_attach"] == {"anchor": "amy!"}
+
+        r = test_client.post(
+            "/test/narrative/pin",
+            json={
+                "kind": "modality",
+                "operation": "unset",
+                "modality_id": "media_attach",
+                "key": "anchor",
+            },
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "ok"
+
+        data = test_client.get("/test/stats").json()
+        assert "media_attach" not in data["effective_modalities_at_cursor"]
+
+    def test_modality_pin_requires_modality_id(self, test_client: TestClient) -> None:
+        r = test_client.post(
+            "/test/narrative/pin",
+            json={"kind": "modality", "operation": "set", "key": "enabled", "value": True},
+        )
+        assert r.status_code == 422
 
 
 class TestTree:

@@ -7,6 +7,8 @@ from pydantic import BaseModel, model_validator
 
 from lens.core.address import NarrativeAddress
 from lens.core.commands.pin import (
+    modality_config_set,
+    modality_config_unset,
     param_set_value,
     param_unset,
     pin_add,
@@ -31,7 +33,7 @@ from lens.server.dependencies import get_session
 
 router = APIRouter(prefix="/{project_slug}")
 
-PinKind = Literal["kb", "var", "param"]
+PinKind = Literal["kb", "var", "param", "modality"]
 
 
 class PinRequest(BaseModel):
@@ -42,6 +44,7 @@ class PinRequest(BaseModel):
     key: str | None = None
     value: Any | None = None
     scope: str | None = None
+    modality_id: str | None = None
 
     @model_validator(mode="after")
     def _validate_pin_shape(self) -> PinRequest:
@@ -68,6 +71,16 @@ class PinRequest(BaseModel):
                 raise ValueError("param pin requires key")
             if op == "set" and self.value is None:
                 raise ValueError("param set requires value")
+        else:
+            assert k == "modality"
+            if op not in ("set", "unset"):
+                raise ValueError("modality pin requires operation set or unset")
+            if not (self.modality_id and self.modality_id.strip()):
+                raise ValueError("modality pin requires modality_id")
+            if not (self.key and self.key.strip()):
+                raise ValueError("modality pin requires key")
+            if op == "set" and self.value is None:
+                raise ValueError("modality set requires value")
         return self
 
 
@@ -98,15 +111,30 @@ def narrative_pin(
             else:
                 count, target_path = var_unset(session, body.key, node_addr, None)
             return {"status": "ok", "count": count, "target": target_path}
-        assert body.kind == "param"
-        assert body.operation is not None and body.key is not None and body.scope is not None
+        if body.kind == "param":
+            assert body.operation is not None and body.key is not None and body.scope is not None
+            if body.operation == "set":
+                count, target_path = param_set_value(
+                    session, body.scope, body.key, body.value, node_addr, None
+                )
+            else:
+                count, target_path = param_unset(
+                    session, body.scope, body.key, node_addr, None
+                )
+            return {"status": "ok", "count": count, "target": target_path}
+        assert body.kind == "modality"
+        assert (
+            body.operation is not None
+            and body.key is not None
+            and body.modality_id is not None
+        )
         if body.operation == "set":
-            count, target_path = param_set_value(
-                session, body.scope, body.key, body.value, node_addr, None
+            count, target_path = modality_config_set(
+                session, body.modality_id, body.key, body.value, node_addr, None
             )
         else:
-            count, target_path = param_unset(
-                session, body.scope, body.key, node_addr, None
+            count, target_path = modality_config_unset(
+                session, body.modality_id, body.key, node_addr, None
             )
         return {"status": "ok", "count": count, "target": target_path}
     except LensException as e:

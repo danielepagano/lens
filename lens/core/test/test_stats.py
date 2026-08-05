@@ -643,6 +643,25 @@ class TestStatsModalities(unittest.TestCase):
       result = get_stats(session)
       self.assertIn("unknown modality 'not_a_real_modality'", result.modality_warnings_at_cursor)
 
+  def test_effective_modalities_at_cursor_reflects_raw_fm_config(self) -> None:
+    from lens.core.pinning import set_modality, set_modality_config
+    from lens.core.storage import Storage
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, node = _make_project(root)
+      storage = Storage(root)
+      set_modality_config(node, "media_attach", "anchor", "amy!", storage)
+      set_modality(node, "speech_markup", False, storage)
+
+      result = get_stats(session)
+      self.assertEqual(
+        result.effective_modalities_at_cursor["media_attach"], {"anchor": "amy!"}
+      )
+      self.assertEqual(
+        result.effective_modalities_at_cursor["speech_markup"], {"enabled": False}
+      )
+
   def test_chat_session_includes_required_modalities(self) -> None:
     from lens.core.modalities import Modality, register_modality
     from lens.core.operators.chat import ChatOperator

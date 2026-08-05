@@ -16,6 +16,7 @@ from lens.core.operator import Operator
 from lens.core.operator_params import collect_merged_raw, effective_param_bindings_at_cursor
 from lens.core.operators import get_operator_class_for_name
 from lens.core.image.registry import list_image_backend_rows
+from lens.core.pinning import collect_modalities_fm
 from lens.core.project import (
     ProjectSession,
     get_selected_datasets,
@@ -46,6 +47,10 @@ def _empty_image_backends() -> list[dict[str, Any]]:
     return []
 
 
+def _empty_modalities_config() -> dict[str, dict[str, Any]]:
+    return {}
+
+
 @dataclass
 class StatsResult:
     kb_types: list[str]
@@ -73,6 +78,9 @@ class StatsResult:
     registered_modality_ids: list[str] = field(default_factory=list[str])
     modalities_at_cursor: list[str] = field(default_factory=list[str])
     modality_warnings_at_cursor: list[str] = field(default_factory=list[str])
+    effective_modalities_at_cursor: dict[str, dict[str, Any]] = field(
+        default_factory=_empty_modalities_config
+    )
     dataset_configs: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
     release_enabled: bool = False
     release_lens_repo_url: str = ""
@@ -183,6 +191,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     effective_params_at_cursor: dict[str, str] = {}
     modalities_at_cursor: list[str] = []
     modality_warnings_at_cursor: list[str] = []
+    effective_modalities_at_cursor: dict[str, dict[str, Any]] = {}
     if not is_dataset and cursor_addr is not None:
         node_addr = cursor_addr.node_only()
         try:
@@ -197,6 +206,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             effective_params_at_cursor = effective_param_bindings_at_cursor(
                 root, node, active
             )
+            effective_modalities_at_cursor = collect_modalities_fm(node)
             if node.key_path:
                 parent = NarrativeNode(
                     narrative_root=node.narrative_root,
@@ -269,6 +279,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         registered_modality_ids=registered_modality_ids,
         modalities_at_cursor=modalities_at_cursor,
         modality_warnings_at_cursor=modality_warnings_at_cursor,
+        effective_modalities_at_cursor=effective_modalities_at_cursor,
         dataset_configs=dataset_configs,
         release_enabled=release_cfg.enabled,
         release_lens_repo_url=release_cfg.lens_repo_url,
