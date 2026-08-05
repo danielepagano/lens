@@ -50,7 +50,7 @@ All project-specific routes are prefixed with `/{slug}`. Replace `{slug}` with t
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/{slug}/narrative/pin` | Pin KB ids, vars, or operator params on a node. `node` defaults to `/@cursor`. **KB:** `{"kind":"kb"` (optional), `"operation": "add"\|"remove"\|"block"\|"unblock", "ids": [...]}`. **Var:** `{"kind":"var", "operation": "set"\|"unset", "key": "...", "value": "..." }` (`value` required for `set`). **Param:** `{"kind":"param", "operation": "set"\|"unset", "scope": "global"\|"<slug>", "key": "...", "value": ... }` (`value` required for `set`). |
+| POST | `/{slug}/narrative/pin` | Pin KB ids, vars, operator params, or modality config on a node. `node` defaults to `/@cursor`. **KB:** `{"kind":"kb"` (optional), `"operation": "add"\|"remove"\|"block"\|"unblock", "ids": [...]}`. **Var:** `{"kind":"var", "operation": "set"\|"unset", "key": "...", "value": "..." }` (`value` required for `set`). **Param:** `{"kind":"param", "operation": "set"\|"unset", "scope": "global"\|"<slug>", "key": "...", "value": ... }` (`value` required for `set`). **Modality:** `{"kind":"modality", "operation": "set"\|"unset", "modality_id": "...", "key": "...", "value": ... }` (`value` required for `set`) — writes/clears one key in `modalities.<modality_id>` (see [configuration.md](../../docs/configuration.md#enabling-and-anchoring-front-matter); `key: "enabled"` is the on/off toggle, other keys are modality-specific, e.g. `media_attach`'s `anchor`). |
 
 ### Rewind
 

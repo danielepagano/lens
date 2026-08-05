@@ -188,6 +188,62 @@ api_key_env = "DEFINITELY_MISSING_SPEECH_VAR"
                 with self.assertRaises(SpeechError):
                     speech_registry.resolve(root)
 
+    def test_grammar_defaults_to_api_when_it_names_a_registered_grammar(self) -> None:
+        """No explicit `grammar =`: `api = "xai"` doubles as the grammar id
+        since a grammar named "xai" is registered. This doesn't turn
+        speech_markup on by itself -- that's still a separate FM opt-in."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_lens_toml(
+                root,
+                """
+[project]
+narrative = "x"
+
+[[speech]]
+api = "xai"
+api_key_env = "FAKE_SPEECH_KEY"
+""",
+            )
+            descriptor = speech_registry.load_descriptor(root)
+            self.assertEqual(descriptor.grammar, "xai")
+
+    def test_explicit_grammar_overrides_api_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_lens_toml(
+                root,
+                """
+[project]
+narrative = "x"
+
+[[speech]]
+api = "xai"
+api_key_env = "FAKE_SPEECH_KEY"
+grammar = "gemini"
+""",
+            )
+            descriptor = speech_registry.load_descriptor(root)
+            self.assertEqual(descriptor.grammar, "gemini")
+
+    def test_grammar_not_defaulted_when_api_has_no_matching_grammar(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_lens_toml(
+                root,
+                """
+[project]
+narrative = "x"
+
+[[speech]]
+api = "openrouter"
+api_key_env = "FAKE_SPEECH_KEY"
+model = "some-tts-model"
+""",
+            )
+            descriptor = speech_registry.load_descriptor(root)
+            self.assertIsNone(descriptor.grammar)
+
     def test_unknown_grammar_raises(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -9,9 +9,11 @@ from lens.core.pinning import (
     pin,
     remove_pin,
     remove_unpin,
+    set_modality_config,
     set_param,
     set_var,
     unpin,
+    unset_modality_config,
     unset_param,
     unset_var,
 )
@@ -262,4 +264,56 @@ def param_set_value(
         raise LensException(str(e)) from e
     storage = session.new_storage(owner=None)
     set_param(target, sc, key.strip(), val, storage)
+    return 1, target.path_str()
+
+
+def validate_modality_id(modality_id: str) -> None:
+    m = modality_id.strip()
+    if not m:
+        raise LensException("modality id cannot be empty")
+
+
+def validate_modality_key(key: str) -> None:
+    k = key.strip()
+    if not k:
+        raise LensException("modality config key cannot be empty")
+
+
+def modality_config_set(
+    session: ProjectSession,
+    modality_id: str,
+    key: str,
+    value: Any,
+    node_pos: str | None,
+    node_opt: str | None,
+) -> tuple[int, str]:
+    """Set one ``modalities.<modality_id>`` config key (e.g. ``key="enabled"`` to
+    toggle, or a modality-specific key like ``media_attach``'s ``anchor``)."""
+    validate_modality_id(modality_id)
+    validate_modality_key(key)
+    try:
+        target = resolve_node(session, node_pos or node_opt)
+    except (RuntimeError, ValueError) as e:
+        raise LensException(str(e)) from e
+    storage = session.new_storage(owner=None)
+    set_modality_config(target, modality_id.strip(), key.strip(), value, storage)
+    return 1, target.path_str()
+
+
+def modality_config_unset(
+    session: ProjectSession,
+    modality_id: str,
+    key: str,
+    node_pos: str | None,
+    node_opt: str | None,
+) -> tuple[int, str]:
+    """Remove one ``modalities.<modality_id>`` config key on this node."""
+    validate_modality_id(modality_id)
+    validate_modality_key(key)
+    try:
+        target = resolve_node(session, node_pos or node_opt)
+    except (RuntimeError, ValueError) as e:
+        raise LensException(str(e)) from e
+    storage = session.new_storage(owner=None)
+    unset_modality_config(target, modality_id.strip(), key.strip(), storage)
     return 1, target.path_str()

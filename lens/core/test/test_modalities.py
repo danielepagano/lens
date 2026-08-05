@@ -39,7 +39,12 @@ from lens.core.modalities.types import (
     ResolvedModalities,
 )
 from lens.core.operators.write import WriteOperator
-from lens.core.pinning import collect_modalities_fm, set_modality
+from lens.core.pinning import (
+    collect_modalities_fm,
+    modality_enabled,
+    set_modality_config,
+    unset_modality_config,
+)
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.core.workflow_runner import WorkflowRunner
@@ -286,7 +291,7 @@ class TestModalityResolution(_RegistryCleanTestCase):
         register_modality(_SpyDepModality())
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, SPY_MODALITY_ID, True, Storage(root))
+            set_modality_config(narrative, SPY_MODALITY_ID, "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertEqual(set(resolved.active_ids), {SPY_DEP_ID, SPY_MODALITY_ID})
             self.assertLess(
@@ -315,7 +320,7 @@ class TestModalityResolution(_RegistryCleanTestCase):
         register_modality(_DefaultBModality())
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, DEFAULT_B_ID, False, Storage(root))
+            set_modality_config(narrative, DEFAULT_B_ID, "enabled", False, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertIn(DEFAULT_A_ID, resolved.active_ids)
             self.assertNotIn(DEFAULT_B_ID, resolved.active_ids)
@@ -323,7 +328,7 @@ class TestModalityResolution(_RegistryCleanTestCase):
     def test_unknown_fm_modality_warns(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, "not_registered", True, Storage(root))
+            set_modality_config(narrative, "not_registered", "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertNotIn("not_registered", resolved.active_ids)
             self.assertTrue(any("not_registered" in w for w in resolved.warnings))
@@ -332,7 +337,7 @@ class TestModalityResolution(_RegistryCleanTestCase):
         register_modality(_GatedModality())
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, GATED_ID, True, Storage(root))
+            set_modality_config(narrative, GATED_ID, "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertNotIn(GATED_ID, resolved.active_ids)
             self.assertTrue(any(GATED_ID in w for w in resolved.warnings))
@@ -345,10 +350,64 @@ class TestModalityResolution(_RegistryCleanTestCase):
             scene_dir.mkdir()
             (scene_dir / "_node.md").write_text("# scene\n")
             scene = NarrativeNode(narrative_root=narrative.narrative_root, key_path=("scene",))
-            set_modality(narrative, "layered_flag", True, storage)
-            set_modality(scene, "layered_flag", False, storage)
+            set_modality_config(narrative, "layered_flag", "enabled", True, storage)
+            set_modality_config(scene, "layered_flag", "enabled", False, storage)
             merged = collect_modalities_fm(scene)
-            self.assertFalse(merged["layered_flag"])
+            self.assertFalse(merged["layered_flag"]["enabled"])
+
+    def test_modality_config_key_set_without_enabled_is_on_by_default(self) -> None:
+        """Setting a modality-specific key (e.g. media_attach's anchor) alone is
+        enough to switch it on — no separate boolean flag required."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            storage = Storage(root)
+            set_modality_config(narrative, "media_attach", "anchor", "amy!", storage)
+            merged = collect_modalities_fm(narrative)
+            self.assertEqual(merged["media_attach"], {"anchor": "amy!"})
+            self.assertTrue(modality_enabled(merged["media_attach"]))
+
+    def test_modality_config_merges_with_explicit_enabled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            storage = Storage(root)
+            set_modality_config(narrative, "media_attach", "anchor", "amy!", storage)
+            set_modality_config(narrative, "media_attach", "enabled", False, storage)
+            merged = collect_modalities_fm(narrative)
+            self.assertEqual(merged["media_attach"], {"anchor": "amy!", "enabled": False})
+            self.assertFalse(modality_enabled(merged["media_attach"]))
+
+    def test_child_node_can_rewrite_one_config_key_without_clobbering_others(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            storage = Storage(root)
+            scene_dir = narrative.narrative_root / "scene"
+            scene_dir.mkdir()
+            (scene_dir / "_node.md").write_text("# scene\n")
+            scene = NarrativeNode(narrative_root=narrative.narrative_root, key_path=("scene",))
+            set_modality_config(narrative, "media_attach", "enabled", True, storage)
+            set_modality_config(narrative, "media_attach", "anchor", "pajamas!", storage)
+            set_modality_config(scene, "media_attach", "anchor", "work!", storage)
+            merged = collect_modalities_fm(scene)
+            self.assertEqual(merged["media_attach"], {"enabled": True, "anchor": "work!"})
+
+    def test_unset_modality_config_key_clears_only_that_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            storage = Storage(root)
+            set_modality_config(narrative, "media_attach", "enabled", True, storage)
+            set_modality_config(narrative, "media_attach", "anchor", "amy!", storage)
+            unset_modality_config(narrative, "media_attach", "anchor", storage)
+            merged = collect_modalities_fm(narrative)
+            self.assertEqual(merged["media_attach"], {"enabled": True})
+
+    def test_unset_last_modality_config_key_drops_the_modality_entirely(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            storage = Storage(root)
+            set_modality_config(narrative, "media_attach", "anchor", "amy!", storage)
+            unset_modality_config(narrative, "media_attach", "anchor", storage)
+            merged = collect_modalities_fm(narrative)
+            self.assertNotIn("media_attach", merged)
 
 
 class TestModalityApply(_RegistryCleanTestCase):
@@ -375,7 +434,7 @@ class TestModalityApply(_RegistryCleanTestCase):
         register_modality(_CrawlMarkerModality())
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, CRAWL_MARKER_ID, True, Storage(root))
+            set_modality_config(narrative, CRAWL_MARKER_ID, "enabled", True, Storage(root))
             crawl_result, ctx, resolved = WriteOperator.crawl_with_modalities(
                 CrawlSpec.of(narrative, storage=Storage(root)),
                 {},
@@ -417,7 +476,7 @@ class TestModalityApply(_RegistryCleanTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             _add_kb(root, "person", "modalitypin", "Pinned by modality")
-            set_modality(narrative, CRAWL_MARKER_ID, True, Storage(root))
+            set_modality_config(narrative, CRAWL_MARKER_ID, "enabled", True, Storage(root))
             crawl_result, ctx, resolved = WriteOperator.crawl_with_modalities(
                 CrawlSpec.of(narrative, storage=Storage(root)),
                 {},
@@ -493,7 +552,7 @@ class TestRefineSpecCache(_RegistryCleanTestCase):
         register_modality(_RefineModality())
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, REFINE_MODALITY_ID, True, Storage(root))
+            set_modality_config(narrative, REFINE_MODALITY_ID, "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             ctx = ModalityContext(
                 session=ProjectSession(root, root),
@@ -531,7 +590,7 @@ class TestModalityPostRefineApply(unittest.IsolatedAsyncioTestCase, _RegistryCle
         register_modality(_PostOnlyModality())
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, "post_only_test", True, Storage(root))
+            set_modality_config(narrative, "post_only_test", "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             ctx = ModalityContext(
                 session=ProjectSession(root, root),
@@ -596,7 +655,7 @@ class TestModalityInlineIntegration(_SpyIntegrationTestCase):
     def test_write_fm_opt_in_calls_prompt_and_post_hooks(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, SPY_MODALITY_ID, True, Storage(root))
+            set_modality_config(narrative, SPY_MODALITY_ID, "enabled", True, Storage(root))
             asyncio.run(self._run_write(root, narrative))
             spy = self._spy_modality()
             self.assertGreaterEqual(spy.counts.prompt_addenda, 1)
@@ -648,7 +707,7 @@ class TestModalityInlineIntegration(_SpyIntegrationTestCase):
     def test_skip_workflow_post_avoids_post_hook_side_effect(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, SPY_MODALITY_ID, True, Storage(root))
+            set_modality_config(narrative, SPY_MODALITY_ID, "enabled", True, Storage(root))
             skip_sent = False
 
             async def on_event(payload: dict[str, object]) -> None:
@@ -682,7 +741,7 @@ class TestModalityInlineIntegration(_SpyIntegrationTestCase):
     def test_workflow_refine_calls_spy_and_persists_refined_text(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, SPY_MODALITY_ID, True, Storage(root))
+            set_modality_config(narrative, SPY_MODALITY_ID, "enabled", True, Storage(root))
 
             refined = GenerationArtifacts(
                 segments=[GenerationSegment("prose", "Spy refined.\n")]
@@ -722,7 +781,7 @@ class TestModalityInlineIntegration(_SpyIntegrationTestCase):
         register_modality(_RefineModality())
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, REFINE_MODALITY_ID, True, Storage(root))
+            set_modality_config(narrative, REFINE_MODALITY_ID, "enabled", True, Storage(root))
             skip_sent = False
 
             async def on_event(payload: dict[str, object]) -> None:

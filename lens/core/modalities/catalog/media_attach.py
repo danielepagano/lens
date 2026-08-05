@@ -1,7 +1,7 @@
 """Media attach modality: post-response facet classification and VN-style image attach.
 
 Selection loop (see issue #51): an ``anchor`` media search query (front matter
-``media_attach.anchor``) narrows a media library to a subject; any facet with
+``modalities.media_attach.anchor``) narrows a media library to a subject; any facet with
 more than one distinct value across the matches is undecided and offered to a
 small, fast classify LLM alongside the previous selection (hysteresis) and a
 little context. The chosen facet values are re-run against the anchor to pick
@@ -43,7 +43,7 @@ from lens.core.modalities.types import (
     RefinePassSpec,
 )
 from lens.core.mount_embed_strip import strip_standalone_lens_mount_attachment_lines
-from lens.core.pinning import collect_media_attach_fm
+from lens.core.pinning import collect_modalities_fm
 from lens.core.prompts import PromptStore
 from lens.core.speech.playback_sequence import parse_composite_line
 
@@ -200,7 +200,7 @@ class MediaAttachModality(Modality):
             return ctx
 
         config = MediaAttachConfig.from_project(ctx.project_root)
-        fm = collect_media_attach_fm(ctx.focus_node)
+        fm = collect_modalities_fm(ctx.focus_node).get(self.id, {})
         anchor_raw = fm.get("anchor")
         anchor = anchor_raw.strip() if isinstance(anchor_raw, str) and anchor_raw.strip() else None
 
@@ -248,7 +248,9 @@ class MediaAttachModality(Modality):
         if cache is None or not cache.mount_configured:
             return ModalityGateResult(active=False, reason="no mount_point configured in lens.toml")
         if not cache.anchor:
-            return ModalityGateResult(active=False, reason="no media_attach.anchor in front matter")
+            return ModalityGateResult(
+                active=False, reason="no modalities.media_attach.anchor in front matter"
+            )
         if cache.capacity_exceeded:
             return ModalityGateResult(active=False, reason="media search index is over capacity")
         if cache.vocabulary is None or cache.vocabulary.match_count == 0:

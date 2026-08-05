@@ -328,7 +328,7 @@ timeout_seconds  = 120
 | `api` | Yes | — | `xai` or `openrouter` |
 | `api_key_env` | Yes | — | Env var for API key |
 | `id` | No | `[default]` | Select with `lens media tts --model` |
-| `grammar` | No* | — | TTS tag grammar: `xai` or `gemini` (required for `speech_markup` modality; invalid ids fail at load) |
+| `grammar` | No* | `api`, if that names a registered grammar | TTS tag grammar: `xai` or `gemini` (required for `speech_markup` modality; invalid ids fail at load) |
 | `refine_llm_id` | No | — | LLM id for `workflow_refine:speech_markup`; defaults to operator LLM when unset |
 | `default_voice` | No | — | Voice when `--voice` omitted (xAI fallback: `eve`) |
 | `base_url` | No | provider default | API root |
@@ -338,7 +338,7 @@ timeout_seconds  = 120
 | `response_format` | No | `mp3` | OpenRouter: `mp3` or `pcm` |
 | `speed` | No | — | OpenRouter playback speed when supported |
 
-\*Set `grammar` on the `[[speech]]` block you use with the **`speech_markup`** modality (see below).
+\*`grammar` defaults to `api` when `api` itself names a registered grammar (e.g. `api = "xai"` needs no separate `grammar =`). Backends whose `api` doesn't double as a grammar id — `openrouter`, whatever model it fronts — still need `grammar` set explicitly. Either way, `speech_markup` itself stays opt-in via `modalities.speech_markup` on the node front matter; a resolvable grammar alone doesn't turn markup on.
 
 ### Speech markup modality (generation)
 
@@ -398,18 +398,19 @@ context_beats = 2       # preceding beats of prose sent as context to the classi
 
 ### Enabling and anchoring (front matter)
 
-Opt in on a node (or ancestor, merged root → cursor) and set the anchor query — a media search string (`word!` required, `key:value` metadata match, `"quoted phrase"`; see `lens/core/media/search.py`) that narrows the library to a subject:
+Every modality's front matter lives under `modalities.<id>`, as an object: `enabled` (defaults to `true` — the object being present at all is enough to opt in) plus whatever config keys that modality defines. `media_attach` defines one: `anchor`, a media search string (`word!` required, `key:value` metadata match, `"quoted phrase"`; see `lens/core/media/search.py`) that narrows the library to a subject. Set it on a node (or ancestor — configs merge key-by-key root → cursor):
 
 ```yaml
 ---
-media_attach:
-  anchor: "image! foreground! amy! home! pajamas!"
 modalities:
-  media_attach: true
+  media_attach:
+    anchor: "image! foreground! amy! home! pajamas!"
 ---
 ```
 
-- The anchor is mutable mid-session: rewrite it on the cursor node (e.g. `pajamas!` → `work!` after a costume change) and the new baseline applies to future beats only — earlier attachments are untouched, since resolution walks root → cursor and the deepest node wins.
+A bare `modalities.<id>: true` / `false` is still shorthand for `{enabled: true/false}` on modalities (most of them) that take no other config.
+
+- The anchor is mutable mid-session: rewrite it on the cursor node (e.g. `pajamas!` → `work!` after a costume change) and the new baseline applies to future beats only — earlier attachments are untouched, since resolution walks root → cursor and the deepest node wins per config key.
 - Any sidecar facet with more than one distinct value across the anchor's matches (e.g. `pose`, `expression`) is undecided and offered to the classify LLM as a closed label set; a facet with only one value across the matches is already pinned by the anchor and needs no decision. If the anchor pins a single image outright (no undecided facets), no classify call is made and no attach happens — treat that as a manual attach.
 - The classify pass sees the current selection and is asked to match or beat it, which gives hysteresis (less flicker) between beats. When the pick comes back identical to the current selection, nothing is re-attached — re-emitting the same image and facets annotation would just be noise with no visual change.
 - The winning image's chosen facet values are recorded immediately above its embed as a `[facets: emotion=happy pose=standing]: #` annotation — a markdown comment stripped from LLM context (unlike an HTML comment), so it never reaches the main model and cannot be mistaken for an operator tag or move the cursor.

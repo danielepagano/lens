@@ -22,7 +22,7 @@ from lens.core.narrative import NarrativeNode
 from lens.core.operators.chat import ChatOperator
 from lens.core.operators.design import DesignOperator
 from lens.core.operators.write import WriteOperator
-from lens.core.pinning import set_modality
+from lens.core.pinning import set_modality_config
 from lens.core.prompts import PromptStore
 from lens.core.storage import Storage
 from lens.rpg.operators.play import PlayOperator
@@ -89,7 +89,7 @@ class TestCatalogModalityResolution(unittest.TestCase):
     def test_fm_opt_out_md_html_comments(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, "md_html_comments", False, Storage(root))
+            set_modality_config(narrative, "md_html_comments", "enabled", False, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertIn("markdown_fragment", resolved.active_ids)
             self.assertNotIn("md_html_comments", resolved.active_ids)

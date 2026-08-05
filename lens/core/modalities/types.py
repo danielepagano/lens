@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 from collections.abc import Callable
@@ -102,6 +102,13 @@ class ModalityContext:
 class ResolvedModalities:
     active_ids: tuple[str, ...]
     warnings: tuple[str, ...] = ()
+    resolution: dict[str, ModalityGateResult] = field(
+        default_factory=dict[str, ModalityGateResult]
+    )
+    """Per-candidate gate outcome (id -> active/reason), including gated-off and
+    unknown ids that never made it into ``active_ids``. Superset of the info in
+    ``warnings``, structured for callers (e.g. stats) that need it per-id instead
+    of as flat strings."""
 
     def active_id_set(self) -> frozenset[str]:
         return frozenset(self.active_ids)

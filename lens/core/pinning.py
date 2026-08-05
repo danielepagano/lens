@@ -15,7 +15,6 @@ KB_PIN = "kb_pin"
 KB_UNPIN = "kb_unpin"
 TTS_CACHED = "tts_cached"
 MODALITIES = "modalities"
-MEDIA_ATTACH = "media_attach"
 
 
 def _render_front_matter(data: dict[str, Any]) -> str:
@@ -263,11 +262,42 @@ def _coerce_modality_flag(value: Any) -> bool | None:
     return None
 
 
-def collect_modalities_fm(node: NarrativeNode) -> dict[str, bool]:
-    """Merged ``modalities:`` flags from root → *node* (later nodes override)."""
+def _coerce_modality_config(value: Any) -> dict[str, Any] | None:
+    """Normalize one ``modalities.<id>`` FM value to a config dict.
+
+    A mapping is used as-is (string-keyed, non-empty keys only). A bare
+    ``true``/``false`` (or boolean-ish string) is shorthand for
+    ``{"enabled": <flag>}`` — the whole point being that a modality with no
+    config of its own can still be toggled with a plain flag, while one that
+    needs config (e.g. ``media_attach``'s ``anchor``) keeps everything about
+    it, including whether it's on, in the same object instead of a second,
+    separately-shaped top-level FM block.
+    """
+    if isinstance(value, dict):
+        rd = cast(dict[Any, Any], value)
+        out: dict[str, Any] = {}
+        for k_raw, v in rd.items():
+            k = str(k_raw).strip()
+            if k:
+                out[k] = v
+        return out
+    flag = _coerce_modality_flag(value)
+    if flag is not None:
+        return {"enabled": flag}
+    return None
+
+
+def collect_modalities_fm(node: NarrativeNode) -> dict[str, dict[str, Any]]:
+    """Merged ``modalities.<id>`` config from root → *node*.
+
+    Each modality's config is its own object; ancestors merge key-by-key
+    *within* each modality's config (deeper node wins per key, not per
+    modality) — this is what lets a leaf node flip ``enabled`` or set e.g.
+    ``anchor`` without clobbering config set higher up the chain.
+    """
     from lens.core.context import ancestor_chain
 
-    merged: dict[str, bool] = {}
+    merged: dict[str, dict[str, Any]] = {}
     for anc in ancestor_chain(node):
         if not anc.exists():
             continue
@@ -279,92 +309,67 @@ def collect_modalities_fm(node: NarrativeNode) -> dict[str, bool]:
             key = str(key_raw).strip()
             if not key:
                 continue
-            flag = _coerce_modality_flag(val_raw)
-            if flag is not None:
-                merged[key] = flag
-    return merged
-
-
-def collect_media_attach_fm(node: NarrativeNode) -> dict[str, Any]:
-    """Merged ``media_attach:`` sub-keys from root → *node* (deeper node wins).
-
-    This is what makes the anchor mutable mid-run: rewriting the cursor node's
-    front matter shifts the baseline for future beats without touching earlier
-    ones, since resolution always walks root → cursor and lets the deepest
-    ancestor's value win.
-    """
-    from lens.core.context import ancestor_chain
-
-    merged: dict[str, Any] = {}
-    for anc in ancestor_chain(node):
-        if not anc.exists():
-            continue
-        raw = anc.front_matter().get(MEDIA_ATTACH)
-        if not isinstance(raw, dict):
-            continue
-        rd = cast(dict[Any, Any], raw)
-        for key_raw, value in rd.items():
-            key = str(key_raw).strip()
-            if not key:
+            cfg = _coerce_modality_config(val_raw)
+            if cfg is None:
                 continue
-            merged[key] = value
+            bucket = merged.setdefault(key, {})
+            bucket.update(cfg)
     return merged
 
 
-def set_media_attach(node: NarrativeNode, key: str, value: str, storage: Storage) -> None:
-    """Set (or, given an empty value, clear) one key in top-level ``media_attach``.
+def modality_enabled(config: dict[str, Any]) -> bool:
+    """Whether a merged modality config (see ``collect_modalities_fm``) is switched on.
 
-    An empty *value* removes *key* rather than persisting an empty string, so
-    that clearing the last sub-key (e.g. the anchor) drops the whole
-    ``media_attach`` block instead of leaving ``media_attach: {key: ''}`` in
-    front matter — ``_render_front_matter`` only filters falsy *top-level*
-    keys, not nested ones.
+    Presence of *any* config for a modality implies it's on — setting e.g.
+    ``media_attach.anchor`` alone is enough — since ``enabled: false`` is the
+    explicit, and only, opt-out.
     """
-
-    def _set(d: dict[str, Any]) -> dict[str, Any]:
-        out = dict(d)
-        raw = out.get(MEDIA_ATTACH)
-        media_attach: dict[str, str] = {}
-        if isinstance(raw, dict):
-            rd = cast(dict[Any, Any], raw)
-            for k_raw, v_raw in rd.items():
-                k = str(k_raw).strip()
-                if not k:
-                    continue
-                media_attach[k] = v_raw if isinstance(v_raw, str) else str(v_raw)
-        if value:
-            media_attach[key] = value
-        else:
-            media_attach.pop(key, None)
-        if media_attach:
-            out[MEDIA_ATTACH] = media_attach
-        else:
-            out.pop(MEDIA_ATTACH, None)
-        return out
-
-    _mutate_front_matter(node, storage, _set)
+    flag = _coerce_modality_flag(config.get("enabled", True))
+    return flag if flag is not None else True
 
 
-def set_modality(
-    node: NarrativeNode, key: str, value: bool, storage: Storage
+def _set_modality_key(
+    node: NarrativeNode, modality_id: str, key: str, value: Any, storage: Storage
 ) -> None:
-    """Set one key in top-level ``modalities``."""
-
     def _set(d: dict[str, Any]) -> dict[str, Any]:
         out = dict(d)
         raw = out.get(MODALITIES)
-        modalities: dict[str, bool] = {}
+        modalities: dict[str, Any] = {}
         if isinstance(raw, dict):
             rd = cast(dict[Any, Any], raw)
             for k_raw, v_raw in rd.items():
                 k = str(k_raw).strip()
-                if not k:
-                    continue
-                flag = _coerce_modality_flag(v_raw)
-                if flag is not None:
-                    modalities[k] = flag
-        modalities[key] = value
-        out[MODALITIES] = modalities
+                if k:
+                    modalities[k] = v_raw
+        cfg = dict(_coerce_modality_config(modalities.get(modality_id)) or {})
+        if value is None or value == "":
+            cfg.pop(key, None)
+        else:
+            cfg[key] = value
+        if cfg:
+            modalities[modality_id] = cfg
+        else:
+            modalities.pop(modality_id, None)
+        if modalities:
+            out[MODALITIES] = modalities
+        else:
+            out.pop(MODALITIES, None)
         return out
 
     _mutate_front_matter(node, storage, _set)
+
+
+def set_modality_config(
+    node: NarrativeNode, modality_id: str, key: str, value: Any, storage: Storage
+) -> None:
+    """Set one modality-specific config key (e.g. ``media_attach``'s ``anchor``)
+    within ``modalities.<modality_id>``, alongside ``enabled``/other keys already
+    set there. An empty string clears *key* rather than persisting it — clearing
+    the last key (including ``enabled``) drops the whole ``modalities.<modality_id>``
+    entry."""
+    _set_modality_key(node, modality_id, key, value, storage)
+
+
+def unset_modality_config(node: NarrativeNode, modality_id: str, key: str, storage: Storage) -> None:
+    """Remove *key* from ``modalities.<modality_id>`` on this node."""
+    _set_modality_key(node, modality_id, key, None, storage)
