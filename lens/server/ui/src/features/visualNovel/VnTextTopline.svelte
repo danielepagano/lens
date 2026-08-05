@@ -18,6 +18,7 @@
     chunkId?: string
     ttsCached?: boolean
     playbackTtsEnabled?: boolean
+    autoVoiceEligible?: boolean
     itemIndex?: number
     onTtsEnded?: (() => void) | undefined
     onToggleCollapsed?: (() => void) | undefined
@@ -34,6 +35,7 @@
     chunkId = '',
     ttsCached = undefined,
     playbackTtsEnabled = false,
+    autoVoiceEligible = true,
     itemIndex = 0,
     onTtsEnded = undefined,
     onToggleCollapsed = undefined,
@@ -64,6 +66,7 @@
           {chunkId}
           {ttsCached}
           ttsEnabled={playbackTtsEnabled}
+          {autoVoiceEligible}
           {itemIndex}
           {vnTts}
           {onTtsEnded}

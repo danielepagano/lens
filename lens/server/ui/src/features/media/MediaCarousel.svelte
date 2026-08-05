@@ -11,11 +11,13 @@
   import MediaSearchResultsList from './MediaSearchResultsList.svelte'
   import MediaStrip from './MediaStrip.svelte'
   import MediaMetadataPanel from './MediaMetadataPanel.svelte'
+  import MediaAnchorBanner from './MediaAnchorBanner.svelte'
   import { dirnameOfPath, requiredKeywordsForDir } from './mediaSearchHandlers'
   import { MediaSearchState } from './mediaSearchState.svelte'
   import {
     attachFromCarousel,
     chromakeyFromCarousel,
+    confirmAnchorFromCarousel,
     confirmRenameInCarousel,
     deleteFromCarousel,
     downloadFromCarousel,
@@ -115,7 +117,9 @@
           ? 'Replace Media'
           : mode === 'chromakey'
             ? 'Chromakey Source'
-            : 'Manage Media',
+            : mode === 'anchor'
+              ? 'Set Auto-Attach Anchor'
+              : 'Manage Media',
   )
 
   let lastRequest: MediaCarouselRequest | null = null
@@ -302,6 +306,9 @@
           <button type="button" onclick={() => (pendingLayer = null)}>Cancel</button>
         </div>
       {/if}
+      {#if mode === 'anchor' && selectedPath === null}
+        <MediaAnchorBanner onConfirm={() => void confirmAnchorFromCarousel(handlerCtx(), search.query)} />
+      {/if}
       {#if loading}
         <div class="carousel-loading">Loading…</div>
       {:else if showingSearchContent}
@@ -412,6 +419,11 @@
           onClear={() => search.clear()}
           onClose={closeSearch}
         />
+        {#if mode === 'anchor'}
+          <p class="carousel-anchor-hint">
+            <code>facets!</code> is always required for auto-attach matches, whether or not it's typed here.
+          </p>
+        {/if}
       {/if}
 
       <MediaMetadataPanel
@@ -463,5 +475,12 @@
     font-size: 0.75rem !important;
     padding: 0.2rem 0.5rem !important;
     min-height: 28px !important;
+  }
+  .carousel-anchor-hint {
+    padding: 0 0.9rem 0.5rem 0.9rem;
+    margin: 0;
+    font-size: 0.75rem;
+    opacity: 0.7;
+    flex-shrink: 0;
   }
 </style>

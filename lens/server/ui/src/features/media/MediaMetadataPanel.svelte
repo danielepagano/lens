@@ -114,9 +114,20 @@
   function removeField(id: string) {
     rows = removeRow(rows, id)
   }
+  // `facets` isn't reserved like `composite` (no dedicated widget), but an
+  // empty fresh row picking it from the datalist should still default to a
+  // `kv` row — that's the shape the media_attach anchor matcher expects.
   function setFieldKey(id: string, key: string) {
-    rows = mapRow(rows, id, (r) => ({ ...r, key }))
+    rows = mapRow(rows, id, (r) => {
+      const next = { ...r, key }
+      if (key.trim() === 'facets' && r.kind === 'text' && r.text.trim() === '') {
+        return resetRowForKind(next, 'kv')
+      }
+      return next
+    })
   }
+
+  const suggestFacetsKey = $derived(!rows.some((r) => r.key.trim() === 'facets'))
   function setFieldText(id: string, text: string) {
     rows = mapRow(rows, id, (r) => ({ ...r, text }))
   }
@@ -203,6 +214,12 @@
           </div>
         {/if}
 
+        {#if suggestFacetsKey}
+          <datalist id="meta-key-suggestions">
+            <option value="facets"></option>
+          </datalist>
+        {/if}
+
         <div class="meta-grid">
           {#each rows as row (row.id)}
             <div class="meta-field">
@@ -213,6 +230,7 @@
                   value={row.key}
                   placeholder="key"
                   aria-label="Field key"
+                  list={suggestFacetsKey ? 'meta-key-suggestions' : undefined}
                   oninput={(e) => setFieldKey(row.id, (e.currentTarget as HTMLInputElement).value)}
                 />
                 <select

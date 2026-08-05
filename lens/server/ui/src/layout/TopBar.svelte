@@ -13,6 +13,7 @@
   import { currentProject } from '../stores/project'
   import { get } from 'svelte/store'
   import HamburgerIcon from '../components/icons/HamburgerIcon.svelte'
+  import SceneModesDialog from './SceneModesDialog.svelte'
   import { parsedHash } from '../stores/parsedHash'
   import {
     vnModeFromParsed,
@@ -28,8 +29,6 @@
   } from '../utils/vnNavigate'
   import { vnCursorCliSlotEligible } from '../utils/vnCursorCli'
   import { navigateVnLogicalStep, vnLogicalStepCount } from '../utils/vnPlaybackNav'
-  import type { VnTtsSettings } from '../utils/vnTypes'
-  import { readVnSession, writeVnSession } from '../utils/vnSessionStorage'
   import ReleaseNotification from '../features/release/ReleaseNotification.svelte'
 
   let { navigate }: { navigate?: (addr: string) => Promise<void> } = $props()
@@ -53,7 +52,6 @@
       ? resolveVisualNovelIndex($parsedHash, $currentProject, $currentAddress)
       : 0
   )
-  const vnTts = $derived(vnActive ? resolveVisualNovelTtsSettings($parsedHash) : null)
   const vnProgressDenom = $derived(vnStepCount)
   const vnProgressNum = $derived(vnProgressDenom > 0 ? Math.min(vnIx + 1, vnProgressDenom) : 0)
   const vnPrevDisabled = $derived(
@@ -65,44 +63,7 @@
   const vnLastIx = $derived(vnStepCount > 0 ? vnStepCount - 1 : 0)
   const vnLastDisabled = $derived(vnNavItems.length < 1 || vnIx === vnLastIx)
 
-  function applyVnTts(next: VnTtsSettings) {
-    const slug = get(currentProject)
-    const addr = get(currentAddress)
-    if (!slug || !addr) return
-    const ix = resolveVisualNovelIndex(get(parsedHash), slug, addr)
-    setVisualNovelHash(slug, addr, ix, next)
-    const prev = readVnSession()
-    if (prev?.projectSlug === slug && prev?.nodeAddress === addr) {
-      writeVnSession({
-        version: 2,
-        projectSlug: slug,
-        nodeAddress: addr,
-        logicalStep: ix,
-        settings: { ...next },
-      })
-    }
-  }
-
-  function toggleSpeak() {
-    const cur = resolveVisualNovelTtsSettings(get(parsedHash))
-    if (cur.speak) {
-      applyVnTts({ speak: false, autoAdvance: false, renderNew: false })
-    } else {
-      applyVnTts({ ...cur, speak: true })
-    }
-  }
-
-  function toggleAutoAdvance() {
-    const cur = resolveVisualNovelTtsSettings(get(parsedHash))
-    if (!cur.speak) return
-    applyVnTts({ ...cur, autoAdvance: !cur.autoAdvance })
-  }
-
-  function toggleRenderNew() {
-    const cur = resolveVisualNovelTtsSettings(get(parsedHash))
-    if (!cur.speak) return
-    applyVnTts({ ...cur, renderNew: !cur.renderNew })
-  }
+  let modesDialogOpen = $state(false)
 
   function toggleKb() {
     if (get(kbPanelOpen)) {
@@ -247,58 +208,15 @@
       disabled={vnLastDisabled}
       onclick={vnLast}>»</button
     >
-    {#if $stats?.tts_available && vnTts}
+    {#if $stats?.tts_available || $stats?.has_mount}
       <button
         type="button"
-        class={['mode-btn', 'vn-tts-toggle', { active: vnTts.speak }]}
-        aria-pressed={vnTts.speak}
-        aria-label="Text-to-speech in Scene"
-        onclick={toggleSpeak}
-      >TTS</button
-      >
-      {#if vnTts.speak}
-        <button
-          type="button"
-          class={['mode-btn', 'vn-tts-toggle', 'vn-tts-icon-btn', { active: vnTts.autoAdvance }]}
-          aria-pressed={vnTts.autoAdvance}
-          aria-label="Auto-advance when speech ends"
-          title="Auto-advance when speech ends"
-          onclick={toggleAutoAdvance}
-        >
-          <svg class="vn-tts-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="currentColor" d="M5 5v14l8.5-7L5 5zm9 0v14l8.5-7L14 5z" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          class={[
-            'mode-btn',
-            'vn-tts-toggle',
-            'vn-tts-icon-btn',
-            'vn-tts-record-btn',
-            { active: vnTts.renderNew },
-          ]}
-          aria-pressed={vnTts.renderNew}
-          aria-label="Generate speech for uncached lines and pre-render the next chunk"
-          title="Generate speech for uncached lines and pre-render the next chunk"
-          onclick={toggleRenderNew}
-        >
-          <svg class="vn-tts-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
-            {#if vnTts.renderNew}
-              <circle cx="12" cy="12" r="6.5" fill="currentColor" />
-            {:else}
-              <circle
-                cx="12"
-                cy="12"
-                r="6.25"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              />
-            {/if}
-          </svg>
-        </button>
-      {/if}
+        class="mode-btn scene-modes-btn"
+        aria-label="Scene modes"
+        title="Scene modes"
+        onclick={() => (modesDialogOpen = true)}
+      >Modes</button>
+      <SceneModesDialog open={modesDialogOpen} onClose={() => (modesDialogOpen = false)} />
     {/if}
     <button type="button" class="vn-exit-btn" aria-label="Exit scene mode" onclick={vnExit}>✕</button>
   {:else}
@@ -362,50 +280,10 @@
     flex-shrink: 0;
   }
 
-  .vn-tts-toggle {
+  .scene-modes-btn {
     flex-shrink: 0;
-    font-size: 0.72rem;
+    font-size: 1rem;
     padding: 0.12rem 0.4rem;
-  }
-
-  .vn-tts-icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.18rem;
-    min-width: 1.85rem;
-    min-height: 1.65rem;
-    line-height: 0;
-  }
-
-  .vn-tts-icon-svg {
-    width: 1.05rem;
-    height: 1.05rem;
-    display: block;
-  }
-
-  .vn-tts-record-btn {
-    color: #e84855;
-    border-color: rgba(232, 72, 85, 0.55);
-  }
-
-  .vn-tts-record-btn:not(.active) {
-    background: rgba(232, 72, 85, 0.12);
-  }
-
-  .vn-tts-record-btn.active {
-    background: rgba(232, 72, 85, 0.38);
-    border-color: #e84855;
-    color: #ff6b76;
-  }
-
-  .vn-tts-record-btn:not(.active):hover {
-    background: rgba(232, 72, 85, 0.2);
-    color: #ff5c6a;
-  }
-
-  .vn-tts-record-btn.active:hover {
-    background: rgba(232, 72, 85, 0.48);
   }
 
   .vn-exit-btn {

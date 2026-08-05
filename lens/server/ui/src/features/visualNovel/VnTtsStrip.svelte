@@ -10,6 +10,7 @@
   } from '../../services/api'
   import type { VnTtsSettings } from '../../utils/vnTypes'
   import { markVnPlaybackChunkTtsCached, vnPlayback } from '../../stores/visualNovel'
+  import { isAttributedDialogueLine } from '../../utils/vnAttribution'
 
   type Props = {
     nodeAddress: string
@@ -17,6 +18,9 @@
     chunkId: string
     ttsCached: boolean | undefined
     ttsEnabled: boolean
+    /** False for narration and user-authored lines — auto-generation (renderNew) skips
+     *  those and voices only the companion's attributed dialogue; manual play never skips. */
+    autoVoiceEligible?: boolean
     itemIndex?: number
     vnTts: VnTtsSettings
     onTtsEnded?: (() => void) | undefined
@@ -27,6 +31,7 @@
     chunkId,
     ttsCached,
     ttsEnabled,
+    autoVoiceEligible = true,
     itemIndex = 0,
     vnTts,
     onTtsEnded,
@@ -70,7 +75,7 @@
     if (!data) return
     const next = nextTextChunkInItems(data.items, itemIndex)
     if (!next || next.tts_cached === true) return
-    if (next.ai_gen === false) return
+    if (next.ai_gen === false || !isAttributedDialogueLine(next.text)) return
     markVnPlaybackChunkTtsCached(next.id)
     try {
       await postTtsRender(nodeAddress, { line: next.line, chunk_id: next.id })
@@ -127,13 +132,13 @@
 
   async function maybeAutoPlay() {
     if (!ttsEnabled || !nodeAddress || !vnTts.speak) return
-    if (!vnTts.renderNew && ttsCached === false) return
+    if (ttsCached === false && (!vnTts.renderNew || !autoVoiceEligible)) return
     await loadAndPlay()
   }
 
   async function kickAutoplayForCurrentChunk() {
     if (!ttsEnabled || !nodeAddress || !chunkId || !vnTts.speak || !vnTts.autoAdvance) return
-    if (!vnTts.renderNew && ttsCached === false) return
+    if (ttsCached === false && (!vnTts.renderNew || !autoVoiceEligible)) return
     if (playing) return
 
     if (!objectUrl) {

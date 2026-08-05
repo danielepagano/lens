@@ -143,6 +143,20 @@ export interface Stats {
   dataset_configs: Record<string, Record<string, unknown>>
   /** Release system status (null when viewing a dataset or release not enabled). */
   release: ReleaseStats | null
+  /**
+   * One entry per modality that's either configured in front matter at the
+   * cursor (root → leaf merge) or was a resolution candidate. `config` is
+   * the raw merged front-matter object; `active`/`reason` are the fully
+   * gated resolved state. A modality with no front-matter entry anywhere in
+   * the ancestor chain is simply absent from this dict.
+   */
+  modalities_at_cursor: Record<string, ModalityAtCursor>
+}
+
+export interface ModalityAtCursor {
+  config: Record<string, unknown>
+  active: boolean
+  reason?: string
 }
 
 export interface ReleaseStats {
@@ -1030,6 +1044,14 @@ export type NarrativePinBody =
       kind: 'param'
       operation: 'set' | 'unset'
       scope: string
+      key: string
+      value?: string | number | boolean | null
+      node?: string | null
+    }
+  | {
+      kind: 'modality'
+      operation: 'set' | 'unset'
+      modality_id: string
       key: string
       value?: string | number | boolean | null
       node?: string | null

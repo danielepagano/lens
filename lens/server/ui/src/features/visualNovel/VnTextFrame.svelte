@@ -46,6 +46,12 @@
   }: Props = $props()
 
   let parsedSelf = $derived(parseAttributedPlaybackText(text, quotePillHslVars))
+  // Auto-generate (renderNew) is meant to voice the companion, not every AI-written
+  // word: `aiGen` alone also covers narration prose written in the same operator
+  // turn as the companion's line, and `with_line_mode: direct` means the other
+  // party's attributed line is aiGen=false anyway. Restricting to attributed
+  // dialogue lines is what actually narrows it to "the companion speaks."
+  let autoVoiceEligible = $derived(aiGen && parsedSelf !== null)
   let parsed = $derived(
     parsedSelf ??
       (lineAttribution
@@ -84,6 +90,7 @@
     {chunkId}
     {ttsCached}
     {playbackTtsEnabled}
+    {autoVoiceEligible}
     {itemIndex}
     {onTtsEnded}
     onToggleCollapsed={onToggleCollapsed}

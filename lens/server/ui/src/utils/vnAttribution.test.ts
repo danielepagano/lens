@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { PlaybackItem } from '../services/api'
-import { buildLineAttributionByLine, parseAttributedPlaybackText } from './vnAttribution'
+import {
+  buildLineAttributionByLine,
+  isAttributedDialogueLine,
+  parseAttributedPlaybackText,
+} from './vnAttribution'
 
 const mockQuote = (_label: string) => ({ accent: '10 20% 30%', border: '10 20% 40%' })
 
@@ -23,5 +27,19 @@ describe('buildLineAttributionByLine', () => {
     ] satisfies PlaybackItem[]
     const byLine = buildLineAttributionByLine(items, mockQuote)
     expect(byLine.has(2)).toBe(false)
+  })
+})
+
+describe('isAttributedDialogueLine', () => {
+  it('is true for a companion speaker line', () => {
+    expect(isAttributedDialogueLine('> [Amy] Hey you.')).toBe(true)
+  })
+
+  it('is false for narration prose, even multi-line', () => {
+    expect(isAttributedDialogueLine('The afternoon light is low and golden.')).toBe(false)
+  })
+
+  it('only inspects the first line of a chunk', () => {
+    expect(isAttributedDialogueLine('Plain lead-in.\n> [Amy] trailing')).toBe(false)
   })
 })
