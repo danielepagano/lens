@@ -77,6 +77,13 @@ class SpeechMarkupCache:
 class MediaAttachCache:
     config: MediaAttachConfig
     anchor: str | None
+    """Raw anchor as configured in front matter -- for display and for the
+    "did the user set anything at all" gate check. Never used to run a
+    search directly; see ``search_anchor``."""
+    search_anchor: str | None
+    """``anchor`` with the hard-coded ``facets!`` term appended (see
+    ``media_attach._faceted_query``) -- what every actual search this
+    modality runs is executed against."""
     mount_configured: bool
     vocabulary: FacetVocabulary | None
     capacity_exceeded: bool

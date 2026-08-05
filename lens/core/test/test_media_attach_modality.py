@@ -167,6 +167,56 @@ class TestGates(_RegistryCleanTestCase):
             gate = mod.gates(ctx)
             self.assertTrue(gate.active)
 
+    def test_matches_with_no_facets_at_all_are_excluded(self) -> None:
+        """The hard-coded ``facets!`` term (see module docstring) means media
+        with no ``facets`` metadata can never count as a match, even though
+        the anchor alone would find it -- there's nothing to ever decide
+        between, so it must not silently look "active"."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            svc = MediaService.for_project(root)
+            assert svc is not None
+            _put(svc, "amy.jpg")  # no facets metadata
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
+            mod = MediaAttachModality()
+            ctx = mod.prepare_context(_ctx(root, node))
+            gate = mod.gates(ctx)
+            self.assertFalse(gate.active)
+            self.assertEqual(gate.reason, "anchor matches no media")
+
+    def test_multiple_matches_with_identical_facets_gates_off(self) -> None:
+        """Two+ matches that are all properly faceted but agree on every
+        value: the facets! requirement can't catch this (both are faceted),
+        but there's still nothing to ever pick between."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            svc = MediaService.for_project(root)
+            assert svc is not None
+            _put(svc, "amy_1.jpg", {"facets": {"emotion": "happy"}})
+            _put(svc, "amy_2.jpg", {"facets": {"emotion": "happy"}})
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
+            mod = MediaAttachModality()
+            ctx = mod.prepare_context(_ctx(root, node))
+            gate = mod.gates(ctx)
+            self.assertFalse(gate.active)
+            self.assertEqual(
+                gate.reason, "anchor matches 2 images but none differ on any facet"
+            )
+
+    def test_hand_typed_facets_term_in_anchor_is_harmless(self) -> None:
+        """A user (or a future UI) typing `facets!` into the anchor themselves
+        doesn't double-count or break matching -- required terms are AND'd."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            svc = MediaService.for_project(root)
+            assert svc is not None
+            _put(svc, "amy.jpg", {"facets": {"emotion": "happy"}})
+            set_modality_config(node, "media_attach", "anchor", "facets! amy!", Storage(root))
+            mod = MediaAttachModality()
+            ctx = mod.prepare_context(_ctx(root, node))
+            gate = mod.gates(ctx)
+            self.assertTrue(gate.active)
+
 
 # ---------------------------------------------------------------------------
 # workflow_refine_pass: built vs declined
@@ -207,6 +257,18 @@ class TestRefineSpec(_RegistryCleanTestCase):
     def test_declines_without_mount(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, node = _make_project(_init_repo(Path(tmp)), with_mount=False)
+            mod = MediaAttachModality()
+            ctx = mod.prepare_context(_ctx(root, node))
+            spec = mod.workflow_refine_pass(ctx, "some prose")
+            self.assertIsNone(spec)
+
+    def test_declines_when_matches_have_no_facets_at_all(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            svc = MediaService.for_project(root)
+            assert svc is not None
+            _put(svc, "amy.jpg")  # no facets metadata
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             spec = mod.workflow_refine_pass(ctx, "some prose")

@@ -10,6 +10,17 @@ manual VN attach would go — with the chosen facets recorded immediately above
 the embed as a ``[facets: ...]: #`` annotation (see ``lens.core.media.facets``
 for why that form and not an HTML comment).
 
+The whole loop only has something to do when at least one facet varies across
+the anchor's matches — a match set with no ``facets`` metadata at all can
+never produce a decision. Rather than leave that to the front-matter anchor
+(easy to configure without and get a silent no-op), every anchor search this
+modality runs is executed with a hard-coded, non-optional ``facets!`` term
+appended (see ``_faceted_query`` below) — front matter never needs to specify
+it, and cannot omit it. That still leaves one no-op case a required-key term
+can't rule out: several matches that all carry facets, but with identical
+values across the board (nothing actually varies) — ``gates()`` calls that
+out with its own reason rather than reporting active with nothing to do.
+
 The main generation model never sees any of this: ``prompt_addenda`` is
 deliberately empty, and the facet vocabulary reaches the classify model only
 through its own isolated ``RefinePassSpec`` instruction.
@@ -50,6 +61,22 @@ from lens.core.speech.playback_sequence import parse_composite_line
 _log = logging.getLogger(__name__)
 
 _SEARCH_PAGE_LIMIT = 20  # mirrors lens.core.media.search.PAGE_SIZE
+
+_FACETS_REQUIRED_TERM = "facets!"
+
+
+def _faceted_query(anchor: str) -> str:
+    """Anchor query with a hard-coded, non-optional ``facets!`` term appended.
+
+    Every search this modality runs goes through here rather than trusting
+    the front-matter anchor to include it: a match set with no ``facets``
+    metadata at all can never produce a decision (see module docstring), and
+    that's worth ruling out at the query level rather than a silent no-op
+    several steps downstream. Front matter never needs to spell this out,
+    and duplicating it there (or in a hand-typed anchor) is harmless --
+    required terms are AND'd, so a repeated one is a no-op.
+    """
+    return f"{anchor} {_FACETS_REQUIRED_TERM}"
 
 
 def _read_node_text(ctx: ModalityContext) -> str:
@@ -203,6 +230,7 @@ class MediaAttachModality(Modality):
         fm = collect_modalities_fm(ctx.focus_node).get(self.id, {})
         anchor_raw = fm.get("anchor")
         anchor = anchor_raw.strip() if isinstance(anchor_raw, str) and anchor_raw.strip() else None
+        search_anchor = _faceted_query(anchor) if anchor else None
 
         try:
             service = MediaService.for_project(ctx.project_root)
@@ -214,16 +242,16 @@ class MediaAttachModality(Modality):
         capacity_exceeded = False
         all_matches_foreground = False
 
-        if service is not None and anchor:
+        if service is not None and search_anchor:
             try:
-                vocabulary = service.facet_vocabulary(anchor)
+                vocabulary = service.facet_vocabulary(search_anchor)
             except MediaSearchCapacityExceeded:
                 capacity_exceeded = True
             except Exception:
                 vocabulary = None
             if vocabulary is not None and vocabulary.match_count > 0:
                 try:
-                    all_matches_foreground = _all_matches_are_foreground(service, anchor)
+                    all_matches_foreground = _all_matches_are_foreground(service, search_anchor)
                 except Exception:
                     all_matches_foreground = False
 
@@ -234,6 +262,7 @@ class MediaAttachModality(Modality):
         cache = MediaAttachCache(
             config=config,
             anchor=anchor,
+            search_anchor=search_anchor,
             mount_configured=mount_configured,
             vocabulary=vocabulary,
             capacity_exceeded=capacity_exceeded,
@@ -255,6 +284,14 @@ class MediaAttachModality(Modality):
             return ModalityGateResult(active=False, reason="media search index is over capacity")
         if cache.vocabulary is None or cache.vocabulary.match_count == 0:
             return ModalityGateResult(active=False, reason="anchor matches no media")
+        if cache.vocabulary.match_count > 1 and not cache.vocabulary.undecided:
+            return ModalityGateResult(
+                active=False,
+                reason=(
+                    f"anchor matches {cache.vocabulary.match_count} images "
+                    "but none differ on any facet"
+                ),
+            )
         if cache.all_matches_foreground and not cache.previous_bg:
             return ModalityGateResult(
                 active=False,
@@ -270,7 +307,7 @@ class MediaAttachModality(Modality):
 
     def workflow_refine_pass(self, ctx: ModalityContext, text: str) -> RefinePassSpec | None:
         cache = ctx.media_attach
-        if cache is None or cache.vocabulary is None or cache.anchor is None:
+        if cache is None or cache.vocabulary is None or cache.search_anchor is None:
             return None
         undecided = cache.vocabulary.undecided
         if not undecided:
@@ -293,7 +330,7 @@ class MediaAttachModality(Modality):
         prompts = PromptStore(ctx.project_root)
         system_message = prompts.get("modalities.media_attach.classify_system")
 
-        anchor = cache.anchor
+        anchor = cache.search_anchor
         previous_facets = cache.previous_facets
         previous_bg = cache.previous_bg
 
