@@ -240,7 +240,7 @@ def setup_media_attach_project(project_dir: Path, llm_base_url: str) -> ProjectS
     matter enabling ``media_attach`` with that anchor.
     """
     from lens.core.commands.attach import build_layered_embed
-    from lens.core.pinning import set_media_attach, set_modality
+    from lens.core.pinning import set_modality_config
 
     session = setup_test_project(
         project_dir, llm_base_url, narrative_name="story", opening_write=False
@@ -271,8 +271,7 @@ def setup_media_attach_project(project_dir: Path, llm_base_url: str) -> ProjectS
         narrative = session.active_narrative
         assert narrative is not None
         storage = session.new_storage(owner=None)
-        set_media_attach(narrative, "anchor", "amy!", storage)
-        set_modality(narrative, "media_attach", True, storage)
+        set_modality_config(narrative, "media_attach", "anchor", "amy!", storage)
 
         node_path = narrative.md_path()
         seed_embed = build_layered_embed("bg.jpg", "amy_happy.png")

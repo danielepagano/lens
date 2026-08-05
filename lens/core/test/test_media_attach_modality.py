@@ -13,7 +13,7 @@ from lens.core.media import MediaService
 from lens.core.modalities.catalog.media_attach import MediaAttachModality, apply_media_attach
 from lens.core.modalities.types import ModalityContext
 from lens.core.narrative import NarrativeNode
-from lens.core.pinning import set_media_attach, set_modality
+from lens.core.pinning import set_modality_config
 from lens.core.storage import Storage
 
 
@@ -88,7 +88,7 @@ class TestGates(_RegistryCleanTestCase):
     def test_no_mount_configured(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, node = _make_project(_init_repo(Path(tmp)), with_mount=False)
-            set_media_attach(node, "anchor", "amy!", Storage(root))
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             gate = mod.gates(ctx)
@@ -102,7 +102,7 @@ class TestGates(_RegistryCleanTestCase):
             ctx = mod.prepare_context(_ctx(root, node))
             gate = mod.gates(ctx)
             self.assertFalse(gate.active)
-            self.assertEqual(gate.reason, "no media_attach.anchor in front matter")
+            self.assertEqual(gate.reason, "no modalities.media_attach.anchor in front matter")
 
     def test_capacity_exceeded(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -115,7 +115,7 @@ class TestGates(_RegistryCleanTestCase):
             assert svc is not None
             _put(svc, "a.jpg", {"facets": {"emotion": "happy"}})
             _put(svc, "b.jpg", {"facets": {"emotion": "sad"}})
-            set_media_attach(node, "anchor", "a!", Storage(root))
+            set_modality_config(node, "media_attach", "anchor", "a!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             gate = mod.gates(ctx)
@@ -128,7 +128,7 @@ class TestGates(_RegistryCleanTestCase):
             svc = MediaService.for_project(root)
             assert svc is not None
             _put(svc, "amy.jpg", {"facets": {"emotion": "happy"}})
-            set_media_attach(node, "anchor", "nobody!", Storage(root))
+            set_modality_config(node, "media_attach", "anchor", "nobody!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             gate = mod.gates(ctx)
@@ -145,7 +145,7 @@ class TestGates(_RegistryCleanTestCase):
                 "amy_fg.jpg",
                 {"facets": {"emotion": "happy"}, "composite": "foreground"},
             )
-            set_media_attach(node, "anchor", "amy!", Storage(root))
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             gate = mod.gates(ctx)
@@ -161,8 +161,7 @@ class TestGates(_RegistryCleanTestCase):
             svc = MediaService.for_project(root)
             assert svc is not None
             _put(svc, "amy.jpg", {"facets": {"emotion": "happy"}})
-            set_media_attach(node, "anchor", "amy!", Storage(root))
-            set_modality(node, "media_attach", True, Storage(root))
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             gate = mod.gates(ctx)
@@ -182,7 +181,7 @@ class TestRefineSpec(_RegistryCleanTestCase):
             assert svc is not None
             # Single-valued facet only -> already pinned, nothing to decide.
             _put(svc, "amy.jpg", {"facets": {"emotion": "happy"}})
-            set_media_attach(node, "anchor", "amy!", Storage(root))
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             spec = mod.workflow_refine_pass(ctx, "some prose")
@@ -195,7 +194,7 @@ class TestRefineSpec(_RegistryCleanTestCase):
             assert svc is not None
             _put(svc, "amy_happy.jpg", {"facets": {"emotion": "happy"}})
             _put(svc, "amy_sad.jpg", {"facets": {"emotion": "sad"}})
-            set_media_attach(node, "anchor", "amy!", Storage(root))
+            set_modality_config(node, "media_attach", "anchor", "amy!", Storage(root))
             mod = MediaAttachModality()
             ctx = mod.prepare_context(_ctx(root, node))
             spec = mod.workflow_refine_pass(ctx, "Amy smiled.")

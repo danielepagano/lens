@@ -11,7 +11,7 @@ from lens.core.modalities.registry import (
 )
 from lens.core.modalities.types import ModalityContext, ResolvedModalities
 from lens.core.narrative import NarrativeNode
-from lens.core.pinning import collect_modalities_fm
+from lens.core.pinning import collect_modalities_fm, modality_enabled
 from lens.core.project import find_git_root_from
 
 
@@ -65,7 +65,8 @@ def resolve_modalities(
     """Resolve active modalities and return prepared context.
 
     Built-in modalities (``Modality.builtin``) are on by default; FM
-    ``modalities.<id>: false`` opts out. *default_ids* is for tests only.
+    ``modalities.<id>: false`` (or ``modalities.<id>.enabled: false``) opts
+    out. *default_ids* is for tests only.
 
     Returns ``(resolved, gate_ctx)`` where *gate_ctx* is the :class:`ModalityContext`
     after :meth:`~lens.core.modalities.base.Modality.prepare_context` and
@@ -74,9 +75,9 @@ def resolve_modalities(
     """
     candidate: set[str] = set(default_ids or ())
     candidate.update(builtin_modality_ids())
-    fm_flags = collect_modalities_fm(focus_node)
-    for key, enabled in fm_flags.items():
-        if enabled:
+    fm_configs = collect_modalities_fm(focus_node)
+    for key, config in fm_configs.items():
+        if modality_enabled(config):
             candidate.add(key)
         else:
             candidate.discard(key)
