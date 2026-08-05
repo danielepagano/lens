@@ -369,6 +369,7 @@ function baseStats(over: Partial<Stats> = {}): Stats {
     transaction: null,
     dataset_configs: {},
     release: null,
+    modalities_at_cursor: {},
     ...over,
   }
 }

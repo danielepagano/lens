@@ -9,6 +9,7 @@ vi.mock('../../services/api', () => ({
   deleteMountPath: vi.fn(),
   deleteMountPathConfirmed: vi.fn(),
   moveMountFile: vi.fn(),
+  narrativePin: vi.fn(),
   uploadMountFile: vi.fn(),
   getMountFilePath: vi.fn((p: string) => `/mount/file/${p}`),
   runEdit: vi.fn(),
@@ -17,10 +18,11 @@ vi.mock('../../services/api', () => ({
   StreamBusyError: class StreamBusyError extends Error {},
 }))
 
-import { attachFile, getMountMetadata, previewChromakey, runEdit } from '../../services/api'
+import { attachFile, getMountMetadata, narrativePin, previewChromakey, runEdit } from '../../services/api'
 import {
   attachFromCarousel,
   chromakeyFromCarousel,
+  confirmAnchorFromCarousel,
   type MediaCarouselHandlerCtx,
   type PendingLayer,
 } from './mediaCarouselHandlers'
@@ -29,6 +31,7 @@ const mockAttachFile = vi.mocked(attachFile)
 const mockGetMountMetadata = vi.mocked(getMountMetadata)
 const mockRunEdit = vi.mocked(runEdit)
 const mockPreviewChromakey = vi.mocked(previewChromakey)
+const mockNarrativePin = vi.mocked(narrativePin)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -339,5 +342,60 @@ describe('chromakeyFromCarousel', () => {
     const s = get(mediaCompositeSession)
     expect(s).toMatchObject({ path: 'chars/hero.png', returnToDir: 'chars' })
     expect(mockPreviewChromakey).toHaveBeenCalledWith({ path: 'chars/hero.png' })
+  })
+})
+
+describe('confirmAnchorFromCarousel', () => {
+  it('persists the raw query verbatim to the media_attach anchor on /@cursor', async () => {
+    mockNarrativePin.mockResolvedValue({ status: 'ok' })
+    const { ctx, state } = makeCtx({ getRequest: () => ({ mode: 'anchor', dir: '' }) })
+
+    await confirmAnchorFromCarousel(ctx, '  image! foreground! amy!  ')
+
+    expect(mockNarrativePin).toHaveBeenCalledWith({
+      kind: 'modality',
+      operation: 'set',
+      modality_id: 'media_attach',
+      key: 'anchor',
+      value: 'image! foreground! amy!',
+      node: '/@cursor',
+    })
+    expect(state.closed).toBe(true)
+    expect(state.done).toBe(true)
+  })
+
+  it('confirms facets! when the query is blank, instead of unsetting the anchor', async () => {
+    mockNarrativePin.mockResolvedValue({ status: 'ok' })
+    const { ctx, state } = makeCtx({ getRequest: () => ({ mode: 'anchor', dir: '' }) })
+
+    await confirmAnchorFromCarousel(ctx, '   ')
+
+    expect(mockNarrativePin).toHaveBeenCalledWith({
+      kind: 'modality',
+      operation: 'set',
+      modality_id: 'media_attach',
+      key: 'anchor',
+      value: 'facets!',
+      node: '/@cursor',
+    })
+    expect(state.closed).toBe(true)
+  })
+
+  it('surfaces a backend error instead of closing', async () => {
+    mockNarrativePin.mockResolvedValue({ status: 'error', detail: 'anchor rejected' })
+    const { ctx, state } = makeCtx({ getRequest: () => ({ mode: 'anchor', dir: '' }) })
+
+    await confirmAnchorFromCarousel(ctx, 'amy!')
+
+    expect(state.error).toBe('anchor rejected')
+    expect(state.closed).toBe(false)
+  })
+
+  it('does nothing outside anchor mode', async () => {
+    const { ctx } = makeCtx({ getRequest: () => ({ mode: 'attach', dir: '' }) })
+
+    await confirmAnchorFromCarousel(ctx, 'amy!')
+
+    expect(mockNarrativePin).not.toHaveBeenCalled()
   })
 })

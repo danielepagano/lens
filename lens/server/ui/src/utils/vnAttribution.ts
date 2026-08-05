@@ -36,6 +36,12 @@ export function buildLineAttributionByLine(
   return map
 }
 
+/** True if the chunk's first line is `> [Name] rest` — an attributed dialogue line, not narration. */
+export function isAttributedDialogueLine(text: string): boolean {
+  const first = text.split('\n')[0] ?? ''
+  return ATTRIBUTED_LINE_RE.test(first)
+}
+
 /**
  * If chunk text is `> [Name] rest`, return label + TTS-stripped body (matches server `strip_for_tts`).
  */

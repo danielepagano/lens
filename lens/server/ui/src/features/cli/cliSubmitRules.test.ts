@@ -32,6 +32,7 @@ const MINIMAL_STATS: Stats = {
   transaction: null,
   dataset_configs: {},
   release: null,
+  modalities_at_cursor: {},
 }
 
 beforeAll(() => {

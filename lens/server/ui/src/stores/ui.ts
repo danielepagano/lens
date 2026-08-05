@@ -77,7 +77,7 @@ export const scrollContentToBottom = writable(0)
 export const scrollCodeMirrorToBottom = writable(0)
 
 export interface MediaCarouselRequest {
-  mode: 'attach' | 'manage' | 'replace' | 'chromakey'
+  mode: 'attach' | 'manage' | 'replace' | 'chromakey' | 'anchor'
   dir: string
   attachAddress?: string
   attachLine?: number

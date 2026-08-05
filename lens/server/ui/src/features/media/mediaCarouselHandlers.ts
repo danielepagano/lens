@@ -6,6 +6,7 @@ import {
   deleteMountPathConfirmed,
   getMountMetadata,
   moveMountFile,
+  narrativePin,
   uploadMountFile,
   getMountFilePath,
   runEdit,
@@ -249,6 +250,43 @@ export function chromakeyFromCarousel(ctx: MediaCarouselHandlerCtx): void {
   ctx.close()
   startChromakeySession(selectedPath, { returnToDir })
   void runChromakeyPreview({ path: selectedPath })
+}
+
+/**
+ * 'anchor' mode never resolves to a picked file — the confirm action is the
+ * raw search query itself (issue #117), persisted verbatim to
+ * `modalities.media_attach.anchor` on the actual project cursor (`/@cursor`,
+ * not whatever node the carousel happens to be showing). A blank query
+ * confirms `facets!` rather than unsetting the anchor — that's the same
+ * default the picker itself opens with when no anchor is set, so there's no
+ * distinct "unset" outcome worth reaching for here.
+ */
+export async function confirmAnchorFromCarousel(
+  ctx: MediaCarouselHandlerCtx,
+  query: string,
+): Promise<void> {
+  const request = ctx.getRequest()
+  if (!request || request.mode !== 'anchor') return
+  ctx.setError(null)
+  const value = query.trim() || 'facets!'
+  try {
+    const result = await narrativePin({
+      kind: 'modality',
+      operation: 'set',
+      modality_id: 'media_attach',
+      key: 'anchor',
+      value,
+      node: '/@cursor',
+    })
+    if (result.status === 'ok') {
+      ctx.close()
+      ctx.onDone?.()
+      return
+    }
+    ctx.setError(result.detail ?? 'Failed to set anchor')
+  } catch (e) {
+    ctx.setError(e instanceof Error ? e.message : String(e))
+  }
 }
 
 export async function removeFromScene(ctx: MediaCarouselHandlerCtx): Promise<void> {
