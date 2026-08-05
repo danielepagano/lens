@@ -9,7 +9,7 @@ from lens.core.modalities.registry import (
     get_modality,
     get_modality_or_raise,
 )
-from lens.core.modalities.types import ModalityContext, ResolvedModalities
+from lens.core.modalities.types import ModalityContext, ModalityGateResult, ResolvedModalities
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import collect_modalities_fm, modality_enabled
 from lens.core.project import find_git_root_from
@@ -96,17 +96,25 @@ def resolve_modalities(
         candidate.update(extra_required)
 
     active, warnings = _filter_registered(candidate)
+    resolution: dict[str, ModalityGateResult] = {
+        modality_id: ModalityGateResult(active=False, reason="unknown modality")
+        for modality_id in candidate - active
+    }
 
-    expanded: set[str] = set(active)
+    with_deps: set[str] = set(active)
     for modality_id in list(active):
         mod = get_modality_or_raise(modality_id)
         for dep in mod.dependencies():
             if get_modality(dep) is not None:
-                expanded.add(dep)
-    expanded.update(active)
+                with_deps.add(dep)
+    with_deps.update(active)
 
-    expanded, expand_warnings = _filter_registered(expanded)
+    expanded, expand_warnings = _filter_registered(with_deps)
     warnings.extend(expand_warnings)
+    for modality_id in with_deps - expanded:
+        resolution.setdefault(
+            modality_id, ModalityGateResult(active=False, reason="unknown modality")
+        )
 
     ordered = _topological_order(frozenset(expanded))
     active_ids: list[str] = []
@@ -131,14 +139,16 @@ def resolve_modalities(
         gate_ctx = mod.prepare_context(gate_ctx)
         gate = mod.gates(gate_ctx)
         if not gate.active:
-            if gate.reason:
-                warnings.append(f"{modality_id}: {gate.reason}")
-            else:
-                warnings.append(f"{modality_id}: gated off")
+            reason = gate.reason or "gated off"
+            warnings.append(f"{modality_id}: {reason}")
+            resolution[modality_id] = ModalityGateResult(active=False, reason=reason)
             continue
         active_ids.append(modality_id)
+        resolution[modality_id] = ModalityGateResult(active=True)
 
     return (
-        ResolvedModalities(active_ids=tuple(active_ids), warnings=tuple(warnings)),
+        ResolvedModalities(
+            active_ids=tuple(active_ids), warnings=tuple(warnings), resolution=resolution
+        ),
         gate_ctx,
     )

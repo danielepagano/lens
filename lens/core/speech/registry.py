@@ -10,7 +10,11 @@ from typing import Any, cast
 from lens.core.speech.api.openrouter import OpenRouterSpeechBackend
 from lens.core.speech.api.xai import XaiSpeechBackend
 from lens.core.speech.backend import SpeechBackend, SpeechError
-from lens.core.speech.grammars import resolve_tts_grammar
+from lens.core.speech.grammars import (
+    ensure_builtin_tts_grammars_registered,
+    registered_tts_grammar_ids,
+    resolve_tts_grammar,
+)
 from lens.core.speech.spec import SpeechDescriptor
 
 
@@ -56,6 +60,17 @@ def _build_descriptor(raw: dict[str, Any]) -> SpeechDescriptor:
         if grammar_raw is not None and str(grammar_raw).strip()
         else None
     )
+    if grammar is None:
+        # No explicit `grammar =`: if `api` happens to name a registered TTS
+        # grammar (e.g. "xai"), use it as the default rather than requiring
+        # the id to be spelled out twice. Backends whose api doesn't match a
+        # grammar id (e.g. "openrouter") still need it set explicitly, since
+        # markup style there depends on the underlying model, not the api.
+        # speech_markup itself stays opt-in via `modalities.speech_markup`,
+        # so defaulting the grammar here can't silently turn markup on.
+        ensure_builtin_tts_grammars_registered()
+        if api in registered_tts_grammar_ids():
+            grammar = api
     refine_llm_raw = raw.get("refine_llm_id")
     refine_llm_id = (
         str(refine_llm_raw).strip()

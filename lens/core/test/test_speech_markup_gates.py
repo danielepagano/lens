@@ -17,7 +17,7 @@ from lens.core.modalities.catalog.speech_markup import SpeechMarkupModality
 from lens.core.modalities.types import ModalityContext
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.write import WriteOperator
-from lens.core.pinning import set_modality
+from lens.core.pinning import set_modality_config
 from lens.core.speech.spec import SpeechDescriptor
 from lens.core.storage import Storage
 
@@ -78,7 +78,36 @@ class TestSpeechMarkupGates(unittest.TestCase):
     def test_active_without_api_key_when_grammar_set(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, "speech_markup", True, Storage(root))
+            set_modality_config(narrative, "speech_markup", "enabled", True, Storage(root))
+            resolved, _ = resolve_modalities(WriteOperator, narrative)
+            self.assertIn("speech_markup", resolved.active_ids)
+
+    def test_active_when_grammar_omitted_but_api_matches_a_grammar_id(self) -> None:
+        """api = "xai" with no explicit grammar= still gates active, since
+        grammar defaults to api when they name the same registered grammar."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            (root / "lens.toml").write_text(
+                """
+[project]
+narrative = "test"
+
+[[speech]]
+api = "xai"
+api_key_env = "MISSING_SPEECH_KEY"
+""",
+                encoding="utf-8",
+            )
+            narrative_dir = root / "narrative" / "test"
+            narrative_dir.mkdir(parents=True)
+            (narrative_dir / "_node.md").write_text("# test\n", encoding="utf-8")
+            (root / "knowledge").mkdir(exist_ok=True)
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "project"], cwd=root, capture_output=True, check=True
+            )
+            narrative = NarrativeNode(narrative_root=narrative_dir, key_path=())
+            set_modality_config(narrative, "speech_markup", "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertIn("speech_markup", resolved.active_ids)
 
@@ -102,7 +131,7 @@ class TestSpeechMarkupGates(unittest.TestCase):
                 params={},
                 project_root=root,
             )
-            set_modality(narrative, "speech_markup", True, Storage(root))
+            set_modality_config(narrative, "speech_markup", "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertIn("speech_markup", resolved.active_ids)
             with patch(
@@ -130,7 +159,7 @@ class TestSpeechMarkupGates(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, "speech_markup", True, Storage(root))
+            set_modality_config(narrative, "speech_markup", "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             self.assertIn("speech_markup", resolved.active_ids)
             ctx = ModalityContext(

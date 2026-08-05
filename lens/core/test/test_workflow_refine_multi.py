@@ -37,7 +37,7 @@ from lens.core.modalities.workflow import (
     resolve_refine_modality_ids,
 )
 from lens.core.operators.write import WriteOperator
-from lens.core.pinning import set_modality
+from lens.core.pinning import set_modality_config
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.core.narrative import NarrativeNode
@@ -181,8 +181,8 @@ class TestResolveRefineIds(_RegistryCleanTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             storage = Storage(root)
-            set_modality(narrative, FIRST_ID, True, storage)
-            set_modality(narrative, SECOND_ID, True, storage)
+            set_modality_config(narrative, FIRST_ID, "enabled", True, storage)
+            set_modality_config(narrative, SECOND_ID, "enabled", True, storage)
             resolved, _ = resolve_modalities(WriteOperator, narrative)
 
             ids = resolve_refine_modality_ids(
@@ -197,8 +197,8 @@ class TestResolveRefineIds(_RegistryCleanTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             storage = Storage(root)
-            set_modality(narrative, FIRST_ID, True, storage)
-            set_modality(narrative, SECOND_ID, True, storage)
+            set_modality_config(narrative, FIRST_ID, "enabled", True, storage)
+            set_modality_config(narrative, SECOND_ID, "enabled", True, storage)
             resolved, _ = resolve_modalities(WriteOperator, narrative)
 
             ids = resolve_refine_modality_ids(
@@ -210,7 +210,7 @@ class TestResolveRefineIds(_RegistryCleanTestCase):
         mod = _make_tagging(FIRST_ID)
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, FIRST_ID, True, Storage(root))
+            set_modality_config(narrative, FIRST_ID, "enabled", True, Storage(root))
             resolved, _ = resolve_modalities(WriteOperator, narrative)
             pending = PendingInlinePersist(
                 mode="start",
@@ -301,8 +301,8 @@ class TestTwoPassesRunIndependently(_InlineRefineTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             storage = Storage(root)
-            set_modality(narrative, FIRST_ID, True, storage)
-            set_modality(narrative, SECOND_ID, True, storage)
+            set_modality_config(narrative, FIRST_ID, "enabled", True, storage)
+            set_modality_config(narrative, SECOND_ID, "enabled", True, storage)
 
             self._run_write(root, narrative, workflow=WorkflowRunner(on_event=on_event))
 
@@ -324,8 +324,8 @@ class TestTwoPassesRunIndependently(_InlineRefineTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             storage = Storage(root)
-            set_modality(narrative, FIRST_ID, True, storage)
-            set_modality(narrative, SECOND_ID, True, storage)
+            set_modality_config(narrative, FIRST_ID, "enabled", True, storage)
+            set_modality_config(narrative, SECOND_ID, "enabled", True, storage)
 
             self._run_write(root, narrative, workflow=WorkflowRunner())
 
@@ -363,8 +363,8 @@ class TestTwoPassesRunIndependently(_InlineRefineTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             storage = Storage(root)
-            set_modality(narrative, FIRST_ID, True, storage)
-            set_modality(narrative, SECOND_ID, True, storage)
+            set_modality_config(narrative, FIRST_ID, "enabled", True, storage)
+            set_modality_config(narrative, SECOND_ID, "enabled", True, storage)
 
             self._run_write(root, narrative, workflow=runner)
 
@@ -383,8 +383,8 @@ class TestTwoPassesRunIndependently(_InlineRefineTestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             storage = Storage(root)
-            set_modality(narrative, FIRST_ID, True, storage)
-            set_modality(narrative, SECOND_ID, True, storage)
+            set_modality_config(narrative, FIRST_ID, "enabled", True, storage)
+            set_modality_config(narrative, SECOND_ID, "enabled", True, storage)
 
             self._run_write(root, narrative, workflow=WorkflowRunner())
 
@@ -397,7 +397,7 @@ class TestTwoPassesRunIndependently(_InlineRefineTestCase):
         _make_tagging(FIRST_ID)
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
-            set_modality(narrative, FIRST_ID, True, Storage(root))
+            set_modality_config(narrative, FIRST_ID, "enabled", True, Storage(root))
 
             self._run_write(root, narrative)
 

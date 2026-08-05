@@ -608,7 +608,7 @@ class TestStatsModalities(unittest.TestCase):
     from unittest.mock import patch
 
     from lens.core.modalities import Modality, clear_registry_for_tests, register_modality
-    from lens.core.pinning import set_modality
+    from lens.core.pinning import set_modality_config
     from lens.core.storage import Storage
 
     class _StatsBuiltin(Modality):
@@ -624,27 +624,34 @@ class TestStatsModalities(unittest.TestCase):
       with patch("lens.core.commands.stats.ensure_modalities_registered"):
         result = get_stats(session)
       self.assertEqual(result.registered_modality_ids, ["stats_builtin_test"])
-      self.assertEqual(result.modalities_at_cursor, ["stats_builtin_test"])
-      self.assertEqual(result.modality_warnings_at_cursor, [])
+      self.assertEqual(
+        result.modalities_at_cursor,
+        {"stats_builtin_test": {"config": {}, "active": True}},
+      )
 
-      set_modality(node, "stats_builtin_test", False, Storage(root))
+      set_modality_config(node, "stats_builtin_test", "enabled", False, Storage(root))
       with patch("lens.core.commands.stats.ensure_modalities_registered"):
         result = get_stats(session)
-      self.assertEqual(result.modalities_at_cursor, [])
+      self.assertFalse(result.modalities_at_cursor["stats_builtin_test"]["active"])
+      self.assertEqual(
+        result.modalities_at_cursor["stats_builtin_test"]["config"], {"enabled": False}
+      )
 
   def test_unknown_fm_modality_warns(self) -> None:
-    from lens.core.pinning import set_modality
+    from lens.core.pinning import set_modality_config
     from lens.core.storage import Storage
 
     with tempfile.TemporaryDirectory() as tmpdir:
       root = _init_repo(Path(tmpdir))
       session, node = _make_project(root)
-      set_modality(node, "not_a_real_modality", True, Storage(root))
+      set_modality_config(node, "not_a_real_modality", "enabled", True, Storage(root))
       result = get_stats(session)
-      self.assertIn("unknown modality 'not_a_real_modality'", result.modality_warnings_at_cursor)
+      entry = result.modalities_at_cursor["not_a_real_modality"]
+      self.assertFalse(entry["active"])
+      self.assertEqual(entry["reason"], "unknown modality")
 
-  def test_effective_modalities_at_cursor_reflects_raw_fm_config(self) -> None:
-    from lens.core.pinning import set_modality, set_modality_config
+  def test_modalities_at_cursor_carries_raw_fm_config(self) -> None:
+    from lens.core.pinning import set_modality_config
     from lens.core.storage import Storage
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -652,15 +659,20 @@ class TestStatsModalities(unittest.TestCase):
       session, node = _make_project(root)
       storage = Storage(root)
       set_modality_config(node, "media_attach", "anchor", "amy!", storage)
-      set_modality(node, "speech_markup", False, storage)
+      set_modality_config(node, "speech_markup", "enabled", False, storage)
 
       result = get_stats(session)
+      # media_attach's raw config carries through even though its gate still
+      # fails (no mount configured in this bare test project) -- config and
+      # active/reason are independent facets of the same entry.
       self.assertEqual(
-        result.effective_modalities_at_cursor["media_attach"], {"anchor": "amy!"}
+        result.modalities_at_cursor["media_attach"]["config"], {"anchor": "amy!"}
       )
+      self.assertFalse(result.modalities_at_cursor["media_attach"]["active"])
       self.assertEqual(
-        result.effective_modalities_at_cursor["speech_markup"], {"enabled": False}
+        result.modalities_at_cursor["speech_markup"]["config"], {"enabled": False}
       )
+      self.assertFalse(result.modalities_at_cursor["speech_markup"]["active"])
 
   def test_chat_session_includes_required_modalities(self) -> None:
     from lens.core.modalities import Modality, register_modality

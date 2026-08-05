@@ -116,11 +116,9 @@ class TestStats:
     def test_includes_modalities_fields(self, test_client: TestClient) -> None:
         data = test_client.get("/test/stats").json()
         assert isinstance(data["registered_modality_ids"], list)
-        assert isinstance(data["modalities_at_cursor"], list)
-        assert isinstance(data["modality_warnings_at_cursor"], list)
-        assert isinstance(data["effective_modalities_at_cursor"], dict)
+        assert isinstance(data["modalities_at_cursor"], dict)
 
-    def test_effective_modalities_at_cursor_reflects_pin_writes(
+    def test_modalities_at_cursor_reflects_pin_writes(
         self, test_client: TestClient
     ) -> None:
         r = test_client.post(
@@ -137,7 +135,12 @@ class TestStats:
         assert r.json()["status"] == "ok"
 
         data = test_client.get("/test/stats").json()
-        assert data["effective_modalities_at_cursor"]["media_attach"] == {"anchor": "amy!"}
+        entry = data["modalities_at_cursor"]["media_attach"]
+        assert entry["config"] == {"anchor": "amy!"}
+        # This client's project has no mount_point configured, so the gate
+        # still fails -- config presence and gate outcome are independent.
+        assert entry["active"] is False
+        assert entry["reason"] == "no mount_point configured in lens.toml"
 
         r = test_client.post(
             "/test/narrative/pin",
@@ -152,7 +155,7 @@ class TestStats:
         assert r.json()["status"] == "ok"
 
         data = test_client.get("/test/stats").json()
-        assert "media_attach" not in data["effective_modalities_at_cursor"]
+        assert "media_attach" not in data["modalities_at_cursor"]
 
     def test_modality_pin_requires_modality_id(self, test_client: TestClient) -> None:
         r = test_client.post(

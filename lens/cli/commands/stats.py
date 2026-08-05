@@ -93,14 +93,18 @@ def stats(
             else:
                 typer.echo("Effective pins at cursor: (none)")
             if result.modalities_at_cursor:
-                typer.echo(
-                    f"Modalities at cursor: {','.join(result.modalities_at_cursor)}"
-                )
+                typer.echo("Modalities at cursor:")
+                for modality_id in sorted(result.modalities_at_cursor):
+                    info = result.modalities_at_cursor[modality_id]
+                    status = "active" if info["active"] else "inactive"
+                    line = f"  {modality_id}: {status}"
+                    if info.get("config"):
+                        line += f" (config: {info['config']})"
+                    if info.get("reason"):
+                        line += f" — {info['reason']}"
+                    typer.echo(line)
             else:
                 typer.echo("Modalities at cursor: (none)")
-            if result.modality_warnings_at_cursor:
-                for warning in result.modality_warnings_at_cursor:
-                    typer.echo(f"Modality warning: {warning}")
         else:
             typer.echo("Active narrative cursor:  (no active narrative)")
 

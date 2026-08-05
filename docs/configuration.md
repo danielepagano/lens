@@ -328,7 +328,7 @@ timeout_seconds  = 120
 | `api` | Yes | — | `xai` or `openrouter` |
 | `api_key_env` | Yes | — | Env var for API key |
 | `id` | No | `[default]` | Select with `lens media tts --model` |
-| `grammar` | No* | — | TTS tag grammar: `xai` or `gemini` (required for `speech_markup` modality; invalid ids fail at load) |
+| `grammar` | No* | `api`, if that names a registered grammar | TTS tag grammar: `xai` or `gemini` (required for `speech_markup` modality; invalid ids fail at load) |
 | `refine_llm_id` | No | — | LLM id for `workflow_refine:speech_markup`; defaults to operator LLM when unset |
 | `default_voice` | No | — | Voice when `--voice` omitted (xAI fallback: `eve`) |
 | `base_url` | No | provider default | API root |
@@ -338,7 +338,7 @@ timeout_seconds  = 120
 | `response_format` | No | `mp3` | OpenRouter: `mp3` or `pcm` |
 | `speed` | No | — | OpenRouter playback speed when supported |
 
-\*Set `grammar` on the `[[speech]]` block you use with the **`speech_markup`** modality (see below).
+\*`grammar` defaults to `api` when `api` itself names a registered grammar (e.g. `api = "xai"` needs no separate `grammar =`). Backends whose `api` doesn't double as a grammar id — `openrouter`, whatever model it fronts — still need `grammar` set explicitly. Either way, `speech_markup` itself stays opt-in via `modalities.speech_markup` on the node front matter; a resolvable grammar alone doesn't turn markup on.
 
 ### Speech markup modality (generation)
 

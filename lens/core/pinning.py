@@ -359,11 +359,6 @@ def _set_modality_key(
     _mutate_front_matter(node, storage, _set)
 
 
-def set_modality(node: NarrativeNode, modality_id: str, enabled: bool, storage: Storage) -> None:
-    """Set ``modalities.<modality_id>.enabled``, merging into any existing config for that id."""
-    _set_modality_key(node, modality_id, "enabled", enabled, storage)
-
-
 def set_modality_config(
     node: NarrativeNode, modality_id: str, key: str, value: Any, storage: Storage
 ) -> None:

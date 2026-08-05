@@ -76,9 +76,7 @@ class StatsResult:
     effective_vars_at_cursor: dict[str, str] = field(default_factory=dict[str, str])
     effective_params_at_cursor: dict[str, str] = field(default_factory=dict[str, str])
     registered_modality_ids: list[str] = field(default_factory=list[str])
-    modalities_at_cursor: list[str] = field(default_factory=list[str])
-    modality_warnings_at_cursor: list[str] = field(default_factory=list[str])
-    effective_modalities_at_cursor: dict[str, dict[str, Any]] = field(
+    modalities_at_cursor: dict[str, dict[str, Any]] = field(
         default_factory=_empty_modalities_config
     )
     dataset_configs: dict[str, dict[str, Any]] = field(default_factory=dict[str, dict[str, Any]])
@@ -118,7 +116,16 @@ def _resolve_modalities_at_cursor(
     node: NarrativeNode,
     *,
     active_session_operator: str | None,
-) -> tuple[list[str], list[str]]:
+) -> dict[str, dict[str, Any]]:
+    """One entry per modality that was either configured in front matter or
+    considered as a candidate (builtin/required/opted-in): its merged FM
+    config, whether it's active, and — if not — why.
+
+    Replaces the old three-field split (``modalities_at_cursor`` /
+    ``modality_warnings_at_cursor`` / ``effective_modalities_at_cursor``),
+    which required cross-referencing by id to answer "is this on, and why
+    not" for any one modality.
+    """
     root = session.project_root
     op_cls, params = _operator_context_at_cursor(
         root, node, active_session_operator=active_session_operator
@@ -135,7 +142,27 @@ def _resolve_modalities_at_cursor(
     resolved, _prepared_ctx = resolve_modalities(
         op_cls, node, params=params, ctx=ctx
     )
-    return list(resolved.active_ids), list(resolved.warnings)
+    fm_configs = collect_modalities_fm(node)
+    merged: dict[str, dict[str, Any]] = {}
+    for modality_id, gate in resolved.resolution.items():
+        entry: dict[str, Any] = {
+            "config": fm_configs.get(modality_id, {}),
+            "active": gate.active,
+        }
+        if gate.reason:
+            entry["reason"] = gate.reason
+        merged[modality_id] = entry
+    for modality_id, config in fm_configs.items():
+        if modality_id in merged:
+            continue
+        # Explicit FM opt-out (enabled: false) is dropped before candidate
+        # resolution, so it never reaches `resolved.resolution` above.
+        merged[modality_id] = {
+            "config": config,
+            "active": False,
+            "reason": "disabled (modalities.<id>.enabled: false)",
+        }
+    return merged
 
 
 def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
@@ -189,9 +216,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     active_session_operator: str | None = None
     effective_vars_at_cursor: dict[str, str] = {}
     effective_params_at_cursor: dict[str, str] = {}
-    modalities_at_cursor: list[str] = []
-    modality_warnings_at_cursor: list[str] = []
-    effective_modalities_at_cursor: dict[str, dict[str, Any]] = {}
+    modalities_at_cursor: dict[str, dict[str, Any]] = {}
     if not is_dataset and cursor_addr is not None:
         node_addr = cursor_addr.node_only()
         try:
@@ -206,7 +231,6 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             effective_params_at_cursor = effective_param_bindings_at_cursor(
                 root, node, active
             )
-            effective_modalities_at_cursor = collect_modalities_fm(node)
             if node.key_path:
                 parent = NarrativeNode(
                     narrative_root=node.narrative_root,
@@ -219,7 +243,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
                         active_session_operator = open_ann.operator
                 except FileNotFoundError:
                     pass
-            modalities_at_cursor, modality_warnings_at_cursor = _resolve_modalities_at_cursor(
+            modalities_at_cursor = _resolve_modalities_at_cursor(
                 session,
                 node,
                 active_session_operator=active_session_operator,
@@ -278,8 +302,6 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         effective_params_at_cursor=effective_params_at_cursor,
         registered_modality_ids=registered_modality_ids,
         modalities_at_cursor=modalities_at_cursor,
-        modality_warnings_at_cursor=modality_warnings_at_cursor,
-        effective_modalities_at_cursor=effective_modalities_at_cursor,
         dataset_configs=dataset_configs,
         release_enabled=release_cfg.enabled,
         release_lens_repo_url=release_cfg.lens_repo_url,
