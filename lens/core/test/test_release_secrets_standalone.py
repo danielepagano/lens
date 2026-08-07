@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -69,6 +70,34 @@ def _init_project(base: Path, lens_toml: str) -> Path:
     )
     return project
 
+
+
+def _init_dependent_remote(base: Path, name: str, lens_toml: str) -> Path:
+    """Create a bare repo holding *lens_toml*, usable as a dependent's git_url."""
+    remote = base / f"{name}.git"
+    subprocess.run(
+        ["git", "init", "--bare", "-b", "main", str(remote)],
+        check=True, capture_output=True,
+    )
+    clone = base / f"{name}-clone"
+    subprocess.run(["git", "clone", str(remote), str(clone)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=clone, check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=clone, check=True, capture_output=True,
+    )
+    (clone / "lens.toml").write_text(lens_toml)
+    subprocess.run(["git", "add", "lens.toml"], cwd=clone, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=clone, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "push", "-u", "origin", "main"],
+        cwd=clone, check=True, capture_output=True,
+    )
+    shutil.rmtree(clone, ignore_errors=True)
+    return remote
 
 
 def _head_sha(project: Path) -> str:
@@ -319,6 +348,86 @@ class ReleaseSecretsSyncTests(unittest.TestCase):
                     rp.stdout.strip(), no_key.stdout.strip(),
                     msg="output should differ when MY_KEY is set",
                 )
+
+    def test_sync_clones_dependents_for_their_secrets(self) -> None:
+        # A [[dependent_project]] carries its own API keys and dataset repos;
+        # CI can only discover them by cloning the dependent's lens.toml.
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            dep_remote = _init_dependent_remote(
+                base,
+                "dep",
+                '[project]\ndatasets = ["testing"]\n'
+                '[[llm]]\napi_key_env = "DEPENDENT_KEY"\nmodel = "gpt-4"\n'
+                '[[dataset_repo]]\nname = "dep-ds"\n'
+                'git_url = "https://example.com/dep-ds.git"\n',
+            )
+            project = _init_project(
+                base,
+                '[release]\nenabled = true\nlens_repo_url = "https://x.com/x.git"\n'
+                "[[dependent_project]]\n"
+                'name = "dep"\n'
+                f'git_url = "{dep_remote}"\nref = "main"\n',
+            )
+
+            rp = _run(
+                "sync", "--dry-run", "--fly-app", "myapp", cwd=project,
+                env={
+                    "DEPENDENT_KEY": "sk-dependent",
+                    "GIT_REPO_DEPLOY_KEY_DEP": "fake-key",
+                    "DATASET_REPO_DEPLOY_KEY_DEP_DS": "fake-ds-key",
+                },
+            )
+            self.assertEqual(rp.returncode, 0, msg=rp.stderr)
+            # The dependent's own API key, its deploy key, and the dataset
+            # repo key declared only in its lens.toml.
+            self.assertIn("DEPENDENT_KEY", rp.stdout)
+            self.assertIn("GIT_REPO_DEPLOY_KEY_DEP", rp.stdout)
+            self.assertIn("DATASET_REPO_DEPLOY_KEY_DEP_DS", rp.stdout)
+            # Values are never printed.
+            self.assertNotIn("sk-dependent", rp.stdout)
+
+    def test_sync_skips_unreachable_dependent(self) -> None:
+        # An unreachable dependent must not fail the release — its secrets
+        # simply stay as they already are on Fly.
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            project = _init_project(
+                base,
+                '[release]\nenabled = true\nlens_repo_url = "https://x.com/x.git"\n'
+                '[[llm]]\napi_key_env = "LEADER_KEY"\nmodel = "gpt-4"\n'
+                "[[dependent_project]]\n"
+                'name = "gone"\n'
+                f'git_url = "{base / "does-not-exist.git"}"\nref = "main"\n',
+            )
+
+            rp = _run(
+                "sync", "--dry-run", "--fly-app", "myapp", cwd=project,
+                env={"LEADER_KEY": "sk-leader"},
+            )
+            self.assertEqual(rp.returncode, 0, msg=rp.stderr)
+            self.assertIn("[skipped]", rp.stderr)
+            self.assertIn("LEADER_KEY", rp.stdout)
+
+    def test_check_lists_dependent_deploy_key(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            dep_remote = _init_dependent_remote(
+                base, "dep", '[project]\ndatasets = ["testing"]\n',
+            )
+            project = _init_project(
+                base,
+                '[release]\nenabled = true\nlens_repo_url = "https://x.com/x.git"\n'
+                "[[dependent_project]]\n"
+                'name = "dep"\n'
+                f'git_url = "{dep_remote}"\nref = "main"\n',
+            )
+
+            rp = _run("check", "--json", cwd=project, env={"GIT_REPO_DEPLOY_KEY_DEP": "k"})
+            self.assertEqual(rp.returncode, 0, msg=rp.stderr)
+            data = json.loads(rp.stdout)
+            names = {s["name"] for s in data["secrets"]}
+            self.assertIn("GIT_REPO_DEPLOY_KEY_DEP", names)
 
     def test_fly_app_auto_detected_from_fly_toml(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

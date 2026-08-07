@@ -17,6 +17,7 @@ from pathlib import Path
 from unittest import mock
 
 from lens.core.commands.deploy import (
+    _validate_release_topology,  # pyright: ignore[reportPrivateUsage]
     build_projects,
     find_colocated_fly_toml,
     init_deploy,
@@ -154,6 +155,85 @@ class ResolveDeployDirTests(unittest.TestCase):
         empty.mkdir()
         with self.assertRaises(LensException):
             resolve_deploy_dir(empty)
+
+
+class DependentProjectDeployedTests(unittest.TestCase):
+    """A ``[[dependent_project]]`` entry must correspond to a deployed slug.
+
+    The entry alone only tells CI about the topology — the container derives
+    the projects it serves from the ``PROJECT_REPO_URL_*`` Fly secrets that
+    ``lens release add`` writes.  A hand-added entry would otherwise deploy
+    nothing and fail silently.
+    """
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.mkdtemp()
+        self._tmp_path = Path(self._tmp)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self._tmp, ignore_errors=True)
+
+    @staticmethod
+    def _leader_toml(*dependent_names: str) -> str:
+        text = (
+            "[release]\nenabled = true\napp_leader = true\n"
+            'lens_repo_url = "https://example.com/lens.git"\n'
+        )
+        for name in dependent_names:
+            text += (
+                "\n[[dependent_project]]\n"
+                f'name = "{name}"\n'
+                f'git_url = "git@example.com:org/{name}.git"\n'
+            )
+        return text
+
+    def test_raises_when_dependent_is_not_a_deployed_slug(self) -> None:
+        parent = self._tmp_path / "parent"
+        parent.mkdir()
+        leader = _write_project(parent, "leader", self._leader_toml("ghost"))
+        _write_project(parent, "sibling")
+
+        projects = build_projects(leader, ["leader", "sibling"])
+        with self.assertRaises(LensException) as ctx:
+            _validate_release_topology(projects)
+        message = str(ctx.exception)
+        self.assertIn("ghost", message)
+        self.assertIn("lens release add", message)
+
+    def test_raises_for_single_project_leader(self) -> None:
+        # The cross-project checks are skipped for one project, but a lone
+        # leader can still declare a dependent that was never added.
+        leader = _write_project(self._tmp_path, "leader", self._leader_toml("ghost"))
+
+        projects = build_projects(leader, ["leader"])
+        with self.assertRaises(LensException) as ctx:
+            _validate_release_topology(projects)
+        self.assertIn("ghost", str(ctx.exception))
+
+    def test_passes_when_dependent_is_deployed(self) -> None:
+        parent = self._tmp_path / "parent"
+        parent.mkdir()
+        leader = _write_project(parent, "leader", self._leader_toml("sibling"))
+        _write_project(parent, "sibling")
+
+        projects = build_projects(leader, ["leader", "sibling"])
+        self.assertEqual(_validate_release_topology(projects), leader)
+
+    def test_ignores_entries_on_non_release_projects(self) -> None:
+        # Only the release leader's topology governs the deployment; a stray
+        # entry in a non-release sibling's lens.toml is not our business.
+        parent = self._tmp_path / "parent"
+        parent.mkdir()
+        leader = _write_project(parent, "leader", self._leader_toml())
+        _write_project(
+            parent,
+            "sibling",
+            "[[dependent_project]]\n"
+            'name = "ghost"\ngit_url = "git@example.com:org/ghost.git"\n',
+        )
+
+        projects = build_projects(leader, ["leader", "sibling"])
+        self.assertEqual(_validate_release_topology(projects), leader)
 
 
 class InitDeployLeaderTargetingTests(unittest.TestCase):

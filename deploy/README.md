@@ -402,6 +402,8 @@ remaining projects.
 
 When adding a project in CI-release mode, use `lens release add` instead; it handles the Fly secrets plus the leader's `[[dependent_project]]` entry. `lens release remove` does the inverse. Desktop-mode deployments (no `[release]` section) continue to use `lens deploy add/remove`.
 
+Writing a `[[dependent_project]]` entry by hand is not enough: the container derives its project list from the `PROJECT_REPO_URL_<SLUG>` secrets that only `lens release add` sets, so a hand-added entry serves nothing. `init`/`add`/`push` now fail with an explicit error when the leader declares a dependent that is not a deployed slug.
+
 ---
 
 ## Operations

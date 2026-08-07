@@ -595,6 +595,14 @@ Only the release leader declares `[[dependent_project]]` entries — siblings
 contain their own `lens.toml` with their own datasets and API keys but do not
 duplicate `[release]` or `[[dependent_project]]`.
 
+> **An entry here does not add a project.** The container derives the projects
+> it serves from the `PROJECT_REPO_URL_<SLUG>` Fly secrets, which are written
+> only by `lens release add` (alongside `LENS_PROJECT_SLUGS` in `fly.toml`).
+> Adding the entry by hand registers the project with CI but deploys nothing —
+> so `lens deploy init`/`add`/`push` reject a `[[dependent_project]]` whose
+> `name` is not a deployed slug. Use `lens release add <slug> --deploy-key
+> <path>`, where `<slug>` matches the project's directory name.
+
 > **Deploy keys:** each project (leader + dependents) needs a
 > `GIT_REPO_DEPLOY_KEY_<SLUG>` CI env var (where `<SLUG>` is the project name
 > uppercased with hyphens→underscores) if the repo is private. CI pushes these

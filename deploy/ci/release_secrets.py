@@ -17,8 +17,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -163,6 +165,63 @@ def _read_lens_toml(project_root: Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
+def _git_clone(git_url: str, dest: Path, ref: str = "main", deploy_key: str | None = None) -> None:
+    """Clone *git_url* to *dest* and check out *ref*.
+
+    Raises ``RuntimeError`` when the clone fails — callers treat a dependent
+    they cannot reach as skippable rather than fatal.
+    """
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    env = os.environ.copy()
+    if git_url.startswith("git@") or git_url.startswith("ssh://"):
+        ssh_cmd = "ssh -o StrictHostKeyChecking=accept-new"
+        if deploy_key:
+            key_dir = Path(tempfile.mkdtemp(prefix="lens-deploy-key-"))
+            key_file = key_dir / "id"
+            key_file.write_text(deploy_key)
+            key_file.chmod(0o600)
+            ssh_cmd += f" -i {key_file}"
+        env["GIT_SSH_COMMAND"] = ssh_cmd
+
+    result = subprocess.run(
+        ["git", "clone", "--depth", "1", "--branch", ref, git_url, str(dest)],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"git clone {git_url} failed: {result.stderr.strip()}")
+
+
+def _clone_dependents(
+    dependents: list[DependentProjectConfig], into: list[Path],
+) -> list[tuple[str, dict[str, Any]]]:
+    """Shallow-clone each dependent and return ``[(name, lens.toml), ...]``.
+
+    Temp directories are appended to *into* for the caller to clean up.
+    Dependents that cannot be cloned (no deploy key in the CI environment)
+    are skipped with a warning rather than failing the run — their secrets
+    simply stay as they are on Fly.
+    """
+    configs: list[tuple[str, dict[str, Any]]] = []
+    for dep in dependents:
+        clone_dir = Path(tempfile.mkdtemp(prefix=f"lens-secrets-{dep.name}-")) / dep.name
+        into.append(clone_dir.parent)
+        deploy_key = os.environ.get(f"GIT_REPO_DEPLOY_KEY_{_slug_to_env_key(dep.name)}")
+        try:
+            _git_clone(dep.git_url, clone_dir, dep.ref, deploy_key=deploy_key)
+        except RuntimeError:
+            print(
+                f"  [skipped] could not clone dependent '{dep.name}' — "
+                "deploy key not in CI env",
+                file=sys.stderr,
+            )
+            continue
+        configs.append((dep.name, _read_lens_toml(clone_dir)))
+    return configs
+
+
 def _read_fly_app(project_root: Path) -> str | None:
     fly_toml = project_root / "fly.toml"
     if not fly_toml.exists():
@@ -271,6 +330,12 @@ def execute_release_secrets_check(
     secrets: list[SecretRequirement] = []
     seen_api_keys: set[str] = set()
     all_configs: list[tuple[str, dict[str, Any]]] = [(leader_slug, raw)]
+    temp_clone_dirs: list[Path] = []
+    try:
+        all_configs.extend(_clone_dependents(dependents, temp_clone_dirs))
+    finally:
+        for tmp_dir in temp_clone_dirs:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     for slug, config in all_configs:
         for table_key in ("llm", "image", "speech"):
@@ -479,17 +544,25 @@ def execute_release_secrets_sync(
 
     leader_slug = project_root.name
 
-    all_projects: list[tuple[str, Path, dict[str, Any]]] = [(leader_slug, project_root, raw)]
+    all_projects: list[tuple[str, dict[str, Any]]] = [(leader_slug, raw)]
+    temp_clone_dirs: list[Path] = []
+    try:
+        all_projects.extend(
+            _clone_dependents(parse_dependent_project_configs(raw), temp_clone_dirs)
+        )
+    finally:
+        for tmp_dir in temp_clone_dirs:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     secrets: dict[str, str] = {}
     seen_api_keys: set[str] = set()
 
-    for _slug, _proj_root, proj_raw in all_projects:
+    for _slug, proj_raw in all_projects:
         _collect_ci_available_api_keys(proj_raw, "llm", seen_api_keys, secrets)
         _collect_ci_available_api_keys(proj_raw, "image", seen_api_keys, secrets)
         _collect_ci_available_api_keys(proj_raw, "speech", seen_api_keys, secrets)
 
-    for slug, _proj_root, _proj_raw in all_projects:
+    for slug, _proj_raw in all_projects:
         env_key = _slug_to_env_key(slug)
         deploy_key_var = f"GIT_REPO_DEPLOY_KEY_{env_key}"
         val = os.environ.get(deploy_key_var)
@@ -497,7 +570,7 @@ def execute_release_secrets_sync(
             secrets[deploy_key_var] = val
 
     seen_datasets: set[str] = set()
-    for _slug, _proj_root, proj_raw in all_projects:
+    for _slug, proj_raw in all_projects:
         for repo in parse_dataset_repo_configs(proj_raw):
             if repo.name in seen_datasets:
                 continue
@@ -615,6 +688,10 @@ def cmd_sync(args: list[str]) -> None:
 
     result = execute_release_secrets_sync(Path.cwd(), fly_app, dry_run=dry_run)
     print(result.summary)
+    if dry_run:
+        # Names only — never the values.
+        for name in sorted(result.collected_secrets):
+            print(f"  {name}")
 
 
 def cmd_check_release(args: list[str]) -> None:

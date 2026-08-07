@@ -26,6 +26,7 @@ from lens.core.release.config import (
     DatasetRepoConfig,
     ReleaseConfig,
     parse_dataset_repo_configs,
+    parse_dependent_project_configs,
     parse_release_config,
     validate_deploy_topology,
 )
@@ -499,22 +500,53 @@ def _fly_deploy(
         raise LensException("fly deploy failed")
 
 
+def _validate_dependents_are_deployed(
+    leader_slug: str, leader_raw: dict[str, Any], deployed_slugs: set[str],
+) -> None:
+    """Raise when the leader declares a dependent this deployment doesn't serve.
+
+    A ``[[dependent_project]]`` entry only describes the topology for CI.
+    The container derives the projects it actually serves from the
+    ``PROJECT_REPO_URL_*`` Fly secrets, which are written by ``lens release
+    add`` alongside ``fly.toml``'s ``LENS_PROJECT_SLUGS`` — so an entry added
+    by hand deploys nothing at all, silently.
+    """
+    undeployed = sorted(
+        dep.name for dep in parse_dependent_project_configs(leader_raw)
+        if dep.name not in deployed_slugs
+    )
+    if not undeployed:
+        return
+    raise LensException(
+        f"release leader '{leader_slug}' declares [[dependent_project]] entries "
+        f"that this deployment does not serve: {', '.join(undeployed)}. The "
+        "served projects come from the PROJECT_REPO_URL_* Fly secrets, which "
+        "only 'lens release add' writes. Run 'lens release add <slug> "
+        "--deploy-key <path>' — the slug must match the project's directory "
+        "name — or remove the stale entry from the leader's lens.toml."
+    )
+
+
 def _validate_release_topology(projects: list[tuple[str, Path, Path]]) -> Path | None:
     """Cross-project ``[release]``/``[[dataset_repo]]`` consistency check.
 
-    *projects* is ``[(slug, git_root, project_root), ...]``. No-op for a
-    single project (nothing cross-project to reconcile). Raises
+    *projects* is ``[(slug, git_root, project_root), ...]``. Raises
     ``LensException`` via :func:`validate_deploy_topology` when more than
     one project claims ``app_leader`` (or none do while more than one has
     ``[release]`` enabled), or when sibling projects declare conflicting
-    ``[[dataset_repo]]`` entries for the same name.
+    ``[[dataset_repo]]`` entries for the same name. Those checks are
+    cross-project and so are skipped for a single project.
+
+    Also raises via :func:`_validate_dependents_are_deployed` when a release
+    project declares a ``[[dependent_project]]`` that is not among the
+    deployed slugs — that one applies to single-project deployments too,
+    since a leader with one served project may still declare dependents.
 
     Returns the release leader's project root when exactly one project sets
     ``[release] app_leader = true`` (``None`` for a single project, or a
     multi-project deployment with no designated leader).
     """
-    if len(projects) <= 1:
-        return None
+    deployed_slugs = {slug for slug, _git_root, _project_root in projects}
     project_configs: list[tuple[str, ReleaseConfig, list[DatasetRepoConfig]]] = []
     leader_root: Path | None = None
     for slug, _git_root, project_root in projects:
@@ -523,6 +555,10 @@ def _validate_release_topology(projects: list[tuple[str, Path, Path]]) -> Path |
         project_configs.append((slug, cfg, parse_dataset_repo_configs(raw)))
         if cfg.app_leader:
             leader_root = project_root
+        if cfg.app_leader or cfg.enabled:
+            _validate_dependents_are_deployed(slug, raw, deployed_slugs)
+    if len(projects) <= 1:
+        return None
     validate_deploy_topology(project_configs)
     return leader_root
 
@@ -736,6 +772,8 @@ def push_deploy(
         _IGNORE = shutil.ignore_patterns(
             ".git",
             ".venv",
+            "venv",
+            ".dev-project",
             "node_modules",
             "__pycache__",
             ".DS_Store",
