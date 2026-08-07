@@ -329,6 +329,8 @@ describe('chromakeyFromCarousel', () => {
     })
     mockPreviewChromakey.mockResolvedValue({
       png_b64: 'ZmFrZQ==',
+      n_frames: 1,
+      preview_skipped: false,
       key_hex: '#FF00FF',
       core_tol: 15,
       residual_thresh: 10,

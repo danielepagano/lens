@@ -54,6 +54,8 @@ export function startChromakeySession(path: string, opts: { returnToDir?: string
     status: 'previewing',
     lastParams: null,
     previewSrc: null,
+    previewSkipped: false,
+    nFrames: 1,
     keyHex: null,
     coreTol: null,
     residualThresh: null,
@@ -66,36 +68,54 @@ export function startChromakeySession(path: string, opts: { returnToDir?: string
   })
 }
 
-export async function runChromakeyPreview(params: MediaCompositeParams): Promise<void> {
+/**
+ * Runs a preview, or records that there is nothing to preview.
+ *
+ * An animated source comes back `preview_skipped`: still a `ready` session
+ * whose next step is Save, just without an image or resolved stats. Returns
+ * whether it was skipped so a caller that already knows what it wants (the CLI
+ * command, invoked with an explicit path) can go straight on to saving.
+ */
+export async function runChromakeyPreview(params: MediaCompositeParams): Promise<boolean> {
   mediaCompositeSession.update((s) => (s ? { ...s, status: 'previewing', error: null } : s))
   try {
     const result = await previewChromakey(params)
+    const skipped = result.preview_skipped
     mediaCompositeSession.update((s) =>
       s
         ? {
             ...s,
             status: 'ready',
             lastParams: params,
-            previewSrc: `data:image/png;base64,${result.png_b64}`,
+            previewSrc: result.png_b64 ? `data:image/png;base64,${result.png_b64}` : null,
+            previewSkipped: skipped,
+            nFrames: result.n_frames,
             keyHex: result.key_hex,
             coreTol: result.core_tol,
             residualThresh: result.residual_thresh,
             dilatePx: result.dilate_px,
             nCornersUsed: result.n_corners_used,
             savedPath: null,
-            previewSeq: s.previewSeq + 1,
+            // Skipped previews resolve no stats, so there is nothing for the
+            // input boxes to resync to -- leave whatever the user typed alone.
+            previewSeq: skipped ? s.previewSeq : s.previewSeq + 1,
           }
         : s
     )
+    return skipped
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     mediaCompositeSession.update((s) => (s ? { ...s, status: 'error', error: message } : s))
+    return false
   }
 }
 
 export async function runChromakeySave(): Promise<void> {
   const session = get(mediaCompositeSession)
-  if (!session || !session.lastParams || session.previewSrc === null) return
+  if (!session || !session.lastParams) return
+  // A skipped preview has no image but is still saveable -- that is the whole
+  // point of skipping it.
+  if (session.previewSrc === null && !session.previewSkipped) return
   mediaCompositeSession.update((s) => (s ? { ...s, status: 'saving', error: null } : s))
   try {
     const result = await saveChromakey(session.lastParams)

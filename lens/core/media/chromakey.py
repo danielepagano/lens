@@ -12,10 +12,19 @@ spatial feather would erode.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 import cv2
 import numpy as np
+
+from lens.core.media.apng import (
+    ApngDecodeError,
+    apng_frame_count,
+    decode_apng,
+    encode_palettized_png,
+    is_apng,
+)
+from fractions import Fraction
 
 
 @dataclass
@@ -64,7 +73,9 @@ class Calibration:
     n_corners_used: int
 
 
-def calibrate(img_bgr: np.ndarray, patch: int = 40, sample_tol: float = 45) -> Optional[Calibration]:
+def calibrate(
+    img_bgr: np.ndarray, patch: int = 40, sample_tol: float = 45, smooth: int = 0
+) -> Optional[Calibration]:
     """Border-seeded flood-fill sampling of background color and its natural variance.
 
     Used to derive a data-driven ``core_tol`` instead of a fixed guess.
@@ -73,9 +84,21 @@ def calibrate(img_bgr: np.ndarray, patch: int = 40, sample_tol: float = 45) -> O
     some inputs. If a generator's output has unusually noisy edges, override
     ``core_tol`` on that image rather than loosening this default.
 
+    ``smooth`` (odd kernel size, 0 to disable) median-blurs a *guide* copy used
+    only for the corner check and the flood fill. Palettized sources dither
+    their flat areas, and dithering defeats both: the corner fails the flatness
+    test, and fixed-range fill cannot span a channel whose spread exceeds
+    ``sample_tol``. Statistics are still measured on the untouched pixels, so
+    the color estimate gets the benefit of denoising while ``core_tol`` still
+    reflects the real noise the keyer has to clear.
+
     Returns ``None`` if no corner looks like a plausible flat background —
     caller must supply ``key_bgr`` explicitly in that case.
     """
+    if smooth and (smooth < 3 or smooth % 2 == 0):
+        raise ValueError(f"smooth must be 0 or an odd value >= 3 (got {smooth})")
+    guide = cv2.medianBlur(img_bgr, smooth) if smooth else img_bgr
+
     h, w = img_bgr.shape[:2]
     corners = [(0, 0), (w - patch, 0), (0, h - patch), (w - patch, h - patch)]
     mask = np.zeros((h + 2, w + 2), np.uint8)
@@ -84,12 +107,12 @@ def calibrate(img_bgr: np.ndarray, patch: int = 40, sample_tol: float = 45) -> O
     n_used = 0
 
     for cx, cy in corners:
-        patch_img = img_bgr[cy:cy + patch, cx:cx + patch]
+        patch_img = guide[cy:cy + patch, cx:cx + patch]
         if not corner_looks_like_background(patch_img):
             continue
         seed = (cx + patch // 2, cy + patch // 2)
-        cv2.floodFill(img_bgr.copy(), mask, seed,
-                       tuple(int(x) for x in img_bgr[seed[1], seed[0]]), diff, diff, flags)
+        cv2.floodFill(guide.copy(), mask, seed,
+                       tuple(int(x) for x in guide[seed[1], seed[0]]), diff, diff, flags)
         n_used += 1
 
     sample_mask = mask[1:-1, 1:-1] > 0
@@ -244,6 +267,193 @@ def remove_background_bytes(
         dilate_px=dilate_px, key_bgr=key_bgr,
     )
     return encode_png(result.bgra)
+
+
+# ---------------------------------------------------------------------------
+# Animated input (GIF / APNG / animated WebP) -> palettized APNG
+# ---------------------------------------------------------------------------
+
+
+# Median kernel for the calibration guide image. Sized for dither noise, which
+# is a 1px checker pattern; 3 clears it. Harmless on clean truecolor sources
+# (APNG, animated WebP) -- a median over a flat region returns that region.
+DITHER_SMOOTH = 3
+
+
+@dataclass(frozen=True, slots=True)
+class DecodedAnimation:
+    frames_bgr: List[np.ndarray]  # composited (disposal already applied)
+    delays: List[Fraction]        # exact seconds per frame, as authored
+    loop_count: int               # 0 == forever
+
+    @property
+    def is_animated(self) -> bool:
+        return len(self.frames_bgr) > 1
+
+
+@dataclass
+class AnimationKeyResult:
+    frames_bgra: List[np.ndarray]        # straight alpha, one per source frame
+    delays: List[Fraction]               # exact seconds per frame, as authored
+    loop_count: int
+    key_bgr: Tuple[float, float, float]
+    core_tol: float
+    residual_thresh: float
+    dilate_px: int
+    n_corners_used: int
+    calibration_frame: int               # frame the key was measured on; -1 if supplied
+
+
+def probe_frame_count(image_bytes: bytes) -> int:
+    """How many frames *image_bytes* holds, without decoding them all.
+
+    APNG answers from ``acTL`` alone; other formats decode at most two frames,
+    which is enough to tell a still from an animation. Callers use this to
+    decide whether a job is worth starting -- keying a large animation costs
+    tens of seconds, so it should never be run speculatively.
+
+    Returns 1 for anything that isn't decodable as an animation.
+    """
+    count = apng_frame_count(image_bytes)
+    if count is not None:
+        return count
+    arr = np.frombuffer(image_bytes, dtype=np.uint8)
+    try:
+        ok, animation = cv2.imdecodeanimation(arr, 0, 2)
+    except cv2.error:
+        return 1
+    return len(animation.frames) if ok and animation.frames else 1
+
+
+def decode_animation(image_bytes: bytes) -> DecodedAnimation:
+    """Decode any animated (or still) image into composited BGR frames.
+
+    APNG goes through :func:`lens.core.media.apng.decode_apng` rather than
+    OpenCV, which mis-composites ``blend_op=OVER`` over ``dispose_op=BACKGROUND``
+    and corrupts frames a few into the sequence. GIF and WebP keep the OpenCV
+    path, which handles them correctly.
+
+    Frames come back already composited, so disposal methods and partial frame
+    rects are resolved here and every frame is a full picture.
+    """
+    if is_apng(image_bytes):
+        try:
+            decoded = decode_apng(image_bytes)
+        except ApngDecodeError as e:
+            raise DecodeError(str(e)) from e
+        return DecodedAnimation(
+            [f[..., :3].copy() for f in decoded.frames_bgra],
+            decoded.delays,
+            decoded.loop_count,
+        )
+
+    arr = np.frombuffer(image_bytes, dtype=np.uint8)
+    ok, animation = cv2.imdecodeanimation(arr)
+    if not ok or not animation.frames:
+        raise DecodeError("couldn't decode image bytes as an animation")
+    frames = [f[..., :3] if f.ndim == 3 and f.shape[2] == 4 else f for f in animation.frames]
+    # OpenCV only reports whole milliseconds for GIF/WebP, which is all those
+    # formats store anyway (GIF delays are centiseconds).
+    delays = [Fraction(int(d), 1000) for d in animation.durations]
+    return DecodedAnimation(list(frames), delays, int(animation.loop_count))
+
+
+def remove_background_animation(
+    frames_bgr: Sequence[np.ndarray],
+    delays: Sequence[Fraction] = (),
+    *,
+    loop_count: int = 0,
+    core_tol: Optional[float] = None,
+    residual_thresh: float = 10.0,
+    dilate_px: Optional[int] = None,
+    key_bgr: Optional[Tuple[float, float, float]] = None,
+) -> AnimationKeyResult:
+    """Key every frame of an animation against one shared background colour.
+
+    Calibration runs **once**, not per frame. Re-measuring each frame lets
+    ``key_bgr`` and ``core_tol`` drift with whatever the encoder's quantizer did
+    to that frame, and the cut boundary then shimmers frame to frame — very
+    visible in motion even when each frame looks fine alone. The first frame
+    that calibrates wins and its numbers are pinned for the whole sequence.
+
+    Raises :class:`CalibrationError` if no frame yields a usable background and
+    none was supplied.
+    """
+    if not frames_bgr:
+        raise DecodeError("animation has no frames")
+
+    resolved_core_tol: float
+    calibration_frame = -1
+    n_corners = 0
+    if key_bgr is None:
+        for i, frame in enumerate(frames_bgr):
+            calib = calibrate(frame, smooth=DITHER_SMOOTH)
+            if calib is not None:
+                key_bgr = calib.key_bgr
+                n_corners = calib.n_corners_used
+                resolved_core_tol = core_tol if core_tol is not None else calib.core_tol
+                calibration_frame = i
+                break
+        else:
+            raise CalibrationError(
+                "no frame has a corner that looks like a flat background "
+                "-- pass key_bgr explicitly"
+            )
+    else:
+        resolved_core_tol = core_tol if core_tol is not None else 40.0
+
+    # Pin dilate_px too: it is resolution-derived, and all frames share a size.
+    if dilate_px is None:
+        dilate_px = max(20, frames_bgr[0].shape[1] // 60)
+
+    keyed = [
+        _key_math(frame, key_bgr, resolved_core_tol, residual_thresh, dilate_px)
+        for frame in frames_bgr
+    ]
+    return AnimationKeyResult(
+        frames_bgra=keyed,
+        delays=list(delays),
+        loop_count=loop_count,
+        key_bgr=key_bgr,
+        core_tol=resolved_core_tol,
+        residual_thresh=residual_thresh,
+        dilate_px=dilate_px,
+        n_corners_used=n_corners,
+        calibration_frame=calibration_frame,
+    )
+
+
+def remove_background_animation_bytes(
+    image_bytes: bytes,
+    *,
+    core_tol: Optional[float] = None,
+    residual_thresh: float = 10.0,
+    dilate_px: Optional[int] = None,
+    key_bgr: Optional[Tuple[float, float, float]] = None,
+    max_colors: int = 256,
+) -> bytes:
+    """Animated image bytes in, palettized APNG bytes out.
+
+    Use :func:`decode_animation` + :func:`remove_background_animation` directly
+    when the calibration stats or the resulting palette are also needed.
+    """
+    decoded = decode_animation(image_bytes)
+    result = remove_background_animation(
+        decoded.frames_bgr,
+        decoded.delays,
+        loop_count=decoded.loop_count,
+        core_tol=core_tol,
+        residual_thresh=residual_thresh,
+        dilate_px=dilate_px,
+        key_bgr=key_bgr,
+    )
+    png_bytes, _quantized = encode_palettized_png(
+        result.frames_bgra,
+        result.delays,
+        loop_count=result.loop_count,
+        max_colors=max_colors,
+    )
+    return png_bytes
 
 
 def parse_hex_key(hexcolor: str) -> Tuple[float, float, float]:

@@ -17,6 +17,7 @@ import { normalizeAddress, normalizePromptNodeSliceMentions } from './common'
 import {
   buildChromakeyParams,
   runChromakeyPreview,
+  runChromakeySave,
   startChromakeySession,
 } from '../features/media/mediaCompositeHandlers'
 
@@ -135,9 +136,12 @@ const mediaHandler = async (
       const residualThresh = (ctx.args.options['residual-thresh'] as string | undefined) ?? ''
       const dilatePx = (ctx.args.options['dilate-px'] as string | undefined) ?? ''
       startChromakeySession(rawPath)
-      await runChromakeyPreview(
+      const skipped = await runChromakeyPreview(
         buildChromakeyParams(rawPath, { key, coreTol, residualThresh, dilatePx })
       )
+      // Invoked with an explicit path and nothing to preview (animated source):
+      // the user already said what they want, so don't park on a Save button.
+      if (skipped) await runChromakeySave()
       return { clearInput: true }
     }
     let dir = rawPath

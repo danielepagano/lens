@@ -7,6 +7,7 @@ from __future__ import annotations
 import subprocess
 import tempfile
 import unittest
+from fractions import Fraction
 from pathlib import Path
 
 import cv2
@@ -14,6 +15,7 @@ import numpy as np
 import yaml
 
 from lens.core.commands.media_composite import chromakey, chromakey_preview
+from lens.core.media.apng import decode_apng, encode_palettized_png
 from lens.core.exceptions import LensException
 from lens.core.project import ProjectSession
 
@@ -57,6 +59,76 @@ def _synthetic_magenta_png(size: int = 200, square: int = 100) -> bytes:
     ok, buf = cv2.imencode(".png", img)
     assert ok
     return buf.tobytes()
+
+
+def _synthetic_magenta_apng(frames: int = 4, size: int = 120) -> bytes:
+    """The same stand-in illustration, animated -- a moving black square."""
+    seq = []
+    for i in range(frames):
+        img = np.full((size, size, 4), (255, 0, 255, 255), dtype=np.uint8)
+        x = 20 + i * 8
+        img[40:80, x:x + 40] = (0, 0, 0, 255)
+        seq.append(img)
+    png, _ = encode_palettized_png(seq, [Fraction(1, 16)] * frames, loop_count=0)
+    return png
+
+
+class ChromakeyAnimationTests(unittest.TestCase):
+    def test_preview_is_skipped_for_animated_source(self) -> None:
+        """Previewing an animation would key every frame, then save would redo it.
+
+        Reported as a normal outcome, not an error: the caller's next step is
+        still save, and it should be able to tell that apart from a failure.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "loop.png").write_bytes(_synthetic_magenta_apng(4))
+            session = ProjectSession(root, root)
+            preview = chromakey_preview(session, "loop.png")
+            self.assertTrue(preview.preview_skipped)
+            self.assertEqual(preview.n_frames, 4)
+            self.assertEqual(preview.png_bytes, b"")
+            self.assertIsNone(preview.key_hex, "no keying ran, so no stats to report")
+            self.assertIsNone(preview.core_tol)
+
+    def test_preview_skip_does_not_write_to_the_mount(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "loop.png").write_bytes(_synthetic_magenta_apng(4))
+            session = ProjectSession(root, root)
+            chromakey_preview(session, "loop.png")
+            self.assertFalse((root / "media" / "loop_fg.png").exists())
+
+    def test_preview_still_works_for_stills(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "still.png").write_bytes(_synthetic_magenta_png())
+            session = ProjectSession(root, root)
+            preview = chromakey_preview(session, "still.png")
+            self.assertEqual(preview.n_frames, 1)
+            self.assertFalse(preview.preview_skipped)
+            self.assertGreater(len(preview.png_bytes), 0)
+            self.assertIsNotNone(preview.key_hex)
+
+    def test_save_writes_an_animated_png(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _init_repo(Path(tmp))
+            _make_project(root)
+            (root / "media" / "loop.png").write_bytes(_synthetic_magenta_apng(4))
+            session = ProjectSession(root, root)
+            result = chromakey(session, "loop.png")
+            self.assertEqual(result.n_frames, 4)
+            self.assertIsNotNone(result.palette_colors)
+            saved = (root / "media" / "loop_fg.png").read_bytes()
+            self.assertIn(b"acTL", saved, "saved output must stay animated")
+            decoded = decode_apng(saved)
+            self.assertEqual(len(decoded.frames_bgra), 4)
+            self.assertEqual(decoded.delays, [Fraction(1, 16)] * 4,
+                             "authored frame rate must survive the round trip")
+            self.assertEqual(decoded.frames_bgra[0][5, 5, 3], 0, "background cleared")
 
 
 class ChromakeyCommandTests(unittest.TestCase):

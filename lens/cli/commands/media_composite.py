@@ -88,6 +88,11 @@ def chromakey(
         f"residual_thresh={result.residual_thresh} dilate_px={result.dilate_px} "
         f"({result.n_corners_used}/4 corners)"
     )
+    if result.n_frames > 1:
+        typer.echo(
+            f"  animated: {result.n_frames} frames, "
+            f"{result.palette_colors}-colour palette with 8-bit alpha"
+        )
     typer.echo(
         "  not clean? re-run with --core-tol (and optionally --key/--dilate-px/"
         "--residual-thresh) to override -- it overwrites this output."
