@@ -224,6 +224,29 @@ class DecodeTests(unittest.TestCase):
         self.assertTrue((second[12, 8] == (255, 0, 0, 255)).all(), "bottom: overlay wins")
         self.assertTrue((second[2, 8] == (0, 0, 255, 255)).all(), "top: red shows through")
 
+    def test_frame_count_mismatch_is_rejected(self) -> None:
+        """acTL's count independently checks the chunk walk.
+
+        A walk that loses sync reads payload bytes as chunk headers and invents
+        or drops frames; disagreeing with the declared count is the cheapest
+        signal that happened, and much better than returning wrong pixels.
+        """
+        png, _ = encode_palettized_png(make_frames(3), [Fraction(1, 20)] * 3)
+        # rewrite acTL's num_frames to a lie, fixing the CRC so only the count
+        # is wrong -- otherwise we would just be testing corruption detection
+        i = png.index(b"acTL")
+        payload = struct.pack(">II", 99, 0)
+        tampered = (
+            png[:i + 4] + payload
+            + struct.pack(">I", zlib.crc32(b"acTL" + payload) & 0xFFFFFFFF)
+            + png[i + 4 + 8 + 4:]
+        )
+        with self.assertRaises(ApngDecodeError) as ctx:
+            decode_apng(tampered)
+        self.assertIn("99", str(ctx.exception))
+        # and the untampered original still decodes
+        self.assertEqual(len(decode_apng(png).frames_bgra), 3)
+
     def test_exact_frame_rate_survives_a_full_roundtrip(self) -> None:
         """1/16s is 62.5ms -- an integer-ms carrier rounds it and the loop drifts.
 

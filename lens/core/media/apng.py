@@ -10,6 +10,16 @@ fraction of the size — close to GIF, but keeping real 8-bit alpha. PNG's
 alpha that :func:`chromakey.remove_background` recovers survives, which it
 cannot in GIF's single-transparent-index model.
 
+Palette *does not* imply 1-bit alpha, despite the widespread belief that it
+does. That belief comes from tooling, not the format: ffmpeg's ``paletteuse``
+binarizes alpha at its ``alpha_threshold`` (default 128), so anything routed
+through ``palettegen``/``paletteuse`` really does come back with hard-edged
+transparency, and the usual conclusion is to fall back to 24-bit colour at
+roughly triple the size. The limit is that filter's, not PNG's — a real
+palettized-PNG encoder keeps all 256 alpha levels. Measured on a keyed 76-frame
+illustration: 205 colours, 14 of them partial-alpha, carrying the entire
+anti-aliased hair matte losslessly at 5.5x smaller than the truecolour source.
+
 OpenCV cannot emit APNG (``imencodeanimation`` with a ``.png``/``.apng``
 extension silently writes only the first frame, with no ``acTL`` chunk), so the
 container is assembled here from ``zlib`` + ``struct``.
@@ -507,6 +517,7 @@ def decode_apng(data: bytes) -> DecodedApng:
     plte: bytes | None = None
     trns: bytes | None = None
     loop_count = 0
+    declared_frames: int | None = None
     frames: List[_RawFrame] = []
     current: _RawFrame | None = None
     seen_idat = False
@@ -523,7 +534,7 @@ def decode_apng(data: bytes) -> DecodedApng:
         elif tag == b"tRNS":
             trns = payload
         elif tag == b"acTL":
-            loop_count = struct.unpack(">II", payload[:8])[1]
+            declared_frames, loop_count = struct.unpack(">II", payload[:8])
         elif tag == b"fcTL":
             _seq, fw, fh, fx, fy = struct.unpack(">IIIII", payload[:20])
             delay_num, delay_den = struct.unpack(">HH", payload[20:24])
@@ -547,6 +558,18 @@ def decode_apng(data: bytes) -> DecodedApng:
 
     if not ihdr or not frames or not seen_idat:
         raise ApngDecodeError("APNG is missing IHDR, IDAT or frame control data")
+
+    # acTL declares the frame count, so it independently checks the chunk walk:
+    # a walk that loses sync mistakes payload bytes for chunk headers and
+    # invents or drops frames, and this is the cheapest place that shows up.
+    # Failing loudly beats handing back frames assembled from misread offsets.
+    if declared_frames is not None and declared_frames != len(frames):
+        raise ApngDecodeError(
+            f"APNG declares {declared_frames} frames in acTL but {len(frames)} "
+            "fcTL chunks were found -- the file is malformed or the chunk walk "
+            "lost sync"
+        )
+
     frames = [f for f in frames if f.data]
     if not frames:
         raise ApngDecodeError("APNG has no frame data")
