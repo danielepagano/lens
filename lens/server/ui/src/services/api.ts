@@ -421,12 +421,16 @@ export interface ChromakeyParams {
 }
 
 export interface ChromakeyPreviewResult {
-  png_b64: string
-  key_hex: string
-  core_tol: number
-  residual_thresh: number
-  dilate_px: number
-  n_corners_used: number
+  /** Null when `preview_skipped` — an animated source is not rendered. */
+  png_b64: string | null
+  key_hex: string | null
+  core_tol: number | null
+  residual_thresh: number | null
+  dilate_px: number | null
+  n_corners_used: number | null
+  n_frames: number
+  /** Animated source: keying every frame to preview would double the save's work. */
+  preview_skipped: boolean
 }
 
 export interface ChromakeySaveResult {
@@ -436,6 +440,8 @@ export interface ChromakeySaveResult {
   residual_thresh: number
   dilate_px: number
   n_corners_used: number
+  n_frames: number
+  palette_colors: number | null
 }
 
 function chromakeyRequestBody(params: ChromakeyParams): Record<string, unknown> {

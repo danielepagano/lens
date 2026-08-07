@@ -220,8 +220,18 @@
               }}
             >✕</button>
           {/if}
-        {:else}
+        {:else if session.previewSkipped}
+          <span class="carousel-spotlight-placeholder">
+            Animated ({session.nFrames} frames) — no preview, since keying every
+            frame would do the whole job twice. Save writes it straight to the
+            mount; re-run with a different tolerance to retune.
+          </span>
+        {:else if session.status === 'previewing'}
           <span class="carousel-spotlight-placeholder">Previewing…</span>
+        {:else if session.status === 'error'}
+          <span class="carousel-spotlight-placeholder">No preview.</span>
+        {:else}
+          <span class="carousel-spotlight-placeholder">Preview to see the cut.</span>
         {/if}
       </div>
 

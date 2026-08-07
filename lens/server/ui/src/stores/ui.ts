@@ -130,6 +130,10 @@ export interface MediaCompositeState {
   /** Params that produced the current `previewSrc` (also what Save re-submits). */
   lastParams: MediaCompositeParams | null
   previewSrc: string | null
+  /** Animated source: there is no preview to show, but Save is still valid. */
+  previewSkipped: boolean
+  /** Frame count of the source; > 1 only for animations. */
+  nFrames: number
   keyHex: string | null
   coreTol: number | null
   residualThresh: number | null

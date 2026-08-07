@@ -94,6 +94,8 @@ describe('runChromakeyPreview', () => {
     startChromakeySession('hero.png')
     mockPreviewChromakey.mockResolvedValue({
       png_b64: 'ZmFrZQ==',
+      n_frames: 1,
+      preview_skipped: false,
       key_hex: '#FF00FF',
       core_tol: 15,
       residual_thresh: 10,
@@ -116,6 +118,8 @@ describe('runChromakeyPreview', () => {
     startChromakeySession('hero.png')
     mockPreviewChromakey.mockResolvedValue({
       png_b64: 'ZmFrZQ==',
+      n_frames: 1,
+      preview_skipped: false,
       key_hex: '#FF00FF',
       core_tol: 15,
       residual_thresh: 10,
@@ -157,6 +161,8 @@ describe('runChromakeySave', () => {
     startChromakeySession('hero.png')
     mockPreviewChromakey.mockResolvedValue({
       png_b64: 'ZmFrZQ==',
+      n_frames: 1,
+      preview_skipped: false,
       key_hex: '#FF00FF',
       core_tol: 15,
       residual_thresh: 10,
@@ -167,6 +173,8 @@ describe('runChromakeySave', () => {
 
     mockSaveChromakey.mockResolvedValue({
       output_path: 'hero_fg.png',
+      n_frames: 1,
+      palette_colors: null,
       key_hex: '#FF00FF',
       core_tol: 30,
       residual_thresh: 10,
@@ -181,10 +189,68 @@ describe('runChromakeySave', () => {
     expect(s?.savedPath).toBe('hero_fg.png')
   })
 
+  it('leaves an animated source ready to save with no preview image', async () => {
+    startChromakeySession('loop.png')
+    mockPreviewChromakey.mockResolvedValue({
+      png_b64: null,
+      n_frames: 76,
+      preview_skipped: true,
+      key_hex: null,
+      core_tol: null,
+      residual_thresh: null,
+      dilate_px: null,
+      n_corners_used: null,
+    })
+
+    const skipped = await runChromakeyPreview({ path: 'loop.png' })
+
+    expect(skipped).toBe(true)
+    const s = get(mediaCompositeSession)
+    expect(s?.status).toBe('ready')
+    expect(s?.previewSkipped).toBe(true)
+    expect(s?.nFrames).toBe(76)
+    expect(s?.previewSrc).toBeNull()
+    expect(s?.error).toBeNull()
+    // lastParams must be set or Save stays a no-op -- that was the dead end
+    expect(s?.lastParams).toEqual({ path: 'loop.png' })
+  })
+
+  it('saves after a skipped preview even though there is no preview image', async () => {
+    startChromakeySession('loop.png')
+    mockPreviewChromakey.mockResolvedValue({
+      png_b64: null,
+      n_frames: 76,
+      preview_skipped: true,
+      key_hex: null,
+      core_tol: null,
+      residual_thresh: null,
+      dilate_px: null,
+      n_corners_used: null,
+    })
+    await runChromakeyPreview({ path: 'loop.png' })
+    mockSaveChromakey.mockResolvedValue({
+      output_path: 'loop_fg.png',
+      n_frames: 76,
+      palette_colors: 205,
+      key_hex: '#BB1AAD',
+      core_tol: 46.5,
+      residual_thresh: 10,
+      dilate_px: 20,
+      n_corners_used: 4,
+    })
+
+    await runChromakeySave()
+
+    expect(mockSaveChromakey).toHaveBeenCalledWith({ path: 'loop.png' })
+    expect(get(mediaCompositeSession)?.savedPath).toBe('loop_fg.png')
+  })
+
   it('sets an error status on save failure', async () => {
     startChromakeySession('hero.png')
     mockPreviewChromakey.mockResolvedValue({
       png_b64: 'ZmFrZQ==',
+      n_frames: 1,
+      preview_skipped: false,
       key_hex: '#FF00FF',
       core_tol: 15,
       residual_thresh: 10,
