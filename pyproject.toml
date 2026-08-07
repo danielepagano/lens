@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "lens"
-version = "1.0.0"
+version = "0.4.0"
 description = "Lens: narrative engine with fractal summarization"
 readme = "README.md"
 license = "MIT"
