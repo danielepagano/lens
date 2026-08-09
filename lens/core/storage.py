@@ -13,6 +13,11 @@ operation Storage checks whether any pending unstaged changes belong to a
 
 Owner format: NarrativeAddress with operator/op_id/line set as appropriate.
 System / non-operator commands use ``None`` (always stages pending first).
+
+Three modes exist (see :class:`StorageMode`).  ``DIRECT`` is the escape hatch
+for edits the user makes by hand (KB objects, config): it never touches the
+pending transaction and instead stages just the files it writes.  See
+"Direct user edits" in docs/design.md.
 """
 
 from __future__ import annotations
@@ -20,6 +25,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+from enum import Enum
 from pathlib import Path
 from typing import ClassVar
 
@@ -112,6 +118,26 @@ def _match_annotation_owner(
     return None
 
 
+class StorageMode(Enum):
+    """How a Storage instance relates to the pending transaction.
+
+    ``OPERATOR``
+        Writes belong to the operator identified by ``owner``.  Pending work
+        from a *different* owner is staged first (single-pending-transaction).
+    ``SYSTEM``
+        Non-operator machinery (init, use, release, media, …).  Any pending
+        transaction is staged before the first write.
+    ``DIRECT``
+        A direct user edit (hand-edited KB object, config change).  Never
+        stages anyone else's work; stages only the files it writes, and only
+        when the pending transaction does not already touch them.
+    """
+
+    OPERATOR = "operator"
+    SYSTEM = "system"
+    DIRECT = "direct"
+
+
 class Storage:
     """Git-backed transactional storage.
 
@@ -122,19 +148,50 @@ class Storage:
     owner:
         NarrativeAddress for the caller.  ``None`` for system /
         non-operator commands (they never continue a pending transaction).
+    mode:
+        Explicit :class:`StorageMode`.  Defaults to ``OPERATOR`` when an owner
+        is given and ``SYSTEM`` otherwise; pass ``DIRECT`` (or use
+        :meth:`for_direct_edit`) for direct user edits.
     """
 
     _GIT: ClassVar[str] = "git"
 
-    def __init__(self, git_root: Path, owner: NarrativeAddress | None = None) -> None:
+    def __init__(
+        self,
+        git_root: Path,
+        owner: NarrativeAddress | None = None,
+        *,
+        mode: StorageMode | None = None,
+    ) -> None:
+        if mode is None:
+            mode = StorageMode.OPERATOR if owner is not None else StorageMode.SYSTEM
+        if mode is not StorageMode.OPERATOR and owner is not None:
+            raise ValueError(f"{mode.value} storage cannot have an operator owner")
+        if mode is StorageMode.OPERATOR and owner is None:
+            raise ValueError("operator storage requires an owner")
         self._root = git_root
         self._owner = owner
+        self._mode = mode
         self._ownership_checked = False
+        self._direct_baseline: set[str] = set()
         self._text_normalizer = StorageTextNormalizer()
+
+    @classmethod
+    def for_direct_edit(cls, git_root: Path) -> Storage:
+        """Storage for a direct user edit: stages only what it writes.
+
+        Use for hand edits to KB objects and config — anything the user is
+        already the reviewer of.  Never use for generated content.
+        """
+        return cls(git_root, mode=StorageMode.DIRECT)
 
     @property
     def root(self) -> Path:
         return self._root
+
+    @property
+    def mode(self) -> StorageMode:
+        return self._mode
 
     def normalize_path_text(self, path: Path) -> NormalizedStorageText:
         """Return cached normalized storage text projections for *path*."""
@@ -643,6 +700,7 @@ class Storage:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         self.invalidate_normalized_path(path)
+        self._stage_direct(path)
         from lens.core.speech.tts_cache_sync import maybe_prune_tts_after_narrative_write
 
         maybe_prune_tts_after_narrative_write(self._root, path)
@@ -652,6 +710,7 @@ class Storage:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
         self.invalidate_normalized_path(path)
+        self._stage_direct(path)
 
     def delete_file(self, path: Path) -> None:
         self._ensure_ownership()
@@ -663,6 +722,7 @@ class Storage:
             maybe_remove_tts_cache_before_narrative_delete(self._root, path)
             path.unlink()
         self.invalidate_normalized_path(path)
+        self._stage_direct(path)
 
     def mkdir(self, path: Path) -> None:
         self._ensure_ownership()
@@ -682,6 +742,7 @@ class Storage:
         src.rename(dst)
         self.invalidate_normalized_path(src)
         self.invalidate_normalized_path(dst)
+        self._stage_direct(src, dst)
 
     def copy_file(self, src: Path, dst: Path) -> None:
         """Copy file content from src to dst. Creates parent dirs if needed."""
@@ -698,12 +759,18 @@ class Storage:
         """Auto-stage pending changes if they belong to a different owner.
 
         Called lazily on the first write operation.  System commands
-        (``owner=None``) always stage any pending changes.  Operators only
-        stage when the detected pending owner differs from ``self._owner``.
+        (``StorageMode.SYSTEM``) always stage any pending changes.  Operators
+        only stage when the detected pending owner differs from ``self._owner``.
+        Direct user edits never stage anyone else's work — they only record
+        which files the pending transaction already owns, so
+        :meth:`_stage_direct` can leave those alone.
         """
         if self._ownership_checked:
             return
         self._ownership_checked = True
+        if self._mode is StorageMode.DIRECT:
+            self._direct_baseline = set(self.pending_files())
+            return
         if not self.has_pending():
             return
         if self._owner is None:
@@ -713,3 +780,34 @@ class Storage:
         if pending_owner == self._owner:
             return
         self.stage_all()
+
+    def _stage_direct(self, *paths: Path) -> None:
+        """Stage *paths* immediately (``DIRECT`` mode only).
+
+        A file the pending transaction already touches is skipped: staging it
+        would split an operator's own work across the staged/unstaged
+        boundary.  Such an edit stays unstaged and merges into the pending
+        transaction, so Discard takes both.
+        """
+        if self._mode is not StorageMode.DIRECT:
+            return
+        rel_paths: list[str] = []
+        for path in paths:
+            rel = self._relative_to_root(path)
+            if rel is None or rel in self._direct_baseline:
+                continue
+            rel_paths.append(rel)
+        if not rel_paths:
+            return
+        subprocess.run(
+            [self._GIT, "add", "--", *rel_paths],
+            cwd=self._root,
+            capture_output=True,
+        )
+
+    def _relative_to_root(self, path: Path) -> str | None:
+        """Repo-relative POSIX path, or ``None`` when *path* is outside the repo."""
+        try:
+            return path.resolve().relative_to(self._root.resolve()).as_posix()
+        except ValueError:
+            return None

@@ -105,6 +105,22 @@ This mapping is a storage design choice; the UI avoids git jargon (it uses “Sa
 
 **Single-transaction invariant:** at most one pending operator transaction per repo. New work auto-stages the previous. Every file mutation goes through `Storage` so ownership and rollback stay coherent.
 
+**Direct user edits — the one exception.** The invariant is about *operator* work being reviewable as a unit. A user hand-editing a KB object or config is already the reviewer, and these edits arrive in bursts (clicking an HP spinner mid-scene), so wrapping them in transaction ownership buys nothing and silently accepts whatever preview happens to be pending. `Storage` therefore has three modes:
+
+| `StorageMode` | Used by | On first write |
+|---------------|---------|----------------|
+| `OPERATOR` (owner set) | Operators, workflow steps, AI-driven `kb edit` | Stages the pending transaction only if it belongs to a *different* owner |
+| `SYSTEM` (owner `None`) | Non-operator machinery: `init`, `use`, release/deploy, media + TTS writes, pins/vars/params | Stages any pending transaction |
+| `DIRECT` (`Storage.for_direct_edit` / `session.new_direct_edit_storage()`) | Direct user edits: the KB write routes (save, create, delete, tag, template, copy, rename) | Stages nothing; instead stages *each file it writes*, immediately |
+
+`DIRECT` writes leave every other pending change exactly as it was, so an unreviewed generation stays unstaged and Discard still reaches it. It is also the honest mode for mechanical repo maintenance — version bumps, migration writes, template refreshes — which can stage themselves instead of pretending to be operator work.
+
+Front-matter writes (pins, vars, operator params) stay `SYSTEM` for now: they land in narrative files, which the pending transaction usually owns anyway. `lens use` stays `SYSTEM` too — switching the active narrative is a structural change, not a hand edit. Both are revisitable; the mode is a per-call-site choice, not a property of the file type.
+
+**Same-file conflict:** if the pending transaction already touches the file being edited, staging it would split an operator's own work across the staged/unstaged boundary — worse than either alternative. In that case `DIRECT` does not stage at all: the edit stays unstaged and merges into the existing transaction, and Discard takes both. The user is editing an object the operator is mid-way through changing, so treating the edit as part of that transaction is the honest reading.
+
+Generated content never uses `DIRECT`. The AI-driven KB edit (`POST /kb/edit`) stays a reviewable transaction, exactly like an operator, because it is something you want to retry and revert.
+
 **Stateless tooling:** Lens needs filesystem access, git credentials, and LLM configuration — not a running database. A deployment can wrap a single commit lifecycle.
 
 **Three ways to use a project:** (1) browse and hand-edit Markdown — Lens optional if structure is respected; filesystem uniqueness is mostly self-enforcing; (2) invoke operators at the cursor with preview/retry; (3) stage and checkpoint. For large resets, **git checkout or branch** restores narrative *and* knowledge together; narrative-only **rewind** truncates the tree but does not roll KB back by itself.

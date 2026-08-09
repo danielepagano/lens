@@ -327,6 +327,120 @@ class TestOwnershipAutoStage(unittest.TestCase):
             self.assertIn("narrative/test/_node.md", cached)
 
 
+class TestDirectEditMode(unittest.TestCase):
+    """Direct user edits stage themselves and leave the pending transaction alone."""
+
+    def _repo_with_pending_preview(self, tmp: str) -> Path:
+        root = _init_repo(Path(tmp))
+        node = root / "narrative" / "test" / "_node.md"
+        node.parent.mkdir(parents=True)
+        node.write_text("# test\n")
+        kb = root / "knowledge" / "pc" / "amy.md"
+        kb.parent.mkdir(parents=True)
+        kb.write_text("hp: 10\n")
+        _git(root, "add", "-A")
+        _git(root, "commit", "-m", "track")
+        # An operator preview the user has not accepted yet.
+        node.write_text("# test\n\n[write]: #\ngenerated prose\n[/write]: #\n")
+        return root
+
+    def test_leaves_unrelated_pending_unstaged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo_with_pending_preview(tmp)
+            kb = root / "knowledge" / "pc" / "amy.md"
+
+            Storage.for_direct_edit(root).write_file(kb, "hp: 4\n")
+
+            cached = _git(root, "diff", "--cached", "--name-only").split()
+            self.assertIn("knowledge/pc/amy.md", cached)
+            self.assertNotIn("narrative/test/_node.md", cached)
+            self.assertIn("narrative/test/_node.md", _git(root, "diff", "--name-only"))
+
+    def test_pending_preview_stays_discardable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo_with_pending_preview(tmp)
+            kb = root / "knowledge" / "pc" / "amy.md"
+
+            Storage.for_direct_edit(root).write_file(kb, "hp: 4\n")
+            Storage(root).rollback()
+
+            self.assertEqual(
+                (root / "narrative" / "test" / "_node.md").read_text(), "# test\n"
+            )
+            self.assertEqual(kb.read_text(), "hp: 4\n")
+
+    def test_stages_new_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo_with_pending_preview(tmp)
+            new_kb = root / "knowledge" / "pc" / "bo.md"
+
+            Storage.for_direct_edit(root).write_file(new_kb, "hp: 8\n")
+
+            self.assertIn(
+                "knowledge/pc/bo.md", _git(root, "diff", "--cached", "--name-only")
+            )
+
+    def test_stages_delete(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo_with_pending_preview(tmp)
+
+            Storage.for_direct_edit(root).delete_file(root / "knowledge" / "pc" / "amy.md")
+
+            cached = _git(root, "diff", "--cached", "--name-only").split()
+            self.assertIn("knowledge/pc/amy.md", cached)
+            self.assertNotIn("narrative/test/_node.md", cached)
+
+    def test_stages_rename_both_sides(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo_with_pending_preview(tmp)
+            src = root / "knowledge" / "pc" / "amy.md"
+            dst = root / "knowledge" / "pc" / "amelia.md"
+
+            Storage.for_direct_edit(root).rename(src, dst)
+
+            # Rename detection collapses the pair, so ask for both sides.
+            cached = _git(root, "diff", "--cached", "--no-renames", "--name-only").split()
+            self.assertIn("knowledge/pc/amy.md", cached)
+            self.assertIn("knowledge/pc/amelia.md", cached)
+            self.assertNotIn("narrative/test/_node.md", cached)
+
+    def test_same_file_as_pending_is_not_staged(self) -> None:
+        """Editing a file the pending transaction already touches merges into it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo_with_pending_preview(tmp)
+            kb = root / "knowledge" / "pc" / "amy.md"
+            # The pending transaction already changed this object.
+            kb.write_text("hp: 7\n")
+
+            Storage.for_direct_edit(root).write_file(kb, "hp: 4\n")
+
+            self.assertEqual(_git(root, "diff", "--cached", "--name-only").strip(), "")
+            self.assertIn("knowledge/pc/amy.md", _git(root, "diff", "--name-only"))
+
+    def test_burst_of_edits_each_stage(self) -> None:
+        """A separate Storage per edit (one per request) still stages each one."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._repo_with_pending_preview(tmp)
+            kb = root / "knowledge" / "pc" / "amy.md"
+
+            for hp in ("9", "8", "7"):
+                Storage.for_direct_edit(root).write_file(kb, f"hp: {hp}\n")
+
+            self.assertIn(
+                "knowledge/pc/amy.md", _git(root, "diff", "--cached", "--name-only")
+            )
+            self.assertNotIn("knowledge/pc/amy.md", _git(root, "diff", "--name-only"))
+
+    def test_rejects_operator_owner(self) -> None:
+        from lens.core.storage import StorageMode
+
+        owner = NarrativeAddress.from_file_and_annotation(
+            "narrative/test/_node.md", operator="write", line=1
+        )
+        with self.assertRaises(ValueError):
+            Storage(Path("/tmp"), owner=owner, mode=StorageMode.DIRECT)
+
+
 class TestDetectPendingOwnerFromDiff(unittest.TestCase):
     def test_added_single_line_annotation(self) -> None:
         diff = (

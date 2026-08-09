@@ -46,6 +46,23 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def _run_cli_command(page: "Page", text: str) -> None:
+    """Type *text* into the CLI and submit it, once the CLI can accept commands.
+
+    The command registry is built from the first ``/stats`` response, so an
+    Enter that lands before it does is rejected as an unknown command and
+    silently swallowed.  The cursor context pill renders only from applied
+    stats, so waiting for it proves the registry is populated.
+    """
+    page.wait_for_selector(
+        '[data-testid="cursor-context-explain"]', timeout=_PAGE_TIMEOUT_MS
+    )
+    cli = page.locator('[data-testid="cli-input"]')
+    cli.click()
+    cli.press_sequentially(text)
+    page.keyboard.press("Enter")
+
+
 class TestRegressionWorkflowBrowser:
     """PW-01: workflow step strip visible during /write stream."""
 
@@ -69,10 +86,7 @@ class TestRegressionWorkflowBrowser:
         with urllib.request.urlopen(rollback_req, timeout=10):
             pass
 
-        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
-        cli.click()  # type: ignore[union-attr]
-        cli.press_sequentially("/write begin ")
-        page.keyboard.press("Enter")  # type: ignore[union-attr]
+        _run_cli_command(page, "/write begin ")
 
         page.wait_for_selector(
             '[data-testid="workflow-steps"]',
@@ -154,10 +168,7 @@ class TestRegressionWorkflowBrowser:
             '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
         )  # type: ignore[union-attr]
 
-        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
-        cli.click()  # type: ignore[union-attr]
-        cli.press_sequentially("/structure-explain")
-        page.keyboard.press("Enter")  # type: ignore[union-attr]
+        _run_cli_command(page, "/structure-explain")
 
         page.wait_for_selector(
             '[data-testid="explain-totals"]', timeout=_PAGE_TIMEOUT_MS

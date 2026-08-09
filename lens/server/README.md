@@ -100,6 +100,10 @@ The UI consumes this route from `features/explain/` (context modal, opened by th
 | PUT | `/{slug}/kb/template/{type}` | Set the template for a KB object type. Body: `{"content": "..."}`. |
 | POST | `/{slug}/kb/with-tag` | Query KB objects by tag. Body: `{"tags": [...], "expand": false, "recurse": null, "same_type_only": false}`. |
 
+The mutating routes above are **direct user edits**: they use `session.new_direct_edit_storage()`, which stages only the files it writes and leaves any pending operator preview unstaged and discardable (see "Direct user edits" in [docs/design.md](../../docs/design.md#git-backed-storage)). `POST /kb/edit` (below) is AI-generated content and deliberately stays a normal reviewable transaction. A direct edit that touches a file the pending transaction already changed is *not* staged — it merges into that transaction instead.
+
+Direct-edit routes build their own `KnowledgeStore`, so any route that mutates tags must call `session.kb.evict_tag_cache()` afterwards to keep the shared store coherent.
+
 ### Transaction
 
 | Method | Path | Description |

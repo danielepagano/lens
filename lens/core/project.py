@@ -563,6 +563,8 @@ class ProjectSession:
     - .media  — the singleton MediaService (warm search index persists for the
                 lifetime of this process), or None if no mount is configured
     - .new_storage(owner)  — factory for per-operation Storage instances
+    - .new_direct_edit_storage() — factory for direct user edits (KB/config),
+                which stage themselves and leave the pending transaction alone
     """
 
     def __init__(self, git_root: Path, project_root: Path) -> None:
@@ -589,6 +591,16 @@ class ProjectSession:
         """Create a fresh Storage for one operation."""
         from lens.core.storage import Storage
         return Storage(self.git_root, owner=owner)
+
+    def new_direct_edit_storage(self) -> Storage:
+        """Create a Storage for a direct user edit (KB object, config).
+
+        Stages only the files it writes and leaves any pending operator
+        transaction untouched.  Not for generated content — see
+        "Direct user edits" in docs/design.md.
+        """
+        from lens.core.storage import Storage
+        return Storage.for_direct_edit(self.git_root)
 
     @classmethod
     def from_cwd(cls) -> ProjectSession:

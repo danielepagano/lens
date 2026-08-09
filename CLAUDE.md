@@ -187,6 +187,8 @@ Closing tags: `[/section:ch1]: #`. Self-closing: `[section:ch1/]: #`.
 
 **Storage + transactions** (`storage.py`): every write goes through `Storage`, which is instantiated with an owner `NarrativeAddress`. On the first write, if unstaged changes exist from a *different* owner, they are auto-staged first. This enforces single-pending-transaction semantics. Git's unstaged area = pending transaction; `git add -A` = commit transaction.
 
+`StorageMode` splits the old `owner=None` sentinel in two: `SYSTEM` (non-operator machinery — stages any pending transaction first) and `DIRECT` (`Storage.for_direct_edit` / `session.new_direct_edit_storage()`), for direct user edits to KB objects and config. `DIRECT` never stages anyone else's work — it stages just the files it writes, unless the pending transaction already touches them, in which case the edit merges into that transaction. Never use it for generated content. See "Direct user edits" in [docs/design.md](docs/design.md).
+
 **Operator** (`operator.py`): abstract base for LLM operators. Operating modes:
 - *Inline* (`write`, `play`, one-shot `chat`): open tag + streamed content + close tag appended to cursor node
 - *Sub-node / session* (`section`, `chat --with`, `play`, `design`, `advance`): creates a child node until `--end` summarizes back
