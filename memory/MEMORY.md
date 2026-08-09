@@ -12,6 +12,17 @@ Lens is a solo hobby project; the owner is the only developer. Process exists on
 - No attribution footers on GitHub posts — one developer, no ambiguity about who wrote what. (The server strips them on post regardless.)
 - Issue prose should be dense and decided. Hedging, restating the same point in two sections, and inventing open questions to look thorough all cost the owner time to strip out.
 
+**Commits use Conventional Commits.** `semantic-release` runs on every push to `main` (`.github/workflows/release.yml` + `.releaserc.json`) with the default Angular preset, so the type is not cosmetic — it decides whether a release is cut:
+
+| Type | Effect on `main` |
+|------|------------------|
+| `feat:` | minor bump, listed in release notes |
+| `fix:` / `perf:` | patch bump, listed in release notes |
+| `docs:` `chore:` `refactor:` `test:` `style:` `build:` `ci:` | no release, not in notes |
+| `type!:` or `BREAKING CHANGE:` footer | major bump |
+
+Tags are bare versions, no `v` prefix (`tagFormat: "${version}"`). Nothing lints commit subjects — `check.yml` only runs `poe check` — so a wrong type fails silently (no release, or an unintended bump) rather than loudly. On a squash merge the PR title becomes the subject semantic-release reads.
+
 ## Doc quick links
 
 | Need | Read |
