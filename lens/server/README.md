@@ -37,6 +37,24 @@ All project-specific routes are prefixed with `/{slug}`. Replace `{slug}` with t
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/{slug}/stats` | Project stats: active narrative, cursor, pending transaction state, dataset, KB counts. |
+| GET | `/{slug}/explain` | Prompt composition at a cursor: every component with block, bytes, estimated tokens, share, and provenance, plus per-block and grand totals. Read-only — no transaction, no model call. |
+
+**`GET /{slug}/explain` query parameters**
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `address` | cursor | Node to report on (e.g. `/chapter-1`, `/@cursor`). |
+| `line` | — | 1-based line; the current passage is reported as ending there. |
+| `operator` | detected | Assemble as this operator instead of the one detected at the cursor. 400 if unknown. |
+| `prompt` | — | Prompt text to include, as if passed to the operator. |
+| `sort` | `order` | `order`, `size`, or `id` — ordering of components within each block. |
+| `chars_per_token` | `4` | Divisor for the token estimate (1–32). |
+
+Response: `{address, node, operator, line, blocks[], excluded[], totals{bytes, tokens, accounted_bytes, other_bytes, other_tokens, messages, message_bytes}, chars_per_token, active_modalities[], pinned_ids[], warnings[]}`. Each block carries `{id, label, role, bytes, tokens, percent, framing_bytes, framing_tokens, cache, components[]}`; each component carries `{id, kind, block, order, bytes, tokens, percent, provenance, provenance_kind, cache, detail}`. Provenance kinds: `node_pin`, `expansion`, `mention`, `rules_companion`, `module`, `modality`, `operator_pin`, `operator`, `narrative`.
+
+**Everything reconciles.** `framing_bytes` / `framing_tokens` are what the block adds around its components (the `--- begin/end <title> ---` wrapper plus separators), so `block.bytes == Σ components.bytes + framing_bytes` and the same holds for tokens; `totals.bytes == Σ blocks.bytes + other_bytes` and `totals.tokens == Σ blocks.tokens + other_tokens`. A client can render a stacked bar from either unit without a leftover slice. Token counts are an estimate — every part is estimated independently and aggregates are sums of their parts, so the total is marginally higher than estimating the whole prompt in one pass; byte counts are exact.
+
+The payload carries only machine values: `cache` is `prefix` / `volatile` (a heuristic until prompt caching lands), and each surface writes and localizes its own explanation of what that means — the API does not ship prose.
 
 ### Narrative
 

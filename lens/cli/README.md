@@ -21,6 +21,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, and AI op
 
    ```bash
    lens stats      # count objects and list narratives (-v for transaction diffs)
+   lens explain    # what is in the prompt at the cursor: size and provenance per component
    lens check      # verify lens.toml, API keys, mount, and paths (--skip-network optional)
    lens kb         # knowledge store (see lens kb --help)
    lens section    # start or end a section at cursor
@@ -69,6 +70,64 @@ Validate configuration and environment for the current project: each `[[llm]]` e
 Count knowledge objects by type and list narrative trees with node counts. Shows the active narrative cursor and whether an open transaction exists (and its owner).
 
 - `-v` / `--verbose` — Print pending transaction diff (unstaged) and staged (checkpoint) diff.
+
+### `lens explain`
+
+Assemble the prompt for a cursor exactly as the operator would, then report it instead of sending it. Read-only: nothing is written, no transaction is opened, and no model is called — it works with no LLM configured.
+
+```bash
+lens explain                        # the current cursor, operator detected from the tree
+lens explain /chapter-1             # a different node
+lens explain /chapter-1 42          # as of line 42 of that node
+lens explain --operator play        # assemble as play (auto-pins and modalities differ)
+lens explain --sort size            # biggest components first, within each block
+lens explain --json                 # the full report, for tooling
+```
+
+Arguments: `[ADDRESS] [LINE]`
+
+- `ADDRESS` — node to report on (e.g. `/chapter-1`, `/@cursor`). Defaults to the cursor.
+- `LINE` — optional 1-based line; the current passage is reported as ending there.
+
+**A leading `/` means the active narrative**, and every segment after it is a node key; a bare first segment names the narrative instead. With `Act-1` active and a `Walstein` node inside it:
+
+| Address | Resolves to |
+|---|---|
+| `/` | root of the active narrative (`Act-1`) |
+| `/Walstein` | `Walstein` inside the active narrative |
+| `Act-1/Walstein` | the same node, spelled explicitly |
+| `Design` | root of the `Design` narrative |
+| `/Act-1/Walstein` | ✗ a node named `Act-1` *inside* `Act-1` — does not exist |
+
+The last row is the common slip. When an address does not resolve, Lens suggests one that does (verified against disk) or lists the node keys that exist at the nearest ancestor. A trailing slash — what shell tab-completion gives you — is accepted.
+
+Options:
+
+- `-o` / `--operator <name>` — assemble as this operator instead of the one detected at the cursor. Auto-pins, required modalities, system prompt, and instruction all differ per operator, so the report does too.
+- `-p` / `--prompt <text>` — include a prompt, as if passed to the operator.
+- `-s` / `--sort order|size|id` — order components within each block (default `order`).
+- `--json` — emit the full report instead of the table.
+- `-v` / `--verbose` — show block-framing and message-separator rows so the columns visibly add up, list components that never reach the model (warnings, participants), and print the cache-position note.
+- `--chars-per-token <n>` — divisor for the token estimate (default 4).
+
+Each row reports the component id (`kb:pc.alice`, `rules-companion:rules.encounter`, `mention-kb:spell.aid`, `narrative:/chapter-1:narrative_summary`, `render-system`, `render-task`), the block it lands in, its bytes and estimated tokens with a share of the total, and **why it is there**:
+
+| Provenance | Meaning |
+|---|---|
+| `node_pin` | `kb_pin` on a named ancestor node |
+| `expansion` | pulled in by a `+` suffix on another pin |
+| `mention` | an `@` mention in the narrative or prompt |
+| `rules_companion` | `rules.<type>` auto-added for pinned objects of that type |
+| `module` | the active session module (or its template) |
+| `modality` | pinned by an active modality |
+| `operator_pin` / `operator` | the operator's own pins, system prompt, or instruction |
+| `narrative` | ancestor summaries, the current passage, or parsed conversation turns |
+
+Totals are reported per block and overall, so "my next call costs about 33k tokens" and "43% of my knowledge block is always-on rules text" are one command away.
+
+Every level reconciles: a block equals its components plus its framing (the `--- begin/end <title> ---` wrapper and separators), and the total equals the blocks plus the message separators — in both bytes and tokens. The framing and separator rows are hidden by default because they are the same handful of bytes on every run; `-v` shows them.
+
+Token counts are an estimate (characters divided by a fixed divisor) because tokenization is model-dependent and Lens ships no tokenizer; byte counts are exact. Each part is estimated on its own and aggregates are sums of their parts, so the grand total runs a few tokens above a single estimate of the whole prompt. The `cache` column is currently a heuristic (stable blocks vs per-call blocks) and will report measured prefix-cache boundaries once prompt caching lands.
 
 ### `lens commit`
 

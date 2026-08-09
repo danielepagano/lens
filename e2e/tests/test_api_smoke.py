@@ -60,3 +60,16 @@ class TestApiSmoke:
         with urllib.request.urlopen(f"{live_server_url}/{project_slug}/narrative/node/story") as resp:
             data = json.loads(resp.read())
         assert "Lorem ipsum" in data["content"]
+
+    def test_explain_reports_prompt_composition(
+        self, live_server_url: str, project_slug: str
+    ) -> None:
+        with urllib.request.urlopen(f"{live_server_url}/{project_slug}/explain") as resp:
+            data = json.loads(resp.read())
+        assert data["operator"]
+        assert data["blocks"]
+        totals = data["totals"]
+        assert totals["bytes"] == totals["accounted_bytes"] + totals["other_bytes"]
+        knowledge = next(b for b in data["blocks"] if b["id"] == "relevant_knowledge")
+        amy = next(c for c in knowledge["components"] if c["id"] == "kb:person.amy")
+        assert amy["provenance_kind"] == "node_pin"

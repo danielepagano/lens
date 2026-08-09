@@ -18,6 +18,20 @@ def _validate_slug(slug: str) -> bool:
     return bool(_SLUG_PATTERN.fullmatch(slug))
 
 
+def _validate_slugs(slugs: list[str]) -> None:
+    """Raise ValueError naming the offending segment of a path."""
+    for slug in slugs:
+        if not slug:
+            raise ValueError(
+                "empty path segment (a doubled '/' in the address)"
+            )
+        if not _validate_slug(slug):
+            raise ValueError(
+                f"invalid slug: {slug!r} "
+                "(letters, digits, underscore, and hyphen only)"
+            )
+
+
 @dataclass(frozen=True)
 class NarrativeAddress:
     """Address for a node, line range, or operator in the narrative tree.
@@ -122,6 +136,11 @@ class NarrativeAddress:
                 raise ValueError(f"invalid operator: {operator}")
             if op_id is not None and not _validate_slug(op_id):
                 raise ValueError(f"invalid op_id: {op_id}")
+        # Shell tab-completion on the narrative/ directory hands back a
+        # trailing slash; it is unambiguous here, so accept it rather than
+        # failing on the empty segment it produces.
+        if len(s) > 1 and s.endswith("/"):
+            s = s.rstrip("/") or "/"
         narrative: str | None = None
         key_path: tuple[str, ...]
         if s.startswith("/"):
@@ -131,17 +150,13 @@ class NarrativeAddress:
                 key_path = ()
             else:
                 slugs = s.split("/")
-                for slug in slugs:
-                    if not _validate_slug(slug):
-                        raise ValueError(f"invalid slug: {slug}")
+                _validate_slugs(slugs)
                 key_path = tuple(slugs)
         else:
             slugs = s.split("/")
             if not slugs or not slugs[0]:
                 raise ValueError(f"invalid path: {s}")
-            for slug in slugs:
-                if not _validate_slug(slug):
-                    raise ValueError(f"invalid slug: {slug}")
+            _validate_slugs(slugs)
             narrative = slugs[0]
             key_path = tuple(slugs[1:]) if len(slugs) > 1 else ()
         return cls(
