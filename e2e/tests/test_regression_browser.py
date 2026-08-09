@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -80,6 +82,87 @@ class TestRegressionWorkflowBrowser:
         assert steps.count() >= 1
         labels = steps.locator(".workflow-step-label").all_inner_texts()
         assert any("Generating" in label for label in labels)
+
+    def test_pw07_explain_modal_reports_composition(
+        self,
+        page: "Page",
+        live_server_url: str,
+        project_slug: str,
+    ) -> None:
+        """PW-07: the context report opens from the cursor and reconciles."""
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        page.click('[data-testid="cursor-context-explain"]')  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="explain-totals"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        # The API is the source of truth; the modal must not invent or drop blocks.
+        with urllib.request.urlopen(
+            f"{live_server_url}/{project_slug}/explain", timeout=10
+        ) as response:
+            report = json.load(response)
+        expected_blocks = [b["id"] for b in report["blocks"]]
+        assert expected_blocks, "explain returned no blocks"
+
+        sections = page.locator('[data-testid="explain-block"]')  # type: ignore[union-attr]
+        assert [
+            sections.nth(i).get_attribute("data-block") for i in range(sections.count())
+        ] == expected_blocks
+
+        # Empty blocks are dropped from the bar but still get a section, so the
+        # bar can have fewer segments than blocks — never more.
+        segments = page.locator('[data-testid="explain-bar-segment"]')  # type: ignore[union-attr]
+        assert 0 < segments.count() <= len(expected_blocks)
+
+        title = page.inner_text('[data-testid="explain-title"]')  # type: ignore[union-attr]
+        assert report["operator"] in title
+
+        # Every component the report lists is rendered as a row.
+        expected_rows = sum(len(b["components"]) for b in report["blocks"])
+        assert page.locator('[data-testid="explain-row"]').count() >= expected_rows  # type: ignore[union-attr]
+
+        # A modal dialog blocks the rest of the page, so leave it closed.
+        page.click(".explain-close")  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="explain-modal"]', state="hidden", timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+    def test_pw08_explain_opens_from_cli_command(
+        self,
+        page: "Page",
+        live_server_url: str,
+        project_slug: str,
+    ) -> None:
+        """PW-08: `/structure-explain` opens the same modal from anywhere."""
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
+        # A hash-only navigation does not reload, so an earlier case can leave
+        # the CLI mid-stream (and therefore busy). Reload for a clean client.
+        cancel_req = urllib.request.Request(
+            f"{live_server_url}/{project_slug}/stream/cancel", data=b"", method="POST"
+        )
+        try:
+            with urllib.request.urlopen(cancel_req, timeout=10):
+                pass
+        except urllib.error.HTTPError:
+            pass
+        page.reload()  # type: ignore[union-attr]
+        page.wait_for_selector(
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+
+        cli = page.locator('[data-testid="cli-input"]')  # type: ignore[union-attr]
+        cli.click()  # type: ignore[union-attr]
+        cli.press_sequentially("/structure-explain")
+        page.keyboard.press("Enter")  # type: ignore[union-attr]
+
+        page.wait_for_selector(
+            '[data-testid="explain-totals"]', timeout=_PAGE_TIMEOUT_MS
+        )  # type: ignore[union-attr]
+        assert page.locator('[data-testid="explain-block"]').count() >= 1  # type: ignore[union-attr]
 
     def test_pw06_transaction_diff_still_renders(
         self,

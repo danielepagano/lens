@@ -612,3 +612,88 @@ def resolve_address(
         root_node = NarrativeNode(narrative_root=narrative_root, key_path=())
         return root_node.find_cursor_address()
     return addr
+
+
+def node_keys_on_disk(node_dir: Path) -> list[str]:
+    """Child node keys physically present under *node_dir*.
+
+    Unlike :meth:`~lens.core.narrative.NarrativeNode.child_keys`, which orders
+    children by the annotations that created them, this reports what is on
+    disk — so it still answers "what exists here?" for nodes whose parent
+    annotation is missing.
+    """
+    if not node_dir.is_dir():
+        return []
+    keys: set[str] = set()
+    for path in node_dir.iterdir():
+        if path.name == "_node.md":
+            continue
+        if path.is_dir() and (path / "_node.md").exists():
+            keys.add(path.name)
+        elif path.suffix == ".md":
+            keys.add(path.stem)
+    return sorted(keys)
+
+
+def _node_exists(narrative: str, key_path: tuple[str, ...], project_root: Path) -> bool:
+    node = NarrativeNode(
+        narrative_root=project_root / "narrative" / narrative, key_path=key_path
+    )
+    return node.exists()
+
+
+def unknown_node_hint(addr: NarrativeAddress, project_root: Path) -> str:
+    """Help for an address that resolved to nothing. Pass the *parsed* address.
+
+    Leads with an alternative spelling of the same words that does resolve —
+    verified against disk, never guessed — because the recurring confusion is
+    which segment names the narrative: a leading ``/`` selects the active
+    narrative and everything after it is a node key, while a bare first
+    segment names the narrative itself.  Falls back to listing the node keys
+    that do exist at the deepest ancestor that does.
+
+    Returns an empty string when there is nothing useful to say, so callers
+    can append it unconditionally.
+    """
+    active = get_active_narrative(project_root)
+    active_name = active.narrative_root.name if active is not None else None
+
+    def spell(narrative: str, key_path: tuple[str, ...]) -> str:
+        if narrative == active_name:
+            return "/" + "/".join(key_path)
+        return "/".join((narrative, *key_path))
+
+    if addr.narrative is None:
+        # Written with a leading '/': every segment was read as a node key.
+        typed = addr.key_path
+        reason = (
+            "a leading '/' addresses the active narrative, so "
+            f"{typed[0]!r} was read as a node key inside it" if typed else ""
+        )
+        alternative = (typed[0], typed[1:]) if typed else None
+    else:
+        # Written without a leading '/': the first segment named a narrative.
+        typed = (addr.narrative, *addr.key_path)
+        reason = f"without a leading '/', {addr.narrative!r} names a narrative"
+        alternative = (active_name, typed) if active_name else None
+
+    if alternative is not None:
+        narrative, key_path = alternative
+        if _node_exists(narrative, key_path, project_root):
+            return f"did you mean '{spell(narrative, key_path)}'? ({reason})"
+
+    narrative_name = addr.narrative or active_name
+    if narrative_name is None:
+        return ""
+    narrative_root = project_root / "narrative" / narrative_name
+    keys = addr.key_path
+    for depth in range(len(keys) - 1, -1, -1):
+        ancestor = NarrativeNode(narrative_root=narrative_root, key_path=keys[:depth])
+        if not ancestor.exists():
+            continue
+        children = node_keys_on_disk(ancestor.md_path().parent)
+        where = spell(narrative_name, keys[:depth])
+        if children:
+            return f"nodes under '{where}': {', '.join(children)}"
+        return f"'{where}' has no child nodes"
+    return ""

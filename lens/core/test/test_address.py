@@ -262,3 +262,32 @@ class TestNarrativeAddressValidation(unittest.TestCase):
     def test_invalid_line_raises(self) -> None:
         with self.assertRaises(ValueError):
             NarrativeAddress.parse("campaign@abc")
+
+
+class TestTrailingSlash(unittest.TestCase):
+    """Shell tab-completion on narrative/ hands back a trailing slash."""
+
+    def test_trailing_slash_on_key_path_is_ignored(self) -> None:
+        addr = NarrativeAddress.parse("/chapter-1/")
+        self.assertIsNone(addr.narrative)
+        self.assertEqual(addr.key_path, ("chapter-1",))
+
+    def test_trailing_slash_on_narrative_form_is_ignored(self) -> None:
+        addr = NarrativeAddress.parse("campaign/chapter-1/")
+        self.assertEqual(addr.narrative, "campaign")
+        self.assertEqual(addr.key_path, ("chapter-1",))
+
+    def test_bare_root_slash_still_means_the_root(self) -> None:
+        addr = NarrativeAddress.parse("/")
+        self.assertIsNone(addr.narrative)
+        self.assertEqual(addr.key_path, ())
+
+    def test_doubled_slash_names_the_problem(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            NarrativeAddress.parse("/chapter-1//scene")
+        self.assertIn("empty path segment", str(ctx.exception))
+
+    def test_invalid_slug_message_shows_the_segment(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            NarrativeAddress.parse("/chapter 1")
+        self.assertIn("chapter 1", str(ctx.exception))

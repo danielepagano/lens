@@ -31,6 +31,7 @@ CMD_CHECKPOINT = (
 )
 CMD_REFRESH = "Fetch from remote and fast-forward the current branch."
 CMD_REWIND = "Move the cursor backward in the narrative tree, discarding all content that comes after."
+CMD_EXPLAIN = "Show what is in the prompt at a cursor: size and provenance, component by component."
 CMD_ROLLBACK = "Undo the last AI operation and restore the narrative to its previous state."
 CMD_KB = (
     "Manage knowledge objects "
@@ -238,6 +239,40 @@ OPT_RESET = (
 )
 
 OPT_JSON = "Output structured JSON on stdout; human summary on stderr."
+
+# ── lens explain ──────────────────────────────────────────────────
+OPT_EXPLAIN_OPERATOR = (
+    "Assemble the prompt as this operator instead of the one detected at the "
+    "cursor (auto-pins and required modalities differ per operator)."
+)
+OPT_EXPLAIN_PROMPT = "Prompt text to include, as if passed to the operator."
+OPT_EXPLAIN_SORT = "Order components within each block: order, size, or id."
+OPT_EXPLAIN_JSON = "Emit the full report as JSON instead of a table."
+OPT_EXPLAIN_VERBOSE = (
+    "Show block framing and separator rows so the columns add up, list "
+    "components that never reach the model, and print the cache-position note."
+)
+# Presentation text for the `cache` column. Deliberately CLI-side: the API
+# returns only the machine values, so each surface writes (and localizes) its
+# own explanation.
+EXPLAIN_CACHE_NOTE = (
+    "Cache positions are a heuristic: blocks that are stable while the cursor "
+    "stays put are marked 'prefix', blocks that change on every call are "
+    "'volatile'. Real prefix-cache boundaries arrive with prompt caching "
+    "support; this column will report measured boundaries then."
+)
+OPT_EXPLAIN_CHARS_PER_TOKEN = (
+    "Characters per token for the estimate (tokenization is model-dependent; "
+    "byte counts are exact)."
+)
+ARG_EXPLAIN_ADDR = (
+    "Node address to report on.  Defaults to the current cursor.  "
+    "Use '/' for the narrative root or '/@cursor' for the cursor."
+)
+ARG_EXPLAIN_LINE = (
+    "Line number within the node (1-based).  Reports the prompt as it would "
+    "be assembled with the current passage ending at that line."
+)
 
 # ═══════════════════════════════════════════════════════════════════
 #  Shared argument help strings
@@ -557,6 +592,20 @@ DESC_REFRESH = (
     "refresh is a no-op even with local pending work.\n"
     "Use --reset to recover when checkpoint or a normal refresh "
     "cannot proceed."
+)
+
+DESC_EXPLAIN = (
+    "Assemble the prompt for a cursor exactly as the operator would, then "
+    "report it instead of sending it.\n\n"
+    "Every component is listed with the block it lands in "
+    "(RELEVANT KNOWLEDGE / PREVIOUS EVENTS SUMMARY / CURRENT PASSAGE / TASK), "
+    "its size in bytes and estimated tokens, its share of the total, and why "
+    "it is there — a pin on a specific ancestor node, a '+' expansion, an "
+    "'@' mention, a rules companion, a session module, or a modality.\n\n"
+    "Read-only: nothing is written, no transaction is opened, and no model is "
+    "called, so it works with no LLM configured.\n\n"
+    "Token counts are an estimate (bytes divided by a fixed divisor); byte "
+    "counts are exact."
 )
 
 DESC_REWIND = (

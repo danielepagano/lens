@@ -246,6 +246,51 @@ ul.tree-list li {
   --node-header-context-indicator-color: color-mix(in srgb, var(--pico-primary) 72%, var(--pico-muted-color));
 }
 
+/* ---- Context composition chart (features/explain) ----
+ *
+ * `series-*` are the prompt blocks a reader can actually curate; `chrome-*`
+ * are the operator's own system/task text, which is fixed overhead and so
+ * wears neutral ink rather than a series colour.
+ *
+ * The four series hues are validated all-pairs (not just adjacent) in both
+ * modes against Pico's card surfaces — #fff light, #181c25 dark — so a block
+ * that is absent at this cursor, which makes two non-adjacent blocks
+ * neighbours in the bar, can never produce a confusable pair. Identity is
+ * additionally carried by the legend and the per-block labels, which is also
+ * the required relief for the sub-3:1 light-mode steps.
+ */
+:root {
+  --explain-series-1: #2a78d6;
+  --explain-series-2: #eda100;
+  --explain-series-3: #e87ba4;
+  --explain-series-4: #008300;
+  --explain-chrome-1: #6f6d68;
+  --explain-chrome-2: #a9a7a0;
+  --explain-chrome-unknown: #898781;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --explain-series-1: #3987e5;
+    --explain-series-2: #c98500;
+    --explain-series-3: #d55181;
+    --explain-series-4: #008300;
+    --explain-chrome-1: #c3c2b7;
+    --explain-chrome-2: #7b8495;
+    --explain-chrome-unknown: #898781;
+  }
+}
+
+:root[data-theme='dark'] {
+  --explain-series-1: #3987e5;
+  --explain-series-2: #c98500;
+  --explain-series-3: #d55181;
+  --explain-series-4: #008300;
+  --explain-chrome-1: #c3c2b7;
+  --explain-chrome-2: #7b8495;
+  --explain-chrome-unknown: #898781;
+}
+
 .cursor-indicator {
   color: var(--cursor-indicator-color);
   font-weight: bolder;

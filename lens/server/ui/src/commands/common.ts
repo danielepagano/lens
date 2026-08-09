@@ -37,6 +37,34 @@ export interface CliPayload {
   availability?: CliOptionAvailability
 }
 
+// ---- Operator slugs ----
+
+/** Operators always available (module names under `lens/core/operators/`). */
+export const CORE_OPERATOR_SLUGS = [
+  'write',
+  'edit',
+  'section',
+  'collate',
+  'compress',
+  'design',
+  'chat',
+] as const
+
+/** Operators unlocked by a dataset: slug → the dataset that provides it. */
+export const DATASET_OPERATOR_SLUGS: Record<string, string> = {
+  play: 'rpg',
+  advance: 'rpg',
+}
+
+/** Operator slugs selectable in the current project, core first. */
+export function availableOperatorSlugs(stats: Stats | null): string[] {
+  const datasets = stats?.current_datasets ?? []
+  const gated = Object.entries(DATASET_OPERATOR_SLUGS)
+    .filter(([, dataset]) => datasets.includes(dataset))
+    .map(([slug]) => slug)
+  return [...CORE_OPERATOR_SLUGS, ...gated]
+}
+
 // ---- Parsed arguments ----
 
 export interface ParsedArgs {

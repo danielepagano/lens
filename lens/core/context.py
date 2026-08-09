@@ -258,6 +258,7 @@ class CrawlResult:
         "project_root",
         "current_node",
         "render_effects",
+        "render_graph",
         "modality_resolution",
         "modality_context",
     )
@@ -274,6 +275,10 @@ class CrawlResult:
         self.project_root = project_root
         self.current_node = current_node
         self.render_effects = render_effects
+        # Set by assemble_prompt(): the post-transform graph that produced the
+        # messages, kept so read-only consumers (``lens explain``) can report
+        # exactly what was rendered without re-assembling it themselves.
+        self.render_graph: CrawlGraph | None = None
         self.modality_resolution: Any | None = None
         self.modality_context: Any | None = None
 
@@ -343,11 +348,46 @@ class CrawlResult:
         }
 
 
-def _block(title: str, body: str) -> str:
+def wrap_block(title: str, body: str) -> str:
+    """Wrap *body* in the ``--- begin/end <title> ---`` framing used in prompts.
+
+    Returns an empty string for empty bodies (the block is then omitted).
+    """
     body_stripped = body.strip()
     if not body_stripped:
         return ""
     return f"--- begin {title} ---\n{body_stripped}\n--- end {title} ---"
+
+
+BLOCK_SYSTEM = "system"
+BLOCK_KNOWLEDGE = "relevant_knowledge"
+BLOCK_PREVIOUS = "previous_events_summary"
+BLOCK_CURRENT = "current_passage"
+BLOCK_EXTRA = "extra"
+BLOCK_TASK = "task"
+
+_KIND_TO_BLOCK: dict[str, str] = {
+    "system": BLOCK_SYSTEM,
+    "knowledge": BLOCK_KNOWLEDGE,
+    "reference": BLOCK_KNOWLEDGE,
+    "narrative_summary": BLOCK_PREVIOUS,
+    "current_narrative": BLOCK_CURRENT,
+    "extra": BLOCK_EXTRA,
+    "task": BLOCK_TASK,
+}
+
+
+def prompt_block_for_component(component: CrawlComponent) -> str | None:
+    """Return the prompt block a rendered *component* lands in, or ``None``.
+
+    ``None`` means the component contributes no bytes to the model messages —
+    either its kind is never rendered (``participant``, ``warning``, …) or it
+    is not LLM-visible.  Mirrors the selection rules in
+    :func:`_sections_from_graph`.
+    """
+    if "llm" not in component.visibility:
+        return None
+    return _KIND_TO_BLOCK.get(component.kind)
 
 
 def ancestor_chain(node: NarrativeNode) -> list[NarrativeNode]:
@@ -360,6 +400,20 @@ def ancestor_chain(node: NarrativeNode) -> list[NarrativeNode]:
             )
         )
     return chain
+
+
+def _pin_origin_fields(
+    level: int, raw: str, ancestors: list[NarrativeNode]
+) -> dict[str, str]:
+    """Describe where a surviving pin came from (ancestor level or extras)."""
+    if level < len(ancestors):
+        return {
+            "pin_source": "node",
+            "pin_level": str(level),
+            "pin_node": ancestors[level].path_str(),
+            "pin_raw": raw,
+        }
+    return {"pin_source": "extra", "pin_level": str(level), "pin_raw": raw}
 
 
 def _resolve_pins_for_ancestors(
@@ -434,11 +488,16 @@ def _resolve_pins_for_ancestors(
 
     effective_ids: list[str] = []
     all_objects: dict[str, KnowledgeObject] = {}
-    for _level_unused, raw in ordered_base:
-        del _level_unused
+    # Per effective id: how it got here (which ancestor level pinned it, and
+    # whether it arrived directly or through a `+` expansion).  Carried into
+    # component metadata so `lens explain` can answer "why is this here".
+    pin_origin: dict[str, dict[str, str]] = {}
+    for level, raw in ordered_base:
         base = raw.rstrip("+")
+        origin = _pin_origin_fields(level, raw, ancestors)
         if not raw.endswith("+"):
             effective_ids.append(base)
+            pin_origin.setdefault(base, origin)
             objs = kb_store.get_objects([base])
             all_objects.update(objs)
         else:
@@ -446,6 +505,12 @@ def _resolve_pins_for_ancestors(
             for cid in ordered_ids:
                 if cid not in all_unpinned and cid not in effective_ids:
                     effective_ids.append(cid)
+                    if cid == base:
+                        pin_origin.setdefault(cid, origin)
+                    else:
+                        pin_origin.setdefault(
+                            cid, {**origin, "pin_expanded_from": base}
+                        )
             all_objects.update(objects)
 
     for cid in effective_ids:
@@ -466,12 +531,17 @@ def _resolve_pins_for_ancestors(
                     id=f"kb:{cid}",
                     kind="knowledge",
                     text=knowledge_formatted[-1],
-                    source=ComponentSource(kind="knowledge", identifier=cid),
+                    source=ComponentSource(
+                        kind="knowledge",
+                        identifier=cid,
+                        metadata=dict(pin_origin.get(cid, {})),
+                    ),
                     priority=len(knowledge_components),
                     metadata={
                         "kb_id": cid,
                         "tags": ",".join(obj.tags),
                         "expansion_policy": expansion_policy_from_tags(obj.tags).mode,
+                        **pin_origin.get(cid, {}),
                     },
                 )
             )
@@ -972,7 +1042,7 @@ def _log_render_effects_if_verbose(graph: CrawlGraph) -> None:
 
 
 def _block_from_components(title: str, components: list[CrawlComponent]) -> str:
-    return _block(title, "\n\n".join(component.text for component in components))
+    return wrap_block(title, "\n\n".join(component.text for component in components))
 
 
 def _system_content_from_graph(graph: CrawlGraph, prompts: PromptStore) -> str:
@@ -987,7 +1057,7 @@ def _system_content_from_graph(graph: CrawlGraph, prompts: PromptStore) -> str:
 def _task_block_from_graph(graph: CrawlGraph, prompts: PromptStore) -> str:
     task = next((component for component in graph.components if component.kind == "task"), None)
     instruction = task.text if task is not None else ""
-    return _block(prompts.get("shared.block.task"), instruction) or instruction
+    return wrap_block(prompts.get("shared.block.task"), instruction) or instruction
 
 
 def _sections_from_graph(graph: CrawlGraph, prompts: PromptStore) -> list[str]:
@@ -1022,7 +1092,7 @@ def _sections_from_graph(graph: CrawlGraph, prompts: PromptStore) -> list[str]:
         None,
     )
     if current is not None and current.text.strip():
-        cur_block = _block(prompts.get("shared.block.current_passage"), current.text)
+        cur_block = wrap_block(prompts.get("shared.block.current_passage"), current.text)
         if cur_block:
             sections.append(cur_block)
     extras = [
@@ -1141,11 +1211,11 @@ def assemble_prompt_kb_edit(
     is_new = existing_content is None
     extra_sections: list[str] = []
     if existing_content:
-        kb_item_block = _block(prompts.get("shared.block.current_text"), existing_content)
+        kb_item_block = wrap_block(prompts.get("shared.block.current_text"), existing_content)
         if kb_item_block:
             extra_sections.append(kb_item_block)
     if template_content and (include_template or is_new):
-        tpl_block = _block(prompts.get("shared.block.result_template"), template_content)
+        tpl_block = wrap_block(prompts.get("shared.block.result_template"), template_content)
         if tpl_block:
             extra_sections.append(tpl_block)
     system_prompt = _build_kb_edit_system_prompt(
@@ -1157,12 +1227,13 @@ def assemble_prompt_kb_edit(
         instruction=instruction,
         extra_sections=extra_sections,
     )
+    result.render_graph = graph
     sections = _sections_from_graph(graph, prompts)
     task_component = next(
         (component for component in graph.components if component.kind == "task"), None
     )
     task_text = task_component.text if task_component is not None else instruction
-    sections.append(_block(prompts.get("shared.block.instructions"), task_text) or task_text)
+    sections.append(wrap_block(prompts.get("shared.block.instructions"), task_text) or task_text)
     user_content = "\n\n".join(sections)
     result.render_effects = tuple(graph.effects)
     return [
@@ -1186,6 +1257,11 @@ def assemble_prompt(
         instruction=instruction,
         extra_sections=extra_sections,
     )
+    result.render_graph = graph
+    if turns:
+        # The current passage is rendered as conversation turns instead of a
+        # [CURRENT PASSAGE] block; explain reads this back off the graph.
+        graph.metadata["rendered_as_turns"] = "true"
     system_msg = {"role": "system", "content": _system_content_from_graph(graph, prompts)}
     task_block = _task_block_from_graph(graph, prompts)
 
@@ -1214,7 +1290,7 @@ def assemble_prompt(
         if component.kind == "narrative_summary" and "llm" in component.visibility
     ]
     if summaries:
-        prev_block = _block(
+        prev_block = wrap_block(
             prompts.get("shared.block.previous_events_summary"),
             "\n\n".join(component.text for component in summaries),
         )

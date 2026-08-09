@@ -127,7 +127,7 @@ Lens is a CLI-first system for AI-assisted narrative creation. A **Lens project*
 lens/
   cli/           # Typer CLI layer (argument parsing, error display)
     main.py      # Entry point + preflight callback
-    commands/    # Non-AI commands (init, use, kb, pin, stats, rollback, commit, checkpoint, rewind, refresh, media; dataset extensions may add more)
+    commands/    # Non-AI commands (init, use, kb, pin, stats, explain, rollback, commit, checkpoint, rewind, refresh, media; dataset extensions may add more)
     operators/   # AI operator CLI adapters (write, edit, section, collate, compress, chat, play, design, advance)
     test/        # CLI unit tests
   core/          # Business logic (no Typer dependency)
@@ -200,6 +200,10 @@ Operators can register themselves as **LLM tools** via `tools.py` (`register_ope
 **Multi-step workflows** (`workflow_runner.py`): session close, auto-compress, and remember are follow-up LLM passes under one user invocation. The runner exposes a step plan (generate → auto_compress, summarize → remember → close). **Skip** declines optional tail steps; **Abort/Cancel** rolls back dirty in-flight steps. See [docs/design.md](docs/design.md) for skip vs abort semantics.
 
 **Context assembly** (`context.py`): `crawl()` collects `kb_pin`/`kb_unpin` from ancestor front matters (walking from root to cursor), resolves linked KB objects, then passes everything to `assemble_prompt()` which formats `[RELEVANT KNOWLEDGE]`, `[PREVIOUS EVENTS SUMMARY]`, `[CURRENT PASSAGE]`, and `[TASK]` blocks into `[system, user]` messages. KB pins resolve on the full ancestor chain; narrative slices follow the lineage spine (fractal summaries).
+
+`assemble_prompt()` stores the final post-transform graph on `CrawlResult.render_graph`. `lens explain` (`core/commands/explain.py`) is a read-only renderer over it: it assembles the prompt exactly as the operator would, then reports per-component size, block, and provenance instead of calling a model. Any new source of context must set component metadata rich enough to explain itself (see `_pin_origin_fields` in `context.py`).
+
+**Operator detection** (`core/operator_detect.py`): which operator owns a cursor, shared by `explain` and `stats` so the two cannot drift. `detect_operator_name()` answers *what would run here* (open ancestor session → own unclosed annotation → most recent completed narrating block); `detect_open_session_operator()` answers *is a session still open* and goes `None` the moment it closes. Use the second only for session-close affordances (`--end`); everything else wants the first.
 
 **KnowledgeStore** (`knowledge.py`): flat key-value store at `knowledge/{type}/{key}.md`. IDs are dot-separated lowercase (`person.amy`). Tags stored in `knowledge/tags.toml` with bidirectional index. The `+` suffix on an ID in a pin expands to linked objects (those sharing a dot-tag pointing to another KB object).
 

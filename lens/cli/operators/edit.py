@@ -21,7 +21,7 @@ from lens.core.address import NarrativeAddress
 from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operators.edit import EditOperator
-from lens.core.project import ProjectSession, resolve_address
+from lens.core.project import ProjectSession, resolve_address, unknown_node_hint
 
 app = typer.Typer(
     invoke_without_command=True,
@@ -101,7 +101,12 @@ def edit(
         raise typer.Exit(1)
 
     if not target_node.exists():
-        typer.echo(f"lens edit: node does not exist: {address}", err=True)
+        hint = unknown_node_hint(addr, session.project_root)
+        typer.echo(
+            f"lens edit: node does not exist: {address}"
+            + (f" \u2014 {hint}" if hint else ""),
+            err=True,
+        )
         raise typer.Exit(1)
 
     try:

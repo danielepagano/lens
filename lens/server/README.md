@@ -36,7 +36,31 @@ All project-specific routes are prefixed with `/{slug}`. Replace `{slug}` with t
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/{slug}/stats` | Project stats: active narrative, cursor, pending transaction state, dataset, KB counts. |
+| GET | `/{slug}/stats` | Project stats: active narrative, cursor, pending transaction state, dataset, KB counts. `active_session_operator` is the session *currently open* over the cursor (see Operator detection below) — the UI gates session-close affordances (`play --end`, `chat --end`) on it. |
+| GET | `/{slug}/explain` | Prompt composition at a cursor: every component with block, bytes, estimated tokens, share, and provenance, plus per-block and grand totals. Read-only — no transaction, no model call. |
+
+**`GET /{slug}/explain` query parameters**
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `address` | cursor | Node to report on (e.g. `/chapter-1`, `/@cursor`). |
+| `line` | — | 1-based line; the current passage is reported as ending there. |
+| `operator` | detected | Assemble as this operator instead of the one detected at the cursor. 400 if unknown. |
+| `prompt` | — | Prompt text to include, as if passed to the operator. |
+| `sort` | `order` | `order`, `size`, or `id` — ordering of components within each block. |
+| `chars_per_token` | `4` | Divisor for the token estimate (1–32). |
+
+**Operator detection.** With no `operator` param, the report assembles as the operator that would actually run at that node: an open session on any ancestor (`play`, `design`, `chat`, `advance`) owns it, otherwise the node's own unclosed annotation, otherwise the most recent *completed* narrating block (`write` plus the session operators — structural tags like `section` are skipped). The last rule matters because an inline turn closes as soon as it finishes, which is the state a report is almost always read in.
+
+Both rules live in `lens/core/operator_detect.py`, shared with `/stats`. Note that they answer different questions: `detect_operator_name` (explain, and the modality report in stats) says *what would run here* and therefore honours a closed inline turn, while `detect_open_session_operator` (`stats.active_session_operator`) says *is a session still open* and returns `null` once it closes — a finished session must not keep offering to end itself.
+
+Response: `{address, node, operator, line, blocks[], excluded[], totals{bytes, tokens, accounted_bytes, other_bytes, other_tokens, messages, message_bytes}, chars_per_token, active_modalities[], pinned_ids[], warnings[]}`. Each block carries `{id, label, role, bytes, tokens, percent, framing_bytes, framing_tokens, cache, components[]}`; each component carries `{id, kind, block, order, bytes, tokens, percent, provenance, provenance_kind, cache, detail}`. Provenance kinds: `node_pin`, `expansion`, `mention`, `rules_companion`, `module`, `modality`, `operator_pin`, `operator`, `narrative`.
+
+**Everything reconciles.** `framing_bytes` / `framing_tokens` are what the block adds around its components (the `--- begin/end <title> ---` wrapper plus separators), so `block.bytes == Σ components.bytes + framing_bytes` and the same holds for tokens; `totals.bytes == Σ blocks.bytes + other_bytes` and `totals.tokens == Σ blocks.tokens + other_tokens`. A client can render a stacked bar from either unit without a leftover slice. Token counts are an estimate — every part is estimated independently and aggregates are sums of their parts, so the total is marginally higher than estimating the whole prompt in one pass; byte counts are exact.
+
+The payload carries only machine values: `cache` is `prefix` / `volatile` (a heuristic until prompt caching lands), and each surface writes and localizes its own explanation of what that means — the API does not ship prose.
+
+The UI consumes this route from `features/explain/` (context modal, opened by the cursor **context** button or `/structure-explain`). It renders blocks from the array rather than a fixed list — `conversation` replaces `current_passage` when the passage parses into turns — and recomputes shares in the displayed unit, since `percent` is byte-based.
 
 ### Narrative
 

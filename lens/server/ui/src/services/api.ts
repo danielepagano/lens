@@ -207,6 +207,92 @@ export const getTree = (): Promise<TreeNode[]> =>
   get(projectPath('/narrative/tree')) as Promise<TreeNode[]>
 export const getNode = (addr: string): Promise<NodeData> =>
   get(projectPath(`/narrative/node/${addr}`)) as Promise<NodeData>
+
+// ---- Prompt composition report (`GET /{slug}/explain`) ----
+
+/** Prefix = stable across calls (cacheable); volatile = changes every call. */
+export type ExplainCache = 'prefix' | 'volatile'
+
+/** One measured unit of the assembled prompt. */
+export interface ExplainComponent {
+  id: string
+  kind: string
+  block: string
+  order: number
+  bytes: number
+  tokens: number
+  /** Share of the grand total, already rounded server-side. */
+  percent: number
+  /** The sentence a human reads: why this is in the prompt. */
+  provenance: string
+  /** Machine-readable provenance: `node_pin`, `expansion`, `mention`, … */
+  provenance_kind: string
+  cache: ExplainCache
+  /** Structured provenance bits: `pin_node`, `kb_id`, `tags`, … */
+  detail: Record<string, string>
+}
+
+/** A rendered prompt block plus the components inside it. */
+export interface ExplainBlock {
+  id: string
+  label: string
+  role: string
+  order: number
+  bytes: number
+  tokens: number
+  percent: number
+  /** Block header/footer and separators — part of the block, not a child row. */
+  framing_bytes: number
+  framing_tokens: number
+  cache: ExplainCache
+  components: ExplainComponent[]
+}
+
+export interface ExplainTotals {
+  bytes: number
+  tokens: number
+  accounted_bytes: number
+  /** Message separators — the residual outside any block. */
+  other_bytes: number
+  other_tokens: number
+  messages: number
+  message_bytes: number[]
+}
+
+export interface ExplainReport {
+  address: string
+  node: string
+  operator: string
+  line: number | null
+  blocks: ExplainBlock[]
+  /** Components that resolved but are not sent (e.g. unresolved `@` tokens). */
+  excluded: ExplainComponent[]
+  totals: ExplainTotals
+  chars_per_token: number
+  active_modalities: string[]
+  pinned_ids: string[]
+  warnings: string[]
+}
+
+export interface ExplainParams {
+  address?: string
+  line?: number
+  operator?: string
+}
+
+/** Read-only: no transaction, no model call — safe to refetch on cursor move. */
+export async function getExplain(params: ExplainParams = {}): Promise<ExplainReport> {
+  const query = new URLSearchParams()
+  if (params.address) query.set('address', params.address)
+  if (params.line !== undefined) query.set('line', String(params.line))
+  if (params.operator) query.set('operator', params.operator)
+  const suffix = query.toString()
+  const path = projectPath(`/explain${suffix ? `?${suffix}` : ''}`)
+  const r = await fetch(path)
+  if (!r.ok) throw new Error(await errorDetail(r))
+  return (await r.json()) as ExplainReport
+}
+
 export type NarrativeKind = 'default' | 'companion_chat'
 
 export interface SetActiveNarrativeOptions {

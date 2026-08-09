@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Stats } from '../../services/api'
   import type { ParsedNodeHeader } from '../../utils/nodeHeaderBlock'
+  import { explainRequest } from '../../stores/ui'
 
   type Props = {
     stats: Stats | null
@@ -35,6 +36,11 @@
 
   function openKbItem(id: string) {
     onOpenKb?.(id)
+  }
+
+  /** Explain the cursor: no address means "wherever the cursor is right now". */
+  function openContextReport() {
+    explainRequest.set({})
   }
 
   function contextSummaryParts(
@@ -143,6 +149,16 @@
   </div>
 {/if}
 
+{#snippet contextReportButton()}
+  <button
+    type="button"
+    class="context-report-btn"
+    title="What is in the prompt here, how big, and why"
+    data-testid="cursor-context-explain"
+    onclick={openContextReport}>context</button
+  >
+{/snippet}
+
 {#if placement === 'cursor' && hasCursorRollup}
   <div class="cursor-indicator-preview">
     <details class="cursor-pins-section" data-testid="cursor-context-rollups">
@@ -153,9 +169,36 @@
         {@render pillsBlock(cursorKbRows, cursorVarEntries, cursorParamRows)}
       </div>
     </details>
+    {#if isCursorNode}{@render contextReportButton()}{/if}
   </div>
 {:else if placement === 'cursor' && isCursorNode}
   <div class="cursor-indicator-preview">
     <span class="cursor-indicator">&gt;</span>
+    {@render contextReportButton()}
   </div>
 {/if}
+
+<style>
+  /* The rollup row is taller than its summary line, so centring in the flex
+   * row drops the chip well below the "N pins" text it belongs to. Pin it to
+   * the top of the row and nudge it onto the summary's own line instead. */
+  .context-report-btn {
+    align-self: flex-start;
+    background: none;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 0.5rem;
+    padding: 0.05rem 0.35rem;
+    margin: 0.15rem 0 0 0.4rem;
+    width: auto;
+    font-size: 0.7rem;
+    font-family: inherit;
+    line-height: 1.4;
+    color: var(--pico-muted-color);
+    cursor: pointer;
+  }
+
+  .context-report-btn:hover {
+    color: var(--pico-color);
+    border-color: var(--pico-primary);
+  }
+</style>

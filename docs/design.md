@@ -198,6 +198,14 @@ Assembled messages follow fixed **attention order**:
 
 Stable instructions and distant grounding come first; immediate task last. Order is a design choice, not an implementation detail.
 
+### Inspecting the composition
+
+Curation only beats retrieval if you can see the curation. `lens explain` (and `GET /{slug}/explain`) assembles the prompt at a cursor exactly as the operator would — same crawl spec, same modality pins, same render transforms — and then reports it instead of sending it: every component with the block it lands in, its bytes and estimated tokens, its share of the total, and why it is there (a pin on a named ancestor, a `+` expansion, an `@` mention, a rules companion, a session module, a modality). Totals are given per block and overall.
+
+This makes pin curation an engineering activity rather than a vibe: a stat block costing 400 tokens in a scene it no longer belongs to is visible, not inferred. The command is read-only by construction — no transaction, no model call, so it works with no LLM configured. Token counts are an estimate (bytes over a fixed divisor); byte counts are exact.
+
+In the web app the same report is a modal, opened by the **context** button beside the cursor pins or by `/structure-explain [address] [line]`: a stacked bar of the prompt blocks over the per-component breakdown, with a tokens/bytes toggle and an operator selector — switching `write` to `play` at the same cursor visibly changes the bar, because auto-pins and required modalities differ. Blocks are read from the payload rather than assumed: when a passage parses into turns there is no `current_passage` block at all, only `conversation`. The report is read-only in the UI too; changing a pin is still `pin-kb`, on the ancestor the row names.
+
 ## Operational modes
 
 The same storage, crawl, and generation pipeline supports three modes that alternate in real use. Separating them keeps prompts focused: planning mutates KB shape; generation appends story; management compresses and extracts durable state.

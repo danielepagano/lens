@@ -10,7 +10,12 @@ from lens.core.address import NarrativeAddress
 from lens.core.annotations import find_front_matter_span, parse_annotations
 from lens.core.exceptions import LensException
 from lens.core.narrative import NarrativeNode
-from lens.core.project import ProjectSession, get_mount_backend, resolve_address
+from lens.core.project import (
+    ProjectSession,
+    get_mount_backend,
+    resolve_address,
+    unknown_node_hint,
+)
 from lens.core.storage import Storage
 
 SUPPORTED_EXTENSIONS = {
@@ -167,7 +172,11 @@ def _resolve_attach_target(session: ProjectSession, address: str | None) -> Narr
         raise LensException(str(e)) from e
 
     if not target.exists():
-        raise LensException(f"node does not exist: {address or '/@cursor'}")
+        hint = unknown_node_hint(addr, session.project_root)
+        raise LensException(
+            f"node does not exist: {address or '/@cursor'}"
+            + (f" \u2014 {hint}" if hint else "")
+        )
     return target
 
 

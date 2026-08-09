@@ -36,7 +36,12 @@ from lens.core.commands.attach import (
 from lens.core.commands.generate import generate as generate_core
 from lens.core.commands.media_tts import iter_node_tts_playback
 from lens.core.exceptions import LensException
-from lens.core.project import ProjectSession, get_mount_backend, resolve_address
+from lens.core.project import (
+    ProjectSession,
+    get_mount_backend,
+    resolve_address,
+    unknown_node_hint,
+)
 
 from .attach import attach_app
 from .media_composite import composite_app
@@ -175,7 +180,12 @@ def tts(
             raise typer.Exit(1)
         target = resolved.to_node(session.project_root)
         if not target.exists():
-            typer.echo(f"lens media tts: node does not exist: {address}", err=True)
+            hint = unknown_node_hint(addr, session.project_root)
+            typer.echo(
+                f"lens media tts: node does not exist: {address}"
+                + (f" \u2014 {hint}" if hint else ""),
+                err=True,
+            )
             raise typer.Exit(1)
 
         for segment in iter_node_tts_playback(

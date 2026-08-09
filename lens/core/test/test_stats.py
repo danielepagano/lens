@@ -57,6 +57,18 @@ def _make_project(tmp: Path, slug: str = "test") -> tuple[ProjectSession, Narrat
   return ProjectSession(tmp, tmp), NarrativeNode(narrative_root=narrative_dir, key_path=())
 
 
+def _commit_all(root: Path, message: str) -> None:
+  import subprocess
+
+  subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+  subprocess.run(
+      ["git", "commit", "-m", message],
+      cwd=root,
+      capture_output=True,
+      check=True,
+  )
+
+
 def _add_kb(root: Path, type_name: str, key: str, content: str) -> None:
   import subprocess
 
@@ -333,6 +345,42 @@ class TestStatsActiveSessionOperator(unittest.TestCase):
 
       result = get_stats(session)
       self.assertEqual(result.active_session_operator, "chat")
+
+  def test_session_tag_on_a_grandparent_still_owns_the_cursor(self) -> None:
+    """`section start` inside a play session leaves the tag two levels up."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, _ = _make_project(root)
+
+      narrative = session.active_narrative
+      assert narrative is not None
+      narrative_dir = narrative.narrative_root
+      (narrative_dir / "sess").mkdir()
+      (narrative_dir / "_node.md").write_text("# test\n\n[play:sess]: #\n")
+      (narrative_dir / "sess" / "_node.md").write_text(
+          "> [Player] we go in\n\n[section:vault]: #\n"
+      )
+      (narrative_dir / "sess" / "vault.md").write_text("# vault\n\nDust.\n")
+      _commit_all(root, "play session with a section")
+
+      result = get_stats(session)
+      self.assertEqual(result.active_session_operator, "play")
+
+  def test_completed_inline_turn_is_not_an_open_session(self) -> None:
+    """A closed `play` turn must not offer `--end` — there is no session."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, _ = _make_project(root)
+
+      narrative = session.active_narrative
+      assert narrative is not None
+      (narrative.narrative_root / "_node.md").write_text(
+          "# test\n\n[play]: #\nThe gate groans open.\n[/play]: #\n"
+      )
+      _commit_all(root, "inline play turn")
+
+      result = get_stats(session)
+      self.assertIsNone(result.active_session_operator)
 
   def test_effective_pins_include_chat_as_with(self) -> None:
     """Cursor in a chat sub-node: stats list as/with from parent annotation."""

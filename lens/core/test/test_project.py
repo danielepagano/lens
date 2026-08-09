@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from lens.core.address import NarrativeAddress
 from lens.core.project import (
     read_local_dataset_paths,
     find_project_root_if_any,
@@ -230,3 +231,75 @@ class TestResolveDatasetPath(unittest.TestCase):
         finally:
             if created and sibling.exists():
                 sibling.rmdir()
+
+
+class TestUnknownNodeHint(unittest.TestCase):
+    """Help for an address that resolved to nothing.
+
+    Mirrors the shape that trips people up: several narrative trees, one of
+    them active, so the same words mean different nodes depending on whether
+    a leading '/' is present.
+    """
+
+    def setUp(self) -> None:
+        from lens.core.project import unknown_node_hint
+
+        self.hint = unknown_node_hint
+        self.tmp = tempfile.mkdtemp()
+        self.root = Path(self.tmp)
+        (self.root / "lens.toml").write_text('[project]\nnarrative = "Act-1"\n')
+        for narrative in ("Act-1", "Design", "prologue"):
+            node_dir = self.root / "narrative" / narrative
+            node_dir.mkdir(parents=True)
+            (node_dir / "_node.md").write_text(f"# {narrative}\n")
+        walstein = self.root / "narrative" / "Act-1" / "Walstein"
+        (walstein / "play-camp-breach").mkdir(parents=True)
+        (walstein / "_node.md").write_text("# Walstein\n")
+        (walstein / "play-camp-breach" / "_node.md").write_text("# breach\n")
+        (self.root / "narrative" / "Act-1" / "Altenheim").mkdir()
+        (self.root / "narrative" / "Act-1" / "Altenheim" / "_node.md").write_text("# a\n")
+
+    def tearDown(self) -> None:
+        import shutil
+
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _hint(self, address: str) -> str:
+        return self.hint(NarrativeAddress.parse(address), self.root)
+
+    def test_narrative_name_after_a_slash_suggests_the_working_address(self) -> None:
+        hint = self._hint("/Act-1/Walstein")
+        self.assertIn("did you mean '/Walstein'?", hint)
+
+    def test_suggestion_survives_to_a_deep_leaf(self) -> None:
+        hint = self._hint("/Act-1/Walstein/play-camp-breach")
+        self.assertIn("did you mean '/Walstein/play-camp-breach'?", hint)
+
+    def test_missing_leading_slash_suggests_adding_it(self) -> None:
+        hint = self._hint("Walstein/play-camp-breach")
+        self.assertIn("did you mean '/Walstein/play-camp-breach'?", hint)
+
+    def test_suggestions_are_verified_not_guessed(self) -> None:
+        # 'Act-1' is a real narrative, but there is no Nowhere node under it,
+        # so no suggestion may be offered for it.
+        hint = self._hint("/Act-1/Nowhere")
+        self.assertNotIn("did you mean", hint)
+
+    def test_falls_back_to_listing_what_exists(self) -> None:
+        hint = self._hint("/Walstein/nope")
+        self.assertIn("nodes under '/Walstein'", hint)
+        self.assertIn("play-camp-breach", hint)
+
+    def test_lists_root_children_for_an_unknown_top_level_key(self) -> None:
+        hint = self._hint("/xyz")
+        self.assertIn("Altenheim", hint)
+        self.assertIn("Walstein", hint)
+
+    def test_listing_reads_disk_not_parent_annotations(self) -> None:
+        # Altenheim has no [section:...] annotation in the root node, so an
+        # annotation-ordered listing would omit it.
+        self.assertIn("Altenheim", self._hint("/xyz"))
+
+    def test_returns_empty_string_when_nothing_useful_can_be_said(self) -> None:
+        # Callers append the hint unconditionally, so it must never be None.
+        self.assertIsInstance(self._hint("/xyz"), str)

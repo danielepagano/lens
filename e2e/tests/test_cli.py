@@ -91,6 +91,52 @@ class TestCliStats:
 
 
 # ---------------------------------------------------------------------------
+# Explain
+# ---------------------------------------------------------------------------
+
+
+class TestCliExplain:
+    def test_explain_reports_blocks_and_a_total(self, cli_project: Path) -> None:
+        r = _lens("explain", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        assert "RELEVANT KNOWLEDGE" in r.stdout
+        assert "kb:person.amy" in r.stdout
+        assert "TOTAL" in r.stdout
+
+    def test_explain_json_totals_add_up(self, cli_project: Path) -> None:
+        import json
+
+        r = _lens("explain", "--json", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        totals = json.loads(r.stdout)["totals"]
+        assert totals["bytes"] == totals["accounted_bytes"] + totals["other_bytes"]
+
+    def test_explain_as_play_uses_rpg_pins_and_modalities(
+        self, cli_project: Path
+    ) -> None:
+        import json
+
+        r = _lens("explain", "--operator", "play", "--json", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["operator"] == "play"
+        assert "rpg_play_context" in data["active_modalities"]
+
+    def test_explain_does_not_dirty_the_repo(self, cli_project: Path) -> None:
+        def status() -> str:
+            return subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=cli_project,
+                capture_output=True,
+                text=True,
+            ).stdout
+
+        before = status()
+        _lens("explain", cwd=cli_project)
+        assert status() == before
+
+
+# ---------------------------------------------------------------------------
 # KB lookups against bundled rpg + testing datasets
 # ---------------------------------------------------------------------------
 
