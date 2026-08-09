@@ -11,8 +11,12 @@ from lens.core.modalities.bootstrap import ensure_modalities_registered
 from lens.core.modalities.registry import registered_ids
 from lens.core.modalities.resolve import resolve_modalities
 from lens.core.modalities.types import ModalityContext
-from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
+from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator
+from lens.core.operator_detect import (
+    detect_open_session_operator,
+    detect_operator_name,
+)
 from lens.core.operator_params import collect_merged_raw, effective_param_bindings_at_cursor
 from lens.core.operators import get_operator_class_for_name
 from lens.core.image.registry import list_image_backend_rows
@@ -33,11 +37,6 @@ from lens.core.release.config import (
 )
 from lens.core.release.version import installed_version
 from lens.core.speech import registry as speech_registry
-
-SESSION_OPERATOR_NAMES: frozenset[str] = frozenset(
-    {"advance", "chat", "design", "play"}
-)
-
 
 def _empty_remember_pins() -> dict[str, list[str]]:
     return {}
@@ -93,17 +92,8 @@ def _operator_context_at_cursor(
     root: Path,
     node: NarrativeNode,
     *,
-    active_session_operator: str | None,
+    operator_name: str | None,
 ) -> tuple[type[Any], dict[str, Any]]:
-    operator_name = active_session_operator
-    if operator_name is None:
-        try:
-            text = node.md_path().read_text(encoding="utf-8")
-            open_ann = find_unclosed_cursor_annotation(text)
-            if open_ann is not None:
-                operator_name = open_ann.operator
-        except FileNotFoundError:
-            pass
     if operator_name:
         op_cls = get_operator_class_for_name(operator_name)
         if op_cls is not None:
@@ -115,7 +105,7 @@ def _resolve_modalities_at_cursor(
     session: ProjectSession,
     node: NarrativeNode,
     *,
-    active_session_operator: str | None,
+    operator_name: str | None,
 ) -> dict[str, dict[str, Any]]:
     """One entry per modality that was either configured in front matter or
     considered as a candidate (builtin/required/opted-in): its merged FM
@@ -125,10 +115,15 @@ def _resolve_modalities_at_cursor(
     ``modality_warnings_at_cursor`` / ``effective_modalities_at_cursor``),
     which required cross-referencing by id to answer "is this on, and why
     not" for any one modality.
+
+    *operator_name* is what would run at the cursor
+    (:func:`~lens.core.operator_detect.detect_operator_name`), not merely what
+    session is open: a finished inline ``play`` turn still resolves its
+    modalities against ``play``.
     """
     root = session.project_root
     op_cls, params = _operator_context_at_cursor(
-        root, node, active_session_operator=active_session_operator
+        root, node, operator_name=operator_name
     )
     ctx = ModalityContext(
         session=session,
@@ -231,22 +226,15 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             effective_params_at_cursor = effective_param_bindings_at_cursor(
                 root, node, active
             )
-            if node.key_path:
-                parent = NarrativeNode(
-                    narrative_root=node.narrative_root,
-                    key_path=node.key_path[:-1],
-                )
-                try:
-                    parent_text = parent.md_path().read_text(encoding="utf-8")
-                    open_ann = find_unclosed_cursor_annotation(parent_text)
-                    if open_ann is not None and open_ann.operator in SESSION_OPERATOR_NAMES:
-                        active_session_operator = open_ann.operator
-                except FileNotFoundError:
-                    pass
+            # Two different questions (see lens.core.operator_detect): the UI
+            # gates session-close affordances on an *open* session, while
+            # modality resolution wants whatever would actually run here —
+            # including a ``play`` turn that has already closed.
+            active_session_operator = detect_open_session_operator(node)
             modalities_at_cursor = _resolve_modalities_at_cursor(
                 session,
                 node,
-                active_session_operator=active_session_operator,
+                operator_name=detect_operator_name(node),
             )
 
     image_backends = list_image_backend_rows(root)

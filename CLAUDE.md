@@ -203,6 +203,8 @@ Operators can register themselves as **LLM tools** via `tools.py` (`register_ope
 
 `assemble_prompt()` stores the final post-transform graph on `CrawlResult.render_graph`. `lens explain` (`core/commands/explain.py`) is a read-only renderer over it: it assembles the prompt exactly as the operator would, then reports per-component size, block, and provenance instead of calling a model. Any new source of context must set component metadata rich enough to explain itself (see `_pin_origin_fields` in `context.py`).
 
+**Operator detection** (`core/operator_detect.py`): which operator owns a cursor, shared by `explain` and `stats` so the two cannot drift. `detect_operator_name()` answers *what would run here* (open ancestor session → own unclosed annotation → most recent completed narrating block); `detect_open_session_operator()` answers *is a session still open* and goes `None` the moment it closes. Use the second only for session-close affordances (`--end`); everything else wants the first.
+
 **KnowledgeStore** (`knowledge.py`): flat key-value store at `knowledge/{type}/{key}.md`. IDs are dot-separated lowercase (`person.amy`). Tags stored in `knowledge/tags.toml` with bidirectional index. The `+` suffix on an ID in a pin expands to linked objects (those sharing a dot-tag pointing to another KB object).
 
 ### Operators (implemented)

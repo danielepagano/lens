@@ -36,7 +36,7 @@ All project-specific routes are prefixed with `/{slug}`. Replace `{slug}` with t
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/{slug}/stats` | Project stats: active narrative, cursor, pending transaction state, dataset, KB counts. |
+| GET | `/{slug}/stats` | Project stats: active narrative, cursor, pending transaction state, dataset, KB counts. `active_session_operator` is the session *currently open* over the cursor (see Operator detection below) — the UI gates session-close affordances (`play --end`, `chat --end`) on it. |
 | GET | `/{slug}/explain` | Prompt composition at a cursor: every component with block, bytes, estimated tokens, share, and provenance, plus per-block and grand totals. Read-only — no transaction, no model call. |
 
 **`GET /{slug}/explain` query parameters**
@@ -51,6 +51,8 @@ All project-specific routes are prefixed with `/{slug}`. Replace `{slug}` with t
 | `chars_per_token` | `4` | Divisor for the token estimate (1–32). |
 
 **Operator detection.** With no `operator` param, the report assembles as the operator that would actually run at that node: an open session on any ancestor (`play`, `design`, `chat`, `advance`) owns it, otherwise the node's own unclosed annotation, otherwise the most recent *completed* narrating block (`write` plus the session operators — structural tags like `section` are skipped). The last rule matters because an inline turn closes as soon as it finishes, which is the state a report is almost always read in.
+
+Both rules live in `lens/core/operator_detect.py`, shared with `/stats`. Note that they answer different questions: `detect_operator_name` (explain, and the modality report in stats) says *what would run here* and therefore honours a closed inline turn, while `detect_open_session_operator` (`stats.active_session_operator`) says *is a session still open* and returns `null` once it closes — a finished session must not keep offering to end itself.
 
 Response: `{address, node, operator, line, blocks[], excluded[], totals{bytes, tokens, accounted_bytes, other_bytes, other_tokens, messages, message_bytes}, chars_per_token, active_modalities[], pinned_ids[], warnings[]}`. Each block carries `{id, label, role, bytes, tokens, percent, framing_bytes, framing_tokens, cache, components[]}`; each component carries `{id, kind, block, order, bytes, tokens, percent, provenance, provenance_kind, cache, detail}`. Provenance kinds: `node_pin`, `expansion`, `mention`, `rules_companion`, `module`, `modality`, `operator_pin`, `operator`, `narrative`.
 
