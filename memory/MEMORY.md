@@ -2,6 +2,27 @@
 
 Concise facts for agents. Full grounding: [CLAUDE.md](../CLAUDE.md). Product design: [docs/design.md](../docs/design.md).
 
+## Project context
+
+Lens is a solo hobby project; the owner is the only developer. Process exists only where it earns its keep for one person. Low ceremony is not low standards — the owner cares a great deal about this work.
+
+- **Issues are for design work worth thinking through** — shape, tradeoffs, code grounding. Most small fixes get no issue at all and go straight to a commit.
+- **No triage ceremony.** Severity labels, priority sorting, and bug-vs-enhancement distinctions carry no routing signal when there is one developer. Never pick a label to force attention; `enhancement` is the default, `bug` only when it genuinely reads as a defect.
+- Don't propose team process (review workflows, issue templates, sign-off gates, status reporting) unless asked.
+- No attribution footers on GitHub posts — one developer, no ambiguity about who wrote what. (The server strips them on post regardless.)
+- Issue prose should be dense and decided. Hedging, restating the same point in two sections, and inventing open questions to look thorough all cost the owner time to strip out.
+
+**Commits use Conventional Commits.** `semantic-release` runs on every push to `main` (`.github/workflows/release.yml` + `.releaserc.json`) with the default Angular preset, so the type is not cosmetic — it decides whether a release is cut:
+
+| Type | Effect on `main` |
+|------|------------------|
+| `feat:` | minor bump, listed in release notes |
+| `fix:` / `perf:` | patch bump, listed in release notes |
+| `docs:` `chore:` `refactor:` `test:` `style:` `build:` `ci:` | no release, not in notes |
+| `type!:` or `BREAKING CHANGE:` footer | major bump |
+
+Tags are bare versions, no `v` prefix (`tagFormat: "${version}"`). Nothing lints commit subjects — `check.yml` only runs `poe check` — so a wrong type fails silently (no release, or an unintended bump) rather than loudly. On a squash merge the PR title becomes the subject semantic-release reads.
+
 ## Doc quick links
 
 | Need | Read |
