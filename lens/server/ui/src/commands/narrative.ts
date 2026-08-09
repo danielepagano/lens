@@ -4,6 +4,7 @@ import {
   transactionResult,
   scrollContentToBottom,
   scrollCodeMirrorToBottom,
+  explainRequest,
 } from '../stores/ui'
 import type {
   CommandContext,
@@ -11,12 +12,13 @@ import type {
   CommandHandler,
   CommandModule,
 } from './common'
-import { normalizeAddress } from './common'
+import { CORE_OPERATOR_SLUGS, DATASET_OPERATOR_SLUGS, normalizeAddress } from './common'
 
 const PIN_KB_OPS = ['add', 'remove', 'block', 'unblock'] as const
 const PIN_VAR_OPS = ['set', 'unset'] as const
 const PIN_PARAM_OPS = ['set', 'unset'] as const
-const PIN_PARAM_SCOPE_SLUGS = 'global,write,edit,section,collate,compress,design,chat,play,advance'
+const OPERATOR_SLUGS = [...CORE_OPERATOR_SLUGS, ...Object.keys(DATASET_OPERATOR_SLUGS)]
+const PIN_PARAM_SCOPE_SLUGS = ['global', ...OPERATOR_SLUGS].join(',')
 const PIN_PARAM_KEY_SLUGS = [
   'llm_id',
   'reasoning',
@@ -75,6 +77,24 @@ const commands: CommandDefinition[] = [
       { name: 'line', valueType: 'line', required: false, hint: 'line number' },
     ],
   },
+  {
+    trigger: 'structure-explain',
+    group: 'structure',
+    cursorTargeting: 'never',
+    hint: 'what is in the prompt here, how big, and why',
+    positional: [
+      { name: 'address', valueType: 'address', required: false, hint: 'node address (default: cursor)' },
+      { name: 'line', valueType: 'line', required: false, hint: 'as of line number' },
+    ],
+    options: [
+      {
+        name: 'operator',
+        valueType: 'slug',
+        slugSource: OPERATOR_SLUGS.join(','),
+        hint: 'assemble as this operator',
+      },
+    ],
+  },
 ]
 
 async function postPin(body: NarrativePinBody, ctx: CommandContext): Promise<{ clearInput: boolean }> {
@@ -99,15 +119,31 @@ async function postPin(body: NarrativePinBody, ctx: CommandContext): Promise<{ c
   }
 }
 
+function positionalLine(ctx: CommandContext): number | undefined {
+  const raw = ctx.args.positional['line'] as string | undefined
+  const parsed = raw !== undefined && raw !== '' ? parseInt(raw, 10) : NaN
+  return Number.isInteger(parsed) ? parsed : undefined
+}
+
 const handler: CommandHandler = async (command, _payload, ctx: CommandContext) => {
   transactionResult.set(null)
+
+  if (command === 'structure-explain') {
+    // Read-only report: the modal owns the fetch, this only opens it.
+    const address = normalizeAddress(ctx.args.positional['address'] as string | undefined)
+    const operator = ctx.args.options['operator'] as string | undefined
+    explainRequest.set({
+      ...(address !== undefined ? { address } : {}),
+      ...(positionalLine(ctx) !== undefined ? { line: positionalLine(ctx) } : {}),
+      ...(operator ? { operator } : {}),
+    })
+    return { clearInput: true }
+  }
 
   if (command === 'structure-rewind') {
     const rawAddress = ctx.args.positional['address'] as string | undefined
     const address = normalizeAddress(rawAddress)
-    const lineRaw = ctx.args.positional['line'] as string | undefined
-    const parsedLine = lineRaw !== undefined && lineRaw !== '' ? parseInt(lineRaw, 10) : NaN
-    const line = Number.isInteger(parsedLine) ? parsedLine : undefined
+    const line = positionalLine(ctx)
     if (!address) {
       return { clearInput: false }
     }

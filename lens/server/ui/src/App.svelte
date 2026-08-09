@@ -13,6 +13,7 @@
   import MediaPreviewCarousel from './features/media/MediaPreviewCarousel.svelte'
   import MediaCompositeChromakey from './features/media/MediaCompositeChromakey.svelte'
   import KbDiffModal from './features/kb/KbDiffModal.svelte'
+  import ExplainModal from './features/explain/ExplainModal.svelte'
   import GuideModal from './features/cli/GuideModal.svelte'
   import ReleaseModal from './features/release/ReleaseModal.svelte'
   import KbPanel from './features/kb/KbPanel.svelte'
@@ -330,6 +331,7 @@
   <MediaCompositeChromakey />
   <MediaCarousel onDone={handleCarouselDone} />
   <KbDiffModal />
+  <ExplainModal />
   <GuideModal />
   <ReleaseModal />
 

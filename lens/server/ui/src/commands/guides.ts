@@ -26,7 +26,7 @@ The CLI bar at the bottom of the screen is your primary way to interact with a L
 |-------|----------|
 | **narrative** | \`write\`, \`design\`, \`chat\`, \`edit\`, \`kb-edit\` |
 | **rpg** | \`play\`, \`advance\` |
-| **structure** | \`structure-section\`, \`structure-collate\`, \`structure-compress\`, \`structure-rename\`, \`structure-rewind\` |
+| **structure** | \`structure-section\`, \`structure-collate\`, \`structure-compress\`, \`structure-rename\`, \`structure-rewind\`, \`structure-explain\` |
 | **pin** | \`pin-kb\`, \`pin-var\`, \`pin-param\` |
 | **transactions** | \`tx-commit\`, \`tx-rollback\`, \`tx-checkpoint\`, \`tx-refresh\`, \`tx-status\` |
 | **media** | \`media-attach\`, \`media-manage\`, \`media-generate\` |
@@ -319,6 +319,34 @@ With a line number, more precise truncation occurs:
 - Otherwise (free text) → simple truncation.
 
 Side effects such as knowledge-base objects created by design operators are never modified.
+`,
+  'structure-explain': `## structure-explain
+
+Show what is in the prompt at a point in the narrative: every component with its size, the block it lands in, and why it is there.
+
+### Usage
+
+\`\`\`
+structure-explain [address] [line]
+\`\`\`
+
+Call without arguments to explain the current cursor.
+
+### Options
+
+- \`--operator\` — Assemble as this operator instead of the detected one
+
+### Details
+
+The prompt is assembled exactly as an operator would assemble it — same pins, same modalities, same transforms — and then reported instead of sent. Nothing is written and no model is called, so this is safe to run at any time, including mid-session.
+
+The report opens as a modal: a stacked bar of the prompt blocks, then each block broken down into its components with size, share, and provenance — a pin on a named ancestor, a \`+\` expansion, an \`@\` mention, a rules companion, a session module, or a modality.
+
+### Notes
+
+- Token counts are estimates from a byte count and a rough divisor; byte counts are exact.
+- Switching \`--operator\` changes the answer: auto-pins and required modalities differ per operator.
+- Rows marked *derived* follow from another pin — change what they derive from, not the row itself.
 `,
   'pin-kb': `## pin-kb
 

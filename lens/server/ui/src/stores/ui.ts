@@ -181,6 +181,15 @@ export const kbDiffRequest = writable<KbDiffRequest | null>(null)
 /** Guide key to show in the CLI guide modal. Null = modal closed. */
 export const guideModalCommand = writable<string | null>(null)
 
+/** Open request for the context composition modal. Null = modal closed.
+ *  All fields optional: omit `address`/`line` to explain the current cursor. */
+export interface ExplainRequest {
+  address?: string
+  line?: number
+  operator?: string
+}
+export const explainRequest = writable<ExplainRequest | null>(null)
+
 /** True when a CodeMirror editor has focus.  Used on mobile to hide the CLI
  *  bottom bar so the virtual keyboard doesn't waste screen space. */
 export const editorFocused = writable(false)

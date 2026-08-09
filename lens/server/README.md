@@ -50,11 +50,15 @@ All project-specific routes are prefixed with `/{slug}`. Replace `{slug}` with t
 | `sort` | `order` | `order`, `size`, or `id` — ordering of components within each block. |
 | `chars_per_token` | `4` | Divisor for the token estimate (1–32). |
 
+**Operator detection.** With no `operator` param, the report assembles as the operator that would actually run at that node: an open session on any ancestor (`play`, `design`, `chat`, `advance`) owns it, otherwise the node's own unclosed annotation, otherwise the most recent *completed* narrating block (`write` plus the session operators — structural tags like `section` are skipped). The last rule matters because an inline turn closes as soon as it finishes, which is the state a report is almost always read in.
+
 Response: `{address, node, operator, line, blocks[], excluded[], totals{bytes, tokens, accounted_bytes, other_bytes, other_tokens, messages, message_bytes}, chars_per_token, active_modalities[], pinned_ids[], warnings[]}`. Each block carries `{id, label, role, bytes, tokens, percent, framing_bytes, framing_tokens, cache, components[]}`; each component carries `{id, kind, block, order, bytes, tokens, percent, provenance, provenance_kind, cache, detail}`. Provenance kinds: `node_pin`, `expansion`, `mention`, `rules_companion`, `module`, `modality`, `operator_pin`, `operator`, `narrative`.
 
 **Everything reconciles.** `framing_bytes` / `framing_tokens` are what the block adds around its components (the `--- begin/end <title> ---` wrapper plus separators), so `block.bytes == Σ components.bytes + framing_bytes` and the same holds for tokens; `totals.bytes == Σ blocks.bytes + other_bytes` and `totals.tokens == Σ blocks.tokens + other_tokens`. A client can render a stacked bar from either unit without a leftover slice. Token counts are an estimate — every part is estimated independently and aggregates are sums of their parts, so the total is marginally higher than estimating the whole prompt in one pass; byte counts are exact.
 
 The payload carries only machine values: `cache` is `prefix` / `volatile` (a heuristic until prompt caching lands), and each surface writes and localizes its own explanation of what that means — the API does not ship prose.
+
+The UI consumes this route from `features/explain/` (context modal, opened by the cursor **context** button or `/structure-explain`). It renders blocks from the array rather than a fixed list — `conversation` replaces `current_passage` when the passage parses into turns — and recomputes shares in the displayed unit, since `percent` is byte-based.
 
 ### Narrative
 
