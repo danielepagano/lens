@@ -26,6 +26,19 @@ from lens.server.streaming import StreamLock, operator_stream_response
 router = APIRouter(prefix="/{project_slug}")
 
 
+def _direct_edit_kb(session: ProjectSession) -> KnowledgeStore:
+    """KnowledgeStore for a hand edit made by the user in the UI.
+
+    Writes stage themselves and leave any pending operator preview alone (see
+    "Direct user edits" in docs/design.md).  The AI-driven ``kb_edit`` route is
+    deliberately *not* routed here: generated content stays a reviewable
+    transaction.
+    """
+    return KnowledgeStore.for_project(
+        session.project_root, storage=session.new_direct_edit_storage()
+    )
+
+
 class KbItemOut(BaseModel):
     id: str
     tags: list[str]
@@ -150,9 +163,7 @@ def kb_save_item(
         parse_id(id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    storage = session.new_storage(owner=None)
-    kb = KnowledgeStore.for_project(session.project_root, storage=storage)
-    kb.store_object(id, body.content)
+    _direct_edit_kb(session).store_object(id, body.content)
     return KbItemSaveResponse(id=id)
 
 
@@ -171,8 +182,7 @@ def kb_create_item(
         parse_id(body.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    storage = session.new_storage(owner=None)
-    kb = KnowledgeStore.for_project(session.project_root, storage=storage)
+    kb = _direct_edit_kb(session)
     kb.store_object(body.id, body.content, use_template=body.use_template)
     objs = kb.get_objects([body.id])
     obj = objs.get(body.id)
@@ -190,10 +200,12 @@ def kb_delete_item(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     try:
-        kb_delete(id, store=session.kb)
-        return KbItemSaveResponse(id=id)
+        kb_delete(id, store=_direct_edit_kb(session))
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    finally:
+        session.kb.evict_tag_cache()
+    return KbItemSaveResponse(id=id)
 
 
 class KbCopyRequest(BaseModel):
@@ -207,10 +219,12 @@ def kb_copy_item(
     session: ProjectSession = Depends(get_session),
 ) -> KbCopyResponse:
     try:
-        kb_copy(body.source_id, body.target_id, store=session.kb)
-        return KbCopyResponse(source_id=body.source_id, target_id=body.target_id)
+        kb_copy(body.source_id, body.target_id, store=_direct_edit_kb(session))
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    finally:
+        session.kb.evict_tag_cache()
+    return KbCopyResponse(source_id=body.source_id, target_id=body.target_id)
 
 
 class KbRenameRequest(BaseModel):
@@ -224,10 +238,12 @@ def kb_rename_item(
     session: ProjectSession = Depends(get_session),
 ) -> KbRenameResponse:
     try:
-        kb_rename(body.old_id, body.new_id, store=session.kb)
-        return KbRenameResponse(old_id=body.old_id, new_id=body.new_id)
+        kb_rename(body.old_id, body.new_id, store=_direct_edit_kb(session))
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    finally:
+        session.kb.evict_tag_cache()
+    return KbRenameResponse(old_id=body.old_id, new_id=body.new_id)
 
 
 class KbTagRequest(BaseModel):
@@ -247,11 +263,13 @@ def kb_tag_item(
         raise HTTPException(status_code=400, detail=str(e))
     try:
         current_tags, invalid_tags = kb_tag(
-            id, body.add, body.remove, store=session.kb
+            id, body.add, body.remove, store=_direct_edit_kb(session)
         )
-        return KbTagResponse(id=id, tags=current_tags, invalid_dot_tags=invalid_tags or None)
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    finally:
+        session.kb.evict_tag_cache()
+    return KbTagResponse(id=id, tags=current_tags, invalid_dot_tags=invalid_tags or None)
 
 
 class KbTemplateRequest(BaseModel):
@@ -273,7 +291,7 @@ def kb_set_template(
     body: KbTemplateRequest,
     session: ProjectSession = Depends(get_session),
 ) -> KbTemplateSetResponse:
-    kb_template(type, body.content, store=session.kb)
+    kb_template(type, body.content, store=_direct_edit_kb(session))
     return KbTemplateSetResponse(type=type)
 
 
