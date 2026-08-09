@@ -2,6 +2,15 @@
 
 Concise facts for agents. Full grounding: [CLAUDE.md](../CLAUDE.md). Product design: [docs/design.md](../docs/design.md).
 
+## Project context
+
+Lens is a solo hobby project; the owner is the only developer. Process exists only where it earns its keep for one person. Low ceremony is not low standards — the owner cares a great deal about this work.
+
+- **Issues are for design work worth thinking through** — shape, tradeoffs, code grounding. Most small fixes get no issue at all and go straight to a commit.
+- **No triage ceremony.** Severity labels, priority sorting, and bug-vs-enhancement distinctions carry no routing signal when there is one developer. Never pick a label to force attention; `enhancement` is the default, `bug` only when it genuinely reads as a defect.
+- Don't propose team process (review workflows, issue templates, sign-off gates, status reporting) unless asked.
+- Issue prose should be dense and decided. Hedging, restating the same point in two sections, and inventing open questions to look thorough all cost the owner time to strip out.
+
 ## Doc quick links
 
 | Need | Read |
