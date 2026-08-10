@@ -24,6 +24,7 @@ from lens.core.context import (
     BLOCK_EXTRA,
     BLOCK_KNOWLEDGE,
     BLOCK_PREVIOUS,
+    BLOCK_STATE,
     BLOCK_SYSTEM,
     BLOCK_TASK,
     CrawlResult,
@@ -73,6 +74,7 @@ _BLOCK_CACHE: dict[str, str] = {
     BLOCK_CURRENT: _CACHE_VOLATILE,
     BLOCK_CONVERSATION: _CACHE_VOLATILE,
     BLOCK_EXTRA: _CACHE_VOLATILE,
+    BLOCK_STATE: _CACHE_VOLATILE,
     BLOCK_TASK: _CACHE_VOLATILE,
 }
 
@@ -83,6 +85,7 @@ _BLOCK_ORDER: tuple[str, ...] = (
     BLOCK_CURRENT,
     BLOCK_CONVERSATION,
     BLOCK_EXTRA,
+    BLOCK_STATE,
     BLOCK_TASK,
 )
 
@@ -93,6 +96,7 @@ _BLOCK_ROLE: dict[str, str] = {
     BLOCK_CURRENT: "user",
     BLOCK_CONVERSATION: "user/assistant",
     BLOCK_EXTRA: "user",
+    BLOCK_STATE: "user",
     BLOCK_TASK: "user",
 }
 
@@ -100,6 +104,7 @@ _BLOCK_TITLE_KEY: dict[str, str] = {
     BLOCK_KNOWLEDGE: "shared.block.relevant_knowledge",
     BLOCK_PREVIOUS: "shared.block.previous_events_summary",
     BLOCK_CURRENT: "shared.block.current_passage",
+    BLOCK_STATE: "shared.block.live_state",
     BLOCK_TASK: "shared.block.task",
 }
 

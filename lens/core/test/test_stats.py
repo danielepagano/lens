@@ -233,6 +233,63 @@ class TestStatsEffectivePins(unittest.TestCase):
       result = get_stats(session)
       self.assertEqual(result.remember_pins_at_cursor, {"place.b": ["remember.session-notes"]})
 
+  def test_state_pins_at_cursor_lists_only_state_tagged_pins(self) -> None:
+    """The pin panel must agree with the prompt about what renders at the tail."""
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.media import MediaService
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, node = _make_project(root)
+      _add_kb(root, "place", "a", "Place A")
+      _add_kb(root, "tracker", "combat", "Goblin HP 7/7")
+
+      node.md_path().write_text(
+          "[\n"
+          "  kb_pin:\n"
+          "    - place.a\n"
+          "    - tracker.combat\n"
+          "]: #\n\n"
+          "# test\n"
+      )
+
+      import subprocess
+
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "pins"], cwd=root, capture_output=True, check=True
+      )
+
+      _write_kb_tags_toml(root, {"tracker.combat": ["state"]})
+      KnowledgeStore.clear_registry()
+      MediaService.clear_registry()
+
+      result = get_stats(session)
+      self.assertEqual(result.effective_pins_at_cursor, ["place.a", "tracker.combat"])
+      self.assertEqual(result.state_pins_at_cursor, ["tracker.combat"])
+
+  def test_state_pins_at_cursor_is_empty_without_the_tag(self) -> None:
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.media import MediaService
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, node = _make_project(root)
+      _add_kb(root, "place", "a", "Place A")
+      node.md_path().write_text("[\n  kb_pin:\n    - place.a\n]: #\n\n# test\n")
+
+      import subprocess
+
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "pins"], cwd=root, capture_output=True, check=True
+      )
+      KnowledgeStore.clear_registry()
+      MediaService.clear_registry()
+
+      result = get_stats(session)
+      self.assertEqual(result.state_pins_at_cursor, [])
+
 
 class TestStatsEffectiveVarsAndParams(unittest.TestCase):
   def test_effective_vars_inherited_at_cursor(self) -> None:

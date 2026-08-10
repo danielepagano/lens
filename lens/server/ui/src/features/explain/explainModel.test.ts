@@ -227,11 +227,20 @@ describe('blockColorVar', () => {
     expect(blockColorVar('relevant_knowledge')).toBe('--explain-series-1')
     expect(blockColorVar('something_a_dataset_added')).toBe('--explain-chrome-unknown')
   })
+
+  it('gives live state a validated series hue, not the unknown fallback', () => {
+    // The same token the `state` pin pill draws from — they must not drift.
+    expect(blockColorVar('live_state')).toBe('--explain-series-5')
+  })
 })
 
 describe('blockShortLabel', () => {
   it('falls back to the payload label for unknown blocks', () => {
     expect(blockShortLabel(block({ id: 'weird', label: 'WEIRD BLOCK' }))).toBe('WEIRD BLOCK')
+  })
+
+  it('shortens live state so it reads beside the other legend entries', () => {
+    expect(blockShortLabel(block({ id: 'live_state', label: 'LIVE STATE' }))).toBe('Live state')
   })
 })
 

@@ -65,6 +65,7 @@ class StatsResult:
     staged_diff: str = field(default="")
     effective_pins_at_cursor: list[str] = field(default_factory=list[str])
     remember_pins_at_cursor: dict[str, list[str]] = field(default_factory=_empty_remember_pins)
+    state_pins_at_cursor: list[str] = field(default_factory=list[str])
     available_llms: list[str] = field(default_factory=list[str])
     image_backends: list[dict[str, Any]] = field(default_factory=_empty_image_backends)
     has_mount: bool = False
@@ -208,6 +209,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
 
     effective_pins_at_cursor: list[str] = []
     remember_pins_at_cursor: dict[str, list[str]] = {}
+    state_pins_at_cursor: list[str] = []
     active_session_operator: str | None = None
     effective_vars_at_cursor: dict[str, str] = {}
     effective_params_at_cursor: dict[str, str] = {}
@@ -222,6 +224,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             pin_crawl = crawl(CrawlSpec.of(node, include_narrative=False))
             effective_pins_at_cursor = pin_crawl.pinned_ids
             remember_pins_at_cursor = pin_crawl.remember_pins
+            state_pins_at_cursor = pin_crawl.state_pins
             effective_vars_at_cursor = dict(collect_vars(node))
             effective_params_at_cursor = effective_param_bindings_at_cursor(
                 root, node, active
@@ -279,6 +282,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         staged_diff=staged_diff,
         effective_pins_at_cursor=effective_pins_at_cursor,
         remember_pins_at_cursor=remember_pins_at_cursor,
+        state_pins_at_cursor=state_pins_at_cursor,
         available_llms=list_available_llms(root),
         image_backends=image_backends,
         has_mount=has_m,

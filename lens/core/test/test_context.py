@@ -1004,3 +1004,149 @@ class TestAssembledKbSecretsAreModelForm(unittest.TestCase):
             messages = assemble_prompt(result, system_prompt="sys", instruction="again")
 
         self.assertIn("the blight is magical", messages[1]["content"])
+
+
+class TestStateTagTailRender(unittest.TestCase):
+    """`state`-tagged KB objects render at the tail, not in RELEVANT KNOWLEDGE."""
+
+    def _project_with_state_pin(
+        self, tmp: Path, *, extra_pins: str = ""
+    ) -> NarrativeNode:
+        root, node = _make_project(_init_repo(tmp))
+        _add_kb(root, "lore", "world", "The world is old.")
+        _add_kb(root, "tracker", "combat", "Goblin HP 7/7")
+        from lens.core.knowledge import KnowledgeStore
+        from lens.core.media import MediaService
+
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        kb = KnowledgeStore.for_project(root)
+        kb.add_tags("tracker.combat", ["state"])
+        root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+        root_node.md_path().write_text(
+            "[\n  kb_pin:\n    - lore.world\n    - tracker.combat\n"
+            + extra_pins
+            + "]: #\n\n# test\n"
+        )
+        subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "pin"], cwd=root, capture_output=True, check=True
+        )
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        return node
+
+    def test_state_object_leaves_relevant_knowledge_and_precedes_task(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project_with_state_pin(Path(tmp))
+            result = crawl(node)
+            messages = assemble_prompt(
+                result, system_prompt="sys", instruction="continue"
+            )
+
+        user = messages[1]["content"]
+        knowledge_block = user.split("--- end RELEVANT KNOWLEDGE ---")[0]
+        self.assertIn("lore.world", knowledge_block)
+        self.assertNotIn("tracker.combat", knowledge_block)
+
+        self.assertIn("Goblin HP 7/7", user)
+        state_at = user.index("--- begin LIVE STATE ---")
+        task_at = user.index("--- begin TASK ---")
+        self.assertLess(state_at, task_at)
+        # Nothing between the state block and the task block.
+        between = user[user.index("--- end LIVE STATE ---") : task_at]
+        self.assertEqual(between.replace("--- end LIVE STATE ---", "").strip(), "")
+
+    def test_state_object_still_counts_as_pinned(self) -> None:
+        """The divert is a render decision; pin resolution is unchanged."""
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project_with_state_pin(Path(tmp))
+            result = crawl(node)
+            assemble_prompt(result, system_prompt="sys", instruction="continue")
+
+        self.assertEqual(result.pinned_ids, ["lore.world", "tracker.combat"])
+        self.assertEqual(len(result.knowledge), 2)
+
+    def test_untagged_project_renders_no_state_block(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "lore", "world", "The world is old.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - lore.world\n]: #\n\n# test\n"
+            )
+            subprocess.run(
+                ["git", "add", "-A"], cwd=root, capture_output=True, check=True
+            )
+            subprocess.run(
+                ["git", "commit", "-m", "pin"], cwd=root, capture_output=True, check=True
+            )
+            from lens.core.knowledge import KnowledgeStore
+            from lens.core.media import MediaService
+
+            KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
+            result = crawl(node)
+            messages = assemble_prompt(
+                result, system_prompt="sys", instruction="continue"
+            )
+
+        self.assertNotIn("LIVE STATE", messages[1]["content"])
+
+    def test_state_block_lands_after_last_turn_in_multi_turn_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project_with_state_pin(Path(tmp))
+            result = crawl(node)
+            messages = assemble_prompt(
+                result,
+                system_prompt="sys",
+                instruction="continue",
+                turns=[
+                    ("user", "Kira swings."),
+                    ("assistant", "The goblin parries."),
+                ],
+            )
+
+        # State must not ride in the cacheable prefix with the knowledge block.
+        prefix = messages[1]["content"]
+        self.assertIn("lore.world", prefix)
+        self.assertNotIn("Goblin HP 7/7", prefix)
+
+        tail = messages[-1]["content"]
+        self.assertEqual(messages[-1]["role"], "user")
+        self.assertIn("Goblin HP 7/7", tail)
+        self.assertLess(tail.index("--- begin LIVE STATE ---"), tail.index("--- begin TASK ---"))
+        self.assertEqual(messages[-2]["content"], "The goblin parries.")
+
+    def test_mentioned_state_object_also_diverts(self) -> None:
+        """A state object entering scope via `@` mention lands at the tail too."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "tracker", "combat", "Goblin HP 7/7")
+            from lens.core.knowledge import KnowledgeStore
+            from lens.core.media import MediaService
+
+            KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
+            KnowledgeStore.for_project(root).add_tags("tracker.combat", ["state"])
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text("# test\n\nKira checks @tracker.combat now.\n")
+            subprocess.run(
+                ["git", "add", "-A"], cwd=root, capture_output=True, check=True
+            )
+            subprocess.run(
+                ["git", "commit", "-m", "prose"], cwd=root, capture_output=True, check=True
+            )
+            KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
+            result = crawl(node)
+            messages = assemble_prompt(
+                result, system_prompt="sys", instruction="continue"
+            )
+
+        user = messages[1]["content"]
+        self.assertIn("--- begin LIVE STATE ---", user)
+        self.assertNotIn("RELEVANT KNOWLEDGE", user)
+        self.assertLess(
+            user.index("--- begin LIVE STATE ---"), user.index("--- begin TASK ---")
+        )

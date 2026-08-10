@@ -252,18 +252,25 @@ ul.tree-list li {
  * are the operator's own system/task text, which is fixed overhead and so
  * wears neutral ink rather than a series colour.
  *
- * The four series hues are validated all-pairs (not just adjacent) in both
+ * The five series hues are validated all-pairs (not just adjacent) in both
  * modes against Pico's card surfaces — #fff light, #181c25 dark — so a block
  * that is absent at this cursor, which makes two non-adjacent blocks
  * neighbours in the bar, can never produce a confusable pair. Identity is
  * additionally carried by the legend and the per-block labels, which is also
  * the required relief for the sub-3:1 light-mode steps.
+ *
+ * Re-validate with the dataviz `validate_palette.js` before changing a step.
+ * `series-5` (live state) was picked so it costs nothing: in both modes the
+ * worst all-pairs CVD gap stays the pre-existing one (light 13.0 deutan
+ * #e87ba4/#2a78d6, dark 6.9 protan #008300/#c98500), and dark keeps every
+ * step at or above 3:1 contrast.
  */
 :root {
   --explain-series-1: #2a78d6;
   --explain-series-2: #eda100;
   --explain-series-3: #e87ba4;
   --explain-series-4: #008300;
+  --explain-series-5: #86198f;
   --explain-chrome-1: #6f6d68;
   --explain-chrome-2: #a9a7a0;
   --explain-chrome-unknown: #898781;
@@ -275,6 +282,7 @@ ul.tree-list li {
     --explain-series-2: #c98500;
     --explain-series-3: #d55181;
     --explain-series-4: #008300;
+    --explain-series-5: #b429c2;
     --explain-chrome-1: #c3c2b7;
     --explain-chrome-2: #7b8495;
     --explain-chrome-unknown: #898781;
@@ -286,6 +294,7 @@ ul.tree-list li {
   --explain-series-2: #c98500;
   --explain-series-3: #d55181;
   --explain-series-4: #008300;
+  --explain-series-5: #b429c2;
   --explain-chrome-1: #c3c2b7;
   --explain-chrome-2: #7b8495;
   --explain-chrome-unknown: #898781;
@@ -620,6 +629,33 @@ details[open]>summary {
 
 .pin-pill.pin-pill--remember:hover {
   border-color: #dc2626;
+}
+
+/* Tagged `state`: renders at the prompt tail and is re-sent every beat.
+ *
+ * A pin can be both `state` and a remember target, so this decoration stays
+ * off `border-color` — which `--remember` already owns — and marks the pill
+ * with a leading dot plus a tinted fill instead. The two read together.
+ *
+ * Both draw from `--explain-series-5`, the same token the LIVE STATE segment
+ * of the context chart uses, so the pill and the chart cannot drift apart. */
+.pin-pill.pin-pill--state {
+  background-color: color-mix(in srgb, var(--explain-series-5) 14%, transparent);
+}
+
+.pin-pill.pin-pill--state::before {
+  content: '';
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  margin-right: 0.25rem;
+  vertical-align: 0.05rem;
+  background-color: var(--explain-series-5);
+}
+
+.pin-pill.pin-pill--state:hover {
+  background-color: color-mix(in srgb, var(--explain-series-5) 24%, transparent);
 }
 
 .pin-pill.pin-pill-var {

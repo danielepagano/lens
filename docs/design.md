@@ -209,10 +209,25 @@ Assembled messages follow fixed **attention order**:
 1. System — operator role and constraints  
 2. Relevant knowledge — crawled KB  
 3. Previous events — ancestor narrative (summaries + recent detail)  
-4. Current passage — cursor node  
-5. Task — instruction, user input, tools  
+4. Current passage — cursor node (or the conversation turns it parses into)  
+5. Live state — KB objects tagged `state` (see below)  
+6. Task — instruction, user input, tools  
 
 Stable instructions and distant grounding come first; immediate task last. Order is a design choice, not an implementation detail.
+
+### Live state: mutable objects render at the tail
+
+Most KB objects are durable facts, and the assembly order above puts them early precisely because they do not change: everything from the system prompt through the last completed turn is a stable prefix a provider can cache.
+
+Some objects are the opposite. An initiative tracker, a live mood, a scratchpad the model reads each beat — the user *intends* to update these as the session runs. Placed in `[RELEVANT KNOWLEDGE]` they sit in the prefix, so every edit invalidates the entire prompt behind them, and they land far from the decision they inform.
+
+Tagging an object **`state`** diverts it to the **tail** — after the last transcript turn, immediately before `[TASK]`. Both pressures agree on that slot: the object costs only its own tokens uncached per beat (a cost that is unavoidable, because the content genuinely changed), and live state is the most decision-relevant material in the prompt.
+
+Mutability is a property of the **object**, not of how it entered scope, so the divert is orthogonal to pinning. It applies identically whether the object arrived as an ancestor front-matter pin, a session module, a rules companion, or an `@` mention — one pass over the finished render graph (`_divert_state_components`, `lens/core/context.py`), running after id dedup so an object that is both pinned and mentioned still lands exactly once. `expansion_policy_from_tags` is the existing precedent for tags driving render behaviour.
+
+Nothing gains write powers here. State objects are player-maintained; `play` still only appends narrative. The user is responsible for keeping them accurate across rollback, retry, and rewind — the same discipline already applied to a character sheet.
+
+`lens explain` reports the block as `live_state`, classified **volatile**, so the per-beat cost is visible rather than inferred.
 
 ### Inspecting the composition
 

@@ -41,6 +41,7 @@ def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> 
         "effective_vars_at_cursor": result.effective_vars_at_cursor,
         "effective_params_at_cursor": result.effective_params_at_cursor,
         "remember_pins_at_cursor": result.remember_pins_at_cursor,
+        "state_pins_at_cursor": result.state_pins_at_cursor,
         "available_llms": result.available_llms,
         "image_backends": result.image_backends,
         "has_mount": result.has_mount,

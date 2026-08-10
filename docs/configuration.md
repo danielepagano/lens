@@ -660,6 +660,23 @@ YAML at the top of node files (`---` … `---`). Not in `lens.toml` but central 
 
 Manage with `lens pin kb add|remove|block|unblock`. The `+` suffix on an id expands linked objects (shared dot-tags).
 
+### Reserved KB tags
+
+Two tags on a KB object change how it renders rather than what it means. Both are engine-level and work regardless of which dataset the object comes from or how it entered scope.
+
+| Tag | Effect |
+|-----|--------|
+| `inline` | An `@type.key` mention is replaced by the object's body in place, instead of contributing a reference block |
+| `state` | The object renders at the **tail** of the prompt — after the last transcript turn, immediately before `[TASK]` — instead of inside `[RELEVANT KNOWLEDGE]` |
+
+Tag an object you intend to **update as the session runs** with `state`: an initiative tracker, a live mood, a per-beat scratchpad. A mutable object in the cacheable prefix invalidates the whole prompt on every change; at the tail it costs only its own tokens per beat, and it sits next to the task it informs. See [design.md](design.md#live-state-mutable-objects-render-at-the-tail).
+
+```bash
+lens kb tag tracker.combat --add state
+```
+
+The divert is a render decision only — the object is still pinned, still deduped against other scopes, and `lens explain` still reports it (in the `live_state` block, marked volatile). Tagging an object that never changes just makes it uncacheable for no benefit.
+
 ### `vars`
 
 String substitution in prompts (`@var:key`). **Node front matter only** — not in `lens.toml`.

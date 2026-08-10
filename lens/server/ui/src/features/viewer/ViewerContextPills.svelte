@@ -29,9 +29,22 @@
     return Boolean(rememberPins[id]?.length)
   }
 
-  function pinRememberTitle(id: string): string | undefined {
+  /** Tagged `state`: rendered at the prompt tail and re-sent on every beat. */
+  const statePins = $derived(new Set(stats?.state_pins_at_cursor ?? []))
+
+  function pinIsState(id: string): boolean {
+    return statePins.has(id)
+  }
+
+  /** One tooltip per pill, so the two decorations cannot fight over `title`. */
+  function pinTitle(id: string): string | undefined {
+    const lines: string[] = []
+    if (pinIsState(id)) {
+      lines.push('Live state — sent after the last turn, re-sent every beat')
+    }
     const tags = rememberPins[id]
-    return tags && tags.length > 0 ? tags.join('\n') : undefined
+    if (tags && tags.length > 0) lines.push(...tags)
+    return lines.length > 0 ? lines.join('\n') : undefined
   }
 
   function openKbItem(id: string) {
@@ -119,9 +132,10 @@
         {
           'pin-pill-unpin': row.unpin,
           'pin-pill--remember': pinHasRememberTargets(row.id),
+          'pin-pill--state': !row.unpin && pinIsState(row.id),
         },
       ]}
-      title={pinRememberTitle(row.id)}
+      title={pinTitle(row.id)}
       onclick={() => openKbItem(row.id)}
     >{row.unpin ? `-${row.id}` : row.id}</button>
   {/each}

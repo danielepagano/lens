@@ -75,6 +75,11 @@ class TestStats:
         assert "remember_pins_at_cursor" in data
         assert isinstance(data["remember_pins_at_cursor"], dict)
 
+    def test_includes_state_pins_at_cursor(self, test_client: TestClient) -> None:
+        data = test_client.get("/test/stats").json()
+        assert "state_pins_at_cursor" in data
+        assert isinstance(data["state_pins_at_cursor"], list)
+
     def test_includes_effective_vars_and_params_at_cursor(self, test_client: TestClient) -> None:
         data = test_client.get("/test/stats").json()
         assert "effective_vars_at_cursor" in data
