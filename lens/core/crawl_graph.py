@@ -19,6 +19,7 @@ ComponentKind = Literal[
     "task",
     "knowledge",
     "reference",
+    "state",
     "narrative_summary",
     "current_narrative",
     "extra",

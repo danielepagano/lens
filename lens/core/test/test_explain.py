@@ -20,6 +20,7 @@ from lens.core.commands.explain import (
 from lens.core.context import (
     BLOCK_CURRENT,
     BLOCK_KNOWLEDGE,
+    BLOCK_STATE,
     BLOCK_SYSTEM,
     BLOCK_TASK,
 )
@@ -27,6 +28,7 @@ from lens.core.crawl_graph import ComponentKind, CrawlComponent
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeStore
 from lens.core.media import MediaService
+from lens.core.pinning import pin
 from lens.core.project import ProjectSession
 from lens.testing.project import setup_test_project
 
@@ -477,3 +479,60 @@ class TestDetectOperator(ExplainTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestExplainStateBlock(unittest.TestCase):
+    """`state`-tagged objects are reported in their own volatile tail block."""
+
+    def setUp(self) -> None:
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        self.tmp = tempfile.mkdtemp(prefix="lens_explain_state_")
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.addCleanup(KnowledgeStore.clear_registry)
+        self.addCleanup(MediaService.clear_registry)
+        self.session = setup_test_project(
+            Path(self.tmp), "http://127.0.0.1:1/v1", opening_write=False
+        )
+        root = self.session.project_root
+        kb = KnowledgeStore.for_project(root)
+        kb.store_object("tracker.combat", "Goblin HP 7/7")
+        kb.add_tags("tracker.combat", ["state"])
+        narrative = self.session.active_narrative
+        assert narrative is not None
+        pin(
+            narrative.find_cursor(),
+            ["tracker.combat"],
+            self.session.new_direct_edit_storage(),
+        )
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+    def test_state_object_is_reported_outside_relevant_knowledge(self) -> None:
+        report = explain_context(self.session)
+        knowledge = _block(report, BLOCK_KNOWLEDGE)
+        assert knowledge is not None
+        self.assertNotIn(
+            "kb:tracker.combat", {c.id for c in knowledge.components}
+        )
+
+        state = _block(report, BLOCK_STATE)
+        assert state is not None
+        tracker = next(c for c in state.components if c.id == "kb:tracker.combat")
+        self.assertEqual(tracker.kind, "state")
+        self.assertGreater(tracker.bytes, 0)
+
+    def test_state_block_is_volatile_and_sits_just_before_the_task(self) -> None:
+        report = explain_context(self.session)
+        order = [b.id for b in report.blocks]
+        self.assertEqual(order[order.index(BLOCK_STATE) + 1], BLOCK_TASK)
+        state = _block(report, BLOCK_STATE)
+        assert state is not None
+        self.assertEqual(state.cache, "volatile")
+
+    def test_totals_still_account_for_every_byte(self) -> None:
+        report = explain_context(self.session)
+        self.assertEqual(report.total_bytes, sum(report.message_bytes))
+        self.assertEqual(
+            report.accounted_bytes + report.other_bytes, report.total_bytes
+        )

@@ -43,6 +43,22 @@ def expansion_policy_from_tags(tags: Iterable[str]) -> ExpansionPolicy:
     return ExpansionPolicy(mode="reference")
 
 
+STATE_TAG = "state"
+"""Reserved tag marking a KB object the user intends to update as the session runs.
+
+State objects render at the **tail** of the prompt — after the last transcript
+turn, immediately before ``[TASK]`` — instead of inside ``[RELEVANT KNOWLEDGE]``.
+A mutable object sitting in the cacheable prefix invalidates the whole prompt
+every time it changes; at the tail it costs only its own tokens, and it lands
+next to the task where it is most decision-relevant.
+"""
+
+
+def is_state_tags(tags: Iterable[str]) -> bool:
+    """Whether *tags* mark the object as live state (see :data:`STATE_TAG`)."""
+    return STATE_TAG in tags
+
+
 def substitute_vars(text: str, vars: dict[str, str]) -> str:
     """Replace ``@var:slug`` tokens with values from *vars*."""
     if not vars or "@var:" not in text:

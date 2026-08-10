@@ -60,6 +60,7 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "shared.block.relevant_knowledge": PromptSpec("shared.block.relevant_knowledge", frozenset()),
     "shared.block.previous_events_summary": PromptSpec("shared.block.previous_events_summary", frozenset()),
     "shared.block.current_passage": PromptSpec("shared.block.current_passage", frozenset()),
+    "shared.block.live_state": PromptSpec("shared.block.live_state", frozenset()),
     "shared.block.task": PromptSpec("shared.block.task", frozenset()),
     "shared.block.instructions": PromptSpec("shared.block.instructions", frozenset()),
     "shared.block.current_text": PromptSpec("shared.block.current_text", frozenset()),

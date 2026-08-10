@@ -179,6 +179,7 @@ Example:
 shared.block.relevant_knowledge = 'RELEVANT KNOWLEDGE'
 shared.block.previous_events_summary = 'PREVIOUS EVENTS SUMMARY'
 shared.block.current_passage = 'CURRENT PASSAGE'
+shared.block.live_state = 'LIVE STATE'
 shared.block.task = 'TASK'
 shared.block.instructions = 'INSTRUCTIONS'
 shared.block.current_text = 'CURRENT TEXT'

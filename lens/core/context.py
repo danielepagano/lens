@@ -32,6 +32,7 @@ from lens.core.crawl_transforms import (
     SecretDecodeTransform,
     StripStandaloneMountEmbedsTransform,
     expansion_policy_from_tags,
+    is_state_tags,
 )
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 from lens.core.narrative import NarrativeNode
@@ -364,12 +365,14 @@ BLOCK_KNOWLEDGE = "relevant_knowledge"
 BLOCK_PREVIOUS = "previous_events_summary"
 BLOCK_CURRENT = "current_passage"
 BLOCK_EXTRA = "extra"
+BLOCK_STATE = "live_state"
 BLOCK_TASK = "task"
 
 _KIND_TO_BLOCK: dict[str, str] = {
     "system": BLOCK_SYSTEM,
     "knowledge": BLOCK_KNOWLEDGE,
     "reference": BLOCK_KNOWLEDGE,
+    "state": BLOCK_STATE,
     "narrative_summary": BLOCK_PREVIOUS,
     "current_narrative": BLOCK_CURRENT,
     "extra": BLOCK_EXTRA,
@@ -1012,8 +1015,38 @@ def _prepare_render_graph(
         logger.debug("render graph: no project_root; skipping AtExpansionTransform")
         graph = SecretDecodeTransform().apply(graph)
         graph = StripStandaloneMountEmbedsTransform().apply(graph)
+    _divert_state_components(graph)
     _log_render_effects_if_verbose(graph)
     return graph
+
+
+def _divert_state_components(graph: CrawlGraph) -> None:
+    """Reclassify `state`-tagged KB components so they render at the tail.
+
+    Runs once, after every transform has contributed its components, so it
+    covers all the ways a KB object can enter scope — ancestor front-matter
+    pins, session modules, rules companions, `@` mentions — with one branch
+    instead of one per construction site.  Running last is also what makes the
+    divert land *after* id dedup: components that would collide were already
+    skipped at build time, so an object that is both pinned and mentioned is a
+    single component here and moves to the tail once.
+    """
+    for component in graph.components:
+        if component.kind not in {"knowledge", "reference"}:
+            continue
+        tags = component.metadata.get("tags", "")
+        if not is_state_tags(tag for tag in tags.split(",") if tag):
+            continue
+        component.kind = "state"
+        component.transform_history.append("state-divert")
+        graph.add_effect(
+            RenderEffect(
+                kind="kb-state",
+                token=component.metadata.get("kb_id", component.id),
+                result=BLOCK_STATE,
+                source_component_id=component.id,
+            )
+        )
 
 
 def _log_render_effects_if_verbose(graph: CrawlGraph) -> None:
@@ -1101,7 +1134,27 @@ def _sections_from_graph(graph: CrawlGraph, prompts: PromptStore) -> list[str]:
         if component.kind == "extra" and "llm" in component.visibility
     ]
     sections.extend(component.text for component in extras if component.text)
+    state_block = _state_block_from_graph(graph, prompts)
+    if state_block:
+        sections.append(state_block)
     return sections
+
+
+def _state_block_from_graph(graph: CrawlGraph, prompts: PromptStore) -> str:
+    """Render the tail `[LIVE STATE]` block, or ``""`` when nothing is diverted.
+
+    Callers must place this immediately before the task block in both the
+    single-turn and multi-turn paths — that adjacency is the whole point of the
+    divert (see :func:`_divert_state_components`).
+    """
+    state = [
+        component
+        for component in graph.components
+        if component.kind == "state" and "llm" in component.visibility
+    ]
+    if not state:
+        return ""
+    return _block_from_components(prompts.get("shared.block.live_state"), state)
 
 
 def crawl_result_from_pins(
@@ -1266,11 +1319,19 @@ def assemble_prompt(
     task_block = _task_block_from_graph(graph, prompts)
 
     if not turns:
+        # `_sections_from_graph` already appends the state block last, so the
+        # task block appended here still lands immediately after it.
         sections = _sections_from_graph(graph, prompts)
         sections.append(task_block)
         user_content = "\n\n".join(sections)
         result.render_effects = tuple(graph.effects)
         return [system_msg, {"role": "user", "content": user_content}]
+
+    # State objects render after the last turn rather than in the prefix, so
+    # they travel with the task block wherever it ends up below.
+    state_block = _state_block_from_graph(graph, prompts)
+    if state_block:
+        task_block = f"{state_block}\n\n{task_block}"
 
     prefix_parts: list[str] = []
     knowledge = [
