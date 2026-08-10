@@ -29,7 +29,7 @@ const DERIVED_KINDS = new Set(['expansion', 'rules_companion', 'modality'])
  * Colour slot per block id.
  *
  * `system` and `task` are operator boilerplate — not curation targets — so
- * they wear neutral chart chrome rather than a series colour. The four blocks
+ * they wear neutral chart chrome rather than a series colour. The five blocks
  * a reader can actually act on get the categorical hues; that set is validated
  * all-pairs in both modes, so a missing block (which makes two non-consecutive
  * blocks neighbours in the bar) can never produce a confusable pair.
@@ -44,6 +44,7 @@ const BLOCK_SLOT: Record<string, string> = {
   current_passage: 'series-3',
   conversation: 'series-3',
   extra: 'series-4',
+  live_state: 'series-5',
   task: 'chrome-2',
 }
 
