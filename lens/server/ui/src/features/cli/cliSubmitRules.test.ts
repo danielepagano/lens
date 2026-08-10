@@ -22,6 +22,7 @@ const MINIMAL_STATS: Stats = {
   effective_vars_at_cursor: {},
   effective_params_at_cursor: {},
   remember_pins_at_cursor: {},
+    state_pins_at_cursor: [],
   available_llms: [],
   image_backends: [],
   has_mount: false,

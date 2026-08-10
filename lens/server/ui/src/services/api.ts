@@ -129,6 +129,8 @@ export interface Stats {
   effective_params_at_cursor: Record<string, string>
   /** KB ids in the effective pin crawl that carry `remember.*` tags → those tags. */
   remember_pins_at_cursor: Record<string, string[]>
+  /** Pinned ids tagged `state` — rendered at the prompt tail, re-sent every beat. */
+  state_pins_at_cursor: string[] | null
   available_llms: string[]
   image_backends: ImageBackendStats[]
   has_mount: boolean

@@ -54,6 +54,7 @@ const BLOCK_SHORT_LABEL: Record<string, string> = {
   previous_events_summary: 'Previous',
   current_passage: 'Passage',
   conversation: 'Turns',
+  live_state: 'Live state',
   extra: 'Extra',
   task: 'Task',
 }

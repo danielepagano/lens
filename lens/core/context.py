@@ -348,6 +348,24 @@ class CrawlResult:
             key: list(value) for key, value in self.graph.remember_pins.items()
         }
 
+    @property
+    def state_pins(self) -> list[str]:
+        """Pinned ids tagged `state`, in pin order.
+
+        Read off the same component metadata the render-time divert uses
+        (:func:`_divert_state_components`), so surfaces that show pins cannot
+        disagree with the prompt about which objects render at the tail.
+        """
+        ids: list[str] = []
+        for component in self.graph.components:
+            kb_id = component.metadata.get("kb_id")
+            if not kb_id or kb_id in ids:
+                continue
+            tags = component.metadata.get("tags", "")
+            if is_state_tags(tag for tag in tags.split(",") if tag):
+                ids.append(kb_id)
+        return ids
+
 
 def wrap_block(title: str, body: str) -> str:
     """Wrap *body* in the ``--- begin/end <title> ---`` framing used in prompts.

@@ -622,6 +622,30 @@ details[open]>summary {
   border-color: #dc2626;
 }
 
+/* Tagged `state`: renders at the prompt tail and is re-sent every beat.
+ *
+ * A pin can be both `state` and a remember target, so this decoration stays
+ * off `border-color` — which `--remember` already owns — and marks the pill
+ * with a leading dot plus a warm fill instead. The two read together. */
+.pin-pill.pin-pill--state {
+  background-color: rgba(237, 161, 0, 0.14);
+}
+
+.pin-pill.pin-pill--state::before {
+  content: '';
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  margin-right: 0.25rem;
+  vertical-align: 0.05rem;
+  background-color: #eda100;
+}
+
+.pin-pill.pin-pill--state:hover {
+  background-color: rgba(237, 161, 0, 0.24);
+}
+
 .pin-pill.pin-pill-var {
   background-color: rgba(34, 197, 94, 0.12);
   border-color: rgba(22, 163, 74, 0.45);
