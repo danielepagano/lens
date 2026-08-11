@@ -22,6 +22,18 @@ ANNOTATION_OPEN_RE = re.compile(
     r"(:(?P<id>[a-zA-Z0-9_-]+))?(?P<self_close>/)?\s*$"
 )
 _ANNOTATION_END_RE = re.compile(r"^\s*\]:\s*#\s*$")
+MENTION_LINE_RE = re.compile(
+    r"^\s*\[(?P<kind>mention|include):\s*(?P<id>[^\s\]]+)\s*\]:\s*#\s*$"
+)
+"""One ``[mention: id]: #`` / ``[include: id]: #`` line (see :mod:`lens.core.mentions`).
+
+Defined here rather than there because the annotation grammar has to *know*
+about the form to ignore it properly: these are inert comments, and inert has
+to mean "skipped by the tail scan" — a scan that merely fails to recognise one
+reports no open annotation at all, which silently moves the cursor up out of an
+open session.
+"""
+
 _AI_SECRET_RE = re.compile(
     r"<!--\s*ai:secret:\s*([\s\S]*?)\s*-->",
     re.MULTILINE,
@@ -229,7 +241,9 @@ def parse_tail_cursor_annotation(text: str) -> ParsedAnnotation | None:
     """
     lines = text.splitlines()
     i = len(lines) - 1
-    while i >= 0 and not lines[i].strip():
+    # Mentions and includes are appended at a node's tail and must not mask the
+    # open annotation above them, so they are skipped exactly like blank lines.
+    while i >= 0 and (not lines[i].strip() or MENTION_LINE_RE.match(lines[i])):
         i -= 1
     if i < 0:
         return None

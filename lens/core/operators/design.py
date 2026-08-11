@@ -133,6 +133,12 @@ class DesignOperator(SessionOperator):
                 extra_pins=ann_pins,
                 extra_unpins=ann_unpins,
                 storage=storage,
+                # Fresh block only: on retry the annotation carrying these is
+                # already back on disk, so the on-disk scan finds it.
+                pending_mentions=(
+                    () if existing_ann is not None
+                    else cls.pending_mentions_from_params(ann_params)
+                ),
             )
         )
 
@@ -250,9 +256,12 @@ class DesignOperator(SessionOperator):
         ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
-            mention_ids = cls.mention_pins(prompt, session.project_root)
-            if mention_ids:
-                ann_params["kb_pin"] = mention_ids
+        mention_ids, include_ids = cls.session_mention_ids(kwargs)
+        ann_params.update(
+            cls.mention_params(
+                prompt, mention_ids, include_ids, project_root=session.project_root
+            )
+        )
         if reasoning:
             ann_params["reasoning"] = reasoning
 
@@ -383,9 +392,12 @@ class DesignOperator(SessionOperator):
             ann_params: dict[str, Any] = {}
             if prompt:
                 ann_params["prompt"] = prompt
-                mention_ids = cls.mention_pins(prompt, session.project_root)
-                if mention_ids:
-                    ann_params["kb_pin"] = mention_ids
+            mention_ids, include_ids = cls.session_mention_ids(kwargs)
+            ann_params.update(
+                cls.mention_params(
+                    prompt, mention_ids, include_ids, project_root=session.project_root
+                )
+            )
             if reasoning:
                 ann_params["reasoning"] = reasoning
 
@@ -483,6 +495,8 @@ class DesignOperator(SessionOperator):
         retry: bool = False,
         end: bool = False,
         slug: str | None = None,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         on_stream_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None,
@@ -504,6 +518,8 @@ class DesignOperator(SessionOperator):
             retry=retry,
             end=end,
             slug=slug,
+            mentions=mentions,
+            includes=includes,
             on_token=on_token,
             on_stream_target=on_stream_target,
             on_stream_event=on_stream_event,

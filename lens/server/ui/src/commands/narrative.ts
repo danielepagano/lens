@@ -14,7 +14,7 @@ import type {
 } from './common'
 import { CORE_OPERATOR_SLUGS, DATASET_OPERATOR_SLUGS, normalizeAddress } from './common'
 
-const PIN_KB_OPS = ['add', 'remove', 'block', 'unblock'] as const
+const PIN_KB_OPS = ['add', 'remove', 'block', 'unblock', 'mention', 'include'] as const
 const PIN_VAR_OPS = ['set', 'unset'] as const
 const PIN_PARAM_OPS = ['set', 'unset'] as const
 const OPERATOR_SLUGS = [...CORE_OPERATOR_SLUGS, ...Object.keys(DATASET_OPERATOR_SLUGS)]
@@ -40,7 +40,7 @@ const commands: CommandDefinition[] = [
     group: 'pin',
     cursorTargeting: 'can-override',
     positional: [
-      { name: 'action', valueType: 'slug', required: true, slugSource: 'add,remove,block,unblock' },
+      { name: 'action', valueType: 'slug', required: true, slugSource: 'add,remove,block,unblock,mention,include' },
       { name: 'ids', valueType: 'kb-id', required: true, repeatable: true, hint: 'KB object ID' },
     ],
     options: [{ name: 'node', valueType: 'address', hint: 'narrative address' }],
@@ -180,7 +180,7 @@ const handler: CommandHandler = async (command, _payload, ctx: CommandContext) =
     }
     const body: NarrativePinBody = {
       kind: 'kb',
-      operation: operation as 'add' | 'remove' | 'block' | 'unblock',
+      operation: operation as (typeof PIN_KB_OPS)[number],
       ids,
       node,
     }

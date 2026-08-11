@@ -13,7 +13,12 @@ from lens.cli.help_strings import (
     OPT_RETRY,
     HELP_OPTS,
 )
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import (
+    include_option,
+    mention_option,
+    pin_option,
+    unpin_option,
+)
 from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operators.write import WriteOperator
@@ -38,6 +43,8 @@ def write(
     ),
     pin: list[str] = pin_option(),
     unpin: list[str] = unpin_option(),
+    mention: list[str] = mention_option(),
+    include: list[str] = include_option(),
     llm: str | None = typer.Option(
         None,
         "--llm",
@@ -84,7 +91,10 @@ def write(
         return
 
     try:
-        validate_ids_exist(session.project_root, list(pin) + list(unpin))
+        validate_ids_exist(
+            session.project_root,
+            list(pin) + list(unpin) + list(mention) + list(include),
+        )
     except LensException as e:
         typer.echo(f"lens write: {e}", err=True)
         raise typer.Exit(1)
@@ -97,6 +107,8 @@ def write(
                 prompt=prompt,
                 pins=list(pin),
                 unpins=list(unpin),
+                mentions=list(mention),
+                includes=list(include),
                 llm_id=llm,
                 reasoning=reasoning,
                 retry=retry,

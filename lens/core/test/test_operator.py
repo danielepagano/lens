@@ -739,17 +739,42 @@ class TestMentionPins(unittest.TestCase):
             pins = Operator.mention_pins(None, root)
             self.assertEqual(pins, [])
 
-    def test_mention_not_followed_by_whitespace_ignored(self) -> None:
+    def test_sentence_punctuation_ends_a_mention(self) -> None:
+        """`@x, @y` names two objects — the same rule the crawl always used.
+
+        `mention_pins` shares `AT_KB_RE` with the prose path so a token that
+        resolves when read out of a passage also resolves when a command turns
+        it into an annotation.  Requiring a space before every comma would be a
+        trap now that the annotation is the only thing adding scope.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root, _ = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
             MediaService.clear_registry()
             _make_kb_object(root, "person.amy")
-            # comma after mention — not whitespace or EOL, should not match
-            pins = Operator.mention_pins(
-                "About @person.amy,the merchant.", root
+            _make_kb_object(root, "person.bob")
+
+            self.assertEqual(
+                Operator.mention_pins("About @person.amy, the merchant.", root),
+                ["person.amy"],
             )
-            self.assertEqual(pins, [])
+            self.assertEqual(
+                Operator.mention_pins("@person.amy and @person.bob.", root),
+                ["person.amy", "person.bob"],
+            )
+
+    def test_hyphenated_key_is_one_mention(self) -> None:
+        """The id runs to the end of the token, not to the first hyphen."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, _ = _make_project(_init_repo(Path(tmp)))
+            KnowledgeStore.clear_registry()
+            MediaService.clear_registry()
+            _make_kb_object(root, "person.amy")
+
+            self.assertEqual(
+                Operator.mention_pins("About @person.amy-the-merchant here", root),
+                [],
+            )
 
 
 class TestNodeSliceRefs(unittest.TestCase):

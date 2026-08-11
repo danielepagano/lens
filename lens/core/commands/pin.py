@@ -4,6 +4,7 @@ from typing import Any
 
 from lens.core.address import NarrativeAddress
 from lens.core.knowledge import parse_id
+from lens.core.mentions import MentionKind, append_mention_annotations
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import (
     pin,
@@ -157,6 +158,58 @@ def pin_block(session: ProjectSession, id: str | None, node_pos: str | None, ext
     storage = session.new_storage(owner=None)
     unpin(target, all_ids, storage)
     return len(all_ids), target.path_str()
+
+
+def pin_scoped(
+    session: ProjectSession,
+    kind: MentionKind,
+    id: str | None,
+    node_pos: str | None,
+    extra_ids: list[str],
+    node_opt: str | None,
+) -> tuple[int, str, bool]:
+    """Append ``mention`` / ``include`` annotations at the target node's tail.
+
+    Unlike the front-matter commands above this writes into the node body,
+    because that position *is* the scope: the block expands where the annotation
+    sits, and a mention's one-turn lifetime is measured from it.  Appending at
+    the tail is also the manual refresh for a mention that has expired — say it
+    again and it is live again.
+
+    Returns ``(count, node, applies_now)``.  Front-matter pins inherit downward,
+    so pinning on an ancestor is the normal way to use them; these do **not**
+    inherit, so writing one into a node that is not the cursor has no effect
+    until the cursor is in that node — the caller should say so rather than
+    report a change that did nothing.
+    """
+    all_ids = collect_ids(id, extra_ids)
+    if not all_ids:
+        raise LensException("provide at least one knowledge object ID (type.key)")
+    validate_ids(all_ids)
+    try:
+        target = resolve_node(session, node_pos or node_opt)
+    except (RuntimeError, ValueError) as e:
+        raise LensException(str(e)) from e
+    # `md_path()` raises rather than returning a missing path, and
+    # FileNotFoundError is not a LensException, so without this the CLI prints a
+    # traceback instead of an error.  The front-matter commands never hit it
+    # because they go through `_mutate_front_matter`.
+    try:
+        path = target.md_path()
+    except FileNotFoundError as e:
+        raise LensException(f"node does not exist: {target.path_str()}") from e
+    current = path.read_text(encoding="utf-8")
+    updated = append_mention_annotations(current, {kind: all_ids})
+    if updated == current:
+        raise LensException("provide at least one knowledge object ID (type.key)")
+    storage = session.new_storage(owner=None)
+    storage.write_file(path, updated)
+    narrative = session.active_narrative
+    applies_now = (
+        narrative is not None
+        and narrative.find_cursor().key_path == target.key_path
+    )
+    return len(all_ids), target.path_str(), applies_now
 
 
 def pin_unblock(session: ProjectSession, id: str | None, node_pos: str | None, extra_ids: list[str], node_opt: str | None) -> tuple[int, str]:

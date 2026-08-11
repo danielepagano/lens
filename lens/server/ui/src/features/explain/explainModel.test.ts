@@ -71,6 +71,7 @@ function report(blocks: ExplainBlock[], over: Partial<ExplainReport> = {}): Expl
     chars_per_token: 4,
     active_modalities: [],
     pinned_ids: [],
+    in_place: [],
     warnings: [],
     ...over,
   }

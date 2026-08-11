@@ -658,6 +658,20 @@ details[open]>summary {
   background-color: color-mix(in srgb, var(--explain-series-5) 24%, transparent);
 }
 
+/* Includes and mentions: a different scope from a pin, so a different pill.
+ *
+ * Both are written mid-node and expand where they sit, never inherited by a
+ * sub-node. The prefix marks which: `+` stays for the rest of the node, `@`
+ * is good for one more AI turn. Dashed border says "not a node pin". */
+.pin-pill.pin-pill--scoped {
+  background-color: color-mix(in srgb, var(--pico-primary) 8%, transparent);
+  border-style: dashed;
+}
+
+.pin-pill.pin-pill--scoped:hover {
+  background-color: color-mix(in srgb, var(--pico-primary) 16%, transparent);
+}
+
 .pin-pill.pin-pill-var {
   background-color: rgba(34, 197, 94, 0.12);
   border-color: rgba(22, 163, 74, 0.45);

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import os
 import subprocess
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -12,14 +13,17 @@ import pytest
 
 from lens.core.auto_compress import read_cursor_auto_compress_state
 from lens.core.commands.rollback import execute_rollback
+from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.section import SectionOperator
 from lens.core.operators.write import WriteOperator
 from lens.core.storage import Storage
 from lens.core.test.llm_run_mock import mock_run_llm
+from lens.core.test.test_mentions import assert_annotations_start_a_block
 from lens.testing.fake_llm import FakeLLMServer
 from lens.testing.project import _quiet_async
 from lens.rpg.operators.play import PlayOperator
+
 from lens.testing.regression_fixtures import (
     setup_advance_minimal,
     setup_auto_compress_disabled_node,
@@ -231,6 +235,63 @@ class TestRegressionCliPreTransforms:
         text = narrative.child_node(play_keys[0]).md_path().read_text(encoding="utf-8")
         assert "@roll" not in text
         assert "> [Player]" in text
+
+
+    def test_mentions_written_once_per_object_and_expire_after_a_turn(
+        self, tmp_project: Path, fake_llm: FakeLLMServer
+    ) -> None:
+        """Issue #125: `@` records an annotation per distinct id, good for one turn."""
+        from lens.core.commands.kb import kb_add
+        from lens.core.mentions import live_mentions
+
+        session = setup_rpg_play_pins(tmp_project, fake_llm.base_url)
+        narrative = session.active_narrative
+        assert narrative is not None
+
+        orig_cwd = Path.cwd()
+        os.chdir(tmp_project)
+        try:
+            kb_add("spell.aid", "Aid raises hit point maximums.", False)
+            kb_add("npc.rowan", "Rowan the guide.", False)
+        finally:
+            os.chdir(orig_cwd)
+        KnowledgeStore.clear_registry()
+
+        async def _no_gm(*_a: object, **_k: object) -> str:
+            raise AssertionError("play should not call the LLM for a player-only line")
+
+        with patch("lens.core.operator.run_llm", mock_run_llm(_no_gm)):
+            _quiet_async(
+                PlayOperator.run_session(
+                    session=session,
+                    narrative=narrative,
+                    prompt="I cast @spell.aid on @npc.rowan, then @spell.aid again",
+                    pins=[],
+                    unpins=[],
+                    extra_params=None,
+                )
+            )
+
+        play_keys = [k for k in narrative.child_keys() if k.startswith("play")]
+        assert play_keys, list(narrative.child_keys())
+        node = narrative.child_node(play_keys[0])
+        text = node.md_path().read_text(encoding="utf-8")
+
+        assert text.count("[mention: spell.aid]: #") == 1
+        assert text.count("[mention: npc.rowan]: #") == 1
+        # Must open their own markdown block or the reader sees them in the prose.
+        assert_annotations_start_a_block(text)
+        assert [r.kb_id for r in live_mentions(text)] == ["spell.aid", "npc.rowan"]
+
+        # A GM turn later they stop expanding — and are still in the file, which
+        # is what makes rewinding past the expiry restore them.
+        node.md_path().write_text(
+            text + "\n[play]: #\n\nThe aid takes hold.\n\n[/play]: #\n",
+            encoding="utf-8",
+        )
+        after = node.md_path().read_text(encoding="utf-8")
+        assert live_mentions(after) == []
+        assert "[mention: spell.aid]: #" in after
 
 
 class TestRegressionCliAdvanceFixture:

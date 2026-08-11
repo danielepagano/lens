@@ -38,13 +38,19 @@ from lens.core.mount_embed_strip import line_is_standalone_lens_mount_attachment
 from lens.core.storage_text import NormalizedStorageText
 
 
-def _build_annotation_intervals(
+def build_annotation_intervals(
     anns: list[ParsedAnnotation],
 ) -> list[tuple[int, int, str]]:
     """Return ``(content_start_1based, content_end_1based, role)`` for each closed pair.
 
     *role* is ``"assistant"`` for pairs with no id, ``"user"`` for pairs with an id
     (summary operators such as ``section`` and ``advance``).
+
+    Also the lifetime primitive for mentions (:mod:`lens.core.mentions`): a
+    one-turn mention is live until an ``assistant`` interval *starts* after it.
+    Pairs with an empty content range are skipped, which is what keeps a mention
+    alive across ``--retry`` — ``write_discard`` empties the body it is about to
+    regenerate, so that turn stops counting.
 
     Content occupies 1-based disk lines ``open.line_end + 1`` to
     ``close.line_start - 1`` (see module docstring for the reasoning).
@@ -125,7 +131,7 @@ def parse_passage_turns(
     instance, this is a cache hit with zero disk I/O.
     """
     anns = parse_annotations(normalized.raw_storage_text)
-    intervals = _build_annotation_intervals(anns)
+    intervals = build_annotation_intervals(anns)
     if not intervals:
         return []
 

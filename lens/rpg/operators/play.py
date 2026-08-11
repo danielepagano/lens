@@ -46,6 +46,7 @@ from lens.core.context import CrawlResult
 from lens.core.modalities import apply_modality_crawl
 from lens.core.modalities.catalog.rpg_play_context import PLAY_AUTO_PINS
 from lens.core.dice import DiceError
+from lens.core.mentions import append_mention_annotations
 from lens.core.operators.session import SessionOperator
 from lens.core.prompts import PromptStore
 from lens.core.project import ProjectSession
@@ -142,6 +143,8 @@ class PlayOperator(SessionOperator):
         unpins: list[str],
         as_pc: str | None,
         _cursor_override: NarrativeNode | None,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
     ) -> None:
         cursor = _cursor_override if _cursor_override is not None else narrative.find_cursor()
         if not cursor.key_path:
@@ -172,7 +175,16 @@ class PlayOperator(SessionOperator):
         cls.check_requirements(crawl_result)
         marker = cls._speaker_marker(crawl_result, as_pc)
 
-        block = f"> [{marker}] {prompt}\n"
+        # Scope named on this line is recorded right under it, so it expands
+        # where the player asked for it rather than 15k tokens upstream in
+        # [RELEVANT KNOWLEDGE].  One line per distinct id: "I cast @spell.aid
+        # on @pc.rowan" records two, naming the same object twice records one.
+        block = append_mention_annotations(
+            f"> [{marker}] {prompt}\n",
+            cls.mention_params(
+                prompt, mentions, includes, project_root=session.project_root
+            ),
+        )
         md = cursor.md_path()
         current = md.read_text(encoding="utf-8")
         if current.strip():
@@ -224,6 +236,8 @@ class PlayOperator(SessionOperator):
         llm_id: str | None,
         reasoning: str | None = None,
         retry: bool,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         _cursor_override: NarrativeNode | None = None,
         extra_params: dict[str, Any] | None = None,
@@ -233,6 +247,9 @@ class PlayOperator(SessionOperator):
         empty_prompt_ok: bool = False,
         workflow: Any | None = None,
     ) -> Any:
+        # Mentions are written next to the player line by `_append_player_line`,
+        # not carried on the [play] annotation, so nothing is forwarded here.
+        del mentions, includes
         return await super().run_inline(
             session=session,
             narrative=narrative,
@@ -340,6 +357,7 @@ class PlayOperator(SessionOperator):
                 )
             except DiceError as e:
                 raise OperatorError(str(e)) from e
+            mention_ids, include_ids = cls.session_mention_ids(kwargs)
             await cls._append_player_line(
                 session=session,
                 narrative=narrative,
@@ -348,6 +366,8 @@ class PlayOperator(SessionOperator):
                 unpins=[],
                 as_pc=as_pc,
                 _cursor_override=node,
+                mentions=mention_ids,
+                includes=include_ids,
             )
             appended_player_line = True
 
@@ -470,6 +490,7 @@ class PlayOperator(SessionOperator):
                 )
             except DiceError as e:
                 raise OperatorError(str(e)) from e
+            mention_ids, include_ids = cls.session_mention_ids(kwargs)
             await cls._append_player_line(
                 session=session,
                 narrative=narrative,
@@ -478,6 +499,8 @@ class PlayOperator(SessionOperator):
                 unpins=[],
                 as_pc=as_pc,
                 _cursor_override=node,
+                mentions=mention_ids,
+                includes=include_ids,
             )
             appended_player_line = True
 

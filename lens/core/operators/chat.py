@@ -55,6 +55,7 @@ from lens.core.knowledge import KnowledgeStore
 from lens.core.generation_artifacts import GenerationArtifacts
 from lens.core.llm import LLMError
 from lens.core.llm_run import LlmRunRequest, run_llm
+from lens.core.mentions import append_mention_annotations
 from lens.core.narrative import NarrativeNode
 from lens.core.exceptions import OperatorError
 from lens.core.operators.session import SessionOperator, prompt_to_slug
@@ -308,6 +309,8 @@ class ChatOperator(SessionOperator):
         reasoning: str | None,
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: Any | None,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
         workflow: WorkflowRunner | None = None,
     ) -> None:
         """Append the ``--with`` blockquote; optionally run the LLM and ``write_start``.
@@ -332,6 +335,14 @@ class ChatOperator(SessionOperator):
             user_prompt=user_prompt,
             narrate=narrate,
         )
+        # The user's line is persisted as prose here, so scope it names is
+        # recorded right under it and expands there — same shape as `play`.
+        block = append_mention_annotations(
+            block,
+            cls.mention_params(
+                user_prompt, mentions, includes, project_root=session.project_root
+            ),
+        )
         sep = cls._sep_before_blockquote_user_line(original)
         text_with_user = original + sep + block
         rel_path = str(md.relative_to(session.git_root))
@@ -346,9 +357,6 @@ class ChatOperator(SessionOperator):
         }
         pins: list[str] = []
         unpins: list[str] = []
-        mention_ids = cls.mention_pins(None, session.project_root)
-        if mention_ids:
-            ann_params["kb_pin"] = list(mention_ids)
         with_id = ann_params.get("with_kb_id")
         with_extra = (
             [str(with_id).strip()]
@@ -371,9 +379,7 @@ class ChatOperator(SessionOperator):
                     ann_params,
                     session=session,
                     narrative=narrative,
-                    extra_pins=cls.merge_extra_pin_ids(
-                        list(pins), list(mention_ids), with_extra
-                    ),
+                    extra_pins=cls.merge_extra_pin_ids(list(pins), with_extra),
                     extra_unpins=unpins,
                     storage=crawl_storage,
                     participants=cls.participants_for_crawl(ann_params),
@@ -502,6 +508,8 @@ class ChatOperator(SessionOperator):
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: Any | None,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
         workflow: WorkflowRunner | None = None,
     ) -> None:
         """Create child sub-node + generate first AI turn in one unstaged transaction.
@@ -551,8 +559,20 @@ class ChatOperator(SessionOperator):
         if reasoning:
             ann_params["reasoning"] = reasoning
 
+        # Mentions from the opening beat seed the child, not the parent
+        # annotation: the session's own node is where they have to expand, and
+        # includes/mentions are never inherited across a node boundary.
+        initial = append_mention_annotations(
+            "",
+            cls.mention_params(
+                prompt, mentions, includes, project_root=session.project_root
+            ),
+        )
+
         # Create the child node; the parent annotation gets all the params.
-        child_node = op.create_subnode(cursor, session_id, params=ann_params)
+        child_node = op.create_subnode(
+            cursor, session_id, initial_content=initial or None, params=ann_params
+        )
 
         # Pin KB objects into the child's front matter for crawl context.
         if pins:
@@ -663,6 +683,8 @@ class ChatOperator(SessionOperator):
         llm_id: str | None,
         retry: bool,
         reasoning: str | None = None,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
@@ -687,6 +709,8 @@ class ChatOperator(SessionOperator):
             llm_id=llm_id,
             retry=retry,
             reasoning=reasoning,
+            mentions=mentions,
+            includes=includes,
             on_token=on_token,
             extra_params=filtered,
             cancel_event=cancel_event,
@@ -775,6 +799,7 @@ class ChatOperator(SessionOperator):
             raise ValidationError("--as is required when starting a chat session")
 
         cursor = narrative.find_cursor()
+        fresh_mentions, fresh_includes = cls.session_mention_ids(kwargs)
         result = await cls._start_fresh_session(
             session=session,
             narrative=narrative,
@@ -789,6 +814,8 @@ class ChatOperator(SessionOperator):
             on_token=on_token,
             on_stream_target=on_stream_target,
             cancel_event=cancel_event,
+            mentions=fresh_mentions,
+            includes=fresh_includes,
             workflow=cast(WorkflowRunner | None, kwargs.get("workflow")),
         )
         await cls._run_post_inline_hooks(
@@ -968,6 +995,8 @@ class ChatOperator(SessionOperator):
             )
             fm_storage.stage_all()
 
+        session_mentions, session_includes = cls.session_mention_ids(kwargs)
+
         # Session speaker turns answer the counterpart line. One-off
         # interjections instead treat the prompt as third-person stage directions.
         inline_ep2: dict[str, Any] = {
@@ -990,6 +1019,8 @@ class ChatOperator(SessionOperator):
                 reasoning=reasoning,
                 on_token=on_token,
                 cancel_event=cancel_event,
+                mentions=session_mentions,
+                includes=session_includes,
                 workflow=cast(WorkflowRunner | None, kwargs.get("workflow")),
             )
             await cls._run_post_inline_hooks(
@@ -1011,6 +1042,8 @@ class ChatOperator(SessionOperator):
                 llm_id=llm_id,
                 reasoning=reasoning,
                 retry=False,
+                mentions=session_mentions,
+                includes=session_includes,
                 on_token=on_token,
                 _cursor_override=node,
                 extra_params=inline_ep2,

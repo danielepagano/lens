@@ -175,6 +175,325 @@ class TestExplainBasics(ExplainTestCase):
         self.assertNotIn("cache_note", payload)
 
 
+class TestExplainCountsMentionsWhereTheyLand(unittest.TestCase):
+    """Mentions expand inside the passage, so their bytes must be counted there.
+
+    Both renderings are checked: the single-turn ``current_passage`` block and
+    the multi-turn ``conversation`` block, because those take different code
+    paths to the node text and a mention must not disappear from either.
+    """
+
+    def setUp(self) -> None:
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        self.tmp = tempfile.mkdtemp(prefix="lens_explain_mentions_")
+        self.session = setup_test_project(
+            Path(self.tmp), "http://127.0.0.1:1/v1", opening_write=False
+        )
+        kb_dir = Path(self.tmp) / "knowledge" / "rules"
+        kb_dir.mkdir(parents=True, exist_ok=True)
+        (kb_dir / "grappling.md").write_text(
+            "Grappling costs one action and provokes nothing.\n", encoding="utf-8"
+        )
+        # Deliberately not pinned: a pinned id is suppressed in place, so a
+        # second *unpinned* object is what exercises two adjacent expansions.
+        (kb_dir / "cover.md").write_text(
+            "Half cover grants +2 AC.\n", encoding="utf-8"
+        )
+        # A KB body that a later transform rewrites: `ai:secret` is stored
+        # ROT13 and reaches the model decoded, so the block in the passage is
+        # not byte-identical to the one the renderer emitted.
+        lore_dir = Path(self.tmp) / "knowledge" / "lore"
+        lore_dir.mkdir(parents=True, exist_ok=True)
+        (lore_dir / "bridge.md").write_text(
+            "The bridge is old.\n\n<!-- ai:secret:\nGur gerfnher\n-->\n",
+            encoding="utf-8",
+        )
+        (lore_dir / "map.md").write_text(
+            "A creased map.\n\n![x](/mount/file/map.png)\n", encoding="utf-8"
+        )
+        tracker_dir = Path(self.tmp) / "knowledge" / "tracker"
+        tracker_dir.mkdir(parents=True, exist_ok=True)
+        (tracker_dir / "combat.md").write_text("Goblin HP 7/7\n", encoding="utf-8")
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        KnowledgeStore.for_project(Path(self.tmp)).add_tags("tracker.combat", ["state"])
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        narrative = self.session.active_narrative
+        assert narrative is not None
+        self.cursor = narrative.find_cursor()
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmp, ignore_errors=True)
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+    def _bytes_with_and_without(self, body: str, block_id: str) -> tuple[int, int]:
+        path = self.cursor.md_path()
+        base = path.read_text(encoding="utf-8")
+        path.write_text(base + body, encoding="utf-8")
+        without = _block(explain_context(self.session), block_id)
+        path.write_text(
+            base + body + "[include: rules.grappling]: #\n", encoding="utf-8"
+        )
+        with_include = _block(explain_context(self.session), block_id)
+        assert without is not None and with_include is not None
+        return without.bytes, with_include.bytes
+
+    def test_single_turn_passage_grows_by_the_expanded_block(self) -> None:
+        without, with_include = self._bytes_with_and_without(
+            "\nAmy walked on.\n", BLOCK_CURRENT
+        )
+        self.assertGreater(with_include, without)
+
+    def test_conversation_turns_grow_by_the_expanded_block(self) -> None:
+        without, with_include = self._bytes_with_and_without(
+            "\n[write]: #\n\nAmy walked on.\n\n[/write]: #\n", BLOCK_CONVERSATION
+        )
+        self.assertGreater(with_include, without)
+
+    def _rows(self, block_id: str) -> list[str]:
+        block = _block(explain_context(self.session), block_id)
+        return [] if block is None else [c.id for c in block.components]
+
+    def test_expansion_gets_its_own_row(self) -> None:
+        """It is a distinct chunk of the prompt, so it is a row like anything else.
+
+        A footnote does not let you compare it against the pins and turns around
+        it, which is the whole job of the report.
+        """
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\n[include: rules.grappling]: #\n",
+            encoding="utf-8",
+        )
+
+        report = explain_context(self.session)
+        block = _block(report, BLOCK_CURRENT)
+        assert block is not None
+        row = next(c for c in block.components if c.id == "include:rules.grappling")
+
+        self.assertEqual(row.provenance_kind, "mention")
+        self.assertIn("rest of this node", row.provenance)
+        self.assertEqual(row.detail["scope"], "include")
+        self.assertGreater(row.bytes, 0)
+        self.assertEqual([i.kb_id for i in report.in_place], ["rules.grappling"])
+
+    def test_splitting_keeps_the_block_arithmetic_exact(self) -> None:
+        """Rows are pieces of the passage, not extra bytes bolted onto it."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\n[include: rules.grappling]: #\n",
+            encoding="utf-8",
+        )
+
+        block = _block(explain_context(self.session), BLOCK_CURRENT)
+        assert block is not None
+
+        self.assertGreater(len(block.components), 1)
+        self.assertEqual(
+            sum(c.bytes for c in block.components) + block.framing_bytes, block.bytes
+        )
+
+    def test_two_adjacent_mentions_each_get_a_row(self) -> None:
+        """Two on consecutive lines is the natural shape of "I cast X and Y"."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n[mention: rules.grappling]: #\n[mention: rules.cover]: #\n",
+            encoding="utf-8",
+        )
+
+        block = _block(explain_context(self.session), BLOCK_CURRENT)
+        assert block is not None
+        rows = [c.id for c in block.components]
+
+        self.assertIn("mention:rules.grappling", rows)
+        self.assertIn("mention:rules.cover", rows)
+        self.assertEqual(
+            sum(c.bytes for c in block.components) + block.framing_bytes, block.bytes
+        )
+
+    def test_rollup_agrees_with_the_rows(self) -> None:
+        """Two numbers for the same object is how a report loses trust.
+
+        A row absorbs the blank line separating it from its neighbour, so the
+        roll-up has to come from the rows rather than be measured separately.
+        """
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n[mention: rules.grappling]: #\n[mention: rules.cover]: #\n",
+            encoding="utf-8",
+        )
+
+        report = explain_context(self.session)
+        rows = {
+            c.detail["kb_id"]: c.bytes
+            for b in report.blocks
+            for c in b.components
+            if c.provenance_kind == "mention"
+        }
+
+        self.assertEqual({i.kb_id: i.bytes for i in report.in_place}, rows)
+
+    def test_expansion_row_appears_in_the_conversation_block_too(self) -> None:
+        """Turns take a different path to the node text than the passage does."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n[write]: #\n\nAmy walked on.\n\n[/write]: #\n"
+            + "\n[include: rules.grappling]: #\n",
+            encoding="utf-8",
+        )
+
+        block = _block(explain_context(self.session), BLOCK_CONVERSATION)
+        assert block is not None
+
+        self.assertIn("include:rules.grappling", [c.id for c in block.components])
+        self.assertEqual(
+            sum(c.bytes for c in block.components) + block.framing_bytes, block.bytes
+        )
+
+    def test_no_row_once_a_mention_expires(self) -> None:
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n[mention: rules.grappling]: #\n"
+            + "\n[write]: #\n\nA turn passes.\n\n[/write]: #\n",
+            encoding="utf-8",
+        )
+
+        self.assertEqual(explain_context(self.session).in_place, ())
+
+    def test_inert_at_tokens_do_not_produce_a_warning(self) -> None:
+        """Regression: prose full of `@ids` used to report them as unresolved."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\nAmy checks @rules.grappling and @spell.missing.\n",
+            encoding="utf-8",
+        )
+
+        report = explain_context(self.session)
+
+        self.assertEqual(
+            [c for c in report.excluded if c.provenance_kind == "warning"], []
+        )
+
+    def test_rollup_ignores_mentions_that_are_not_spliced_in(self) -> None:
+        """`mention-kb:` (state, diverted to the tail) and `mention-ref:` (node
+        slices) also carry a "mention" provenance, but neither is inside the
+        passage — listing them would double-count against their own block row
+        and report an empty kind."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n[mention: tracker.combat]: #\n",
+            encoding="utf-8",
+        )
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+        report = explain_context(self.session)
+
+        # It is in scope, at the tail — but not as an in-place expansion.
+        self.assertIn(
+            BLOCK_STATE, [b.id for b in report.blocks]
+        )
+        self.assertEqual(report.in_place, ())
+        self.assertTrue(all(i.kind in ("include", "mention") for i in report.in_place))
+
+    def test_line_limited_report_suppresses_an_already_pinned_object(self) -> None:
+        """`--line` must assemble the prompt the operator would, pins included."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\n[mention: person.amy]: #\n",
+            encoding="utf-8",
+        )
+        line_count = len(path.read_text(encoding="utf-8").split("\n"))
+
+        full = explain_context(self.session)
+        limited = explain_context(self.session, line=line_count)
+
+        # person.amy is pinned at the root in this fixture, so neither rendering
+        # may expand it a second time inside the passage.
+        self.assertEqual(full.in_place, ())
+        self.assertEqual(limited.in_place, ())
+
+    def test_row_survives_ai_secret_decoding(self) -> None:
+        """The needle has to be transformed the way the passage was.
+
+        Regression: a mentioned object carrying an `ai:secret` block reaches the
+        model decoded, so an exact match against the emitted (encoded) block
+        failed and the expansion silently vanished into the narrative row.
+        """
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\n[mention: lore.bridge]: #\n",
+            encoding="utf-8",
+        )
+
+        report = explain_context(self.session)
+        block = _block(report, BLOCK_CURRENT)
+        assert block is not None
+
+        self.assertIn("mention:lore.bridge", [c.id for c in block.components])
+        self.assertEqual([i.kb_id for i in report.in_place], ["lore.bridge"])
+        self.assertEqual(
+            sum(c.bytes for c in block.components) + block.framing_bytes, block.bytes
+        )
+
+    def test_row_survives_mount_embed_stripping(self) -> None:
+        """The other transform that rewrites a body — and it changes its length."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\n[mention: lore.map]: #\n",
+            encoding="utf-8",
+        )
+
+        report = explain_context(self.session)
+        block = _block(report, BLOCK_CURRENT)
+        assert block is not None
+
+        self.assertIn("mention:lore.map", [c.id for c in block.components])
+        self.assertEqual(
+            sum(c.bytes for c in block.components) + block.framing_bytes, block.bytes
+        )
+
+    def test_a_rewritten_body_still_splits_alongside_a_plain_one(self) -> None:
+        """Two expansions where only one needed transforming."""
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n[mention: lore.bridge]: #\n\n[mention: rules.grappling]: #\n",
+            encoding="utf-8",
+        )
+
+        block = _block(explain_context(self.session), BLOCK_CURRENT)
+        assert block is not None
+        rows = [c.id for c in block.components]
+
+        self.assertIn("mention:lore.bridge", rows)
+        self.assertIn("mention:rules.grappling", rows)
+        self.assertEqual(
+            sum(c.bytes for c in block.components) + block.framing_bytes, block.bytes
+        )
+
+    def test_knowledge_block_stays_out_of_it(self) -> None:
+        path = self.cursor.md_path()
+        path.write_text(
+            path.read_text(encoding="utf-8") + "\n[include: rules.grappling]: #\n",
+            encoding="utf-8",
+        )
+        report = explain_context(self.session)
+        knowledge = _block(report, BLOCK_KNOWLEDGE)
+        ids = [] if knowledge is None else [c.id for c in knowledge.components]
+        self.assertNotIn("kb:rules.grappling", ids)
+        self.assertNotIn("mention-kb:rules.grappling", ids)
+
+
 class TestExplainIsReadOnly(ExplainTestCase):
     def test_leaves_the_working_tree_untouched(self) -> None:
         before = self.session.new_storage().pending_diff()
@@ -332,16 +651,18 @@ class TestProvenance(unittest.TestCase):
         self.assertEqual(kind, "rules_companion")
         self.assertIn("encounter", why)
 
-    def test_mention(self) -> None:
+    def test_mention_of_a_state_object(self) -> None:
+        """The only mention shape that is a component rather than passage bytes."""
         component = self._component(
-            "mention-kb:spell.aid",
+            "mention-kb:tracker.combat",
             "knowledge",
-            kb_id="spell.aid",
-            expanded_from="narrative:story:current_narrative",
+            kb_id="tracker.combat",
+            mention_scope="state",
         )
         kind, why = self._why(component)
         self.assertEqual(kind, "mention")
-        self.assertIn("@spell.aid", why)
+        self.assertIn("tracker.combat", why)
+        self.assertIn("tail", why)
 
     def test_session_module(self) -> None:
         component = self._component(

@@ -103,6 +103,16 @@ OPT_PIN_PLAY = (
     "KB object ID to pin (repeatable); at least one must be tagged 'pc'"
 )
 
+# --mention / -M, --include / -I
+OPT_MENTION = (
+    "KB object ID to mention here (repeatable); expands at this point for one "
+    "AI turn, same as writing @type.key in the prompt"
+)
+OPT_INCLUDE = (
+    "KB object ID to include here (repeatable); expands at this point and stays "
+    "for the rest of this node"
+)
+
 # --unpin / -u
 OPT_UNPIN = "KB object ID to exclude from inherited context for this call (repeatable)"
 OPT_UNPIN_SECTION = (

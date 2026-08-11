@@ -212,7 +212,14 @@ class TestCrawlTransforms(unittest.TestCase):
             self.assertTrue(any(effect.kind == "kb-inline" for effect in graph.effects))
             self.assertTrue(any(effect.kind == "var" for effect in graph.effects))
 
-    def test_reference_mentions_are_deduped_components(self) -> None:
+    def test_reference_mentions_add_nothing_to_the_knowledge_block(self) -> None:
+        """A reference-policy `@` is inert: scope comes from the annotation.
+
+        It used to inject a ``mention-kb:`` component into ``[RELEVANT
+        KNOWLEDGE]`` from wherever the token was found, including ancestor
+        prose, which is why a mention never expired.  Mentions now expand at
+        their own annotation's line (see ``lens.core.mentions``).
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root = _make_project(_init_repo(Path(tmp)))
             _add_kb(root, "person.amy", "Amy details")
@@ -229,9 +236,71 @@ class TestCrawlTransforms(unittest.TestCase):
 
             AtExpansionTransform(project_root=root, storage=Storage(root)).apply(graph)
 
-            refs = [c for c in graph.components if c.id == "mention-kb:person.amy"]
-            self.assertEqual(len(refs), 1)
-            self.assertIn("person.amy", graph.pinned_ids)
+            self.assertEqual(
+                [c for c in graph.components if c.id.startswith("mention-kb:")], []
+            )
+            self.assertNotIn("person.amy", graph.pinned_ids)
+            # The token itself survives untouched — it is a shortcut, not markup.
+            self.assertEqual(
+                graph.component_by_id("prompt").text,  # pyright: ignore[reportOptionalMemberAccess]
+                "@person.amy and @person.amy",
+            )
+
+    def test_plain_kb_token_is_not_reported_as_unresolved(self) -> None:
+        """An inert `@` is the normal case, not a problem worth warning about.
+
+        Regression: every `@type.key` left in prose was collected as an
+        "unresolved token", so an ordinary play transcript produced a warning
+        listing every spell the player had ever named.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "spell.aid", "Aid details")
+
+            graph = CrawlGraph(project_root=root)
+            graph.add_component(
+                CrawlComponent(
+                    id="passage",
+                    kind="current_narrative",
+                    text="I cast @spell.aid and also @spell.missing.",
+                )
+            )
+
+            AtExpansionTransform(project_root=root, storage=Storage(root)).apply(graph)
+
+            self.assertEqual(graph.components_of_kind("warning"), [])
+
+    def test_unresolved_var_still_warns(self) -> None:
+        """The mechanism still fires for tokens that were meant to expand."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _make_project(_init_repo(Path(tmp)))
+
+            graph = CrawlGraph(project_root=root)
+            graph.add_component(
+                CrawlComponent(id="passage", kind="current_narrative", text="@var:nope")
+            )
+
+            AtExpansionTransform(project_root=root, storage=Storage(root)).apply(graph)
+
+            warnings = graph.components_of_kind("warning")
+            self.assertEqual(len(warnings), 1)
+            self.assertIn("@var:nope", warnings[0].text)
+
+    def test_the_same_warning_is_not_reported_twice(self) -> None:
+        """`crawl` transforms the graph, then `_prepare_render_graph` again."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _make_project(_init_repo(Path(tmp)))
+
+            graph = CrawlGraph(project_root=root)
+            graph.add_component(
+                CrawlComponent(id="passage", kind="current_narrative", text="@var:nope")
+            )
+
+            transform = AtExpansionTransform(project_root=root, storage=Storage(root))
+            transform.apply(graph)
+            transform.apply(graph)
+
+            self.assertEqual(len(graph.components_of_kind("warning")), 1)
 
     def test_force_inline_kb_inlines_reference_policy_mentions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -193,7 +193,14 @@ export function componentRows(
       derived: isDerived(component),
       kbId: component.detail.kb_id ?? null,
       pinNode: component.detail.pin_node ?? null,
-      tags: component.detail.tags ? component.detail.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+      // A `scope` detail marks an include/mention expanded inside the passage;
+      // showing it as a tag is how the row reads as a different kind of thing
+      // from the narrative it was split out of.
+      tags: component.detail.scope
+        ? [component.detail.scope]
+        : component.detail.tags
+          ? component.detail.tags.split(',').map((t) => t.trim()).filter(Boolean)
+          : [],
     }))
 }
 

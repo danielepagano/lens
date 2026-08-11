@@ -18,6 +18,7 @@ from lens.core.operators.chat import ChatOperator
 from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.core.test.llm_run_mock import mock_run_llm
+from lens.core.test.test_mentions import assert_annotations_start_a_block
 
 
 def _init_repo(tmp: Path) -> None:
@@ -382,6 +383,83 @@ class TestChatSession(unittest.TestCase):
     # ------------------------------------------------------------------
     # Fresh session creation (requires --with)
     # ------------------------------------------------------------------
+
+    def test_at_mentions_in_a_with_turn_are_recorded(self) -> None:
+        """The user's line is prose, so scope it names is recorded under it.
+
+        Regression: this path used to call ``mention_pins(None, ...)``, which
+        can only ever return ``[]`` — dead code that went unnoticed while the
+        crawl still scanned rendered prose for ``@`` tokens.
+        """
+        with patch(
+            "lens.core.operators.chat.run_llm",
+            mock_run_llm(_mock_generate),
+        ):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="at the inn",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="Ask @npc.waiter about @npc.bob, then @npc.waiter again",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+
+        text = self._chat_child_md()
+        assert_annotations_start_a_block(text)
+        self.assertEqual(text.count("[mention: npc.waiter]: #"), 1)
+        self.assertEqual(text.count("[mention: npc.bob]: #"), 1)
+        self.assertLess(
+            text.index("[mention: npc.waiter]: #"), text.index("[mention: npc.bob]: #")
+        )
+
+    def test_mention_and_include_flags_on_a_with_turn(self) -> None:
+        with patch(
+            "lens.core.operators.chat.run_llm",
+            mock_run_llm(_mock_generate),
+        ):
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="at the inn",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+            asyncio.run(
+                ChatOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="What is on the menu?",
+                    module_id=None,
+                    pins=[],
+                    unpins=[],
+                    mentions=["npc.waiter"],
+                    includes=["pc.amy"],
+                    extra_params={"as_kb_id": "npc.bob", "with_kb_id": "pc.amy"},
+                )
+            )
+
+        text = self._chat_child_md()
+        assert_annotations_start_a_block(text)
+        self.assertIn("[mention: npc.waiter]: #", text)
+        self.assertIn("[include: pc.amy]: #", text)
 
     def test_session_slug_includes_character_keys(self) -> None:
         """Session ID includes the --as and --with character keys."""

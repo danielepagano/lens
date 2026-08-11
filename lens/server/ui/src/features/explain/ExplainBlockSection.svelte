@@ -41,7 +41,9 @@
   <summary class="explain-block-summary">
     <span class="explain-swatch" style="background: var({colorVar});"></span>
     <span class="explain-block-label">{block.label}</span>
+    <!-- Probably not needed
     <span class="explain-block-role" title="Message role this block is sent as">({block.role})</span>
+    -->
     <span class="explain-block-value">{formatSize(blockValue, unit)}</span>
     <span class="explain-block-share">{formatShare(blockShare)}</span>
     <span class={['explain-cache', `explain-cache--${block.cache}`]} title={cacheNote(block.cache)}>

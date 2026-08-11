@@ -31,7 +31,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
 from typing import Any, ClassVar, cast
 
@@ -530,6 +530,23 @@ class SessionOperator(Operator):
     auto_pins: ClassVar[list[str]] = []
     """KB ids pinned automatically when a fresh session is created."""
 
+    @staticmethod
+    def session_mention_ids(kwargs: Mapping[str, Any]) -> tuple[list[str], list[str]]:
+        """``(--mention ids, --include ids)`` forwarded through ``run_session``.
+
+        :meth:`run_session` passes them on in ``**kwargs`` rather than as named
+        parameters of every ``_run_fresh`` / ``_run_inside`` override, matching
+        how ``extra_params`` already travels.
+        """
+
+        def ids(key: str) -> list[str]:
+            raw = kwargs.get(key)
+            if not isinstance(raw, list):
+                return []
+            return [item for item in cast(list[Any], raw) if isinstance(item, str)]
+
+        return ids("mentions"), ids("includes")
+
     @classmethod
     def derive_modules_for_crawl(
         cls, node: NarrativeNode
@@ -981,6 +998,8 @@ class SessionOperator(Operator):
         retry: bool = False,
         end: bool = False,
         slug: str | None = None,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: Any | None = None,
@@ -1017,6 +1036,8 @@ class SessionOperator(Operator):
             kwargs_dict["extra_params"] = merged_ep
         else:
             kwargs_dict.pop("extra_params", None)
+        kwargs_dict["mentions"] = list(mentions or [])
+        kwargs_dict["includes"] = list(includes or [])
         kwargs = kwargs_dict
 
         if end:

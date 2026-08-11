@@ -465,7 +465,7 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                     )
                 )
 
-    def test_at_mention_is_persisted_on_write_annotation_and_in_crawl(self) -> None:
+    def test_at_mention_expands_in_place_and_is_recorded_on_the_annotation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
@@ -478,8 +478,12 @@ class TestWriteOperatorRunInline(unittest.TestCase):
                 messages: list[dict[str, str]], *_args: Any, **_kwargs: Any
             ) -> Any:
                 user_content = messages[1]["content"]
-                self.assertIn("RELEVANT KNOWLEDGE", user_content)
+                # In context, but at the point it was mentioned rather than in
+                # the cacheable knowledge prefix.
+                self.assertIn("KB['person.amy']", user_content)
                 self.assertIn("Amy the merchant.", user_content)
+                self.assertNotIn("RELEVANT KNOWLEDGE", user_content)
+                self.assertIn("CURRENT PASSAGE", user_content)
                 yield StreamEvent(
                     final=final_payload_from_text(
                         "Generated content",
@@ -496,9 +500,9 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             self.assertNotIn("person.amy", fm.get("kb_pin", []))
             anns = [a for a in parse_annotations(text) if a.operator == "write" and not a.closing]
             self.assertTrue(anns)
-            self.assertIn("person.amy", anns[-1].params.get("kb_pin", []))
+            self.assertEqual(anns[-1].params.get("mention"), ["person.amy"])
 
-    def test_at_mention_added_on_retry_prompt_updates_annotation_pins(self) -> None:
+    def test_at_mention_added_on_retry_prompt_is_recorded_and_expands(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             KnowledgeStore.clear_registry()
@@ -512,7 +516,8 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             async def _retry_stream(
                 messages: list[dict[str, str]], *_args: Any, **_kwargs: Any
             ) -> Any:
-                # Mention appears only on retry prompt; it must be pinned and present in crawl.
+                # Mention appears only on the retry prompt; `write_discard`
+                # emptied the body it is regenerating, so the mention is live.
                 self.assertIn("Amy the merchant.", messages[1]["content"])
                 yield StreamEvent(
                     final=final_payload_from_text(
@@ -528,7 +533,8 @@ class TestWriteOperatorRunInline(unittest.TestCase):
             text = narrative.find_cursor().md_path().read_text(encoding="utf-8")
             anns = [a for a in parse_annotations(text) if a.operator == "write" and not a.closing]
             self.assertTrue(anns)
-            self.assertIn("person.amy", anns[-1].params.get("kb_pin", []))
+            self.assertEqual(anns[-1].params.get("mention"), ["person.amy"])
+            self.assertNotIn("person.amy", anns[-1].params.get("kb_pin", []))
 
 
 class TestWriteManual(unittest.TestCase):

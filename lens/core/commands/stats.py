@@ -11,6 +11,7 @@ from lens.core.modalities.bootstrap import ensure_modalities_registered
 from lens.core.modalities.registry import registered_ids
 from lens.core.modalities.resolve import resolve_modalities
 from lens.core.modalities.types import ModalityContext
+from lens.core.mentions import INCLUDE, live_mentions
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator
 from lens.core.operator_detect import (
@@ -66,6 +67,8 @@ class StatsResult:
     effective_pins_at_cursor: list[str] = field(default_factory=list[str])
     remember_pins_at_cursor: dict[str, list[str]] = field(default_factory=_empty_remember_pins)
     state_pins_at_cursor: list[str] = field(default_factory=list[str])
+    include_ids_at_cursor: list[str] = field(default_factory=list[str])
+    mention_ids_at_cursor: list[str] = field(default_factory=list[str])
     available_llms: list[str] = field(default_factory=list[str])
     image_backends: list[dict[str, Any]] = field(default_factory=_empty_image_backends)
     has_mount: bool = False
@@ -87,6 +90,25 @@ class StatsResult:
     release_app_leader: bool = False
     release_installed_version: str | None = None
     release_dataset_repos: list[dict[str, str]] = field(default_factory=list[dict[str, str]])
+
+
+def _scoped_ids_at_cursor(node: NarrativeNode) -> tuple[list[str], list[str]]:
+    """``(include ids, mention ids)`` still expanding in *node*, in written order.
+
+    Reported separately from ``effective_pins_at_cursor`` because they are a
+    different scope: node-local, never inherited, and — for mentions — good for
+    one more assistant turn.  See :mod:`lens.core.mentions`.
+    """
+    if not node.exists():
+        return [], []
+    raw = node.md_path().read_text(encoding="utf-8")
+    includes: list[str] = []
+    mentions: list[str] = []
+    for ref in live_mentions(raw):
+        bucket = includes if ref.kind == INCLUDE else mentions
+        if ref.kb_id not in bucket:
+            bucket.append(ref.kb_id)
+    return includes, mentions
 
 
 def _operator_context_at_cursor(
@@ -210,6 +232,8 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     effective_pins_at_cursor: list[str] = []
     remember_pins_at_cursor: dict[str, list[str]] = {}
     state_pins_at_cursor: list[str] = []
+    include_ids_at_cursor: list[str] = []
+    mention_ids_at_cursor: list[str] = []
     active_session_operator: str | None = None
     effective_vars_at_cursor: dict[str, str] = {}
     effective_params_at_cursor: dict[str, str] = {}
@@ -225,6 +249,11 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             effective_pins_at_cursor = pin_crawl.pinned_ids
             remember_pins_at_cursor = pin_crawl.remember_pins
             state_pins_at_cursor = pin_crawl.state_pins
+            # A separate scan: the pin crawl above runs with
+            # `include_narrative=False`, and mentions live in the node body.
+            # Only the live ones — an expired mention stays in the text (that
+            # is what makes rewind work) but is no longer in scope.
+            include_ids_at_cursor, mention_ids_at_cursor = _scoped_ids_at_cursor(node)
             effective_vars_at_cursor = dict(collect_vars(node))
             effective_params_at_cursor = effective_param_bindings_at_cursor(
                 root, node, active
@@ -280,6 +309,8 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         current_datasets=current_datasets,
         pending_diff=pending_diff,
         staged_diff=staged_diff,
+        include_ids_at_cursor=include_ids_at_cursor,
+        mention_ids_at_cursor=mention_ids_at_cursor,
         effective_pins_at_cursor=effective_pins_at_cursor,
         remember_pins_at_cursor=remember_pins_at_cursor,
         state_pins_at_cursor=state_pins_at_cursor,

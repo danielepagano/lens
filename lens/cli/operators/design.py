@@ -17,7 +17,12 @@ from lens.cli.help_strings import (
     OPT_MODULE_DESIGN,
     HELP_OPTS,
 )
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import (
+    include_option,
+    mention_option,
+    pin_option,
+    unpin_option,
+)
 from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operators.design import DesignOperator
@@ -50,6 +55,8 @@ def design(
     ),
     pin: list[str] = pin_option(OPT_PIN),
     unpin: list[str] = unpin_option(OPT_UNPIN),
+    mention: list[str] = mention_option(),
+    include: list[str] = include_option(),
     llm: str | None = typer.Option(
         None,
         "--llm",
@@ -98,7 +105,7 @@ def design(
 
     if not end:
         try:
-            ids_to_validate = list(pin) + list(unpin)
+            ids_to_validate = list(pin) + list(unpin) + list(mention) + list(include)
             module_key = module.strip() if module else None
             if module_key:
                 ids_to_validate.append(f"design.{module_key}")
@@ -118,6 +125,8 @@ def design(
                 module_id=module_key if not end else None,
                 pins=list(pin),
                 unpins=list(unpin),
+                mentions=list(mention),
+                includes=list(include),
                 llm_id=llm,
                 reasoning=reasoning,
                 retry=retry,

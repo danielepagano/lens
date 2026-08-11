@@ -20,7 +20,12 @@ from lens.cli.help_strings import (
     OPT_UNPIN,
     HELP_OPTS,
 )
-from lens.cli.options import pin_option, unpin_option  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
+from lens.cli.options import (
+    include_option,
+    mention_option,
+    pin_option,
+    unpin_option,
+)  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
 from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.rpg.operators.play import PlayOperator
@@ -60,6 +65,8 @@ def play(
     ),
     pin: list[str] = pin_option(OPT_PIN_PLAY),
     unpin: list[str] = unpin_option(OPT_UNPIN),
+    mention: list[str] = mention_option(),
+    include: list[str] = include_option(),
     llm: str | None = typer.Option(
         None,
         "--llm",
@@ -154,7 +161,10 @@ def play(
             raise typer.Exit(1)
 
     try:
-        validate_ids_exist(session.project_root, list(pin) + list(unpin))
+        validate_ids_exist(
+            session.project_root,
+            list(pin) + list(unpin) + list(mention) + list(include),
+        )
     except LensException as e:
         typer.echo(f"lens play: {e}", err=True)
         raise typer.Exit(1)
@@ -169,6 +179,8 @@ def play(
                 module_id=module_id,
                 pins=pins,
                 unpins=list(unpin),
+                mentions=list(mention),
+                includes=list(include),
                 llm_id=llm,
                 reasoning=reasoning,
                 retry=retry,

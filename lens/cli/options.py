@@ -10,7 +10,14 @@ from typing import Any
 
 import typer
 
-from lens.cli.help_strings import OPT_LLM, OPT_PIN, OPT_REASONING, OPT_UNPIN
+from lens.cli.help_strings import (
+    OPT_INCLUDE,
+    OPT_LLM,
+    OPT_MENTION,
+    OPT_PIN,
+    OPT_REASONING,
+    OPT_UNPIN,
+)
 
 
 def pin_option(help_override: str | None = None) -> Any:
@@ -19,6 +26,24 @@ def pin_option(help_override: str | None = None) -> Any:
         "--pin",
         "-p",
         help=help_override or OPT_PIN,
+    )
+
+
+def mention_option(help_override: str | None = None) -> Any:
+    return typer.Option(
+        [],
+        "--mention",
+        "-M",
+        help=help_override or OPT_MENTION,
+    )
+
+
+def include_option(help_override: str | None = None) -> Any:
+    return typer.Option(
+        [],
+        "--include",
+        "-I",
+        help=help_override or OPT_INCLUDE,
     )
 
 

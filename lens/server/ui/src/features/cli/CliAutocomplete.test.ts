@@ -360,6 +360,8 @@ function baseStats(over: Partial<Stats> = {}): Stats {
     effective_params_at_cursor: {},
     remember_pins_at_cursor: {},
     state_pins_at_cursor: [],
+    include_ids_at_cursor: [],
+    mention_ids_at_cursor: [],
     available_llms: ['fast'],
     image_backends: [],
     has_mount: false,

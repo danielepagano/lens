@@ -37,6 +37,8 @@ class WriteBody(BaseModel):
     prompt: str | None = None
     pins: list[str] = []
     unpins: list[str] = []
+    mentions: list[str] = []
+    includes: list[str] = []
     llm_id: str | None = None
     reasoning: str | None = None
     retry: bool = False
@@ -51,6 +53,8 @@ class PlayBody(BaseModel):
     module_id: str | None = None
     pins: list[str] = []
     unpins: list[str] = []
+    mentions: list[str] = []
+    includes: list[str] = []
     llm_id: str | None = None
     reasoning: str | None = None
     retry: bool = False
@@ -65,6 +69,8 @@ class DesignBody(BaseModel):
     module_id: str | None = None
     pins: list[str] = []
     unpins: list[str] = []
+    mentions: list[str] = []
+    includes: list[str] = []
     llm_id: str | None = None
     reasoning: str | None = None
     retry: bool = False
@@ -116,6 +122,8 @@ class ChatBody(BaseModel):
     wait: bool | None = None
     pins: list[str] = []
     unpins: list[str] = []
+    mentions: list[str] = []
+    includes: list[str] = []
     llm_id: str | None = None
     reasoning: str | None = None
     retry: bool = False
@@ -166,9 +174,14 @@ def _require_narrative(session: ProjectSession) -> Any:
     return narrative
 
 
-def _validate_pins(session: ProjectSession, pins: list[str], unpins: list[str]) -> None:
+def _validate_pins(
+    session: ProjectSession,
+    pins: list[str],
+    unpins: list[str],
+    scoped: list[str] | None = None,
+) -> None:
     try:
-        validate_ids_exist(session.project_root, pins + unpins)
+        validate_ids_exist(session.project_root, pins + unpins + list(scoped or []))
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -377,7 +390,7 @@ async def operator_write(
     from lens.core.operators.write import WriteOperator
 
     narrative, lock, event_queue, on_token, _on_se = _init_stream(request, session, lock)
-    _validate_pins(session, body.pins, body.unpins)
+    _validate_pins(session, body.pins, body.unpins, body.mentions + body.includes)
     cursor = narrative.find_cursor()
     node_addr = str(cursor.to_address())
 
@@ -391,6 +404,8 @@ async def operator_write(
             prompt=body.prompt,
             pins=body.pins,
             unpins=body.unpins,
+            mentions=body.mentions,
+            includes=body.includes,
             llm_id=body.llm_id,
             reasoning=body.reasoning,
             retry=body.retry,
@@ -436,13 +451,14 @@ async def operator_play(
     narrative, lock, event_queue, on_token, _on_se = _init_stream(request, session, lock)
     pins = list(body.pins)
     unpins = list(body.unpins)
+    scoped = list(body.mentions) + list(body.includes)
     if body.module_id is not None and body.module_id.strip():
         module_key = body.module_id.strip()
         pins_for_validation = pins + [f"rules.{module_key}"]
-        _validate_pins(session, pins_for_validation, unpins)
+        _validate_pins(session, pins_for_validation, unpins, scoped)
     else:
         module_key = None
-        _validate_pins(session, pins, unpins)
+        _validate_pins(session, pins, unpins, scoped)
     pins = _play_pins_with_encounter_expand(pins)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
@@ -470,6 +486,8 @@ async def operator_play(
             module_id=module_key,
             pins=pins,
             unpins=unpins,
+            mentions=body.mentions,
+            includes=body.includes,
             llm_id=body.llm_id,
             reasoning=body.reasoning,
             retry=body.retry,
@@ -542,13 +560,14 @@ async def operator_design(
     narrative, lock, event_queue, on_token, on_stream_event = _init_stream(request, session, lock)
     pins = list(body.pins)
     unpins = list(body.unpins)
+    scoped = list(body.mentions) + list(body.includes)
     if body.module_id is not None and body.module_id.strip():
         module_key = body.module_id.strip()
         pins_for_validation = pins + [f"design.{module_key}"]
-        _validate_pins(session, pins_for_validation, unpins)
+        _validate_pins(session, pins_for_validation, unpins, scoped)
     else:
         module_key = None
-        _validate_pins(session, pins, unpins)
+        _validate_pins(session, pins, unpins, scoped)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
 
@@ -564,6 +583,8 @@ async def operator_design(
             module_id=module_key,
             pins=pins,
             unpins=unpins,
+            mentions=body.mentions,
+            includes=body.includes,
             llm_id=body.llm_id,
             reasoning=body.reasoning,
             retry=body.retry,
@@ -626,7 +647,9 @@ async def operator_chat(
         validate_kb_ids.append(ak)
     if isinstance(wk, str):
         validate_kb_ids.append(wk)
-    _validate_pins(session, validate_kb_ids, unpins)
+    _validate_pins(
+        session, validate_kb_ids, unpins, list(body.mentions) + list(body.includes)
+    )
 
     async def on_stream_target(addr: str) -> None:
         target_ref[0] = addr
@@ -642,6 +665,8 @@ async def operator_chat(
                 module_id=None,
                 pins=pins,
                 unpins=unpins,
+                mentions=body.mentions,
+                includes=body.includes,
                 llm_id=eff_llm_id,
                 reasoning=eff_reasoning,
                 retry=body.retry,
@@ -668,6 +693,8 @@ async def operator_chat(
                 module_id=None,
                 pins=pins,
                 unpins=unpins,
+                mentions=body.mentions,
+                includes=body.includes,
                 llm_id=eff_llm_id,
                 reasoning=eff_reasoning,
                 retry=body.retry,
@@ -693,6 +720,8 @@ async def operator_chat(
                 prompt=body.prompt,
                 pins=pins,
                 unpins=unpins,
+                mentions=body.mentions,
+                includes=body.includes,
                 llm_id=eff_llm_id,
                 reasoning=eff_reasoning,
                 retry=body.retry,
