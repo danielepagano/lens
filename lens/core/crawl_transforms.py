@@ -17,16 +17,23 @@ from lens.core.crawl_graph import (
     RenderEffect,
 )
 from lens.core.dice import DiceError, substitute_rolls
-from lens.core.knowledge import KnowledgeObject, KnowledgeStore
+from lens.core.knowledge import KnowledgeStore
 from lens.core.mount_embed_strip import strip_standalone_lens_mount_attachment_lines
 from lens.core.now import substitute_now
 from lens.core.project import resolve_address
 from lens.core.storage import Storage
 
 _MENTION_END = r"(?=[\s\.,;:!\?\)]|$)"
-_AT_KB_RE = re.compile(
+AT_KB_RE = re.compile(
     r"@([a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]*[a-zA-Z0-9_-])" + _MENTION_END
 )
+"""The one `@type.key` pattern.
+
+Shared with :meth:`~lens.core.operator.Operator.mention_pins` so a token that
+resolves in prose also resolves when a command turns it into an annotation.
+Sentence punctuation ends a mention — ``I cast @spell.aid on @pc.rowan, then…``
+names two objects, and nobody should have to leave a space before the comma.
+"""
 _AT_NODE_SLICE_RE = re.compile(
     r"@((?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*|[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)@[0-9]+:[0-9]+)"
     + _MENTION_END
@@ -104,7 +111,7 @@ def substitute_inline_kb(
             ).strip_comments_text.strip()
             return _resolve(body, depth + 1)
 
-        return _AT_KB_RE.sub(repl, s)
+        return AT_KB_RE.sub(repl, s)
 
     return _resolve(text, 0)
 
@@ -212,6 +219,11 @@ class AtExpansionTransform:
             text = f"@ expansion stopped after {self._max_depth} passes{detail}"
         else:
             text = f"@ expansion left unresolved tokens{detail}"
+        # The graph is transformed twice in the normal flow — once by `crawl`,
+        # once by `_prepare_render_graph` — so without this the same warning is
+        # reported as two components.
+        if any(c.kind == "warning" and c.text == text for c in graph.components):
+            return graph
         graph.add_component(
             CrawlComponent(
                 id=graph.next_id("warning"),
@@ -224,16 +236,24 @@ class AtExpansionTransform:
         )
         return graph
 
-    @staticmethod
-    def _collect_unresolved_tokens(graph: CrawlGraph) -> set[str]:
+    def _collect_unresolved_tokens(self, graph: CrawlGraph) -> set[str]:
+        """Tokens that were *meant* to expand and did not.
+
+        A plain ``@type.key`` is deliberately inert — it is a shortcut that
+        wrote a mention annotation, and the annotation is what adds scope, so
+        finding one left in the prose is the normal case and warning about it
+        is pure noise.  Only an ``inline``-tagged object is obliged to expand
+        here, so only a surviving one of those is a real failure.
+        """
         unresolved: set[str] = set()
         for component in graph.components:
             if "llm" not in component.visibility and "hidden" not in component.visibility:
                 continue
             for m in _AT_VAR_RE.finditer(component.text):
                 unresolved.add(m.group(0))
-            for m in _AT_KB_RE.finditer(component.text):
-                unresolved.add(m.group(0))
+            for m in AT_KB_RE.finditer(component.text):
+                if self._is_inline_kb(m.group(1)):
+                    unresolved.add(m.group(0))
             for m in _AT_NODE_SLICE_RE.finditer(component.text):
                 unresolved.add(m.group(0))
             for m in _AT_NOW_RE.finditer(component.text):
@@ -241,6 +261,11 @@ class AtExpansionTransform:
             for m in _AT_ROLL_RE.finditer(component.text):
                 unresolved.add(m.group(0))
         return unresolved
+
+    def _is_inline_kb(self, raw_id: str) -> bool:
+        objects = self._kb.get_objects([raw_id])
+        obj = objects.get(raw_id.lower()) or objects.get(raw_id)
+        return obj is not None and expansion_policy_from_tags(obj.tags).mode == "inline"
 
     def _expand_vars(
         self, text: str, graph: CrawlGraph, component: CrawlComponent
@@ -315,6 +340,17 @@ class AtExpansionTransform:
         component: CrawlComponent,
         seen_inline: set[str],
     ) -> str:
+        """Substitute `inline`-tagged KB bodies; leave every other `@` alone.
+
+        A reference-mode ``@type.key`` used to inject a ``mention-kb:`` component
+        into ``[RELEVANT KNOWLEDGE]`` from wherever it was found — including
+        ancestor prose pulled in by the spine crawl, which is why a mention from
+        round 1 never went away.  Scope is now added by the annotation a command
+        writes (:mod:`lens.core.mentions`), which expands at its own line, so the
+        ``@`` left in the prose is inert: a shortcut that wrote the annotation,
+        nothing more, exactly like ``@roll``.
+        """
+
         def repl(match: re.Match[str]) -> str:
             raw_id = match.group(1)
             objects = self._kb.get_objects([raw_id])
@@ -322,71 +358,25 @@ class AtExpansionTransform:
             if obj is None:
                 return match.group(0)
             policy = expansion_policy_from_tags(obj.tags)
-            if policy.mode == "inline" or self._force_inline_kb:
-                if obj.id in seen_inline:
-                    return match.group(0)
-                seen_inline.add(obj.id)
-                body = self._storage.normalize_raw_text(
-                    obj.text, source_id=f"inline:{obj.id}"
-                ).strip_comments_text.strip()
-                graph.add_effect(
-                    RenderEffect(
-                        kind="kb-inline",
-                        token=match.group(0),
-                        result=obj.id,
-                        source_component_id=component.id,
-                    )
+            if policy.mode != "inline" and not self._force_inline_kb:
+                return match.group(0)
+            if obj.id in seen_inline:
+                return match.group(0)
+            seen_inline.add(obj.id)
+            body = self._storage.normalize_raw_text(
+                obj.text, source_id=f"inline:{obj.id}"
+            ).strip_comments_text.strip()
+            graph.add_effect(
+                RenderEffect(
+                    kind="kb-inline",
+                    token=match.group(0),
+                    result=obj.id,
+                    source_component_id=component.id,
                 )
-                return body
-            self._add_reference_component(graph, component, obj)
-            return match.group(0)
-
-        return _AT_KB_RE.sub(repl, text)
-
-    def _add_reference_component(
-        self, graph: CrawlGraph, source_component: CrawlComponent, obj: KnowledgeObject
-    ) -> None:
-        if obj.id in graph.pinned_ids or graph.component_by_id(f"kb:{obj.id}") is not None:
-            return
-        component_id = f"mention-kb:{obj.id}"
-        if graph.component_by_id(component_id) is not None:
-            return
-        formatted = self._storage.format_kb_prompt_block(
-            canonical_id=obj.id,
-            text=obj.text,
-            tags=obj.tags,
-            include_comments=False,
-            source_id=f"mention:{obj.id}",
-        )
-        graph.add_component(
-            CrawlComponent(
-                id=component_id,
-                kind="knowledge",
-                text=formatted,
-                source=ComponentSource(
-                    kind="knowledge",
-                    identifier=obj.id,
-                    metadata={"expanded_from": source_component.id},
-                ),
-                priority=len(graph.components),
-                metadata={
-                    "kb_id": obj.id,
-                    "tags": ",".join(obj.tags),
-                    "expanded_from": source_component.id,
-                    "expansion_policy": "reference",
-                },
             )
-        )
-        if obj.id not in graph.pinned_ids:
-            graph.pinned_ids.append(obj.id)
-        graph.add_effect(
-            RenderEffect(
-                kind="kb-reference",
-                token=f"@{obj.id}",
-                result=obj.id,
-                source_component_id=source_component.id,
-            )
-        )
+            return body
+
+        return AT_KB_RE.sub(repl, text)
 
     def _expand_node_slices(
         self, text: str, graph: CrawlGraph, component: CrawlComponent

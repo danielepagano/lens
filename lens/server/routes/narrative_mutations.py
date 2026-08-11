@@ -14,6 +14,7 @@ from lens.core.commands.pin import (
     pin_add,
     pin_block,
     pin_remove,
+    pin_scoped,
     pin_unblock,
     var_set,
     var_unset,
@@ -51,8 +52,11 @@ class PinRequest(BaseModel):
         k = self.kind
         op = self.operation
         if k == "kb":
-            if op not in ("add", "remove", "block", "unblock"):
-                raise ValueError("kb pin requires operation add, remove, block, or unblock")
+            if op not in ("add", "remove", "block", "unblock", "mention", "include"):
+                raise ValueError(
+                    "kb pin requires operation add, remove, block, unblock, "
+                    "mention, or include"
+                )
             if not self.ids:
                 raise ValueError("kb pin requires non-empty ids")
         elif k == "var":
@@ -94,6 +98,16 @@ def narrative_pin(
     try:
         if body.kind == "kb":
             assert body.operation is not None and body.ids is not None
+            if body.operation in ("mention", "include"):
+                count, target_path, applies_now = pin_scoped(
+                    session, body.operation, None, node_addr, body.ids, None
+                )
+                return {
+                    "status": "ok",
+                    "count": count,
+                    "target": target_path,
+                    "applies_now": applies_now,
+                }
             fn = {
                 "add": pin_add,
                 "remove": pin_remove,

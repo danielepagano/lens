@@ -131,6 +131,10 @@ export interface Stats {
   remember_pins_at_cursor: Record<string, string[]>
   /** Pinned ids tagged `state` — rendered at the prompt tail, re-sent every beat. */
   state_pins_at_cursor: string[] | null
+  /** Includes written into the cursor node — in scope for the rest of the node. */
+  include_ids_at_cursor: string[] | null
+  /** Mentions still expanding at the cursor — good for one more AI turn. */
+  mention_ids_at_cursor: string[] | null
   available_llms: string[]
   image_backends: ImageBackendStats[]
   has_mount: boolean
@@ -273,7 +277,16 @@ export interface ExplainReport {
   chars_per_token: number
   active_modalities: string[]
   pinned_ids: string[]
+  /** Includes/mentions expanded inside the passage; their bytes are already in a block. */
+  in_place: ExplainInPlace[]
   warnings: string[]
+}
+
+export interface ExplainInPlace {
+  kind: 'include' | 'mention'
+  kb_id: string
+  bytes: number
+  tokens: number
 }
 
 export interface ExplainParams {
@@ -715,6 +728,8 @@ export interface WriteParams {
   prompt?: string
   pins?: string[]
   unpins?: string[]
+  mentions?: string[]
+  includes?: string[]
   llm_id?: string
   reasoning?: string
   retry?: boolean
@@ -742,6 +757,8 @@ export interface PlayParams {
   module_id?: string
   pins?: string[]
   unpins?: string[]
+  mentions?: string[]
+  includes?: string[]
   llm_id?: string
   reasoning?: string
   retry?: boolean
@@ -762,6 +779,8 @@ export interface DesignParams {
   module_id?: string
   pins?: string[]
   unpins?: string[]
+  mentions?: string[]
+  includes?: string[]
   llm_id?: string
   reasoning?: string
   retry?: boolean
@@ -800,6 +819,8 @@ export interface ChatParams {
   wait?: boolean
   pins?: string[]
   unpins?: string[]
+  mentions?: string[]
+  includes?: string[]
   llm_id?: string
   reasoning?: string
   retry?: boolean
@@ -1123,7 +1144,7 @@ export const releaseClear = (): Promise<{
 export type NarrativePinBody =
   | {
       kind?: 'kb'
-      operation: 'add' | 'remove' | 'block' | 'unblock'
+      operation: 'add' | 'remove' | 'block' | 'unblock' | 'mention' | 'include'
       ids: string[]
       node?: string | null
     }

@@ -138,6 +138,7 @@ lens/
     context.py   # crawl() + assemble_prompt() for LLM context assembly
     llm_run.py   # LlmRun envelope: gather → transform → generate → persist
     prompt_transforms.py # @ prompt orchestration (STORABLE / FLAT); graph transforms in crawl_transforms.py
+    mentions.py  # mention/include annotations: parse, lifetime, in-place render
     workflow_runner.py # Multi-step operator scheduling (generate→auto_compress, summarize→remember)
     hooks.py     # post_inline (auto-compress), summarize_close (remember)
     knowledge.py # KnowledgeStore + KnowledgeObject (filesystem KB)
@@ -202,6 +203,8 @@ Operators can register themselves as **LLM tools** via `tools.py` (`register_ope
 **Multi-step workflows** (`workflow_runner.py`): session close, auto-compress, and remember are follow-up LLM passes under one user invocation. The runner exposes a step plan (generate → auto_compress, summarize → remember → close). **Skip** declines optional tail steps; **Abort/Cancel** rolls back dirty in-flight steps. See [docs/design.md](docs/design.md) for skip vs abort semantics.
 
 **Context assembly** (`context.py`): `crawl()` collects `kb_pin`/`kb_unpin` from ancestor front matters (walking from root to cursor), resolves linked KB objects, then passes everything to `assemble_prompt()` which formats `[RELEVANT KNOWLEDGE]`, `[PREVIOUS EVENTS SUMMARY]`, `[CURRENT PASSAGE]`, and `[TASK]` blocks into `[system, user]` messages. KB pins resolve on the full ancestor chain; narrative slices follow the lineage spine (fractal summaries).
+
+**Mentions and includes** (`mentions.py`): scope added *mid-node* and expanded **in place**, at the annotation's own line, instead of in `[RELEVANT KNOWLEDGE]`. Written as one-id markdown comments (`[mention: spell.aid]: #`, `[include: rules.grappling]: #`) by `--mention` / `--include`, by `lens pin kb mention|include`, or by a `@type.key` in a prompt (one annotation per distinct id). An include lasts the rest of the node; a mention lasts one assistant turn, computed from distance to the cursor and never stored — so retry does not consume it and rewind restores it. Never inherited by sub-nodes. A `@` left in prose is inert: only the annotation adds scope. `state`-tagged objects are the one exception — they are handed to the tail divert instead of inlined. Expansion is render-time only; nothing is ever written into the node.
 
 KB objects tagged **`state`** are diverted out of `[RELEVANT KNOWLEDGE]` and rendered at the tail, immediately before `[TASK]` — one pass (`_divert_state_components`) over the finished render graph, so it applies to every scope (pin, module, rules companion, `@` mention) and runs after id dedup. Anything the user updates mid-session belongs there: in the prefix it would invalidate the cache on every edit. See "Live state" in [docs/design.md](docs/design.md).
 

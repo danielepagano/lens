@@ -291,6 +291,68 @@ class TestStatsEffectivePins(unittest.TestCase):
       self.assertEqual(result.state_pins_at_cursor, [])
 
 
+  def test_includes_and_mentions_are_reported_separately_from_pins(self) -> None:
+    """A different scope needs a different row: node-local, and mentions expire."""
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.media import MediaService
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, node = _make_project(root)
+      _add_kb(root, "place", "a", "Place A")
+      _add_kb(root, "spell", "aid", "Aid spell")
+      _add_kb(root, "rules", "grappling", "Grappling rules")
+
+      node.md_path().write_text(
+          "[\n  kb_pin:\n    - place.a\n]: #\n\n"
+          "# test\n\n"
+          "[include: rules.grappling]: #\n"
+          "[mention: spell.aid]: #\n"
+      )
+
+      import subprocess
+
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "scope"], cwd=root, capture_output=True, check=True
+      )
+      KnowledgeStore.clear_registry()
+      MediaService.clear_registry()
+
+      result = get_stats(session)
+      self.assertEqual(result.effective_pins_at_cursor, ["place.a"])
+      self.assertEqual(result.include_ids_at_cursor, ["rules.grappling"])
+      self.assertEqual(result.mention_ids_at_cursor, ["spell.aid"])
+
+  def test_expired_mention_is_not_reported(self) -> None:
+    """It stays in the text so rewind works, but it is no longer in scope."""
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.media import MediaService
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, node = _make_project(root)
+      _add_kb(root, "spell", "aid", "Aid spell")
+
+      node.md_path().write_text(
+          "# test\n\n"
+          "[mention: spell.aid]: #\n\n"
+          "[write]: #\n\nGenerated.\n\n[/write]: #\n"
+      )
+
+      import subprocess
+
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "scope"], cwd=root, capture_output=True, check=True
+      )
+      KnowledgeStore.clear_registry()
+      MediaService.clear_registry()
+
+      result = get_stats(session)
+      self.assertEqual(result.mention_ids_at_cursor, [])
+
+
 class TestStatsEffectiveVarsAndParams(unittest.TestCase):
   def test_effective_vars_inherited_at_cursor(self) -> None:
     import subprocess

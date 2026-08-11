@@ -22,7 +22,12 @@ from lens.cli.help_strings import (
     OPT_WAIT,
     HELP_OPTS,
 )
-from lens.cli.options import pin_option, unpin_option
+from lens.cli.options import (
+    include_option,
+    mention_option,
+    pin_option,
+    unpin_option,
+)
 from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
 from lens.core.operator_params import chat_invocation_uses_session, prepare_chat_invocation
@@ -61,6 +66,8 @@ def chat(
     ),
     pin: list[str] = pin_option(OPT_PIN),
     unpin: list[str] = unpin_option(OPT_UNPIN),
+    mention: list[str] = mention_option(),
+    include: list[str] = include_option(),
     llm: str | None = typer.Option(None, "--llm", "-l", help=OPT_LLM),
     reasoning: str | None = typer.Option(
         None, "--reasoning", help=OPT_REASONING
@@ -143,7 +150,7 @@ def chat(
     all_pins = list(pin)
 
     try:
-        ids_check = list(all_pins) + list(unpin)
+        ids_check = list(all_pins) + list(unpin) + list(mention) + list(include)
         ak = extra_params.get("as_kb_id")
         wk = extra_params.get("with_kb_id")
         if isinstance(ak, str):
@@ -168,6 +175,8 @@ def chat(
                 module_id=None,
                 pins=all_pins,
                 unpins=list(unpin),
+                mentions=list(mention),
+                includes=list(include),
                 llm_id=llm,
                 reasoning=reasoning,
                 retry=retry,
@@ -189,6 +198,8 @@ def chat(
                 module_id=None,
                 pins=all_pins,
                 unpins=list(unpin),
+                mentions=list(mention),
+                includes=list(include),
                 llm_id=llm,
                 reasoning=reasoning,
                 retry=retry,
@@ -207,6 +218,8 @@ def chat(
             prompt=prompt,
             pins=all_pins,
             unpins=list(unpin),
+            mentions=list(mention),
+            includes=list(include),
             llm_id=llm,
             reasoning=reasoning,
             retry=retry,

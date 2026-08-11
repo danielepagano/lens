@@ -14,11 +14,13 @@ no LLM configuration because no model call is made.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
 from lens.core.address import NarrativeAddress
+from lens.core.annotations import decode_ai_secrets
+from lens.core.mount_embed_strip import strip_standalone_lens_mount_attachment_lines
 from lens.core.context import (
     BLOCK_CURRENT,
     BLOCK_EXTRA,
@@ -33,6 +35,7 @@ from lens.core.context import (
 )
 from lens.core.crawl_graph import CrawlComponent, CrawlGraph
 from lens.core.exceptions import LensException
+from lens.core.mentions import MENTION_KINDS
 from lens.core.narrative import NarrativeNode
 from lens.core.operator import Operator
 from lens.core.operator_detect import detect_operator_name
@@ -45,7 +48,6 @@ from lens.core.project import (
     unknown_node_hint,
 )
 from lens.core.prompts import PromptStore
-from lens.core.storage import Storage
 
 BLOCK_CONVERSATION = "conversation"
 
@@ -178,6 +180,34 @@ class ExplainBlock:
 
 
 @dataclass(frozen=True)
+class ExplainInPlace:
+    """One include/mention expanded inside the passage.
+
+    Not a block row: the block is spliced into the narrative text, so its bytes
+    are already counted in ``current_passage`` / ``conversation``.  Listed
+    separately because otherwise there is no way to tell from the report that a
+    mention took effect at all — which is the first thing you want to know
+    after writing one.
+    """
+
+    kind: str
+    kb_id: str
+    bytes: int
+    tokens: int
+    text: str = ""
+    """The rendered block, used to locate it inside the passage.  Not serialised
+    — consumers get the bytes and the id, and the text is already in the row."""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind,
+            "kb_id": self.kb_id,
+            "bytes": self.bytes,
+            "tokens": self.tokens,
+        }
+
+
+@dataclass(frozen=True)
 class ExplainReport:
     """Full composition report for one cursor + operator pair."""
 
@@ -197,6 +227,7 @@ class ExplainReport:
     chars_per_token: int
     active_modalities: tuple[str, ...]
     pinned_ids: tuple[str, ...]
+    in_place: tuple[ExplainInPlace, ...]
     warnings: tuple[str, ...]
 
     def to_dict(self) -> dict[str, Any]:
@@ -219,6 +250,7 @@ class ExplainReport:
             "chars_per_token": self.chars_per_token,
             "active_modalities": list(self.active_modalities),
             "pinned_ids": list(self.pinned_ids),
+            "in_place": [i.to_dict() for i in self.in_place],
             "warnings": list(self.warnings),
         }
 
@@ -323,10 +355,16 @@ def _resolve_operator(
     return op_cls
 
 
-def _current_passage_override(
-    node: NarrativeNode, line: int, storage: Storage
-) -> str:
-    """Text of *node* truncated at *line*, as the current passage would render."""
+def _current_passage_override(node: NarrativeNode, line: int) -> str:
+    """Raw text of *node* truncated at *line*.
+
+    Deliberately raw: ``crawl`` expands mentions and strips comments from an
+    override, and it is the only place that knows the resolved pins, so
+    expanding here would report a block the real prompt suppresses as
+    already-pinned.  Truncating first is what makes ``--line`` answer "as of
+    that point" — a mention written later is not in scope yet, and one written
+    earlier is live or expired according to the turns above *line*.
+    """
     try:
         raw = node.md_path().read_text(encoding="utf-8")
     except FileNotFoundError as e:
@@ -336,7 +374,7 @@ def _current_passage_override(
         raise LensException(
             f"line {line} is out of range for '{node.path_str()}' (1–{len(lines)})"
         )
-    return storage.normalize_raw_text("\n".join(lines[:line])).strip_comments_text
+    return "\n".join(lines[:line])
 
 
 # ---------------------------------------------------------------------------
@@ -386,8 +424,10 @@ def component_provenance(
         return "operator", "current passage override", detail
 
     if cid.startswith("mention-kb:"):
-        origin = meta.get("expanded_from", "?")
-        return "mention", f"@{kb_id} mentioned in {origin}", detail
+        # The only mentions that reach the graph: `state`-tagged objects, which
+        # are diverted to the tail instead of expanding inside the passage.
+        # Ordinary ones are counted where they land, in the narrative rows.
+        return "mention", f"{kb_id} mentioned here (live state, sent at the tail)", detail
     if cid.startswith("mention-ref:"):
         origin = meta.get("expanded_from", "?")
         return "mention", f"@node-slice mentioned in {origin}", detail
@@ -454,13 +494,18 @@ def _block_rendered_text(
 def _turn_components(
     operator: Operator, crawl_result: CrawlResult
 ) -> list[tuple[str, str]]:
-    """Re-derive the conversation turns the operator's prompt would use."""
+    """Re-derive the conversation turns the operator's prompt would use.
+
+    Through ``passage_view``, not a fresh read of the file: the operator sees
+    the node with live mentions expanded in place, and a report that re-parsed
+    the raw text would under-count every mention's bytes.
+    """
     from lens.core.turns import parse_passage_turns
 
     node = crawl_result.current_node
     if node is None or not node.exists():
         return []
-    return parse_passage_turns(operator.storage.normalize_path_text(node.md_path()))
+    return parse_passage_turns(operator.passage_view(crawl_result, node))
 
 
 def _sorted(
@@ -532,7 +577,7 @@ def explain_context(
     spec_kwargs: dict[str, Any] = {"storage": storage}
     if effective_line is not None:
         spec_kwargs["current_passage_override"] = _current_passage_override(
-            node, effective_line, storage
+            node, effective_line
         )
 
     spec = op_cls.crawl_spec(
@@ -623,6 +668,7 @@ def _build_report(
     def pct(size: int) -> float:
         return (size / total_bytes * 100.0) if total_bytes else 0.0
 
+    in_place = _expansions_for_split(graph, chars_per_token)
     grouped = _grouped_components(graph)
     rendered_as_turns = graph.metadata.get("rendered_as_turns") == "true"
     if rendered_as_turns:
@@ -642,24 +688,37 @@ def _build_report(
             prov_kind, why, detail = component_provenance(
                 component, operator_name=operator_name, modality_pins=modality_pins
             )
-            size = _byte_size(component.text)
-            rows.append(
-                ExplainComponent(
-                    id=component.id,
-                    kind=component.kind,
-                    block=block_id,
-                    order=order,
-                    bytes=size,
-                    tokens=estimate_tokens(component.text, chars_per_token),
-                    percent=pct(size),
-                    provenance=why,
-                    provenance_kind=prov_kind,
-                    cache=_BLOCK_CACHE.get(block_id, "unknown"),
-                    detail=detail,
+            # A mention expanded inside the cursor passage is its own chunk of
+            # the prompt; split it out so it gets a row instead of vanishing
+            # into the narrative it sits in.
+            segments = (
+                _split_in_place(
+                    component.id, component.text, why, prov_kind, detail, in_place
                 )
+                if component.kind == "current_narrative"
+                else [_Segment(component.id, component.text, why, prov_kind, detail)]
             )
-            order += 1
+            for segment in segments:
+                size = _byte_size(segment.text)
+                rows.append(
+                    ExplainComponent(
+                        id=segment.id,
+                        kind="mention" if segment.provenance_kind == "mention" else component.kind,
+                        block=block_id,
+                        order=order,
+                        bytes=size,
+                        tokens=estimate_tokens(segment.text, chars_per_token),
+                        percent=pct(size),
+                        provenance=segment.provenance,
+                        provenance_kind=segment.provenance_kind,
+                        cache=_BLOCK_CACHE.get(block_id, "unknown"),
+                        detail=segment.detail,
+                    )
+                )
+                order += 1
         rendered = _block_rendered_text(block_id, [c.text for c in components], prompts)
+        # Framing is measured against the *rows*, which after an in-place split
+        # are pieces of the same text — so the residual stays correct.
         framing_bytes, framing_tokens = _framing_size(
             rendered, [c.text for c in components], chars_per_token
         )
@@ -681,23 +740,31 @@ def _build_report(
         for index, (role, content) in enumerate(
             _turn_components(operator_instance, crawl_result)
         ):
-            size = _byte_size(content)
-            turn_rows.append(
-                ExplainComponent(
-                    id=f"turn:{index + 1}:{role}",
-                    kind="turn",
-                    block=BLOCK_CONVERSATION,
-                    order=order,
-                    bytes=size,
-                    tokens=estimate_tokens(content, chars_per_token),
-                    percent=pct(size),
-                    provenance=f"{role} turn parsed from {node.path_str()}",
-                    provenance_kind="narrative",
-                    cache=_CACHE_VOLATILE,
-                    detail={"role": role},
+            for segment in _split_in_place(
+                f"turn:{index + 1}:{role}",
+                content,
+                f"{role} turn parsed from {node.path_str()}",
+                "narrative",
+                {"role": role},
+                in_place,
+            ):
+                size = _byte_size(segment.text)
+                turn_rows.append(
+                    ExplainComponent(
+                        id=segment.id,
+                        kind="mention" if segment.provenance_kind == "mention" else "turn",
+                        block=BLOCK_CONVERSATION,
+                        order=order,
+                        bytes=size,
+                        tokens=estimate_tokens(segment.text, chars_per_token),
+                        percent=pct(size),
+                        provenance=segment.provenance,
+                        provenance_kind=segment.provenance_kind,
+                        cache=_CACHE_VOLATILE,
+                        detail=segment.detail,
+                    )
                 )
-            )
-            order += 1
+                order += 1
         if turn_rows:
             drafts.append(
                 _BlockDraft(
@@ -785,8 +852,171 @@ def _build_report(
         chars_per_token=chars_per_token,
         active_modalities=_active_modality_ids(crawl_result),
         pinned_ids=tuple(crawl_result.pinned_ids),
+        in_place=_in_place_from_rows(blocks),
         warnings=tuple(warnings),
     )
+
+
+@dataclass(frozen=True)
+class _Segment:
+    """One measurable piece of a narrative row."""
+
+    id: str
+    text: str
+    provenance: str
+    provenance_kind: str
+    detail: dict[str, str]
+
+
+def _split_in_place(
+    row_id: str,
+    text: str,
+    base_provenance: str,
+    base_kind: str,
+    base_detail: dict[str, str],
+    expansions: Sequence[ExplainInPlace],
+) -> list[_Segment]:
+    """Split narrative *text* into prose and the mention blocks inside it.
+
+    An expanded include/mention is a distinct, attributable chunk of the prompt,
+    so it earns its own row rather than disappearing into the turn that happens
+    to contain it.  Splitting rather than adding keeps the arithmetic honest:
+    the pieces still sum to the row they came from.
+
+    The block is located by text, so the needle has to be put through the same
+    transforms the passage went through or it will not be there to find: a KB
+    body carrying an ``ai:secret`` block reaches the model decoded, and a
+    standalone mount attachment is stripped out.  Both paths that consume this
+    apply both — the narrative component via ``SecretDecodeTransform`` /
+    ``StripStandaloneMountEmbedsTransform``, the turns via ``llm_view`` and
+    ``parse_passage_turns`` — so one transformed needle covers them, and it is a
+    no-op for an object with neither.
+
+    Still falls back to a single prose segment when a block cannot be located;
+    a report that under-attributes beats one that double-counts.
+    """
+    hits: list[tuple[int, ExplainInPlace, str]] = []
+    for expansion in expansions:
+        if not expansion.text:
+            continue
+        needle = strip_standalone_lens_mount_attachment_lines(
+            decode_ai_secrets(expansion.text)
+        )
+        at = text.find(needle)
+        if at >= 0:
+            hits.append((at, expansion, needle))
+    if not hits:
+        return [_Segment(row_id, text, base_provenance, base_kind, base_detail)]
+
+    hits.sort(key=lambda h: h[0])
+    # Segments must tile *all* of `text` with no gaps: the rows are pieces of
+    # one component, and dropping even the blank line between them would leave
+    # the block bytes not equal to the sum of its rows.
+    segments: list[_Segment] = []
+    cursor = 0
+    for at, expansion, needle in hits:
+        if at < cursor:
+            continue
+        if at > cursor:
+            segments.append(
+                _Segment(row_id, text[cursor:at], base_provenance, base_kind, base_detail)
+            )
+        marker = "+" if expansion.kind == "include" else "@"
+        lifetime = (
+            "rest of this node" if expansion.kind == "include" else "one AI turn"
+        )
+        segments.append(
+            _Segment(
+                f"{expansion.kind}:{expansion.kb_id}",
+                # The matched form, not the original: a stripped mount embed
+                # makes them different lengths and the rows must still tile.
+                needle,
+                f"{marker}{expansion.kb_id} expanded in place, {lifetime}",
+                "mention",
+                {"kb_id": expansion.kb_id, "scope": expansion.kind},
+            )
+        )
+        cursor = at + len(needle)
+    if cursor < len(text):
+        segments.append(
+            _Segment(row_id, text[cursor:], base_provenance, base_kind, base_detail)
+        )
+    return _merge_blank_segments(segments)
+
+
+def _merge_blank_segments(segments: list[_Segment]) -> list[_Segment]:
+    """Fold whitespace-only prose into a neighbour rather than giving it a row.
+
+    The blank line separating a mention from the prose around it is real bytes
+    that have to land somewhere, but "  " is not worth a row of its own.
+    """
+    merged: list[_Segment] = []
+    carry = ""
+    for segment in segments:
+        if segment.provenance_kind != "mention" and not segment.text.strip():
+            if merged:
+                merged[-1] = replace(merged[-1], text=merged[-1].text + segment.text)
+            else:
+                carry += segment.text  # nothing before it yet; hold for the next
+            continue
+        merged.append(
+            replace(segment, text=carry + segment.text) if carry else segment
+        )
+        carry = ""
+    if carry:  # pragma: no cover - a split always yields one mention segment
+        return segments
+    return merged
+
+
+def _in_place_from_rows(
+    blocks: Sequence[ExplainBlock],
+) -> tuple[ExplainInPlace, ...]:
+    """The roll-up, derived from the rows so the two can never disagree.
+
+    Built from the finished rows rather than from the render effects: a row
+    absorbs the blank line separating it from its neighbour, so measuring the
+    effect independently reported a few bytes less for the same object.
+    """
+    return tuple(
+        ExplainInPlace(
+            kind=row.detail.get("scope", ""),
+            kb_id=row.detail.get("kb_id", row.id),
+            bytes=row.bytes,
+            tokens=row.tokens,
+        )
+        for block in blocks
+        for row in block.components
+        # `provenance_kind` is also "mention" for `mention-kb:` (a state object
+        # diverted to the tail) and `mention-ref:` (a node slice).  Neither is
+        # spliced into the passage, and both already have a block row, so
+        # selecting on them would double-list with an empty kind.
+        if row.detail.get("scope") in MENTION_KINDS
+    )
+
+
+def _expansions_for_split(
+    graph: CrawlGraph, chars_per_token: int
+) -> tuple[ExplainInPlace, ...]:
+    """Includes and mentions to look for inside the narrative text.
+
+    Read off the render effects ``crawl`` records, because the expansion leaves
+    no component of its own to find it by.
+    """
+    out: list[ExplainInPlace] = []
+    for effect in graph.effects:
+        if effect.kind not in ("kb-mention", "kb-include"):
+            continue
+        size = int(effect.result) if effect.result.isdigit() else 0
+        out.append(
+            ExplainInPlace(
+                kind=effect.kind.removeprefix("kb-"),
+                kb_id=effect.token,
+                bytes=size,
+                tokens=-(-size // max(1, chars_per_token)),
+                text=effect.details.get("text", ""),
+            )
+        )
+    return tuple(out)
 
 
 def _active_modality_ids(crawl_result: CrawlResult) -> tuple[str, ...]:

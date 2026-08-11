@@ -16,6 +16,7 @@ from lens.core.media import MediaService
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession
 from lens.core.test.llm_run_mock import mock_run_llm
+from lens.core.test.test_mentions import assert_annotations_start_a_block
 from lens.rpg.operators.play import PlayOperator
 
 
@@ -196,6 +197,81 @@ class TestPlayAppend(unittest.TestCase):
         text = self._play_child_md()
         self.assertEqual(text.count("KB['spell.foo']"), 0)
         self.assertEqual(text.count("@spell.foo"), 2)
+
+    def test_each_mentioned_object_records_one_annotation(self) -> None:
+        """Several @s in one line record one annotation each; a repeat records one."""
+        for kb_type, key, body in (
+            ("spell", "foo", "Foo spell\n"),
+            ("npc", "rowan", "Rowan the guide\n"),
+        ):
+            d = self.root / "knowledge" / kb_type
+            d.mkdir(parents=True, exist_ok=True)
+            (d / f"{key}.md").write_text(body)
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(["git", "commit", "-m", "kb"], cwd=self.root, capture_output=True, check=True)
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+        with patch(
+            "lens.core.operator.run_llm",
+            mock_run_llm(_never_generate_text),
+        ):
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="I cast @spell.foo on @npc.rowan, then @spell.foo again",
+                    pins=[],
+                    unpins=[],
+                    extra_params=None,
+                )
+            )
+
+        text = self._play_child_md()
+        # The annotations must open their own markdown block; glued under the
+        # player line they are a lazy continuation and the reader sees them.
+        assert_annotations_start_a_block(text)
+        self.assertEqual(text.count("[mention: spell.foo]: #"), 1)
+        self.assertEqual(text.count("[mention: npc.rowan]: #"), 1)
+        # In written order, immediately under the line that named them.
+        self.assertLess(
+            text.index("[mention: spell.foo]: #"), text.index("[mention: npc.rowan]: #")
+        )
+        self.assertLess(text.index("> [Player] I cast"), text.index("[mention: spell.foo]: #"))
+
+    def test_explicit_mention_and_include_flags_record_annotations(self) -> None:
+        spell_dir = self.root / "knowledge" / "spell"
+        spell_dir.mkdir(parents=True, exist_ok=True)
+        (spell_dir / "foo.md").write_text("Foo spell\n")
+        rules_dir = self.root / "knowledge" / "rules"
+        rules_dir.mkdir(parents=True, exist_ok=True)
+        (rules_dir / "grappling.md").write_text("Grappling rules\n")
+        subprocess.run(["git", "add", "-A"], cwd=self.root, capture_output=True, check=True)
+        subprocess.run(["git", "commit", "-m", "kb"], cwd=self.root, capture_output=True, check=True)
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+        with patch(
+            "lens.core.operator.run_llm",
+            mock_run_llm(_never_generate_text),
+        ):
+            asyncio.run(
+                PlayOperator.run_session(
+                    session=self.session,
+                    narrative=self.narrative,
+                    prompt="I grab him",
+                    pins=[],
+                    unpins=[],
+                    mentions=["spell.foo"],
+                    includes=["rules.grappling"],
+                    extra_params=None,
+                )
+            )
+
+        text = self._play_child_md()
+        assert_annotations_start_a_block(text)
+        self.assertIn("[mention: spell.foo]: #", text)
+        self.assertIn("[include: rules.grappling]: #", text)
 
     def test_node_slice_refs_are_not_persisted_to_player_turns(self) -> None:
         lore = self.root / "narrative" / "test" / "lore.md"

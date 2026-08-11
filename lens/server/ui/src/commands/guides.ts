@@ -350,12 +350,12 @@ The report opens as a modal: a stacked bar of the prompt blocks, then each block
 `,
   'pin-kb': `## pin-kb
 
-Declare which knowledge objects apply at a node. Pinned objects are automatically included when AI operators run at or below this node.
+Declare which knowledge objects apply, either for a whole node or from this point on.
 
 ### Usage
 
 \`\`\`
-pin-kb add|remove|block|unblock <id> [ids...]
+pin-kb add|remove|block|unblock|mention|include <id> [ids...]
 \`\`\`
 
 ### Actions
@@ -363,6 +363,8 @@ pin-kb add|remove|block|unblock <id> [ids...]
 - \`remove\` — Unpin a KB object from a node
 - \`block\` — Suppress a pin inherited from an ancestor node
 - \`unblock\` — Restore an ancestor pin that was previously suppressed
+- \`mention\` — Put an object in context *at this point* for one AI turn
+- \`include\` — Put an object in context *at this point* for the rest of the node
 
 ### Options
 
@@ -371,6 +373,11 @@ pin-kb add|remove|block|unblock <id> [ids...]
 ### Notes
 
 - Pins tell the AI what facts are "in frame" for a scene; they inherit from root to cursor.
+- Mentions and includes are different: they expand where they were written, are never inherited
+  by sub-nodes, and a mention stops expanding after one AI turn. Say it again to refresh it.
+- \`mention\` and \`include\` are also available as \`--mention\` / \`--include\` on
+  \`write\`, \`play\`, \`chat\`, and \`design\`; typing \`@type.key\` in a prompt is a
+  one-turn mention.
 `,
   'pin-var': `## pin-var
 

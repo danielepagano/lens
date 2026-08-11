@@ -110,7 +110,7 @@ Options:
 - `-v` / `--verbose` — show block-framing and message-separator rows so the columns visibly add up, list components that never reach the model (warnings, participants), and print the cache-position note.
 - `--chars-per-token <n>` — divisor for the token estimate (default 4).
 
-Each row reports the component id (`kb:pc.alice`, `rules-companion:rules.encounter`, `mention-kb:spell.aid`, `narrative:/chapter-1:narrative_summary`, `render-system`, `render-task`), the block it lands in, its bytes and estimated tokens with a share of the total, and **why it is there**:
+Each row reports the component id (`kb:pc.alice`, `rules-companion:rules.encounter`, `mention:spell.aid`, `narrative:/chapter-1:narrative_summary`, `render-system`, `render-task`), the block it lands in, its bytes and estimated tokens with a share of the total, and **why it is there**:
 
 | Provenance | Meaning |
 |---|---|
@@ -494,6 +494,8 @@ Pins attach knowledge objects to a node's front matter so they are automatically
 | `remove`   | Remove from `kb_pin`                            |
 | `block`    | Add to `kb_unpin` (cancel an ancestor pin)      |
 | `unblock`  | Remove from `kb_unpin`                          |
+| `mention`  | In context **from this point**, for one AI turn |
+| `include`  | In context **from this point**, rest of the node|
 
 All `kb` commands take one positional ID and an optional positional node address (default: cursor). Use `-i`/`--id` (repeatable) for multiple IDs, and `--node`/`-n` when combining with `-i`.
 
@@ -506,9 +508,28 @@ lens pin kb add -i person.amy -i place.city --node /amy-story  # multiple IDs
 lens pin kb block person.amy /amy-story   # suppress an ancestor pin here
 lens pin kb remove person.amy             # undo a pin
 lens pin kb unblock person.amy            # undo a block
+
+lens pin kb mention spell.aid             # one AI turn, from here on
+lens pin kb include rules.grappling       # rest of this node, from here on
+lens pin kb mention spell.aid /chapter-1  # only applies once the cursor is there
 ```
 
 Node addresses follow the format `[<narrative>/]<key>[/<key>...]` or `/@cursor`. Run `lens pin kb <command> --help` for details.
+
+#### Mentions and includes are a different scope
+
+`add` / `remove` / `block` / `unblock` edit front matter: they apply to the whole node and are inherited by children. `mention` and `include` instead append an annotation at the node's tail, and the object is rendered **there** — inside the passage, at the point you asked for it — rather than in `[RELEVANT KNOWLEDGE]`. They are never inherited — not by sub-nodes, and not upward from an ancestor.
+
+A **mention** stops expanding after one AI turn; an **include** lasts for the rest of the node. Nothing counts down and nothing is deleted: expiry is computed from how far the annotation is from the cursor, so retrying does not consume a mention and rewinding past an expiry brings it back. To refresh an expired mention, mention it again.
+
+They take effect **only in the node they were written into, and only while that node is the cursor**. That is the opposite of `add`, where targeting an ancestor is the whole point because pins inherit downward. Passing a node address is therefore only useful to pre-stage a node you are about to move into, and the command says so when the target is not the cursor.
+
+The same thing is available per invocation as `--mention` / `--include` on `write`, `play`, `chat`, and `design` — repeatable, and combinable with `--pin`. Writing `@type.key` in a prompt is the shortcut for `--mention`: each distinct object named gets one annotation, in the order they appear.
+
+```bash
+lens play "I cast @spell.aid on @pc.rowan"          # two one-turn mentions
+lens write "Describe the fight" --include rules.combat --pin loc.arena
+```
 
 ### Vars (`lens pin var`)
 

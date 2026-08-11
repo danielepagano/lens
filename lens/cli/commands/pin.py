@@ -24,11 +24,13 @@ from lens.core.commands.pin import (
     pin_add,
     pin_block,
     pin_remove,
+    pin_scoped,
     pin_unblock,
     var_set,
     var_unset,
 )
 from lens.core.exceptions import LensException
+from lens.core.mentions import MentionKind
 from lens.core.project import ProjectSession
 
 app = typer.Typer(
@@ -139,6 +141,57 @@ def unblock(
             typer.echo(f"Error: {e}", err=True)
         else:
             typer.echo(f"lens pin kb unblock: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@kb_app.command()
+def mention(
+    id: str | None = typer.Argument(None, help="Knowledge object ID to mention here"),
+    node_pos: str | None = typer.Argument("/@cursor", help=PIN_NODE),
+    extra_ids: list[str] = typer.Option([], "--id", "-i", help=PIN_EXTRA_IDS),
+    node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
+) -> None:
+    """Mention a KB object at this point — in context for one AI turn."""
+    _run_scoped("mention", id, node_pos, extra_ids, node_opt)
+
+
+@kb_app.command()
+def include(
+    id: str | None = typer.Argument(None, help="Knowledge object ID to include here"),
+    node_pos: str | None = typer.Argument("/@cursor", help=PIN_NODE),
+    extra_ids: list[str] = typer.Option([], "--id", "-i", help=PIN_EXTRA_IDS),
+    node_opt: str | None = typer.Option(None, "--node", "-n", help=PIN_NODE_OPT),
+) -> None:
+    """Include a KB object at this point — in context for the rest of the node."""
+    _run_scoped("include", id, node_pos, extra_ids, node_opt)
+
+
+def _run_scoped(
+    kind: MentionKind,
+    id: str | None,
+    node_pos: str | None,
+    extra_ids: list[str],
+    node_opt: str | None,
+) -> None:
+    verb = "Mentioned" if kind == "mention" else "Included"
+    try:
+        session = ProjectSession.from_cwd()
+        count, target_path, applies_now = pin_scoped(
+            session, kind, id, node_pos, extra_ids, node_opt
+        )
+        typer.echo(f"{verb} {count} object(s) at {target_path}")
+        if not applies_now:
+            typer.echo(
+                f"note: {target_path} is not the cursor — "
+                f"{kind}s are not inherited, so this takes effect only while "
+                "the cursor is in that node",
+                err=True,
+            )
+    except LensException as e:
+        if "invalid ID" in str(e) or "provide at least one" in str(e):
+            typer.echo(f"Error: {e}", err=True)
+        else:
+            typer.echo(f"lens pin kb {kind}: {e}", err=True)
         raise typer.Exit(1)
 
 

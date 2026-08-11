@@ -9,6 +9,7 @@ from pathlib import Path
 
 from lens.core.context import (
     CrawlResult,
+    CrawlSpec,
     SliceAnchor,
     collect_vars,
     spine_path,
@@ -574,7 +575,13 @@ class TestCrawlGraphExpansion(unittest.TestCase):
             self.assertNotIn("@visual.person-amy", content)
             self.assertTrue(any(e.kind == "kb-inline" for e in result.render_effects))
 
-    def test_reference_kb_mention_adds_relevant_knowledge(self) -> None:
+    def test_reference_kb_mention_in_task_adds_no_knowledge_block(self) -> None:
+        """A bare `@` in rendered text no longer pulls the object into context.
+
+        Scope is added by the ``[mention: …]: #`` annotation a command writes,
+        which expands at its own line — not by scanning rendered text, which
+        could never expire and invalidated the whole cacheable prefix.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root, node = _make_project(_init_repo(Path(tmp)))
             _add_kb(root, "person", "amy", "Amy is a hero.")
@@ -586,10 +593,10 @@ class TestCrawlGraphExpansion(unittest.TestCase):
                 instruction="Use @person.amy as context.",
             )
 
-            self.assertIn("RELEVANT KNOWLEDGE", msgs[1]["content"])
-            self.assertIn("KB['person.amy']", msgs[1]["content"])
+            self.assertNotIn("RELEVANT KNOWLEDGE", msgs[1]["content"])
+            self.assertNotIn("KB['person.amy']", msgs[1]["content"])
             self.assertIn("@person.amy", msgs[1]["content"])
-            self.assertTrue(any(e.kind == "kb-reference" for e in result.render_effects))
+            self.assertFalse(any(e.kind == "kb-reference" for e in result.render_effects))
 
     def test_rolls_in_kb_are_render_effects(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1006,6 +1013,84 @@ class TestAssembledKbSecretsAreModelForm(unittest.TestCase):
         self.assertIn("the blight is magical", messages[1]["content"])
 
 
+class TestCurrentPassageOverride(unittest.TestCase):
+    """An override replaces the passage, so nothing may be derived from the node.
+
+    `edit` / `collate` pass a slice of prose as the passage.  Deriving mentions
+    from the node's full text instead would inject a `state` object into
+    [LIVE STATE], and render effects claiming expansions, describing text the
+    prompt does not contain.
+    """
+
+    def _project(self, tmp: str):
+        root, node = _make_project(_init_repo(Path(tmp)))
+        _add_kb(root, "tracker", "combat", "Goblin HP 7/7")
+        _add_kb(root, "spell", "aid", "Aid raises hit point maximums.")
+        from lens.core.knowledge import KnowledgeStore
+        from lens.core.media import MediaService
+
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        KnowledgeStore.for_project(root).add_tags("tracker.combat", ["state"])
+        root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+        root_node.md_path().write_text(
+            "# test\n\nKira waits.\n\n"
+            "[mention: tracker.combat]: #\n\n[mention: spell.aid]: #\n"
+        )
+        subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", "mentions"], cwd=root, capture_output=True, check=True
+        )
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        return node
+
+    def test_override_suppresses_state_and_effects_from_the_node(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project(tmp)
+
+            result = crawl(
+                CrawlSpec.of(node, current_passage_override="Earlier prose only.")
+            )
+
+            self.assertEqual(result.state_pins, [])
+            self.assertEqual(
+                [e for e in result.render_effects if e.kind.startswith("kb-")], []
+            )
+            self.assertNotIn("KB['spell.aid']", result.current_content or "")
+
+    def test_override_still_expands_a_mention_it_contains(self) -> None:
+        """`explain --line` hands crawl a raw truncation and must get the pins."""
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project(tmp)
+
+            result = crawl(
+                CrawlSpec.of(
+                    node,
+                    current_passage_override="Kira waits.\n\n[mention: spell.aid]: #\n",
+                )
+            )
+
+            self.assertIn("KB['spell.aid']", result.current_content or "")
+            self.assertNotIn("[mention:", result.current_content or "")
+
+    def test_override_respects_pin_suppression(self) -> None:
+        """An already-pinned object must not be expanded a second time."""
+        with tempfile.TemporaryDirectory() as tmp:
+            node = self._project(tmp)
+
+            result = crawl(
+                CrawlSpec.of(
+                    node,
+                    extra_pins=["spell.aid"],
+                    current_passage_override="Kira waits.\n\n[mention: spell.aid]: #\n",
+                )
+            )
+
+            self.assertIn("spell.aid", result.pinned_ids)
+            self.assertNotIn("KB['spell.aid']", result.current_content or "")
+
+
 class TestStateTagTailRender(unittest.TestCase):
     """`state`-tagged KB objects render at the tail, not in RELEVANT KNOWLEDGE."""
 
@@ -1119,7 +1204,13 @@ class TestStateTagTailRender(unittest.TestCase):
         self.assertEqual(messages[-2]["content"], "The goblin parries.")
 
     def test_mentioned_state_object_also_diverts(self) -> None:
-        """A state object entering scope via `@` mention lands at the tail too."""
+        """A state object entering scope via a mention lands at the tail too.
+
+        Mentions normally expand in place, but a `state` object must not: its
+        content changes between beats, and inlining it would freeze a snapshot
+        into the append-only transcript.  It is diverted to [LIVE STATE] like
+        any other state object instead.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root, node = _make_project(_init_repo(Path(tmp)))
             _add_kb(root, "tracker", "combat", "Goblin HP 7/7")
@@ -1130,7 +1221,9 @@ class TestStateTagTailRender(unittest.TestCase):
             MediaService.clear_registry()
             KnowledgeStore.for_project(root).add_tags("tracker.combat", ["state"])
             root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
-            root_node.md_path().write_text("# test\n\nKira checks @tracker.combat now.\n")
+            root_node.md_path().write_text(
+                "# test\n\nKira checks the tracker now.\n[mention: tracker.combat]: #\n"
+            )
             subprocess.run(
                 ["git", "add", "-A"], cwd=root, capture_output=True, check=True
             )

@@ -134,6 +134,7 @@ from lens.core.context import (
     apply_transforms_to_result,
     assemble_prompt,
     crawl,
+    cursor_mention_renderer,
 )
 from lens.core.prompt_transforms import (
     PromptTransformContext,
@@ -141,6 +142,7 @@ from lens.core.prompt_transforms import (
     transform_prompt,
 )
 from lens.core.crawl_graph import ComponentSource, CrawlComponent, CrawlTransform
+from lens.core.crawl_transforms import AT_KB_RE
 from lens.core.dice import DiceError
 from lens.core.exceptions import OperatorError, ValidationError
 from lens.core.knowledge import KnowledgeStore
@@ -154,7 +156,9 @@ from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.operator_params import apply_pinned_invocation
 from lens.core.project import ProjectSession, resolve_address
+from lens.core.mentions import INCLUDE, MENTION, MENTION_KINDS
 from lens.core.storage import Storage
+from lens.core.storage_text import NormalizedStorageText
 from lens.core.modalities import (
     InlineGenerationResult,
     ModalityContext,
@@ -179,9 +183,6 @@ from lens.core.workflow_runner import (
 
 InlineGenerationOutcome = Literal["ok", "interrupted"]
 
-_AT_MENTION_RE = re.compile(
-    r"@([a-zA-Z0-9_-]+\.[a-zA-Z0-9_.-]+)(?=\s|$)", re.MULTILINE
-)
 _AT_NODE_SLICE_RE = re.compile(
     r"@((?:/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*|[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_-]+)*)@[0-9]+:[0-9]+)(?=\s|$)",
     re.MULTILINE,
@@ -706,7 +707,7 @@ class Operator(ABC):
         kb_store = KnowledgeStore.for_project(project_root)
         found: list[str] = []
         seen: set[str] = set()
-        for m in _AT_MENTION_RE.finditer(prompt):
+        for m in AT_KB_RE.finditer(prompt):
             cid = m.group(1)
             if cid in seen:
                 continue
@@ -714,6 +715,50 @@ class Operator(ABC):
             if kb_store.exists(cid):
                 found.append(cid)
         return found
+
+    @staticmethod
+    def mention_params(
+        prompt: str | None,
+        mentions: list[str] | None,
+        includes: list[str] | None,
+        *,
+        project_root: Path,
+    ) -> dict[str, list[str]]:
+        """Annotation params recording this invocation's mentions and includes.
+
+        Every ``@type.key`` in *prompt* is a one-turn mention, plus any explicit
+        ``--mention`` ids; ``--include`` ids are sticky for the rest of the node.
+        Each distinct id appears once, in first-occurrence order, so a message
+        naming three objects records three — and naming one twice records one.
+        """
+        mention_ids = Operator.merge_extra_pin_ids(
+            Operator.mention_pins(prompt, project_root), list(mentions or [])
+        )
+        include_ids = Operator.merge_extra_pin_ids(list(includes or []))
+        params: dict[str, list[str]] = {}
+        if mention_ids:
+            params[MENTION] = mention_ids
+        if include_ids:
+            params[INCLUDE] = include_ids
+        return params
+
+    @staticmethod
+    def pending_mentions_from_params(
+        params: dict[str, Any],
+    ) -> tuple[tuple[str, str], ...]:
+        """``(kind, id)`` pairs for an annotation that is not on disk yet.
+
+        A fresh inline generation persists its annotation only after the model
+        answers, so for that one turn the mention exists nowhere but in the
+        params about to be written.  On retry the annotation is already there
+        (``write_discard`` rewrites the tag before the crawl), so the on-disk
+        scan finds it and this is not used.
+        """
+        return tuple(
+            (kind, kid)
+            for kind in MENTION_KINDS
+            for kid in Operator.extract_list(params, kind)
+        )
 
     @classmethod
     def transform_storable_prompt(
@@ -1160,6 +1205,34 @@ class Operator(ABC):
         )
         return prepared_ctx, resolved
 
+    def passage_view(
+        self, crawl_result: CrawlResult, node: NarrativeNode
+    ) -> NormalizedStorageText:
+        """Cursor-node text as the model will see it, mentions expanded in place.
+
+        The turns path reads the node file again rather than the graph's
+        ``current_narrative`` component, so it has to apply the same expansion
+        :func:`~lens.core.context.crawl` applied — otherwise a mention would show
+        up in the single-turn rendering and vanish in the multi-turn one.  The
+        expanded buffer is never written; feeding it back through
+        ``normalize_raw_text`` keeps annotation line numbers and the disk-line
+        map describing the same text, which is all ``parse_passage_turns`` needs.
+        """
+        normalized = self.storage.normalize_path_text(node.md_path())
+        if crawl_result.project_root is None:
+            return normalized
+        expanded, _, _ = cursor_mention_renderer(
+            project_root=crawl_result.project_root,
+            storage=self.storage,
+            pinned_ids=crawl_result.pinned_ids,
+            pending_mentions=crawl_result.pending_mentions,
+        )(normalized.raw_storage_text)
+        if expanded == normalized.raw_storage_text:
+            return normalized
+        return self.storage.normalize_raw_text(
+            expanded, source_id=f"mentions:{node.path_str()}"
+        )
+
     def build_messages(
         self,
         crawl_result: CrawlResult,
@@ -1184,7 +1257,7 @@ class Operator(ABC):
         turns: list[tuple[str, str]] | None = None
         node = crawl_result.current_node
         if node is not None:
-            result = parse_passage_turns(self.storage.normalize_path_text(node.md_path()))
+            result = parse_passage_turns(self.passage_view(crawl_result, node))
             if result:
                 turns = result
         messages = assemble_prompt(
@@ -1216,6 +1289,8 @@ class Operator(ABC):
         llm_id: str | None,
         retry: bool,
         reasoning: str | None = None,
+        mentions: list[str] | None = None,
+        includes: list[str] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         extra_params: dict[str, Any] | None = None,
         cancel_event: asyncio.Event | None = None,
@@ -1230,6 +1305,11 @@ class Operator(ABC):
         *empty_prompt_ok* is for operators (e.g. play) that persist the user
         turn outside the annotation and call the LLM with instruction-only
         context; they pass ``prompt=None`` into this orchestrator.
+
+        *mentions* / *includes* are explicit ``--mention`` / ``--include`` ids;
+        every ``@type.key`` in *prompt* is a mention too.  Both are recorded on
+        the annotation this invocation writes, which is what puts them in
+        context — see :mod:`lens.core.mentions`.
 
         Returns :class:`WorkflowOutcome` when a multi-step workflow ran (write/play/chat).
 
@@ -1256,9 +1336,16 @@ class Operator(ABC):
             except DiceError as e:
                 raise ValidationError(str(e)) from e
 
-        mention_pins = cls.mention_pins(prompt, session.project_root)
-        if mention_pins:
-            pins = pins + mention_pins
+        # Mentions ride on the annotation this invocation writes rather than on
+        # `pins`: that is what gives them a position to expand at and a lifetime
+        # measured from it.  Threading them through `extra_params` puts them in
+        # `ann_params` for both the fresh and the retry path, and persists them
+        # in the open tag with no extra plumbing.
+        scoped = cls.mention_params(
+            prompt, mentions, includes, project_root=session.project_root
+        )
+        if scoped:
+            extra_params = {**(extra_params or {}), **scoped}
 
         async def run_generate() -> StepResult:
             gen = await cls._run_inline_generation(
@@ -1525,10 +1612,6 @@ class Operator(ABC):
         ann_line = cls.ann_line_for_append(current_text)
         owner = cls.owner_id(None, rel_path, line=ann_line)
 
-        mention_ids = cls.mention_pins(prompt, session.project_root)
-        if mention_ids:
-            existing_pins = cls.extract_list(ann_params, "kb_pin")
-            ann_params["kb_pin"] = existing_pins + mention_ids
         with_id = ann_params.get("with_kb_id")
         with_extra = (
             [str(with_id).strip()]
@@ -1542,12 +1625,11 @@ class Operator(ABC):
                 ann_params,
                 session=session,
                 narrative=narrative,
-                extra_pins=cls.merge_extra_pin_ids(
-                    list(pins), list(mention_ids), with_extra
-                ),
+                extra_pins=cls.merge_extra_pin_ids(list(pins), with_extra),
                 extra_unpins=unpins,
                 storage=crawl_storage,
                 participants=cls.participants_for_crawl(ann_params),
+                pending_mentions=cls.pending_mentions_from_params(ann_params),
             ),
             ann_params,
             session=session,
@@ -1756,13 +1838,10 @@ class Operator(ABC):
         try:
             op.write_discard(cursor, existing_ann, updated_params=new_params if params_changed else None)
 
-            mention_ids = cls.mention_pins(
-                new_params.get("prompt") if isinstance(new_params.get("prompt"), str) else None,
-                session.project_root,
-            )
-            if mention_ids:
-                existing_pins = cls.extract_list(new_params, "kb_pin")
-                new_params["kb_pin"] = existing_pins + mention_ids
+            # No pending mentions here: `write_discard` above rewrote the open
+            # tag with `new_params`, so the on-disk scan already sees them — and
+            # it emptied the body it is about to regenerate, so the turn that
+            # would have expired them no longer counts.
             with_id = new_params.get("with_kb_id")
             with_extra = (
                 [str(with_id).strip()]
@@ -1775,9 +1854,7 @@ class Operator(ABC):
                     new_params,
                     session=session,
                     narrative=narrative,
-                    extra_pins=cls.merge_extra_pin_ids(
-                        eff_pins, list(mention_ids), with_extra
-                    ),
+                    extra_pins=cls.merge_extra_pin_ids(eff_pins, with_extra),
                     extra_unpins=eff_unpins,
                     storage=op.storage,
                     participants=cls.participants_for_crawl(new_params),

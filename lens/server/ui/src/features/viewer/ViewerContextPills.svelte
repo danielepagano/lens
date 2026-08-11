@@ -2,6 +2,14 @@
   import type { Stats } from '../../services/api'
   import type { ParsedNodeHeader } from '../../utils/nodeHeaderBlock'
   import { explainRequest } from '../../stores/ui'
+  import {
+    contextSummaryParts,
+    cursorKbRows as buildCursorKbRows,
+    pillKey,
+    pillLabel,
+    pillTitle,
+    type KbPillRow,
+  } from './contextPillRows'
 
   type Props = {
     stats: Stats | null
@@ -13,7 +21,6 @@
     onOpenKb?: (id: string) => void
   }
 
-  type KbPillRow = { id: string; unpin: boolean }
   type ParamPillRow = { key: string; label: string }
 
   let {
@@ -36,15 +43,11 @@
     return statePins.has(id)
   }
 
-  /** One tooltip per pill, so the two decorations cannot fight over `title`. */
-  function pinTitle(id: string): string | undefined {
-    const lines: string[] = []
-    if (pinIsState(id)) {
-      lines.push('Live state — sent after the last turn, re-sent every beat')
-    }
-    const tags = rememberPins[id]
-    if (tags && tags.length > 0) lines.push(...tags)
-    return lines.length > 0 ? lines.join('\n') : undefined
+  function pinTitle(row: KbPillRow): string | undefined {
+    return pillTitle(row, {
+      isState: pinIsState,
+      rememberTags: (id) => rememberPins[id] ?? [],
+    })
   }
 
   function openKbItem(id: string) {
@@ -54,20 +57,6 @@
   /** Explain the cursor: no address means "wherever the cursor is right now". */
   function openContextReport() {
     explainRequest.set({})
-  }
-
-  function contextSummaryParts(
-    pinCount: number,
-    unpinCount: number,
-    varCount: number,
-    paramCount: number,
-  ): string[] {
-    const parts: string[] = []
-    if (pinCount) parts.push(`${pinCount} pin${pinCount === 1 ? '' : 's'}`)
-    if (unpinCount) parts.push(`${unpinCount} unpin${unpinCount === 1 ? '' : 's'}`)
-    if (varCount) parts.push(`${varCount} var${varCount === 1 ? '' : 's'}`)
-    if (paramCount) parts.push(`${paramCount} param${paramCount === 1 ? '' : 's'}`)
-    return parts
   }
 
   const hasHeaderKb = $derived(header.pins.length > 0 || header.unpins.length > 0)
@@ -86,15 +75,18 @@
     })),
   )
   const headerSummaryParts = $derived(
-    contextSummaryParts(
-      header.pins.length,
-      header.unpins.length,
-      header.varsEntries.length,
-      header.paramPills.length,
-    ),
+    contextSummaryParts({
+      pins: header.pins.length,
+      unpins: header.unpins.length,
+      vars: header.varsEntries.length,
+      params: header.paramPills.length,
+    }),
   )
 
   const cursorPins = $derived(stats?.effective_pins_at_cursor ?? [])
+  /** Node-local scope, listed after the pins it does not behave like. */
+  const cursorIncludes = $derived(stats?.include_ids_at_cursor ?? [])
+  const cursorMentions = $derived(stats?.mention_ids_at_cursor ?? [])
   const cursorVars = $derived(stats?.effective_vars_at_cursor ?? {})
   const cursorParams = $derived(stats?.effective_params_at_cursor ?? {})
   const cursorVarEntries = $derived(Object.entries(cursorVars).sort(([a], [b]) => a.localeCompare(b)))
@@ -104,18 +96,26 @@
   const hasCursorRollup = $derived(
     isCursorNode &&
       (cursorPins.length > 0 ||
+        cursorIncludes.length > 0 ||
+        cursorMentions.length > 0 ||
         cursorVarEntries.length > 0 ||
         cursorParamEntries.length > 0),
   )
 
-  const cursorKbRows = $derived.by((): KbPillRow[] =>
-    cursorPins.map((id) => ({ id, unpin: false as const })),
+  const cursorKbRows = $derived(
+    buildCursorKbRows(cursorPins, cursorIncludes, cursorMentions),
   )
   const cursorParamRows = $derived.by((): ParamPillRow[] =>
     cursorParamEntries.map(([pk, pv]) => ({ key: pk, label: `--${pk}=${pv}` })),
   )
   const cursorSummaryParts = $derived(
-    contextSummaryParts(cursorPins.length, 0, cursorVarEntries.length, cursorParamEntries.length),
+    contextSummaryParts({
+      pins: cursorPins.length,
+      vars: cursorVarEntries.length,
+      params: cursorParamEntries.length,
+      includes: cursorIncludes.length,
+      mentions: cursorMentions.length,
+    }),
   )
 </script>
 
@@ -124,20 +124,21 @@
   varEntries: [string, string][],
   paramRows: ParamPillRow[],
 )}
-  {#each kbRows as row, i (`${i}:${row.unpin ? `u:${row.id}` : row.id}`)}
+  {#each kbRows as row, i (pillKey(row, i))}
     <button
       type="button"
       class={[
         'pin-pill',
         {
           'pin-pill-unpin': row.unpin,
+          'pin-pill--scoped': Boolean(row.scope),
           'pin-pill--remember': pinHasRememberTargets(row.id),
-          'pin-pill--state': !row.unpin && pinIsState(row.id),
+          'pin-pill--state': !row.unpin && !row.scope && pinIsState(row.id),
         },
       ]}
-      title={pinTitle(row.id)}
+      title={pinTitle(row)}
       onclick={() => openKbItem(row.id)}
-    >{row.unpin ? `-${row.id}` : row.id}</button>
+    >{pillLabel(row)}</button>
   {/each}
   {#each varEntries as [k, v] (`${k}=${v}`)}
     <span class="pin-pill pin-pill-var">@var:{k}={v}</span>

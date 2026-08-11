@@ -174,9 +174,41 @@ Context assembly is the heart of Lens. Operators do not hand-craft prompts; they
 
 **Pins** answer: *for this scene, what facts should the model know?*
 
-`kb_pin` / `kb_unpin` on node front matter inherit root → cursor (deeper wins; unpins cancel ancestors, e.g. "we're having a moment, forget about the RPG rules"). Per-call pins and `@type.key` mentions add ephemeral scope. **Vars** (dynamic values you can insert by id) and **params** (pin operator parameters you don't want to specify all the time, like a custom reasoning level for this one node) inherit the same way — substitution and operator defaults without repeating configuration every invocation.
+`kb_pin` / `kb_unpin` on node front matter inherit root → cursor (deeper wins; unpins cancel ancestors, e.g. "we're having a moment, forget about the RPG rules"). **Vars** (dynamic values you can insert by id) and **params** (pin operator parameters you don't want to specify all the time, like a custom reasoning level for this one node) inherit the same way — substitution and operator defaults without repeating configuration every invocation.
 
 Pinning is how Lens keeps prompts small without losing fidelity: only objects declared in-frame enter context, plus their linked expansions when requested.
+
+### Mentions and includes: scope added mid-node, expanded in place
+
+A pin answers "what is true for this whole node". It is the wrong shape for "the spell I am casting right now". Two more scopes cover that, told apart by **where they were written**, not by what they mean — no judgment call, nothing for a dataset to prescribe:
+
+| Scope | Written | Lifetime | Renders |
+|---|---|---|---|
+| node pin | node front matter | whole node, inherited by children | `[RELEVANT KNOWLEDGE]` |
+| **include** | annotation mid-node | rest of the node, never inherited | **in place**, at its own line |
+| **mention** | annotation mid-node | one assistant turn | **in place**, then stops expanding |
+
+Both are written by a command — `--mention` / `--include` on `write`, `play`, `chat`, `design`, or `lens pin kb mention|include` at the cursor — as a markdown comment carrying one id, one line per id:
+
+```
+> [Kira] I cast @spell.aid on @pc.rowan
+[mention: spell.aid]: #
+[mention: pc.rowan]: #
+```
+
+Typing `@type.key` in a prompt is the shortcut that writes those lines; it is a one-turn mention. The `@` left in the prose is then completely inert, like `@roll` after it resolves — **the annotation is the only thing that adds scope**. That is what makes a mention in ancestor prose, dragged in by the spine crawl, do nothing.
+
+**Why in place rather than a knowledge block.** With multi-turn assembly (`lens/core/turns.py`) the transcript is append-only, so the cacheable prefix is not "end of the knowledge block", it is "end of the previous turn". The knowledge block is therefore the *worst* place for anything that changes per beat: adding one mention there rewrites the entire prefix, transcript included. Expanding at the mention's own line is append-only, so everything before it stays byte-identical — and it binds the reference to the line that motivated it, which reads better to a small model than the same text 15k tokens upstream.
+
+**Nothing is written into the node, and nothing counts down.** Expansion is render-time only: the renderer replaces the annotation with the same canonical `KB['type.key']` block the pinned path emits, so the model never learns a second format. Lifetime is computed from distance to the cursor in assistant turns (`lens/core/mentions.py`), never stored. That buys several properties at once: retry does not consume a mention (`write_discard` empties the turn being regenerated, so it stops counting); rewinding past an expiry restores it, because the annotation is still in the text and only the render decision changed; two clients agree; nothing drifts from git. Expired annotations are deliberately **not** cleaned up — their persistence is what makes rewind work.
+
+Expiry cost also scales the right way, which is why there is no configurable TTL: a one-turn mention expires while it is still one turn from the tail, so the invalidation covers almost nothing, and an include never expires, so it never invalidates. If an object matters again, mention it again.
+
+**Node-local in both directions.** An include or mention expands only in the node it was written into, and only while that node is the cursor: it does not reach down into a child, and it does not reach up from an ancestor (ancestors render as stripped summaries). Because these sit at a node's tail, the cursor scan has to *skip* them rather than merely not recognise them — a scan that returns "no open annotation" for one written above an open session silently moves the cursor out of that session (`parse_tail_cursor_annotation`, `lens/core/annotations.py`).
+
+**Sub-nodes take pins only.** Includes and mentions are cursor-node-local and never inherited — a sub-node starts a fresh cache prefix anyway, and re-declaring is one line of front matter. This keeps the ancestor walk untouched and removes any question about what an expired mention in a parent means. It also gives the private-conversation mechanic for free: open a sub-node, don't pin `rules.system`, and talk without the ruleset in context.
+
+One exception, and it is the object's property rather than the mention's: an object tagged `state` is never inlined. Its content changes between beats, so it is diverted to `[LIVE STATE]` at the tail like any other state object (see below) instead of being frozen into the transcript.
 
 ### Crawl
 
@@ -223,7 +255,7 @@ Some objects are the opposite. An initiative tracker, a live mood, a scratchpad 
 
 Tagging an object **`state`** diverts it to the **tail** — after the last transcript turn, immediately before `[TASK]`. Both pressures agree on that slot: the object costs only its own tokens uncached per beat (a cost that is unavoidable, because the content genuinely changed), and live state is the most decision-relevant material in the prompt.
 
-Mutability is a property of the **object**, not of how it entered scope, so the divert is orthogonal to pinning. It applies identically whether the object arrived as an ancestor front-matter pin, a session module, a rules companion, or an `@` mention — one pass over the finished render graph (`_divert_state_components`, `lens/core/context.py`), running after id dedup so an object that is both pinned and mentioned still lands exactly once. `expansion_policy_from_tags` is the existing precedent for tags driving render behaviour.
+Mutability is a property of the **object**, not of how it entered scope, so the divert is orthogonal to pinning. It applies identically whether the object arrived as an ancestor front-matter pin, a session module, a rules companion, or a mention — one pass over the finished render graph (`_divert_state_components`, `lens/core/context.py`), running after id dedup so an object that is both pinned and mentioned still lands exactly once. A mention of a state object is the one case that does *not* expand in place: `render_mentions_in_place` hands the id back for the divert instead of inlining a snapshot into the transcript. `expansion_policy_from_tags` is the existing precedent for tags driving render behaviour.
 
 Nothing gains write powers here. State objects are player-maintained; `play` still only appends narrative. The user is responsible for keeping them accurate across rollback, retry, and rewind — the same discipline already applied to a character sheet.
 
@@ -231,7 +263,7 @@ Nothing gains write powers here. State objects are player-maintained; `play` sti
 
 ### Inspecting the composition
 
-Curation only beats retrieval if you can see the curation. `lens explain` (and `GET /{slug}/explain`) assembles the prompt at a cursor exactly as the operator would — same crawl spec, same modality pins, same render transforms — and then reports it instead of sending it: every component with the block it lands in, its bytes and estimated tokens, its share of the total, and why it is there (a pin on a named ancestor, a `+` expansion, an `@` mention, a rules companion, a session module, a modality). Totals are given per block and overall.
+Curation only beats retrieval if you can see the curation. `lens explain` (and `GET /{slug}/explain`) assembles the prompt at a cursor exactly as the operator would — same crawl spec, same modality pins, same render transforms — and then reports it instead of sending it: every component with the block it lands in, its bytes and estimated tokens, its share of the total, and why it is there (a pin on a named ancestor, a `+` expansion, a rules companion, a session module, a modality). Totals are given per block and overall. An include or mention expanded in place gets its **own row** inside the passage or conversation block it landed in: the narrative row is split around it, so the pieces still sum to the block exactly and the object can be compared against the pins and turns around it.
 
 This makes pin curation an engineering activity rather than a vibe: a stat block costing 400 tokens in a scene it no longer belongs to is visible, not inferred. The command is read-only by construction — no transaction, no model call, so it works with no LLM configured. Token counts are an estimate (bytes over a fixed divisor); byte counts are exact.
 
@@ -368,7 +400,7 @@ Separately, there are post-generation behaviors (post-processing and refine pass
 
 | Mechanism | What it changes |
 |-----------|-----------------|
-| `@` storable pre-pass | `transform_prompt(..., STORABLE)` on prompts stored in narrative or fed into `crawl()` — vars, inline-tag KB, rolls, `@now`; KB `@` mostly survives for `mention_pins`. Applied automatically via `Operator.run_inline` / `transform_storable_prompt`. |
+| `@` storable pre-pass | `transform_prompt(..., STORABLE)` on prompts stored in narrative or fed into `crawl()` — vars, inline-tag KB, rolls, `@now`; KB `@` survives for `mention_pins`, which turns it into a mention annotation. Applied automatically via `Operator.run_inline` / `transform_storable_prompt`. |
 | `@` render (crawl graph) | `AtExpansionTransform` during `assemble_prompt` — reference KB blocks, slices, tag policy. Automatic for all crawl-based `LlmRun` paths. |
 | `@` flat (no crawl) | `transform_prompt(..., FLAT)` — force-inline all `@` in one string (e.g. `media generate`). |
 | `edit` mutation | Existing prose via staged claim + replacement |

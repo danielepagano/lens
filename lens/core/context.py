@@ -12,7 +12,7 @@ participants, current-passage override). :func:`crawl` returns a
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, cast
@@ -162,6 +162,10 @@ def _empty_params() -> dict[str, Any]:
     return {}
 
 
+def _empty_mention_tuple() -> tuple[tuple[str, str], ...]:
+    return ()
+
+
 @dataclass(frozen=True)
 class CrawlSpec:
     """Frozen description of what to crawl.
@@ -194,6 +198,16 @@ class CrawlSpec:
     operator_params: dict[str, Any] = field(default_factory=_empty_params)
     session: Any | None = None
     narrative: NarrativeNode | None = None
+    pending_mentions: tuple[tuple[str, str], ...] = field(
+        default_factory=_empty_mention_tuple
+    )
+    """``(kind, kb_id)`` mentions written by *this* invocation but not yet on disk.
+
+    A fresh inline generation persists its annotation only after the model
+    answers, so for exactly one turn the mention exists nowhere but here.  They
+    render at the end of the cursor passage — byte-identical to where the
+    persisted annotation lands, so the next beat reads it off disk unchanged.
+    """
 
     @classmethod
     def of(cls, node: NarrativeNode, **kwargs: Any) -> CrawlSpec:
@@ -262,6 +276,7 @@ class CrawlResult:
         "render_graph",
         "modality_resolution",
         "modality_context",
+        "pending_mentions",
     )
 
     def __init__(
@@ -271,11 +286,15 @@ class CrawlResult:
         project_root: Path | None = None,
         current_node: NarrativeNode | None = None,
         render_effects: tuple[RenderEffect, ...] = (),
+        pending_mentions: tuple[tuple[str, str], ...] = (),
     ) -> None:
         self.graph: CrawlGraph = graph
         self.project_root = project_root
         self.current_node = current_node
         self.render_effects = render_effects
+        # Carried from the spec so the turns path in ``Operator.build_messages``
+        # renders the cursor node exactly as ``crawl`` rendered it here.
+        self.pending_mentions = pending_mentions
         # Set by assemble_prompt(): the post-transform graph that produced the
         # messages, kept so read-only consumers (``lens explain``) can report
         # exactly what was rendered without re-assembling it themselves.
@@ -605,14 +624,121 @@ def spine_path(
     return path
 
 
+CursorMentionRenderer = Callable[[str], "tuple[str, list[str], list[Any]]"]
+"""Renders the cursor node's raw text with live mentions expanded in place.
+
+Returns ``(expanded_text, state_tagged_ids, expansions)`` — see
+:func:`~lens.core.mentions.render_mentions_in_place`.
+"""
+
+
+def cursor_mention_renderer(
+    *,
+    project_root: Path,
+    storage: Storage,
+    pinned_ids: Sequence[str],
+    pending_mentions: Sequence[tuple[str, str]] = (),
+) -> CursorMentionRenderer:
+    """Build the renderer used by :func:`crawl` and ``Operator.build_messages``.
+
+    Both must expand identically — one builds the ``[CURRENT PASSAGE]``
+    component, the other re-parses the same node into conversation turns — so
+    they share this factory rather than each assembling the arguments.
+    """
+    from lens.core.mentions import MentionRef, render_mentions_in_place
+
+    pending = tuple(
+        MentionRef(kind=cast(Any, kind), kb_id=kb_id, line=_PENDING_MENTION_LINE)
+        for kind, kb_id in pending_mentions
+    )
+
+    def render(raw: str) -> tuple[str, list[str], list[Any]]:
+        return render_mentions_in_place(
+            raw,
+            project_root=project_root,
+            storage=storage,
+            pinned_ids=pinned_ids,
+            pending=pending,
+        )
+
+    return render
+
+
+_PENDING_MENTION_LINE = 1 << 30
+"""Any line past the end of the buffer; ``render_mentions_in_place`` clamps it
+to end-of-text, which is where the annotation will be persisted."""
+
+
+def _add_mention_state_components(
+    graph: CrawlGraph,
+    state_ids: Sequence[str],
+    *,
+    project_root: Path,
+    storage: Storage,
+) -> None:
+    """Add `state`-tagged mentions as components so they render at the tail.
+
+    A mentioned object tagged ``state`` is deliberately *not* inlined into the
+    passage: its content changes between beats, and inlining would freeze a
+    snapshot into the append-only transcript — the exact cost tagging it
+    ``state`` asks Lens to avoid.  Added here as an ordinary knowledge
+    component, it is picked up by :func:`_divert_state_components` at render
+    time and lands in ``[LIVE STATE]`` before ``[TASK]`` like any other.
+    """
+    if not state_ids:
+        return
+    kb_store = KnowledgeStore.for_project(project_root)
+    objects = kb_store.get_objects(list(state_ids))
+    for kb_id in state_ids:
+        obj = objects.get(kb_id) or objects.get(kb_id.lower())
+        component_id = f"mention-kb:{kb_id}"
+        if obj is None or graph.component_by_id(component_id) is not None:
+            continue
+        graph.add_component(
+            CrawlComponent(
+                id=component_id,
+                kind="knowledge",
+                text=storage.format_kb_prompt_block(
+                    canonical_id=obj.id,
+                    text=obj.text,
+                    tags=obj.tags,
+                    include_comments=False,
+                    source_id=f"mention:{obj.id}",
+                ),
+                source=ComponentSource(kind="knowledge", identifier=obj.id),
+                priority=len(graph.components),
+                metadata={
+                    "kb_id": obj.id,
+                    "tags": ",".join(obj.tags),
+                    "expansion_policy": "reference",
+                    "mention_scope": "state",
+                },
+            )
+        )
+        if obj.id not in graph.pinned_ids:
+            graph.pinned_ids.append(obj.id)
+
+
 def _collect_spine_narrative(
-    anchor: SliceAnchor, cursor_node: NarrativeNode, *, storage: Storage
-) -> tuple[list[str], str | None]:
-    """Collect narrative text along the spine from *anchor* to *cursor_node*."""
+    anchor: SliceAnchor,
+    cursor_node: NarrativeNode,
+    *,
+    storage: Storage,
+    expand_cursor: CursorMentionRenderer | None = None,
+) -> tuple[list[str], str | None, list[str], list[Any]]:
+    """Collect narrative text along the spine from *anchor* to *cursor_node*.
+
+    Returns ``(previous_summaries, current_content, state_mention_ids, expansions)``.
+    *expand_cursor* renders mentions in place, and only ever runs on the cursor
+    node: includes and mentions are node-local and never inherited, so ancestor
+    prose on the spine is stripped exactly as before.
+    """
     path = spine_path(anchor.node, cursor_node)
 
     previous_summaries: list[str] = []
     current_content: str | None = None
+    state_mention_ids: list[str] = []
+    expansions: list[Any] = []
 
     for node in path:
         if not node.exists():
@@ -623,16 +749,20 @@ def _collect_spine_narrative(
             lines = text.split("\n")
             text = "\n".join(lines[anchor.line_end - 1 :])
 
+        is_cursor = node.key_path == cursor_node.key_path
+        if is_cursor and expand_cursor is not None:
+            text, state_mention_ids, expansions = expand_cursor(text)
+
         stripped = storage.normalize_raw_text(text).strip_comments_text
         if not stripped.strip():
             continue
 
-        if node.key_path == cursor_node.key_path:
+        if is_cursor:
             current_content = stripped
         else:
             previous_summaries.append(stripped)
 
-    return previous_summaries, current_content
+    return previous_summaries, current_content, state_mention_ids, expansions
 
 
 def _narrative_component(
@@ -799,12 +929,31 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
         _remember_pins_subset(project_root, pinned_ids) if spec.include_kb else {}
     )
 
+    # Includes and mentions expand in place, in the cursor node only, so this
+    # renderer is built after pins resolve (already-pinned ids are suppressed)
+    # and never runs on ancestor prose.
+    expand_cursor: CursorMentionRenderer | None = None
+    if spec.include_narrative:
+        expand_cursor = cursor_mention_renderer(
+            project_root=project_root,
+            storage=local_storage,
+            pinned_ids=pinned_ids,
+            pending_mentions=spec.pending_mentions,
+        )
+
     previous_components: list[CrawlComponent] = []
     current_component: CrawlComponent | None = None
+    state_mention_ids: list[str] = []
+    mention_expansions: list[Any] = []
     if spec.include_narrative:
         if spec.anchor is not None:
-            previous_summaries, current_content = _collect_spine_narrative(
-                spec.anchor, node, storage=local_storage
+            previous_summaries, current_content, state_mention_ids, mention_expansions = (
+                _collect_spine_narrative(
+                    spec.anchor,
+                    node,
+                    storage=local_storage,
+                    expand_cursor=expand_cursor,
+                )
             )
             path = spine_path(spec.anchor.node, node)
             previous_index = 0
@@ -847,9 +996,19 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
                     )
             current_node_anc = ancestors[-1]
             if current_node_anc.exists():
-                stripped = local_storage.normalize_path_text(
+                normalized = local_storage.normalize_path_text(
                     current_node_anc.md_path()
-                ).strip_comments_text
+                )
+                stripped = normalized.strip_comments_text
+                if expand_cursor is not None:
+                    expanded, state_mention_ids, mention_expansions = expand_cursor(
+                        normalized.raw_storage_text
+                    )
+                    if expanded != normalized.raw_storage_text:
+                        stripped = local_storage.normalize_raw_text(
+                            expanded,
+                            source_id=f"mentions:{current_node_anc.path_str()}",
+                        ).strip_comments_text
                 if stripped.strip():
                     current_component = _narrative_component(
                         node=current_node_anc,
@@ -859,15 +1018,33 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
                     )
 
     if spec.current_passage_override is not None:
+        # The override *replaces* the passage, so anything derived from the
+        # node's own text no longer describes what is being sent — deriving it
+        # there would put a `state` mention into [LIVE STATE], and effects
+        # claiming expansions, for text the prompt never contains.  Re-deriving
+        # from the override keeps the two in step: `edit` / `collate` pass
+        # comment-stripped text, where this finds nothing and is a no-op, while
+        # `explain --line` passes a raw truncation and gets the same expansion
+        # (and the same pin suppression) the un-truncated path would give it.
         override_text = spec.current_passage_override
+        state_mention_ids, mention_expansions = [], []
         if override_text:
-            current_component = _override_current_component(
+            if expand_cursor is not None:
+                override_text, state_mention_ids, mention_expansions = expand_cursor(
+                    override_text
+                )
+            override_text = local_storage.normalize_raw_text(
+                override_text
+            ).strip_comments_text
+        current_component = (
+            _override_current_component(
                 text=override_text,
                 project_root=project_root,
                 priority=len(previous_components),
             )
-        else:
-            current_component = None
+            if override_text.strip()
+            else None
+        )
 
     current_node = ancestors[-1] if ancestors[-1].exists() else None
     graph = _build_base_graph(
@@ -879,6 +1056,22 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
         remember_pins=remember_pins,
     )
     graph.vars.update(_collect_vars(ancestors))
+    _add_mention_state_components(
+        graph, state_mention_ids, project_root=project_root, storage=local_storage
+    )
+    for expansion in mention_expansions:
+        # The block is spliced into the passage rather than added as its own
+        # component, so this effect is the only trace that it happened — and
+        # `lens explain` needs it to answer "did my mention land".
+        graph.add_effect(
+            RenderEffect(
+                kind=f"kb-{expansion.kind}",
+                token=expansion.kb_id,
+                result=str(expansion.bytes),
+                source_component_id=graph.current_node_component_id or "",
+                details={"text": expansion.text},
+            )
+        )
 
     if spec.participants:
         ParticipantTransform(participants=dict(spec.participants)).apply(graph)
@@ -898,6 +1091,7 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
         project_root=project_root,
         current_node=current_node,
         render_effects=tuple(graph.effects),
+        pending_mentions=spec.pending_mentions,
     )
     if modality_resolution is not None and modality_context is not None:
         from lens.core.modalities.apply import attach_modality_resolution_to_crawl

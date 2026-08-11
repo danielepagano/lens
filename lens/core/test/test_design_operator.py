@@ -667,8 +667,12 @@ class TestDesignEnd(unittest.TestCase):
 
 
 class TestDesignMentionExpansion(unittest.TestCase):
-    def test_mention_in_fresh_prompt_pins_kb_object(self) -> None:
-        """@type.key mentions in prompts must be stored on the operator annotation (not node front matter)."""
+    def test_mention_in_fresh_prompt_is_recorded_on_the_annotation(self) -> None:
+        """@type.key in a prompt records a one-turn mention on the operator annotation.
+
+        Not node front matter: a front-matter pin would outlive the beat it was
+        asked for and survive a rewind of the prose that motivated it.
+        """
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             (root / "knowledge" / "npc").mkdir(parents=True, exist_ok=True)
@@ -682,10 +686,11 @@ class TestDesignMentionExpansion(unittest.TestCase):
             self.assertNotIn("npc.smith", fm.get("kb_pin", []))
             anns = [a for a in parse_annotations(text) if a.operator == "design" and not a.closing]
             self.assertTrue(anns)
-            self.assertIn("npc.smith", anns[-1].params.get("kb_pin", []))
+            self.assertEqual(anns[-1].params.get("mention"), ["npc.smith"])
+            self.assertNotIn("npc.smith", anns[-1].params.get("kb_pin", []))
 
-    def test_mention_in_continuation_prompt_pins_kb_object(self) -> None:
-        """@type.key mentions in continuation prompts must be stored on the operator annotation (not node front matter)."""
+    def test_mention_in_continuation_prompt_is_recorded_on_the_annotation(self) -> None:
+        """Same for a continuation prompt inside an open session."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
             (root / "knowledge" / "npc").mkdir(parents=True, exist_ok=True)
@@ -703,18 +708,23 @@ class TestDesignMentionExpansion(unittest.TestCase):
             self.assertNotIn("npc.smith", fm.get("kb_pin", []))
             anns = [a for a in parse_annotations(text) if a.operator == "design" and not a.closing]
             self.assertTrue(anns)
-            self.assertIn("npc.smith", anns[-1].params.get("kb_pin", []))
+            self.assertEqual(anns[-1].params.get("mention"), ["npc.smith"])
+            self.assertNotIn("npc.smith", anns[-1].params.get("kb_pin", []))
 
-    def test_nonexistent_mention_not_pinned(self) -> None:
-        """@ mentions for KB objects that don't exist must not be pinned."""
+    def test_nonexistent_mention_is_not_recorded(self) -> None:
+        """@ mentions for KB objects that do not exist record nothing."""
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
             _run_design(root, narrative, prompt="Design @npc.ghost who does not exist")
 
             cursor = narrative.find_cursor()
-            fm = parse_front_matter(cursor.md_path().read_text(encoding="utf-8"))
+            text = cursor.md_path().read_text(encoding="utf-8")
+            fm = parse_front_matter(text)
             self.assertNotIn("npc.ghost", fm.get("kb_pin", []))
+            anns = [a for a in parse_annotations(text) if a.operator == "design" and not a.closing]
+            self.assertTrue(anns)
+            self.assertNotIn("mention", anns[-1].params)
 
 
 # ---------------------------------------------------------------------------
