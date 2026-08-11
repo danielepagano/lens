@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 class WriteOperator(Operator):
     name: ClassVar[str] = "write"
     requires_id: ClassVar[bool] = False
+    supports_module_requests: ClassVar[bool] = True
 
     @property
     def system_prompt(self) -> str:

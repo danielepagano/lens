@@ -157,6 +157,13 @@ from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.operator_params import apply_pinned_invocation
 from lens.core.project import ProjectSession, resolve_address
 from lens.core.mentions import INCLUDE, MENTION, MENTION_KINDS
+from lens.core.module_requests import (
+    UNLOGGED_MODULE_TOOLS,
+    ModuleRequestSink,
+    build_module_request_bundle,
+    module_task_hint,
+    unloaded_modules,
+)
 from lens.core.storage import Storage
 from lens.core.storage_text import NormalizedStorageText
 from lens.core.modalities import (
@@ -281,6 +288,18 @@ class Operator(ABC):
     """Modality ids always active for this operator (plus default stack)."""
 
     use_command_tools: ClassVar[bool] = False
+
+    supports_module_requests: ClassVar[bool] = False
+    """Whether this operator can be given model-requested modules.
+
+    True only for operators whose generation goes through the base inline flow
+    (:meth:`_do_fresh_inline` / :meth:`_do_continue` / :meth:`_do_retry`), because
+    that is what passes a :class:`~lens.core.module_requests.ModuleRequestSink`
+    and persists the resulting ``include`` above the block.  It gates the task
+    hint as well as the tool, so an operator can never be told to call a tool it
+    was not given — an operator with its own generation path (``chat``,
+    ``design``, ``advance``, ``edit``) must pass a sink before flipping this.
+    """
     """Whether to expose KB command tools (kb_get, kb_with_tag) to the LLM.
 
     Operators opt in by setting this to ``True``.  Only planning operators
@@ -853,6 +872,7 @@ class Operator(ABC):
         reasoning: str | None = None,
         tools: list[dict[str, Any]] | None = None,
         command_tool_handlers: dict[str, CommandToolFn] | None = None,
+        unlogged_tool_names: frozenset[str] = frozenset(),
     ) -> GenerationArtifacts:
         """Stream LLM output and return structured generation artifacts."""
         return await run_llm(
@@ -866,6 +886,7 @@ class Operator(ABC):
                 on_token=on_token,
                 operator_name=operator_name,
                 reasoning=reasoning,
+                unlogged_tool_names=unlogged_tool_names,
             ),
         )
 
@@ -942,6 +963,7 @@ class Operator(ABC):
         content: str = "",
         *,
         verbatim_prefix: str = "",
+        pre_tag_text: str = "",
         artifacts: GenerationArtifacts | None = None,
     ) -> None:
         """Atomically write an open tag, generated content, and close tag to the node.
@@ -949,6 +971,8 @@ class Operator(ABC):
         Pass *artifacts* from :func:`~lens.core.llm_run.run_llm` (composed per
         operator policy) or plain *content* string. *verbatim_prefix* is
         user-authored text prepended unchanged (e.g. chat scene).
+        *pre_tag_text* lands **outside** the block, above the open tag — see
+        :meth:`_with_pre_tag`.
         """
         if artifacts is not None:
             content = compose_for_operator(artifacts, self.__class__.name)
@@ -958,8 +982,32 @@ class Operator(ABC):
         sep = "\n" if current.endswith("\n") else "\n\n"
         close_tag = self.build_close_tag(None)
         self.storage.write_file(
-            md, current + sep + tag + "\n\n" + body.rstrip() + "\n\n" + close_tag + "\n"
+            md,
+            current
+            + sep
+            + self._with_pre_tag(pre_tag_text, tag)
+            + "\n\n"
+            + body.rstrip()
+            + "\n\n"
+            + close_tag
+            + "\n",
         )
+
+    @staticmethod
+    def _with_pre_tag(pre_tag_text: str, tag: str) -> str:
+        """Put *pre_tag_text* on its own lines immediately above the open *tag*.
+
+        Used for ``include`` annotations the model earned mid-generation.  Above
+        the tag rather than inside the block on purpose: :meth:`write_discard`
+        truncates from the tag line down, so a retry keeps the include and the
+        model does not have to spend another tool call re-loading a module it
+        already asked for.  A blank line either side keeps the reference-style
+        comment at the start of its own block, where markdown hides it.
+        """
+        block = pre_tag_text.strip()
+        if not block:
+            return tag
+        return f"{block}\n\n{tag}"
 
     def write_append(
         self,
@@ -968,15 +1016,22 @@ class Operator(ABC):
         new_content: str = "",
         *,
         verbatim_prefix: str = "",
+        pre_tag_text: str = "",
         artifacts: GenerationArtifacts | None = None,
     ) -> None:
-        """Preserve existing content, append new content before close tag."""
+        """Preserve existing content, append new content before close tag.
+
+        *pre_tag_text* is inserted above the open tag, outside the block — see
+        :meth:`_with_pre_tag`.
+        """
         if artifacts is not None:
             new_content = compose_for_operator(artifacts, self.__class__.name)
         new_content = verbatim_prefix + new_content if verbatim_prefix else new_content
         md = node.md_path()
         text = md.read_text(encoding="utf-8")
-        new_tag = self.build_open_tag(ann.id, dict(ann.params) or None)
+        new_tag = self._with_pre_tag(
+            pre_tag_text, self.build_open_tag(ann.id, dict(ann.params) or None)
+        )
         close_tag = self.build_close_tag(ann.id)
 
         close_ann: ParsedAnnotation | None = None
@@ -1118,8 +1173,17 @@ class Operator(ABC):
         ctx: ModalityContext,
         project_root: Path,
         params: dict[str, Any],
+        *,
+        module_sink: ModuleRequestSink | None = None,
     ) -> tuple[list[dict[str, Any]] | None, dict[str, CommandToolFn] | None]:
-        """Operator command tools plus active modality tools."""
+        """Operator command tools, registered modules, and active modality tools.
+
+        *module_sink* opts this generation into model-requested modules (see
+        :mod:`lens.core.module_requests`).  Pass one from any path that can
+        persist the resulting ``include`` annotations; omit it and no module tool
+        is offered, because a module loaded with nowhere to latch would have to
+        be requested again on the very next beat.
+        """
         tools_payload: list[dict[str, Any]] | None = None
         command_handlers: dict[str, CommandToolFn] | None = None
         override = cls._inline_command_tools_bundle(project_root, params)
@@ -1130,6 +1194,15 @@ class Operator(ABC):
             bundle = build_command_tools_bundle(project_root)
             tools_payload = bundle.tools
             command_handlers = bundle.handlers
+        if module_sink is not None and cls.supports_module_requests:
+            modules = build_module_request_bundle(
+                unloaded_modules(project_root, cls.name, ctx.crawl_result),
+                module_sink,
+                project_root,
+            )
+            if modules is not None and modules.tools and modules.handlers:
+                tools_payload = [*(tools_payload or []), *modules.tools]
+                command_handlers = {**(command_handlers or {}), **modules.handlers}
         return merge_modality_command_tools(
             tools_payload, command_handlers, resolved, ctx
         )
@@ -1233,6 +1306,32 @@ class Operator(ABC):
             expanded, source_id=f"mentions:{node.path_str()}"
         )
 
+    def append_module_hint(self, crawl_result: CrawlResult, instruction: str) -> str:
+        """Append the list of still-unloaded modules to this operator's task.
+
+        Mirrors the ``load_module`` catalog: same source, same filter, and the same
+        :attr:`supports_module_requests` gate, so the task can never advertise a
+        module the tool will not accept — or a tool this operator was not given.
+        Lands at the tail of ``[TASK]`` rather than in the system prompt: the
+        system prompt is the cacheable part, and this list changes the moment a
+        module latches.
+
+        The catalog is read from the crawl as it stands when the request is
+        built, which is before modality transforms run.  A transform that pins a
+        registered module (a rules companion, say) would therefore leave it on
+        the menu for one beat; the cost is a redundant fetch, not a duplicated
+        block, because the pin suppresses the include's expansion.
+        """
+        project_root = crawl_result.project_root
+        if project_root is None or not self.supports_module_requests:
+            return instruction
+        hint = module_task_hint(
+            unloaded_modules(project_root, self.name, crawl_result), project_root
+        )
+        if not hint:
+            return instruction
+        return f"{instruction.rstrip()}\n\n{hint}"
+
     def build_messages(
         self,
         crawl_result: CrawlResult,
@@ -1253,7 +1352,7 @@ class Operator(ABC):
         if resolved_modalities is not None:
             resolved = resolved_modalities
         apply_modality_crawl(crawl_result, resolved, ctx)
-        instruction = self.build_instruction(params)
+        instruction = self.append_module_hint(crawl_result, self.build_instruction(params))
         turns: list[tuple[str, str]] | None = None
         node = crawl_result.current_node
         if node is not None:
@@ -1412,6 +1511,7 @@ class Operator(ABC):
                     pending.tag,
                     artifacts=pending.artifacts,
                     verbatim_prefix=pending.verbatim_prefix,
+                    pre_tag_text=pending.pre_tag_text,
                 )
             else:
                 assert pending.existing_ann is not None
@@ -1420,6 +1520,7 @@ class Operator(ABC):
                     pending.existing_ann,
                     artifacts=pending.artifacts,
                     verbatim_prefix=pending.verbatim_prefix,
+                    pre_tag_text=pending.pre_tag_text,
                 )
             runner.clear_inline_modality_state()
             return StepResult(ok=True)
@@ -1644,8 +1745,9 @@ class Operator(ABC):
 
         artifacts = GenerationArtifacts()
 
+        module_sink = ModuleRequestSink()
         tools_payload, command_handlers = cls.merge_command_tools_for_generation(
-            resolved, ctx, session.project_root, ann_params
+            resolved, ctx, session.project_root, ann_params, module_sink=module_sink
         )
 
         try:
@@ -1664,6 +1766,7 @@ class Operator(ABC):
                     modality_context=ctx,
                     on_token=on_token,
                     cancel_event=cancel_event,
+                    unlogged_tool_names=UNLOGGED_MODULE_TOOLS,
                 ),
             )
         except LLMError as e:
@@ -1685,6 +1788,7 @@ class Operator(ABC):
             owner=owner,
             narrative=narrative,
             operator_name=cls.name,
+            pre_tag_text=module_sink.include_annotations(),
         )
         return InlineGenerationResult(
             outcome="ok",
@@ -1742,8 +1846,9 @@ class Operator(ABC):
             narrative=narrative,
             resolved_modalities=resolved,
         )
+        module_sink = ModuleRequestSink()
         cont_tools, cont_handlers = cls.merge_command_tools_for_generation(
-            resolved, ctx, session.project_root, ann_dict
+            resolved, ctx, session.project_root, ann_dict, module_sink=module_sink
         )
 
         try:
@@ -1757,6 +1862,7 @@ class Operator(ABC):
                 reasoning=ann_reasoning,
                 tools=cont_tools,
                 command_tool_handlers=cont_handlers,
+                unlogged_tool_names=UNLOGGED_MODULE_TOOLS,
             )
         except LLMError as e:
             raise OperatorError(f"LLM error: {e}") from e
@@ -1775,7 +1881,12 @@ class Operator(ABC):
             on_token=on_token,
             cancel_event=cancel_event,
         )
-        op.write_append(cursor, existing_ann, artifacts=artifacts)
+        op.write_append(
+            cursor,
+            existing_ann,
+            artifacts=artifacts,
+            pre_tag_text=module_sink.include_annotations(),
+        )
         print(f"Continued writing in {cursor.path_str()}", file=sys.stderr)
 
     @classmethod
@@ -1899,15 +2010,9 @@ class Operator(ABC):
                 else:
                     messages.extend(build_feedback_messages(previous_content, feedback, session.project_root))
 
-            retry_override = cls._inline_command_tools_bundle(
-                session.project_root, new_params
-            )
-            retry_tools = retry_override.tools if retry_override is not None else None
-            retry_handlers = (
-                retry_override.handlers if retry_override is not None else None
-            )
-            retry_tools, retry_handlers = merge_modality_command_tools(
-                retry_tools, retry_handlers, resolved, ctx
+            module_sink = ModuleRequestSink()
+            retry_tools, retry_handlers = cls.merge_command_tools_for_generation(
+                resolved, ctx, session.project_root, new_params, module_sink=module_sink
             )
 
             artifacts = await cls.stream_output(
@@ -1920,6 +2025,7 @@ class Operator(ABC):
                 reasoning=eff_reasoning,
                 tools=retry_tools,
                 command_tool_handlers=retry_handlers,
+                unlogged_tool_names=UNLOGGED_MODULE_TOOLS,
             )
 
             if artifacts.interrupted:
@@ -1940,6 +2046,7 @@ class Operator(ABC):
                 owner=owner,
                 narrative=narrative,
                 operator_name=cls.name,
+                pre_tag_text=module_sink.include_annotations(),
             )
             committed = True
             return InlineGenerationResult(

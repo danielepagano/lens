@@ -32,6 +32,8 @@ datasets = ["rpg", "<your-ruleset-dataset>"]
 
 **Modules**: `--module <key>` pins `rules.<key>` (e.g. `rules.combat`, `rules.downtime`) into the session. Only one extra module is active at a time; switching swaps it out. Use `lens section` + a new `play` call to nest sessions with different modules.
 
+**Modules the GM asks for**: when an active dataset registers rules modules (`[[dataset.modules]]` in the dataset's `lens.toml`, targeting `play`), the model is offered a `load_module` tool for the ones not already in scope and may pull one in before it answers — for the scene transitions the player did not predict. Loading writes `[include: rules.<key>]: #` above the block — the only trace it leaves — so the module stays in scope for the rest of the node and survives `--retry`. Nothing to enable per project; see [configuration.md](../../docs/configuration.md#datasetmodules-dataset-lenstoml).
+
 Default: append one or more player lines (blockquotes) without calling the GM / LLM — useful when several characters act before narration. `@mentions` in the prompt are dumped as `KnowledgeObject`-formatted text inside an HTML comment for later reference.
 
 **`--pass`**: call the GM / LLM to respond, writing a `[play]...[/play]` block containing only GM output. With no prompt text, it generates a GM response based on the current passage.

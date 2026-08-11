@@ -2,6 +2,14 @@
 extension = "lens_testing_ext"
 verbose_llm = true
 
+# Model-requestable module (issue #136): offered to `play` as a `load_module`
+# tool while `rules.skirmish` is not already in scope.
+[[dataset.modules]]
+id = "rules.skirmish"
+operators = ["play"]
+description = """How a fight is structured: exchanges, the harm ladder, and threat clocks.
+Load the moment violence starts or becomes unavoidable — before narrating the first blow."""
+
 [[llm]]
 id = "local"
 base_url = "http://127.0.0.1:1234/v1"

@@ -78,6 +78,7 @@ class PlayOperator(SessionOperator):
         {"attributed_dialogue", "rpg_play_context"}
     )
 
+    supports_module_requests: ClassVar[bool] = True
     module_prefix: ClassVar[str] = "rules."
     auto_pins: ClassVar[list[str]] = []
     summarize_on_end: ClassVar[bool] = True

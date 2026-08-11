@@ -367,6 +367,32 @@ class CrawlResult:
             key: list(value) for key, value in self.graph.remember_pins.items()
         }
 
+    def scoped_kb_ids(self) -> set[str]:
+        """Every KB id the model can already see, lowercased.
+
+        ``pinned_ids`` is the effective post-walk pin set — front matter,
+        operator params, modality auto-pins, ``+`` link expansion, and session
+        modules (:class:`~lens.core.crawl_transforms.ModuleTransform` appends to
+        it).  Mentions and includes are not pins: they expand in place and leave
+        a ``kb-mention`` / ``kb-include`` render effect instead, so they are
+        added here from the effects.
+
+        Used to answer "is this object already in scope by *any* route", which
+        is what decides whether a module is still worth offering to the model
+        (see :mod:`lens.core.module_requests`).
+        """
+        scoped = {kid.rstrip("+").lower() for kid in self.graph.pinned_ids}
+        for effect in (*self.graph.effects, *self.render_effects):
+            if effect.kind in {"kb-mention", "kb-include"}:
+                scoped.add(effect.token.lower())
+            elif effect.kind == "kb-inline":
+                # An `inline`-tagged `@type.key` splices the whole object into the
+                # prose.  Its `token` is the raw `@…` match, so the id is in
+                # `result` — reading `token` here would add a string that matches
+                # nothing and silently keep the object on the menu.
+                scoped.add(effect.result.lower())
+        return scoped
+
     @property
     def state_pins(self) -> list[str]:
         """Pinned ids tagged `state`, in pin order.

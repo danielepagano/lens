@@ -412,6 +412,7 @@ async def stream_final_payload(
     on_preview: PreviewHandler | None = None,
     on_stream_event: StreamEventHandler | None = None,
     max_command_tool_iterations: int | None = None,
+    unlogged_tool_names: frozenset[str] = frozenset(),
 ) -> FinalPayload:
     """One streaming round; returns the final payload including tool calls."""
     final = await collect_final_payload(
@@ -427,6 +428,7 @@ async def stream_final_payload(
             reasoning=reasoning,
             operator_name=operator_name,
             max_command_tool_iterations=max_command_tool_iterations,
+            unlogged_tool_names=unlogged_tool_names,
         ),
         on_preview=on_preview,
         on_stream_event=on_stream_event,
@@ -454,6 +456,7 @@ async def generate_artifacts(
     interrupt_policy: InterruptPolicy = "return_empty",
     on_llm_error: Callable[[LLMError], Exception] | None = None,
     max_command_tool_iterations: int | None = None,
+    unlogged_tool_names: frozenset[str] = frozenset(),
 ) -> GenerationArtifacts:
     try:
         final = await stream_final_payload(
@@ -470,6 +473,7 @@ async def generate_artifacts(
             on_preview=on_preview,
             on_stream_event=on_stream_event,
             max_command_tool_iterations=max_command_tool_iterations,
+            unlogged_tool_names=unlogged_tool_names,
         )
         apply_interrupt_policy(final, interrupt_policy)
         if final.interrupted:
@@ -975,6 +979,7 @@ async def generate_stream(
     reasoning: str | None = None,
     operator_name: str | None = None,
     max_command_tool_iterations: int | None = None,
+    unlogged_tool_names: frozenset[str] = frozenset(),
 ) -> AsyncGenerator[StreamEvent, None]:
     """Stream LLM output as structured events.
 
@@ -1126,17 +1131,23 @@ async def generate_stream(
                     )
                     result = result + warning
                     yield StreamEvent(preview=warning)
-                # Persist always gets an encoded fence (independent of stream policy).
-                persist_fence = encode_ai_secrets_for_persist(
-                    format_tool_call_fence(
-                        tc.name, tc.arguments, response_char_len=len(result),
-                    ),
-                    inside_secret=open_secret,
-                )
-                tool_markdowns.append(persist_fence)
-                open_secret = ends_inside_ai_secret(
-                    persist_fence, inside_secret=open_secret
-                )
+                # Persist always gets an encoded fence (independent of stream
+                # policy) — unless the tool is unlogged, meaning it already
+                # leaves its own durable trace in the node (``load_module``
+                # writes an ``include`` annotation).  A second record would only
+                # bloat the passage and put a tool name in the transcript the
+                # model reads back on every later beat.
+                if tc.name not in unlogged_tool_names:
+                    persist_fence = encode_ai_secrets_for_persist(
+                        format_tool_call_fence(
+                            tc.name, tc.arguments, response_char_len=len(result),
+                        ),
+                        inside_secret=open_secret,
+                    )
+                    tool_markdowns.append(persist_fence)
+                    open_secret = ends_inside_ai_secret(
+                        persist_fence, inside_secret=open_secret
+                    )
                 # Stream preview uses the stream composer.
                 stream_kind, stream_content = compose_tool_call_for_stream(
                     tc.name, tc.arguments,

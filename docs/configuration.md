@@ -493,6 +493,30 @@ verbose_llm = true
 
 Currently used with the same effect as `[project].verbose_llm` for LLM logging (either can enable verbose prompts).
 
+### `[[dataset.modules]]` (dataset `lens.toml` only)
+
+Declared in a **dataset's own** `lens.toml`, not in a project's. Each entry registers a KB object as a **model-requestable module**: the model may pull it into scope mid-generation with the `load_module` tool when the scene turns into something the module covers.
+
+```toml
+[dataset]
+
+[[dataset.modules]]
+id = "rules.combat"
+operators = ["play"]
+description = """Turn order, actions, and damage resolution.
+Load when violence starts or initiative will be rolled."""
+```
+
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `id` | Yes | Canonical KB id (any type — `rules.*` is a convention, not a rule) |
+| `operators` | Yes | Operators allowed to request it, e.g. `["play"]`. Only operators that accept module requests (`write`, `play` today) can be targeted; any other name is inert and logs a warning at load |
+| `description` | Yes | What the module contains **and when it is needed** — this is what the model decides on, so write the trigger, not a title |
+
+Both the id and the description appear in the tool schema and at the tail of that operator's task. A module is offered only while it is **not already in scope** (front-matter pin, `--module`, `include`, `mention`, or `+` link expansion), so once loaded it disappears from the menu; when nothing is left to offer, no tool is added at all. Loading one writes an `[include: <id>]: #` annotation into the node, which is what keeps it in scope for the rest of that node — see [design.md](design.md) and [rpg-design.md](rpg-design.md).
+
+Projects cannot add to or shadow these declarations: they are part of the mechanics you opt into by listing the dataset. Entries missing any field are skipped with a warning, as is an `id` that resolves to no KB object.
+
 ---
 
 ## `[config-<name>]` (dataset configuration)
