@@ -185,6 +185,15 @@ shared.block.instructions = 'INSTRUCTIONS'
 shared.block.current_text = 'CURRENT TEXT'
 shared.block.result_template = 'RESULT TEMPLATE'
 
+shared.module_request_tool_description = '''Load one module into scope before you write. Its full text comes straight back to you, so you apply it in this same reply; it then stays in scope for the rest of the scene and is never offered again. Call this INSTEAD of asking the user about something a module below covers, and call it BEFORE narrating the change that needs it — not after. Call it silently: anything you write in the same turn as the call is persisted as part of the story, so do not announce or explain the load. One module per call. Available modules:
+{catalog}'''
+shared.module_request_task_hint = '''BEFORE WRITING THIS BEAT, check these modules. They are NOT in your context yet, and each one says when it is needed:
+{catalog}
+If this beat is that situation — or is about to become it — call the load_module tool first, then write with the rules in hand. Loading costs you nothing and lasts the rest of the scene. Do not ask the user about a mechanic one of these covers, and do not narrate the transition now and load afterwards.'''
+shared.module_request_catalog_entry = '- {id}: {description}'
+shared.module_request_loaded_suffix = '''
+(Module {id} is now in scope for the rest of this scene. Do not request it again. Do not quote or restate its text; apply it.)'''
+
 write.system = '''You continue a living scene from the inside. Write fluent, immersive prose at a high reading level, never hurried; let dialogue feel spoken and description feel noticed rather than pasted on.
 
 Use the provided sections as follows:
@@ -270,7 +279,7 @@ What this is not:
 - Not filler description whose only job is to sound fantasy-like.'''
 play.instruction_continue = '''Continue the scene from the current passage and any newly appended player or character lines. Write in present tense — the events are happening now, not being recounted later. Follow the script of any encounter KB that is present, but do not let procedure flatten the scene into a template.
 
-Treat the player's reported mechanics as the authoritative current state. Do not recompute or override them. In combat, state non-PC intent and visible consequences, then stop when player-side mechanics or uncertain outcomes need to be resolved. If a needed mechanic is not present in pinned knowledge or an @mentioned KB item, ask the player rather than assuming.
+Treat the player's reported mechanics as the authoritative current state. Do not recompute or override them. In combat, state non-PC intent and visible consequences, then stop when player-side mechanics or uncertain outcomes need to be resolved. If a needed mechanic is not present in pinned knowledge, an @mentioned KB item, or a module you can load, ask the player rather than assuming.
 
 Do not repeat rule text. Never write PC decisions, thoughts, or feelings. When a character attempts something uncertain, call for a check — name the skill and difficulty — and wait for the player to report the result before narrating consequences. Stop at decision points and yield to the player.
 '''

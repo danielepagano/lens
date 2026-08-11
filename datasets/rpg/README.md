@@ -99,6 +99,21 @@ When a front reaches resolution, advance notes it in the summary but does NOT cl
 
 See [docs/rpg-design.md](../../docs/rpg-design.md) for the full design rationale.
 
+## Rules modules the model can request
+
+This dataset registers no `[[dataset.modules]]` yet — `rules.system` is still one object. A dataset that splits its rules (a base plus combat, chase, downtime, …) can register the split parts so `play` may pull one into scope itself when the scene turns, instead of the player predicting it with `--module`:
+
+```toml
+# <dataset>/lens.toml
+[[dataset.modules]]
+id = "rules.combat"
+operators = ["play"]
+description = """Turn order, actions, and damage resolution.
+Load when violence starts or initiative will be rolled."""
+```
+
+Field reference: [configuration.md](../../docs/configuration.md#datasetmodules-dataset-lenstoml). Why this belongs to the model rather than the player: [docs/rpg-design.md](../../docs/rpg-design.md).
+
 ## Configuration
 
 The RPG dataset exposes one configuration key, settable under `[config-rpg]` in the project's `lens.toml`:

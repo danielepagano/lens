@@ -59,6 +59,9 @@ class LlmRunRequest:
     on_llm_error: Callable[[LLMError], Exception] | None = None
     resolved_modalities: ResolvedModalities | None = None
     modality_context: ModalityContext | None = None
+    unlogged_tool_names: frozenset[str] = frozenset()
+    """Tools whose call is not persisted as a ``tool-call`` fence — they record
+    themselves in the node some other way (see :mod:`lens.core.module_requests`)."""
 
 
 def resolve_llm_run_messages(request: LlmRunRequest) -> list[dict[str, Any]]:
@@ -114,6 +117,7 @@ async def run_llm(
         interrupt_policy=request.interrupt_policy,
         on_llm_error=request.on_llm_error,
         max_command_tool_iterations=request.max_command_tool_iterations,
+        unlogged_tool_names=request.unlogged_tool_names,
     )
 
 
@@ -135,6 +139,7 @@ async def run_llm_final(request: LlmRunRequest) -> FinalPayload:
             on_preview=request.on_token,
             on_stream_event=request.on_stream_event,
             max_command_tool_iterations=request.max_command_tool_iterations,
+            unlogged_tool_names=request.unlogged_tool_names,
         )
         return apply_interrupt_policy(final, request.interrupt_policy)
     except LLMError as e:

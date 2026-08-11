@@ -65,6 +65,18 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "shared.block.instructions": PromptSpec("shared.block.instructions", frozenset()),
     "shared.block.current_text": PromptSpec("shared.block.current_text", frozenset()),
     "shared.block.result_template": PromptSpec("shared.block.result_template", frozenset()),
+    "shared.module_request_tool_description": PromptSpec(
+        "shared.module_request_tool_description", frozenset({"catalog"})
+    ),
+    "shared.module_request_task_hint": PromptSpec(
+        "shared.module_request_task_hint", frozenset({"catalog"})
+    ),
+    "shared.module_request_catalog_entry": PromptSpec(
+        "shared.module_request_catalog_entry", frozenset({"id", "description"})
+    ),
+    "shared.module_request_loaded_suffix": PromptSpec(
+        "shared.module_request_loaded_suffix", frozenset({"id"})
+    ),
     "write.system": PromptSpec("write.system", frozenset()),
     "write.instruction_continue": PromptSpec("write.instruction_continue", frozenset()),
     "write.instruction_with_prompt": PromptSpec("write.instruction_with_prompt", frozenset({"prompt"})),

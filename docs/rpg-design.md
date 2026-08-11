@@ -69,6 +69,12 @@ We create two core rule objects:
   - `rules.system`: system-specific rules. Lens ships with "Lens in the Dark", a simple "Forged in the Dark" ruleset (https://bladesinthedark.com/licensing) tuned for AI use, but it can be overridden by a game system ruleset by simply replacing that object id in a higher-priority dataset.
     - `rules.*`: some systems benefit from having multiple rulesets for different phases of play (e.g. Blades in the Dark's downtime, D&D's Bastions, etc., very specific combat rules like in some Powered by the Apocalypse games). In these cases the system rules can just be the foundation, and then the player can alternate phases by splitting the rules and pinning as needed. This is the parallel to `design` having different modules for different things you can work on.
 
+##### Who asks for a rules module
+
+`play --module <key>` puts the choice on the player, which is backwards for the common case: the player is directing, not writing, and often does not know the scene is about to become combat. A dataset can therefore **register** its rules modules in its own `lens.toml` (`[[dataset.modules]]` with `operators = ["play"]` and a description of when the module is needed — see [configuration.md](configuration.md#datasetmodules-dataset-lenstoml)), and the model may pull one into scope with the `load_module` tool before it replies. It gets the text in time to use it in that same beat, and Lens writes an `include` annotation so the module stays in scope for the rest of the node. It is offered only while it is out of scope, so this costs at most one round trip per module per node.
+
+Prepared content should still pre-declare: tag an encounter with the rules module it uses and `encounter.*+` expansion loads it deterministically at pin time, leaving the tool to cover only the transitions nobody planned. And there is no unload: when the fight is over, `collate` the range into a sub-node (the annotations travel with the prose) or `--end` the session — the same moves you would make anyway.
+
 #### Reference Objects
 
 Reference materials are different than rules proper because they are **lists of items only relevant if in play**, and even if in play, they may not be that relevant in narrative. In other words, the AI doesn't need to know about a creature stat block until it's in play, or about a special ability until something in scene can use it or the player invokes it.  

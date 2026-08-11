@@ -132,6 +132,8 @@ class PendingInlinePersist:
     owner: NarrativeAddress
     narrative: NarrativeNode
     operator_name: str
+    pre_tag_text: str = ""
+    """Annotations to persist above the open tag (model-requested module includes)."""
     refine_modality_ids: tuple[str, ...] = ()
     """Active modalities that wanted a refine pass when the step plan was built."""
     refine_ids_cached: bool = False

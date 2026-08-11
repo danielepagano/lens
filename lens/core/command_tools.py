@@ -89,7 +89,7 @@ def get_command_registry(
 # ---------------------------------------------------------------------------
 
 
-def _format_objects(objects: dict[str, KnowledgeObject]) -> str:
+def format_objects_for_model(objects: dict[str, KnowledgeObject]) -> str:
     """Render KB objects for the model — decoded, matching RELEVANT KNOWLEDGE.
 
     ``KnowledgeObject.format`` returns storage form.  Handing that to the model
@@ -113,7 +113,7 @@ async def _kb_get(args: dict[str, Any], project_root: Path) -> str:
     _ordered, objects = kb.get_objects_with_links(ids)
     if not objects:
         return f"(no KB objects found for: {', '.join(ids)})"
-    return _format_objects(objects)
+    return format_objects_for_model(objects)
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ async def _kb_with_tag(args: dict[str, Any], project_root: Path) -> str:
     else:
         parts = ["IDs:\n" + "\n".join(_format_id_line(cid) for cid in result.ids)]
     if result.objects:
-        formatted = _format_objects(result.objects)
+        formatted = format_objects_for_model(result.objects)
         if formatted:
             parts.append(formatted)
     return "\n\n".join(parts)
