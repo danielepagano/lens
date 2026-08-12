@@ -51,6 +51,11 @@ if [ ! -f fly.toml ]; then
   echo "release.sh: fly.toml not found in project root" >&2
   exit 1
 fi
+# Resolve to an absolute path up front: step 5 passes the cloned Lens repo as
+# flyctl's WORKING_DIRECTORY, which flyctl also uses as the base for
+# resolving a relative --config path — a bare "fly.toml" would then be
+# looked up inside the clone instead of the project root.
+FLY_TOML="$(pwd)/fly.toml"
 FLY_APP=$(python3 -c "import tomllib; print(tomllib.load(open('fly.toml','rb'))['app'])")
 
 # Step 1 — pre-flight secrets check (every commit, fail fast on drift)
@@ -118,7 +123,7 @@ flyctl deploy \
   --app "$FLY_APP" \
   --build-arg "LENS_VERSION=$TARGET" \
   "$LENS_CLONE" \
-  --config fly.toml \
+  --config "$FLY_TOML" \
   --dockerfile "$LENS_CLONE/deploy/Dockerfile"
 
 echo "release.sh: deploy of $TARGET succeeded"
