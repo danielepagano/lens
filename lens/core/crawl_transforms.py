@@ -17,7 +17,7 @@ from lens.core.crawl_graph import (
     RenderEffect,
 )
 from lens.core.dice import DiceError, substitute_rolls
-from lens.core.knowledge import KnowledgeStore
+from lens.core.knowledge import KnowledgeObject, KnowledgeStore
 from lens.core.mount_embed_strip import strip_standalone_lens_mount_attachment_lines
 from lens.core.now import substitute_now
 from lens.core.project import resolve_address
@@ -535,6 +535,12 @@ class ModuleTransform:
     ``<key>`` is the part after the last ``.`` in the module id) and includes
     it when present.
 
+    **Modules always resolve with ``+``.**  A module's dot-tags pointing at
+    other KB objects (``rules.system`` on ``design.encounter``, say) are
+    resolved one hop and added alongside it.  That is what lets a dataset
+    attach its rules to a module declaratively, instead of hoping the model
+    calls ``kb_get`` for them mid-session.
+
     Already-pinned modules and templates are skipped — the transform is a
     no-op for ids resolved through normal ``kb_pin`` front-matter chains.
     """
@@ -566,11 +572,31 @@ class ModuleTransform:
     ) -> None:
         if kb_id in graph.pinned_ids:
             return
-        component_id = f"module:{kb_id}"
-        if graph.component_by_id(component_id) is not None:
+        if graph.component_by_id(f"module:{kb_id}") is not None:
             return
-        obj = self._kb.get_objects([kb_id]).get(kb_id)
-        if obj is None:
+        # `+`: the module itself, then whatever its dot-tags link to.
+        ordered_ids, objects = self._kb.get_objects_with_links([f"{kb_id}+"])
+        for resolved_id in ordered_ids:
+            obj = objects.get(resolved_id)
+            if obj is None:
+                continue
+            if obj.id == kb_id:
+                self._add_component(graph, obj, role=role, linked_from=None)
+            else:
+                self._add_component(graph, obj, role=f"{role}-link", linked_from=kb_id)
+
+    def _add_component(
+        self,
+        graph: CrawlGraph,
+        obj: KnowledgeObject,
+        *,
+        role: str,
+        linked_from: str | None,
+    ) -> None:
+        if obj.id in graph.pinned_ids:
+            return
+        component_id = f"module:{obj.id}"
+        if graph.component_by_id(component_id) is not None:
             return
         formatted = self._storage.format_kb_prompt_block(
             canonical_id=obj.id,
@@ -594,6 +620,7 @@ class ModuleTransform:
                     "kb_id": obj.id,
                     "tags": ",".join(obj.tags),
                     "module_role": role,
+                    **({"module_linked_from": linked_from} if linked_from else {}),
                     "expansion_policy": expansion_policy_from_tags(obj.tags).mode,
                 },
             )

@@ -675,6 +675,19 @@ class TestProvenance(unittest.TestCase):
         self.assertEqual(kind, "module")
         self.assertIn("design.encounter", why)
 
+    def test_module_link_names_the_module_it_came_from(self) -> None:
+        component = self._component(
+            "module:rules.system",
+            "knowledge",
+            kb_id="rules.system",
+            module_role="module-link",
+            module_linked_from="design.encounter",
+        )
+        kind, why = self._why(component)
+        self.assertEqual(kind, "module")
+        self.assertIn("design.encounter", why)
+        self.assertIn("+", why)
+
     def test_modality_pin_is_attributed_to_its_modality(self) -> None:
         component = self._component(
             "kb:rules.system", "knowledge", kb_id="rules.system", pin_source="extra"

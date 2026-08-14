@@ -2728,8 +2728,14 @@ ritual = [
     "stat.wraith",
     "stat.zombie",
 ]
+"rules.system" = [
+    "design.encounter",
+]
 
 [objects]
+"design.encounter" = [
+    "rules.system",
+]
 "equipment.splint" = [
     "category:heavy-armor",
 ]

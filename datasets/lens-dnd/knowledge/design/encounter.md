@@ -26,7 +26,7 @@ Participants include any given PCs, plus:
 IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest that the user load the appropriate module; if they decline, add necessary detail in the encounter itself, not new objects.
 
 3: COMBAT BALANCING (when the scene includes the possibility of combat)
-- `kb_get` **`rules.system`** if you need how combat is framed for this table.
+- **`rules.system`** is already in RELEVANT KNOWLEDGE: it frames how combat works at this table.
 - Take PC levels from pinned **`pc.*`** objects (e.g. tags **`level:N`**).
 - Discover enemies: `stat._template` describes conventions; use **`kb_with_tag`** to find **`stat.*`** candidates (CR, type, habitat, etc.). Rank by **narrative fit** first.
 - Use **`balance_encounter`** on your ranked list. Pass **`pcs`** as one level per PC. Pass **`allies`** in the **same shape as `required`**: `{ "id": "stat.…", "count": N }` per allied stat block that fights on the party's side. The tool reads each ally's **`cr:`** tags and adds **count × build XP** to the budget so enemy totals match **PCs plus exactly those allies** — use the same ids and counts you will list under Prep.
