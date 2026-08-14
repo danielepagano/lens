@@ -111,6 +111,24 @@ class TestKnowledgeStore(unittest.TestCase):
         self.store.store_object("tracker.combat", "Updated body.")
         self.assertEqual(self.store.get_tags("tracker.combat"), [])
 
+    def test_template_tags_not_reapplied_on_recreate_with_template(self) -> None:
+        # store_object is an upsert: re-running -t against an *existing* id
+        # (e.g. to reset its body back to the template) must not resurrect a
+        # tag the user deliberately removed — tags are a creation-time
+        # default, not something the template re-asserts.
+        self.store.set_template(
+            "tracker",
+            "[\n    tags: state\n]: #\n\nDescribe the tracker.",
+        )
+        self.store.store_object("tracker.combat", None, use_template=True)
+        self.assertEqual(self.store.get_tags("tracker.combat"), ["state"])
+
+        self.store.remove_tags("tracker.combat", ["state"])
+        self.assertEqual(self.store.get_tags("tracker.combat"), [])
+
+        self.store.store_object("tracker.combat", None, use_template=True)
+        self.assertEqual(self.store.get_tags("tracker.combat"), [])
+
     def test_template_create_and_update(self) -> None:
         self.store.set_template("npc", "First template")
         self.assertEqual(self.store.get_template("NPC"), "First template")

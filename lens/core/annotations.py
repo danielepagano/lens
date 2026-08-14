@@ -194,6 +194,16 @@ def pop_front_matter_key(text: str, key: str) -> tuple[Any, str]:
     start, end = span
     key_re = re.compile(rf"^(\s*){re.escape(key)}\s*:")
     param_lines = lines[start + 1 : end - 1]
+
+    # Only a line at the block's own top-level indent can be *the* key to pop —
+    # a same-named key nested under some other top-level key (e.g. `meta:` /
+    # `  tags: ...`) is that other key's value, not a sibling to remove.
+    base_indent: int | None = None
+    for line in param_lines:
+        if line.strip():
+            base_indent = len(line) - len(line.lstrip(" "))
+            break
+
     kept: list[str] = []
     skip_indent: int | None = None
     for line in param_lines:
@@ -204,7 +214,7 @@ def pop_front_matter_key(text: str, key: str) -> tuple[Any, str]:
             else:
                 continue
         m = key_re.match(line)
-        if m:
+        if m and len(m.group(1)) == base_indent:
             skip_indent = len(m.group(1))
             continue
         kept.append(line)

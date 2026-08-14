@@ -242,10 +242,12 @@ class KnowledgeStore:
 
         template_tags: list[str] = []
         if use_template:
+            is_new = not self.exists(canonical_id)
             template = self.get_template(type_name)
             if template is not None:
                 raw_tags, content = pop_front_matter_key(template, "tags")
-                template_tags = _normalize_template_tags(raw_tags)
+                if is_new:
+                    template_tags = _normalize_template_tags(raw_tags)
             else:
                 content = ""
 

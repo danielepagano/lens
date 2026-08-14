@@ -319,6 +319,18 @@ class TestPopFrontMatterKey(unittest.TestCase):
         self.assertEqual(remaining, "\nBody text.")
         self.assertIsNone(find_front_matter_span(remaining))
 
+    def test_does_not_strip_same_named_key_nested_under_another_key(self) -> None:
+        text = "[\n    tags: state\n    meta:\n      tags: nested_value\n]: #\n\nBody."
+        value, remaining = pop_front_matter_key(text, "tags")
+        self.assertEqual(value, "state")
+        self.assertEqual(
+            remaining,
+            "[\n    meta:\n      tags: nested_value\n]: #\n\nBody.",
+        )
+        self.assertEqual(
+            parse_front_matter(remaining), {"meta": {"tags": "nested_value"}}
+        )
+
 
 class TestParseTailCursorAnnotation(unittest.TestCase):
     def test_single_line_open_returns_cursor(self) -> None:
