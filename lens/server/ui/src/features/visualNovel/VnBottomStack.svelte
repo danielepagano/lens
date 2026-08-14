@@ -48,7 +48,7 @@
   }: Props = $props()
 </script>
 
-<div class="vn-bottom-stack">
+<div class={['vn-bottom-stack', { 'vn-bottom-stack--cli': atCursorCliBeat }]}>
   {#if textChunk}
     <VnTextFrame
       text={textChunk.text}
@@ -90,6 +90,13 @@
     padding: 0 0.75rem;
     padding-bottom: calc(0.45rem + env(safe-area-inset-bottom, 0px));
     pointer-events: auto;
+  }
+
+  /* When the in-scene CLI is showing there is no text frame, so the bar is the
+     only content and nothing inside needs scrolling. Let the absolutely
+     positioned suggestion chips escape the stack's overflow clipping. */
+  .vn-bottom-stack--cli {
+    overflow: visible;
   }
 
   .vn-empty {
