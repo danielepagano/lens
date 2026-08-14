@@ -4,6 +4,19 @@ Build `encounter.*` objects — prepared situations for play to use as scripts. 
 
 The **`encounter._template`** layout is included in RELEVANT KNOWLEDGE when you use this module. **Follow its three sections in order** (`## Situation`, `## Running non-PC characters`, `## Prep and reference`). Do not collapse them into one flat bullet list.
 
+THE RULES SHELF
+Two rules objects are linked to this module and are already in RELEVANT KNOWLEDGE, because every encounter needs both: **`rules.system`** (the base — DCs, attitudes and Influence, vision and hiding, conditions, dying, resting) and **`rules.encounter`** (how `play` will actually run the object you are writing — write for that procedure).
+
+The rest of the shelf depends on what kind of scene this is, so it is not loaded. `kb_get` only the ones this scene actually calls for:
+
+- **`rules.combat`** — running a fight: initiative and surprise, the action economy, opportunity attacks, movement, cover, mounts, underwater, how damage and death land.
+- **`rules.chase`** — running a pursuit, violent or not: distance instead of position, exhaustion from dashing, escape and catch conditions.
+- **`rules.environment`** — hazards, weather, difficult terrain, obscured areas, travel pace.
+
+A quiet negotiation in a parlour needs none of them. If the user already knows what kind of scene this is, they can save you even the lookup by mentioning or including the ruleset in their opening request (`--include rules.combat`, or `@rules.chase` in the prompt).
+
+You can reach all of this and `play` cannot. During play the model gets `rules.system` plus whatever the scene turns into; everything else arrives at the table only because **you** put it there. That is the point of prep.
+
 STEP 0: STORY SERVICE CHECK
 Before building anything, establish the connection to the story:
 - What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes (unless it was already provided).
@@ -26,7 +39,7 @@ Participants include any given PCs, plus:
 IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest that the user load the appropriate module; if they decline, add necessary detail in the encounter itself, not new objects.
 
 3: COMBAT BALANCING (when the scene includes the possibility of combat)
-- **`rules.system`** is already in RELEVANT KNOWLEDGE: it frames how combat works at this table.
+- `kb_get` **`rules.combat`** if you need how a fight is framed at this table (unless it is already in context).
 - Take PC levels from pinned **`pc.*`** objects (e.g. tags **`level:N`**).
 - Discover enemies: `stat._template` describes conventions; use **`kb_with_tag`** to find **`stat.*`** candidates (CR, type, habitat, etc.). Rank by **narrative fit** first.
 - Use **`balance_encounter`** on your ranked list. Pass **`pcs`** as one level per PC. Pass **`allies`** in the **same shape as `required`**: `{ "id": "stat.…", "count": N }` per allied stat block that fights on the party's side. The tool reads each ally's **`cr:`** tags and adds **count × build XP** to the budget so enemy totals match **PCs plus exactly those allies** — use the same ids and counts you will list under Prep.
@@ -43,9 +56,31 @@ IMPORTANT: if you think you are missing objects, DO NOT just create them! There 
 
 **Tags on the encounter object:** Include story links as usual (`location.*`, relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it.
 
+**Tag the rules this scene needs.** `play` starts with only the base rules; a tag on the encounter is what puts a module in front of it *before* the scene turns, with no round trip and no chance the model fails to notice:
+- Tag **`rules.combat`** on any encounter where violence is possible — not only on set-piece fights, but on the negotiation that could go wrong and the heist that could be discovered.
+- Tag **`rules.chase`** when someone is likely to run: a quarry, a courier, a creature that flees when bloodied.
+- Tag **`rules.environment`** when the world is part of the problem — weather, hazards, deep water, a long journey.
+
+**Tag the module, or quote the rule — whichever is smaller.** A tag hands `play` the whole object on every beat of the scene. That is right when the scene *runs on* those rules: a fight needs all of `rules.combat`, a pursuit needs all of `rules.chase`. It is wrong when you opened a ruleset and took one or two lines out of it. If the encounter needs nothing from `rules.environment` but the ice rule, quote the ice rule into the scene rules and do not tag it — one line beats four kilobytes, and quoting is what §5 asks for anyway.
+
+Do **not** tag rules objects onto each other, and do not tag `rules.system` — it is always present in play.
+
 Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list; pasting stat bodies instead of tokens; **`KB['stat.…']`** outside Prep; **`allies`** in the tool that don't match the allied **`stat.*`** lines you write in Prep (ids or counts). You should never emit kb items for any other object type (faction, npc, location, etc.), only the encounter.
 
-5: SECRETS
+5: SCENE RULES — QUOTE THEM, OR WRITE THEM
+A scene often needs a procedure that no module covers: the auction, the collapsing stair, the rite that has to be interrupted in a specific order. You are the only part of this system that can prepare one, because `play` sees a beat at a time and answers fast.
+
+**Quoting.** When a rule you already have applies, copy it into the scene rules **verbatim, with its numbers**. Never soften a rule into a description. `Slippery Ice: Difficult Terrain. Walking requires DC 10 Acrobatics or fall Prone.` is a rule; "ice is difficult terrain and crossing it briskly risks going down" is not a rule at all — it reads like guidance, so nobody notices it is gone, and the AI cannot act on it. If a rule is not worth its numbers, leave it out rather than paraphrasing it.
+
+**Inventing.** When nothing fits, write the procedure yourself. This is allowed and encouraged: a fast model with a little structure in front of it behaves far better than one improvising, which either yes-ands everything or invents something unhinged and then commits to it for the rest of the scene. An invented rule must look like a rule:
+- Name the trigger, the check (ability or skill), the DC, and what happens on success and on failure.
+- Give it a cost or a clock, so it can end.
+- Keep it consistent with the base rules — you may add a procedure, not overturn how a D20 test works.
+
+Good: `Rising water: at the end of each round the water rises one foot. At 3 feet the floor is Difficult Terrain; at 5 feet Small creatures must swim (DC 12 Athletics each round or lose their action).`
+Bad: "the water keeps rising and it gets harder to move."
+
+6: SECRETS
 Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.
 
 APPENDIX - ENCOUNTER TYPES

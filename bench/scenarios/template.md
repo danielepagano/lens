@@ -6,6 +6,11 @@ One-paragraph description of what this scenario tests and why it matters.
 datasets:
 ```
 
+The `testing` dataset is added to every bench project by default, because most
+scenarios use its cast. Add `include_testing: false` to this block to leave it
+out — needed when it would interfere, e.g. it registers `rules.skirmish` as a
+`play` module, which competes with a real dataset's modules for the same trigger.
+
 **Prompt keys exercised:** `operator.key_name`
 
 ## Setup

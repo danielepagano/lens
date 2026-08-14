@@ -105,6 +105,37 @@ def _load_scenario_datasets(scenario_path: Path) -> list[str]:
     return []
 
 
+def _load_scenario_include_testing(scenario_path: Path) -> bool:
+    """Read ``include_testing`` from a scenario's config block (default ``True``).
+
+    The ``testing`` dataset is added to every bench project because most scenarios
+    rely on its cast (``pc.elena`` and friends).  It also registers
+    ``rules.skirmish`` as a ``play`` module, which contaminates any scenario that
+    tests *which* module a model chooses on a different dataset: the model is
+    offered a foreign entry whose description matches the same trigger.  Such a
+    scenario opts out with::
+
+        ```config
+        datasets:
+          - rpg
+          - lens-dnd
+        include_testing: false
+        ```
+    """
+    import re
+
+    text = scenario_path.read_text(encoding="utf-8")
+    m = re.search(r"```config\n(.*?)```", text, re.DOTALL)
+    if not m:
+        return True
+    for line in m.group(1).splitlines():
+        stripped = line.strip()
+        if stripped.startswith("include_testing:"):
+            value = stripped[len("include_testing:"):].strip().lower()
+            return value not in {"false", "no", "0"}
+    return True
+
+
 def _apply_bench_lens_config(
     project_dir: Path,
     profile: dict[str, object],
@@ -148,7 +179,12 @@ def setup_project(
     """Create and configure a benchmark project.  Returns the project directory."""
     profile = _load_profile(profile_path)
 
-    datasets = ["testing"]
+    include_testing = (
+        _load_scenario_include_testing(scenario_path)
+        if scenario_path is not None
+        else True
+    )
+    datasets = ["testing"] if include_testing else []
     if scenario_path is not None:
         extra = _load_scenario_datasets(scenario_path)
         for ds in extra:

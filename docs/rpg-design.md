@@ -75,6 +75,21 @@ We create two core rule objects:
 
 Prepared content should still pre-declare: tag an encounter with the rules module it uses and `encounter.*+` expansion loads it deterministically at pin time, leaving the tool to cover only the transitions nobody planned. And there is no unload: when the fight is over, `collate` the range into a sub-node (the annotations travel with the prose) or `--end` the session — the same moves you would make anyway.
 
+##### Which rules earn a module
+
+Registering everything that *could* be needed recreates the problem: an unloaded module costs a catalog line on every beat, in the tool schema and again at the tail of the task. The test is **system or situation**.
+
+A **system** is big, structured, self-contained, and announces itself in the fiction — a fight, a pursuit. It earns a module. A **situation** — one hazard, a sea voyage, a specific negotiation, a crafting project — is known at prep time, is usually small, and differs every scene. It has no reliable trigger the model could recognise, so it travels inside the prepared object instead, either quoted into the scene rules or tagged so `encounter.*+` brings it along.
+
+That leaves two more routes worth naming, neither of which costs a per-beat line:
+
+- **`rules.<type>` companions.** `<type>._template` tells `design` how to *create* an object of a type; `rules.<type>` tells `play` how to *use* one, and `RulesCompanionTransform` adds it whenever any `<type>.*` object is pinned. Convention only — ship the file and it activates. This is where per-type guidance belongs instead of being repeated in every object.
+- **Rules on a design module.** Module pins resolve with `+`, so tagging a rules object on `design.<key>` puts it in the crawl when the session opens. Link only what *every* session of that kind needs — the base ruleset, plus the runtime procedure the authored object will be read against — and **list** the rest inside the module text. `design` has `kb_get`, runs a handful of turns, and knows by then what sort of scene it is building; a user who already knows can skip even that with `--include rules.combat` or an `@rules.chase` in the opening prompt. Linking the whole shelf just moves the always-loaded problem from `play` to `design`.
+
+  The listing has to be honest about which is which. If the module text describes an optional object in terms that make it sound always relevant, no model will decline to fetch it, and you have paid for a tool call to reach something you should simply have linked. Either it is always needed — link it — or say plainly when it is not needed.
+
+  Rules objects must not tag *each other*, or `play --module <key>` will drag the links in too.
+
 #### Reference Objects
 
 Reference materials are different than rules proper because they are **lists of items only relevant if in play**, and even if in play, they may not be that relevant in narrative. In other words, the AI doesn't need to know about a creature stat block until it's in play, or about a special ability until something in scene can use it or the player invokes it.  

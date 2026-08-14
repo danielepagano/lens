@@ -101,7 +101,7 @@ See [docs/rpg-design.md](../../docs/rpg-design.md) for the full design rationale
 
 ## Rules modules the model can request
 
-This dataset registers no `[[dataset.modules]]` yet — `rules.system` is still one object. A dataset that splits its rules (a base plus combat, chase, downtime, …) can register the split parts so `play` may pull one into scope itself when the scene turns, instead of the player predicting it with `--module`:
+This dataset registers no `[[dataset.modules]]` — its Lasers & Feelings `rules.system` is 8 KB and fits in one object. A dataset that splits its rules can register the split parts so `play` pulls one into scope itself when the scene turns, instead of the player predicting it with `--module`:
 
 ```toml
 # <dataset>/lens.toml
@@ -112,7 +112,15 @@ description = """Turn order, actions, and damage resolution.
 Load when violence starts or initiative will be rolled."""
 ```
 
+`lens-dnd` is the worked example — see [its README](../lens-dnd/README.md#how-the-rules-reach-the-model). The rule it follows: a module has to be a *system* with a discrete narrative trigger (a fight, a pursuit). Rules for *situations* — a specific hazard, a sea voyage, one negotiation — are known at prep time and belong on the prepared object instead, because every unloaded module taxes every beat with a catalog line in both the tool schema and the task tail.
+
 Field reference: [configuration.md](../../docs/configuration.md#datasetmodules-dataset-lenstoml). Why this belongs to the model rather than the player: [docs/rpg-design.md](../../docs/rpg-design.md).
+
+## `rules.<type>`: usage rules for a KB type
+
+`<type>._template` tells `design` how to **create** an object of that type. The counterpart is `rules.<type>`, which tells `play` how to **use** one: whenever any `<type>.*` object is pinned, `RulesCompanionTransform` adds `rules.<type>` to the crawl if it exists. That is convention only — ship `knowledge/rules/<type>.md` in a dataset and it activates, with no configuration and no code.
+
+This is where per-type guidance belongs, rather than being repeated inside every object of that type. `lens-dnd` ships `rules.encounter`, `rules.stat`, and `rules.tracker` on this route.
 
 ## Configuration
 
