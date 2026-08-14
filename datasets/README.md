@@ -32,6 +32,21 @@ Typical contents:
 - **`knowledge/tags.toml`** — bidirectional tag index (optional but usual)
 - **`lens.toml`** — only `[dataset]` today (dataset marker for the CLI)
 
+### Templates (`{type}/_template.md`)
+
+A `_template.md` seeds `lens kb add <id> -t` (and any other `use_template=True` creation path — the KB UI's "use template" checkbox, dataset extensions) with default content for every new object of that type. It can also declare a default **tag set** in its own front matter, applied once at creation:
+
+```
+[
+    kb-details: true
+    tags: state
+]: #
+
+Describe the place: notable features, mood, who's usually here.
+```
+
+The `tags:` key is consumed by creation — it is stripped from the new object's body and applied via the normal tag index instead, so tagging stays in `tags.toml` rather than duplicated inline. Removing a tag afterward is not re-applied; existing objects are never migrated when a template's `tags:` declaration changes. See [Template default tags](../docs/configuration.md#template-default-tags) for the full contract, including how this interacts with the `design` operator's `kb` fences.
+
 Datasets do **not** have `narrative/` or `[project]`. Stories always live in **your** project repo; datasets only supply shared reference material.
 
 ## How projects use datasets

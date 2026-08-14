@@ -14,6 +14,7 @@ from lens.core.annotations import (
     parse_annotations,
     parse_front_matter,
     parse_tail_cursor_annotation,
+    pop_front_matter_key,
     strip_html_comments,
     strip_markdown_comments,
 )
@@ -283,6 +284,52 @@ class TestFindFrontMatterSpan(unittest.TestCase):
 
     def test_returns_none_for_empty_string(self) -> None:
         self.assertIsNone(find_front_matter_span(""))
+
+
+class TestPopFrontMatterKey(unittest.TestCase):
+    def test_no_front_matter_returns_none_and_unchanged_text(self) -> None:
+        text = "# title\ncontent"
+        value, remaining = pop_front_matter_key(text, "tags")
+        self.assertIsNone(value)
+        self.assertEqual(remaining, text)
+
+    def test_key_absent_returns_none_and_unchanged_text(self) -> None:
+        text = "[\n    kb-details: true\n]: #\n\nBody"
+        value, remaining = pop_front_matter_key(text, "tags")
+        self.assertIsNone(value)
+        self.assertEqual(remaining, text)
+
+    def test_pops_scalar_key_and_keeps_siblings(self) -> None:
+        text = "[\n    kb-details: true\n    tags: state\n]: #\n\nBody text."
+        value, remaining = pop_front_matter_key(text, "tags")
+        self.assertEqual(value, "state")
+        self.assertEqual(remaining, "[\n    kb-details: true\n]: #\n\nBody text.")
+        self.assertEqual(parse_front_matter(remaining), {"kb-details": True})
+
+    def test_pops_list_key_including_continuation_lines(self) -> None:
+        text = "[\n    tags:\n      - a\n      - b\n    kb-details: true\n]: #\n\nBody"
+        value, remaining = pop_front_matter_key(text, "tags")
+        self.assertEqual(value, ["a", "b"])
+        self.assertEqual(remaining, "[\n    kb-details: true\n]: #\n\nBody")
+
+    def test_pops_only_key_drops_whole_block(self) -> None:
+        text = "[\n    tags: state\n]: #\n\nBody text."
+        value, remaining = pop_front_matter_key(text, "tags")
+        self.assertEqual(value, "state")
+        self.assertEqual(remaining, "\nBody text.")
+        self.assertIsNone(find_front_matter_span(remaining))
+
+    def test_does_not_strip_same_named_key_nested_under_another_key(self) -> None:
+        text = "[\n    tags: state\n    meta:\n      tags: nested_value\n]: #\n\nBody."
+        value, remaining = pop_front_matter_key(text, "tags")
+        self.assertEqual(value, "state")
+        self.assertEqual(
+            remaining,
+            "[\n    meta:\n      tags: nested_value\n]: #\n\nBody.",
+        )
+        self.assertEqual(
+            parse_front_matter(remaining), {"meta": {"tags": "nested_value"}}
+        )
 
 
 class TestParseTailCursorAnnotation(unittest.TestCase):

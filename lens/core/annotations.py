@@ -173,6 +173,60 @@ def parse_front_matter(text: str) -> dict[str, Any]:
     return _parse_yaml_params(yaml_lines)
 
 
+def pop_front_matter_key(text: str, key: str) -> tuple[Any, str]:
+    """Extract *key* from the leading front-matter comment block, if present.
+
+    Returns ``(value, remaining_text)``: *value* is the raw YAML value for
+    *key* (``None`` if there is no front matter or the key is absent), and
+    *remaining_text* is *text* with that key's line(s) removed from the
+    front-matter block — other keys are left untouched, and the whole block
+    is dropped if nothing else remains. When *value* is ``None``,
+    *remaining_text* equals *text* unchanged.
+    """
+    span = find_front_matter_span(text)
+    if span is None:
+        return None, text
+    fm = parse_front_matter(text)
+    if key not in fm:
+        return None, text
+
+    lines = text.split("\n")
+    start, end = span
+    key_re = re.compile(rf"^(\s*){re.escape(key)}\s*:")
+    param_lines = lines[start + 1 : end - 1]
+
+    # Only a line at the block's own top-level indent can be *the* key to pop —
+    # a same-named key nested under some other top-level key (e.g. `meta:` /
+    # `  tags: ...`) is that other key's value, not a sibling to remove.
+    base_indent: int | None = None
+    for line in param_lines:
+        if line.strip():
+            base_indent = len(line) - len(line.lstrip(" "))
+            break
+
+    kept: list[str] = []
+    skip_indent: int | None = None
+    for line in param_lines:
+        if skip_indent is not None:
+            indent = len(line) - len(line.lstrip(" "))
+            if line.strip() and indent <= skip_indent:
+                skip_indent = None
+            else:
+                continue
+        m = key_re.match(line)
+        if m and len(m.group(1)) == base_indent:
+            skip_indent = len(m.group(1))
+            continue
+        kept.append(line)
+
+    if kept:
+        new_lines = lines[: start + 1] + kept + lines[end - 1 :]
+    else:
+        new_lines = lines[:start] + lines[end:]
+
+    return fm[key], "\n".join(new_lines)
+
+
 def iter_kept_storage_lines(raw: str) -> list[tuple[str, int]]:
     """Lines kept by :func:`strip_markdown_comments` with 1-based physical line numbers.
 
