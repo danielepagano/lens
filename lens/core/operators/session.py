@@ -358,6 +358,7 @@ async def apply_remember_patches(
     reasoning: str | None = None,
     cancel_event: Any | None = None,
     storage: Storage | None = None,
+    applied_out: list[str] | None = None,
 ) -> str:
     """Detect pinned objects with remember.* tags and apply kb_patch updates.
 
@@ -370,6 +371,11 @@ async def apply_remember_patches(
     (audit-comment policy). Empty string when
     there is nothing to run. On ``LLMError``, returns a visible HTML comment
     suffix and logs a warning (summary / parent close should still proceed).
+
+    Patches land as ``kb_patch`` tool calls *during* generation, so stopping
+    mid-run can leave some targets updated. *applied_out*, when given, collects
+    the ids that were actually patched, so a caller that stops the pass can say
+    what it left behind.
     """
     if not crawl_result.pinned_ids:
         return ""
@@ -473,6 +479,21 @@ async def apply_remember_patches(
     allowed = frozenset(target_to_rem_tags.keys())
     bundle = build_kb_patch_whitelist_bundle(allowed)
     handlers = bundle.handlers or {}
+
+    if applied_out is not None:
+        inner_patch = handlers.get("kb_patch")
+        if inner_patch is not None:
+
+            async def _recording_kb_patch(
+                args: dict[str, Any], root: Path
+            ) -> str:
+                out = await inner_patch(args, root)
+                target = args.get("id")
+                if isinstance(target, str) and not out.startswith("(error"):
+                    applied_out.append(target)
+                return out
+
+            handlers = {**handlers, "kb_patch": _recording_kb_patch}
 
     artifacts = GenerationArtifacts()
     for attempt in range(_REMEMBER_MAX_LLM_ATTEMPTS):
@@ -941,6 +962,11 @@ class SessionOperator(Operator):
                 )
             return StepResult(ok=True)
 
+        runner = workflow or WorkflowRunner(
+            session=session,
+            cancel_event=cancel_event,
+            on_status=on_status,
+        )
         steps: list[WorkflowStepDef] = []
         if cls.summarize_on_end:
             steps.extend(
@@ -961,6 +987,7 @@ class SessionOperator(Operator):
                     operator=cls,
                     operator_params={},
                     narrative=narrative,
+                    workflow=runner,
                 )
             )
         steps.append(
@@ -971,11 +998,6 @@ class SessionOperator(Operator):
             )
         )
 
-        runner = workflow or WorkflowRunner(
-            session=session,
-            cancel_event=cancel_event,
-            on_status=on_status,
-        )
         outcome = await runner.run(steps)
         return finalize_workflow_outcome(session, outcome)
 

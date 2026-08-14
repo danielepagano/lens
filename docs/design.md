@@ -467,17 +467,27 @@ These are three different controls:
 | **Skip** (per step in the plan) | “I don’t want this optional step.” | No — completed steps stay | Yes — next steps run (e.g. skip `remember` → `close` still runs) |
 | **Retry** (after retryable failure) | “Run this step again.” | No | Yes — only that step is re-invoked |
 | **Abort / Cancel** (stream stop during a dirty step) | “Stop now — this step may have partial side effects.” | Yes, when the step has `abort_rolls_back` | No — remaining steps are not run |
+| **Cancel step** (mid-run, `cancel_scope="step"`) | “Stop this step, keep what it was polishing.” | No | Yes — the step ends `skipped`, next steps run |
 | **Discard** (transaction UI) | “Reject this entire preview.” | Yes — always | N/A |
 
 **Skip** is forward-only and is the main reason the plan exists. Optional tail steps (`remember`, `auto_compress`, …) are marked `skippable` in the plan; the UI shows a Skip control on each planned skippable step. Skip can be signaled while an earlier step is still running (e.g. skip `remember` during `summarize`).
 
-**Abort** is for in-flight steps that mutate state incrementally (KB patches during `remember`, collate during `auto_compress`). Those steps set `abort_rolls_back`: stream Cancel sets `cancel_event`, the step stops, and core calls `finalize_workflow_outcome()` at workflow entry points to run `execute_rollback` on the operator transaction when `rollback_pending`. Use **Skip** instead when you simply don’t want the tail step — abort is the escape hatch when you’re already mid-mutation.
+**Cancel step** covers the case Skip cannot reach: a step already running whose output the rest of the workflow can do without. Steps declare `cancel_scope="step"`; their LLM call is given `WorkflowRunner.step_cancel_event(step_id)` rather than the stream-wide `cancel_event`, so `POST /stream/workflow/action` with `action: "cancel"` interrupts just that step. The step ends `skipped` with a warning and the following steps still run. Two use it today:
+
+- **Modality refine passes** (`workflow_refine:<id>`) — the pre-refine text stands and `persist` runs.
+- **`remember`** — the memory pass stops, the summary stands, and `close` runs, so the session still ends. Because `kb_patch` calls land *during* generation, patches already applied stay; the step reports them in its warning (`applied_out` on `apply_remember_patches`) rather than pretending nothing happened.
+
+A step whose partial work must not survive is not a candidate — use `abort_rolls_back` for those. Where the generic wording is too vague about what survives, set `cancel_label` (e.g. `"Skip memory"`); the plan carries it and the UI uses it verbatim.
+
+**Abort** is for in-flight steps that mutate structure and cannot be left half-done (`collate_persist`, `auto_compress`). Those steps set `abort_rolls_back`: stream Cancel sets `cancel_event`, the step stops, and core calls `finalize_workflow_outcome()` at workflow entry points to run `execute_rollback` on the operator transaction when `rollback_pending`. Use **Skip** instead when you simply don’t want the tail step — abort is the escape hatch when you’re already mid-mutation.
+
+> **Known gap:** through the HTTP path, `abort_rolls_back` does not actually roll back. `/stream/cancel` also cancels the asyncio task, so `CancelledError` propagates out of `WorkflowRunner.run()` before `finalize_workflow_outcome()` can run; the route reports `done: interrupted` and the partial work stays as the pending transaction for the user to Discard. Verified 2026-08-14.
 
 #### Examples
 
 **Session end — skip remember:** Plan is `summarize → remember → close`. You skip `remember` from the preview. Summarize completes (summary held in memory for this run), remember is marked `skipped`, **close runs** and inserts the summary into the parent. Session closes without KB memory updates.
 
-**Session end — abort mid-remember:** Remember is running and may have applied partial KB patches. Cancel aborts remember and **rolls back the whole session-end transaction** — do not try to keep summarize while dropping partial remember.
+**Session end — skip memory mid-run:** Remember is already running. The step's own control (labelled **Skip memory**) stops that pass only: the summary stands, **close runs**, the session ends without memory updates. Any `kb_patch` that already landed stays and is named in the step's warning.
 
 **Write — skip auto-compress:** Plan is `generate → auto_compress`. Generation completes (unstaged). You skip `auto_compress`. The raw generation stays in the pending preview.
 

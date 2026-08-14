@@ -301,6 +301,113 @@ class TestWorkflowRunner(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(Storage(tmp).has_pending())
 
 
+    async def test_step_scoped_cancel_skips_only_that_step(self) -> None:
+        cancel = asyncio.Event()
+        runner = WorkflowRunner(cancel_event=cancel)
+        ran: list[str] = []
+
+        async def refine() -> StepResult:
+            runner.cancel_step("refine")
+            interrupted = runner.step_cancel_event("refine").is_set()
+            ran.append("refine")
+            return StepResult(
+                ok=True,
+                warnings=("kept pre-refine text",) if interrupted else (),
+            )
+
+        async def persist() -> StepResult:
+            ran.append("persist")
+            return StepResult(ok=True)
+
+        outcome = await runner.run([
+            WorkflowStepDef(
+                id="refine", label="Refining…", run=refine, cancel_scope="step"
+            ),
+            WorkflowStepDef(id="persist", label="Saving…", run=persist),
+        ])
+
+        self.assertEqual(ran, ["refine", "persist"])
+        self.assertEqual(outcome.steps[0].status, "skipped")
+        self.assertEqual(outcome.steps[0].warnings, ("kept pre-refine text",))
+        self.assertEqual(outcome.steps[1].status, "success")
+        self.assertFalse(outcome.interrupted)
+        self.assertFalse(cancel.is_set())
+
+    async def test_step_scoped_cancel_before_run_skips_the_step(self) -> None:
+        runner = WorkflowRunner()
+        ran: list[str] = []
+
+        async def first() -> StepResult:
+            runner.cancel_step("refine")
+            ran.append("first")
+            return StepResult(ok=True)
+
+        async def refine() -> StepResult:
+            ran.append("refine")
+            return StepResult(ok=True)
+
+        outcome = await runner.run([
+            WorkflowStepDef(id="first", label="First", run=first),
+            WorkflowStepDef(
+                id="refine", label="Refining…", run=refine, cancel_scope="step"
+            ),
+        ])
+
+        self.assertEqual(ran, ["first"])
+        self.assertEqual(outcome.steps[1].status, "skipped")
+
+    async def test_step_scoped_cancel_rejected_for_workflow_scoped_step(self) -> None:
+        runner = WorkflowRunner()
+        errors: list[str] = []
+
+        async def step() -> StepResult:
+            try:
+                runner.cancel_step("plain")
+            except ValueError as e:
+                errors.append(str(e))
+            return StepResult(ok=True)
+
+        outcome = await runner.run([WorkflowStepDef(id="plain", label="P", run=step)])
+
+        self.assertEqual(outcome.steps[0].status, "success")
+        self.assertTrue(errors)
+        self.assertIn("cannot be cancelled on its own", errors[0])
+
+    async def test_step_cancel_event_also_fires_on_workflow_cancel(self) -> None:
+        cancel = asyncio.Event()
+        runner = WorkflowRunner(cancel_event=cancel)
+        step_event = runner.step_cancel_event("refine")
+
+        self.assertFalse(step_event.is_set())
+        cancel.set()
+        self.assertTrue(step_event.is_set())
+
+    async def test_plan_carries_cancel_scope_and_rollback_flags(self) -> None:
+        events: list[dict[str, Any]] = []
+
+        async def on_event(payload: dict[str, Any]) -> None:
+            events.append(payload)
+
+        async def ok_step() -> StepResult:
+            return StepResult(ok=True)
+
+        runner = WorkflowRunner(on_event=on_event)
+        await runner.run([
+            WorkflowStepDef(
+                id="refine", label="Refining…", run=ok_step, cancel_scope="step"
+            ),
+            WorkflowStepDef(
+                id="compress", label="C", run=ok_step, abort_rolls_back=True
+            ),
+        ])
+
+        plan = next(e for e in events if e.get("action") == "plan")
+        by_id = {s["id"]: s for s in plan["steps"]}
+        self.assertEqual(by_id["refine"].get("cancel_scope"), "step")
+        self.assertNotIn("cancel_scope", by_id["compress"])
+        self.assertTrue(by_id["compress"].get("abort_rolls_back"))
+        self.assertNotIn("abort_rolls_back", by_id["refine"])
+
     async def test_plan_omits_steps_not_should_run_at_plan_time(self) -> None:
         events: list[dict[str, Any]] = []
 

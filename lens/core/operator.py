@@ -1575,6 +1575,7 @@ class Operator(ABC):
                 get_ctx=lambda: runner.modality_context,
                 on_token=on_token,
                 cancel_event=cancel_event,
+                workflow=runner,
             ),
             WorkflowStepDef(
                 id="persist",

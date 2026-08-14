@@ -565,7 +565,7 @@ details[open]>summary {
 .content .md-fence-tool-call pre code.language-tool-call {
   display: block;
   white-space: pre;
-  text-wrap: nowrap;
+  text-wrap: initial;
   padding: 0.65rem 0.75rem;
   font-size: 0.8rem;
   line-height: 1.45;

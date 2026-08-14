@@ -15,6 +15,7 @@ from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.core.workflow_runner import (
     StepResult,
+    WorkflowRunner,
     WorkflowStepDef,
     remember_failure_message,
     remember_result_is_failure,
@@ -28,6 +29,19 @@ class SummarizeRememberState:
     remember_suffix: str = ""
     crawl_result: CrawlResult | None = None
     content: str = ""
+
+
+REMEMBER_STEP_ID = "remember"
+
+
+def _skipped_warning(applied: list[str]) -> str:
+    """What the user gets to know after stopping the memory pass themselves."""
+    if applied:
+        return (
+            "memory update skipped — summary kept; "
+            f"{len(applied)} object(s) already updated: {', '.join(applied)}"
+        )
+    return "memory update skipped — summary kept, nothing written to memory"
 
 
 def remember_should_run(crawl_result: CrawlResult | None, project_root: Any) -> bool:
@@ -61,8 +75,15 @@ def build_summarize_remember_steps(
     operator: type[Any] | None = None,
     operator_params: dict[str, Any] | None = None,
     narrative: NarrativeNode | None = None,
+    workflow: WorkflowRunner | None = None,
 ) -> list[WorkflowStepDef]:
-    """Build summarize and remember workflow steps sharing *state*."""
+    """Build summarize and remember workflow steps sharing *state*.
+
+    ``remember`` is cancellable on its own: stopping it drops the memory pass but
+    keeps the summary and lets ``close`` run, so the session still ends.  That
+    needs *workflow*, whose per-step cancel event the pass listens on instead of
+    the stream-wide one.
+    """
 
     def _crawl() -> CrawlResult:
         if prepare_crawl is not None:
@@ -104,16 +125,30 @@ def build_summarize_remember_steps(
     async def run_remember() -> StepResult:
         if state.crawl_result is None or not state.content:
             return StepResult(ok=True, skipped=True)
+        step_event = (
+            workflow.step_cancel_event(REMEMBER_STEP_ID)
+            if workflow is not None
+            else cancel_event
+        )
+        applied: list[str] = []
         suffix = await apply_remember_patches(
             crawl_result=state.crawl_result,
             content=state.content,
             project_root=session.project_root,
             llm_id=llm_id,
             reasoning=reasoning,
-            cancel_event=cancel_event,
+            cancel_event=step_event,
             storage=storage,
+            applied_out=applied,
         )
-        if cancel_event is not None and cancel_event.is_set():
+        stream_cancelled = cancel_event is not None and cancel_event.is_set()
+        step_cancelled = (
+            step_event is not None and step_event.is_set() and not stream_cancelled
+        )
+        if step_cancelled:
+            # The user asked for this pass only; summary and close still stand.
+            return StepResult(ok=True, warnings=(_skipped_warning(applied),))
+        if stream_cancelled:
             return StepResult(ok=False, cancelled=True)
         if remember_result_is_failure(suffix):
             state.remember_suffix = suffix
@@ -139,13 +174,14 @@ def build_summarize_remember_steps(
             failure_policy="fatal",
         ),
         WorkflowStepDef(
-            id="remember",
+            id=REMEMBER_STEP_ID,
             label="Updating memory…",
             run=run_remember,
             should_run=remember_run,
             failure_policy="retryable",
             non_interactive_failure="skip",
             skippable=True,
-            abort_rolls_back=True,
+            cancel_scope="step",
+            cancel_label="Skip memory",
         ),
     ]

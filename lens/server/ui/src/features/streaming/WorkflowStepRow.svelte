@@ -52,7 +52,7 @@
   {#if step.error && step.status === 'failed'}
     <span class="workflow-step-error">{step.error}</span>
   {/if}
-  {#if step.status === 'success' && step.warnings?.length}
+  {#if (step.status === 'success' || step.status === 'skipped') && step.warnings?.length}
     <span class="workflow-step-warnings" data-testid="workflow-step-warnings">
       {step.warnings.join(' · ')}
     </span>

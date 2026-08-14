@@ -24,11 +24,25 @@
     return null
   })
 
-  async function handleCancelStep(_stepId: string) {
+  /** Step-scoped steps (refine) stop alone and keep their input; everything else aborts the stream. */
+  async function handleCancelStep(stepId: string) {
+    const step = steps.find((s) => s.id === stepId)
+    const stepScoped = step?.cancel_scope === 'step'
     try {
-      await cancelStream()
+      if (stepScoped) {
+        await workflowStreamAction(stepId, 'cancel')
+      } else {
+        await cancelStream()
+      }
     } catch (e) {
+      // A silent no-op here looks identical to "the button does nothing", so say so.
+      const detail = e instanceof Error ? e.message : String(e)
       console.error('Cancel failed:', e)
+      streamingPreview.update((prev) =>
+        prev
+          ? { ...prev, statusLine: `${stepScoped ? 'Skip' : 'Cancel'} failed: ${detail}` }
+          : prev
+      )
     }
   }
 

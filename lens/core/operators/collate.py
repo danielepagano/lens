@@ -274,6 +274,11 @@ class CollateOperator(Operator):
             self.storage.write_file(target_node.md_path(), new_parent_text)
             return StepResult(ok=True)
 
+        runner = workflow or WorkflowRunner(
+            session=session,
+            cancel_event=cancel_event,
+            on_status=on_status,
+        )
         steps = build_summarize_remember_steps(
             sr_state,
             session=session,
@@ -292,6 +297,7 @@ class CollateOperator(Operator):
             operator=CollateOperator,
             operator_params={"id": id},
             narrative=narrative_root,
+            workflow=runner,
         )
         steps.append(
             WorkflowStepDef(
@@ -302,11 +308,6 @@ class CollateOperator(Operator):
             )
         )
 
-        runner = workflow or WorkflowRunner(
-            session=session,
-            cancel_event=cancel_event,
-            on_status=on_status,
-        )
         outcome = await runner.run(steps, emit_plan=workflow is None)
         return finalize_workflow_outcome(session, outcome)
 
