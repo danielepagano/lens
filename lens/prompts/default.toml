@@ -33,6 +33,7 @@ Entry text here (follow type._template when present).
 ```
 
 - The ``tags`` list **adds** tags only; use ``remove-tags`` to drop tags. Omit the body (or leave only blank lines after the closing ``---``) on an **existing** id to update tags only without replacing stored text. For a **new** id, an empty body still creates an empty object.
+- If ``type._template`` declares its own front-matter ``tags:`` key, that is the type's default tag set — it is **not** applied automatically here. When creating a new id of that type, copy those tags into your own block's ``tags`` list yourself.
 - Include as many blocks as needed; prose outside blocks has no KB side-effects.
 - A non-empty body replaces the full stored text for that id. Use ``kb_get`` only for ids not already under RELEVANT KNOWLEDGE; inlined objects begin with ``KB['type.key']``.'''
 modalities.tool_fence_awareness.hint = '''

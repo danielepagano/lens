@@ -68,6 +68,49 @@ class TestKnowledgeStore(unittest.TestCase):
         path = self.root / "knowledge" / "place" / "nyc.md"
         self.assertEqual(path.read_text(), "Template: describe the place.")
 
+    def test_template_declared_tags_applied_on_create(self) -> None:
+        self.store.set_template(
+            "tracker",
+            "[\n    kb-details: true\n    tags: state\n]: #\n\nDescribe the tracker.",
+        )
+        self.store.store_object("tracker.combat", None, use_template=True)
+        self.assertEqual(self.store.get_tags("tracker.combat"), ["state"])
+        path = self.root / "knowledge" / "tracker" / "combat.md"
+        body = path.read_text()
+        self.assertNotIn("tags:", body)
+        self.assertIn("kb-details: true", body)
+        self.assertIn("Describe the tracker.", body)
+
+    def test_template_declared_tags_list(self) -> None:
+        self.store.set_template(
+            "front",
+            "[\n    tags:\n      - remember.core\n      - active\n]: #\n\nBody.",
+        )
+        self.store.store_object("front.goblins", None, use_template=True)
+        self.assertEqual(
+            set(self.store.get_tags("front.goblins")), {"remember.core", "active"}
+        )
+
+    def test_template_no_tags_declaration_is_noop(self) -> None:
+        self.store.set_template("place", "Template: describe the place.")
+        self.store.store_object("place.nyc", None, use_template=True)
+        self.assertEqual(self.store.get_tags("place.nyc"), [])
+
+    def test_template_tags_not_reapplied_after_removal(self) -> None:
+        self.store.set_template(
+            "tracker",
+            "[\n    tags: state\n]: #\n\nDescribe the tracker.",
+        )
+        self.store.store_object("tracker.combat", None, use_template=True)
+        self.assertEqual(self.store.get_tags("tracker.combat"), ["state"])
+
+        self.store.remove_tags("tracker.combat", ["state"])
+        self.assertEqual(self.store.get_tags("tracker.combat"), [])
+
+        # A plain content update (no template) must not resurrect the tag.
+        self.store.store_object("tracker.combat", "Updated body.")
+        self.assertEqual(self.store.get_tags("tracker.combat"), [])
+
     def test_template_create_and_update(self) -> None:
         self.store.set_template("npc", "First template")
         self.assertEqual(self.store.get_template("NPC"), "First template")

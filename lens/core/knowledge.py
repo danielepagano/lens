@@ -9,6 +9,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, cast
+from lens.core.annotations import pop_front_matter_key
 from lens.core.exceptions import LensException
 from lens.core.project import get_selected_datasets, resolve_dataset_path
 from lens.core.storage_text import format_kb_prompt_block
@@ -66,6 +67,15 @@ def parse_id(canonical_id: str, default_type: str | None = None) -> tuple[str, s
 
 def _canonical_id(type_name: str, key: str) -> str:
     return f"{type_name}.{key}".lower()
+
+
+def _normalize_template_tags(raw: Any) -> list[str]:
+    """Normalize a template's declared ``tags:`` front-matter value to a tag list."""
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return [str(t) for t in cast(list[Any], raw)]
+    return [str(raw)]
 
 
 @dataclass
@@ -230,9 +240,14 @@ class KnowledgeStore:
         type_name, key = parse_id(canonical_id)
         path = self._object_path(type_name, key)
 
+        template_tags: list[str] = []
         if use_template:
             template = self.get_template(type_name)
-            content = template if template is not None else ""
+            if template is not None:
+                raw_tags, content = pop_front_matter_key(template, "tags")
+                template_tags = _normalize_template_tags(raw_tags)
+            else:
+                content = ""
 
         if content is None:
             # Treat the object as existing if it lives in any dataset too.
@@ -244,11 +259,18 @@ class KnowledgeStore:
             self._ensure_local(canonical_id)
         self._ensure_storage().write_file(path, content)
 
+        if template_tags:
+            self.add_tags(canonical_id, template_tags)
+
     def get_template(self, type_name: str) -> str | None:
         """Return the template for *type_name* from project or datasets.
 
         Project-local templates take precedence; among datasets, the last selected
         dataset wins (mirroring object shadowing rules).
+
+        The returned text includes any declared ``tags:`` front-matter key
+        verbatim — that key is a creation-time default, consumed and stripped
+        by :meth:`store_object` (``use_template=True``), not by this getter.
         """
         type_lower = type_name.lower()
 

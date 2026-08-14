@@ -713,6 +713,24 @@ lens kb tag tracker.combat --add state
 
 The divert is a render decision only — the object is still pinned, still deduped against other scopes, and `lens explain` still reports it (in the `live_state` block, marked volatile). Tagging an object that never changes just makes it uncacheable for no benefit.
 
+### Template default tags
+
+A type's `_template.md` can declare a default tag set in its own front matter, alongside `kb-details` if present:
+
+```
+[
+    kb-details: true
+    tags: state
+]: #
+```
+
+Whenever an object is created from the template — `lens kb add <id> -t`, the KB UI's "use template" checkbox, or any code path that calls `store_object(..., use_template=True)` — the declared tags are applied to the new object via the normal tag index (`knowledge/tags.toml`).
+
+- **Default, not enforcement.** Tags are applied once, at creation. Removing one afterward is not re-asserted, and the template does not update existing objects.
+- The `tags:` key is consumed by creation and stripped from the new object's own body — it never appears in the created file, so it doesn't sit next to `knowledge/tags.toml` as a second source of truth.
+- Existing objects are untouched; changing a template's `tags:` declaration is not backfilled.
+- Objects created by an LLM via `design`'s `kb` fences (see [Prompt packs](#prompt-packs)) are **not** covered by this mechanism — the fence extractor only applies the `tags:` list present in the fence itself. The `design` system prompt instructs the model to copy a template's declared tags into its own block when creating a new id of that type.
+
 ### `vars`
 
 String substitution in prompts (`@var:key`). **Node front matter only** — not in `lens.toml`.
