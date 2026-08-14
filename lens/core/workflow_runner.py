@@ -23,6 +23,7 @@ WorkflowOutcomeKind = Literal["success", "partial", "failed", "cancelled"]
 WorkflowAction = Literal["retry", "skip"]
 FailurePolicy = Literal["fatal", "retryable", "warn"]
 NonInteractiveFailure = Literal["fail", "skip"]
+CancelScope = Literal["workflow", "step"]
 
 _workflow_step_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "lens_workflow_step_id",
@@ -55,6 +56,24 @@ class StepResult:
     cancelled: bool = False
 
 
+class StepCancelEvent(asyncio.Event):
+    """Cancel event for one step, also fired by the workflow-wide cancel.
+
+    Only ``is_set()`` is consulted by the LLM loop, so the union is computed
+    there rather than mirrored with a watcher task; ``wait()`` still tracks this
+    event alone.
+    """
+
+    def __init__(self, workflow_cancel: asyncio.Event | None) -> None:
+        super().__init__()
+        self._workflow_cancel = workflow_cancel
+
+    def is_set(self) -> bool:
+        if self._workflow_cancel is not None and self._workflow_cancel.is_set():
+            return True
+        return super().is_set()
+
+
 @dataclass
 class WorkflowStepSnapshot:
     id: str
@@ -63,6 +82,9 @@ class WorkflowStepSnapshot:
     error: str | None = None
     warnings: tuple[str, ...] = ()
     skippable: bool = False
+    cancel_scope: CancelScope = "workflow"
+    abort_rolls_back: bool = False
+    cancel_label: str | None = None
 
 
 @dataclass
@@ -85,6 +107,13 @@ class WorkflowStepDef:
     """User may skip this step from the plan preview before it runs (forward-only)."""
     abort_rolls_back: bool = False
     """Abort while this step is running discards the whole operator pending transaction."""
+    cancel_scope: CancelScope = "workflow"
+    """``"step"``: cancelling mid-run stops only this step; the workflow keeps going
+    with whatever the earlier steps produced (refine passes, which are pure
+    improvements over an already-good result)."""
+    cancel_label: str | None = None
+    """Button text for the mid-run cancel, when the generic wording is too vague
+    about what survives (e.g. ``"Skip memory"`` on ``remember``)."""
 
 
 class WorkflowRunner:
@@ -106,6 +135,8 @@ class WorkflowRunner:
         self._pending_action: WorkflowAction | None = None
         self._paused_step_id: str | None = None
         self._skip_requested: set[str] = set()
+        self._step_cancelled: set[str] = set()
+        self._step_cancel_events: dict[str, StepCancelEvent] = {}
         self._snapshots: list[WorkflowStepSnapshot] = []
         self._step_defs: dict[str, WorkflowStepDef] = {}
         self._steps_list: list[WorkflowStepDef] = []
@@ -152,6 +183,43 @@ class WorkflowRunner:
     def on_event_handler(self) -> WorkflowEventHandler | None:
         return self._on_event
 
+    def step_cancel_event(self, step_id: str) -> asyncio.Event:
+        """Cancel event scoped to *step_id* (also fires on the workflow-wide cancel).
+
+        Steps that declare ``cancel_scope="step"`` pass this — not the workflow
+        event — to their LLM calls, so cancelling one does not abort the rest.
+        """
+        ev = self._step_cancel_events.get(step_id)
+        if ev is None:
+            ev = StepCancelEvent(self._cancel_event)
+            self._step_cancel_events[step_id] = ev
+        return ev
+
+    def cancel_step(self, step_id: str) -> None:
+        """Stop *step_id* alone; the workflow continues with what it already has."""
+        step_def = self._step_defs.get(step_id)
+        if step_def is None:
+            raise ValueError(f"unknown workflow step {step_id!r}")
+        if step_def.cancel_scope != "step":
+            raise ValueError(
+                f"workflow step {step_id!r} cannot be cancelled on its own"
+            )
+        snap = self._snap_for(step_id)
+        status = snap.status if snap is not None else None
+        if status == "planned":
+            self._skip_requested.add(step_id)
+            return
+        if status != "running":
+            raise ValueError(
+                f"workflow step {step_id!r} is not running (status={status!r})"
+            )
+        self._step_cancelled.add(step_id)
+        self.step_cancel_event(step_id).set()
+
+    def _cancelled_alone(self, step_id: str) -> bool:
+        """The step was cancelled on its own, with no workflow-wide cancel behind it."""
+        return step_id in self._step_cancelled and not self._is_cancelled()
+
     def signal_action(self, step_id: str, action: WorkflowAction) -> None:
         step_def = self._step_defs.get(step_id)
         if step_def is None:
@@ -189,14 +257,7 @@ class WorkflowRunner:
         for step_def in steps:
             if not step_def.should_run():
                 continue
-            plan_steps.append(
-                WorkflowStepSnapshot(
-                    step_def.id,
-                    step_def.label,
-                    "planned",
-                    skippable=step_def.skippable,
-                )
-            )
+            plan_steps.append(self._plan_snapshot(step_def))
         if emit_plan:
             self._snapshots = list(plan_steps)
             await self._emit(
@@ -217,12 +278,7 @@ class WorkflowRunner:
 
             snap = self._snap_for(step_def.id)
             if snap is None:
-                snap = WorkflowStepSnapshot(
-                    step_def.id,
-                    step_def.label,
-                    "planned",
-                    skippable=step_def.skippable,
-                )
+                snap = self._plan_snapshot(step_def)
                 self._snapshots.append(snap)
                 await self._emit(
                     {"type": "workflow", "action": "plan", "steps": self._snapshot_dicts()}
@@ -254,6 +310,12 @@ class WorkflowRunner:
             await self._emit_step_start(step_def)
 
             result = await self._run_step_with_policy(step_def)
+
+            if self._cancelled_alone(step_def.id):
+                snap.status = "skipped"
+                snap.warnings = result.warnings
+                await self._emit_step_end(step_def.id, "skipped")
+                continue
 
             if result.cancelled or self._is_cancelled():
                 snap.status = "cancelled"
@@ -300,6 +362,11 @@ class WorkflowRunner:
                         snap.status = "running"
                         await self._emit_step_start(step_def)
                         result = await self._run_step_with_policy(step_def)
+                        if self._cancelled_alone(step_def.id):
+                            snap.status = "skipped"
+                            snap.warnings = result.warnings
+                            await self._emit_step_end(step_def.id, "skipped")
+                            continue
                         if result.cancelled or self._is_cancelled():
                             snap.status = "cancelled"
                             if step_def.abort_rolls_back:
@@ -360,6 +427,17 @@ class WorkflowRunner:
             steps=list(self._snapshots),
             interrupted=self._is_cancelled() or aborted,
             rollback_pending=rollback_pending,
+        )
+
+    def _plan_snapshot(self, step_def: WorkflowStepDef) -> WorkflowStepSnapshot:
+        return WorkflowStepSnapshot(
+            step_def.id,
+            step_def.label,
+            "planned",
+            skippable=step_def.skippable,
+            cancel_scope=step_def.cancel_scope,
+            abort_rolls_back=step_def.abort_rolls_back,
+            cancel_label=step_def.cancel_label,
         )
 
     def _snap_for(self, step_id: str) -> WorkflowStepSnapshot | None:
@@ -443,6 +521,9 @@ class WorkflowRunner:
                 **({"error": s.error} if s.error else {}),
                 **({"warnings": list(s.warnings)} if s.warnings else {}),
                 **({"skippable": True} if s.skippable else {}),
+                **({"cancel_scope": s.cancel_scope} if s.cancel_scope != "workflow" else {}),
+                **({"abort_rolls_back": True} if s.abort_rolls_back else {}),
+                **({"cancel_label": s.cancel_label} if s.cancel_label else {}),
             }
             for s in self._snapshots
         ]

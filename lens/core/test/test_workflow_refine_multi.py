@@ -42,7 +42,7 @@ from lens.core.project import ProjectSession
 from lens.core.storage import Storage
 from lens.core.narrative import NarrativeNode
 from lens.core.test.llm_run_mock import mock_run_llm
-from lens.core.workflow_runner import WorkflowRunner
+from lens.core.workflow_runner import WorkflowOutcome, WorkflowRunner
 
 FIRST_ID = "refine_first"
 SECOND_ID = "refine_second"
@@ -247,7 +247,8 @@ class _InlineRefineTestCase(unittest.TestCase):
         narrative: Any,
         *,
         workflow: WorkflowRunner | None = None,
-    ) -> None:
+        refine: Any = None,
+    ) -> WorkflowOutcome | None:
         async def _draft(*_a: object, **_k: object) -> str:
             return "Draft.\n"
 
@@ -258,15 +259,18 @@ class _InlineRefineTestCase(unittest.TestCase):
                 segments=[GenerationSegment("prose", "refined\n")]
             )
 
+        outcome: WorkflowOutcome | None = None
+
         async def _run() -> None:
+            nonlocal outcome
             with patch("lens.core.operator.run_llm", mock_run_llm(_draft)):
                 with patch(
                     "lens.core.modalities.workflow.run_refine_pass",
-                    side_effect=_fake_refine,
+                    side_effect=refine or _fake_refine,
                 ):
                     with contextlib.redirect_stdout(io.StringIO()):
                         with contextlib.redirect_stderr(io.StringIO()):
-                            await WriteOperator.run_inline(
+                            outcome = await WriteOperator.run_inline(
                                 session=ProjectSession(root, root),
                                 narrative=narrative,
                                 prompt="go",
@@ -278,6 +282,7 @@ class _InlineRefineTestCase(unittest.TestCase):
                             )
 
         asyncio.run(_run())
+        return outcome
 
 
 class TestTwoPassesRunIndependently(_InlineRefineTestCase):
@@ -392,6 +397,50 @@ class TestTwoPassesRunIndependently(_InlineRefineTestCase):
             self.assertNotIn(f"<!-- {FIRST_ID} -->", text)
             self.assertIn(f"<!-- {SECOND_ID} -->", text)
             self.assertIn("Draft.", text)
+
+    def test_cancelling_a_pass_keeps_the_draft_and_finishes_the_workflow(self) -> None:
+        """Cancel on a refine step drops that pass only — not the generation.
+
+        The step's LLM call gets the runner's *step* cancel event, so an interrupted
+        pass falls back to the pre-refine text and persist still runs.
+        """
+        _make_tagging(FIRST_ID)
+        _make_tagging(SECOND_ID)
+        runner = WorkflowRunner()
+        target = refine_step_id(FIRST_ID)
+
+        async def _refine(*_a: object, **kwargs: object) -> GenerationArtifacts:
+            cancel_event = kwargs.get("cancel_event")
+            if isinstance(cancel_event, asyncio.Event) and not cancel_event.is_set():
+                # Only the first pass is cancelled; stand in for the user clicking it.
+                with contextlib.suppress(ValueError):
+                    runner.cancel_step(target)
+                if cancel_event.is_set():
+                    return GenerationArtifacts(interrupted=True)
+            return GenerationArtifacts(
+                segments=[GenerationSegment("prose", "refined\n")]
+            )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            storage = Storage(root)
+            set_modality_config(narrative, FIRST_ID, "enabled", True, storage)
+            set_modality_config(narrative, SECOND_ID, "enabled", True, storage)
+
+            outcome = self._run_write(
+                root, narrative, workflow=runner, refine=_refine
+            )
+
+            assert outcome is not None
+            self.assertFalse(outcome.interrupted)
+            statuses = {s.id: s.status for s in outcome.steps}
+            self.assertEqual(statuses[target], "skipped")
+            self.assertEqual(statuses["persist"], "success")
+
+            text = narrative.md_path().read_text(encoding="utf-8")
+            self.assertIn("Draft.", text)
+            self.assertNotIn(f"<!-- {FIRST_ID} -->", text)
+            self.assertIn(f"<!-- {SECOND_ID} -->", text)
 
     def test_single_pass_still_works_without_a_runner(self) -> None:
         _make_tagging(FIRST_ID)

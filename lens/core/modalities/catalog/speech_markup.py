@@ -20,6 +20,7 @@ from lens.core.modalities.types import (
     RefinePassSpec,
     SpeechMarkupCache,
 )
+from lens.core.pinning import collect_modalities_fm
 from lens.core.prompts import PromptStore
 from lens.core.speech import registry as speech_registry
 from lens.core.speech.grammars import (
@@ -29,6 +30,10 @@ from lens.core.speech.grammars import (
 )
 
 _log = logging.getLogger(__name__)
+
+SPEECH_MARKUP_MODES = frozenset({"generate", "refine", "both"})
+"""``modalities.speech_markup.mode`` values: generate tags while writing, run the
+post-generation refine pass, or both. Anything else falls back to ``both``."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,7 +189,11 @@ class SpeechMarkupModality(Modality):
         grammar = (
             resolve_tts_grammar(descriptor.grammar) if descriptor.grammar else None
         )
-        cache = SpeechMarkupCache(descriptor=descriptor, grammar=grammar)
+        fm = collect_modalities_fm(ctx.focus_node).get(self.id, {})
+        mode = fm.get("mode")
+        if mode not in SPEECH_MARKUP_MODES:
+            mode = "both"
+        cache = SpeechMarkupCache(descriptor=descriptor, grammar=grammar, mode=mode)
         return replace(ctx, speech_markup=cache)
 
     def gates(self, ctx: ModalityContext) -> ModalityGateResult:
@@ -209,11 +218,15 @@ class SpeechMarkupModality(Modality):
         cache = ctx.speech_markup
         if cache is None or cache.grammar is None:
             return ()
+        if cache.mode not in ("generate", "both"):
+            return ()
         return (speech_markup_generate_addendum(ctx.project_root, cache.grammar),)
 
     def workflow_refine_pass(self, ctx: ModalityContext, text: str) -> RefinePassSpec | None:
         cache = ctx.speech_markup
         if cache is None or cache.grammar is None:
+            return None
+        if cache.mode not in ("refine", "both"):
             return None
 
         lines, has_trailing_newline = split_lines_keepends(text)

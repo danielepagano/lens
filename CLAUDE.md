@@ -258,7 +258,7 @@ The server is a FastAPI adapter over `lens/core/`. CLI and server are sibling in
 - Core must raise explicit exceptions, not call `sys.exit()` or `print()`.
 - Routes must catch domain exceptions and return HTTP 400/500. Stack traces must not leak to clients.
 - One SSE stream at a time per project (enforced via `app.state.stream_locks`). New streaming routes must acquire the same lock.
-- Workflow actions: `POST /{slug}/stream/workflow/action` with `{step_id, action: "skip"|"retry"}`.
+- Workflow actions: `POST /{slug}/stream/workflow/action` with `{step_id, action: "skip"|"retry"|"cancel"}`. `cancel` is step-scoped and only valid for steps declaring `cancel_scope="step"` (refine passes): it stops that step, keeps the pre-step result, and the workflow continues.
 
 **Authentication:** Handled entirely at the Caddy reverse proxy layer. FastAPI trusts all incoming requests as authenticated. Do not add auth logic to routes. If Caddy is removed, the server must not be exposed to the public internet.
 

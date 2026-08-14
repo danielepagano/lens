@@ -116,6 +116,11 @@ class SectionOperator(Operator):
                 )
             return StepResult(ok=True)
 
+        runner = workflow or WorkflowRunner(
+            session=session,
+            cancel_event=cancel_event,
+            on_status=on_status,
+        )
         steps = build_summarize_remember_steps(
             sr_state,
             session=session,
@@ -133,6 +138,7 @@ class SectionOperator(Operator):
             operator=type(self),
             operator_params={},
             narrative=self.narrative_root,
+            workflow=runner,
         )
         steps.append(
             WorkflowStepDef(
@@ -142,11 +148,6 @@ class SectionOperator(Operator):
             )
         )
 
-        runner = workflow or WorkflowRunner(
-            session=session,
-            cancel_event=cancel_event,
-            on_status=on_status,
-        )
         outcome = await runner.run(steps)
         return finalize_workflow_outcome(session, outcome)
 

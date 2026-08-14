@@ -121,7 +121,7 @@ Direct-edit routes build their own `KnowledgeStore`, so any route that mutates t
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/{slug}/stream/cancel` | Stop the active stream. Completed workflow steps remain in the pending transaction; use rollback to discard the preview. |
-| POST | `/{slug}/stream/workflow/action` | Retry or skip a paused workflow step. Body: `{"step_id": "<id>", "action": "retry"\|"skip"}`. |
+| POST | `/{slug}/stream/workflow/action` | Retry or skip a paused workflow step, or cancel a running step-scoped one. Body: `{"step_id": "<id>", "action": "retry"\|"skip"\|"cancel"}`. `cancel` is only valid for steps whose plan entry carries `cancel_scope: "step"` (refine passes) — it stops that step alone and the workflow continues; 400 otherwise. |
 
 Closing the browser tab or dropping the SSE connection auto-cancels the active stream (same semantics as explicit cancel). One stream at a time per project (409 if busy).
 

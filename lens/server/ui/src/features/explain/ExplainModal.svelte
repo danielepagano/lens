@@ -7,6 +7,7 @@
   import { availableOperatorSlugs } from '../../commands/common'
   import ExplainBar from './ExplainBar.svelte'
   import ExplainBlockSection from './ExplainBlockSection.svelte'
+  import SelectMenu from '../../components/SelectMenu.svelte'
   import {
     blockSegments,
     formatShare,
@@ -31,6 +32,10 @@
   let openBlocks = $state<Record<string, boolean>>({})
 
   const operatorChoices = $derived(availableOperatorSlugs($stats))
+  const operatorOptions = $derived([
+    { value: '', label: report ? `${report.operator} (detected)` : 'detected' },
+    ...operatorChoices.map((slug) => ({ value: slug, label: slug })),
+  ])
 
   /** Project state that can change what the prompt would contain. */
   const projectStateKey = $derived(
@@ -169,15 +174,15 @@
             >
           </div>
 
-          <label class="explain-operator">
+          <div class="explain-operator">
             <span>as</span>
-            <select bind:value={operatorOverride} aria-label="Assemble as operator">
-              <option value="">{report ? `${report.operator} (detected)` : 'detected'}</option>
-              {#each operatorChoices as slug (slug)}
-                <option value={slug}>{slug}</option>
-              {/each}
-            </select>
-          </label>
+            <SelectMenu
+              ariaLabel="Assemble as operator"
+              value={operatorOverride}
+              options={operatorOptions}
+              onChange={(v) => (operatorOverride = v)}
+            />
+          </div>
 
           <button
             type="button"
@@ -366,13 +371,9 @@
     color: var(--pico-muted-color);
   }
 
-  .explain-operator select {
-    margin: 0;
-    padding: 0.15rem 1.6rem 0.15rem 0.4rem;
-    height: 32px;
-    width: auto;
+  .explain-operator :global(.select-menu-trigger) {
+    min-width: 7rem;
     font-size: 0.75rem;
-    background-position: center right 0.4rem;
   }
 
   .explain-refresh {

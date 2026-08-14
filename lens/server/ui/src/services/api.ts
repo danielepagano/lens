@@ -372,7 +372,7 @@ export async function cancelStream(): Promise<void> {
 
 export async function workflowStreamAction(
   stepId: string,
-  action: 'retry' | 'skip'
+  action: 'retry' | 'skip' | 'cancel'
 ): Promise<void> {
   const r = await fetch(projectPath('/stream/workflow/action'), {
     method: 'POST',
@@ -658,6 +658,10 @@ export interface WorkflowStepSnapshot {
   skippable?: boolean
   /** Cancel mid-step rolls back the whole operator preview (e.g. collate). */
   abort_rolls_back?: boolean
+  /** 'step': cancel stops this step only and the workflow keeps going (refine passes). */
+  cancel_scope?: 'workflow' | 'step'
+  /** Step-supplied button text for the mid-run cancel (e.g. "Skip memory"). */
+  cancel_label?: string
 }
 
 export interface OperatorWorkflowEvent {

@@ -304,6 +304,7 @@ async def run_modality_post_refine_workflow(
             get_ctx=lambda: workflow.modality_context,
             on_token=on_token,
             cancel_event=cancel_event,
+            workflow=workflow,
         ),
     ]
     outcome = await workflow.run(steps, emit_plan=False)
@@ -427,6 +428,7 @@ def build_refine_step_defs(
     get_ctx: Callable[[], ModalityContext | None],
     on_token: Callable[[str], Awaitable[None]] | None = None,
     cancel_event: asyncio.Event | None = None,
+    workflow: WorkflowRunner | None = None,
 ) -> list[WorkflowStepDef]:
     """One independently skippable ``workflow_refine:<id>`` step per refine-capable modality.
 
@@ -434,14 +436,26 @@ def build_refine_step_defs(
     step's ``should_run`` narrows it once ``pending.refine_modality_ids`` is known.
     The runner re-checks ``should_run`` as it iterates, so steps that only become
     eligible after generate still appear in the plan.
+
+    A refine pass only polishes an already-usable result, so it is cancellable on its
+    own (``cancel_scope="step"``): its LLM call gets the runner's per-step cancel
+    event, and interrupting it keeps the pre-refine text and carries on to persist
+    instead of discarding the generation.
     """
 
     def _make(modality_id: str) -> WorkflowStepDef:
+        step_id = refine_step_id(modality_id)
+
         def should_run() -> bool:
             pending = get_pending()
             return pending is not None and modality_id in pending.refine_modality_ids
 
         async def run() -> StepResult:
+            step_cancel = (
+                workflow.step_cancel_event(step_id)
+                if workflow is not None
+                else cancel_event
+            )
             return await run_workflow_refine_step(
                 session,
                 modality_id=modality_id,
@@ -449,16 +463,17 @@ def build_refine_step_defs(
                 resolved=get_resolved(),
                 ctx=get_ctx(),
                 on_token=on_token,
-                cancel_event=cancel_event,
+                cancel_event=step_cancel,
             )
 
         return WorkflowStepDef(
-            id=refine_step_id(modality_id),
+            id=step_id,
             label=f"Refining ({modality_id.replace('_', ' ')})…",
             run=run,
             should_run=should_run,
             failure_policy="warn",
             skippable=True,
+            cancel_scope="step",
         )
 
     return [_make(mid) for mid in registered_refine_modality_ids()]

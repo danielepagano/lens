@@ -71,6 +71,9 @@ class RefinePassSpec:
 class SpeechMarkupCache:
     descriptor: SpeechDescriptor
     grammar: TtsGrammar | None
+    mode: str = "both"
+    """Which speech markup asks to honor: ``generate`` (add tags while writing),
+    ``refine`` (post-generation cleanup pass only), or ``both`` (default)."""
 
 
 @dataclass(frozen=True)

@@ -6,7 +6,7 @@ import json
 import subprocess
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from lens.core.exceptions import OperatorError
 from lens.core.test.llm_run_mock import mock_run_llm
+from lens.server.streaming import StreamLock
 
 
 def _git_init(project: Path) -> None:
@@ -207,6 +208,35 @@ def write_client(tmp_path: Path) -> Generator[TestClient, None, None]:
         yield client
 
 
+class _StubWorkflow:
+    """Stands in for the runner: the route only dispatches to it."""
+
+    def __init__(self, error: str | None = None) -> None:
+        self.cancelled: list[str] = []
+        self.actions: list[tuple[str, str]] = []
+        self.error = error
+
+    def cancel_step(self, step_id: str) -> None:
+        if self.error:
+            raise ValueError(f"workflow step {step_id!r} {self.error}")
+        self.cancelled.append(step_id)
+
+    def signal_action(self, step_id: str, action: str) -> None:
+        self.actions.append((step_id, action))
+
+
+def _fake_active_workflow(
+    client: TestClient, error: str | None = None
+) -> tuple[StreamLock, _StubWorkflow]:
+    """Mark the project's stream lock as running a workflow, with a stub runner."""
+    locks = cast(dict[str, StreamLock], client.app.state.stream_locks)  # type: ignore[attr-defined]
+    lock = locks.setdefault("test", StreamLock())
+    workflow = _StubWorkflow(error)
+    lock.kind = "write"
+    lock.workflow = workflow
+    return lock, workflow
+
+
 class TestOperatorStreamWorkflow:
     def test_write_stream_emits_workflow_plan(self, write_client: TestClient) -> None:
         async def _text(*_a: Any, **_k: Any) -> str:
@@ -236,4 +266,44 @@ class TestOperatorStreamWorkflow:
             "/test/stream/workflow/action",
             json={"step_id": "generate", "action": "skip"},
         )
+        assert r.status_code == 400
+
+    def test_cancel_action_cancels_only_that_step(self, write_client: TestClient) -> None:
+        """Cancel on a step-scoped step must not touch the stream-wide cancel."""
+        lock, workflow = _fake_active_workflow(write_client)
+
+        r = write_client.post(
+            "/test/stream/workflow/action",
+            json={"step_id": "workflow_refine:speech_markup", "action": "cancel"},
+        )
+
+        assert r.status_code == 200
+        assert workflow.cancelled == ["workflow_refine:speech_markup"]
+        assert workflow.actions == []
+        assert not lock.cancel_event.is_set()
+
+    def test_cancel_action_rejected_for_workflow_scoped_step(
+        self, write_client: TestClient
+    ) -> None:
+        lock, _ = _fake_active_workflow(
+            write_client, error="cannot be cancelled on its own"
+        )
+
+        r = write_client.post(
+            "/test/stream/workflow/action",
+            json={"step_id": "generate", "action": "cancel"},
+        )
+
+        assert r.status_code == 400
+        assert "cannot be cancelled on its own" in r.json()["detail"]
+        assert not lock.cancel_event.is_set()
+
+    def test_unknown_workflow_action_is_400(self, write_client: TestClient) -> None:
+        _fake_active_workflow(write_client)
+
+        r = write_client.post(
+            "/test/stream/workflow/action",
+            json={"step_id": "generate", "action": "explode"},
+        )
+
         assert r.status_code == 400

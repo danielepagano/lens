@@ -156,7 +156,7 @@ class CompressBody(BaseModel):
 
 class WorkflowActionBody(BaseModel):
     step_id: str
-    action: str  # "retry" | "skip"
+    action: str  # "retry" | "skip" | "cancel"
 
 
 # ---------------------------------------------------------------------------
@@ -959,10 +959,16 @@ async def stream_workflow_action(
 ) -> dict[str, str]:
     if lock.kind is None or lock.workflow is None:
         raise HTTPException(status_code=400, detail="no workflow stream in progress")
-    if body.action not in ("retry", "skip"):
-        raise HTTPException(status_code=400, detail="action must be retry or skip")
+    if body.action not in ("retry", "skip", "cancel"):
+        raise HTTPException(
+            status_code=400, detail="action must be retry, skip or cancel"
+        )
     try:
-        lock.workflow.signal_action(body.step_id, body.action)  # type: ignore[arg-type]
+        if body.action == "cancel":
+            # Step-scoped: stops that step only, leaving earlier steps' work intact.
+            lock.workflow.cancel_step(body.step_id)
+        else:
+            lock.workflow.signal_action(body.step_id, body.action)  # type: ignore[arg-type]
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return {"status": "ok", "step_id": body.step_id, "action": body.action}
