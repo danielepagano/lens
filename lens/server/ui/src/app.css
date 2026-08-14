@@ -1344,7 +1344,9 @@ details[open]>summary {
   margin-bottom: 0;
 }
 
-/* Native <select> popups mis-render inside <dialog>; radios avoid that for two choices. */
+/* Native <select> popups mis-render inside <dialog> (tiny list pinned to the
+   top-left of the viewport on mobile). Radios avoid that for two choices; for
+   longer lists use components/SelectMenu.svelte. */
 .narrative-create-dialog .narrative-create-type {
   margin: 0 0 0.85rem;
   padding: 0;

@@ -183,5 +183,79 @@ api_key_env = "MISSING_SPEECH_KEY"
                 self.assertEqual(load_mock.call_count, 1)
 
 
+_DIALOGUE_TEXT = '> [Amy] "Hello there."\n'
+
+
+class TestSpeechMarkupMode(unittest.TestCase):
+    """``modalities.speech_markup.mode`` splits the generate and refine asks."""
+
+    def _resolved_ctx(self, tmp: Path, mode: str | None):
+        root, narrative = _make_project(_init_repo(tmp))
+        storage = Storage(root)
+        if mode is None:
+            set_modality_config(narrative, "speech_markup", "enabled", True, storage)
+        else:
+            set_modality_config(narrative, "speech_markup", "mode", mode, storage)
+        resolved, ctx = resolve_modalities(WriteOperator, narrative)
+        self.assertIn("speech_markup", resolved.active_ids)
+        assert ctx.speech_markup is not None
+        return resolved, ctx, ctx.speech_markup
+
+    def test_default_mode_is_both(self) -> None:
+        """A bare enabled flag keeps legacy behavior: inline tags + refine pass."""
+        with tempfile.TemporaryDirectory() as tmp:
+            _resolved, ctx, cache = self._resolved_ctx(Path(tmp), mode=None)
+            self.assertEqual(cache.mode, "both")
+            self.assertTrue(SpeechMarkupModality().prompt_addenda(ctx))
+            self.assertIsNotNone(
+                SpeechMarkupModality().workflow_refine_pass(ctx, _DIALOGUE_TEXT)
+            )
+
+    def test_mode_generate_skips_refine_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _resolved, ctx, cache = self._resolved_ctx(Path(tmp), mode="generate")
+            self.assertEqual(cache.mode, "generate")
+            self.assertTrue(SpeechMarkupModality().prompt_addenda(ctx))
+            self.assertIsNone(
+                SpeechMarkupModality().workflow_refine_pass(ctx, _DIALOGUE_TEXT)
+            )
+
+    def test_mode_refine_skips_generate_addendum(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _resolved, ctx, cache = self._resolved_ctx(Path(tmp), mode="refine")
+            self.assertEqual(cache.mode, "refine")
+            self.assertEqual(SpeechMarkupModality().prompt_addenda(ctx), ())
+            self.assertIsNotNone(
+                SpeechMarkupModality().workflow_refine_pass(ctx, _DIALOGUE_TEXT)
+            )
+
+    def test_mode_both_offers_both(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _resolved, ctx, cache = self._resolved_ctx(Path(tmp), mode="both")
+            self.assertEqual(cache.mode, "both")
+            self.assertTrue(SpeechMarkupModality().prompt_addenda(ctx))
+            self.assertIsNotNone(
+                SpeechMarkupModality().workflow_refine_pass(ctx, _DIALOGUE_TEXT)
+            )
+
+    def test_unknown_mode_falls_back_to_both(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            _resolved, _ctx, cache = self._resolved_ctx(Path(tmp), mode="nonsense")
+            self.assertEqual(cache.mode, "both")
+
+    def test_mode_generate_produces_no_refine_step(self) -> None:
+        """workflow_refine:speech_markup is not offered when mode excludes refine."""
+        from lens.core.modalities import workflow as modalities_workflow
+
+        with tempfile.TemporaryDirectory() as tmp:
+            resolved, ctx, _cache = self._resolved_ctx(Path(tmp), mode="generate")
+            self.assertEqual(
+                modalities_workflow.resolve_refine_modality_ids(
+                    resolved, ctx, _DIALOGUE_TEXT
+                ),
+                (),
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

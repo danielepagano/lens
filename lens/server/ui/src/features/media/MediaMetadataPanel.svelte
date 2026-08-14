@@ -17,6 +17,7 @@
   import type { MetadataFieldRow, MetadataValueKind, ReservedMetadata } from './mediaMetadataTypes'
   import MediaMetadataListEditor from './MediaMetadataListEditor.svelte'
   import MediaMetadataKvEditor from './MediaMetadataKvEditor.svelte'
+  import SelectMenu from '../../components/SelectMenu.svelte'
   import type { CompositeRole } from '../../utils/mediaComposite'
 
   type Props = {
@@ -162,6 +163,12 @@
     { value: 'list', label: 'List' },
     { value: 'kv', label: 'KV' },
   ]
+
+  const COMPOSITE_OPTIONS: { value: string; label: string }[] = [
+    { value: '', label: 'Unset' },
+    { value: 'background', label: 'Background' },
+    { value: 'foreground', label: 'Foreground' },
+  ]
 </script>
 
 <dialog bind:this={dialog} class="meta-dialog" onclose={handleClose} onclick={handleBackdropClick}>
@@ -198,19 +205,14 @@
         {#if compositeValue !== undefined}
           <div class="meta-composite-row">
             <span class="meta-composite-label">Composite</span>
-            <select
-              class="meta-composite-select"
-              aria-label="Composite role"
+            <SelectMenu
+              ariaLabel="Composite role"
               value={compositeValue ?? ''}
-              onchange={(e) => {
-                const v = (e.currentTarget as HTMLSelectElement).value
+              options={COMPOSITE_OPTIONS}
+              onChange={(v) => {
                 compositeValue = v === '' ? null : (v as CompositeRole)
               }}
-            >
-              <option value="">Unset</option>
-              <option value="background">Background</option>
-              <option value="foreground">Foreground</option>
-            </select>
+            />
           </div>
         {/if}
 
@@ -233,17 +235,12 @@
                   list={suggestFacetsKey ? 'meta-key-suggestions' : undefined}
                   oninput={(e) => setFieldKey(row.id, (e.currentTarget as HTMLInputElement).value)}
                 />
-                <select
-                  class="meta-kind-select"
-                  aria-label="Field type"
+                <SelectMenu
+                  ariaLabel="Field type"
                   value={row.kind}
-                  onchange={(e) =>
-                    setFieldKind(row.id, (e.currentTarget as HTMLSelectElement).value as MetadataValueKind)}
-                >
-                  {#each KIND_OPTIONS as opt (opt.value)}
-                    <option value={opt.value}>{opt.label}</option>
-                  {/each}
-                </select>
+                  options={KIND_OPTIONS}
+                  onChange={(v) => setFieldKind(row.id, v as MetadataValueKind)}
+                />
                 <button
                   type="button"
                   class="outline contrast meta-remove-field"
@@ -362,13 +359,9 @@
     font-size: 0.82rem;
     opacity: 0.85;
   }
-  .meta-composite-select {
+  .meta-composite-row :global(.select-menu-trigger) {
     flex: 0 0 auto;
-    width: auto;
-    margin: 0;
-    padding: 0.2rem 2rem 0.2rem 0.4rem;
-    font-size: 0.82rem;
-    height: 32px;
+    min-width: 8rem;
   }
   .meta-grid {
     display: flex;
@@ -396,14 +389,10 @@
     font-size: 0.82rem;
     height: 32px;
   }
-  .meta-kind-select {
+  .meta-field-row1 :global(.select-menu-trigger) {
     flex: 0 0 auto;
-    width: auto;
-    min-width: 0;
-    margin: 0;
-    padding: 0.2rem 1.6rem 0.2rem 0.4rem;
+    min-width: 5.5rem;
     font-size: 0.76rem;
-    height: 32px;
   }
   .meta-remove-field {
     flex: 0 0 auto;

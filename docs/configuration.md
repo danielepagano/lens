@@ -142,7 +142,7 @@ api_key_env      = "OPENAI_API_KEY"
 temperature      = 0.8
 first_token_timeout_seconds = 10
 timeout_seconds  = 120
-reasoning        = false
+reasoning        = true
 reasoning_effort = "medium"
 
 [[llm]]
@@ -353,8 +353,20 @@ modalities:
 
 - Uses the **default** (first) `[[speech]]` block’s `grammar` for generation and refine. The grammar must match that block’s engine (e.g. `grammar = "gemini"` with an OpenRouter/Gemini TTS model). `lens media tts --model` selects which block is used for **playback** only; markup always follows the default block’s `grammar` today.
 - Prompt text is in the project/pack (`speech.markup.generate`, `speech.markup.refine`, `speech.grammar.<id>.rules`) — not KB pins. Grammars registered in Python may optionally override the three markup template keys (`generate_prompt_key`, `refine_prompt_key`, `refine_system_prompt_key`); bundled `xai` and `gemini` use the defaults above.
+- `speech_markup` is two asks, selectable separately via `modalities.speech_markup.mode`:
+
+  ```yaml
+  modalities:
+    speech_markup:
+      mode: generate   # add TTS tags while writing (no refine pass)
+      # mode: refine   # post-generation cleanup pass only (no inline tags)
+      # mode: both     # default: inline tags + cleanup pass
+  ```
+
+  `both` (or a bare `speech_markup: true`) is the default and matches legacy behavior. `generate` drops the `workflow_refine:speech_markup` step entirely — use it when the main model tags reliably and you want to skip the extra LLM round-trip. `refine` runs only the cleanup pass, e.g. over dialogue already written without tags.
 - Independent from **`attributed_dialogue`** (blockquote formatting); both can be active.
 - After generate, **`workflow_refine:speech_markup`** runs a separate minimal LLM call (refine prompt only — no KB or passage crawl) on eligible dialogue lines; speech markup uses JSON input/output. Each modality that wants a refine pass gets its own step under this `workflow_refine:<modality_id>` id and can be skipped on its own.
+- The refine pass uses the `[[speech]]` block's **`refine_llm_id`** when set; otherwise it falls back to the operator's LLM (the default `[[llm]]` entry or `[operator.<name>] llm`). Because the refine call re-emits every dialogue line as JSON, its output scales with passage size — point `refine_llm_id` at a fast `[[llm]]` entry with `reasoning = false` (and no `[operator.<name>]` temperature/reasoning overrides) so the pass stays cheap; a fixed `max_tokens` cap is not sized to the passage and is the wrong tool here.
 
 ### TTS playback
 

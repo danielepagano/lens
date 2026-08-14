@@ -9,6 +9,7 @@
   import { setVisualNovelHash, resolveVisualNovelIndex, resolveVisualNovelTtsSettings } from '../utils/vnNavigate'
   import { readVnSession, writeVnSession } from '../utils/vnSessionStorage'
   import type { VnTtsSettings } from '../utils/vnTypes'
+  import SelectMenu from '../components/SelectMenu.svelte'
 
   type Props = {
     open?: boolean
@@ -102,6 +103,47 @@
     }
   }
 
+  async function setModalityKey(key: string, value: string | boolean): Promise<void> {
+    try {
+      const result = await narrativePin({
+        kind: 'modality',
+        operation: 'set',
+        modality_id: 'speech_markup',
+        key,
+        value,
+        node: '/@cursor',
+      })
+      if (result.status !== 'ok') {
+        transactionResult.set({ title: 'Pin error', message: result.detail ?? 'Unknown error' })
+      }
+    } catch (err) {
+      transactionResult.set({
+        title: 'Pin error',
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
+  }
+
+  type SpeechMarkupMode = 'off' | 'generate' | 'refine' | 'both'
+
+  const SPEECH_MARKUP_OPTIONS: { value: SpeechMarkupMode; label: string }[] = [
+    { value: 'off', label: 'Off' },
+    { value: 'generate', label: 'Generate' },
+    { value: 'refine', label: 'Refine' },
+    { value: 'both', label: 'Generate + Refine' },
+  ]
+
+  function setSpeechMarkupMode(mode: SpeechMarkupMode) {
+    if (mode === 'off') {
+      void setModalityKey('enabled', false)
+      return
+    }
+    void (async () => {
+      await setModalityKey('enabled', true)
+      await setModalityKey('mode', mode)
+    })()
+  }
+
   // media_attach: deliberately not tied to whichever address a VN player
   // might currently be showing — always the actual project cursor. Absent
   // from the dict entirely means "toggle off, anchor unset" (see
@@ -124,9 +166,14 @@
   }
 
   const speechMarkupAtCursor = $derived($stats?.modalities_at_cursor?.speech_markup ?? null)
-  const speechMarkupEnabled = $derived(
-    speechMarkupAtCursor !== null && speechMarkupAtCursor.config.enabled !== false
-  )
+  const speechMarkupMode = $derived.by<SpeechMarkupMode>(() => {
+    const at = speechMarkupAtCursor
+    if (at === null) return 'off'
+    const cfg = at.config
+    if (cfg.enabled === false) return 'off'
+    const mode = cfg.mode
+    return mode === 'generate' || mode === 'refine' || mode === 'both' ? mode : 'both'
+  })
 </script>
 
 <dialog bind:this={dialog} class="modes-dialog" onclose={handleClose} onclick={handleBackdropClick}>
@@ -159,15 +206,16 @@
 
         <section class="modes-section">
           <h4>Speech Markup</h4>
-          <label class="modes-row">
-            <span>Insert TTS markup during generation</span>
-            <input
-              type="checkbox"
-              role="switch"
-              checked={speechMarkupEnabled}
-              onchange={() => void setModalityEnabled('speech_markup', !speechMarkupEnabled)}
+          <div class="modes-row">
+            <span>Markup pass</span>
+            <SelectMenu
+              ariaLabel="Markup pass"
+              value={speechMarkupMode}
+              options={SPEECH_MARKUP_OPTIONS}
+              onChange={(v) => setSpeechMarkupMode(v as SpeechMarkupMode)}
             />
-          </label>
+          </div>
+          <p class="modes-hint">Generate adds TTS tags while writing. Refine pass adds or improves tags in a second pass.</p>
         </section>
       {/if}
 
@@ -264,5 +312,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .modes-row :global(.select-menu-trigger) {
+    flex-shrink: 0;
+    max-width: 62%;
   }
 </style>
