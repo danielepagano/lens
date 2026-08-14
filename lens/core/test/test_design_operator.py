@@ -14,6 +14,7 @@ from collections.abc import Awaitable, Callable
 
 from lens.core.annotations import parse_front_matter
 from lens.core.annotations import parse_annotations
+from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import StreamEvent, final_payload_from_text
 from lens.core.narrative import NarrativeNode
 from lens.core.exceptions import OperatorError, ValidationError
@@ -444,6 +445,89 @@ class TestDesignCompanionTemplatePin(unittest.TestCase):
             self.assertIn("npc._template", content)
             self.assertNotIn("design.encounter", content)
             self.assertNotIn("encounter._template", content)
+
+
+class TestDesignModuleLinkExpansion(unittest.TestCase):
+    """Modules resolve with ``+``: whatever a module dot-tags comes with it.
+
+    That is how a dataset attaches its rules to a design module declaratively —
+    the session opens with them in RELEVANT KNOWLEDGE instead of relying on the
+    model to go fetch them with ``kb_get``.
+    """
+
+    RULES_TEXT = "COMBAT: both sides roll snake eyes to open."
+
+    def _project_with_module(self, tmp: Path, *, tagged: bool) -> tuple[Path, NarrativeNode]:
+        root, narrative = _make_project(_init_repo(tmp))
+        (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+        (root / "knowledge" / "design" / "encounter.md").write_text(
+            "[DESIGN MODULE]: ENCOUNTER\n", encoding="utf-8"
+        )
+        (root / "knowledge" / "rules").mkdir(parents=True, exist_ok=True)
+        (root / "knowledge" / "rules" / "system.md").write_text(
+            f"{self.RULES_TEXT}\n", encoding="utf-8"
+        )
+        if tagged:
+            (root / "knowledge" / "tags.toml").write_text(
+                '[tags]\n"rules.system" = ["design.encounter"]\n\n'
+                '[objects]\n"design.encounter" = ["rules.system"]\n',
+                encoding="utf-8",
+            )
+        KnowledgeStore.clear_registry()
+        return root, narrative
+
+    def _captured_user_content(self, root: Path, narrative: NarrativeNode) -> str:
+        captured: list[list[dict[str, str]]] = []
+
+        async def _capture_stream(*args: Any, **kwargs: Any) -> AsyncIterator[StreamEvent]:
+            captured.append(args[0])
+            async for ev in _fake_generate_stream(*args, **kwargs):
+                yield ev
+
+        _run_design(
+            root, narrative, module_id="encounter", generate_mock=_capture_stream
+        )
+        self.assertEqual(len(captured), 1)
+        return " ".join(m.get("content", "") for m in captured[0])
+
+    def test_module_pulls_its_tagged_object_into_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = self._project_with_module(Path(tmp), tagged=True)
+
+            content = self._captured_user_content(root, narrative)
+
+            self.assertIn("design.encounter", content)
+            self.assertIn("rules.system", content)
+            self.assertIn(self.RULES_TEXT, content)
+
+    def test_untagged_module_pulls_nothing_extra(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = self._project_with_module(Path(tmp), tagged=False)
+
+            content = self._captured_user_content(root, narrative)
+
+            self.assertIn("design.encounter", content)
+            self.assertNotIn("rules.system", content)
+
+    def test_explain_attributes_the_linked_object_to_the_module(self) -> None:
+        from lens.core.commands.explain import explain_context
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = self._project_with_module(Path(tmp), tagged=True)
+            _run_design(root, narrative, module_id="encounter")
+
+            report = explain_context(ProjectSession(root, root))
+
+            rows = {
+                row.id: row for block in report.blocks for row in block.components
+            }
+            self.assertIn("module:design.encounter", rows)
+            linked = rows.get("module:rules.system")
+            self.assertIsNotNone(linked)
+            assert linked is not None
+            self.assertEqual(linked.provenance_kind, "module")
+            self.assertIn("design.encounter", linked.provenance)
+            self.assertGreater(linked.bytes, 0)
 
 
 # ---------------------------------------------------------------------------

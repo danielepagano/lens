@@ -34,7 +34,7 @@ The dataset provides five integrated layers for designing and running encounters
 
 ### 1. Design module — `knowledge/design/encounter.md`
 
-Loaded by `lens design --module encounter`. Guides the LLM through a structured workflow:
+Loaded by `lens design --module encounter`. Tagged `rules.system`, so opening the module also brings the D&D rules reference into context — modules resolve with `+`. Guides the LLM through a structured workflow:
 
 1. **Story service check** — connect the encounter to active fronts and PC story threads
 2. **Situation gathering** — scene, participants, stakes, secrets
