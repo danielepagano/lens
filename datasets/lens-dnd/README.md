@@ -21,8 +21,13 @@ datasets = ["rpg", "lens-dnd"]
 | `knowledge/spell/` | ~175 D&D 2024 spells, tagged with `level:`, `school:`, `ritual` |
 | `knowledge/feature/` | ~20 class and species features (SRD-only) |
 | `knowledge/equipment/` | ~45 weapons, armors, and shields, tagged with `category:` |
-| `knowledge/rules/system.md` | D&D rules reference for AI DM (d20 system, actions, combat, resting, conditions) |
-| `knowledge/rules/encounter.md` | Encounter running procedures (spatial tracking, initiative flow, pacing, resolution) |
+| `knowledge/rules/system.md` | The base rules every beat needs — d20 tests, DCs, attitudes and Influence, vision and hiding, conditions, dying, resting. Always in `play` context |
+| `knowledge/rules/combat.md` | Running a fight. Model-requestable module |
+| `knowledge/rules/chase.md` | Running a pursuit, violent or not. Model-requestable module |
+| `knowledge/rules/environment.md` | Hazards, weather, terrain, travel pace. Reached by prep |
+| `knowledge/rules/encounter.md` | Usage rules for `encounter.*` — spatial tracking, controlling non-PCs, pacing, encounter flow |
+| `knowledge/rules/stat.md` | Usage rules for `stat.*` — act only from the block, what the player owns |
+| `knowledge/rules/tracker.md` | Usage rules for `tracker.*` — read it as canonical state, act from the named initiative down |
 | `knowledge/design/encounter.md` | Design module for `lens design --module encounter` |
 | `knowledge/encounter/_template.md` | KB template for `encounter.*` objects |
 | `knowledge/tracker/_template.md` | KB template for `tracker.*` initiative trackers |
@@ -34,7 +39,7 @@ The dataset provides five integrated layers for designing and running encounters
 
 ### 1. Design module — `knowledge/design/encounter.md`
 
-Loaded by `lens design --module encounter`. Tagged `rules.system`, so opening the module also brings the D&D rules reference into context — modules resolve with `+`. Guides the LLM through a structured workflow:
+Loaded by `lens design --module encounter`. Tagged `rules.system` and `rules.encounter`, so opening the module brings both into context — modules resolve with `+`. Those two apply to every encounter; the scene-dependent rest of the shelf (`rules.combat`, `rules.chase`, `rules.environment`) is listed inside the module for `kb_get` rather than linked, because most encounters need none of it. Guides the LLM through a structured workflow:
 
 1. **Story service check** — connect the encounter to active fronts and PC story threads
 2. **Situation gathering** — scene, participants, stakes, secrets
@@ -91,6 +96,25 @@ KB template for `tracker.*` objects — static interactive initiative trackers r
 - Monsters/NPCs: AC, HP counters, resource trackers (legendary resistances, legendary actions, recharge abilities, per-day spells)
 - NPCs with stat blocks linked as `[Name](kb/npc.xxx) ([stat](kb/stat.xxx))`
 - Delivered via LLM tool output with `kb-details: true` frontmatter for master/detail view
+
+## How the rules reach the model
+
+The ruleset is **dense where it is cheap and sparse where it is expensive**. `design` thinks, runs a handful of turns, and produces what play leans on, so it gets everything. `play` answers once per beat, so it gets the base plus whatever the scene actually became.
+
+| Object | Route | Loaded when |
+|--------|-------|-------------|
+| `rules.system` | modality auto-pin | every `play` beat |
+| `rules.combat`, `rules.chase` | `[[dataset.modules]]` → `load_module` | the model recognises the scene turned into a fight or a pursuit; latches as `[include: …]: #` for the rest of the node |
+| `rules.combat`, `rules.chase`, `rules.environment` | `+` expansion of a tag on an `encounter.*` | a prepared scene is pinned as `encounter.foo+` — no round trip, and the module drops off the `load_module` menu |
+| `rules.encounter`, `rules.stat`, `rules.tracker` | `rules.<type>` companion | any `encounter.*` / `stat.*` / `tracker.*` object is pinned |
+| `rules.system`, `rules.encounter` | `+` expansion of `design.encounter` | a `lens design --module encounter` session opens |
+| `rules.combat`, `rules.chase`, `rules.environment` | `kb_get` by `design`, or `--include` / `@rules.*` from the user | that session's scene calls for it |
+| scene-specific procedures | written into the `encounter.*` object by `design` | the encounter is in play |
+
+Two consequences worth knowing:
+
+- **`rules.*` objects carry no tags pointing at each other.** `play --module combat` resolves with `+` like any module pin, so a link between two rules objects would drag the second one in. Links live on `design.*` modules and on `encounter.*` objects.
+- **Modules are for systems, not situations.** A fight and a chase are systems: big, structured, self-contained, with a clear trigger. A specific hazard or negotiation is a situation — known at prep time, small, different every scene — so it travels inside the prepared object instead. Every registered module costs a catalog line on every beat until it is loaded.
 
 ## Commands and tools
 
