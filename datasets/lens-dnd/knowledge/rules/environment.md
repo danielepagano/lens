@@ -1,8 +1,10 @@
 D&D ENVIRONMENT, HAZARDS, AND TRAVEL
 
+Hazards, weather, difficult terrain, obscured areas, and travel pace — the rules for scenes where the world itself is the obstacle. Reached at prep time: quote the one rule a scene needs into the encounter rather than carrying the whole booklet into play.
+
 > This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/ legalcode.
 
-Reference for scenes where the world itself is the obstacle. Quote the specific rule you are using into the encounter you are writing, with its numbers intact — a hazard described without its DC or its dice is not a hazard, it is scenery.
+Quote the specific rule you are using into the encounter you are writing, with its numbers intact — a hazard described without its DC or its dice is not a hazard, it is scenery.
 
 HAZARDS
 

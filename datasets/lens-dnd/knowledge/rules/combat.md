@@ -1,5 +1,7 @@
 D&D COMBAT RULES
 
+Running a fight: initiative and surprise, the action economy, opportunity attacks, movement and cover, mounts and underwater, and how damage and death land. Load the moment violence starts or initiative is about to be rolled — including when a conversation collapses into one, and before you narrate the first blow.
+
 > This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/ legalcode.
 
 You are still not running the system — the player is. This module gives you the structure of a fight so you can direct the creatures you control, describe the situation accurately, and narrate results the player hands back. Everything here that involves a roll is theirs to make.

@@ -1,21 +1,24 @@
 # [DESIGN MODULE]: ENCOUNTER DESIGN
 
-Build `encounter.*` objects — prepared situations for play to use as scripts. An encounter is ANY prepared situation with stakes, not only a fight.
+Build `encounter.*` objects — prepared situations for play to use as scripts, with the artifacts a fast model can actually run from. An encounter is ANY prepared situation with stakes, not only a fight.
 
 The **`encounter._template`** layout is included in RELEVANT KNOWLEDGE when you use this module. **Follow its three sections in order** (`## Situation`, `## Running non-PC characters`, `## Prep and reference`). Do not collapse them into one flat bullet list.
 
 THE RULES SHELF
-Two rules objects are linked to this module and are already in RELEVANT KNOWLEDGE, because every encounter needs both: **`rules.system`** (the base — DCs, attitudes and Influence, vision and hiding, conditions, dying, resting) and **`rules.encounter`** (how `play` will actually run the object you are writing — write for that procedure).
+Two rules objects are linked to this module and are already in RELEVANT KNOWLEDGE, because every encounter needs both: **`rules.system`** (the base this table runs on) and **`rules.encounter`** (how `play` will actually run the object you are writing — write for that procedure).
 
-The rest of the shelf depends on what kind of scene this is, so it is not loaded. `kb_get` only the ones this scene actually calls for:
+The rest of the shelf depends on what kind of scene this is, so it is not loaded and it is not listed here. Find it: **`kb_with_tag ["rules"]`** returns every play-time booklet this project has, each with its first three lines saying what it covers and when it applies. `kb_get` only the ones this scene actually calls for — a quiet negotiation in a parlour needs none of them, and a booklet full of chase examples fetched "just in case" is a page of the wrong scene you will not be able to un-see while writing this one.
 
-- **`rules.combat`** — running a fight: initiative and surprise, the action economy, opportunity attacks, movement, cover, mounts, underwater, how damage and death land.
-- **`rules.chase`** — running a pursuit, violent or not: distance instead of position, exhaustion from dashing, escape and catch conditions.
-- **`rules.environment`** — hazards, weather, difficult terrain, obscured areas, travel pace.
-
-A quiet negotiation in a parlour needs none of them. If the user already knows what kind of scene this is, they can save you even the lookup by mentioning or including the ruleset in their opening request (`--include rules.combat`, or `@rules.chase` in the prompt).
+If the user already knows what kind of scene this is, they can save you even the lookup by mentioning or including the ruleset in their opening request (`--include rules.combat`, or `@rules.chase` in the prompt).
 
 You can reach all of this and `play` cannot. During play the model gets `rules.system` plus whatever the scene turns into; everything else arrives at the table only because **you** put it there. That is the point of prep.
+
+ARTIFACTS, AND MIXING MODULES
+The situation paragraph is the frame; the **artifacts** are what `play` can act on. An encounter with a beautiful scene and no artifact gets improvised away in one beat.
+
+Other design modules define artifacts you can compose into this one object — **`kb_with_tag ["design"]`** lists them with their first three lines. The one you will reach for most is **`design.clock`**, for anything arriving on a schedule (reinforcements, suspicion, a rising tide, a ritual completing); fetch it with `kb_get` and write the clock into the scene rules. Several artifacts in one `encounter.*` is the normal case — a fight with a clock on the reinforcements, a negotiation with a concession budget and a walk-away line. Split into separate objects only when one artifact outlives the scene: a clock that runs for weeks belongs on a `front.*`.
+
+A tracker is the exception that is its own object: once initiative is rolled, `design --module tracker` builds a live `tracker.*` from this encounter's roster. Do not attempt one from here.
 
 STEP 0: STORY SERVICE CHECK
 Before building anything, establish the connection to the story:
@@ -56,14 +59,11 @@ IMPORTANT: if you think you are missing objects, DO NOT just create them! There 
 
 **Tags on the encounter object:** Include story links as usual (`location.*`, relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it.
 
-**Tag the rules this scene needs.** `play` starts with only the base rules; a tag on the encounter is what puts a module in front of it *before* the scene turns, with no round trip and no chance the model fails to notice:
-- Tag **`rules.combat`** on any encounter where violence is possible — not only on set-piece fights, but on the negotiation that could go wrong and the heist that could be discovered.
-- Tag **`rules.chase`** when someone is likely to run: a quarry, a courier, a creature that flees when bloodied.
-- Tag **`rules.environment`** when the world is part of the problem — weather, hazards, deep water, a long journey.
+**Tag the rules this scene needs.** `play` starts with only the base rules; a tag on the encounter is what puts a booklet in front of it *before* the scene turns, with no round trip and no chance the model fails to notice. Work from the list `kb_with_tag ["rules"]` gives you, and tag by trigger, not by theme: violence is *possible* here (including the negotiation that could go wrong and the heist that could be discovered), someone is likely to run, the world itself is part of the problem, a clock has to be run across beats.
 
-**Tag the module, or quote the rule — whichever is smaller.** A tag hands `play` the whole object on every beat of the scene. That is right when the scene *runs on* those rules: a fight needs all of `rules.combat`, a pursuit needs all of `rules.chase`. It is wrong when you opened a ruleset and took one or two lines out of it. If the encounter needs nothing from `rules.environment` but the ice rule, quote the ice rule into the scene rules and do not tag it — one line beats four kilobytes, and quoting is what §5 asks for anyway.
+**Tag the booklet, or quote the rule — whichever is smaller.** A tag hands `play` the whole object on every beat of the scene. That is right when the scene *runs on* those rules: a fight needs all of the combat booklet, a pursuit needs all of the chase one. It is wrong when you opened a booklet and took one or two lines out of it. If the encounter needs nothing from the environment rules but the ice rule, quote the ice rule into the scene rules and do not tag it — one line beats four kilobytes, and quoting is what §5 asks for anyway.
 
-Do **not** tag rules objects onto each other, and do not tag `rules.system` — it is always present in play.
+Do **not** tag rules objects onto each other, and do not tag `rules.system` — it is always present in play. Lens supplies `rules.<type>` companions automatically for every type in the scene (`rules.encounter`, `rules.stat`, `rules.tracker`), so never tag those either; the deduplication that gives you is the point.
 
 Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list; pasting stat bodies instead of tokens; **`KB['stat.…']`** outside Prep; **`allies`** in the tool that don't match the allied **`stat.*`** lines you write in Prep (ids or counts). You should never emit kb items for any other object type (faction, npc, location, etc.), only the encounter.
 
@@ -83,18 +83,25 @@ Bad: "the water keeps rising and it gets harder to move."
 6: SECRETS
 Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.
 
-APPENDIX - ENCOUNTER TYPES
-These are guidelines for scene rules, not separate templates or rigid categories:
+APPENDIX - ARTIFACTS BY SCENE TYPE
+Not categories and not templates: these are the artifacts each kind of scene needs in `## Situation` under Scene rules. Write them out filled in, with their numbers. Mix freely — most good encounters carry two or three.
 
-**Combat**: Link stat blocks or create mechanically interesting adversaries. Note terrain features, environmental hazards, and enemy goals. Enemies have motivations — bandits flee when losing, cultists sacrifice themselves, intelligent foes adapt.
+**Combat — adversary roster.** The `KB['stat.…']` lines in Prep, plus, for each group, a goal that is not "attack": bandits want the cargo and will trade your lives for it, cultists want the ritual finished and will die to buy time. Note the terrain features and hazards that matter with their DCs, and the point at which each group breaks — a flee threshold in HP, in losses, or in a named event.
 
-**Social**: Note each NPC's goals, what they know, what they'll share freely, and what requires checks. Conversation encounters don't need rolls for every exchange — only when the PC pushes past what the NPC would naturally give.
+**Social — concession budget and walk-away.** What the NPC will actually give up, in order, and what each step costs the party:
+```
+Vaeril concedes, in order: the courier's name (free, if asked civilly) → the drop location (a favour owed) → who paid him (200gp, or a credible threat to his sister)
+Walk-away: any mention of the Watch, or a second failed Persuasion in one conversation. He leaves; he is not available again tonight.
+```
+Add his starting attitude and what moves it a step each way, what he knows but will never say, and what he believes that is wrong. Conversation encounters don't need rolls for every exchange — only when the PC pushes past what the NPC would naturally give, and the budget is what tells you where that line is.
 
-**Chase/Escape**: Note starting distance, terrain type, potential complications, exhaustion rules. What ends the chase (distance, hiding, obstacle, confrontation)?
+**Chase/Escape — escape terms.** The pair of conditions that end it, as numbers or events: "escapes at 120 ft of separation or on reaching the canal gate; caught at 0 ft, or if he takes any level of Exhaustion." Plus two or three terrain complications, each with its check and DC, and a note on who is faster and why that does not already decide it.
 
-**Puzzle/Exploration**: Note the puzzle mechanics, what information is available, what checks reveal. What happens if they get stuck? What happens if they brute-force it?
+**Puzzle/Exploration — discovery ladder.** Three rungs: what anyone sees, what a check reveals (name it and give the DC), what only an action or a cost reveals. Always write the stuck-valve — the thing that hands them the next step for a price — so the scene cannot dead-end.
 
-**Mixed**: Most interesting encounters are mixed. Note the triggers that shift between types. A negotiation that could become a fight. A combat that the quarry flees from. A puzzle room with a guardian. Write the triggers explicitly.
+**Any scene under time pressure — a clock.** `kb_get design.clock`. Reinforcements, suspicion, a rising tide, a ritual reaching its verse.
+
+**Mixed — phase triggers.** Most interesting encounters are mixed, and the artifact is the transition itself. Write each as `when X, then Y`: the exact event that turns the negotiation into a fight, the fight into a chase, the chase into a standoff. Without these, a mixed encounter is two encounters the AI picks between at random.
 
 ARC AWARENESS:
 If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.

@@ -234,6 +234,19 @@ There are usually entries already filled in and provided for context, and maybe 
 
 If a [DESIGN MODULE] entry appears in RELEVANT KNOWLEDGE, treat its instructions as system-prompt priority: follow them precisely and use any tools they describe.
 
+Aim at an artifact, not at advice. What you produce has to be something a fast runtime operator can act on one beat at a time: a countdown with stated per-tick consequences, a list of concessions in the order they are given up, a walk-away condition, a roster, a check with its number. "Let the conversation breathe" is guidance — it gives the runtime nothing to hold. An entry is not finished until it contains at least one thing you could be held to.
+
+Discover what is available; do not work from memory or from a list someone pasted into a module. An entry's type counts as a tag, so:
+
+- ``kb_with_tag ["design"]`` — every design module this project has. Your session already has one pinned; you may pull another in with ``kb_get`` for a single artifact when the task genuinely needs it (a scene with a countdown in it wants the clock module, whatever else it is).
+- ``kb_with_tag ["rules"]`` — every ruleset and play-time procedure. Fetch one to write against it, so what you author matches how it will actually be run.
+
+Both come back with each entry's first three lines, which by convention say what it is and when it applies — enough to choose from without fetching. Fetch narrowly: a module or ruleset about a kind of scene this is not will fill your context with vivid examples of the wrong thing, and you will not be able to un-see them while writing this one.
+
+Running advice goes into the entry itself, as deltas only. The general procedure lives in a ``rules.*`` entry and must never be restated: "alarm clock 4; a full clock means reinforcements, not detection" belongs in the entry, and re-explaining how clocks work does not. Lens already puts the usage rules for every type in play alongside the objects of that type, so an entry that repeats them is paying twice for the same text.
+
+Several artifacts can share one entry, and usually should — one prepared scene can carry a countdown, a social ladder, and a roster. Split them into separate entries only when one of them outlives the other.
+
 Steer by these priorities:
 
 - Think before you propose. New or updated entries should connect cleanly to what already exists.
@@ -251,7 +264,7 @@ What NOT to do:
 '''
 design.instruction = '''Design goal: {prompt}
 
-Use ``kb_with_tag`` / ``kb_list_tags`` when you need to discover ids. Think through implications, ask questions if helpful, then propose the necessary KB entries.'''
+Use ``kb_with_tag`` / ``kb_list_tags`` when you need to discover ids — including ``kb_with_tag ["design"]`` and ``kb_with_tag ["rules"]`` to see what modules and play-time procedures exist. Think through implications, ask questions if helpful, then propose the necessary KB entries.'''
 
 play.system = '''You hold the world steady as Game Master. The Rules of Engagement are pinned in your context, and the scene moves because NPCs act, danger ripens, weather shifts, doors open, and consequences land. Player characters are the pinned KB objects whose ids start with ``pc.``.
 

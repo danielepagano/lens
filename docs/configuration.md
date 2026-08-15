@@ -515,19 +515,18 @@ Declared in a **dataset's own** `lens.toml`, not in a project's. Each entry regi
 [[dataset.modules]]
 id = "rules.combat"
 operators = ["play"]
-description = """Turn order, actions, and damage resolution.
-Load when violence starts or initiative will be rolled."""
 ```
 
 | Field | Required | Meaning |
 |-------|----------|---------|
 | `id` | Yes | Canonical KB id (any type — `rules.*` is a convention, not a rule) |
 | `operators` | Yes | Operators allowed to request it, e.g. `["play"]`. Only operators that accept module requests (`write`, `play` today) can be targeted; any other name is inert and logs a warning at load |
-| `description` | Yes | What the module contains **and when it is needed** — this is what the model decides on, so write the trigger, not a title |
 
-Both the id and the description appear in the tool schema and at the tail of that operator's task. A module is offered only while it is **not already in scope** (front-matter pin, `--module`, `include`, `mention`, or `+` link expansion), so once loaded it disappears from the menu; when nothing is left to offer, no tool is added at all. Loading one writes an `[include: <id>]: #` annotation into the node, which is what keeps it in scope for the rest of that node — see [design.md](design.md) and [rpg-design.md](rpg-design.md).
+**The description is not configured here.** What the module covers and when it is needed — the only part the model decides on — is the KB object's own **first three lines** (see [first three lines](#first-three-lines)). A `description` key in the manifest is ignored with a warning: a second copy of that text, in another file, maintained by hand, drifts — and the drifting copy is the one the model reads. Write the trigger at the top of the rules file instead, where whoever edits the rules will see it.
 
-Projects cannot add to or shadow these declarations: they are part of the mechanics you opt into by listing the dataset. Entries missing any field are skipped with a warning, as is an `id` that resolves to no KB object.
+Both the id and those three lines appear in the tool schema and at the tail of that operator's task. A module is offered only while it is **not already in scope** (front-matter pin, `--module`, `include`, `mention`, or `+` link expansion), so once loaded it disappears from the menu; when nothing is left to offer, no tool is added at all. Loading one writes an `[include: <id>]: #` annotation into the node, which is what keeps it in scope for the rest of that node — see [design.md](design.md) and [rpg-design.md](rpg-design.md).
+
+Projects cannot add to or shadow these declarations: they are part of the mechanics you opt into by listing the dataset. Entries missing `id` or `operators` are skipped with a warning, as is an `id` that resolves to no KB object — or to one whose first three lines say nothing, since the model would be picking from a bare id.
 
 ---
 
@@ -696,9 +695,24 @@ YAML at the top of node files (`---` … `---`). Not in `lens.toml` but central 
 
 Manage with `lens pin kb add|remove|block|unblock`. The `+` suffix on an id expands linked objects (shared dot-tags).
 
+### First three lines
+
+Every KB object reserves its **first three lines** for saying what it is: its name or title, what it is for or when it applies, and blank lines. Nothing else belongs there — no rules text, no licence blockquote, no data.
+
+Those three lines are machine-read, which is what makes the convention load-bearing rather than stylistic:
+
+- `lens kb with-tag` and the `kb_with_tag` tool print them under every match, so a search over dozens of candidates says what each one *is* without expanding any of them.
+- [`[[dataset.modules]]`](#datasetmodules-dataset-lenstoml) uses them as the module's catalog entry — the text the model decides on when choosing whether to pull a ruleset into scope.
+
+Lens annotation blocks (`[ … ]: #`) are skipped before counting, so a template declaring default tags still gets its three lines. A line that is entirely one HTML comment is unwrapped, which is why type templates put their usage note in `<!-- … -->`: it describes the template without landing in every object created from it.
+
+Nothing enforces this. The penalty for breaking it is silence — an object whose purpose sits on line 40 is one no search can surface on purpose.
+
 ### Reserved KB tags
 
-Two tags on a KB object change how it renders rather than what it means. Both are engine-level and work regardless of which dataset the object comes from or how it entered scope.
+An object's **type is a searchable tag**: `lens kb with-tag design` returns every `design.*` object, `with-tag rules` every `rules.*` one, with no tagging required and nothing to keep in sync. This is how `design` discovers which modules and rulesets a project has. Types also appear in `lens kb list-tags`. Explicit tags still work normally and combine with a type in the usual way (`with-tag rules combat-ready` ANDs them).
+
+Two further tags change how an object renders rather than what it means. Both are engine-level and work regardless of which dataset the object comes from or how it entered scope.
 
 | Tag | Effect |
 |-----|--------|

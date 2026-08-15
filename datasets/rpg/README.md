@@ -34,8 +34,11 @@ datasets = ["rpg", "my-ruleset"]
 | `knowledge/design/front.md` | Design module: front grooming (three-layer structure: surface, core question, twist) |
 | `knowledge/design/encounter.md` | Design module: encounter design (combat, social, chase, puzzle, mixed; arc-aware) |
 | `knowledge/design/world.md` | Design module: world and setting (`lore.world` <500 words, directive-style) |
+| `knowledge/design/clock.md` | Design module: progress clocks — an artifact written *inside* an encounter or front, not a KB type |
+| `knowledge/design/_template.md` | The spec for design modules themselves: the artifact contract every module must satisfy |
 | `knowledge/rules/rpg.md` | Rules of Engagement — AI-GM behavioral contract (authority boundaries, gates, conduct) |
 | `knowledge/rules/system.md` | System stub: Lasers & Feelings (CC BY 4.0; overridable by a higher-priority dataset) |
+| `knowledge/rules/clock.md` | Usage rules for clocks — when to tick, what to announce, what happens at full |
 
 ## How to bootstrap a campaign
 
@@ -99,6 +102,16 @@ When a front reaches resolution, advance notes it in the summary but does NOT cl
 
 See [docs/rpg-design.md](../../docs/rpg-design.md) for the full design rationale.
 
+## Design modules produce artifacts
+
+A design module is not a briefing, it is a recipe for a **named artifact**: a clock with stated per-tick consequences, a concession budget, a walk-away condition, a stat roster. The artifact has to be *checkable* (a structural yes/no question can fail it) and *actionable* (`play` can do something with it one beat at a time). A module that produces "let the conversation breathe" produces guidance, and `play` will improvise the tension away.
+
+`knowledge/design/_template.md` is the contract every module here satisfies. `design.clock` is the worked example of an artifact that is deliberately **not** a KB type — there is no `clock.foo` object; a clock is four lines written inside an `encounter.*` or `front.*`, and `design.encounter` and `design.front` both pull it in. One object carrying several artifacts is the normal case; split only when one artifact outlives the other.
+
+**Finding them.** An object's type is a searchable tag, so `lens kb with-tag design` lists every module and `lens kb with-tag rules` every ruleset, each with its first three lines saying what it is for. `design` is prompted to discover this way rather than work from a list pasted into some modules and not others.
+
+**First three lines.** Every object here reserves them for its own name and purpose — nothing else. That is what tag search and the `load_module` catalog read; see [configuration.md](../../docs/configuration.md#first-three-lines).
+
 ## Rules modules the model can request
 
 This dataset registers no `[[dataset.modules]]` — its Lasers & Feelings `rules.system` is 8 KB and fits in one object. A dataset that splits its rules can register the split parts so `play` pulls one into scope itself when the scene turns, instead of the player predicting it with `--module`:
@@ -108,8 +121,14 @@ This dataset registers no `[[dataset.modules]]` — its Lasers & Feelings `rules
 [[dataset.modules]]
 id = "rules.combat"
 operators = ["play"]
-description = """Turn order, actions, and damage resolution.
-Load when violence starts or initiative will be rolled."""
+```
+
+The manifest names the object and who may ask for it, and nothing else. What the module covers and when it is needed comes from the KB object's own **first three lines** — so `knowledge/rules/combat.md` opens:
+
+```
+D&D COMBAT RULES
+
+Running a fight: initiative and surprise, the action economy, … Load the moment violence starts or initiative is about to be rolled.
 ```
 
 `lens-dnd` is the worked example — see [its README](../lens-dnd/README.md#how-the-rules-reach-the-model). The rule it follows: a module has to be a *system* with a discrete narrative trigger (a fight, a pursuit). Rules for *situations* — a specific hazard, a sea voyage, one negotiation — are known at prep time and belong on the prepared object instead, because every unloaded module taxes every beat with a catalog line in both the tool schema and the task tail.

@@ -1,8 +1,26 @@
 # [DESIGN MODULE]: FRONT GROOMING
 
-This is the module for keeping pressure alive in the campaign. Use it when the story needs new hooks, when existing fronts need to react to what the PCs did, or when between-session prep needs to turn vague possibility into playable tension.
+Keep pressure alive in the campaign. Use it when the story needs new hooks, when existing fronts need to react to what the PCs did, or when between-session prep needs to turn vague possibility into playable tension.
 
 The `front._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Assess the current state before creating or changing anything.
+
+WHAT MAKES A FRONT RUNNABLE
+
+A front is read by `advance`, which sees no scene — only the front, the day counter, and two random numbers. So the artifact a front must carry is a **movement rule**: something `advance` can act on without a table to look at.
+
+The workhorse is a clock. `kb_get design.clock` for the full shape; on a front, the constraint is that its `Ticks when` line has to be answerable from outside a scene:
+
+```
+Clock: The mine floods [6]
+- Ticks when: one segment per day the pumps stay unattended; two on a day the party diverted the river crew
+- At full: the lower gallery is lost and the Deepmark's ore contract defaults
+```
+
+A front whose only trigger is "when the PCs push on it" never moves on its own, which makes it a hook, not a front. That is allowed — say so in the object, and give it a timeline anchor instead so it still lands on a date. What is not allowed is a front that reads as urgent and contains nothing that can change.
+
+Chance clauses are the other movement rule `advance` understands: state them as "every N days there is an X% chance that Z", so a luck roll has something to be measured against. Vague menace gets improvised away.
+
+Tag `rules.clock` on a front carrying a clock the GM will also have to run inside scenes.
 
 Start by getting your footing:
 - Read the timeline object. Its tags list the active front IDs. The timeline and all tagged fronts are already in RELEVANT KNOWLEDGE.
@@ -62,6 +80,7 @@ Before closing, do a quick pressure check:
 - Are 2-4 fronts active?
 - Do active fronts collectively challenge multiple PCs? (Check against their core questions)
 - Are the timeline's tags correct (active fronts present, closed fronts absent)?
+- Does each front carry something `advance` can move — a clock, a timeline anchor, or a stated chance clause — or is it waiting on a scene that may never come?
 
 TIMELINE AWARENESS — CRITICAL:
 The timeline object's tags are what keep fronts active. Your job is to manage the tags: when you create a front or close one, update the timeline's tag set. That's it.

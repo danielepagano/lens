@@ -71,7 +71,9 @@ We create two core rule objects:
 
 ##### Who asks for a rules module
 
-`play --module <key>` puts the choice on the player, which is backwards for the common case: the player is directing, not writing, and often does not know the scene is about to become combat. A dataset can therefore **register** its rules modules in its own `lens.toml` (`[[dataset.modules]]` with `operators = ["play"]` and a description of when the module is needed — see [configuration.md](configuration.md#datasetmodules-dataset-lenstoml)), and the model may pull one into scope with the `load_module` tool before it replies. It gets the text in time to use it in that same beat, and Lens writes an `include` annotation so the module stays in scope for the rest of the node. It is offered only while it is out of scope, so this costs at most one round trip per module per node.
+`play --module <key>` puts the choice on the player, which is backwards for the common case: the player is directing, not writing, and often does not know the scene is about to become combat. A dataset can therefore **register** its rules modules in its own `lens.toml` (`[[dataset.modules]]` with `operators = ["play"]` — see [configuration.md](configuration.md#datasetmodules-dataset-lenstoml)), and the model may pull one into scope with the `load_module` tool before it replies.
+
+The registration names the object and who may ask for it, and stops there. What the module covers and when it is needed — the only part the model decides on — is the object's own [first three lines](#first-three-lines-every-object-says-what-it-is). Putting the trigger in the manifest instead would mean maintaining a second copy of it in a different file, by hand, and the copy that drifts is the one the model reads. It gets the text in time to use it in that same beat, and Lens writes an `include` annotation so the module stays in scope for the rest of the node. It is offered only while it is out of scope, so this costs at most one round trip per module per node.
 
 Prepared content should still pre-declare: tag an encounter with the rules module it uses and `encounter.*+` expansion loads it deterministically at pin time, leaving the tool to cover only the transitions nobody planned. And there is no unload: when the fight is over, `collate` the range into a sub-node (the annotations travel with the prose) or `--end` the session — the same moves you would make anyway.
 
@@ -131,9 +133,69 @@ So, how do we track time if we want to do in an advanced way? We follow these ru
      - To run time-overlapping narratives, the user can simply create multiple timelines with the same start reference time, and start them at different day numbers, advancing them whenever they play that narrative.
    3. **Lifecycle**: `advance` updates front content (clocks, phases, resolution notes) but NEVER changes which fronts are active. `design --module front` handles the lifecycle: creating a new front tags it on the timeline; closing a front removes its tag from the timeline. This separation ensures resolved fronts stay in context for planning the next problem.
 
-## RPG Object Templates
+## Artifacts, templates, modules, and rules
+
+Four kinds of authored thing sit between "the user wants a scene" and "`play` runs a beat". They are constantly confused with each other, and each confusion has a characteristic failure, so they are worth separating precisely.
+
+| | What it is | Who reads it | Lives in |
+|---|---|---|---|
+| **Artifact** | The concrete, checkable thing prep produces | `play` / `advance`, one beat at a time | Inside a KB object |
+| **Template** (`<type>._template`) | The shape of a KB object of one type | `design`, while writing | `knowledge/<type>/_template.md` |
+| **Design module** (`design.*`) | How to get to a good artifact | `design`, while thinking | `knowledge/design/<key>.md` |
+| **Rules booklet** (`rules.*`) | How to use an artifact at play time | `play` / `advance` | `knowledge/rules/<key>.md` |
+
+### The artifact is the point
+
+Everything in the planning phase exists to produce **artifacts**: named things with a shape you can check and content a runtime operator can act on. A clock with stated per-tick consequences. A concession budget and a walk-away condition. An escape distance. An initiative order. A stat roster with counts.
+
+The test is two-part, and both halves matter:
+
+- **Checkable** — you can ask a structural yes/no question about it. *Is the core question genuinely arguable? Does `At full` name one event with actors and a place?* A criterion you cannot fail is not a criterion.
+- **Actionable** — a fast model, mid-beat, can do something with it. *What shows up in the scene; what happens if it is ignored.*
+
+A module that produces "let the conversation breathe" has produced guidance, not an artifact. `play` reads it, agrees, and improvises the tension away — which is exactly the outcome the preparation was supposed to prevent. **A design module is not ready until it names an artifact and says how to tell a good one from a bad one.** The artifact need not be its own KB object; at minimum it is one concrete line a runtime operator can hold onto.
+
+`design.encounter` and `design.front` are the reference implementations.
+
+### One object, several artifacts
+
+An encounter design session still produces an `encounter.*` object — but it is a *container*, and it should usually carry more than one artifact: combat antagonists, a clock, a bespoke mechanic, the social options. Templates make each one quick and regular to write, and there is no rule that one template maps to one file. Several artifact shapes dumped into a single encounter is the encouraged case whenever that scene is the only place they are relevant.
+
+Split an artifact into its own object on one criterion: **it outlives the thing containing it**. A clock that runs for a month is a front's; a clock that runs for a scene is the encounter's. Two objects carrying the same artifact is a bug, not reuse.
+
+The corollary is that a design session is not restricted to its pinned module. `--module encounter` sets the primary task; the session may pull `design.clock` in with `kb_get` for one artifact, or the user may hand it over up front with `--include design.clock` or an `@design.clock` in the prompt. Modules mix.
+
+### Running advice: deltas only
+
+The strongest default is to write how to run a thing **into the thing itself**. `play` sees a beat at a time; a procedure sitting next to the situation it applies to is a procedure that gets followed.
+
+The guard against the obvious regression: the object carries **deltas only**. "Alarm clock 4; a full clock means reinforcements, not detection; guards rotate every 10 minutes" is a delta. Re-explaining how clocks work is not — `rules.clock` already covers that, and the re-explanation is both wasted tokens and a second, divergent copy of the rule.
+
+A rules booklet is therefore **optional**. Write one when the general procedure is non-trivial and reused; skip it when usage is obvious, or when putting the how-to next to the definition is simply easier for the model to associate. Even an unshipped booklet is useful as a source of ready-made instruction phrasing to copy next to the artifact.
+
+When a booklet does exist, three routes get it to `play`, and only the first costs anything per beat:
+
+- **Registered module** (`[[dataset.modules]]`) — the model pulls it in when the scene turns. For *systems* only; see [Which rules earn a module](#which-rules-earn-a-module).
+- **`rules.<type>` companion** — automatic. Any `stat.*` in scope brings `rules.stat`; any `encounter.*` brings `rules.encounter`. Nothing to tag, nothing to remember.
+- **A tag on the prepared object** — `encounter.foo+` expands to whatever the encounter links, so a booklet tagged there is in front of `play` *before* the scene turns. This is the route for a booklet with no type to hang off, and the deduplication is free: run two things that need the same booklet and it appears once.
+
+Tag the booklet when the scene *runs on* it. When you opened a booklet and took one line out of it, quote that line into the object instead — with its numbers intact. One quoted rule beats four kilobytes.
+
+### First three lines: every object says what it is
+
+Every KB object reserves its **first three lines** for its own name or title, what it is for or when it applies, and blank lines. Nothing else. This costs nothing to adopt — stat blocks, spells, and most existing files already open this way — and it is what makes an object findable without being read.
+
+Two mechanisms depend on it. `kb_with_tag` returns those lines under every match, so a search over dozens of candidates says what each one *is*. And `[[dataset.modules]]` uses them as the catalog entry a model chooses on, which is why the manifest carries no description of its own.
+
+Discovery works off the **type**, which counts as a tag: `kb_with_tag ["design"]` lists every design module a project has, `kb_with_tag ["rules"]` every booklet — each with its three lines. That is how `design` is told to find what is available, instead of a hardcoded list pasted into some modules and not others, which is inconsistent by construction and stale the moment a dataset ships a new file.
+
+Fetching is still deliberate. The filename never justified loading a module, and neither does the headline on its own: pulling in the social rules during a goblin fight fills the context with vivid examples of the wrong scene, and the model cannot un-see them. Three lines are enough to decline.
+
+### Templates
 
 Object templates, field descriptions, and usage guidance live in `datasets/rpg/knowledge/` — one `_template.md` per type (`pc.*`, `npc.*`, `location.*`, `faction.*`, `front.*`, `lore.*`, `encounter.*`, `timeline.*`).
+
+Templates and modules overlap a little, and that is fine: the template is the *structure* of a KB item, the module is how to reach that structure well. Worth knowing, though, that **the `kb`-fenced blocks a design session emits do not go through templates** — the template is just more prompt. That is an advantage rather than a limitation, because it decouples a template from a file: you can hold templates for several artifacts and write them all into one encounter.
 
 ## RPG Operators
 
@@ -172,7 +234,11 @@ Each design module is a `design.*` KB object that contains instructions for the 
 
 When the user is done with a design session, `lens design --end` runs `kb extract` on the full sub-node and imports all the generated KB objects. Each call to `lens design` adds a new inline block to the sub-node; the user can refine progressively across multiple calls. You can start with no module for an open-ended session, or go straight to a specific task — `lens design "build the ambush" --module encounter` creates a sub-node with `design.encounter` already pinned.
 
-Design module definitions live in `datasets/rpg/knowledge/design/` — each `design.<topic>.md` file is the current spec (world, pc, npc, location, faction, front, encounter).
+"Only one module is active" is about the *pin*, not about what the session may read. The pinned module sets the primary task; the session pulls other modules in per-artifact with `kb_get`, and the user can pre-load one with `--include design.clock` or `@design.clock`. See [One object, several artifacts](#one-object-several-artifacts).
+
+Design module definitions live in `datasets/rpg/knowledge/design/` — each `design.<topic>.md` file is the current spec (world, pc, npc, location, faction, front, encounter, clock). `datasets/rpg/knowledge/design/_template.md` is the spec for the modules themselves: what a module owes its reader, and the artifact contract every one of them has to satisfy. A system dataset adds its own — `lens-dnd` ships `design.encounter` (shadowing the core one, with balancing and a stat roster) and `design.tracker`.
+
+`design.clock` is the worked example of an artifact that is deliberately **not** a type. There is no `clock.time-until-too-late` object; a clock is four lines written inside an `encounter.*` or a `front.*`, and the module supplies the shape, the sizing, and the checks. Both `design.encounter` and `design.front` name it as the artifact they most often need.
 
 #### Encounter objects: the script for `play`
 
@@ -184,6 +250,7 @@ This is powerful because:
 3. **Secrets stay secret.** The player can tell `design` "I'm going to the bridge to meet the informant" and the encounter object can encode that the informant is actually an ambush. The player doesn't see the encounter object contents during design — they see the design conversation. During play, the AI sees the encounter and acts accordingly.
 4. **Reuse and adaptation.** An encounter object can be re-used (the patrol at the checkpoint is the same every time) or adapted (the party's reputation has changed, so the guards react differently — update the encounter or let `play` figure it out from the pinned front).
 
+The failure mode to watch is an encounter that is all situation: a scene described beautifully with nothing in it that can be acted on. The situation paragraph is the frame; the [artifacts](#the-artifact-is-the-point) are the script. A good encounter usually carries two or three — a fight with a clock on the reinforcements, a negotiation with a concession budget and a walk-away line — composed from whichever design modules define them.
 
 ### Play with `play`
 

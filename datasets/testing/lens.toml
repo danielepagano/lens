@@ -3,12 +3,11 @@ extension = "lens_testing_ext"
 verbose_llm = true
 
 # Model-requestable module (issue #136): offered to `play` as a `load_module`
-# tool while `rules.skirmish` is not already in scope.
+# tool while `rules.skirmish` is not already in scope.  The catalog entry comes
+# from the object's first three lines, not from here.
 [[dataset.modules]]
 id = "rules.skirmish"
 operators = ["play"]
-description = """How a fight is structured: exchanges, the harm ladder, and threat clocks.
-Load the moment violence starts or becomes unavoidable — before narrating the first blow."""
 
 [[llm]]
 id = "local"

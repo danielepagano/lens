@@ -158,6 +158,44 @@ def normalize_storage_text(raw_storage_text: str) -> NormalizedStorageText:
     )
 
 
+KB_HEADLINE_LINES = 3
+"""How many leading lines of a KB body are reserved for self-description.
+
+The **first-three-lines policy**: the opening three lines of every KB object may
+contain only the object's name or title, what it is for / when it applies, and
+blank lines.  Nothing else — no rules text, no attribution, no front matter that
+is not a Lens annotation block.
+
+That convention is what makes an object describable without reading it.  A tag
+search can list dozens of candidates and say what each one is for; a dataset can
+register a rules module without restating its trigger in ``lens.toml``.  Both
+read exactly these three lines, so a file that buries its purpose on line 40 is
+simply undiscoverable — the cost of breaking the policy is silence, not an error.
+"""
+
+
+def kb_headline(text: str, *, max_lines: int = KB_HEADLINE_LINES) -> str:
+    """The first-three-lines self-description of a KB body (see :data:`KB_HEADLINE_LINES`).
+
+    Lens annotation blocks (``[ … ]: #``) are structure, not content, so they are
+    dropped before counting — a template declaring ``tags: state`` still gets its
+    three lines.  Blank lines are counted (they are part of the budget) but not
+    emitted, and a line that is entirely one HTML comment is unwrapped: templates
+    keep their usage note in a comment so it does not show up in the object a
+    user creates from them, and that note is exactly the description wanted here.
+    """
+    lines = normalize_storage_text(text).strip_comments_text.split("\n")[:max_lines]
+    out: list[str] = []
+    for raw in lines:
+        line = raw.strip()
+        if line.startswith("<!--") and line.endswith("-->"):
+            line = line[len("<!--") : -len("-->")].strip()
+        if not line or line in ("<!--", "-->"):
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
 def format_kb_prompt_block(
     *,
     canonical_id: str,

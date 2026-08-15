@@ -363,7 +363,10 @@ class TestKnowledgeStore(unittest.TestCase):
         self.store.add_tags("stat.ghoul", ["cr:1", "type:undead", "habitat:any"])
         self.store.add_tags("stat.wight", ["cr:3", "type:undead", "habitat:any"])
         tags = self.store.list_unique_tags()
-        self.assertEqual(sorted(tags), ["cr:1", "cr:3", "habitat:any", "type:undead"])
+        # `stat` is listed too: a type is a searchable tag (see get_ids_with_tag).
+        self.assertEqual(
+            sorted(tags), ["cr:1", "cr:3", "habitat:any", "stat", "type:undead"]
+        )
 
     def test_list_unique_tags_type_filter(self) -> None:
         self.store.store_object("stat.ghoul", "Ghoul")
@@ -371,7 +374,7 @@ class TestKnowledgeStore(unittest.TestCase):
         self.store.add_tags("stat.ghoul", ["cr:1", "type:undead"])
         self.store.add_tags("spell.fireball", ["level:3", "type:evocation"])
         tags = self.store.list_unique_tags(type_filter="stat")
-        self.assertEqual(sorted(tags), ["cr:1", "type:undead"])
+        self.assertEqual(sorted(tags), ["cr:1", "stat", "type:undead"])
 
     def test_list_unique_tags_prefix_filter(self) -> None:
         self.store.store_object("stat.ghoul", "Ghoul")

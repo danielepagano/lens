@@ -1,5 +1,7 @@
 D&D CHASE RULES
 
+Running a pursuit: tracking distance instead of position, exhaustion from repeated Dashes, terrain complications, and the conditions under which the quarry escapes or is caught. Load when someone runs and someone follows, whether or not anyone means anyone harm — fleeing a creditor or tailing a courier counts.
+
 > This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/ legalcode.
 
 Use these rules whenever someone is trying to get away and someone else is trying not to let them. That includes chases with no violence in them at all — fleeing a creditor, tailing a courier, outrunning a collapse. Do NOT resolve a chase with ordinary movement rates: comparing Speeds makes the outcome arithmetic, and it is decided before the first round.

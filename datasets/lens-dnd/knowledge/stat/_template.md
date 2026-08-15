@@ -1,3 +1,7 @@
+D&D STAT BLOCK
+
+A creature sheet the AI runs. This template is a tag index, not a shape: stat blocks are imported from the SRD, and what you need at design time is how to find one. `rules.stat` covers how to run one in play.
+
 Tags for finding stat blocks (use with `lens kb with-tag <tag>`):
 
 - **cr (challenge rating):** `cr:0`, `cr:1`, `cr:2`, … `cr:25`, and fractional `cr:1-2`, `cr:1-4`, `cr:1-8` (slash encoded as hyphen)

@@ -1,4 +1,7 @@
 LASERS AND FEELINGS - LENS EDITION
+
+The default `rules.system` stub: a whole ruleset in one object — crew creation, the single-stat resolution, and the play loop. Shadowed by any later dataset that ships its own `rules.system`.
+
 *(CC BY 4.0 – John Harper, 2013. This adaptation is released under the same license.)*
 
 When you work, look at the current history. You could be in ONE OF THREE STATES. You can follow ONE PATH for each response.

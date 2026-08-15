@@ -156,10 +156,16 @@ async def _kb_with_tag(args: dict[str, Any], project_root: Path) -> str:
         return f"(no KB objects found with tags: {', '.join(tags)})"
 
     def _format_id_line(cid: str) -> str:
+        line = cid
         if result.id_to_tags and cid in result.id_to_tags:
             tag_str = " ".join(result.id_to_tags[cid])
-            return f"{cid}  [{tag_str}]" if tag_str else cid
-        return cid
+            if tag_str:
+                line = f"{cid}  [{tag_str}]"
+        headline = (result.id_to_headline or {}).get(cid)
+        if headline:
+            indented = "\n".join(f"    {ln}" for ln in headline.split("\n"))
+            line = f"{line}\n{indented}"
+        return line
 
     if expand:
         parts: list[str] = []
@@ -376,7 +382,12 @@ register_command_tool(
         description=(
             "Find KB objects matching tag groups. AND across groups, OR within (a b c). "
             'Examples: ["type:undead", "(cr:1 cr:2)"] = undead with CR 1 or 2. '
-            "Returns matching IDs, each with its full set of tags."
+            "An object's TYPE counts as a tag, so [\"design\"] lists every design.* "
+            "object and [\"rules\"] every rules.* one — that is how you find out what "
+            "modules and rulesets exist. "
+            "Returns matching IDs, each with its full set of tags and its first three "
+            "lines — which by convention say what the object is and when it applies, so "
+            "you can pick from the list without kb_get-ing every candidate."
         ),
         parameters={
             "type": "object",
@@ -386,7 +397,9 @@ register_command_tool(
                     "items": {"type": "string"},
                     "description": (
                         "Tag groups. Single tags ANDed; '(a b c)' = OR within. "
-                        "Examples: [\"faction\"], [\"type:undead\", \"(cr:1 cr:2 cr:3)\"]"
+                        "A bare object type is a valid tag. "
+                        "Examples: [\"design\"], [\"rules\"], "
+                        "[\"type:undead\", \"(cr:1 cr:2 cr:3)\"]"
                     ),
                 },
                 "type_filter": {

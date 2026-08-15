@@ -6,7 +6,7 @@ Encounter name
 - **Situation**: (what's happening — where, when, who is present — one or two tight paragraphs or short bullets)
 - **Stakes**: (what can go wrong, what's at risk)
 - **Initial positions**: (for combat/physical encounters: starting distances between groups in feet, formations, terrain zones, cover, elevation, chokepoints — enough for theater-of-mind)
-- **Scene rules**: (terrain, light, hazards, time pressure, social dynamics — keep short; link `location.*` if detail is large)
+- **Scene rules**: (the artifacts this scene runs on, written out with their numbers: a clock, a concession budget and walk-away line, escape terms, a discovery ladder, quoted hazard rules. Keep prose short; link `location.*` if the setting detail is large. Deltas only — never restate a `rules.*` booklet.)
 - **Triggers**: (dialog escalates, timer, reinforcements, secret surfaces, phase change)
 - **Resolution**: (how it can end — fronts, attitudes, loot, intel)
 

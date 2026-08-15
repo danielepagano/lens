@@ -12,7 +12,7 @@ from typing import Any, ClassVar, cast
 from lens.core.annotations import pop_front_matter_key
 from lens.core.exceptions import LensException
 from lens.core.project import get_selected_datasets, resolve_dataset_path
-from lens.core.storage_text import format_kb_prompt_block
+from lens.core.storage_text import format_kb_prompt_block, kb_headline
 
 import tomli_w
 
@@ -113,6 +113,15 @@ class KnowledgeObject:
             include_comments=include_comments,
             strip_html=strip_html_comments,
         )
+
+    def headline(self) -> str:
+        """This object's first-three-lines self-description.
+
+        See :func:`~lens.core.storage_text.kb_headline` for the policy. Used to
+        say what an object is for without paying for its body — tag listings and
+        the model-requestable module catalog both read it.
+        """
+        return kb_headline(self.text)
 
     def __repr__(self) -> str:
         return self.format()
@@ -315,6 +324,14 @@ class KnowledgeStore:
         objects; selected datasets contribute their own tag indexes via their
         ``tags.toml`` files. The result is the union of all matching IDs.
 
+        **A type name is a tag.** ``get_ids_with_tag("rules")`` returns every
+        ``rules.*`` object, whether or not anything was ever tagged. The type is
+        already the one grouping every object carries, so making it searchable
+        costs nothing and saves maintaining a parallel tag that says the same
+        word — and a stale hand-maintained tag is worse than no tag, because the
+        objects missing from it are invisible rather than merely unlabelled.
+        Explicit tags still win where both exist: the two sets are unioned.
+
         If *type_filter* is given, only IDs whose type prefix matches are returned
         (e.g. ``type_filter="front"`` keeps only ``front.*`` IDs).
         """
@@ -329,6 +346,11 @@ class KnowledgeStore:
         for ds in self._dataset_stores:
             ds_tag_to_objs, _ = ds._load_tags()
             objs.update(ds_tag_to_objs.get(tag_l, set()))
+
+        # The type itself, for a bare token that names one.  Dot-tags (links) and
+        # `key:value` tags are never type names, so they never take this path.
+        if "." not in tag_l and ":" not in tag_l:
+            objs.update(self.list_ids(type_filter=tag_l))
 
         result = sorted(objs)
         if type_filter:
@@ -440,6 +462,17 @@ class KnowledgeStore:
                 if want_prefix is not None and not tag.startswith(want_prefix):
                     continue
                 tags_set.add(tag)
+
+        # Type names are searchable tags (see get_ids_with_tag), so list them —
+        # a discovery tool that hides half of what it can find is a trap.
+        for obj_id in self.list_ids(type_filter=want_type):
+            try:
+                obj_type, _ = parse_id(obj_id)
+            except ValueError:
+                continue
+            if want_prefix is not None and not obj_type.startswith(want_prefix):
+                continue
+            tags_set.add(obj_type)
 
         return sorted(tags_set)
 
