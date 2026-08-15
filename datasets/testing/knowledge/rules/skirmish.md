@@ -1,5 +1,7 @@
 # SKIRMISH — fights, at the table
 
+How a fight is structured: exchanges, the harm ladder, and threat clocks. Load the moment violence starts or becomes unavoidable — before narrating the first blow.
+
 Layered on the base rules: dice, LASERS/FEELINGS, and success counting are
 unchanged. This module only says how a fight is *structured* once one starts.
 

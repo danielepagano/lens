@@ -1,15 +1,20 @@
 """Model-requested modules: a latching command tool that pulls rules into scope.
 
 A **module** is an ordinary KB object a dataset has *registered* as something the
-model may pull into scope on its own, mid-scene, with a description of when it is
-needed::
+model may pull into scope on its own, mid-scene::
 
     # <dataset>/lens.toml
     [[dataset.modules]]
     id = "rules.combat"
     operators = ["play"]
-    description = '''Turn order, actions, and damage resolution.
-    Load when violence starts or initiative will be rolled.'''
+
+The registration says *which* object and *who* may ask for it, and nothing else.
+What the module covers and when it is needed — the only part the model actually
+decides on — comes from the object's own first three lines (see
+:data:`~lens.core.storage_text.KB_HEADLINE_LINES`).  A description in the manifest
+would be a second copy of that text, in a different file, updated by hand: it
+would drift, and the drifting copy is the one the model reads.  Write the trigger
+into the top of the rules file, where the person editing the rules will see it.
 
 Why a tool here at all
 ----------------------
@@ -88,12 +93,24 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class ModuleDecl:
-    """One registered module: what it is, and which operators may request it."""
+    """One registered module: which object, and which operators may request it.
+
+    *description* is empty as parsed and filled in by :func:`unloaded_modules`
+    from the KB object's headline — the manifest does not carry one.
+    """
 
     kb_id: str
-    description: str
     operators: tuple[str, ...]
     dataset: str
+    description: str = ""
+
+    def with_description(self, description: str) -> ModuleDecl:
+        return ModuleDecl(
+            kb_id=self.kb_id,
+            operators=self.operators,
+            dataset=self.dataset,
+            description=description,
+        )
 
 
 _REGISTRY_CACHE: dict[tuple[Path, tuple[str, ...]], tuple[ModuleDecl, ...]] = {}
@@ -129,7 +146,6 @@ def _parse_dataset_modules(dataset_name: str, dataset_path: Path) -> list[Module
             continue
         entry = cast(dict[str, Any], raw_entry)
         kb_id = entry.get("id")
-        description = entry.get("description")
         raw_operators = entry.get("operators")
         operators = (
             tuple(op for op in cast(list[Any], raw_operators) if isinstance(op, str))
@@ -139,14 +155,14 @@ def _parse_dataset_modules(dataset_name: str, dataset_path: Path) -> list[Module
         if not isinstance(kb_id, str) or not kb_id.strip():
             logger.warning("dataset '%s': module entry without an 'id'", dataset_name)
             continue
-        if not isinstance(description, str) or not description.strip():
+        if "description" in entry:
             logger.warning(
-                "dataset '%s': module '%s' has no description — the model would have "
-                "nothing to decide on, so it is ignored",
+                "dataset '%s': module '%s' declares a 'description' — that key is no "
+                "longer read; the catalog entry comes from the object's first three "
+                "lines, so move the trigger text to the top of the KB file",
                 dataset_name,
                 kb_id,
             )
-            continue
         if not operators:
             logger.warning(
                 "dataset '%s': module '%s' targets no operators — ignored",
@@ -165,7 +181,6 @@ def _parse_dataset_modules(dataset_name: str, dataset_path: Path) -> list[Module
         decls.append(
             ModuleDecl(
                 kb_id=kb_id.strip(),
-                description=description.strip(),
                 operators=operators,
                 dataset=dataset_name,
             )
@@ -230,9 +245,12 @@ def unloaded_modules(
 ) -> tuple[ModuleDecl, ...]:
     """Modules worth offering: registered for this operator, not already in scope.
 
-    A module that resolves to no KB object is dropped — a dataset may register an
-    id it ships in a later version, and offering a tool that can only fail is
-    worse than offering nothing.
+    This is where each declaration acquires its catalog description, read off the
+    object's own first three lines.  A module that resolves to no KB object is
+    dropped — a dataset may register an id it ships in a later version, and
+    offering a tool that can only fail is worse than offering nothing.  So is one
+    whose object describes itself in no lines at all: the model would be choosing
+    from a bare id.
     """
     decls = modules_for_operator(project_root, operator_name)
     if not decls:
@@ -241,11 +259,24 @@ def unloaded_modules(
         crawl_result.scoped_kb_ids() if crawl_result is not None else set()
     )
     kb = KnowledgeStore.for_project(project_root)
-    return tuple(
-        decl
-        for decl in decls
-        if decl.kb_id.lower() not in in_scope and kb.exists(decl.kb_id)
-    )
+    offers: list[ModuleDecl] = []
+    for decl in decls:
+        if decl.kb_id.lower() in in_scope:
+            continue
+        obj = kb.get_objects([decl.kb_id]).get(decl.kb_id)
+        if obj is None:
+            continue
+        headline = obj.headline()
+        if not headline:
+            logger.warning(
+                "dataset '%s': module '%s' opens with no title or purpose line, so "
+                "there is nothing to offer it by — it is not listed",
+                decl.dataset,
+                decl.kb_id,
+            )
+            continue
+        offers.append(decl.with_description(headline))
+    return tuple(offers)
 
 
 def _catalog_text(decls: tuple[ModuleDecl, ...], prompts: PromptStore) -> str:

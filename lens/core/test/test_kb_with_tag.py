@@ -13,6 +13,7 @@ from unittest.mock import patch
 from lens.core.commands.kb import kb_with_tag
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
+from lens.core.storage_text import kb_headline
 
 
 def _make_project(tmp: Path) -> None:
@@ -420,6 +421,105 @@ class TestKbWithTagCore(unittest.TestCase):
         self.assertEqual(by_tag["location.city"], ["location.tavern"])
 
 
+class TestTypeAsTag(unittest.TestCase):
+    """A type is a tag: `design` finds every design.* with no tagging required.
+
+    Discovery has to work off what an object already is. A parallel hand-kept tag
+    saying the same word as the id would go stale, and the objects missing from it
+    would be invisible rather than merely unlabelled.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp()
+        self.root = Path(self.tmp)
+        _make_project(self.root)
+        self.store = KnowledgeStore(self.root)
+        self.store.store_object(
+            "design.clock", "CLOCK\n\nA countdown you can point at.\n\nLong body."
+        )
+        self.store.store_object("design.mute", "\n\n\nNo self-description here.")
+        self.store.store_object("place.nyc", "NYC")
+
+    def tearDown(self) -> None:
+        import shutil
+
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _run(self, tags: list[str], **kwargs: object) -> object:
+        with patch("lens.core.commands.kb.get_store", return_value=self.store):
+            return kb_with_tag(tags, **kwargs)  # type: ignore[arg-type]
+
+    def test_a_bare_type_matches_every_object_of_that_type(self) -> None:
+        result = self._run(["design"])
+
+        self.assertEqual(result.ids, ["design.clock", "design.mute"])  # type: ignore[attr-defined]
+
+    def test_a_type_ands_with_a_real_tag(self) -> None:
+        self.store.add_tags("design.clock", ["featured"])
+
+        result = self._run(["design", "featured"])
+
+        self.assertEqual(result.ids, ["design.clock"])  # type: ignore[attr-defined]
+
+    def test_types_are_listed_as_tags(self) -> None:
+        """A discovery tool that hides half of what it can find is a trap."""
+        self.assertIn("design", self.store.list_unique_tags())
+
+    def test_a_template_is_not_an_object_of_its_type(self) -> None:
+        self.store.set_template("design", "# [DESIGN MODULE]: {TITLE}")
+
+        result = self._run(["design"])
+
+        self.assertNotIn("design._template", result.ids)  # type: ignore[attr-defined]
+
+    def test_headlines_accompany_the_id_list(self) -> None:
+        result = self._run(["design"])
+
+        self.assertEqual(
+            result.id_to_headline,  # type: ignore[attr-defined]
+            {"design.clock": "CLOCK\nA countdown you can point at."},
+        )
+
+    def test_expand_does_not_pay_for_headlines(self) -> None:
+        """With whole bodies on screen the headline is already the first line of one."""
+        result = self._run(["design"], expand=True)
+
+        self.assertIsNone(result.id_to_headline)  # type: ignore[attr-defined]
+
+
+class TestKbHeadline(unittest.TestCase):
+    """The first-three-lines policy: what a KB object says about itself."""
+
+    def test_title_blank_purpose_is_the_canonical_shape(self) -> None:
+        self.assertEqual(
+            kb_headline("D&D COMBAT RULES\n\nRunning a fight.\n\nSTARTING COMBAT\n"),
+            "D&D COMBAT RULES\nRunning a fight.",
+        )
+
+    def test_nothing_past_the_third_line_is_read(self) -> None:
+        self.assertEqual(
+            kb_headline("One\nTwo\nThree\nFour\n"), "One\nTwo\nThree"
+        )
+
+    def test_annotation_front_matter_does_not_spend_the_budget(self) -> None:
+        """A template declaring default tags still gets three lines of its own."""
+        text = "[\n    tags: state\n]: #\nTracker\n\nLive combat state.\n\nBody.\n"
+
+        self.assertEqual(kb_headline(text), "Tracker\nLive combat state.")
+
+    def test_a_one_line_html_comment_is_unwrapped(self) -> None:
+        """Templates keep their usage note in a comment so it never lands in copies."""
+        text = "<!-- A prepared situation. Usage: pin when the scene starts. -->\nName\n"
+
+        self.assertEqual(
+            kb_headline(text),
+            "A prepared situation. Usage: pin when the scene starts.\nName",
+        )
+
+    def test_a_body_that_never_names_itself_has_no_headline(self) -> None:
+        self.assertEqual(kb_headline("\n\n\nBody starts on line four.\n"), "")
+
+
 class TestWithTagCli(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.mkdtemp()
@@ -460,11 +560,15 @@ class TestWithTagCli(unittest.TestCase):
                 finally:
                     sys.stdout = old_stdout
 
-    def test_cli_base_prints_ids(self) -> None:
-        self.store.store_object("place.nyc", "NYC")
+    def test_cli_base_prints_ids_with_headline(self) -> None:
+        self.store.store_object("place.nyc", "NYC\n\nA city that never sleeps.\n\nBody.")
         self.store.add_tags("place.nyc", ["featured"])
         out = self._run_with_tag_cli(["featured"])
-        self.assertEqual(out.strip(), "place.nyc  [featured]")
+        self.assertEqual(
+            out.strip(),
+            "place.nyc  [featured]\n    NYC\n    A city that never sleeps.",
+        )
+        self.assertNotIn("Body.", out)
 
     def test_cli_expand_prints_objects(self) -> None:
         self.store.store_object("place.nyc", "Big city")
@@ -524,7 +628,7 @@ class TestWithTagCli(unittest.TestCase):
         self.store.add_tags("place.boston", ["featured"])
         self.store.add_tags("place.chicago", ["pc"])
         out = self._run_with_tag_cli(["featured", "pc"])
-        self.assertEqual(out.strip(), "place.nyc  [featured pc]")
+        self.assertEqual(out.strip(), "place.nyc  [featured pc]\n    NYC")
 
     def test_cli_recurse_depth_1_omits_deeper_children(self) -> None:
         _build_map_fixture(self.store)

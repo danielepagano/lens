@@ -247,6 +247,28 @@ class WithTagResult:
     layers: list[tuple[str, list[str]]] | None = None
     objects: dict[str, KnowledgeObject] | None = None
     id_to_tags: dict[str, list[str]] | None = None
+    id_to_headline: dict[str, str] | None = None
+    """Each match's first-three-lines self-description (see :func:`kb_headline`).
+
+    A bare id list answers "does anything match" but not "which of these do I
+    want", and the caller — a person at a terminal or a model mid-design —
+    then has to fetch candidates one at a time to find out. Populated only when
+    ``expand`` is false; with full bodies on screen the headline is already there.
+    """
+
+
+def _headlines_for(kb: KnowledgeStore, ids: list[str]) -> dict[str, str]:
+    """Headline per id, skipping ids that resolve to nothing or describe nothing."""
+    objects = kb.get_objects(ids)
+    out: dict[str, str] = {}
+    for oid in ids:
+        obj = objects.get(oid)
+        if obj is None:
+            continue
+        headline = obj.headline()
+        if headline:
+            out[oid] = headline
+    return out
 
 
 def parse_tag_groups(tags: list[str]) -> list[list[str]]:
@@ -315,7 +337,11 @@ def kb_with_tag(
             ids = _filter_ids_by_tag_type(ids, first_tag)
         id_to_tags = {oid: kb.get_tags(oid) for oid in ids}
         if not expand:
-            return WithTagResult(ids=ids, id_to_tags=id_to_tags)
+            return WithTagResult(
+                ids=ids,
+                id_to_tags=id_to_tags,
+                id_to_headline=_headlines_for(kb, ids),
+            )
         objects = kb.get_objects(ids)
         return WithTagResult(ids=ids, objects=objects, id_to_tags=id_to_tags)
 
@@ -352,7 +378,12 @@ def kb_with_tag(
                 all_ids.append(cid)
     id_to_tags = {oid: kb.get_tags(oid) for oid in all_ids}
     if not expand:
-        return WithTagResult(ids=root_ids, layers=layers, id_to_tags=id_to_tags)
+        return WithTagResult(
+            ids=root_ids,
+            layers=layers,
+            id_to_tags=id_to_tags,
+            id_to_headline=_headlines_for(kb, all_ids),
+        )
     objects = kb.get_objects(all_ids)
     return WithTagResult(ids=root_ids, layers=layers, objects=objects, id_to_tags=id_to_tags)
 

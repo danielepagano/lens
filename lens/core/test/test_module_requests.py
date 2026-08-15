@@ -14,6 +14,7 @@ from lens.core.knowledge import KnowledgeStore
 from lens.core.media import MediaService
 from lens.core.module_requests import (
     LOAD_MODULE_TOOL,
+    ModuleDecl,
     ModuleRequestSink,
     build_module_request_bundle,
     clear_module_registry,
@@ -24,7 +25,14 @@ from lens.core.module_requests import (
 )
 from lens.core.narrative import NarrativeNode
 
-MODULE_BODY = "# Skirmish\n\nRoll off, higher wins.\n"
+MODULE_BODY = (
+    "# Skirmish\n"
+    "\n"
+    "Turn order and damage. Load when violence starts.\n"
+    "\n"
+    "Roll off, higher wins.\n"
+)
+"""First three lines are the catalog entry; the body is what `load_module` returns."""
 
 
 def _git(root: Path, *args: str) -> None:
@@ -52,7 +60,6 @@ VALID_MANIFEST = """\
 [[dataset.modules]]
 id = "rules.skirmish"
 operators = ["play", "write"]
-description = "Turn order and damage. Load when violence starts."
 """
 
 
@@ -110,7 +117,6 @@ class TestRegistry(_ProjectFixture):
         self.assertEqual([d.kb_id for d in decls], ["rules.skirmish"])
         self.assertEqual(decls[0].operators, ("play", "write"))
         self.assertEqual(decls[0].dataset, "moduleset")
-        self.assertIn("violence starts", decls[0].description)
 
     def test_filtered_by_target_operator(self) -> None:
         self.assertEqual(
@@ -134,20 +140,13 @@ class TestMalformedDeclarations(_ProjectFixture):
 
 [[dataset.modules]]
 operators = ["play"]
-description = "no id at all"
-
-[[dataset.modules]]
-id = "rules.skirmish"
-operators = ["play"]
 
 [[dataset.modules]]
 id = "rules.other"
-description = "no operators, so nobody can ask for it"
 
 [[dataset.modules]]
 id = "rules.skirmish"
 operators = ["play"]
-description = "Turn order and damage."
 """
 
     def test_incomplete_entries_are_skipped_not_fatal(self) -> None:
@@ -155,7 +154,39 @@ description = "Turn order and damage."
         decls = dataset_modules(self.root)
 
         self.assertEqual([d.kb_id for d in decls], ["rules.skirmish"])
-        self.assertEqual(decls[0].description, "Turn order and damage.")
+
+
+class TestDescriptionFromHeadline(_ProjectFixture):
+    def _offer(self) -> tuple[ModuleDecl, ...]:
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        return unloaded_modules(self.root, "play", crawl(CrawlSpec.of(self.node())))
+
+    def test_catalog_entry_is_the_objects_first_three_lines(self) -> None:
+        decls = self._offer()
+
+        self.assertEqual(
+            [d.description for d in decls],
+            ["# Skirmish\nTurn order and damage. Load when violence starts."],
+        )
+
+    def test_a_body_that_describes_itself_in_no_lines_is_not_offered(self) -> None:
+        """Nothing to choose on is worse than no choice at all."""
+        (self.dataset / "knowledge" / "rules" / "skirmish.md").write_text(
+            "\n\n\nRoll off, higher wins.\n", encoding="utf-8"
+        )
+
+        self.assertEqual(self._offer(), ())
+
+    def test_headline_tracks_the_file_without_touching_the_manifest(self) -> None:
+        (self.dataset / "knowledge" / "rules" / "skirmish.md").write_text(
+            "# Skirmish\n\nNow about duels only.\n\nRoll off.\n", encoding="utf-8"
+        )
+
+        self.assertEqual(
+            [d.description for d in self._offer()],
+            ["# Skirmish\nNow about duels only."],
+        )
 
 
 class TestCatalogFilter(_ProjectFixture):

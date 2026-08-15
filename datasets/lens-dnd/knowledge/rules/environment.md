@@ -1,8 +1,6 @@
 D&D ENVIRONMENT, HAZARDS, AND TRAVEL
 
-> This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/ legalcode.
-
-Reference for scenes where the world itself is the obstacle. Quote the specific rule you are using into the encounter you are writing, with its numbers intact — a hazard described without its DC or its dice is not a hazard, it is scenery.
+Rules for environemntal hazards that cause damage and conditions and for long-distance travel. Include if you are on a long journey or in unfriendly environments.
 
 HAZARDS
 
@@ -23,16 +21,6 @@ ENVIRONMENTAL EFFECTS
 - Dead Magic Zone: As Antimagic Field spell — all magic ceases within (typically ≤300 ft diameter).
 - Wild Magic Zone: Spellcasting triggers a Wild Magic surge.
 
-DIFFICULT TERRAIN
-
-Every foot of movement in Difficult Terrain costs 1 extra foot. It is not cumulative: a space either is Difficult Terrain or it is not, however many things make it so.
-
-A space is Difficult Terrain if it contains any of the following or something similar: a creature that is not Tiny and not your ally; furniture sized for creatures of your size or larger; heavy snow, ice, rubble, or undergrowth; liquid between shin- and waist-deep; a narrow opening sized for a creature one size smaller than you; a slope of 20 degrees or more.
-
-OBSCURED AREAS
-
-- Lightly Obscured (dim light, patchy fog, moderate foliage): Disadvantage on Wisdom (Perception) checks that rely on sight.
-- Heavily Obscured (darkness, heavy fog, dense foliage): the area is opaque, and a creature trying to see into it has the Blinded condition for that purpose.
 
 TRAVEL
 

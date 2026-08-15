@@ -1,6 +1,6 @@
 D&D RULES REFERENCE FOR AI DM
 
-> This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/ legalcode.
+Core D&D 5.5 Rules - Always included in all play sessions.
 
 THE D20 SYSTEM
 
@@ -108,8 +108,8 @@ EXPLORATION
 VISION, SENSES, AND LIGHT
 
 - Bright Light: Normal vision.
-- Dim Light: Lightly Obscured — Disadvantage on sight-based Perception checks.
-- Darkness: Heavily Obscured — effectively Blinded for sight.
+- Lightly Obscured (dim light, patchy fog, moderate foliage, or similar): Disadvantage on Wisdom (Perception) checks that rely on sight.
+- Heavily Obscured (darkness, heavy fog, dense foliage, or similar): the area is opaque, and a creature trying to see into it has the Blinded condition for that purpose.
 
 DARKVISION: Treats darkness as dim light within its range. Cannot see color. Does not grant normal vision in dim light.
 
@@ -141,7 +141,7 @@ MOVING THROUGH THE WORLD
 
 These are the rulings you will be asked for most often outside a fight. Use the numbers; do not estimate them.
 
-- Difficult Terrain: every foot of movement costs 1 extra foot. Not cumulative — a space either is Difficult Terrain or it is not, however many things make it so.
+- Difficult Terrain: every foot of movement costs 1 extra foot. Not cumulative — a space either is Difficult Terrain or it is not, however many things make it so. A space is Difficult Terrain if it contains any of the following or something similar: a creature that is not Tiny and not your ally; furniture sized for creatures of your size or larger; heavy snow, ice, rubble, or undergrowth; liquid between shin- and waist-deep; a narrow opening sized for a creature one size smaller than you; a slope of 20 degrees or more.
 - Falling: 1d6 Bludgeoning per 10 feet, max 20d6. Lands Prone unless it takes 0 damage. A creature falling into liquid can use its Reaction to make a DC 15 Str (Athletics) or Dex (Acrobatics) check to halve the damage.
 - Climbing and swimming: each foot costs 1 extra foot (2 extra in Difficult Terrain), ignored by a creature using a Climb or Swim Speed. A slippery surface, one with few handholds, or rough water may call for a DC 15 Str (Athletics) check — that call is yours.
 - Long Jump: leap horizontally up to your Strength **score** in feet with at least a 10-foot run-up, half that from standing. Each foot costs a foot of movement. Landing in Difficult Terrain: DC 10 Dex (Acrobatics) or Prone. Clearing a low obstacle may take a DC 10 Str (Athletics) check.

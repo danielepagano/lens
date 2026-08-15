@@ -4,11 +4,7 @@ extension = "lens.dnd:register"
 [[dataset.modules]]
 id = "rules.combat"
 operators = ["play"]
-description = """Running a fight: initiative and surprise, the action economy, opportunity attacks, movement and cover, mounts and underwater, and how damage and death land.
-Load the moment violence starts or initiative is about to be rolled — including when a conversation collapses into one, and before you narrate the first blow."""
 
 [[dataset.modules]]
 id = "rules.chase"
 operators = ["play"]
-description = """Running a pursuit: tracking distance instead of position, exhaustion from repeated Dashes, terrain complications, and the conditions under which the quarry escapes or is caught.
-Load when someone runs and someone follows, whether or not anyone means anyone harm — fleeing a creditor or tailing a courier counts."""

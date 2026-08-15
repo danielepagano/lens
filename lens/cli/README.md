@@ -395,11 +395,24 @@ lens kb with-tag location.kingdom -r             # Breadth-first over dot-tags (
 lens kb with-tag location.kingdom -r -e          # Same as above, but print objects layer by layer
 lens kb with-tag location.kingdom -r -e -s       # Only follow/print IDs whose type matches the starting tag (location.*)
 
+# A type is a tag — no tagging required:
+lens kb with-tag design                          # Every design.* module, with what each is for
+lens kb with-tag rules                           # Every rules.* object
+
 # OR groups: use (a b c) for tags that match any of a, b, or c. Quote for shell:
 lens kb with-tag "(cr:1-2 cr:1-4)" "(type:undead type:humanoid)" size:large
 ```
 
-- Base form prints object IDs with their tags (e.g. `stat.ghoul  [cr:1 type:undead]`).
+- Base form prints object IDs with their tags, then each object's **first three lines** indented beneath — by convention its name and what it is for, so a wide search is readable without expanding it:
+
+  ```
+  stat.ghoul  [cr:1 type:undead]
+      **Ghoul** · Medium Undead, Chaotic Evil
+      **AC** 12 · **HP** 22 · **Speed** 30 ft.
+  ```
+
+  See [first three lines](../../docs/configuration.md#first-three-lines). `-e/--expand` prints whole bodies instead, where the headline is already the top of each one.
+- **A bare object type is a valid tag**: `with-tag design` matches every `design.*` object whether or not it carries tags. Types also show up in `lens kb list-tags`.
 - **OR groups**: Tags in `(a b c)` match objects that have *any* of those tags. Groups are ANDed; quote parenthesized args for the shell.
 - `-e/--expand` prints objects in the same `KB['id']` format as `lens kb get`.
 - `-r/--recurse` follows dot-tags from objects (and object IDs used as tags, e.g. for Up-style location maps) breadth-first, avoiding cycles. Optional numeric argument limits depth (e.g. `-r 2`); `0` means full traversal.

@@ -1,6 +1,6 @@
 D&D COMBAT RULES
 
-> This work includes material from the System Reference Document 5.2.1 (“SRD 5.2.1”) by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/ legalcode.
+Running a fight: initiative and surprise, the action economy, opportunity attacks, movement and cover, mounts and underwater, and how damage and death land. Load the moment violence starts or initiative is about to be rolled — including when a conversation collapses into one, and before you narrate the first blow.
 
 You are still not running the system — the player is. This module gives you the structure of a fight so you can direct the creatures you control, describe the situation accurately, and narrate results the player hands back. Everything here that involves a roll is theirs to make.
 
@@ -49,7 +49,6 @@ It does NOT trigger on teleportation, on movement the creature did not spend (an
 
 MOVEMENT AND POSITION
 
-- Difficult Terrain: every foot of movement costs 1 extra foot. It is not cumulative — a space either is Difficult Terrain or it is not, no matter how many things make it so.
 - Dropping Prone is free. Standing up costs half your Speed. A creature with Speed 0 cannot drop prone.
 - You can move through the space of an ally, an Incapacitated creature, a Tiny creature, or a creature two or more sizes different from yours. Another creature's space is Difficult Terrain unless it is Tiny or your ally. You cannot willingly end a move in an occupied space. Knocking an enemy Prone does **not** open its space — Prone is not one of the exceptions.
 - A flying creature without the Hover trait can stay aloft without moving; it does not have to travel each round to remain in the air.

@@ -286,7 +286,12 @@ def with_tag(
         help="Only return objects of this type (e.g. --type front)",
     ),
 ) -> None:
-    """List object IDs matching tag groups (AND across, OR within parens); optionally expand or recurse by dot-tags."""
+    """List object IDs matching tag groups (AND across, OR within parens); optionally expand or recurse by dot-tags.
+
+    Each ID is listed with its tags and its first three lines, which by
+    convention say what the object is and when it applies. Use ``--expand`` for
+    full bodies instead.
+    """
     if not tags:
         typer.echo("Error: at least one tag is required", err=True)
         raise typer.Exit(1)
@@ -313,10 +318,16 @@ def with_tag(
                 pass
 
     def _format_id_with_tags(cid: str) -> str:
+        line = cid
         if result.id_to_tags and cid in result.id_to_tags:
             tag_str = " ".join(result.id_to_tags[cid])
-            return f"{cid}  [{tag_str}]" if tag_str else cid
-        return cid
+            if tag_str:
+                line = f"{cid}  [{tag_str}]"
+        headline = (result.id_to_headline or {}).get(cid)
+        if headline:
+            indented = "\n".join(f"    {ln}" for ln in headline.split("\n"))
+            line = f"{line}\n{indented}"
+        return line
 
     if recurse is None:
         if not expand:
