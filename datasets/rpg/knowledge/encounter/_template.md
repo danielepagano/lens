@@ -5,7 +5,7 @@ Encounter name
 - Stakes: (what can go wrong, what's at risk)
 - Initial positions: (for combat/physical encounters: starting distances, formations, terrain zones — enough for theater-of-mind)
 - Participants: (who's involved; link npc/faction or stat block objects. For prepared combatants, also tag the encounter with the relevant `stat.*` so `encounter.*+` can expand them during play.)
-- Scene rules: (the artifacts this scene runs on, written out with their numbers: a clock, a concession budget and walk-away line, escape terms, a discovery ladder, quoted hazard rules. Deltas only — never restate a `rules.*` booklet. Link a lore object if one artifact is genuinely large.)
+- Scene rules: (special mechanics for this situation — tactical features, environmental effects, conversation goals, chase rules, puzzle mechanics, time pressure. Keep short; link lore object if complex.)
 - Triggers: (what causes the situation to shift — dialog escalates, timer expires, reinforcements arrive, secret is revealed)
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
 

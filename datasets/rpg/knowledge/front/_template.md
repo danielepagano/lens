@@ -6,7 +6,6 @@ Name (any way we'd be referencing this problem)
 - Known to PCs: what the party believes
 - Phases or beats: how it might escalate, where it's at  
   - Timeline anchors: if applicable, specific values of the day counter when something is meant to happen
-  - Clocks: `Clock: <what is coming> [4|6|8]` plus a `Ticks when:` line the advance operator can act on without a scene, and an `At full:` line naming one concrete event. See `design.clock`.
 - Possible resolutions
   - Specific triggers, state of the world, or actions that affect the result
   - Any dependencies on chance, in the form of "every (counter mod x) days there is a y% chance that z could happen"

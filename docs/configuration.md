@@ -697,16 +697,16 @@ Manage with `lens pin kb add|remove|block|unblock`. The `+` suffix on an id expa
 
 ### First three lines
 
-Every KB object reserves its **first three lines** for saying what it is: its name or title, what it is for or when it applies, and blank lines. Nothing else belongs there — no rules text, no licence blockquote, no data.
+An object's **first three lines** are read as its self-description — by convention its name or title and what it is for. Most KB content already opens this way (a stat block names the creature, a rules file names the ruleset), so nothing needs converting.
 
-Those three lines are machine-read, which is what makes the convention load-bearing rather than stylistic:
+Two mechanisms read exactly those lines:
 
 - `lens kb with-tag` and the `kb_with_tag` tool print them under every match, so a search over dozens of candidates says what each one *is* without expanding any of them.
-- [`[[dataset.modules]]`](#datasetmodules-dataset-lenstoml) uses them as the module's catalog entry — the text the model decides on when choosing whether to pull a ruleset into scope.
+- [`[[dataset.modules]]`](#datasetmodules-dataset-lenstoml) uses them as the module's catalog entry — the text the model decides on when choosing whether to pull a ruleset into scope. **Only registered modules need to be written for this**; nothing else changes behaviour based on its opening lines.
 
-Lens annotation blocks (`[ … ]: #`) are skipped before counting, so a template declaring default tags still gets its three lines. A line that is entirely one HTML comment is unwrapped, which is why type templates put their usage note in `<!-- … -->`: it describes the template without landing in every object created from it.
+Lens annotation blocks (`[ … ]: #`) are skipped before counting, so a template declaring default tags still gets its three lines. A line that is entirely one HTML comment is unwrapped, so a type template's `<!-- … -->` usage note reads as its description.
 
-Nothing enforces this. The penalty for breaking it is silence — an object whose purpose sits on line 40 is one no search can surface on purpose.
+Nothing enforces this, and an object that opens some other way is only harder to skim in a search — except for a registered module, where empty opening lines mean the module is not offered at all.
 
 ### Reserved KB tags
 
