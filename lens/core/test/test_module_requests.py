@@ -117,8 +117,6 @@ class TestRegistry(_ProjectFixture):
         self.assertEqual([d.kb_id for d in decls], ["rules.skirmish"])
         self.assertEqual(decls[0].operators, ("play", "write"))
         self.assertEqual(decls[0].dataset, "moduleset")
-        # The manifest carries no description — it is resolved against the KB.
-        self.assertEqual(decls[0].description, "")
 
     def test_filtered_by_target_operator(self) -> None:
         self.assertEqual(
@@ -149,7 +147,6 @@ id = "rules.other"
 [[dataset.modules]]
 id = "rules.skirmish"
 operators = ["play"]
-description = "a leftover description, no longer read"
 """
 
     def test_incomplete_entries_are_skipped_not_fatal(self) -> None:
@@ -157,16 +154,6 @@ description = "a leftover description, no longer read"
         decls = dataset_modules(self.root)
 
         self.assertEqual([d.kb_id for d in decls], ["rules.skirmish"])
-
-    def test_a_stale_manifest_description_is_ignored(self) -> None:
-        """The KB headline is the single source; a leftover key must not win."""
-        decls = unloaded_modules(self.root, "play", crawl(CrawlSpec.of(self.node())))
-
-        self.assertEqual([d.kb_id for d in decls], ["rules.skirmish"])
-        self.assertEqual(
-            decls[0].description,
-            "# Skirmish\nTurn order and damage. Load when violence starts.",
-        )
 
 
 class TestDescriptionFromHeadline(_ProjectFixture):

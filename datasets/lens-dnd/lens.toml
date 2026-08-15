@@ -1,8 +1,6 @@
 [dataset]
 extension = "lens.dnd:register"
 
-# Model-requestable rules modules. The catalog entry the model chooses on is the
-# first three lines of each object — do not restate it here.
 [[dataset.modules]]
 id = "rules.combat"
 operators = ["play"]

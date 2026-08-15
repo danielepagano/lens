@@ -1,6 +1,6 @@
 USING A D&D STAT BLOCK
 
-A `stat.*` object is the sheet for a creature YOU control. `stat._template` describes how stat blocks are tagged and found; this is how to run one at the table.
+A `stat.*` object is the sheet for a creature YOU (the AI) controls. This is how to run one at the table.
 
 WHAT IS YOURS AND WHAT IS NOT
 

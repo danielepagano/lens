@@ -1,6 +1,8 @@
 # D&D Dataset (`lens-dnd`)
 
-Rules, stat blocks, spells, and encounter-building tools from D&D 5.5e SRD.
+Rules, stat blocks, spells, and encounter-building tools from D&D 5.5e SRD. 
+
+The below statement applies to the various files within this dataset; since the files are used as composable prompts, it is no practical to include it there.
 
 > This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
 
@@ -104,7 +106,7 @@ The ruleset is **dense where it is cheap and sparse where it is expensive**. `de
 | Object | Route | Loaded when |
 |--------|-------|-------------|
 | `rules.system` | modality auto-pin | every `play` beat |
-| `rules.combat`, `rules.chase` | `[[dataset.modules]]` → `load_module` | the model recognises the scene turned into a fight or a pursuit; latches as `[include: …]: #` for the rest of the node. The catalog entry it decides on is each object's own first three lines — the manifest carries only the id and the operators |
+| `rules.combat`, `rules.chase` | `[[dataset.modules]]` → `load_module` | the model recognises the scene turned into a fight or a pursuit; latches as `[include: …]: #` for the rest of the node. The model also sees each object's first three lines, which tell it what the module is for. |
 | `rules.combat`, `rules.chase`, `rules.environment` | `+` expansion of a tag on an `encounter.*` | a prepared scene is pinned as `encounter.foo+` — no round trip, and the module drops off the `load_module` menu |
 | `rules.encounter`, `rules.stat`, `rules.tracker` | `rules.<type>` companion | any `encounter.*` / `stat.*` / `tracker.*` object is pinned |
 | `rules.system`, `rules.encounter` | `+` expansion of `design.encounter` | a `lens design --module encounter` session opens |
