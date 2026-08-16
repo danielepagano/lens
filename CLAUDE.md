@@ -9,7 +9,7 @@ Agent-oriented grounding for this repository. User-facing docs start at [README.
 | Getting started, project layout | [README.md](README.md) |
 | Architecture, operators, workflow | [docs/design.md](docs/design.md) |
 | `lens.toml`, LLM, mounts, validation | [docs/configuration.md](docs/configuration.md) |
-| Testing layers, fake LLM, sandbox, bench | [docs/testing.md](docs/testing.md) |
+| Testing layers, fake LLM, sandbox, prompt lab, bench | [docs/testing.md](docs/testing.md) |
 | CLI commands and operators | [lens/cli/README.md](lens/cli/README.md) |
 | Datasets, extensions, sibling layout | [datasets/README.md](datasets/README.md) |
 | RPG play (`play`, `advance`, fronts) | [docs/rpg-design.md](docs/rpg-design.md), [datasets/rpg/README.md](datasets/rpg/README.md) |
@@ -36,6 +36,7 @@ poe test-ui            # Vitest (lens/server/ui)
 poe build-ui           # vite build → lens/server/static/
 poe e2e-sandbox        # manual browser sandbox (temp project + fake LLM)
 poe mock-llm           # standalone controllable fake LLM on :18765
+poe prompt-lab         # assemble + measure real operator prompts (see below)
 poe lens <command>     # run the CLI locally
 
 # Cloud fallback (poe not on PATH)
@@ -58,6 +59,26 @@ playwright install chromium          # once, for browser e2e
 ## Definition of done
 
 Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, integration tests, UI unit tests, UI build, and e2e tests in sequence — all must pass.
+
+## Editing prompts and KB content
+
+`lens/prompts/default.toml`, `datasets/*/knowledge/design/*`, `datasets/*/knowledge/rules/*`, and every `_template.md` are **LLM prompts**, not documentation. The diff is not the artifact — the *assembled context* is, and no test asserts on it. Use `poe prompt-lab` (`lens/testing/prompt_lab.py`, full guide in [docs/testing.md](docs/testing.md#prompt-lab-poe-prompt-lab)):
+
+```bash
+poe prompt-lab -- --out /tmp/before        # baseline BEFORE editing
+#  …edit…
+poe prompt-lab -- --baseline /tmp/before   # per-scenario token deltas
+poe prompt-lab -- --only design-encounter  # one scenario, full composition table
+```
+
+It builds a realistic campaign, drives the real operators against the fake LLM, and reports each prompt with `lens explain` — which objects arrived, by which route (pin, `+` expansion, session module, rules companion), and what each costs. No model is called for the report.
+
+Rules of thumb learned the hard way:
+
+- **Never assemble in-process right after writing KB objects.** `KnowledgeStore` caches its tag index per project; a fresh tag can read stale and a `+` expansion silently resolves to nothing, which is indistinguishable from a real bug. Shell out to the CLI, or verify anything surprising through it before believing it.
+- **Check the play side after any design-side edit.** They share `rules.*` objects, so a booklet edited for `design` lands in every play beat too.
+- **Budget reality:** a play beat with a prepared encounter is ~14k tokens, ~82% of it rules booklets and ~180 tokens of encounter object. Guidance added to a module is cheap; guidance added to a `rules.*` booklet or to `rules.rpg` is paid on every single beat.
+- Content conventions that machinery depends on — the first-three-lines policy, type-as-tag discovery, `rules.<type>` companions — are in [docs/rpg-design.md](docs/rpg-design.md) and [docs/configuration.md](docs/configuration.md). Breaking them fails silently, never loudly.
 
 ## End-to-end test infrastructure
 

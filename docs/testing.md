@@ -15,6 +15,8 @@ How Lens is verified: fast automated checks in CI, full-stack e2e against a fake
 | Manual sandbox with regression fixture | `poe e2e-sandbox --fixture remember_section` |
 | Slow mock streams (cancel / skip / workflow UI) | `poe e2e-sandbox --fixture remember_section --tokens 80 --tps 2` |
 | Standalone controllable mock LLM (bench + manual) | `poe mock-llm` |
+| **Prompt/KB change: measure the assembled context** | `poe prompt-lab` |
+| Save a prompt-lab baseline, then compare after editing | `poe prompt-lab -- --out /tmp/before`, then `poe prompt-lab -- --baseline /tmp/before` |
 | Functional quality benchmark (real LLM) | See [bench/README.md](../bench/README.md) |
 
 Run a single test module:
@@ -44,6 +46,7 @@ flowchart TB
     E2E[E2E e2e/tests]
   end
   subgraph manual [Manual / quality]
+    LAB[prompt-lab]
     SANDBOX[e2e-sandbox]
     BENCH[Bench scenarios]
   end
@@ -61,6 +64,7 @@ flowchart TB
 | E2E | `e2e/tests/` | No (in-process fake LLM) |
 | Regression fixtures | `e2e/fixtures/`, `lens/testing/regression_fixtures.py` | No |
 | Manual sandbox | `lens/testing/e2e_sandbox.py` | No |
+| Prompt lab | `lens/testing/prompt_lab.py` | No (assembles, does not generate) |
 | Bench | `bench/scenarios/`, `bench/tools/` | Yes |
 
 ---
@@ -166,6 +170,39 @@ Automated coverage is split by **lane** (see tests under `e2e/tests/test_regress
 | Unit | existing core/server tests | `WorkflowRunner`, remember patches, compress |
 
 Bench quality rubrics (B-01–B-07) are not CI-gated; run when judging model output.
+
+---
+
+## Prompt lab (`poe prompt-lab`)
+
+Editing `lens/prompts/default.toml`, a `design.*` module, a `rules.*` booklet or a `_template` is editing an **LLM prompt**. The diff is not the artifact — the assembled context is, and it is the thing a reviewer cannot see. `lens/testing/prompt_lab.py` builds a realistic campaign (PC, timeline, front, location, a tagged `encounter.*` with a stat roster), drives the real operators against the fake LLM, and reports each prompt's composition with `lens explain`.
+
+```bash
+poe prompt-lab                                  # every scenario, full tables
+poe prompt-lab -- --quiet                       # totals only
+poe prompt-lab -- --only design-encounter       # one scenario (repeatable)
+poe prompt-lab -- --keep                        # keep the project to poke at by hand
+poe prompt-lab -- --datasets rpg                # drop the D&D layer
+```
+
+The workflow that makes it worth having:
+
+```bash
+poe prompt-lab -- --out /tmp/before      # baseline, before you touch anything
+#  …edit prompts / modules / templates…
+poe prompt-lab -- --baseline /tmp/before # per-scenario token deltas
+```
+
+Scenarios cover a play beat with and without a prepared encounter, a design session with no module, with one, and with two. Add one by appending a `Scenario` to `SCENARIOS`.
+
+**What it answers that tests do not:** whether a module is still reachable, whether a `rules.<type>` companion still fires, what a change costs in tokens, and where the budget actually goes. Some findings only show up here — a play beat with a prepared encounter is ~82% rules booklets and ~180 tokens of encounter, which is the whole argument for keeping running advice in an object down to deltas.
+
+**Two traps it exists to avoid:**
+
+- **Do not assemble in-process after writing KB objects.** `KnowledgeStore` caches its tag index per project, so a freshly written tag can read stale and a `+` expansion silently resolves to nothing — which looks exactly like a broken feature. Prompt lab shells out to the CLI for every step, so it always reads the world as a user would.
+- **Undoing a scenario's pins afterwards does not isolate it.** The next `lens rollback` discards the *removal* along with everything else uncommitted, restoring the pin. Scenarios are set up from the committed baseline instead.
+
+No model is called for the report: `lens explain` assembles the prompt exactly as the operator would and measures it. The fake LLM only opens the sessions the scenarios need, so runs are deterministic and take seconds.
 
 ---
 
