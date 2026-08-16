@@ -4,16 +4,14 @@ Build `encounter.*` objects — prepared situations for play to use as scripts. 
 
 The **`encounter._template`** layout is included in RELEVANT KNOWLEDGE when you use this module. **Follow its three sections in order** (`## Situation`, `## Running non-PC characters`, `## Prep and reference`). Do not collapse them into one flat bullet list.
 
+An encounter is the usual place to put several prepared things at once — the antagonists, the clock, the way out of the conversation. They go in this object by default, because this is the object the scene pins. Anything split out gets tagged here so `encounter.<key>+` still carries it.
+
 THE RULES SHELF
 Two rules objects are linked to this module and are already in RELEVANT KNOWLEDGE, because every encounter needs both: **`rules.system`** (the base — DCs, attitudes and Influence, vision and hiding, conditions, dying, resting) and **`rules.encounter`** (how `play` will actually run the object you are writing — write for that procedure).
 
-The rest of the shelf depends on what kind of scene this is, so it is not loaded. `kb_get` only the ones this scene actually calls for:
+The rest of the shelf depends on what kind of scene this is, so it is not loaded — and it is not listed here either, because a list in one module goes stale the moment the dataset gains a booklet. Find it: **`kb_with_tag ["rules"]`** returns every booklet with its opening lines, which state what it covers and when it applies. Then `kb_get` only the ones this scene actually calls for.
 
-- **`rules.combat`** — running a fight: initiative and surprise, the action economy, opportunity attacks, movement, cover, mounts, underwater, how damage and death land.
-- **`rules.chase`** — running a pursuit, violent or not: distance instead of position, exhaustion from dashing, escape and catch conditions.
-- **`rules.environment`** — hazards, weather, difficult terrain, obscured areas, travel pace.
-
-A quiet negotiation in a parlour needs none of them. If the user already knows what kind of scene this is, they can save you even the lookup by mentioning or including the ruleset in their opening request (`--include rules.combat`, or `@rules.chase` in the prompt).
+A quiet negotiation in a parlour needs none of them, and loading one you do not need is worse than the tool call it saved: a shelf of combat procedure will colour every line you write afterwards. If the user already knows what kind of scene this is, they can save you even the lookup by mentioning or including the ruleset in their opening request (`--include rules.combat`, or `@rules.chase` in the prompt).
 
 You can reach all of this and `play` cannot. During play the model gets `rules.system` plus whatever the scene turns into; everything else arrives at the table only because **you** put it there. That is the point of prep.
 
@@ -36,7 +34,7 @@ Participants include any given PCs, plus:
 - Factions have `faction.*` objects
 - Locations: if the encounter is in a specific, sufficiently complex, recurring place, it may have a `location.*` object
 
-IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest that the user load the appropriate module; if they decline, add necessary detail in the encounter itself, not new objects.
+Missing an NPC, faction, or location object? Do not create it here — say what you want to introduce and let the user load that module.
 
 3: COMBAT BALANCING (when the scene includes the possibility of combat)
 - `kb_get` **`rules.combat`** if you need how a fight is framed at this table (unless it is already in context).
@@ -45,14 +43,14 @@ IMPORTANT: if you think you are missing objects, DO NOT just create them! There 
 - Use **`balance_encounter`** on your ranked list. Pass **`pcs`** as one level per PC. Pass **`allies`** in the **same shape as `required`**: `{ "id": "stat.…", "count": N }` per allied stat block that fights on the party's side. The tool reads each ally's **`cr:`** tags and adds **count × build XP** to the budget so enemy totals match **PCs plus exactly those allies** — use the same ids and counts you will list under Prep.
 - If you change the ally roster after balancing, call the tool again with updated **`allies`**.
 - When the tool returns creature IDs and counts, you **must** note every fighting **`stat.*`** into **`## Prep and reference`** as **`N× KB['stat.…']`** lines (same token shape as pinned objects in context). Do **not** paste full stat text into the encounter. Do **not** use **`KB['…']`** for other object types (PCs etc.) as pins already surface those. Do **not** scatter **`KB['stat.…']`** outside **`## Prep and reference`**.
-- Also tag the encounter object with every **`stat.*`** that appears in **`## Prep and reference`**. This is important: the Prep roster is for the human-readable script, but the tags are what let `encounter.some-scene+` pull those stat blocks into play context later.
+- Also tag the encounter object with every **`stat.*`** that appears in **`## Prep and reference`**. This is not bookkeeping: the Prep roster is the human-readable script, and the **tags** are the only thing that puts those stat blocks in front of `play`, via `encounter.some-scene+`. `play` has no `kb_get` — it cannot fetch a block you forgot to tag. A roster line reading `4× KB['stat.bandit']` with no matching tag produces a GM that has been told to act from a stat block it cannot see, and it will improvise the creature instead.
 
 4: WRITE THE ENCOUNTER OBJECT
 **Part 1 — `## Situation`:** Situation, stakes, initial positions, scene rules, triggers, resolution. Name participants in prose or with dot-ids (`pc.*`, `faction.*`). No **`KB['…']`** tokens here. If combat is not a given, state how narratively it would be triggered or avoided. For combat/physical encounters, include **initial positions**: starting distances between groups in feet, formations, terrain zones, cover, elevation, and chokepoints — enough for theater-of-mind spatial tracking.
 
 **Part 2 — `## Running non-PC characters`:** Defaults are in the template (player runs the table; AI answers when asked, grounded in stats/objects). Add only encounter-specific tactics, priorities, morale, triggers.
 
-**Part 3 — `## Prep and reference`:** For combat, **mandatory** **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). Non-combat or no stat-backed creatures: note **`— none`** or omit stat lines.
+**Part 3 — `## Prep and reference`:** Combat encounters only, and then **mandatory**: a **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). A scene with no stat-backed creatures omits the section entirely — the template licenses it for combat and nothing else.
 
 **Tags on the encounter object:** Include story links as usual (`location.*`, relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it.
 
@@ -70,6 +68,8 @@ Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list
 5: SCENE RULES — QUOTE THEM, OR WRITE THEM
 A scene often needs a procedure that no module covers: the auction, the collapsing stair, the rite that has to be interrupted in a specific order. You are the only part of this system that can prepare one, because `play` sees a beat at a time and answers fast.
 
+**Deltas only.** `rules.encounter` is in front of `play` on every beat and already says how a prepared scene is run; `rules.combat` says how a fight is run. This section holds what is DIFFERENT about this scene — values, triggers, exceptions — and never a second telling of a procedure. A re-explained rule drifts from the booklet, and at play time nothing tells the model which copy wins.
+
 **Quoting.** When a rule you already have applies, copy it into the scene rules **verbatim, with its numbers**. Never soften a rule into a description. `Slippery Ice: Difficult Terrain. Walking requires DC 10 Acrobatics or fall Prone.` is a rule; "ice is difficult terrain and crossing it briskly risks going down" is not a rule at all — it reads like guidance, so nobody notices it is gone, and the AI cannot act on it. If a rule is not worth its numbers, leave it out rather than paraphrasing it.
 
 **Inventing.** When nothing fits, write the procedure yourself. This is allowed and encouraged: a fast model with a little structure in front of it behaves far better than one improvising, which either yes-ands everything or invents something unhinged and then commits to it for the rest of the scene. An invented rule must look like a rule:
@@ -82,19 +82,6 @@ Bad: "the water keeps rising and it gets harder to move."
 
 6: SECRETS
 Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.
-
-APPENDIX - ENCOUNTER TYPES
-These are guidelines for scene rules, not separate templates or rigid categories:
-
-**Combat**: Link stat blocks or create mechanically interesting adversaries. Note terrain features, environmental hazards, and enemy goals. Enemies have motivations — bandits flee when losing, cultists sacrifice themselves, intelligent foes adapt.
-
-**Social**: Note each NPC's goals, what they know, what they'll share freely, and what requires checks. Conversation encounters don't need rolls for every exchange — only when the PC pushes past what the NPC would naturally give.
-
-**Chase/Escape**: Note starting distance, terrain type, potential complications, exhaustion rules. What ends the chase (distance, hiding, obstacle, confrontation)?
-
-**Puzzle/Exploration**: Note the puzzle mechanics, what information is available, what checks reveal. What happens if they get stuck? What happens if they brute-force it?
-
-**Mixed**: Most interesting encounters are mixed. Note the triggers that shift between types. A negotiation that could become a fight. A combat that the quarry flees from. A puzzle room with a guardian. Write the triggers explicitly.
 
 ARC AWARENESS:
 If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.

@@ -32,7 +32,8 @@ datasets = ["rpg", "my-ruleset"]
 | `knowledge/design/location.md` | Design module: location build-out (few locations, well-described; sensory > historical) |
 | `knowledge/design/faction.md` | Design module: faction build-out (methods section is most important) |
 | `knowledge/design/front.md` | Design module: front grooming (three-layer structure: surface, core question, twist) |
-| `knowledge/design/encounter.md` | Design module: encounter design (combat, social, chase, puzzle, mixed; arc-aware) |
+| `knowledge/design/encounter.md` | Design module: encounter design (any prepared situation; scene rules quoted or invented, deltas only; arc-aware) |
+| `knowledge/design/_template.md` | What a design module must contain — chiefly the named artifact it produces for play to act on |
 | `knowledge/design/world.md` | Design module: world and setting (`lore.world` <500 words, directive-style) |
 | `knowledge/rules/rpg.md` | Rules of Engagement — AI-GM behavioral contract (authority boundaries, gates, conduct) |
 | `knowledge/rules/system.md` | System stub: Lasers & Feelings (CC BY 4.0; overridable by a higher-priority dataset) |

@@ -15,6 +15,8 @@ How Lens is verified: fast automated checks in CI, full-stack e2e against a fake
 | Manual sandbox with regression fixture | `poe e2e-sandbox --fixture remember_section` |
 | Slow mock streams (cancel / skip / workflow UI) | `poe e2e-sandbox --fixture remember_section --tokens 80 --tps 2` |
 | Standalone controllable mock LLM (bench + manual) | `poe mock-llm` |
+| **Prompt/KB change: measure the assembled context** | `poe prompt-lab -- --scenario bench/scenarios/<s>.md -o play` |
+| Save a prompt-lab baseline, then compare after editing | add `--out /tmp/before`, then `--baseline /tmp/before` |
 | Functional quality benchmark (real LLM) | See [bench/README.md](../bench/README.md) |
 
 Run a single test module:
@@ -44,6 +46,7 @@ flowchart TB
     E2E[E2E e2e/tests]
   end
   subgraph manual [Manual / quality]
+    LAB[prompt-lab]
     SANDBOX[e2e-sandbox]
     BENCH[Bench scenarios]
   end
@@ -61,6 +64,7 @@ flowchart TB
 | E2E | `e2e/tests/` | No (in-process fake LLM) |
 | Regression fixtures | `e2e/fixtures/`, `lens/testing/regression_fixtures.py` | No |
 | Manual sandbox | `lens/testing/e2e_sandbox.py` | No |
+| Prompt lab | `lens/testing/prompt_lab.py` | No (assembles, does not generate) |
 | Bench | `bench/scenarios/`, `bench/tools/` | Yes |
 
 ---
@@ -166,6 +170,38 @@ Automated coverage is split by **lane** (see tests under `e2e/tests/test_regress
 | Unit | existing core/server tests | `WorkflowRunner`, remember patches, compress |
 
 Bench quality rubrics (B-01–B-07) are not CI-gated; run when judging model output.
+
+---
+
+## Prompt lab (`poe prompt-lab`)
+
+Editing `lens/prompts/default.toml`, a `design.*` module, a `rules.*` booklet or a `_template` is editing an **LLM prompt**. The diff is not the artifact — the assembled context is, and nothing in the suite asserts on it. `lens/testing/prompt_lab.py` is a sweep over `lens explain` for a project, reporting each prompt's composition: which objects arrived, by which route (pin, `+` expansion, session module, rules companion), and what each costs.
+
+**It owns no content.** The project comes from bench — `setup_bench.py` plus the scenario's own `_setup.sh` — so the material is the datasets and scenarios that are maintained anyway, and a sweep never calcifies observations on a private fixture.
+
+```bash
+poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play
+poe prompt-lab -- --scenario bench/scenarios/design_instructions.md -o design
+poe prompt-lab -- --project bench/projects/lens_bench_xyz -o play -o design   # reuse a project
+poe prompt-lab -- --scenario … -o design -m encounter -m tracker              # open a session first
+```
+
+The workflow that makes it worth having:
+
+```bash
+poe prompt-lab -- --scenario … -o play --out /tmp/before   # baseline, before you touch anything
+#  …edit prompts / modules / templates…
+poe prompt-lab -- --scenario … -o play --baseline /tmp/before
+```
+
+**What it answers that tests do not:** whether a module is still reachable, whether a `rules.<type>` companion still fires, what a change costs in tokens, and where the budget actually goes.
+
+**Two traps it exists to avoid:**
+
+- **Do not assemble in-process after writing KB objects.** `KnowledgeStore` caches its tag index per project, so a freshly written tag can read stale and a `+` expansion silently resolves to nothing — indistinguishable from a broken feature. Prompt lab shells out to the CLI for every step.
+- **A private fixture is content debt.** An earlier cut of this file carried its own campaign inline, which duplicated bench and froze every measurement onto one small arbitrary sample. If a sweep needs material that does not exist, add a bench scenario — that is the layer that owns content.
+
+`lens explain` assembles and measures rather than generating, so a sweep needs no LLM. One is needed only when `--module` asks for a session to be opened first: use the default `llm_mock` profile with `poe mock-llm` running alongside.
 
 ---
 

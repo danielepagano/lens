@@ -7,6 +7,7 @@ Name
 - Social feel: who is usually here, mood
 - History/usage: how this place has been used over time
 - Why it matters: dangers, opportunities, adventure relevance
+- What the place does: at least one feature that acts on a scene — an access rule, a cost, something on a schedule (the tide takes the causeway; the toll-keeper logs every name)
 - Tensions or secrets
 
 <!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->

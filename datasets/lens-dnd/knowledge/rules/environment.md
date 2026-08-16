@@ -1,6 +1,6 @@
 D&D ENVIRONMENT, HAZARDS, AND TRAVEL
 
-Rules for environemntal hazards that cause damage and conditions and for long-distance travel. Include if you are on a long journey or in unfriendly environments.
+Rules for environmental hazards that cause damage and conditions, and for long-distance travel. Load when the party is on a long journey or in an environment that is itself part of the problem — weather, deep water, extreme cold, difficult terrain.
 
 HAZARDS
 

@@ -1,12 +1,13 @@
 [
     tags: state
 ]: #
-<!-- 
+<!--
 D&D INITIATIVE TRACKER
+The shape of a live combat tracker: initiative order, HP, conditions, expended resources. Follow when writing or updating a `tracker.*` object; `design.tracker` covers gathering the roster and `rules.tracker` covers reading one at the table.
 
 IMPORTANT: Emit ONLY the final tracker markdown — no reasoning, no commentary before or after, no commentary about making tool calls. The content below (after this comment block) is the tracker starter. Replace the placeholder comments with the actual data as you build the full tracker with all combatants.
 
-Create tracker.* objects — static interactive initiative trackers for combat encounters. A tracker is live state, updated every round: always include `tags: [state]` in the kb fence when creating one (this template's own front matter declares the same default, applied automatically if the object is created outside the design flow — but the kb-fence extractor does not read it, so put it in your own block).
+A tracker is live state, updated every round: always include `tags: [state]` in the kb fence when creating one (this template's own front matter declares the same default, applied automatically if the object is created outside the design flow — but the kb-fence extractor does not read it, so put it in your own block).
 
 Every combatant is a <details> element sorted by initiative count (descending). PCs get an Active [x]/[ ] marker, reaction tracker, and a conditions textarea only. Monsters/NPCs get AC, HP, resource/condition bullets, and a conditions textarea.
 
@@ -123,12 +124,12 @@ FULL EXAMPLE (for reference — a completed tracker with multiple entries):
   ```
   </details>
 
-The `kb-details: true` frontmatter enables master/detail view so KB links open in a detail panel under the main content.
+The `kb-details: true` annotation block at the top of the body enables master/detail view, so KB links open in a detail panel under the main content. It is a Lens annotation, not front matter — see the mistake below.
 
 IF TRACKER EXISTS: task instructions say what to do (add newcomers, remove combatants, fix mistakes). Preserve existing HP/counters/notes unless told otherwise.
 
 COMMON MISTAKES:
-- Using YAML frontmatter (`---`) — must be `[\n    kb-details: true\n]: #`.
+- Writing `kb-details` as YAML (`---`) inside the body — it must be the annotation form, `[\n    kb-details: true\n]: #`. This says nothing about the kb fence's own `---` front matter, which still carries `id` and `tags: [state]` as usual.
 - Omitting recharge abilities.
 - Including At Will: spells.
 - Adding HP or resources to PCs.

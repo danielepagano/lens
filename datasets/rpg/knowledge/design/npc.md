@@ -39,6 +39,8 @@ Then write the object with only the details that will keep paying rent:
 
 Keep it under 200 words in the body. The AI will latch onto every detail — be deliberate about what you include. A few strong details beat a comprehensive profile.
 
+Give every NPC at least one **limit**: a boundary, a price, or a trigger, stated as a condition with a consequence. Without one the AI will negotiate the character into whatever the player wants, because nothing said otherwise. "Loyal" is a trait and does nothing; "warns Vasa within the hour, whatever he promised the party" changes what the scene is worth. Other good ones: "will not name anyone still living in the Quarter, at any price"; "talks freely about the shipment, but the buyer costs him his job, so it costs the party something real".
+
 If the NPC has secrets:
 - Use `ai:secret` comments for information only the AI should know
 - The visible text should read naturally without the secret

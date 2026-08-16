@@ -776,7 +776,7 @@ Arguments: `[PROMPT]`
 
 Options:
 
-- `--module` / `-m` — rules module key (a KB object under `rules.<key>`, e.g. `combat`, `downtime`). The module is pinned into the sub-node's front matter. Only one extra module is active at a time; switching removes the previous one. `rules.system` and `rules.rpg` are always auto-pinned.
+- `--module` / `-m` — rules module key (a KB object under `rules.<key>`, e.g. `combat`, `downtime`). The module is recorded on the session's open annotation. **Repeatable**, and passing it again *replaces* the active set rather than appending. `rules.system` and `rules.rpg` are always auto-pinned.
 - `--as` / `-as` — PC key to attribute the prompt to (e.g. `-as alice` → `[ALICE]`); must be a pinned `pc.*`.
 - `--retry` — discard the last block and regenerate it.
 - `--end` — close the play session and return to the parent node.
@@ -804,7 +804,7 @@ Arguments: `[PROMPT]`
 
 Options:
 
-- `--module` / `-m` — design module key (a KB object under `design.<key>`, e.g. `encounter`). The module is pinned into the sub-node's front matter so it appears in every subsequent call's context. Only one module is active at a time; switching removes the previous one.
+- `--module` / `-m` — design module key (a KB object under `design.<key>`, e.g. `encounter`). The module is recorded on the session's open annotation so it resolves into every subsequent call's context, along with its `+` links and its `<key>._template`. **Repeatable:** `--module encounter --module tracker` runs one session against both. Passing `--module` again on a later call *replaces* the active set rather than appending, so the flag always means "these are the modules now"; keys are validated before anything is written.
 - `--retry` — discard the last inline block and regenerate it.
 - `--end` — close the design session: runs `kb extract` on the full sub-node content, writes inserted/updated KB objects, and appends the closing tag to the parent node.
 

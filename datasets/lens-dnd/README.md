@@ -31,6 +31,7 @@ datasets = ["rpg", "lens-dnd"]
 | `knowledge/rules/stat.md` | Usage rules for `stat.*` — act only from the block, what the player owns |
 | `knowledge/rules/tracker.md` | Usage rules for `tracker.*` — read it as canonical state, act from the named initiative down |
 | `knowledge/design/encounter.md` | Design module for `lens design --module encounter` |
+| `knowledge/design/tracker.md` | Design module for `lens design --module tracker` — gather the roster and initiative, then write a `tracker.*` |
 | `knowledge/encounter/_template.md` | KB template for `encounter.*` objects |
 | `knowledge/tracker/_template.md` | KB template for `tracker.*` initiative trackers |
 | `knowledge/tags.toml` | Bidirectional tag index (CR × stat blocks, school × spells, category × equipment, etc.) |
@@ -41,7 +42,7 @@ The dataset provides five integrated layers for designing and running encounters
 
 ### 1. Design module — `knowledge/design/encounter.md`
 
-Loaded by `lens design --module encounter`. Tagged `rules.system` and `rules.encounter`, so opening the module brings both into context — modules resolve with `+`. Those two apply to every encounter; the scene-dependent rest of the shelf (`rules.combat`, `rules.chase`, `rules.environment`) is listed inside the module for `kb_get` rather than linked, because most encounters need none of it. Guides the LLM through a structured workflow:
+Loaded by `lens design --module encounter`. Tagged `rules.system` and `rules.encounter`, so opening the module brings both into context — modules resolve with `+`. Those two apply to every encounter; the scene-dependent rest of the shelf is neither linked nor listed, because most encounters need none of it and a list inside one module goes stale the moment the dataset gains a booklet. The module tells the LLM to find it instead — `kb_with_tag ["rules"]` returns every booklet with the opening lines that say when it applies — and then `kb_get` only what the scene calls for. Guides the LLM through a structured workflow:
 
 1. **Story service check** — connect the encounter to active fronts and PC story threads
 2. **Situation gathering** — scene, participants, stakes, secrets

@@ -9,7 +9,7 @@ Agent-oriented grounding for this repository. User-facing docs start at [README.
 | Getting started, project layout | [README.md](README.md) |
 | Architecture, operators, workflow | [docs/design.md](docs/design.md) |
 | `lens.toml`, LLM, mounts, validation | [docs/configuration.md](docs/configuration.md) |
-| Testing layers, fake LLM, sandbox, bench | [docs/testing.md](docs/testing.md) |
+| Testing layers, fake LLM, sandbox, prompt lab, bench | [docs/testing.md](docs/testing.md) |
 | CLI commands and operators | [lens/cli/README.md](lens/cli/README.md) |
 | Datasets, extensions, sibling layout | [datasets/README.md](datasets/README.md) |
 | RPG play (`play`, `advance`, fronts) | [docs/rpg-design.md](docs/rpg-design.md), [datasets/rpg/README.md](datasets/rpg/README.md) |
@@ -36,6 +36,7 @@ poe test-ui            # Vitest (lens/server/ui)
 poe build-ui           # vite build → lens/server/static/
 poe e2e-sandbox        # manual browser sandbox (temp project + fake LLM)
 poe mock-llm           # standalone controllable fake LLM on :18765
+poe prompt-lab         # assemble + measure real operator prompts (see below)
 poe lens <command>     # run the CLI locally
 
 # Cloud fallback (poe not on PATH)
@@ -58,6 +59,27 @@ playwright install chromium          # once, for browser e2e
 ## Definition of done
 
 Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, integration tests, UI unit tests, UI build, and e2e tests in sequence — all must pass.
+
+## Editing prompts and KB content
+
+`lens/prompts/default.toml`, `datasets/*/knowledge/design/*`, `datasets/*/knowledge/rules/*`, and every `_template.md` are **LLM prompts**, not documentation. The diff is not the artifact — the *assembled context* is, and no test asserts on it. Measure with `poe prompt-lab` (full guide in [docs/testing.md](docs/testing.md#prompt-lab-poe-prompt-lab)):
+
+```bash
+poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play --out /tmp/before
+#  …edit…
+poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play --baseline /tmp/before
+```
+
+It sweeps `lens explain` over a project bench built, and reports which objects arrived by which route and what each costs. It owns no content: material comes from datasets and bench scenarios. If a sweep needs material that does not exist, **add a bench scenario** — never a fixture inside the tool.
+
+Rules of thumb learned the hard way:
+
+- **Never assemble in-process right after writing KB objects.** `KnowledgeStore` caches its tag index per project; a fresh tag can read stale and a `+` expansion silently resolves to nothing, which is indistinguishable from a real bug. Shell out to the CLI, or verify anything surprising through it before believing it.
+- **Check the play side after any design-side edit.** They share `rules.*` objects, so a booklet edited for `design` lands in every play beat too.
+- **Budget asymmetry.** Guidance added to a design module is paid once per design session; guidance added to a `rules.*` booklet or `rules.rpg` is paid on *every* play beat, where booklets are already the large majority of the prompt.
+- **Guidance the whole system needs goes in the operator prompt; guidance one task needs goes in its module.** If the same text has to be written into two modules, it belongs in the prompt — or it is a module that does not exist yet (see #152). An appendix of thin per-case guidance is the worst of both: too light to produce good content, and paid for on every session that does not need it.
+- **A KB object is already the artifact.** `design.*` modules should make their object *actionable* — a limit, an access rule, a break condition, something `play` can check mid-beat — by improving the object's own guidance and its `_template` in step. Do not bolt a section labelled "the artifact" onto a type that is one.
+- Content conventions that machinery depends on — the first-three-lines policy, type-as-tag discovery, `rules.<type>` companions — are in [docs/rpg-design.md](docs/rpg-design.md) and [docs/configuration.md](docs/configuration.md). Breaking them fails silently, never loudly.
 
 ## End-to-end test infrastructure
 

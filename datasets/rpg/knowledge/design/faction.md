@@ -1,6 +1,8 @@
 # [DESIGN MODULE]: FACTION BUILD-OUT
 
-Build `faction.*` objects for groups whose collective behavior matters in play. A faction is not just "an organization in the setting." It is any group whose shared goals, methods, or resources create pressure: a thieves' guild, a regiment, a merchant cartel, a wolf pack defending territory, a neighborhood watch, a cult of three. If the PC party acquires collective goals, assets, methods, or allies, they become a faction too.
+Build `faction.*` objects: how a group behaves as a group, so the AI can run its unnamed members. Use when a group will recur, drives or opposes a front, or shows up in encounters as more than one body.
+
+A faction is not just "an organization in the setting." It is any group whose shared goals, methods, or resources create pressure: a thieves' guild, a regiment, a merchant cartel, a wolf pack defending territory, a neighborhood watch, a cult of three. If the PC party acquires collective goals, assets, methods, or allies, they become a faction too.
 
 Factions serve two practical purposes during play:
 1. **Contextualizing fronts**: a front often has a faction driving it or opposing it. The faction object tells the AI *how* that group pursues its goals — methods, resources, attitude — so the front's escalation feels grounded.
@@ -28,7 +30,7 @@ Not all of these need answers. A pack of dire wolves needs territory, tactics, a
 
 Write the object so unnamed members become easy to run. Keep it compact. A faction object should be **under 200 words** in the body. The AI will use every detail you give it to control group behavior, so be deliberate:
 - Identity and beliefs: one or two sentences on who they are and what drives them
-- Methods: how they solve problems — this is the most important section, because it directly controls how the AI plays unnamed members in encounters
+- Methods: how they solve problems. The most important section, because it directly controls how the AI plays unnamed members. Write these as rules that **decide** behaviour mid-scene without further thought — "they break when they lose a third of their number, and they take their wounded"; "never violence in daylight, never in front of a witness who can name them". "Ruthless but disciplined" is a description and decides nothing.
 - Reach and recruitment: where they operate, who joins, hard constraints
 - Stance toward PCs and other factions: current relationship, not history
 - Current operations: what they're actively doing, as far as anyone knows
@@ -55,7 +57,6 @@ If the party has evolved to have collective goals, shared assets, a reputation, 
 
 GUIDELINES:
 - Factions are about *collective behavior*, not organizational charts. The AI needs to know how members act, not the faction's founding history.
-- Methods are the most important section. "They operate through blackmail and bribery, never direct violence" tells the AI exactly how to play every unnamed member of this faction in any encounter.
 - A faction that only appears in one encounter probably doesn't need an object — describe the group in the encounter instead.
 - If a faction needs named NPCs (a leader, a contact, a rival within the group), suggest loading the NPC design module. Do not create NPC objects yourself.
 - If a faction needs a headquarters or territory location, suggest loading the location design module. Do not create location objects yourself.
