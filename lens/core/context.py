@@ -24,6 +24,7 @@ from lens.core.crawl_graph import (
     CrawlGraph,
     CrawlTransform,
     RenderEffect,
+    kb_ids_from_effects,
 )
 from lens.core.crawl_transforms import (
     AtExpansionTransform,
@@ -403,18 +404,16 @@ class CrawlResult:
 
         Used to answer "is this object already in scope by *any* route", which
         is what decides whether a module is still worth offering to the model
-        (see :mod:`lens.core.module_requests`).
+        (see :mod:`lens.core.module_requests`) and which ``rules.<type>``
+        companions play should bring along.
         """
         scoped = {kid.rstrip("+").lower() for kid in self.graph.pinned_ids}
-        for effect in (*self.graph.effects, *self.render_effects):
-            if effect.kind in {"kb-mention", "kb-include"}:
-                scoped.add(effect.token.lower())
-            elif effect.kind == "kb-inline":
-                # An `inline`-tagged `@type.key` splices the whole object into the
-                # prose.  Its `token` is the raw `@…` match, so the id is in
-                # `result` — reading `token` here would add a string that matches
-                # nothing and silently keep the object on the menu.
-                scoped.add(effect.result.lower())
+        scoped.update(
+            kid.rstrip("+").lower()
+            for kid in kb_ids_from_effects(
+                (*self.graph.effects, *self.render_effects)
+            )
+        )
         return scoped
 
     @property

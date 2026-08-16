@@ -15,6 +15,7 @@ from lens.core.crawl_graph import (
     CrawlGraph,
     ExpansionPolicy,
     RenderEffect,
+    kb_ids_from_effects,
 )
 from lens.core.dice import DiceError, substitute_rolls
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
@@ -445,7 +446,22 @@ class AtExpansionTransform:
 
 
 class RulesCompanionTransform:
-    """Add `rules.<type>` KB companions for pinned non-rules objects."""
+    """Add `rules.<type>` KB companions for every non-rules object in scope.
+
+    ``<type>._template`` tells ``design`` how to *create* an object of a type;
+    ``rules.<type>`` tells ``play`` how to *use* one.  Ship the file and it
+    activates — no tagging, nothing for an author to remember — which is the
+    whole point: per-type running guidance lives once here instead of being
+    restated in every object of that type.
+
+    "In scope" has to mean every route, not just pins.  An object reaches the
+    model as a front-matter pin, as a ``+`` link off one, as a session module,
+    or as an ``@`` mention / ``include`` that splices it into the prose.  The
+    last group leaves a render effect rather than a pin, so reading
+    ``pinned_ids`` alone silently dropped the companion exactly when the player
+    reached for something mid-scene — ``@stat.wolf`` in an unprepared fight put
+    a stat block in front of a model that had never been told how to run one.
+    """
 
     name = "rules-companion"
 
@@ -455,19 +471,24 @@ class RulesCompanionTransform:
         self._kb = KnowledgeStore.for_project(project_root)
 
     def apply(self, graph: CrawlGraph) -> CrawlGraph:
-        pinned_set = set(graph.pinned_ids)
+        scoped_ids = [
+            *graph.pinned_ids,
+            *kb_ids_from_effects(graph.effects),
+        ]
+        scoped_set = {kb_id.rstrip("+").lower() for kb_id in scoped_ids}
         types_seen: set[str] = set()
-        for pinned_id in graph.pinned_ids:
-            if "." not in pinned_id:
+        for kb_id in scoped_ids:
+            base = kb_id.rstrip("+")
+            if "." not in base:
                 continue
-            obj_type = pinned_id.split(".", 1)[0]
+            obj_type = base.split(".", 1)[0].lower()
             if obj_type != "rules":
                 types_seen.add(obj_type)
 
         companion_ids: list[str] = []
         for obj_type in sorted(types_seen):
             rules_id = f"rules.{obj_type}"
-            if rules_id not in pinned_set and self._kb.exists(rules_id):
+            if rules_id.lower() not in scoped_set and self._kb.exists(rules_id):
                 companion_ids.append(rules_id)
 
         if not companion_ids:

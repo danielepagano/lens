@@ -105,12 +105,51 @@ def format_objects_for_model(objects: dict[str, KnowledgeObject]) -> str:
 # ---------------------------------------------------------------------------
 
 
+DESIGN_MODULE_PREFIX = "design."
+
+
+def _design_template_companions(
+    ids: list[str], kb: KnowledgeStore
+) -> list[str]:
+    """``<key>._template`` ids for any ``design.<key>`` in *ids* that has one.
+
+    A design module and the template for the type it produces are two halves of
+    one instruction, and ``--module`` already delivers them together (see
+    :class:`~lens.core.crawl_transforms.ModuleTransform`).  A module discovered
+    mid-session is the same situation reached by a different road: tag search
+    returns ``design.*`` objects and never their templates, because a template
+    is not tagged as a design object and has no reason to be.  Without this the
+    model would have to know to ask for a second id whose name it can only
+    guess at, and the usual outcome is that it does not ask.
+
+    Only the ``design.`` namespace is expanded.  ``rules.encounter`` shares the
+    shape but not the meaning — it is the play-time booklet, and the authoring
+    template has no business arriving with it.
+    """
+    companions: list[str] = []
+    for raw in ids:
+        base = raw.strip().rstrip("+")
+        if not base.startswith(DESIGN_MODULE_PREFIX):
+            continue
+        key = base[len(DESIGN_MODULE_PREFIX) :]
+        if not key or "." in key:
+            continue
+        template_id = f"{key}._template"
+        if template_id in companions or template_id in ids:
+            continue
+        if kb.exists(template_id):
+            companions.append(template_id)
+    return companions
+
+
 async def _kb_get(args: dict[str, Any], project_root: Path) -> str:
     ids: list[str] = args.get("ids") or []
     if not ids:
         return "(no ids provided)"
     kb = KnowledgeStore.for_project(project_root)
-    _ordered, objects = kb.get_objects_with_links(ids)
+    _ordered, objects = kb.get_objects_with_links(
+        ids + _design_template_companions(ids, kb)
+    )
     if not objects:
         return f"(no KB objects found for: {', '.join(ids)})"
     return format_objects_for_model(objects)
@@ -190,7 +229,9 @@ register_command_tool(
             "entity before writing about it. Append '+' to an ID (e.g. 'npc.gandalf+') "
             "to also fetch objects linked from it (only if needed!). Do not request IDs "
             "already inlined in the user message under RELEVANT KNOWLEDGE (each object "
-            "starts with a KB['id'] line)—that text is current."
+            "starts with a KB['id'] line)—that text is current. "
+            "Fetching a design module ('design.<key>') also returns '<key>._template' "
+            "when one exists, so you never have to ask for the template separately."
         ),
         parameters={
             "type": "object",

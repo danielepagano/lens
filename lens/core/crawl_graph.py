@@ -111,6 +111,29 @@ class RenderEffect:
     details: Mapping[str, str] = field(default_factory=_empty_metadata)
 
 
+def kb_ids_from_effects(effects: Iterable[RenderEffect]) -> list[str]:
+    """KB ids that reached the prompt as an expansion rather than as a pin.
+
+    Mentions and includes splice their object into the prose instead of adding
+    it to ``pinned_ids``, so the effect they leave behind is the only record
+    that the object is in front of the model.  Anything asking "can the model
+    see this object" has to read both, and there is more than one such caller:
+    the module catalog decides what is still worth offering, and the rules
+    companions decide which ``rules.<type>`` booklets to bring along.
+
+    Ids come back in effect order and are not case-folded; callers that need a
+    set do that themselves.
+    """
+    ids: list[str] = []
+    for effect in effects:
+        if effect.kind in ("kb-mention", "kb-include"):
+            ids.append(effect.token)
+        elif effect.kind == "kb-inline":
+            # `token` is the raw `@…` match here; the resolved id is `result`.
+            ids.append(effect.result)
+    return ids
+
+
 @dataclass(slots=True)
 class CrawlComponent:
     """One ordered unit of context or renderable text."""
