@@ -4,11 +4,11 @@ Build a `tracker.*` object: the live, per-round state of one fight — initiativ
 
 The `tracker._template` is included in RELEVANT KNOWLEDGE when you use this module. It is the authority on the exact shape — entry format, which resources become counters, what never appears on a PC entry. Follow it literally; this module is about getting the *inputs* right, not the markup.
 
-WHAT THE ARTIFACT IS
+WHAT A TRACKER IS FOR
 
 A tracker is the one object in this system that is deliberately mutable state, and that is why it is tagged `state`: Lens renders it at the tail of the prompt, right before the task, so the player can edit it every round without invalidating the cached prefix. `rules.tracker` tells `play` how to read one — that it is canonical, that it outranks the prose, and that `play` must never try to update it.
 
-So the artifact is checkable in a very literal way: for every creature in the fight there is exactly one entry, at the right initiative, showing what it has left. If a creature is in the fiction and not in the tracker, the tracker is wrong.
+It is correct in a very literal way: for every creature in the fight there is exactly one entry, at the right initiative, showing what it has left. If a creature is in the fiction and not in the tracker, the tracker is wrong.
 
 BEFORE YOU BUILD
 

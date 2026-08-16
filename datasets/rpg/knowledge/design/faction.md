@@ -30,22 +30,12 @@ Not all of these need answers. A pack of dire wolves needs territory, tactics, a
 
 Write the object so unnamed members become easy to run. Keep it compact. A faction object should be **under 200 words** in the body. The AI will use every detail you give it to control group behavior, so be deliberate:
 - Identity and beliefs: one or two sentences on who they are and what drives them
-- Methods: how they solve problems — this is the most important section, because it directly controls how the AI plays unnamed members in encounters
+- Methods: how they solve problems. The most important section, because it directly controls how the AI plays unnamed members. Write these as rules that **decide** behaviour mid-scene without further thought — "they break when they lose a third of their number, and they take their wounded"; "never violence in daylight, never in front of a witness who can name them". "Ruthless but disciplined" is a description and decides nothing.
 - Reach and recruitment: where they operate, who joins, hard constraints
 - Stance toward PCs and other factions: current relationship, not history
 - Current operations: what they're actively doing, as far as anyone knows
 
 If the faction is minimal (a type of creature, a loose gang), you can skip sections that don't apply. A wolf pack doesn't need "beliefs" — it needs territory, pack tactics, and what provokes or deters them.
-
-THE ARTIFACT: THE RULE THAT DECIDES A MEMBER'S BEHAVIOUR
-
-Methods are the most useful part of a faction object, and they are only useful when written as something a play operator can apply to an unnamed member in the middle of a fight or a conversation. That is the artifact: one or two rules that decide behaviour without further thought.
-
-- "They break when they lose a third of their number, and they take their wounded."
-- "Never violence in daylight, never in front of a witness who can name them."
-- "Any member will trade a captive for a name. Any member will refuse to trade a captive for money."
-
-"Ruthless but disciplined" is a description; it decides nothing. "They break at a third" decides the fight.
 
 If the faction has hidden agendas, internal conflicts, or information the players shouldn't know:
 - Use `ai:secret` comments for information only the AI should see
@@ -67,7 +57,6 @@ If the party has evolved to have collective goals, shared assets, a reputation, 
 
 GUIDELINES:
 - Factions are about *collective behavior*, not organizational charts. The AI needs to know how members act, not the faction's founding history.
-- Methods are the most important section. "They operate through blackmail and bribery, never direct violence" tells the AI exactly how to play every unnamed member of this faction in any encounter.
 - A faction that only appears in one encounter probably doesn't need an object — describe the group in the encounter instead.
 - If a faction needs named NPCs (a leader, a contact, a rival within the group), suggest loading the NPC design module. Do not create NPC objects yourself.
 - If a faction needs a headquarters or territory location, suggest loading the location design module. Do not create location objects yourself.

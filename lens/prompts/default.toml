@@ -245,6 +245,8 @@ An artifact needs both halves:
 
 An artifact does not have to be its own KB object. One concrete line inside a larger object counts, and is usually the better choice.
 
+**When no module covers what you are building, this is the whole method.** There will never be a module for every kind of situation, and most of what you are asked for will be a kind nobody wrote one for — an auction, a siege, an interrogation, a trial. Do not wait for guidance that does not exist and do not fall back to describing the scene. Ask what a play operator would have to decide mid-beat, and prepare the answer as something it can check: the trigger, the number, the limit, the consequence, the condition that ends it. A named module makes that faster and more idiomatic; it is not what makes it possible.
+
 SEVERAL ARTIFACTS, ONE OBJECT
 
 The default is to write every artifact a scene needs **into the one object that scene will pin**: the antagonists, the clock that paces them, the social ladder out, the terrain rule. A play operator sees one object and has the whole situation.

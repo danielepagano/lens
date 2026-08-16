@@ -4,7 +4,7 @@ Build `encounter.*` objects — prepared situations for play to use as scripts. 
 
 The **`encounter._template`** layout is included in RELEVANT KNOWLEDGE when you use this module. **Follow its three sections in order** (`## Situation`, `## Running non-PC characters`, `## Prep and reference`). Do not collapse them into one flat bullet list.
 
-An encounter is the usual home for several artifacts at once, so apply that rule here by default: the scene's artifacts go in this object, and anything split out gets tagged here so `encounter.<key>+` still carries it.
+An encounter is the usual place to put several prepared things at once — the antagonists, the clock, the way out of the conversation. They go in this object by default, because this is the object the scene pins. Anything split out gets tagged here so `encounter.<key>+` still carries it.
 
 THE RULES SHELF
 Two rules objects are linked to this module and are already in RELEVANT KNOWLEDGE, because every encounter needs both: **`rules.system`** (the base — DCs, attitudes and Influence, vision and hiding, conditions, dying, resting) and **`rules.encounter`** (how `play` will actually run the object you are writing — write for that procedure).
@@ -82,48 +82,6 @@ Bad: "the water keeps rising and it gets harder to move."
 
 6: SECRETS
 Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.
-
-APPENDIX - SITUATION TYPES AND THEIR ARTIFACTS
-
-Not separate templates or rigid categories: the artifact each kind of situation owes you, and the question that says whether it is real. If you have the guidance but not the artifact, the scene is not prepped.
-
-**Combat**: adversaries with a goal beyond "attack", terrain that changes a decision, a break condition.
-- Artifact: the break condition, with a number. "Raiders break at half strength; the captain covers the retreat."
-- Check: at what point does this fight stop, and who decides? (`rules.combat` runs it; you set the terms.)
-
-**Social**: attitude and concealed goal per NPC, plus the shape of the give — what is free, what is bought, what is never available. Attitudes and Influence are in `rules.system`; do not restate them.
-- Artifacts: a **concession budget** ("two things: the name, then the meeting place"); a **walk-away condition** ("any mention of the Guild and he is gone"); the **price** of anything past the budget.
-- Check: could the party get it all by being pleasant? Then there are no stakes. Could they get nothing? Then it is a wall.
-
-**Negotiation**: both opening positions, both real floors, the currency being traded.
-- Artifact: the floor, stated. "She will not go below 400, but takes 250 plus the courier's name."
-- Check: does a deal exist that both would sign? If not, say so — the scene is about discovering that.
-
-**Interrogation**: what the subject knows, believes, and will invent under pressure. The false answer is the interesting artifact.
-- Artifact: a ladder — what each kind of pressure buys, and the rung where they start lying. "Fear gets the route; pain gets a route, but the wrong one."
-- Check: is there a wrong answer the party can walk away believing?
-
-**Chase / Escape**: `rules.chase` supplies the procedure (distance, Dash exhaustion, complications). You supply the specifics.
-- Artifacts: starting distance; what the quarry runs *toward*; both end conditions. "Caught at melee reach; escaped over the dock wall or 3 rounds out of sight."
-- Check: does the quarry want something other than "away"?
-
-**Infiltration**: an alarm state that advances, with each state changing the place. Binary spotted / not-spotted is a coin flip, not a scene.
-- Artifact: a clock with per-tick consequence and a stated meaning. "Alarm 4. Full means the shift doubles and the gate closes — not that they are caught."
-- Check: is there still a scene after the clock fills?
-
-**Puzzle / Exploration**: the mechanism, what is knowable without a check, what each check reveals, and — mandatory — the stuck path and the brute-force path.
-- Artifact: the fallback. "Third failure: the water rises a foot and the answer shows on the far wall."
-- Check: name two ways past this that are not the intended one.
-
-**Siege / Defence**: phases with explicit triggers, the thing defended and how damage to it shows, what can be spent to buy time.
-- Artifact: the phase list with triggers. "Phase 2 when the gate falls or on round 6, whichever comes first."
-- Check: can the party lose slowly, or only all at once?
-
-**Auction / Contest**: rivals with limits, the ladder of rounds, what winning costs.
-- Artifact: the rival's ceiling. "The Baron's agent stops at 900 unless insulted, in which case there is no ceiling."
-- Check: what does the party lose by winning?
-
-**Mixed**: most good encounters are mixed, and the artifact is the **trigger** — the explicit line where one becomes another. Write it as a condition, not a mood: "if the party names the Guild", "at round 3" — never "if things get tense". A trigger into violence or pursuit is also where `play` loads the module that covers it, so make it unmistakable.
 
 ARC AWARENESS:
 If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.

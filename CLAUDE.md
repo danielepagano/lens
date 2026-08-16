@@ -62,22 +62,23 @@ Always run `poe check` before considering a task complete. It runs lint, typeche
 
 ## Editing prompts and KB content
 
-`lens/prompts/default.toml`, `datasets/*/knowledge/design/*`, `datasets/*/knowledge/rules/*`, and every `_template.md` are **LLM prompts**, not documentation. The diff is not the artifact — the *assembled context* is, and no test asserts on it. Use `poe prompt-lab` (`lens/testing/prompt_lab.py`, full guide in [docs/testing.md](docs/testing.md#prompt-lab-poe-prompt-lab)):
+`lens/prompts/default.toml`, `datasets/*/knowledge/design/*`, `datasets/*/knowledge/rules/*`, and every `_template.md` are **LLM prompts**, not documentation. The diff is not the artifact — the *assembled context* is, and no test asserts on it. Measure with `poe prompt-lab` (full guide in [docs/testing.md](docs/testing.md#prompt-lab-poe-prompt-lab)):
 
 ```bash
-poe prompt-lab -- --out /tmp/before        # baseline BEFORE editing
+poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play --out /tmp/before
 #  …edit…
-poe prompt-lab -- --baseline /tmp/before   # per-scenario token deltas
-poe prompt-lab -- --only design-encounter  # one scenario, full composition table
+poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play --baseline /tmp/before
 ```
 
-It builds a realistic campaign, drives the real operators against the fake LLM, and reports each prompt with `lens explain` — which objects arrived, by which route (pin, `+` expansion, session module, rules companion), and what each costs. No model is called for the report.
+It sweeps `lens explain` over a project bench built, and reports which objects arrived by which route and what each costs. It owns no content: material comes from datasets and bench scenarios. If a sweep needs material that does not exist, **add a bench scenario** — never a fixture inside the tool.
 
 Rules of thumb learned the hard way:
 
 - **Never assemble in-process right after writing KB objects.** `KnowledgeStore` caches its tag index per project; a fresh tag can read stale and a `+` expansion silently resolves to nothing, which is indistinguishable from a real bug. Shell out to the CLI, or verify anything surprising through it before believing it.
 - **Check the play side after any design-side edit.** They share `rules.*` objects, so a booklet edited for `design` lands in every play beat too.
-- **Budget reality:** a play beat with a prepared encounter is ~14k tokens, ~82% of it rules booklets and ~180 tokens of encounter object. Guidance added to a module is cheap; guidance added to a `rules.*` booklet or to `rules.rpg` is paid on every single beat.
+- **Budget asymmetry.** Guidance added to a design module is paid once per design session; guidance added to a `rules.*` booklet or `rules.rpg` is paid on *every* play beat, where booklets are already the large majority of the prompt.
+- **Guidance the whole system needs goes in the operator prompt; guidance one task needs goes in its module.** If the same text has to be written into two modules, it belongs in the prompt — or it is a module that does not exist yet (see #152). An appendix of thin per-case guidance is the worst of both: too light to produce good content, and paid for on every session that does not need it.
+- **A KB object is already the artifact.** `design.*` modules should make their object *actionable* — a limit, an access rule, a break condition, something `play` can check mid-beat — by improving the object's own guidance and its `_template` in step. Do not bolt a section labelled "the artifact" onto a type that is one.
 - Content conventions that machinery depends on — the first-three-lines policy, type-as-tag discovery, `rules.<type>` companions — are in [docs/rpg-design.md](docs/rpg-design.md) and [docs/configuration.md](docs/configuration.md). Breaking them fails silently, never loudly.
 
 ## End-to-end test infrastructure

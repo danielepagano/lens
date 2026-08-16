@@ -2,7 +2,7 @@
 Name (plus any nicknames or code-names we'd see them called)
 
 - Who they are and what they believe or want
-- How they operate (methods, subtlety or brutality)
+- How they operate: methods as rules that decide an unnamed member's behaviour mid-scene (when they break, what they never do), not adjectives
 - Where they are strongest, whom they recruit (particularly the hard rules)
 - How they feel about the party and other factions
 - Ongoing plans or operations

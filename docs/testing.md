@@ -15,8 +15,8 @@ How Lens is verified: fast automated checks in CI, full-stack e2e against a fake
 | Manual sandbox with regression fixture | `poe e2e-sandbox --fixture remember_section` |
 | Slow mock streams (cancel / skip / workflow UI) | `poe e2e-sandbox --fixture remember_section --tokens 80 --tps 2` |
 | Standalone controllable mock LLM (bench + manual) | `poe mock-llm` |
-| **Prompt/KB change: measure the assembled context** | `poe prompt-lab` |
-| Save a prompt-lab baseline, then compare after editing | `poe prompt-lab -- --out /tmp/before`, then `poe prompt-lab -- --baseline /tmp/before` |
+| **Prompt/KB change: measure the assembled context** | `poe prompt-lab -- --scenario bench/scenarios/<s>.md -o play` |
+| Save a prompt-lab baseline, then compare after editing | add `--out /tmp/before`, then `--baseline /tmp/before` |
 | Functional quality benchmark (real LLM) | See [bench/README.md](../bench/README.md) |
 
 Run a single test module:
@@ -175,34 +175,33 @@ Bench quality rubrics (B-01–B-07) are not CI-gated; run when judging model out
 
 ## Prompt lab (`poe prompt-lab`)
 
-Editing `lens/prompts/default.toml`, a `design.*` module, a `rules.*` booklet or a `_template` is editing an **LLM prompt**. The diff is not the artifact — the assembled context is, and it is the thing a reviewer cannot see. `lens/testing/prompt_lab.py` builds a realistic campaign (PC, timeline, front, location, a tagged `encounter.*` with a stat roster), drives the real operators against the fake LLM, and reports each prompt's composition with `lens explain`.
+Editing `lens/prompts/default.toml`, a `design.*` module, a `rules.*` booklet or a `_template` is editing an **LLM prompt**. The diff is not the artifact — the assembled context is, and nothing in the suite asserts on it. `lens/testing/prompt_lab.py` is a sweep over `lens explain` for a project, reporting each prompt's composition: which objects arrived, by which route (pin, `+` expansion, session module, rules companion), and what each costs.
+
+**It owns no content.** The project comes from bench — `setup_bench.py` plus the scenario's own `_setup.sh` — so the material is the datasets and scenarios that are maintained anyway, and a sweep never calcifies observations on a private fixture.
 
 ```bash
-poe prompt-lab                                  # every scenario, full tables
-poe prompt-lab -- --quiet                       # totals only
-poe prompt-lab -- --only design-encounter       # one scenario (repeatable)
-poe prompt-lab -- --keep                        # keep the project to poke at by hand
-poe prompt-lab -- --datasets rpg                # drop the D&D layer
+poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play
+poe prompt-lab -- --scenario bench/scenarios/design_instructions.md -o design
+poe prompt-lab -- --project bench/projects/lens_bench_xyz -o play -o design   # reuse a project
+poe prompt-lab -- --scenario … -o design -m encounter -m tracker              # open a session first
 ```
 
 The workflow that makes it worth having:
 
 ```bash
-poe prompt-lab -- --out /tmp/before      # baseline, before you touch anything
+poe prompt-lab -- --scenario … -o play --out /tmp/before   # baseline, before you touch anything
 #  …edit prompts / modules / templates…
-poe prompt-lab -- --baseline /tmp/before # per-scenario token deltas
+poe prompt-lab -- --scenario … -o play --baseline /tmp/before
 ```
 
-Scenarios cover a play beat with and without a prepared encounter, a design session with no module, with one, and with two. Add one by appending a `Scenario` to `SCENARIOS`.
-
-**What it answers that tests do not:** whether a module is still reachable, whether a `rules.<type>` companion still fires, what a change costs in tokens, and where the budget actually goes. Some findings only show up here — a play beat with a prepared encounter is ~82% rules booklets and ~180 tokens of encounter, which is the whole argument for keeping running advice in an object down to deltas.
+**What it answers that tests do not:** whether a module is still reachable, whether a `rules.<type>` companion still fires, what a change costs in tokens, and where the budget actually goes.
 
 **Two traps it exists to avoid:**
 
-- **Do not assemble in-process after writing KB objects.** `KnowledgeStore` caches its tag index per project, so a freshly written tag can read stale and a `+` expansion silently resolves to nothing — which looks exactly like a broken feature. Prompt lab shells out to the CLI for every step, so it always reads the world as a user would.
-- **Undoing a scenario's pins afterwards does not isolate it.** The next `lens rollback` discards the *removal* along with everything else uncommitted, restoring the pin. Scenarios are set up from the committed baseline instead.
+- **Do not assemble in-process after writing KB objects.** `KnowledgeStore` caches its tag index per project, so a freshly written tag can read stale and a `+` expansion silently resolves to nothing — indistinguishable from a broken feature. Prompt lab shells out to the CLI for every step.
+- **A private fixture is content debt.** An earlier cut of this file carried its own campaign inline, which duplicated bench and froze every measurement onto one small arbitrary sample. If a sweep needs material that does not exist, add a bench scenario — that is the layer that owns content.
 
-No model is called for the report: `lens explain` assembles the prompt exactly as the operator would and measures it. The fake LLM only opens the sessions the scenarios need, so runs are deterministic and take seconds.
+`lens explain` assembles and measures rather than generating, so a sweep needs no LLM. One is needed only when `--module` asks for a session to be opened first: use the default `llm_mock` profile with `poe mock-llm` running alongside.
 
 ---
 

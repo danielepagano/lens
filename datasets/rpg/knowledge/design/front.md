@@ -46,9 +46,9 @@ The twist is a ONE-SENTENCE idea tucked into the secret layer. It doesn't need t
 
 **Key principle**: if a player never follows up on a front, it was ALWAYS just what it appeared on the surface. Only threads the PCs pull actually develop into grand arcs. The three-layer structure gives every front the POTENTIAL for depth without requiring it.
 
-THE ARTIFACT: SOMETHING THAT MOVES ON ITS OWN
+MAKE IT MOVE ON ITS OWN
 
-The three layers make a front *matter*. They do not make it *advance*. `advance` runs with the front in front of it and two random numbers, and it can only do something if the front says what changes when time passes. That line is the artifact, and a front without one is a premise that will sit at the same state forever.
+The three layers make a front *matter*. They do not make it *advance*. `advance` runs with the front and two random numbers, and it can only do something if the front says what changes when time passes. A front without that is a premise that will sit at the same state forever.
 
 Give every front at least one of:
 

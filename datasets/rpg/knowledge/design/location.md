@@ -26,15 +26,7 @@ Write each location so the GM can feel it immediately:
 
 DO NOT write encyclopedic descriptions. The AI will work with what you give it — a few vivid details are better than a paragraph of generic description.
 
-THE ARTIFACT: SOMETHING THE PLACE DOES
-
-Sensory detail makes a location writable; it does not make it playable. Give every location at least one line that acts on the scene — a feature with a cost, an access rule, a thing that happens on a schedule. That is the artifact, and a play operator can check whether it has come up.
-
-- "The tide takes the causeway for six hours a day. Cross late and you swim or you wait."
-- "The toll-keeper logs every name. Anyone who crosses is findable afterwards."
-- "Only two ways out: the main stair, and a drop into the cistern nobody survives cleanly."
-
-One such line is worth a paragraph of atmosphere, because atmosphere can be improvised at the table and an access rule cannot.
+Sensory detail makes a location writable; it does not make it playable. Give every location at least one line that **acts on the scene** — a feature with a cost, an access rule, something that happens on a schedule. "The tide takes the causeway for six hours a day; cross late and you swim or you wait." "The toll-keeper logs every name, so anyone who crosses is findable afterwards." "Only two ways out: the main stair, and a drop into the cistern nobody survives cleanly." One such line is worth a paragraph of atmosphere, because atmosphere can be improvised at the table and an access rule cannot.
 
 Connect it to the live story:
 - Which fronts play out here? Link via tags.
