@@ -4,7 +4,7 @@ Build `encounter.*` objects: compact situations the GM can actually run. An enco
 
 The `encounter._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
-An encounter is the most common home for several artifacts at once. Write the antagonists, the clock, the social ladder out, and the terrain rule INTO this one object — it is the object the scene will pin, and `play` sees one thing and has the whole situation. Split an artifact into its own object only when it outlives this scene or is reused by another; then tag it here so `encounter.<key>+` still carries it.
+An encounter is the most common home for several artifacts at once, so apply that rule here by default: the scene's artifacts go in this object, and anything split out gets tagged here so `encounter.<key>+` still carries it.
 
 Before building anything, establish why this scene deserves an object:
 - What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes (unless it was already provided).

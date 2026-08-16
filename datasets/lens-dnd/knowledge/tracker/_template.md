@@ -124,12 +124,12 @@ FULL EXAMPLE (for reference — a completed tracker with multiple entries):
   ```
   </details>
 
-The `kb-details: true` frontmatter enables master/detail view so KB links open in a detail panel under the main content.
+The `kb-details: true` annotation block at the top of the body enables master/detail view, so KB links open in a detail panel under the main content. It is a Lens annotation, not front matter — see the mistake below.
 
 IF TRACKER EXISTS: task instructions say what to do (add newcomers, remove combatants, fix mistakes). Preserve existing HP/counters/notes unless told otherwise.
 
 COMMON MISTAKES:
-- Using YAML frontmatter (`---`) — must be `[\n    kb-details: true\n]: #`.
+- Writing `kb-details` as YAML (`---`) inside the body — it must be the annotation form, `[\n    kb-details: true\n]: #`. This says nothing about the kb fence's own `---` front matter, which still carries `id` and `tags: [state]` as usual.
 - Omitting recharge abilities.
 - Including At Will: spells.
 - Adding HP or resources to PCs.

@@ -4,7 +4,7 @@ Build `encounter.*` objects — prepared situations for play to use as scripts. 
 
 The **`encounter._template`** layout is included in RELEVANT KNOWLEDGE when you use this module. **Follow its three sections in order** (`## Situation`, `## Running non-PC characters`, `## Prep and reference`). Do not collapse them into one flat bullet list.
 
-An encounter is the usual home for several artifacts at once. The clock that paces the scene, the concession budget, the terrain rule, the antagonists' break condition — all of them belong INSIDE this object, because this is the object the scene pins and `play` should see the whole situation in one place. Split one out only when it outlives this scene or another scene reuses it, and then tag it here so `encounter.<key>+` still carries it.
+An encounter is the usual home for several artifacts at once, so apply that rule here by default: the scene's artifacts go in this object, and anything split out gets tagged here so `encounter.<key>+` still carries it.
 
 THE RULES SHELF
 Two rules objects are linked to this module and are already in RELEVANT KNOWLEDGE, because every encounter needs both: **`rules.system`** (the base — DCs, attitudes and Influence, vision and hiding, conditions, dying, resting) and **`rules.encounter`** (how `play` will actually run the object you are writing — write for that procedure).
@@ -43,14 +43,14 @@ Missing an NPC, faction, or location object? Do not create it here — say what 
 - Use **`balance_encounter`** on your ranked list. Pass **`pcs`** as one level per PC. Pass **`allies`** in the **same shape as `required`**: `{ "id": "stat.…", "count": N }` per allied stat block that fights on the party's side. The tool reads each ally's **`cr:`** tags and adds **count × build XP** to the budget so enemy totals match **PCs plus exactly those allies** — use the same ids and counts you will list under Prep.
 - If you change the ally roster after balancing, call the tool again with updated **`allies`**.
 - When the tool returns creature IDs and counts, you **must** note every fighting **`stat.*`** into **`## Prep and reference`** as **`N× KB['stat.…']`** lines (same token shape as pinned objects in context). Do **not** paste full stat text into the encounter. Do **not** use **`KB['…']`** for other object types (PCs etc.) as pins already surface those. Do **not** scatter **`KB['stat.…']`** outside **`## Prep and reference`**.
-- Also tag the encounter object with every **`stat.*`** that appears in **`## Prep and reference`**. This is important: the Prep roster is for the human-readable script, but the tags are what let `encounter.some-scene+` pull those stat blocks into play context later.
+- Also tag the encounter object with every **`stat.*`** that appears in **`## Prep and reference`**. This is not bookkeeping: the Prep roster is the human-readable script, and the **tags** are the only thing that puts those stat blocks in front of `play`, via `encounter.some-scene+`. `play` has no `kb_get` — it cannot fetch a block you forgot to tag. A roster line reading `4× KB['stat.bandit']` with no matching tag produces a GM that has been told to act from a stat block it cannot see, and it will improvise the creature instead.
 
 4: WRITE THE ENCOUNTER OBJECT
 **Part 1 — `## Situation`:** Situation, stakes, initial positions, scene rules, triggers, resolution. Name participants in prose or with dot-ids (`pc.*`, `faction.*`). No **`KB['…']`** tokens here. If combat is not a given, state how narratively it would be triggered or avoided. For combat/physical encounters, include **initial positions**: starting distances between groups in feet, formations, terrain zones, cover, elevation, and chokepoints — enough for theater-of-mind spatial tracking.
 
 **Part 2 — `## Running non-PC characters`:** Defaults are in the template (player runs the table; AI answers when asked, grounded in stats/objects). Add only encounter-specific tactics, priorities, morale, triggers.
 
-**Part 3 — `## Prep and reference`:** For combat, **mandatory** **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). Non-combat or no stat-backed creatures: note **`— none`** or omit stat lines.
+**Part 3 — `## Prep and reference`:** Combat encounters only, and then **mandatory**: a **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). A scene with no stat-backed creatures omits the section entirely — the template licenses it for combat and nothing else.
 
 **Tags on the encounter object:** Include story links as usual (`location.*`, relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it.
 
