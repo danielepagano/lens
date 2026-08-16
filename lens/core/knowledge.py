@@ -1119,6 +1119,47 @@ class KnowledgeStore:
             _scan_store(ds)
         return sorted(ids)
 
+    def list_facet_ids(self, canonical_id: str) -> list[str]:
+        """Return canonical ids of the same type whose key starts with ``<key>-``.
+
+        A *facet* is a same-type object whose key is the parent key plus a
+        ``-``-delimited suffix (``front.problem`` -> ``front.problem-prep``).
+        Facets are a purely lexical relationship on the key — no tag or
+        front-matter bookkeeping is involved — discovered by scanning this
+        store's own knowledge directory plus every dataset store, mirroring
+        :meth:`list_ids`. The scan is flat: a multi-level facet such as
+        ``front.problem-prep-notes`` is a facet of ``front.problem`` (its key
+        starts with ``problem-``) and is returned alongside single-level
+        facets; no tree is built.
+
+        Excludes ``_template`` objects and *canonical_id* itself. Returns a
+        sorted (deterministic) list; the id need not exist for its facets to
+        be found.
+        """
+        try:
+            type_name, key = parse_id(canonical_id)
+        except ValueError:
+            return []
+        prefix = f"{key}-"
+        ids: set[str] = set()
+
+        def _scan_store(store: "KnowledgeStore") -> None:
+            type_dir = store._knowledge / type_name
+            if not type_dir.is_dir():
+                return
+            for f in type_dir.glob("*.md"):
+                if f.stem == "_template":
+                    continue
+                if f.stem.startswith(prefix):
+                    ids.add(f"{type_name}.{f.stem}")
+
+        _scan_store(self)
+        for ds in self._dataset_stores:
+            _scan_store(ds)
+
+        ids.discard(canonical_id.lower())
+        return sorted(ids)
+
     def delete_object(self, canonical_id: str) -> None:
         # Deleting a dataset-only item is a no-op.
         if not self._is_local(canonical_id):

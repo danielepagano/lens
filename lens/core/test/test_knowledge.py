@@ -517,6 +517,77 @@ class TestKnowledgeStore(unittest.TestCase):
         stripped = strip_markdown_comments(objs["place.nyc"].text)
         self.assertNotIn("[ hidden ]", stripped)
 
+    # --- list_facet_ids ---
+
+    def test_list_facet_ids_finds_same_type_dash_prefixed(self) -> None:
+        self.store.store_object("front.problem", "The problem.")
+        self.store.store_object("front.problem-prep", "Prep notes.")
+        self.assertEqual(
+            self.store.list_facet_ids("front.problem"), ["front.problem-prep"]
+        )
+
+    def test_list_facet_ids_no_facets_returns_empty(self) -> None:
+        self.store.store_object("front.problem", "The problem.")
+        self.assertEqual(self.store.list_facet_ids("front.problem"), [])
+
+    def test_list_facet_ids_excludes_self(self) -> None:
+        self.store.store_object("front.problem", "The problem.")
+        self.assertNotIn("front.problem", self.store.list_facet_ids("front.problem"))
+
+    def test_list_facet_ids_excludes_template(self) -> None:
+        self.store.store_object("front.problem", "The problem.")
+        self.store.store_object("front.problem-prep", "Prep notes.")
+        self.store.set_template("front", "Template body")
+        # A same-type template is stored as "front._template", never as
+        # "front.problem-*", so this mostly guards against a future template
+        # naming collision; the explicit "_template" stem is skipped either way.
+        (self.root / "knowledge" / "front" / "_template.md").write_text("nope")
+        self.assertNotIn(
+            "front._template", self.store.list_facet_ids("front.problem")
+        )
+
+    def test_list_facet_ids_multi_level(self) -> None:
+        self.store.store_object("front.problem", "The problem.")
+        self.store.store_object("front.problem-prep", "Prep notes.")
+        self.store.store_object("front.problem-prep-notes", "Deeper notes.")
+        self.assertEqual(
+            self.store.list_facet_ids("front.problem"),
+            ["front.problem-prep", "front.problem-prep-notes"],
+        )
+
+    def test_list_facet_ids_different_type_not_matched(self) -> None:
+        self.store.store_object("front.problem", "The problem.")
+        self.store.store_object("lore.problem-related", "Unrelated type.")
+        self.assertEqual(self.store.list_facet_ids("front.problem"), [])
+
+    def test_list_facet_ids_deterministic_sorted_order(self) -> None:
+        self.store.store_object("front.problem", "The problem.")
+        self.store.store_object("front.problem-zeta", "Z")
+        self.store.store_object("front.problem-alpha", "A")
+        self.assertEqual(
+            self.store.list_facet_ids("front.problem"),
+            ["front.problem-alpha", "front.problem-zeta"],
+        )
+
+    def test_list_facet_ids_unrelated_dash_collision_not_matched(self) -> None:
+        """stat.guard / stat.guard-captain are unrelated objects, not facets.
+
+        list_facet_ids is purely lexical and does not know that — it is the
+        caller's job (root-pins-only) to make that collision harmless. This
+        test documents that the lookup itself has no special-casing.
+        """
+        self.store.store_object("stat.guard", "A guard.")
+        self.store.store_object("stat.guard-captain", "A different monster.")
+        self.assertEqual(
+            self.store.list_facet_ids("stat.guard"), ["stat.guard-captain"]
+        )
+
+    def test_list_facet_ids_id_need_not_exist(self) -> None:
+        self.store.store_object("front.problem-prep", "Prep notes.")
+        self.assertEqual(
+            self.store.list_facet_ids("front.problem"), ["front.problem-prep"]
+        )
+
 
 class TestKbCli(unittest.TestCase):
     def setUp(self) -> None:
@@ -1007,6 +1078,26 @@ class TestKnowledgeDatasets(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             self.store.rename_object("person.hero", "person.hero_renamed")
         self.assertIn("dataset", str(ctx.exception))
+
+    # --- list_facet_ids across project + dataset stores ---
+
+    def test_list_facet_ids_scans_dataset_store(self) -> None:
+        (self.dataset / "knowledge" / "person" / "hero-backstory.md").write_text(
+            "Backstory."
+        )
+        self.assertEqual(
+            self.store.list_facet_ids("person.hero"), ["person.hero-backstory"]
+        )
+
+    def test_list_facet_ids_merges_project_and_dataset_facets(self) -> None:
+        (self.dataset / "knowledge" / "person" / "hero-backstory.md").write_text(
+            "Backstory."
+        )
+        self.store.store_object("person.hero-goals", "Goals.")
+        self.assertEqual(
+            self.store.list_facet_ids("person.hero"),
+            ["person.hero-backstory", "person.hero-goals"],
+        )
 
 
 class TestKnowledgeObjectFormatStripHtml(unittest.TestCase):

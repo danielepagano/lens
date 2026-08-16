@@ -317,6 +317,7 @@ class AdvanceOperator(Operator):
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     use_command_tools: ClassVar[bool] = True
+    expand_facets: ClassVar[bool] = True
 
     @property
     def system_prompt(self) -> str:

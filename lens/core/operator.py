@@ -289,6 +289,18 @@ class Operator(ABC):
 
     use_command_tools: ClassVar[bool] = False
 
+    expand_facets: ClassVar[bool] = False
+    """Whether root pins for this operator get same-type ``<id>-*`` facets appended.
+
+    Facets (``front.problem`` -> ``front.problem-prep``) hold prep/plot material
+    that must stay invisible during play but wants to be automatically in scope
+    for prep-side operators. Applies only to root pins (ancestor ``kb_pin``,
+    ``extra_pins``, ``--module``) — never to ids reached via ``+`` link
+    expansion, tags, mentions, or includes. See
+    :meth:`~lens.core.knowledge.KnowledgeStore.list_facet_ids` and
+    ``_resolve_pins_for_ancestors`` in :mod:`lens.core.context`.
+    """
+
     supports_module_requests: ClassVar[bool] = False
     """Whether this operator can be given model-requested modules.
 

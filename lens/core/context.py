@@ -513,8 +513,19 @@ def _resolve_pins_for_ancestors(
     extra_pins: list[str] | None = None,
     extra_unpins: list[str] | None = None,
     include_kb: bool,
+    expand_facets: bool = False,
 ) -> tuple[list[str], list[str], list[CrawlComponent]]:
-    """Resolve pins/unpins across *ancestors* and optional extras."""
+    """Resolve pins/unpins across *ancestors* and optional extras.
+
+    When *expand_facets* is true, every **root pin** (an id resolved directly
+    from ancestor ``kb_pin``, ``extra_pins``, or ``--module`` — never an id
+    reached through ``+`` link expansion) also pulls in its same-type
+    ``<id>-*`` facets (see
+    :meth:`~lens.core.knowledge.KnowledgeStore.list_facet_ids`). A root pin
+    written with a trailing ``+`` still counts as a root pin for this purpose:
+    its base id gets facets *and* its ``+`` link expansion, but the objects
+    pulled in by ``+`` do not themselves get facets.
+    """
     kb_store = KnowledgeStore.for_project(project_root)
 
     all_pins: list[tuple[int, str]] = []
@@ -601,6 +612,14 @@ def _resolve_pins_for_ancestors(
                             cid, {**origin, "pin_expanded_from": base}
                         )
             all_objects.update(objects)
+
+        if expand_facets:
+            for facet_id in kb_store.list_facet_ids(base):
+                if facet_id in all_unpinned or facet_id in effective_ids:
+                    continue
+                effective_ids.append(facet_id)
+                pin_origin.setdefault(facet_id, {**origin, "facet_of": base})
+                all_objects.update(kb_store.get_objects([facet_id]))
 
     for cid in effective_ids:
         obj = all_objects.get(cid)
@@ -966,6 +985,7 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
     merged_extra: list[str] | None = extra_pins_list or None
     extra_unpins_arg: list[str] | None = list(spec.extra_unpins) or None
 
+    expand_facets = bool(spec.operator is not None and getattr(spec.operator, "expand_facets", False))
     _, pinned_ids, knowledge_components = _resolve_pins_for_ancestors(
         project_root,
         ancestors,
@@ -973,6 +993,7 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
         extra_pins=merged_extra,
         extra_unpins=extra_unpins_arg,
         include_kb=spec.include_kb,
+        expand_facets=expand_facets,
     )
     remember_pins = (
         _remember_pins_subset(project_root, pinned_ids) if spec.include_kb else {}
