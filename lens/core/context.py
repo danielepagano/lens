@@ -52,10 +52,16 @@ def session_module_ids(
     """Read active modules for a session sub-node from its parent annotation.
 
     Returns the canonical KB ids — i.e. ``module_prefix + key`` — for each
-    ``module: <key>`` entry on the parent's open
-    ``[<operator_name>:<session_id>]`` annotation.  Empty when *node* is not
-    a session sub-node, when the operator does not match, or when the
-    annotation has no ``module`` param.
+    ``module`` entry on the parent's open ``[<operator_name>:<session_id>]``
+    annotation.  Empty when *node* is not a session sub-node, when the operator
+    does not match, or when the annotation has no ``module`` param.
+
+    The param carries either one key (``module: encounter``) or several
+    (``module: [encounter, clock]``); a session may run more than one module at
+    a time, and each resolves independently — module text, its ``+`` links, and
+    its ``<key>._template`` companion.  Order is the order the user gave, and
+    duplicates collapse so ``--module encounter --module encounter`` is not two
+    copies of the same prompt.
     """
     if not module_prefix or not node.key_path:
         return ()
@@ -77,11 +83,29 @@ def session_module_ids(
             and not ann.closing
             and not ann.self_closing
         ):
-            module = ann.params.get("module")
-            if isinstance(module, str) and module.strip():
-                return (module_prefix + module.strip(),)
-            return ()
+            return _module_ids_from_param(ann.params.get("module"), module_prefix)
     return ()
+
+
+def _module_ids_from_param(raw: Any, module_prefix: str) -> tuple[str, ...]:
+    """Canonical module ids for a ``module`` annotation param.
+
+    Accepts the scalar form (one key) and the sequence form (several), which is
+    what YAML round-trips a one-or-many param as.
+    """
+    keys: list[Any] = []
+    if isinstance(raw, str):
+        keys = [raw]
+    elif isinstance(raw, (list, tuple)):
+        keys = list(cast(Sequence[Any], raw))
+    out: list[str] = []
+    for key in keys:
+        if not isinstance(key, str) or not key.strip():
+            continue
+        kb_id = module_prefix + key.strip()
+        if kb_id not in out:
+            out.append(kb_id)
+    return tuple(out)
 
 
 def chat_session_extra_pins(node: NarrativeNode) -> list[str]:

@@ -56,6 +56,24 @@ def unpin_option(help_override: str | None = None) -> Any:
     )
 
 
+def module_keys(values: list[str], prefix: str) -> list[str]:
+    """Normalize repeated ``--module`` values into bare keys.
+
+    Accepts either the key (``combat``) or the canonical id (``rules.combat``),
+    because both read naturally on a command line and the operator only ever
+    stores the key.  Blanks are dropped and duplicates collapse, so a repeated
+    flag never turns into two copies of one module in the prompt.
+    """
+    keys: list[str] = []
+    for raw in values:
+        key = raw.strip()
+        if key.startswith(prefix):
+            key = key[len(prefix) :]
+        if key and key not in keys:
+            keys.append(key)
+    return keys
+
+
 def llm_option(*, summary: bool = False) -> Any:
     return typer.Option(
         None,

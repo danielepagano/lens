@@ -2,8 +2,8 @@
 
 Session operators (``design``, ``play``) create a sub-node the first time they
 are invoked and continue working inside it on subsequent calls.  They support
-*modules* — KB objects with a configurable prefix that are pinned one-at-a-time
-into the session sub-node front matter.
+*modules* — KB objects with a configurable prefix, recorded on the session's
+open annotation and resolved into context at crawl time.
 
 Subclasses override :meth:`_run_fresh` and :meth:`_run_inside` to define how
 generation works, and optionally :meth:`run_session_end` for custom close
@@ -21,9 +21,12 @@ Session lifecycle
 
 Module handling
 ---------------
-``--module <key>`` pins ``<module_prefix><key>`` in the sub-node front matter.
-Only one module is active at a time: switching ``--module`` removes all
-``<module_prefix>*`` pins before adding the new one.
+``--module <key>`` puts ``<module_prefix><key>`` into scope for the session.
+The flag repeats: a session can run several modules at once (an encounter and
+a clock, say), and each resolves independently — its own text, its ``+`` links,
+and its ``<key>._template`` companion.  The active set is stored on the parent
+open annotation and *replaced* by the next call that passes ``--module``, so
+the flag reads as "these are the modules now", not "add one more".
 """
 
 from __future__ import annotations
@@ -31,7 +34,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, ClassVar, cast
 
@@ -77,6 +80,26 @@ def prompt_to_slug(prompt: str, max_words: int = 5) -> str:
     """Convert prompt text to a hyphen-joined slug of up to *max_words* words."""
     words = _NONSLUG_RE.sub(" ", prompt.lower()).split()
     return "-".join(words[:max_words])
+
+
+def module_key_list(module_ids: Sequence[str] | str | None) -> list[str]:
+    """Normalize a module argument to an ordered, deduplicated list of keys.
+
+    A lone ``str`` is treated as one key rather than a sequence of characters.
+    ``Sequence[str]`` admits ``str``, so without this a caller that passes
+    ``"encounter"`` gets a session called ``design-e-n-c-o-u-t-r`` instead of a
+    type error — a failure worth ruling out at the boundary rather than
+    documenting.
+    """
+    if module_ids is None:
+        return []
+    raw = [module_ids] if isinstance(module_ids, str) else list(module_ids)
+    keys: list[str] = []
+    for item in raw:
+        key = item.strip()
+        if key and key not in keys:
+            keys.append(key)
+    return keys
 
 
 # ---------------------------------------------------------------------------
@@ -544,8 +567,9 @@ class SessionOperator(Operator):
     """KB id prefix for modules (e.g. ``"design."`` or ``"rules."``).
 
     When the user passes ``--module <key>``, the full KB id is
-    ``module_prefix + key``.  Only one module pin (matching the prefix) is
-    active at a time.
+    ``module_prefix + key``.  ``--module`` may be repeated; the set of keys is
+    stored on the parent open annotation and replaced wholesale the next time
+    the flag is passed.
     """
 
     auto_pins: ClassVar[list[str]] = []
@@ -642,17 +666,20 @@ class SessionOperator(Operator):
     def generate_session_id(
         cls,
         prompt: str | None,
-        module_id: str | None,
+        module_ids: Sequence[str] | None,
         parent: NarrativeNode,
     ) -> str:
         """Auto-generate a unique session sub-node id.
 
-        Pattern: ``<name>[-module_id][-prompt_slug]`` with a numeric suffix
-        when a sub-node with that name already exists.
+        Pattern: ``<name>[-module…][-prompt_slug]`` with a numeric suffix
+        when a sub-node with that name already exists.  Every active module key
+        appears, so a two-module session is legible from its id alone
+        (``design-encounter-clock-the-bridge``).
         """
         parts = [cls.name]
-        if module_id:
-            parts.append(module_id.strip())
+        for key in module_key_list(module_ids):
+            if key not in parts:
+                parts.append(key)
         if prompt:
             slug = prompt_to_slug(prompt)
             if slug:
@@ -674,7 +701,7 @@ class SessionOperator(Operator):
     def _update_front_matter_for_call(
         cls,
         node: NarrativeNode,
-        module_id: str | None,
+        module_ids: Sequence[str] | None,
         pins: list[str],
         unpins: list[str],
         storage: Storage,
@@ -682,33 +709,50 @@ class SessionOperator(Operator):
     ) -> None:
         """Apply per-call front-matter / annotation updates.
 
-        - If *module_id* is provided and :attr:`module_prefix` is set, validate
-          the module exists and rewrite the parent open annotation's ``module``
-          param.  Modules no longer pin to front matter — they resolve at
-          crawl time via :class:`ModuleTransform`.
+        - If *module_ids* is non-empty and :attr:`module_prefix` is set,
+          validate every module exists and rewrite the parent open annotation's
+          ``module`` param to exactly that set.  Modules no longer pin to front
+          matter — they resolve at crawl time via :class:`ModuleTransform`.
         - Merge any extra *pins* / *unpins* into the sub-node's front matter
           as before.
         """
-        if module_id and cls.module_prefix:
-            new_module_kb_id = cls.module_prefix + module_id
-            if not session.kb.exists(new_module_kb_id):
-                raise ValidationError(
-                    f"module does not exist: {new_module_kb_id}"
-                )
-            cls._set_parent_module(node, module_id, storage)
+        keys = cls._validated_module_keys(module_ids, session)
+        if keys and cls.module_prefix:
+            cls._set_parent_module(node, keys, storage)
         if pins:
             pin_node(node, pins, storage)
         if unpins:
             unpin_node(node, unpins, storage)
 
     @classmethod
+    def _validated_module_keys(
+        cls, module_ids: Sequence[str] | None, session: ProjectSession
+    ) -> list[str]:
+        """Deduplicated module keys, each checked to exist in the KB.
+
+        Validation happens before anything is written so a typo in the second
+        ``--module`` cannot leave a session opened against the first one only.
+        """
+        if not cls.module_prefix:
+            return []
+        keys = module_key_list(module_ids)
+        for key in keys:
+            kb_id = cls.module_prefix + key
+            if not session.kb.exists(kb_id):
+                raise ValidationError(f"module does not exist: {kb_id}")
+        return keys
+
+    @classmethod
     def _set_parent_module(
-        cls, node: NarrativeNode, module_id: str | None, storage: Storage
+        cls, node: NarrativeNode, module_ids: Sequence[str] | None, storage: Storage
     ) -> None:
         """Rewrite the parent open annotation's ``module`` param for *node*.
 
-        Set ``module_id=None`` to drop the param.  Raises :class:`OperatorError`
-        if *node* is not inside an open ``[<op>:<id>]`` session.
+        Pass an empty sequence (or ``None``) to drop the param.  A single key is
+        written as a scalar and several as a list, so the common case stays as
+        readable in the markdown as it was before sessions could hold more than
+        one.  Raises :class:`OperatorError` if *node* is not inside an open
+        ``[<op>:<id>]`` session.
         """
         if not node.key_path:
             raise ValidationError(
@@ -735,11 +779,14 @@ class SessionOperator(Operator):
             raise ValidationError(
                 f"no open [{cls.name}:{session_id}] annotation on parent"
             )
+        keys = module_key_list(module_ids)
         new_params = dict(target_ann.params)
-        if module_id is None:
+        if not keys:
             new_params.pop("module", None)
+        elif len(keys) == 1:
+            new_params["module"] = keys[0]
         else:
-            new_params["module"] = module_id
+            new_params["module"] = keys
         op = cls(storage, node)
         new_tag = op.build_open_tag(session_id, new_params or None)
         lines = text.split("\n")
@@ -759,7 +806,7 @@ class SessionOperator(Operator):
         session: ProjectSession,
         narrative: NarrativeNode,
         prompt: str | None,
-        module_id: str | None,
+        module_ids: Sequence[str] | None,
         pins: list[str],
         unpins: list[str],
         on_stream_target: Callable[[str], Awaitable[None]] | None,
@@ -770,6 +817,7 @@ class SessionOperator(Operator):
         Returns ``(child_node, storage)`` so the caller can create inline
         storage keyed to the child.
         """
+        module_keys = cls._validated_module_keys(module_ids, session)
         cursor = narrative.find_cursor()
         if slug is not None:
             if not validate_slug(slug):
@@ -787,23 +835,21 @@ class SessionOperator(Operator):
                 )
             session_id = slug
         else:
-            session_id = cls.generate_session_id(prompt, module_id, cursor)
+            session_id = cls.generate_session_id(prompt, module_keys, cursor)
 
         rel_path = str(cursor.md_path().relative_to(session.git_root))
         owner = cls.owner_id(session_id, rel_path)
         storage = session.new_storage(owner=owner)
         op = cls(storage, narrative)
 
-        # Module is stored in the parent open annotation (resolved at crawl
-        # time by ModuleTransform), not in front-matter pins.  Validate first.
+        # Modules are stored on the parent open annotation (resolved at crawl
+        # time by ModuleTransform), not as front-matter pins.  One key stays a
+        # scalar so the markdown reads the way it always did.
         ann_params: dict[str, Any] = {}
-        if module_id and cls.module_prefix:
-            module_kb_id = cls.module_prefix + module_id
-            if not session.kb.exists(module_kb_id):
-                raise ValidationError(
-                    f"module does not exist: {module_kb_id}"
-                )
-            ann_params["module"] = module_id
+        if module_keys:
+            ann_params["module"] = (
+                module_keys[0] if len(module_keys) == 1 else module_keys
+            )
 
         child_node = op.create_subnode(
             cursor, session_id, params=ann_params or None
@@ -858,7 +904,7 @@ class SessionOperator(Operator):
         narrative: NarrativeNode,
         node: NarrativeNode,
         prompt: str | None,
-        module_id: str | None,
+        module_ids: Sequence[str] | None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
@@ -1012,7 +1058,7 @@ class SessionOperator(Operator):
         session: ProjectSession,
         narrative: NarrativeNode,
         prompt: str | None = None,
-        module_id: str | None = None,
+        module_ids: Sequence[str] | None = None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None = None,
@@ -1085,7 +1131,7 @@ class SessionOperator(Operator):
                 narrative=narrative,
                 node=session_node,
                 prompt=prompt,
-                module_id=module_id,
+                module_ids=module_ids,
                 pins=pins,
                 unpins=unpins,
                 llm_id=llm_id,
@@ -1102,7 +1148,7 @@ class SessionOperator(Operator):
                 session=session,
                 narrative=narrative,
                 prompt=prompt,
-                module_id=module_id,
+                module_ids=module_ids,
                 pins=pins,
                 unpins=unpins,
                 on_stream_target=on_stream_target,
