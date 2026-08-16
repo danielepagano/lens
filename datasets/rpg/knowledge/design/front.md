@@ -46,6 +46,18 @@ The twist is a ONE-SENTENCE idea tucked into the secret layer. It doesn't need t
 
 **Key principle**: if a player never follows up on a front, it was ALWAYS just what it appeared on the surface. Only threads the PCs pull actually develop into grand arcs. The three-layer structure gives every front the POTENTIAL for depth without requiring it.
 
+THE ARTIFACT: SOMETHING THAT MOVES ON ITS OWN
+
+The three layers make a front *matter*. They do not make it *advance*. `advance` runs with the front in front of it and two random numbers, and it can only do something if the front says what changes when time passes. That line is the artifact, and a front without one is a premise that will sit at the same state forever.
+
+Give every front at least one of:
+
+- **A count with a consequence.** "Council members turned: 3 of 7. At 5 the vote is lost and the levy doubles." Not "the council is being corrupted".
+- **A phase with a trigger.** "Phase 2 when the party is seen at the bridge, or on day 20, whichever is first."
+- **A chance rule the luck rolls can resolve.** "Every third day, on 60+, another caravan is taken." State the period and the threshold; `advance` supplies the number and will not invent the rule.
+
+State it in the front's own terms, not as an explanation of how clocks work — that is procedure, and it belongs to the rules, not here. Keep the whole thing compact: the surface is 2-4 sentences, each secret layer is one, and the artifact is one line.
+
 **Derived fronts** inherit the core question and twist from their parent front. They represent the same underlying tension in a new form — escalated, complicated, or viewed from a different angle. The surface changes; the secret seed persists.
 
 **Fresh vs. derived**: when creating a new front, decide whether it's a fresh arc seed (new question, new twist) or a derived front (inheriting from an existing one). Base this on story context — if an existing arc is developing, derive from it. If the story needs a completely new thread, seed a fresh one. The player doesn't need to know which is which.
@@ -55,7 +67,7 @@ Fronts may need objects that do not exist yet:
 - Factions use `faction.*` objects
 - Locations: if the front relates to specific, sufficiently complex, and recurring locations, they will have a `location.*` object.
 
-IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest to the user that you want to introduce an NPC, faction, or location, and have them decide whether to accept and load the appropriate module for the task. If they decline, just add necessary character and location details in the encounter itself, not other objects.  
+Missing an NPC, faction, or location object? Do not create it here — say what you want to introduce and let the user load that module. If they decline, name the person or place inside the front's own text.
 
 Before closing, do a quick pressure check:
 - List all fronts created/updated/closed with their IDs

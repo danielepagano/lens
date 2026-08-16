@@ -1,12 +1,13 @@
 [
     tags: state
 ]: #
-<!-- 
+<!--
 D&D INITIATIVE TRACKER
+The shape of a live combat tracker: initiative order, HP, conditions, expended resources. Follow when writing or updating a `tracker.*` object; `design.tracker` covers gathering the roster and `rules.tracker` covers reading one at the table.
 
 IMPORTANT: Emit ONLY the final tracker markdown — no reasoning, no commentary before or after, no commentary about making tool calls. The content below (after this comment block) is the tracker starter. Replace the placeholder comments with the actual data as you build the full tracker with all combatants.
 
-Create tracker.* objects — static interactive initiative trackers for combat encounters. A tracker is live state, updated every round: always include `tags: [state]` in the kb fence when creating one (this template's own front matter declares the same default, applied automatically if the object is created outside the design flow — but the kb-fence extractor does not read it, so put it in your own block).
+A tracker is live state, updated every round: always include `tags: [state]` in the kb fence when creating one (this template's own front matter declares the same default, applied automatically if the object is created outside the design flow — but the kb-fence extractor does not read it, so put it in your own block).
 
 Every combatant is a <details> element sorted by initiative count (descending). PCs get an Active [x]/[ ] marker, reaction tracker, and a conditions textarea only. Monsters/NPCs get AC, HP, resource/condition bullets, and a conditions textarea.
 

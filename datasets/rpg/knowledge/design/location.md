@@ -1,6 +1,8 @@
 # [DESIGN MODULE]: LOCATION BUILD-OUT
 
-Build `location.*` objects: places the story can keep coming back to. Locations are fractal — continent to region to city to room — but we only make objects for places that MATTER: places with pressure, recurrence, secrets, or a real chance of anchoring play. When invoked you will have a TASK to create or modify one or more locations; don't exceed the given mandate.
+Build `location.*` objects: places the story keeps coming back to, linked into a map graph. Use for places with pressure, recurrence, secrets, or a real chance of anchoring play — not for every room the party walks through.
+
+Locations are fractal — continent to region to city to room. When invoked you will have a TASK to create or modify one or more locations; don't exceed the given mandate.
 
 The `location._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Work with the user from there.
 
@@ -23,6 +25,16 @@ Write each location so the GM can feel it immediately:
 - Tensions, secrets, or plot hooks (encoded if secret from the player)
 
 DO NOT write encyclopedic descriptions. The AI will work with what you give it — a few vivid details are better than a paragraph of generic description.
+
+THE ARTIFACT: SOMETHING THE PLACE DOES
+
+Sensory detail makes a location writable; it does not make it playable. Give every location at least one line that acts on the scene — a feature with a cost, an access rule, a thing that happens on a schedule. That is the artifact, and a play operator can check whether it has come up.
+
+- "The tide takes the causeway for six hours a day. Cross late and you swim or you wait."
+- "The toll-keeper logs every name. Anyone who crosses is findable afterwards."
+- "Only two ways out: the main stair, and a drop into the cistern nobody survives cleanly."
+
+One such line is worth a paragraph of atmosphere, because atmosphere can be improvised at the table and an access rule cannot.
 
 Connect it to the live story:
 - Which fronts play out here? Link via tags.

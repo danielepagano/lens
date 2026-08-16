@@ -58,6 +58,36 @@ We also have three **layers** of objects:
 
 Each layer is (at least) one Lens `dataset`.
 
+### Artifacts, Modules, Rules, and Templates
+
+Four things carry the weight of RPG prep, and they are constantly confused with one another. The distinction is worth being pedantic about, because each is read by a different consumer at a different time.
+
+**An artifact** is the thing prep actually produces: something named, with a shape you can check and content you can act on. A concession budget. A walk-away condition. A clock with a stated consequence per tick. An alarm that means *reinforcements*, not *detection*. The test is whether a play operator, mid-beat, can look at it and find it either satisfied or not. "Let the conversation breathe" fails that test — it is guidance, and guidance evaporates under pressure. "Two concessions, then he walks" survives it.
+
+An artifact does **not** have to be its own KB object, and usually should not be. One concrete line inside the encounter is an artifact.
+
+**A design module** (`design.*`) is instruction for making one: the stance to take, the structure to fill, what makes a good one, worked examples, and what it is not. A module is not ready until it names an artifact and says how to check it. Modules are read by `design`, never by `play`.
+
+**A rules booklet** (`rules.*`) is how to *use* an artifact once the scene is live: how to engage with it, which triggers bring it into play, what a full clock means procedurally. A booklet is written for `play`. `design` reads booklets too — it has to, since it is authoring an object that will be read against them — but it writes *against* a booklet, never *out of* one, and nothing a booklet says should end up copied into an emitted object. Not every artifact needs one — sometimes the usage is obvious, and sometimes stating usage right next to the definition is simply easier for a model to associate than a separate document would be. So a `rules.*` object may not exist at all, or may exist mainly as a shelf of ready-made phrasings to quote next to an artifact.
+
+**A template** (`<type>._template`) is the shape of a stored object: fields, ordering, tag policy. Templates and modules overlap by design — the template is the target, the module is how to get there well. One thing to be clear about: the fenced `kb` blocks a design session emits do **not** pass through the template machinery. The template is *just more prompt*. That is an advantage, not a gap: it means several templates can be read in one session and their artifacts landed in a single object, whenever that is the only place they are ever relevant.
+
+#### Mixing
+
+Both axes mix, and the system is much less useful if they do not.
+
+*Several modules, one session.* `design --module encounter --module npc` runs one session against both, with both templates in scope. A prepared scene is usually several artifacts — the situation, the antagonists, the clock that paces them — and splitting that across sessions splits exactly the context that makes them fit together. Passing `--module` again *replaces* the set, so a session can be narrowed back down.
+
+*Several artifacts, one object.* The default is to write everything the scene needs into the object the scene will pin. An encounter can carry its own antagonist notes, its own clock, and its own social ladder out. Split an artifact into a separate object only when it earns the split: it outlives the scene, it is reused elsewhere, or it is long enough to bury what surrounds it. When you do split, tag it on the parent so `encounter.foo+` still carries it.
+
+Lens de-duplicates the result. Rules for a type arrive automatically for objects actually in scope — an encounter containing `stat.*` blocks brings `rules.stat` with no tagging and nothing to remember — and a booklet reached twice through two different links is still rendered once.
+
+#### The regression to guard against
+
+Give a design module permission to write running advice into its artifact and it will, sooner or later, re-explain the whole procedure. The rule is **deltas only**. `rules.encounter` already covers how to run a prepared scene; the object states what is different about *this* one — the numbers, the triggers, the exceptions — and never restates how clocks work.
+
+This is not a tidiness argument. A re-explained rule is a second copy that drifts from the booklet, and at play time the model has no way to tell which copy is authoritative. It is also why the deltas rule survives contact with the token budget: a play beat with a prepared encounter runs roughly 14k tokens, of which the rules booklets are about 82% and the encounter itself under 200 tokens. The object is not where you save space; it is where you say the thing no booklet could know.
+
 ### Reference Data
 
 #### Rules
@@ -66,7 +96,7 @@ Operators pin the core rules plus any system-specific rules they need. We do NOT
 
 We create two core rule objects:  
   - `rules.rpg`: our AI-player contract; core layer, ruleset-agnostic
-  - `rules.system`: system-specific rules. Lens ships with "Lens in the Dark", a simple "Forged in the Dark" ruleset (https://bladesinthedark.com/licensing) tuned for AI use, but it can be overridden by a game system ruleset by simply replacing that object id in a higher-priority dataset.
+  - `rules.system`: system-specific rules. Lens ships with a Lens edition of *Lasers and Feelings* (CC BY 4.0 – John Harper, 2013), a one-page ruleset tuned for AI use, but it can be overridden by a game system ruleset by simply replacing that object id in a higher-priority dataset — which is what the bundled `lens-dnd` dataset does.
     - `rules.*`: some systems benefit from having multiple rulesets for different phases of play (e.g. Blades in the Dark's downtime, D&D's Bastions, etc., very specific combat rules like in some Powered by the Apocalypse games). In these cases the system rules can just be the foundation, and then the player can alternate phases by splitting the rules and pinning as needed. This is the parallel to `design` having different modules for different things you can work on.
 
 ##### Who asks for a rules module
@@ -133,7 +163,9 @@ So, how do we track time if we want to do in an advanced way? We follow these ru
 
 ## RPG Object Templates
 
-Object templates, field descriptions, and usage guidance live in `datasets/rpg/knowledge/` — one `_template.md` per type (`pc.*`, `npc.*`, `location.*`, `faction.*`, `front.*`, `lore.*`, `encounter.*`, `timeline.*`).
+Object templates, field descriptions, and tag policy live in `datasets/rpg/knowledge/` — one `_template.md` per type (`pc.*`, `npc.*`, `location.*`, `faction.*`, `front.*`, `lore.*`, `encounter.*`, `timeline.*`). A system dataset adds templates for the types it introduces and may shadow a core one where the system needs a different shape: `lens-dnd` ships `stat.*`, `spell.*`, `equipment.*`, and `tracker.*`, and replaces `encounter._template` with a sectioned version that carries a stat-block roster.
+
+Templates are read by `design` as prompt, so a template earns its length the same way a module does. The short ones (`lore`, `pc`) are fields and a tag policy; the long ones are really authoring instructions that happen to live next to a shape.
 
 ## RPG Operators
 
@@ -168,11 +200,26 @@ Other Considerations:
 
 #### Design Modules
 
-Each design module is a `design.*` KB object that contains instructions for the AI on how to approach a specific build-out task — what to ask, what to look up, what to produce. Selecting a module with `--module <key>` pins `design.<key>` into the sub-node's front matter so it appears in every subsequent call's context. Only one module is active at a time; passing `--module` again removes the previous one and pins the new one.
+Each design module is a `design.*` KB object that contains instructions for the AI on how to approach a specific build-out task — what to ask, what to look up, and above all which artifact to produce. Selecting a module with `--module <key>` records `design.<key>` on the session's open annotation so it resolves into every subsequent call's context, together with its `+` links and its `<key>._template`.
 
-When the user is done with a design session, `lens design --end` runs `kb extract` on the full sub-node and imports all the generated KB objects. Each call to `lens design` adds a new inline block to the sub-node; the user can refine progressively across multiple calls. You can start with no module for an open-ended session, or go straight to a specific task — `lens design "build the ambush" --module encounter` creates a sub-node with `design.encounter` already pinned.
+The flag repeats. `--module encounter --module tracker` runs one session against both modules and both templates; passing `--module` again on a later call *replaces* the active set rather than appending, so the flag always reads as "these are the modules now". Keys are validated before anything is written, so a typo in the second module cannot open a session against only the first.
 
-Design module definitions live in `datasets/rpg/knowledge/design/` — each `design.<topic>.md` file is the current spec (world, pc, npc, location, faction, front, encounter).
+When the user is done with a design session, `lens design --end` runs `kb extract` on the full sub-node and imports all the generated KB objects. Each call to `lens design` adds a new inline block to the sub-node; the user can refine progressively across multiple calls. You can start with no module for an open-ended session, or go straight to a specific task — `lens design "build the ambush" --module encounter` creates a sub-node with `design.encounter` already in scope.
+
+**Discovery, not a list.** Modules are found, never enumerated in prose. A bare token naming a type matches every object of that type, so `kb_with_tag ["design"]` returns every design module there is, each printed with its first three lines. That is why the [first-three-lines policy](#the-first-three-lines) is load-bearing: those lines are the entire basis on which a module is chosen or skipped. `design` can also reach a module mid-session with `kb_get design.<key>`, which returns `<key>._template` alongside it — templates are not tagged, so a tag search alone would never find them.
+
+A hand-maintained list of modules pasted into some modules and not others is the thing this replaces. Such a list goes stale silently, and a stale discovery list is worse than none: the modules missing from it are invisible rather than merely unlabelled.
+
+Design module definitions live in `datasets/rpg/knowledge/design/`, with system-specific overrides in the system dataset (`datasets/lens-dnd/knowledge/design/`).
+
+#### The first three lines
+
+Every design module, rules booklet, and template opens with at most three lines containing only its name or title, its purpose and when it applies, and whitespace. Nothing else. This is a content convention with two mechanical consumers, so it is not decorative:
+
+1. `kb_with_tag` prints those lines under every match, which is how `design` chooses between modules it has not read.
+2. `[[dataset.modules]]` uses them as the `load_module` catalog entry, instead of a description duplicated into `lens.toml`. A registered module whose opening lines do not say what it covers and when to load it is, in practice, not offered.
+
+The convention costs nothing on most objects because they already look like this — a stat block opens with a name, a spell with its name and level. It matters most on the long instructional documents, which are exactly the ones that tend to open with a section heading instead.
 
 #### Encounter objects: the script for `play`
 

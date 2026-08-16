@@ -39,6 +39,16 @@ Then write the object with only the details that will keep paying rent:
 
 Keep it under 200 words in the body. The AI will latch onto every detail — be deliberate about what you include. A few strong details beat a comprehensive profile.
 
+THE ARTIFACT: A LIMIT
+
+Voice makes an NPC playable; a limit makes them *checkable*. Every NPC object should carry at least one line that a play operator can test against mid-scene — a boundary, a price, a trigger. Without it, the AI will negotiate the character into whatever the player wants, because nothing said otherwise.
+
+- "Will not name anyone still living in the Quarter, at any price."
+- "Talks freely about the shipment; the buyer costs him his job, so it costs the party something real."
+- "One favour owed to Kira. He pays it once and then behaves like a stranger."
+
+State it as a condition with a consequence, never as a trait. "Loyal" is a trait and does nothing. "Warns Vasa within the hour, whatever he promised the party" is a limit, and it changes what the scene is worth.
+
 If the NPC has secrets:
 - Use `ai:secret` comments for information only the AI should know
 - The visible text should read naturally without the secret

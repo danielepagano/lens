@@ -4,16 +4,14 @@ Build `encounter.*` objects — prepared situations for play to use as scripts. 
 
 The **`encounter._template`** layout is included in RELEVANT KNOWLEDGE when you use this module. **Follow its three sections in order** (`## Situation`, `## Running non-PC characters`, `## Prep and reference`). Do not collapse them into one flat bullet list.
 
+An encounter is the usual home for several artifacts at once. The clock that paces the scene, the concession budget, the terrain rule, the antagonists' break condition — all of them belong INSIDE this object, because this is the object the scene pins and `play` should see the whole situation in one place. Split one out only when it outlives this scene or another scene reuses it, and then tag it here so `encounter.<key>+` still carries it.
+
 THE RULES SHELF
 Two rules objects are linked to this module and are already in RELEVANT KNOWLEDGE, because every encounter needs both: **`rules.system`** (the base — DCs, attitudes and Influence, vision and hiding, conditions, dying, resting) and **`rules.encounter`** (how `play` will actually run the object you are writing — write for that procedure).
 
-The rest of the shelf depends on what kind of scene this is, so it is not loaded. `kb_get` only the ones this scene actually calls for:
+The rest of the shelf depends on what kind of scene this is, so it is not loaded — and it is not listed here either, because a list in one module goes stale the moment the dataset gains a booklet. Find it: **`kb_with_tag ["rules"]`** returns every booklet with its opening lines, which state what it covers and when it applies. Then `kb_get` only the ones this scene actually calls for.
 
-- **`rules.combat`** — running a fight: initiative and surprise, the action economy, opportunity attacks, movement, cover, mounts, underwater, how damage and death land.
-- **`rules.chase`** — running a pursuit, violent or not: distance instead of position, exhaustion from dashing, escape and catch conditions.
-- **`rules.environment`** — hazards, weather, difficult terrain, obscured areas, travel pace.
-
-A quiet negotiation in a parlour needs none of them. If the user already knows what kind of scene this is, they can save you even the lookup by mentioning or including the ruleset in their opening request (`--include rules.combat`, or `@rules.chase` in the prompt).
+A quiet negotiation in a parlour needs none of them, and loading one you do not need is worse than the tool call it saved: a shelf of combat procedure will colour every line you write afterwards. If the user already knows what kind of scene this is, they can save you even the lookup by mentioning or including the ruleset in their opening request (`--include rules.combat`, or `@rules.chase` in the prompt).
 
 You can reach all of this and `play` cannot. During play the model gets `rules.system` plus whatever the scene turns into; everything else arrives at the table only because **you** put it there. That is the point of prep.
 
@@ -36,7 +34,7 @@ Participants include any given PCs, plus:
 - Factions have `faction.*` objects
 - Locations: if the encounter is in a specific, sufficiently complex, recurring place, it may have a `location.*` object
 
-IMPORTANT: if you think you are missing objects, DO NOT just create them! There are specialized Design Modules for each of these. Suggest that the user load the appropriate module; if they decline, add necessary detail in the encounter itself, not new objects.
+Missing an NPC, faction, or location object? Do not create it here — say what you want to introduce and let the user load that module.
 
 3: COMBAT BALANCING (when the scene includes the possibility of combat)
 - `kb_get` **`rules.combat`** if you need how a fight is framed at this table (unless it is already in context).
@@ -70,6 +68,8 @@ Common mistakes: calling **`balance_encounter`** but skipping the Prep stat list
 5: SCENE RULES — QUOTE THEM, OR WRITE THEM
 A scene often needs a procedure that no module covers: the auction, the collapsing stair, the rite that has to be interrupted in a specific order. You are the only part of this system that can prepare one, because `play` sees a beat at a time and answers fast.
 
+**Deltas only.** `rules.encounter` is in front of `play` on every beat and already says how a prepared scene is run; `rules.combat` says how a fight is run. This section holds what is DIFFERENT about this scene — values, triggers, exceptions — and never a second telling of a procedure. A re-explained rule drifts from the booklet, and at play time nothing tells the model which copy wins.
+
 **Quoting.** When a rule you already have applies, copy it into the scene rules **verbatim, with its numbers**. Never soften a rule into a description. `Slippery Ice: Difficult Terrain. Walking requires DC 10 Acrobatics or fall Prone.` is a rule; "ice is difficult terrain and crossing it briskly risks going down" is not a rule at all — it reads like guidance, so nobody notices it is gone, and the AI cannot act on it. If a rule is not worth its numbers, leave it out rather than paraphrasing it.
 
 **Inventing.** When nothing fits, write the procedure yourself. This is allowed and encouraged: a fast model with a little structure in front of it behaves far better than one improvising, which either yes-ands everything or invents something unhinged and then commits to it for the rest of the scene. An invented rule must look like a rule:
@@ -83,18 +83,47 @@ Bad: "the water keeps rising and it gets harder to move."
 6: SECRETS
 Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.
 
-APPENDIX - ENCOUNTER TYPES
-These are guidelines for scene rules, not separate templates or rigid categories:
+APPENDIX - SITUATION TYPES AND THEIR ARTIFACTS
 
-**Combat**: Link stat blocks or create mechanically interesting adversaries. Note terrain features, environmental hazards, and enemy goals. Enemies have motivations — bandits flee when losing, cultists sacrifice themselves, intelligent foes adapt.
+Not separate templates or rigid categories: the artifact each kind of situation owes you, and the question that says whether it is real. If you have the guidance but not the artifact, the scene is not prepped.
 
-**Social**: Note each NPC's goals, what they know, what they'll share freely, and what requires checks. Conversation encounters don't need rolls for every exchange — only when the PC pushes past what the NPC would naturally give.
+**Combat**: adversaries with a goal beyond "attack", terrain that changes a decision, a break condition.
+- Artifact: the break condition, with a number. "Raiders break at half strength; the captain covers the retreat."
+- Check: at what point does this fight stop, and who decides? (`rules.combat` runs it; you set the terms.)
 
-**Chase/Escape**: Note starting distance, terrain type, potential complications, exhaustion rules. What ends the chase (distance, hiding, obstacle, confrontation)?
+**Social**: attitude and concealed goal per NPC, plus the shape of the give — what is free, what is bought, what is never available. Attitudes and Influence are in `rules.system`; do not restate them.
+- Artifacts: a **concession budget** ("two things: the name, then the meeting place"); a **walk-away condition** ("any mention of the Guild and he is gone"); the **price** of anything past the budget.
+- Check: could the party get it all by being pleasant? Then there are no stakes. Could they get nothing? Then it is a wall.
 
-**Puzzle/Exploration**: Note the puzzle mechanics, what information is available, what checks reveal. What happens if they get stuck? What happens if they brute-force it?
+**Negotiation**: both opening positions, both real floors, the currency being traded.
+- Artifact: the floor, stated. "She will not go below 400, but takes 250 plus the courier's name."
+- Check: does a deal exist that both would sign? If not, say so — the scene is about discovering that.
 
-**Mixed**: Most interesting encounters are mixed. Note the triggers that shift between types. A negotiation that could become a fight. A combat that the quarry flees from. A puzzle room with a guardian. Write the triggers explicitly.
+**Interrogation**: what the subject knows, believes, and will invent under pressure. The false answer is the interesting artifact.
+- Artifact: a ladder — what each kind of pressure buys, and the rung where they start lying. "Fear gets the route; pain gets a route, but the wrong one."
+- Check: is there a wrong answer the party can walk away believing?
+
+**Chase / Escape**: `rules.chase` supplies the procedure (distance, Dash exhaustion, complications). You supply the specifics.
+- Artifacts: starting distance; what the quarry runs *toward*; both end conditions. "Caught at melee reach; escaped over the dock wall or 3 rounds out of sight."
+- Check: does the quarry want something other than "away"?
+
+**Infiltration**: an alarm state that advances, with each state changing the place. Binary spotted / not-spotted is a coin flip, not a scene.
+- Artifact: a clock with per-tick consequence and a stated meaning. "Alarm 4. Full means the shift doubles and the gate closes — not that they are caught."
+- Check: is there still a scene after the clock fills?
+
+**Puzzle / Exploration**: the mechanism, what is knowable without a check, what each check reveals, and — mandatory — the stuck path and the brute-force path.
+- Artifact: the fallback. "Third failure: the water rises a foot and the answer shows on the far wall."
+- Check: name two ways past this that are not the intended one.
+
+**Siege / Defence**: phases with explicit triggers, the thing defended and how damage to it shows, what can be spent to buy time.
+- Artifact: the phase list with triggers. "Phase 2 when the gate falls or on round 6, whichever comes first."
+- Check: can the party lose slowly, or only all at once?
+
+**Auction / Contest**: rivals with limits, the ladder of rounds, what winning costs.
+- Artifact: the rival's ceiling. "The Baron's agent stops at 900 unless insulted, in which case there is no ceiling."
+- Check: what does the party lose by winning?
+
+**Mixed**: most good encounters are mixed, and the artifact is the **trigger** — the explicit line where one becomes another. Write it as a condition, not a mood: "if the party names the Guild", "at round 3" — never "if things get tense". A trigger into violence or pursuit is also where `play` loads the module that covers it, so make it unmistakable.
 
 ARC AWARENESS:
 If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.

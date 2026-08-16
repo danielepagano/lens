@@ -1,6 +1,8 @@
 # [DESIGN MODULE]: FACTION BUILD-OUT
 
-Build `faction.*` objects for groups whose collective behavior matters in play. A faction is not just "an organization in the setting." It is any group whose shared goals, methods, or resources create pressure: a thieves' guild, a regiment, a merchant cartel, a wolf pack defending territory, a neighborhood watch, a cult of three. If the PC party acquires collective goals, assets, methods, or allies, they become a faction too.
+Build `faction.*` objects: how a group behaves as a group, so the AI can run its unnamed members. Use when a group will recur, drives or opposes a front, or shows up in encounters as more than one body.
+
+A faction is not just "an organization in the setting." It is any group whose shared goals, methods, or resources create pressure: a thieves' guild, a regiment, a merchant cartel, a wolf pack defending territory, a neighborhood watch, a cult of three. If the PC party acquires collective goals, assets, methods, or allies, they become a faction too.
 
 Factions serve two practical purposes during play:
 1. **Contextualizing fronts**: a front often has a faction driving it or opposing it. The faction object tells the AI *how* that group pursues its goals — methods, resources, attitude — so the front's escalation feels grounded.
@@ -34,6 +36,16 @@ Write the object so unnamed members become easy to run. Keep it compact. A facti
 - Current operations: what they're actively doing, as far as anyone knows
 
 If the faction is minimal (a type of creature, a loose gang), you can skip sections that don't apply. A wolf pack doesn't need "beliefs" — it needs territory, pack tactics, and what provokes or deters them.
+
+THE ARTIFACT: THE RULE THAT DECIDES A MEMBER'S BEHAVIOUR
+
+Methods are the most useful part of a faction object, and they are only useful when written as something a play operator can apply to an unnamed member in the middle of a fight or a conversation. That is the artifact: one or two rules that decide behaviour without further thought.
+
+- "They break when they lose a third of their number, and they take their wounded."
+- "Never violence in daylight, never in front of a witness who can name them."
+- "Any member will trade a captive for a name. Any member will refuse to trade a captive for money."
+
+"Ruthless but disciplined" is a description; it decides nothing. "They break at a third" decides the fight.
 
 If the faction has hidden agendas, internal conflicts, or information the players shouldn't know:
 - Use `ai:secret` comments for information only the AI should see
