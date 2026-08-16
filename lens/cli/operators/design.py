@@ -20,6 +20,7 @@ from lens.cli.help_strings import (
 from lens.cli.options import (
     include_option,
     mention_option,
+    module_keys,
     pin_option,
     unpin_option,
 )
@@ -47,8 +48,8 @@ def design(
         None,
         help=ARG_PROMPT_DESIGN,
     ),
-    module: str | None = typer.Option(
-        None,
+    module: list[str] = typer.Option(
+        [],
         "--module",
         "-m",
         help=OPT_MODULE_DESIGN,
@@ -106,15 +107,14 @@ def design(
     if not end:
         try:
             ids_to_validate = list(pin) + list(unpin) + list(mention) + list(include)
-            module_key = module.strip() if module else None
-            if module_key:
-                ids_to_validate.append(f"design.{module_key}")
+            keys = module_keys(module, "design.")
+            ids_to_validate.extend(f"design.{key}" for key in keys)
             validate_ids_exist(session.project_root, ids_to_validate)
         except LensException as e:
             typer.echo(f"lens design: {e}", err=True)
             raise typer.Exit(1)
     else:
-        module_key = None
+        keys = []
 
     try:
         result, cancelled = run_with_cancel(
@@ -122,7 +122,7 @@ def design(
                 session=session,
                 narrative=narrative,
                 prompt=prompt,
-                module_id=module_key if not end else None,
+                module_ids=keys if not end else None,
                 pins=list(pin),
                 unpins=list(unpin),
                 mentions=list(mention),

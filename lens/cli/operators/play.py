@@ -23,6 +23,7 @@ from lens.cli.help_strings import (
 from lens.cli.options import (
     include_option,
     mention_option,
+    module_keys,
     pin_option,
     unpin_option,
 )  # noqa: F401  # pyright: ignore[reportUnusedImport]  # registers write tool
@@ -90,8 +91,8 @@ def play(
         "-as",
         help=OPT_AS_PLAY,
     ),
-    module: str | None = typer.Option(
-        None,
+    module: list[str] = typer.Option(
+        [],
         "--module",
         "-m",
         help=OPT_MODULE_PLAY,
@@ -116,7 +117,9 @@ def play(
     """Narrate a player-agency moment in GM voice, then pause for player response.
 
     Opens a play session sub-node the first time, or continues the current
-    session.  Use --module to activate a rules module (e.g. combat, downtime).
+    session.  Use --module to activate a rules module (e.g. combat, downtime); repeat
+    it for a scene that needs more than one, and note that passing it again
+    replaces the session's current set.
     Use --end to close the session.
 
     By default, play appends only what the player says (no GM / LLM). Use --pass
@@ -149,16 +152,11 @@ def play(
         )
         raise typer.Exit(1)
 
-    # Validate module id if provided.
-    module_id: str | None = None
-    if module:
-        if module.startswith("rules."):
-            module_id = module[len("rules."):]
-        else:
-            module_id = module
-        if not module_id:
-            typer.echo("lens play: --module requires a key after 'rules.'", err=True)
-            raise typer.Exit(1)
+    # Normalize repeated --module values; each may be a key or a rules.* id.
+    keys = module_keys(module, "rules.")
+    if module and not keys:
+        typer.echo("lens play: --module requires a key after 'rules.'", err=True)
+        raise typer.Exit(1)
 
     try:
         validate_ids_exist(
@@ -176,7 +174,7 @@ def play(
                 session=session,
                 narrative=narrative,
                 prompt=prompt,
-                module_id=module_id,
+                module_ids=keys,
                 pins=pins,
                 unpins=list(unpin),
                 mentions=list(mention),

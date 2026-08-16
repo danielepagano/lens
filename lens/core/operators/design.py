@@ -17,21 +17,25 @@ Session lifecycle
 
 Module handling
 ---------------
-``--module <key>`` pins ``design.<key>`` in the sub-node front matter.  If the
-KB contains ``<key>._template``, that id is pinned as well and is replaced when
-``--module`` changes (e.g. ``location`` + ``location._template``; ``world`` adds
-no extra pin when no template exists).  The LLM sees the module as RELEVANT
-KNOWLEDGE and is instructed (via the system prompt) to treat it as a directive.
-Only one module is active at a time: switching ``--module`` removes all
-``design.*`` pins before adding the new one, and drops the previous type's
-``._template`` companion if it was pinned.
+``--module <key>`` puts ``design.<key>`` into scope for the session.  If the KB
+contains ``<key>._template``, that id comes with it (e.g. ``location`` +
+``location._template``; ``world`` adds nothing extra when no template exists).
+The LLM sees the module as RELEVANT KNOWLEDGE and is instructed (via the system
+prompt) to treat it as a directive.
+
+The flag repeats.  ``--module encounter --module clock`` runs one session
+against both modules and both templates, which is the point: a prepared scene
+is usually several artifacts — the encounter, the clock that paces it, the
+antagonists — and splitting that across sessions splits the context that makes
+them fit together.  A later call that passes ``--module`` replaces the active
+set rather than adding to it, so a session can be narrowed back down too.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -296,7 +300,7 @@ class DesignOperator(SessionOperator):
         narrative: NarrativeNode,
         node: NarrativeNode,
         prompt: str | None,
-        module_id: str | None,
+        module_ids: Sequence[str] | None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
@@ -342,9 +346,9 @@ class DesignOperator(SessionOperator):
                 new_params["reasoning"] = reasoning
 
             # Update front matter before discard so context reflects new module.
-            if module_id or pins or unpins:
+            if module_ids or pins or unpins:
                 cls._update_front_matter_for_call(
-                    node, module_id, pins, unpins, storage, session
+                    node, module_ids, pins, unpins, storage, session
                 )
 
             pre_retry_snapshot = node.md_path().read_text(encoding="utf-8")
@@ -382,10 +386,10 @@ class DesignOperator(SessionOperator):
 
             # Apply front-matter changes with a system-level storage, then
             # stage them so the generation starts from a clean state.
-            if module_id or pins or unpins:
+            if module_ids or pins or unpins:
                 fm_storage = session.new_storage()
                 cls._update_front_matter_for_call(
-                    node, module_id, pins, unpins, fm_storage, session
+                    node, module_ids, pins, unpins, fm_storage, session
                 )
                 fm_storage.stage_all()
 
@@ -487,7 +491,7 @@ class DesignOperator(SessionOperator):
         session: ProjectSession,
         narrative: NarrativeNode,
         prompt: str | None = None,
-        module_id: str | None = None,
+        module_ids: Sequence[str] | None = None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None = None,
@@ -510,7 +514,7 @@ class DesignOperator(SessionOperator):
             session=session,
             narrative=narrative,
             prompt=prompt,
-            module_id=module_id,
+            module_ids=module_ids,
             pins=pins,
             unpins=unpins,
             llm_id=llm_id,

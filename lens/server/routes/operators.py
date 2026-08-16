@@ -51,6 +51,7 @@ class WriteManualBody(BaseModel):
 class PlayBody(BaseModel):
     prompt: str | None = None
     module_id: str | None = None
+    module_ids: list[str] | None = None
     pins: list[str] = []
     unpins: list[str] = []
     mentions: list[str] = []
@@ -67,6 +68,7 @@ class PlayBody(BaseModel):
 class DesignBody(BaseModel):
     prompt: str | None = None
     module_id: str | None = None
+    module_ids: list[str] | None = None
     pins: list[str] = []
     unpins: list[str] = []
     mentions: list[str] = []
@@ -184,6 +186,25 @@ def _validate_pins(
         validate_ids_exist(session.project_root, pins + unpins + list(scoped or []))
     except LensException as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+def _body_module_keys(
+    module_id: str | None, module_ids: list[str] | None
+) -> list[str]:
+    """Merge a request's module fields into the operator's ordered key list.
+
+    ``module_id`` is the original single-module field, kept so existing clients
+    keep working; ``module_ids`` is the list form.  A client may send either,
+    and one that sends both gets them in that order with duplicates collapsed.
+    """
+    keys: list[str] = []
+    for raw in [module_id, *(module_ids or [])]:
+        if not isinstance(raw, str):
+            continue
+        key = raw.strip()
+        if key and key not in keys:
+            keys.append(key)
+    return keys
 
 
 def _play_pins_with_encounter_expand(pins: list[str]) -> list[str]:
@@ -452,12 +473,11 @@ async def operator_play(
     pins = list(body.pins)
     unpins = list(body.unpins)
     scoped = list(body.mentions) + list(body.includes)
-    if body.module_id is not None and body.module_id.strip():
-        module_key = body.module_id.strip()
-        pins_for_validation = pins + [f"rules.{module_key}"]
+    module_keys = _body_module_keys(body.module_id, body.module_ids)
+    if module_keys:
+        pins_for_validation = pins + [f"rules.{key}" for key in module_keys]
         _validate_pins(session, pins_for_validation, unpins, scoped)
     else:
-        module_key = None
         _validate_pins(session, pins, unpins, scoped)
     pins = _play_pins_with_encounter_expand(pins)
     cursor = narrative.find_cursor()
@@ -483,7 +503,7 @@ async def operator_play(
             session=session,
             narrative=narrative,
             prompt=body.prompt,
-            module_id=module_key,
+            module_ids=module_keys,
             pins=pins,
             unpins=unpins,
             mentions=body.mentions,
@@ -561,12 +581,11 @@ async def operator_design(
     pins = list(body.pins)
     unpins = list(body.unpins)
     scoped = list(body.mentions) + list(body.includes)
-    if body.module_id is not None and body.module_id.strip():
-        module_key = body.module_id.strip()
-        pins_for_validation = pins + [f"design.{module_key}"]
+    module_keys = _body_module_keys(body.module_id, body.module_ids)
+    if module_keys:
+        pins_for_validation = pins + [f"design.{key}" for key in module_keys]
         _validate_pins(session, pins_for_validation, unpins, scoped)
     else:
-        module_key = None
         _validate_pins(session, pins, unpins, scoped)
     cursor = narrative.find_cursor()
     target_ref: list[str] = [str(cursor.to_address())]
@@ -580,7 +599,7 @@ async def operator_design(
             session=session,
             narrative=narrative,
             prompt=body.prompt,
-            module_id=module_key,
+            module_ids=module_keys,
             pins=pins,
             unpins=unpins,
             mentions=body.mentions,
@@ -662,7 +681,7 @@ async def operator_chat(
                 session=session,
                 narrative=narrative,
                 prompt=body.prompt,
-                module_id=None,
+                module_ids=None,
                 pins=pins,
                 unpins=unpins,
                 mentions=body.mentions,
@@ -690,7 +709,7 @@ async def operator_chat(
                 session=session,
                 narrative=narrative,
                 prompt=body.prompt,
-                module_id=None,
+                module_ids=None,
                 pins=pins,
                 unpins=unpins,
                 mentions=body.mentions,

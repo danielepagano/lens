@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from lens.core.context import CrawlResult
+from lens.core.crawl_graph import RenderEffect
 from lens.core.knowledge import KnowledgeStore
 from lens.core.media import MediaService
 from lens.core.modalities import (
@@ -206,6 +207,105 @@ class TestInjectRulesCompanions(unittest.TestCase):
 
         self.assertEqual(len(cr.knowledge), 0)
         self.assertIn("rules.system", cr.pinned_ids)
+
+    def _crawl_with_effect(
+        self, tmp: Path, *, pinned_ids: list[str], effect: RenderEffect
+    ) -> CrawlResult:
+        cr = CrawlResult.from_text_fields(
+            knowledge=[],
+            previous_summaries=[],
+            current_content=None,
+            pinned_ids=pinned_ids,
+            project_root=tmp,
+        )
+        cr.graph.add_effect(effect)
+        narrative = NarrativeNode(
+            narrative_root=tmp / "narrative" / "test", key_path=()
+        )
+        _apply_play_modalities(cr, tmp, narrative)
+        return cr
+
+    def test_injects_rules_for_a_mentioned_object(self) -> None:
+        """An ``@`` mention is in scope without being a pin — it still needs rules.
+
+        A player reaching for ``@stat.wolf`` mid-scene is exactly when the model
+        most needs to be told how to run one.
+        """
+        tmp = Path(self._tmp.name)
+        _init_repo(tmp)
+        _make_project(tmp, rules_types=["stat"])
+
+        cr = self._crawl_with_effect(
+            tmp,
+            pinned_ids=["pc.alice"],
+            effect=RenderEffect(
+                kind="kb-mention",
+                token="stat.wolf",
+                result="120",
+                source_component_id="legacy-current",
+            ),
+        )
+
+        self.assertIn("rules.stat", cr.pinned_ids)
+        self.assertTrue(any("Rules for stat" in k for k in cr.knowledge))
+
+    def test_injects_rules_for_an_included_object(self) -> None:
+        """``include`` is how a loaded module latches; same scope, same rules."""
+        tmp = Path(self._tmp.name)
+        _init_repo(tmp)
+        _make_project(tmp, rules_types=["tracker"])
+
+        cr = self._crawl_with_effect(
+            tmp,
+            pinned_ids=["pc.alice"],
+            effect=RenderEffect(
+                kind="kb-include",
+                token="tracker.bridge-fight",
+                result="200",
+                source_component_id="legacy-current",
+            ),
+        )
+
+        self.assertIn("rules.tracker", cr.pinned_ids)
+
+    def test_injects_rules_for_an_inline_expanded_object(self) -> None:
+        """``kb-inline`` carries the resolved id in ``result``, not ``token``."""
+        tmp = Path(self._tmp.name)
+        _init_repo(tmp)
+        _make_project(tmp, rules_types=["stat"])
+
+        cr = self._crawl_with_effect(
+            tmp,
+            pinned_ids=["pc.alice"],
+            effect=RenderEffect(
+                kind="kb-inline",
+                token="@stat.wolf",
+                result="stat.wolf",
+                source_component_id="legacy-current",
+            ),
+        )
+
+        self.assertIn("rules.stat", cr.pinned_ids)
+
+    def test_mentioned_rules_object_is_not_duplicated(self) -> None:
+        """A booklet already mentioned into scope is not added a second time."""
+        tmp = Path(self._tmp.name)
+        _init_repo(tmp)
+        _make_project(tmp, rules_types=["stat"])
+
+        cr = self._crawl_with_effect(
+            tmp,
+            pinned_ids=["stat.wolf"],
+            effect=RenderEffect(
+                kind="kb-include",
+                token="rules.stat",
+                result="120",
+                source_component_id="legacy-current",
+            ),
+        )
+
+        self.assertNotIn("rules.stat", cr.pinned_ids)
+        self.assertEqual(cr.knowledge, [])
 
     def test_modality_auto_pins_use_context_project_root(self) -> None:
         """Auto-pins apply even when ``CrawlResult.project_root`` is unset."""

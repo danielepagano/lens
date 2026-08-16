@@ -1,8 +1,5 @@
 {
   "typeCheckingMode": "strict",
   "pythonVersion": "3.12",
-  "venvPath": "/Users/daniele/Library/Caches/pypoetry/virtualenvs",
-  "venv": "lens-LtL4t6e--py3.14",
   "include": ["lens"]
 }
-

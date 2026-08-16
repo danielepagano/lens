@@ -167,11 +167,13 @@ OPT_SLUG_CHAT = (
 # --module / -m
 OPT_MODULE_PLAY = (
     "Rules module to activate (e.g. 'combat' => rules.combat); "
-    "swaps previous module"
+    "repeatable, and replaces the session's current set"
 )
 OPT_MODULE_DESIGN = (
     "Design module key to use "
-    "(KB object under design.<key>, e.g. 'encounter')"
+    "(KB object under design.<key>, e.g. 'encounter'); "
+    "repeatable to build several artifacts in one session, "
+    "and replaces the session's current set"
 )
 
 # --summary-guide / -g

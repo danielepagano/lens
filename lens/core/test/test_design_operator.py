@@ -107,7 +107,7 @@ def _run_design(
     narrative: NarrativeNode,
     *,
     prompt: str | None = None,
-    module_id: str | None = None,
+    module_ids: list[str] | None = None,
     retry: bool = False,
     end: bool = False,
     generate_mock: Any = None,
@@ -124,7 +124,7 @@ def _run_design(
                     session=ProjectSession(root, root),
                     narrative=narrative,
                     prompt=prompt,
-                    module_id=module_id,
+                    module_ids=module_ids,
                     pins=[],
                     unpins=[],
                     retry=retry,
@@ -158,12 +158,31 @@ class TestDesignIdGeneration(unittest.TestCase):
         self.assertEqual(result, "design-one-two-three-four-five")
 
     def test_module_only(self) -> None:
-        result = DesignOperator.generate_session_id(None, "encounter", self._parent())
+        result = DesignOperator.generate_session_id(None, ["encounter"], self._parent())
         self.assertEqual(result, "design-encounter")
 
     def test_module_and_prompt(self) -> None:
-        result = DesignOperator.generate_session_id("tavern scene", "location", self._parent())
+        result = DesignOperator.generate_session_id(
+            "tavern scene", ["location"], self._parent()
+        )
         self.assertEqual(result, "design-location-tavern-scene")
+
+    def test_several_modules_all_appear(self) -> None:
+        result = DesignOperator.generate_session_id(
+            "the bridge", ["encounter", "clock"], self._parent()
+        )
+        self.assertEqual(result, "design-encounter-clock-the-bridge")
+
+    def test_duplicate_modules_collapse(self) -> None:
+        result = DesignOperator.generate_session_id(
+            None, ["encounter", "encounter"], self._parent()
+        )
+        self.assertEqual(result, "design-encounter")
+
+    def test_bare_string_module_is_one_key(self) -> None:
+        """A lone str is one key, not a sequence of single characters."""
+        result = DesignOperator.generate_session_id(None, "encounter", self._parent())
+        self.assertEqual(result, "design-encounter")
 
     def test_collision_adds_numeric_suffix(self) -> None:
         parent = self._parent()
@@ -323,7 +342,7 @@ class TestDesignModulePin(unittest.TestCase):
                 "[DESIGN MODULE]: ENCOUNTER\n", encoding="utf-8"
             )
 
-            _run_design(root, narrative, module_id="encounter")
+            _run_design(root, narrative, module_ids=["encounter"])
 
             cursor = narrative.find_cursor()
             self.assertNotIn("design.encounter", parse_front_matter(cursor.md_path().read_text()).get("kb_pin", []))
@@ -346,7 +365,7 @@ class TestDesignModulePin(unittest.TestCase):
             root, narrative = _make_project(_init_repo(Path(tmp)))
 
             with self.assertRaises(ValidationError) as ctx:
-                _run_design(root, narrative, module_id="missing")
+                _run_design(root, narrative, module_ids=["missing"])
 
             self.assertIn("module does not exist", str(ctx.exception))
 
@@ -366,7 +385,7 @@ class TestDesignModulePin(unittest.TestCase):
                 async for ev in _fake_generate_stream(*args, **kwargs):
                     yield ev
 
-            _run_design(root, narrative, module_id="encounter", generate_mock=_capture_stream)
+            _run_design(root, narrative, module_ids=["encounter"], generate_mock=_capture_stream)
 
             self.assertEqual(len(captured), 1)
             # The module text should appear somewhere in the messages
@@ -389,7 +408,7 @@ class TestDesignCompanionTemplatePin(unittest.TestCase):
             async for ev in _fake_generate_stream(*args, **kwargs):
                 yield ev
 
-        _run_design(root, narrative, module_id=module_id, generate_mock=_capture_stream)
+        _run_design(root, narrative, module_ids=[module_id], generate_mock=_capture_stream)
         self.assertEqual(len(captured), 1)
         return " ".join(m.get("content", "") for m in captured[0])
 
@@ -423,6 +442,39 @@ class TestDesignCompanionTemplatePin(unittest.TestCase):
             self.assertIn("design.world", content)
             self.assertNotIn("world._template", content)
 
+    def test_several_modules_each_bring_their_template(self) -> None:
+        """``--module a --module b`` is two modules and two templates, not a swap."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text("E\n")
+            (root / "knowledge" / "design" / "clock.md").write_text("C\n")
+            for t in ("encounter", "clock"):
+                (root / "knowledge" / t).mkdir(parents=True, exist_ok=True)
+                (root / "knowledge" / t / "_template.md").write_text(f"{t} template\n")
+
+            captured: list[list[dict[str, str]]] = []
+
+            async def _capture_stream(
+                *args: Any, **kwargs: Any
+            ) -> AsyncIterator[StreamEvent]:
+                captured.append(args[0])
+                async for ev in _fake_generate_stream(*args, **kwargs):
+                    yield ev
+
+            _run_design(
+                root,
+                narrative,
+                module_ids=["encounter", "clock"],
+                generate_mock=_capture_stream,
+            )
+            content = " ".join(m.get("content", "") for m in captured[0])
+
+            self.assertIn("design.encounter", content)
+            self.assertIn("encounter._template", content)
+            self.assertIn("design.clock", content)
+            self.assertIn("clock._template", content)
+
     def test_module_switch_replaces_template_pin(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))
@@ -433,7 +485,7 @@ class TestDesignCompanionTemplatePin(unittest.TestCase):
                 (root / "knowledge" / t).mkdir(parents=True, exist_ok=True)
                 (root / "knowledge" / t / "_template.md").write_text(f"{t}\n")
 
-            _run_design(root, narrative, module_id="encounter")
+            _run_design(root, narrative, module_ids=["encounter"])
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
                 ["git", "commit", "-m", "first"], cwd=root, capture_output=True, check=True,
@@ -485,7 +537,7 @@ class TestDesignModuleLinkExpansion(unittest.TestCase):
                 yield ev
 
         _run_design(
-            root, narrative, module_id="encounter", generate_mock=_capture_stream
+            root, narrative, module_ids=["encounter"], generate_mock=_capture_stream
         )
         self.assertEqual(len(captured), 1)
         return " ".join(m.get("content", "") for m in captured[0])
@@ -514,7 +566,7 @@ class TestDesignModuleLinkExpansion(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = self._project_with_module(Path(tmp), tagged=True)
-            _run_design(root, narrative, module_id="encounter")
+            _run_design(root, narrative, module_ids=["encounter"])
 
             report = explain_context(ProjectSession(root, root))
 
@@ -614,13 +666,13 @@ class TestDesignModuleSwitch(unittest.TestCase):
             (root / "knowledge" / "design" / "encounter.md").write_text("E\n")
             (root / "knowledge" / "design" / "npc.md").write_text("N\n")
 
-            _run_design(root, narrative, module_id="encounter")
+            _run_design(root, narrative, module_ids=["encounter"])
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
             subprocess.run(
                 ["git", "commit", "-m", "first"], cwd=root, capture_output=True, check=True,
             )
 
-            _run_design(root, narrative, module_id="npc")
+            _run_design(root, narrative, module_ids=["npc"])
 
             cursor = narrative.find_cursor()
             parent = NarrativeNode(
@@ -637,6 +689,87 @@ class TestDesignModuleSwitch(unittest.TestCase):
                 and not a.self_closing
             ]
             self.assertEqual(modules, ["npc"])
+
+    @staticmethod
+    def _module_param(narrative: NarrativeNode) -> Any:
+        from lens.core.annotations import parse_annotations
+
+        cursor = narrative.find_cursor()
+        parent = NarrativeNode(
+            narrative_root=cursor.narrative_root,
+            key_path=cursor.key_path[:-1],
+        )
+        session_id = cursor.key_path[-1]
+        for ann in reversed(
+            parse_annotations(parent.md_path().read_text(encoding="utf-8"))
+        ):
+            if (
+                ann.operator == "design"
+                and ann.id == session_id
+                and not ann.closing
+                and not ann.self_closing
+            ):
+                return ann.params.get("module")
+        return None
+
+    def test_several_modules_round_trip_through_the_annotation(self) -> None:
+        """Two modules are stored as a list and read back as two module ids."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text("E\n")
+            (root / "knowledge" / "design" / "clock.md").write_text("C\n")
+
+            _run_design(root, narrative, module_ids=["encounter", "clock"])
+
+            self.assertEqual(self._module_param(narrative), ["encounter", "clock"])
+            self.assertEqual(
+                DesignOperator.derive_modules_for_crawl(narrative.find_cursor()),
+                ("design.encounter", "design.clock"),
+            )
+
+    def test_single_module_stays_a_scalar_param(self) -> None:
+        """One module still writes ``module: encounter``, not a one-item list."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text("E\n")
+
+            _run_design(root, narrative, module_ids=["encounter"])
+
+            self.assertEqual(self._module_param(narrative), "encounter")
+
+    def test_later_module_call_replaces_the_whole_set(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            for key in ("encounter", "clock", "npc"):
+                (root / "knowledge" / "design" / f"{key}.md").write_text(f"{key}\n")
+
+            _run_design(root, narrative, module_ids=["encounter", "clock"])
+            subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "first"], cwd=root, capture_output=True, check=True,
+            )
+
+            _run_design(root, narrative, module_ids=["npc"])
+
+            self.assertEqual(self._module_param(narrative), "npc")
+
+    def test_unknown_module_in_the_list_is_rejected_before_anything_is_written(
+        self,
+    ) -> None:
+        """A typo in the second key must not open a session on the first one."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "encounter.md").write_text("E\n")
+
+            with self.assertRaises(ValidationError):
+                _run_design(root, narrative, module_ids=["encounter", "clcok"])
+
+            cursor = narrative.find_cursor()
+            self.assertEqual(cursor.key_path, ())
 
 
 # ---------------------------------------------------------------------------

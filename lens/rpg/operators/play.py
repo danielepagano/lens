@@ -25,8 +25,9 @@ Module handling
 ``--module <key>`` stores ``module: <key>`` on the parent ``[play:<id>]`` open
 annotation (canonical KB id ``rules.<key>``, e.g. ``rules.combat``).  Gather
 resolves it through :attr:`~lens.core.context.CrawlSpec.modules` and
-:class:`~lens.core.crawl_transforms.ModuleTransform`.  Only one extra rules module
-is active per session; switching ``--module`` updates that annotation param.
+:class:`~lens.core.crawl_transforms.ModuleTransform`.  The flag repeats — a
+scene that is a fight *and* a pursuit needs both booklets — and a later call
+that passes ``--module`` replaces the active set rather than adding to it.
 
 Requires at least one ``pc.*`` KB object pinned (at any ancestor level) so the
 LLM knows who the player characters are.
@@ -38,7 +39,7 @@ modules belong in ``lens design`` sessions, not mixed into play prompts.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Any, ClassVar, cast
 
 from lens.core.exceptions import OperatorError, ValidationError
@@ -405,7 +406,7 @@ class PlayOperator(SessionOperator):
         narrative: NarrativeNode,
         node: NarrativeNode,
         prompt: str | None,
-        module_id: str | None,
+        module_ids: Sequence[str] | None,
         pins: list[str],
         unpins: list[str],
         llm_id: str | None,
@@ -437,7 +438,7 @@ class PlayOperator(SessionOperator):
         if retry:
             # For retry: update front-matter with the same owner as the
             # pending annotation so pending owner stays consistent.
-            if module_id or pins or unpins:
+            if module_ids or pins or unpins:
                 probe_storage = session.new_storage()
                 probe_op = cls(probe_storage, narrative)
                 existing_ann = probe_op.find_open_annotation(node)
@@ -448,7 +449,7 @@ class PlayOperator(SessionOperator):
                 else:
                     fm_storage = session.new_storage()
                 cls._update_front_matter_for_call(
-                    node, module_id, pins, unpins, fm_storage, session
+                    node, module_ids, pins, unpins, fm_storage, session
                 )
         else:
             # Non-retry: stage pending, update front-matter, stage again.
@@ -456,10 +457,10 @@ class PlayOperator(SessionOperator):
             if probe_storage.has_pending():
                 probe_storage.stage_all()
 
-            if module_id or pins or unpins:
+            if module_ids or pins or unpins:
                 fm_storage = session.new_storage()
                 cls._update_front_matter_for_call(
-                    node, module_id, pins, unpins, fm_storage, session
+                    node, module_ids, pins, unpins, fm_storage, session
                 )
                 fm_storage.stage_all()
 
