@@ -10,7 +10,7 @@ The scene's meaning is given, not derived here. Why this confrontation matters, 
 
 Before building anything, establish why this scene deserves an object:
 - What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes (unless it was already provided).
-- Which PCs does it challenge? Check their `lore.<name>` objects for core questions this scene could pressure.
+- Which PCs does it challenge?
 - If the encounter doesn't connect to an active front or PC story, reflect: why does this scene matter? You may propose a front for whatever tension drives the scene; if the user wants to actually create the front, they will engage with a front design module; your job is still to create the encounter.
 
 Get the live shape of the situation:
@@ -45,8 +45,6 @@ Two ways to get a scene rule, both fine:
 WHAT THE PLAYER MUST NOT READ YET
 
 A prepared scene almost always knows something the player does not: the informant is a trap, the merchant is poisoning the drinks, the "abandoned" tower has watchers. That belongs in the encounter object itself, because `play` has to act on it the moment the scene starts — it is not prep, it is the scene. Keep it out of the object's plain visible text, and make sure that text still reads correctly if the fact never comes out; the player may glimpse an object name in a pin list, and they should learn nothing from it.
-
-The encounter's **back** — `encounter.<key>-prep`, which design sessions see and `play` does not — is for the other thing: what this scene is a step toward, which follow-up it sets up, why the front placed it here. Most encounters need none. Never put a scene-time fact there; `play` would never see it.
 
 ARC AWARENESS:
 If this encounter is where a front's twist could surface — a turning point where the story's buried question becomes visible through consequences — prepare the conditions for it rather than the reveal itself. Read the front's prep for what the arc is actually about, and build the scene so the dissonance between surface and depth becomes tangible if the PCs push in that direction. The encounter never forces it.

@@ -2,13 +2,12 @@
 
 Schedule the campaign's pressure: decide which prepared material is live right now, and make each live piece move on its own. Use it between sessions, after the PCs have changed the situation, or when `advance` reports a front has run out of prep.
 
-This module does not invent the story. The arcs, the buried questions, and the twists are planning output and arrive as material — in the front's own `-` facets, in `lore.*` objects, in the PC lore. Your job is orchestration: what is on stage now, what the given material says moves next, and what number, trigger, or limit makes that checkable. You author a front's motion; `advance` is what later reads it.
+This module does not invent the story. The arcs, the buried questions, and the twists are planning output and arrive as material. Your job is orchestration: what is on stage now, what the given material says moves next, and what number, trigger, or limit makes that checkable. You author a front's motion; `advance` is what later reads it.
 
 The `front._template` layout is in RELEVANT KNOWLEDGE. Assess the current state before changing anything.
 
 Get your footing:
-- Read the timeline. Its tags list the active front IDs, and those fronts are already in your context — but their backs are not, since they arrive by expansion rather than as pins. `kb_get` the fronts you are grooming and each comes back with its `-prep` facet.
-- `kb_get` each PC's `lore.<name>` for their core questions — that is how you judge which pressures are worth the party's attention.
+- Read the timeline. Its tags list the active front IDs, and those fronts are already in your context — but their backs are not, since they arrive by expansion rather than as pins. `kb_get` the fronts you are grooming and each comes back with its `-arc` facet (the prep).
 - Read the narrative. What did the PCs resolve, provoke, or walk away from? Fronts must reflect it.
 - If the goal is unclear, ask: new pressure on stage, updates to what is there, or something specific.
 
@@ -38,11 +37,11 @@ Make it perceivable. A count the party cannot see moving is bookkeeping, not pre
 
 Write it in the front's own terms. How clocks work as a procedure belongs to the rules, not here. Keep the whole front compact: the situation in 2-4 sentences, the motion in one line.
 
-THE BACK
+THE ARC (Back prep Object)
 
-A front is the likeliest object in this system to have one. The front object is the play surface — the visible situation, its state, and what moves it. Everything else the arc knows goes in `front.<key>-prep`: the buried question, the twist, which complication is queued behind this one, why this piece sits where it does. Every design and advance session sees it; `play` never does.
+A front is the likeliest object in this system to have one. The front object is the play surface — the visible situation, its state, and what moves it. Everything else the arc knows goes in `front.<key>-arc`: the buried question, the twist, which complication is queued behind this one, why this piece sits where it does. Every design and advance session sees it; `play` never does.
 
-You do not author that material, but you maintain it: mark a piece spent when it comes forward, strike one the PCs have made impossible. A front with no prep facet is fine — many fronts are exactly what they appear to be — but a front whose prep is *empty* has stopped developing, and that is worth saying out loud.
+You do not author that material, but you maintain it: mark a piece spent when it comes forward, strike one the PCs have made impossible. A front with no arc is fine — many fronts are exactly what they appear to be — but a front whose arc prep is *empty* has stopped developing, and that is worth saying out loud.
 
 Nothing `play` must act on during a scene goes in the back. Facts a GM needs live in the front itself, written so the visible text reads correctly whether or not they surface.
 
@@ -54,7 +53,7 @@ TIMELINE AWARENESS — CRITICAL
 
 The timeline's tags are what keep fronts active, and you are the only operator that touches them. `advance` updates front *content* and never the tag set.
 
-Creating a front is TWO blocks — the front itself, and a tags-only block adding it to the timeline:
+Creating a front is TWO blocks — the front itself (content and tags), plus a tags-only block _adding_ it to the timeline:
 
 ```kb
 ---
@@ -63,7 +62,7 @@ tags: [front.goblins]
 ---
 ```
 
-Closing one is a tags-only block removing it:
+Closing a front is then also a tags-only block removing it from the timeline:
 
 ```kb
 ---
@@ -72,7 +71,7 @@ remove-tags: [front.goblins]
 ---
 ```
 
-An empty body leaves the timeline's day counter and text untouched. You may also tag supporting objects (`location.*`, `faction.*`, `npc.*`) onto the timeline so they ride along into play — only ones important enough for every scene; otherwise keep the timeline lean and inline the context in the front.
+An empty body (front-matter only) leaves the timeline's day counter and text untouched. You may also tag supporting objects (`location.*`, `faction.*`, `npc.*`) onto the timeline so they ride along into play — only ones important enough for every scene; otherwise keep the timeline lean and inline the context in the front.
 
 Before closing: list every front you created, updated, or closed with its ID; confirm 2-4 are active; confirm each states what changes when time passes; confirm the timeline's tags match.
 
