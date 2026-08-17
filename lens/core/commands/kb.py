@@ -236,9 +236,62 @@ def kb_patch(
     return KbPatchResult(obj, "patched")
 
 
-def kb_get(ids: list[str]) -> tuple[list[str], dict[str, KnowledgeObject]]:
+def kb_get(
+    ids: list[str], *, facets: bool = False
+) -> tuple[list[str], dict[str, KnowledgeObject]]:
+    """Fetch objects for *ids* (``+``/``++`` suffixes expand linked objects).
+
+    With *facets*, each **requested** id also pulls its same-type ``<id>-*``
+    facets (``front.problem`` -> ``front.problem-prep``), each landing directly
+    after its parent.  This mirrors the root-pins-only rule that governs facet
+    expansion during a crawl: objects reached through ``+`` do not themselves
+    gain facets, so ``stat.guard`` pulled in as a link never drags in the
+    unrelated ``stat.guard-captain``.
+    """
     kb = get_store()
-    return kb.get_objects_with_links(ids)
+    ordered_ids, objects = kb.get_objects_with_links(ids)
+    if not facets:
+        return ordered_ids, objects
+
+    facets_by_root: dict[str, list[str]] = {}
+    for raw in ids:
+        base = raw.rstrip("+")
+        try:
+            type_part, key_part = parse_id(base)
+        except ValueError:
+            continue
+        facets_by_root.setdefault(f"{type_part}.{key_part}", [])
+
+    for root in facets_by_root:
+        facets_by_root[root] = kb.list_facet_ids(root)
+
+    ordered: list[str] = []
+    seen: set[str] = set()
+
+    def _emit_facets(root: str) -> None:
+        for facet_id in facets_by_root.get(root, ()):
+            if facet_id in seen:
+                continue
+            obj = kb.get_objects([facet_id]).get(facet_id)
+            if obj is None:
+                continue
+            objects[facet_id] = obj
+            ordered.append(facet_id)
+            seen.add(facet_id)
+
+    for cid in ordered_ids:
+        if cid not in seen:
+            ordered.append(cid)
+            seen.add(cid)
+        _emit_facets(cid)
+
+    # A requested root that resolves to nothing is absent from *ordered_ids*,
+    # but asking for its facets is still a fair question — `list_facet_ids`
+    # deliberately does not require the parent to exist.
+    for root in facets_by_root:
+        _emit_facets(root)
+
+    return ordered, objects
 
 
 @dataclass

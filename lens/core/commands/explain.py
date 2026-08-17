@@ -406,8 +406,9 @@ def component_provenance(
     """Return ``(provenance kind, human explanation, detail)`` for a component.
 
     The provenance kind is machine-readable (``node_pin``, ``expansion``,
-    ``mention``, ``rules_companion``, ``module``, ``modality``, ``narrative``,
-    ``operator``, …); the explanation is the sentence a human reads.
+    ``facet``, ``mention``, ``rules_companion``, ``module``, ``modality``,
+    ``narrative``, ``operator``, …); the explanation is the sentence a human
+    reads.
     """
     meta = component.metadata
     detail: dict[str, str] = {k: v for k, v in meta.items() if v}
@@ -446,8 +447,15 @@ def component_provenance(
 
     if cid.startswith("kb:"):
         expanded_from = meta.get("pin_expanded_from")
+        facet_of = meta.get("facet_of")
         pin_node = meta.get("pin_node")
         owner = modality_pins.get(kb_id.lower())
+        if facet_of:
+            # A facet carries its parent's pin origin, so without this branch it
+            # would report as an ordinary `kb_pin` and read as something the
+            # user pinned by hand.
+            where = f" (pinned on {pin_node})" if pin_node else ""
+            return "facet", f"'-' facet of {facet_of}{where}", detail
         if expanded_from:
             where = f" (pinned on {pin_node})" if pin_node else ""
             return "expansion", f"'+' expansion of {expanded_from}{where}", detail

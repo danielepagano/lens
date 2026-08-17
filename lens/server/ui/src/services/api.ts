@@ -231,7 +231,7 @@ export interface ExplainComponent {
   percent: number
   /** The sentence a human reads: why this is in the prompt. */
   provenance: string
-  /** Machine-readable provenance: `node_pin`, `expansion`, `mention`, … */
+  /** Machine-readable provenance: `node_pin`, `expansion`, `facet`, `mention`, … */
   provenance_kind: string
   cache: ExplainCache
   /** Structured provenance bits: `pin_node`, `kb_id`, `tags`, … */
