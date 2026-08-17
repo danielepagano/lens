@@ -30,17 +30,20 @@ Not all of these need answers. A pack of dire wolves needs territory, tactics, a
 
 Write the object so unnamed members become easy to run. Keep it compact. A faction object should be **under 200 words** in the body. The AI will use every detail you give it to control group behavior, so be deliberate:
 - Identity and beliefs: one or two sentences on who they are and what drives them
-- Methods: how they solve problems. The most important section, because it directly controls how the AI plays unnamed members. Write these as rules that **decide** behaviour mid-scene without further thought — "they break when they lose a third of their number, and they take their wounded"; "never violence in daylight, never in front of a witness who can name them". "Ruthless but disciplined" is a description and decides nothing.
+- Methods: how they solve problems. This is the artifact this module produces, and the most important section, because it directly controls how the AI plays unnamed members. Write these as rules that **decide** behaviour mid-scene without further thought — "they break when they lose a third of their number, and they take their wounded"; "never violence in daylight, never in front of a witness who can name them". "Ruthless but disciplined" is a description and decides nothing. Each method should be one the party can read off the group's behaviour after a scene or two, and then plan against — a method they can never detect changes nothing for them.
 - Reach and recruitment: where they operate, who joins, hard constraints
 - Stance toward PCs and other factions: current relationship, not history
 - Current operations: what they're actively doing, as far as anyone knows
 
 If the faction is minimal (a type of creature, a loose gang), you can skip sections that don't apply. A wolf pack doesn't need "beliefs" — it needs territory, pack tactics, and what provokes or deters them.
 
-If the faction has hidden agendas, internal conflicts, or information the players shouldn't know:
-- Use `ai:secret` comments for information only the AI should see
-- The visible text should read naturally without the secret — faction names may appear in pin lists the player can see
-- Secrets should be discoverable through play (infiltration, interrogation, observation)
+WHAT THE GROUP IS ACTUALLY DOING
+
+If the group's real agenda is load-bearing — an arc turns on it — it is a story fact: take it from the front, its prep, or the user, and say so if nobody has decided it. Do not invent a grand hidden purpose because the group seems like it should have one. Small local ones (who they are actually working for this month, what the daylight rule is really protecting) are yours.
+
+What `play` needs to run members truthfully in a scene stays in the `faction.*` object, kept out of its plain visible text (faction names show up in pin lists) and written so the object still reads correctly if the party never learns it. Keep it discoverable through play: infiltration, interrogation, observation.
+
+The faction's **back** — `faction.<key>-plans`, seen by design and never by `play` — holds the campaign-scale operation: the sequence of moves, the eventual reveal, what they do when the party finally interferes. Reach for it only when there is a longer game to hold. What members might act on this week belongs in the object.
 
 Link with restraint:
 - Tag the faction with its headquarters `location.*` if one exists

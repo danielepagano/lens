@@ -9,5 +9,4 @@ Encounter name
 - Triggers: (what causes the situation to shift — dialog escalates, timer expires, reinforcements arrive, secret is revealed)
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
 
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
 <!-- TAG POLICY: tag an encounter with the location where it takes place and any driving front, npc, or faction. For combat encounters, tag with difficulty:low/moderate/high and every relevant `stat.*`. -->

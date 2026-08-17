@@ -73,5 +73,11 @@ kb_pin:
 
 The `+` expansion follows the timeline's dot-tags, pulling in all active fronts plus any supporting objects (locations, factions, NPCs) tagged on the timeline. Changing which fronts are active is a matter of adding/removing tags on the timeline object — done by `design`, not by editing narrative front matter.
 
+## Prep reaches `design` and `advance`, never `play`
+
+`design` and `advance` also **facet-expand** every root pin: a pinned `lore.world` brings `lore.world-plots`, a front reaching `advance` brings `front.harbour-prep`. `play` does not expand facets, so the same pin set gives the GM only the play surface. Nothing is tagged and nothing is pinned by hand — the `-` in the key is the whole convention. See [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
+
+This is what lets `advance` have a definite job: it does not invent what happens next, it promotes the next prepared piece into the front's visible text. When a front's prep runs out, `advance` says so and the user runs `lens design --module front`.
+
 For the full design rationale, see [docs/rpg-design.md](../../docs/rpg-design.md) § *Front* and § *Pass The Time*.
 

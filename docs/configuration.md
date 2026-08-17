@@ -695,6 +695,8 @@ YAML at the top of node files (`---` … `---`). Not in `lens.toml` but central 
 
 Manage with `lens pin kb add|remove|block|unblock`. The `+` suffix on an id expands linked objects (shared dot-tags).
 
+**Facet expansion (`-`).** Prep-side operators — currently `design` and `advance` — also pull the same-type **facets** of every root pin: a pinned `front.problem` brings `front.problem-prep`, `lore.world` brings `lore.world-plots`. This is implicit and never written as a suffix, and every other operator (`play` included) ignores it, which is what keeps prep material out of play space. It applies to **root pins only** — ancestor `kb_pin`, runtime `--pin`, `--module` — and never to ids reached through `+`, tags, mentions, or includes, so a linked `stat.guard` never drags in the unrelated `stat.guard-captain`. The root need not exist for its facets to resolve. `lens explain` reports these with a `facet` provenance; `lens kb get -f` applies the same rule at the command line. Rationale: [rpg-design.md](rpg-design.md#the-play-surface-and-the-prep-surface).
+
 ### First three lines
 
 An object's **first three lines** are read as its self-description — by convention its name or title and what it is for. Most KB content already opens this way (a stat block names the creature, a rules file names the ruleset), so nothing needs converting.
@@ -881,7 +883,7 @@ For the **resolved** `[[llm]]` row: `[operator.<name>]` > `[[llm]]` entry > buil
 
 ### Knowledge crawl
 
-Ancestor `kb_pin` / `kb_unpin` root→cursor; runtime `--pin` / `--unpin` and `@type.key` mentions add to the crawl for that call.
+Ancestor `kb_pin` / `kb_unpin` root→cursor; runtime `--pin` / `--unpin` and `@type.key` mentions add to the crawl for that call. On `design` and `advance`, each root pin also brings its `-` facets.
 
 ---
 

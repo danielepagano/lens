@@ -26,7 +26,7 @@ The tension: enough detail that the AI writes distinctively ("Alice deftly jumpe
 TAGGING: Tag `pc.<name>` with a level or tier indicator if such a concept is present in the system, e.g. `level:N` for total character level in D&D. Link to any faction/crew the PC belongs to. The user can add mechanical condition tags during play (e.g. `speed:flying`, `concentrating`).
 
 THE DEPTH (`lore.<name>`)
-The lore object contains everything about the character that informs how the STORY evolves — the material that other design modules use to create content that resonates with this character. It is not referenced during normal play.
+This is the character's **back**: everything that informs how the STORY evolves, which planning and the other design modules read to create content that resonates with this character. It is never pinned during play and must not be — the play surface is `pc.<name>`, and the depth reaching a beat is exactly the failure this split exists to prevent. A design session reaches it with `kb_get`.
 
 Probe conversationally for pressure points:
 - Full backstory: origin, formative events, key relationships from the past
@@ -63,7 +63,7 @@ Assemble and review:
 
 Review:
 - Is `pc.<name>` under ~200 words? Could the AI voice this character distinctively from just this object?
-- Does `lore.<name>` give `design.front` enough material to create fronts that challenge this character?
+- Does `lore.<name>` give a planning session enough material to build arcs that challenge this character?
 - Are the core questions genuinely difficult? Or are they morality checkboxes with obvious answers?
 - Does `pc.<name>` accidentally contain depth that belongs in `lore.<name>`?
 

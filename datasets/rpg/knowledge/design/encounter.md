@@ -6,6 +6,8 @@ The `encounter._template` layout is included in RELEVANT KNOWLEDGE when you use 
 
 An encounter is the most common place to put several prepared things at once — the antagonists, the clock that paces them, the way out of the conversation. They go in this object by default, because this is the object the scene pins. Anything split out gets tagged here so `encounter.<key>+` still carries it.
 
+The scene's meaning is given, not derived here. Why this confrontation matters, who is really behind it, what it is secretly about — that comes from the front and its prep, or from the user. You decide the shape: the positions, the pressure, the triggers, the way out. If you cannot build one without settling a story question nobody answered, say so and stop.
+
 Before building anything, establish why this scene deserves an object:
 - What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes (unless it was already provided).
 - Which PCs does it challenge? Check their `lore.<name>` objects for core questions this scene could pressure.
@@ -15,7 +17,7 @@ Get the live shape of the situation:
 - What's the scene? (where, when, who's involved)
 - What type of situation? (combat, social, chase, puzzle, exploration, or a mix)
 - What's at stake? (consequences of success and failure)
-- Any secrets? (information the player shouldn't see until revealed through play)
+- What is not what it appears to be? (anything the player should discover through play rather than read off the pin list)
 
 Assemble the participants cleanly. They include any given PCs, plus:
 - Named NPCs (recurring non-player characters) have `npc.*` objects
@@ -40,15 +42,16 @@ Two ways to get a scene rule, both fine:
 - **Quote** an existing rule verbatim, with its numbers, when one applies. Never soften it into description — "Slick planks: Difficult Terrain; crossing at a run is DC 10 Acrobatics or fall Prone" is a rule; "the planks are treacherous when wet" is not, and nobody will notice the rule went missing.
 - **Invent** one when nothing fits. This is encouraged: a fast model with a little structure behaves far better than one improvising a subsystem mid-beat. An invented rule must look like a rule — name the trigger, the check, the difficulty, and what happens on success and failure — and it must have a cost or a clock so it can end. Add procedure; never overturn how the system's basic resolution works.
 
-SECRETS
-If the encounter has secrets (the informant is actually a trap, the merchant is poisoning the drinks, the "abandoned" tower has invisible watchers):
-- Encode secrets using the `ai:secret` comment format so only the AI sees them during play
-- The encounter object's visible text should read naturally without the secret — the player may glimpse object names in pin lists
+WHAT THE PLAYER MUST NOT READ YET
+
+A prepared scene almost always knows something the player does not: the informant is a trap, the merchant is poisoning the drinks, the "abandoned" tower has watchers. That belongs in the encounter object itself, because `play` has to act on it the moment the scene starts — it is not prep, it is the scene. Keep it out of the object's plain visible text, and make sure that text still reads correctly if the fact never comes out; the player may glimpse an object name in a pin list, and they should learn nothing from it.
+
+The encounter's **back** — `encounter.<key>-prep`, which design sessions see and `play` does not — is for the other thing: what this scene is a step toward, which follow-up it sets up, why the front placed it here. Most encounters need none. Never put a scene-time fact there; `play` would never see it.
+
+ARC AWARENESS:
+If this encounter is where a front's twist could surface — a turning point where the story's buried question becomes visible through consequences — prepare the conditions for it rather than the reveal itself. Read the front's prep for what the arc is actually about, and build the scene so the dissonance between surface and depth becomes tangible if the PCs push in that direction. The encounter never forces it.
 
 What this is not:
 - Not a blow-by-blow prediction of how the scene will unfold.
 - Not a stat dump with no dramatic pressure.
 - Not a rigid format the GM must recite in order.
-
-ARC AWARENESS:
-If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.

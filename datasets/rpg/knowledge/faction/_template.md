@@ -7,5 +7,4 @@ Name (plus any nicknames or code-names we'd see them called)
 - How they feel about the party and other factions
 - Ongoing plans or operations
 
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
 <!-- TAG POLICY: tag a `faction` object minimally (they are linked to); you can include the location headquarters or the pc/npc leader  -->

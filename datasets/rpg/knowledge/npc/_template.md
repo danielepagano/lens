@@ -8,5 +8,4 @@ Name (plus any nicknames or code-names we'd see them called)
 - Limits: (at least one boundary, price, or trigger, as a condition with a consequence — what they will not do, what a favour costs, what makes them walk or talk. Not a trait: "loyal" decides nothing.)
 - Status and Moves: (what they are up to, as far as people know)
 
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
 <!-- TAG POLICY: you may link a base NPC object to mechanical details like a `stat` block, a lore object, their faction, or a front they own, if any. -->

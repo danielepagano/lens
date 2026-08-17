@@ -16,6 +16,8 @@ A quiet negotiation in a parlour needs none of them, and loading one you do not 
 You can reach all of this and `play` cannot. During play the model gets `rules.system` plus whatever the scene turns into; everything else arrives at the table only because **you** put it there. That is the point of prep.
 
 STEP 0: STORY SERVICE CHECK
+The fiction is given; the mechanism is yours. Why this confrontation matters and what it is secretly about comes from the front, its prep, or the user — the positions, the numbers, the triggers, and the way out are what you invent. If the scene cannot be built without settling a story question nobody answered, say so and stop.
+
 Before building anything, establish the connection to the story:
 - What front does this encounter serve? Use `kb_get` to fetch the front and understand its stakes (unless it was already provided).
 - Which PCs does it challenge? Check their `lore.<name>` objects for core questions this scene could pressure.
@@ -26,7 +28,7 @@ Ask about:
 - What's the scene? (where, when, who's involved)
 - What type of situation? (combat, social, chase, puzzle, exploration, or a mix)
 - What's at stake? (consequences of success and failure)
-- Any secrets? (information the player shouldn't see until revealed through play)
+- What is not what it appears to be? (anything the player should discover through play rather than read off a pin list)
 
 2: ASSEMBLE PARTICIPANTS
 Participants include any given PCs, plus:
@@ -80,8 +82,10 @@ A scene often needs a procedure that no module covers: the auction, the collapsi
 Good: `Rising water: at the end of each round the water rises one foot. At 3 feet the floor is Difficult Terrain; at 5 feet Small creatures must swim (DC 12 Athletics each round or lose their action).`
 Bad: "the water keeps rising and it gets harder to move."
 
-6: SECRETS
-Encode secrets with **`ai:secret`**. Visible text should read naturally without the secret.
+6: WHAT THE PLAYER MUST NOT READ YET
+A prepared scene almost always knows something the player does not. Whatever `play` has to act on the moment the scene starts stays in the encounter object — it is not prep, it is the scene — kept out of the object's plain visible text, which must still read correctly if the fact never comes out.
+
+The encounter's **back** — `encounter.<key>-prep`, expanded into design and advance sessions and never into `play`'s — is for the other thing: what this scene is a step toward, which follow-up it sets up, why the front placed it here. Most encounters need none, and a scene-time fact put there would never reach the table.
 
 ARC AWARENESS:
-If this encounter could be a moment where a front's twist is revealed — a turning point where the story's hidden question becomes visible through consequences — encode that potential in the secret layer. The encounter doesn't force the reveal; it creates the conditions where it COULD happen if the PCs push in the right direction. Check the front's `ai:secret` layers and consider whether this scene is where the dissonance between surface and depth becomes tangible.
+If this encounter is where a front's twist could surface — a turning point where the story's buried question becomes visible through consequences — prepare the conditions for it, not the reveal. Read the front and its prep for what the arc is actually about, and build the scene so the dissonance between surface and depth becomes tangible if the PCs push in that direction. The encounter never forces it.
