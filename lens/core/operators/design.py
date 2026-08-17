@@ -77,7 +77,9 @@ class DesignOperator(SessionOperator):
         project_root: Path,
         ann_params: dict[str, Any],
     ) -> CommandToolsBundle | None:
-        base = build_command_tools_bundle(project_root)
+        base = build_command_tools_bundle(
+            project_root, expand_facets=cls.expand_facets
+        )
         tool_spec, handler = build_media_search_tool_entry()
         tools = list(base.tools) if base.tools else []
         handlers = dict(base.handlers) if base.handlers else {}

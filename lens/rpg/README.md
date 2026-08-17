@@ -40,10 +40,12 @@ Default: append one or more player lines (blockquotes) without calling the GM / 
 
 ## How `lens advance` works
 
-`advance` is a **session operator** that moves time forward and updates fronts. It requires a `timeline.*` object pinned on an ancestor node (typically at the narrative root).
+`advance` is a **session operator** that moves time forward and updates whatever time moved — fronts above all, but also clocks, trackers, and any object whose own body states what a day costs it. It requires a `timeline.*` object pinned on an ancestor node (typically at the narrative root).
 
 **Requirements**:
 - At least one `timeline.*` pinned on an ancestor node
+
+**No module.** `advance` is spawned as a child of the narrative node that already carries the fronts, and it has exactly one job, so there is nothing for a module to select between — its whole procedure is in `advance.system`. It used to pin `design.front`, which meant every advance carried front *authoring* instructions (timeline tag management, create/close boilerplate) it is forbidden to act on.
 
 **Front discovery**: The user pins `timeline.<id>+` on the narrative root. The `+` suffix does a one-hop expansion following the timeline's dot-tags, which list the active front IDs. Fronts are automatically in context for every crawl — no manual pinning/unpinning needed.
 
@@ -72,6 +74,14 @@ kb_pin:
 ```
 
 The `+` expansion follows the timeline's dot-tags, pulling in all active fronts plus any supporting objects (locations, factions, NPCs) tagged on the timeline. Changing which fronts are active is a matter of adding/removing tags on the timeline object — done by `design`, not by editing narrative front matter.
+
+## Prep reaches `design` and `advance`, never `play`
+
+`design` and `advance` also **facet-expand** every root pin: a pinned `lore.world` brings `lore.world-plots`, a pinned `pc.amy` brings `pc.amy-background`. `play` never does, so the same pin set gives the GM only the play surface — no tagging, nothing pinned by hand.
+
+A front **pinned on the narrative** brings its back with it. One reached only through the timeline's `+` expansion has not been named, so `front.harbour-prep` does not ride along until something asks for `front.harbour` by name — which `advance` is told to do before it moves anything. See [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
+
+Either way this is what gives `advance` a definite job: it does not invent what happens next, it promotes the next prepared piece into the visible text. When prep runs out, `advance` says so and the user runs `lens design --module front`.
 
 For the full design rationale, see [docs/rpg-design.md](../../docs/rpg-design.md) § *Front* and § *Pass The Time*.
 

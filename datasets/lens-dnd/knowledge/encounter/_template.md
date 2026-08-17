@@ -33,5 +33,4 @@ Subheadings (**Enemies** / **Allies**) optional. Repeat a **`KB['stat.*']`** on 
 
 Do **not** add **`KB['pc.…']`**, **`KB['npc.…']`**, **`KB['faction.…']`**, etc. Refer to those by name or dot-ids in Situation and Running.
 
-<!-- ai:secret: Ercynpr guvf grkg jvgu nal vasbezngvba lbh qba'g jnag gur cynlre gb xabj; gur cyngsbez jvyy rapbqr vg gb or bayl NV-ivfvoyr. -->
 <!-- TAG POLICY: tag with location, front, npc, faction as appropriate. Combat: difficulty:low/moderate/high, plus every `stat.*` used in Prep. -->

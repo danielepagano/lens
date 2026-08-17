@@ -389,6 +389,82 @@ class TestCrawlFacets(unittest.TestCase):
             r = crawl(node, operator=DesignOperator)
             self.assertEqual(r.pinned_ids, ["front.problem"])
 
+    def test_module_pin_gets_its_facet(self) -> None:
+        """``--module`` names an id directly, so it is a root pin.
+
+        The transform that resolves modules bypasses ``_resolve_pins_for_ancestors``
+        entirely, so facet expansion had to be wired into it separately — it was
+        documented as working before it did.
+        """
+        from lens.core.operators.design import DesignOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "design", "front", "[DESIGN MODULE]: FRONT")
+            _add_kb(root, "design", "front-extra", "Prep-side addendum.")
+            r = crawl(node, operator=DesignOperator, modules=("design.front",))
+            self.assertIn("design.front-extra", r.pinned_ids)
+
+    def test_play_module_pin_does_not_get_facet(self) -> None:
+        """Facet expansion stays operator-gated on the module route too."""
+        from lens.rpg.operators.play import PlayOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "rules", "combat", "Combat rules.")
+            _add_kb(root, "rules", "combat-optional", "Unrelated variant rules.")
+            r = crawl(node, operator=PlayOperator, modules=("rules.combat",))
+            self.assertNotIn("rules.combat-optional", r.pinned_ids)
+
+    def test_module_link_target_does_not_get_facet(self) -> None:
+        """A module's ``+`` link target is not a root pin, so it gains no facets.
+
+        Same collision guard as the pin route: ``design.encounter`` linking
+        ``stat.guard`` must not drag in ``stat.guard-captain``.
+        """
+        from lens.core.operators.design import DesignOperator
+        from lens.core.knowledge import KnowledgeStore
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "design", "encounter", "[DESIGN MODULE]: ENCOUNTER")
+            _add_kb(root, "stat", "guard", "A guard.")
+            _add_kb(root, "stat", "guard-captain", "An unrelated captain.")
+            kb = KnowledgeStore.for_project(root)
+            kb.add_tags("design.encounter", ["stat.guard"])
+            _commit(root)
+            KnowledgeStore.clear_registry()
+            r = crawl(node, operator=DesignOperator, modules=("design.encounter",))
+            self.assertIn("stat.guard", r.pinned_ids)
+            self.assertNotIn("stat.guard-captain", r.pinned_ids)
+
+    def test_id_pinned_and_also_plus_expanded_renders_once(self) -> None:
+        """An id reachable both ways must not render its KB block twice.
+
+        ``timeline.vale+`` pulls ``front.blight``; pinning ``front.blight`` at
+        the cursor (to get its facets) named the same id again and duplicated
+        the whole block in the prompt.
+        """
+        from lens.core.operators.design import DesignOperator
+        from lens.core.knowledge import KnowledgeStore
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "timeline", "vale", "Day: 1")
+            _add_kb(root, "front", "blight", "The blight.")
+            kb = KnowledgeStore.for_project(root)
+            kb.add_tags("timeline.vale", ["front.blight"])
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - timeline.vale+\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            KnowledgeStore.clear_registry()
+            r = crawl(node, operator=DesignOperator, extra_pins=["front.blight"])
+            self.assertEqual(r.pinned_ids.count("front.blight"), 1)
+            blocks = "\n".join(r.knowledge)
+            self.assertEqual(blocks.count("KB['front.blight']"), 1)
+
     def test_facet_provenance_metadata(self) -> None:
         from lens.core.operators.design import DesignOperator
 

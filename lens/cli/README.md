@@ -116,6 +116,7 @@ Each row reports the component id (`kb:pc.alice`, `rules-companion:rules.encount
 |---|---|
 | `node_pin` | `kb_pin` on a named ancestor node |
 | `expansion` | pulled in by a `+` suffix on another pin |
+| `facet` | a `-` facet of a root pin (`front.problem-prep`), expanded only for `design` and `advance` |
 | `mention` | an `@` mention in the narrative or prompt |
 | `rules_companion` | `rules.<type>` auto-added for pinned objects of that type |
 | `module` | the active session module (or its template) |
@@ -235,10 +236,14 @@ Fetch and print knowledge objects. Append `+` to an ID to include directly linke
 ```bash
 lens kb get person.hero
 lens kb get person.hero+ place.tavern++
+lens kb get front.problem -f                    # also its '-' facets (front.problem-prep, …)
 lens kb get person.hero --no-include-comments   # strip markdown comments
 ```
 
-Options: `--include-comments` (default: true) — keep markdown comments in the output.
+Options:
+
+- `--include-comments` (default: true) — keep markdown comments in the output.
+- `-f` / `--facet-expand` — also fetch each requested id's `-` facets: the prep-side material `design` and `advance` pull automatically and `play` never sees. Only the ids you asked for gain facets, so a `stat.guard` reached through `+` never drags in `stat.guard-captain`. See [configuration.md](../../docs/configuration.md#knowledge-pins).
 
 ### `lens kb template`
 

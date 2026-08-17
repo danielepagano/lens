@@ -302,8 +302,17 @@ class CommandToolsBundle:
     handlers: dict[str, CommandToolFn] | None
 
 
-def build_command_tools_bundle(project_root: Path) -> CommandToolsBundle:
-    from lens.core.command_tools import get_command_registry
+def build_command_tools_bundle(
+    project_root: Path, *, expand_facets: bool = False
+) -> CommandToolsBundle:
+    """Command tools for one generation.
+
+    *expand_facets* mirrors the operator flag of the same name: on the prep-side
+    operators, ``kb_get`` resolves a named id's ``-`` facets too, exactly as an
+    ancestor pin and ``lens kb get -f`` already do.  Left off, the model cannot
+    reach a facet by any route.
+    """
+    from lens.core.command_tools import get_command_registry, kb_get_facets_handler
 
     cmd_registry = get_command_registry(project_root)
     if not cmd_registry:
@@ -320,6 +329,8 @@ def build_command_tools_bundle(project_root: Path) -> CommandToolsBundle:
         for name, (cmd_def, _fn) in cmd_registry.items()
     ]
     handlers = {name: fn for name, (_def, fn) in cmd_registry.items()}
+    if expand_facets and "kb_get" in handlers:
+        handlers["kb_get"] = kb_get_facets_handler
     return CommandToolsBundle(tools=tools, handlers=handlers)
 
 

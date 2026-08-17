@@ -34,6 +34,7 @@ from typing import Any, cast
 
 from lens.core.annotations import decode_ai_secrets, encode_ai_secrets_for_persist
 from lens.core.commands.kb import kb_patch as _cmd_kb_patch
+from lens.core.commands.kb import resolve_ids_with_facets
 from lens.core.commands.kb import kb_with_tag as _cmd_kb_with_tag
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
@@ -101,7 +102,7 @@ def format_objects_for_model(objects: dict[str, KnowledgeObject]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# kb_get handler — delegates to commands/kb.py, identical to CLI behaviour
+# kb_get handler — shares `commands/kb.py`'s resolution, identical to the CLI
 # ---------------------------------------------------------------------------
 
 
@@ -142,17 +143,42 @@ def _design_template_companions(
     return companions
 
 
-async def _kb_get(args: dict[str, Any], project_root: Path) -> str:
+async def _kb_get_impl(
+    args: dict[str, Any], project_root: Path, *, facets: bool
+) -> str:
     ids: list[str] = args.get("ids") or []
     if not ids:
         return "(no ids provided)"
     kb = KnowledgeStore.for_project(project_root)
-    _ordered, objects = kb.get_objects_with_links(
-        ids + _design_template_companions(ids, kb)
-    )
+    companions = _design_template_companions(ids, kb)
+    if facets:
+        # Facets go to the ids the model actually named — the same
+        # root-pins-only rule the crawl applies — never to the template
+        # companions we added on its behalf.
+        _ordered, objects = resolve_ids_with_facets(kb, ids)
+        if companions:
+            objects.update(kb.get_objects_with_links(companions)[1])
+    else:
+        _ordered, objects = kb.get_objects_with_links(ids + companions)
     if not objects:
         return f"(no KB objects found for: {', '.join(ids)})"
     return format_objects_for_model(objects)
+
+
+async def _kb_get(args: dict[str, Any], project_root: Path) -> str:
+    return await _kb_get_impl(args, project_root, facets=False)
+
+
+async def kb_get_facets_handler(args: dict[str, Any], project_root: Path) -> str:
+    """``kb_get`` for the prep-side operators: a named id brings its ``-`` back.
+
+    Swapped in by :func:`~lens.core.llm.build_command_tools_bundle` when the
+    calling operator sets ``expand_facets``.  Without this the model had no
+    route to a facet at all: pins reach it only for ids on a node, so a
+    ``front.*`` arriving through ``timeline.<id>+`` left its prep unreachable
+    even when the model asked for the front by name.
+    """
+    return await _kb_get_impl(args, project_root, facets=True)
 
 
 # ---------------------------------------------------------------------------

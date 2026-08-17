@@ -95,8 +95,7 @@ THREAT…                   WANTS TO…              THE…                     
 ```
 
 Add more interesting details as you go, but keep it open-ended, as most will be improvised! It should have a fun, pulp-space-opera tone. 
-IMPORTANT: because the above is an HTML comment, the user cannot see it in an app, but they can in raw markdown. 
-Add another comment, structured exactly as <!-- ai:secret: (whatever secret) --> after the adventure to add user-encoded secrets. They must be dramatic and usable by the GAME PLAY script.
+IMPORTANT: because the above is an HTML comment, the user cannot see it in an app, but they can in raw markdown. Include at least one dramatic thing the crew does not know yet and the GAME PLAY script can reveal — the real nature of the threat, who is lying, what the artifact does — and keep it out of anything the player will read.
 
 3. Once you have created the comment above, start writing outside the comment again so the the user can see the output.  
 Begin the opening scene with something like "The Raptor has picked up a distress signal / strange readings / evidence of... (depending on the story). What do you do?”. 

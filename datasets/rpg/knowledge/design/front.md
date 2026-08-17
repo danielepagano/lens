@@ -1,127 +1,82 @@
 # [DESIGN MODULE]: FRONT GROOMING
 
-This is the module for keeping pressure alive in the campaign. Use it when the story needs new hooks, when existing fronts need to react to what the PCs did, or when between-session prep needs to turn vague possibility into playable tension.
+Schedule the campaign's pressure: decide which prepared material is live right now, and make each live piece move on its own. Use it between sessions, after the PCs have changed the situation, or when `advance` reports a front has run out of prep.
 
-The `front._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Assess the current state before creating or changing anything.
+This module does not invent the story. The arcs, the buried questions, and the twists are planning output and arrive as material. Your job is orchestration: what is on stage now, what the given material says moves next, and what number, trigger, or limit makes that checkable. You author a front's motion; `advance` is what later reads it.
 
-Start by getting your footing:
-- Read the timeline object. Its tags list the active front IDs. The timeline and all tagged fronts are already in RELEVANT KNOWLEDGE.
-- Fetch PC lore: use `kb_get` for each PC's `lore.<name>` object: you need their depth (wounds, flaws, desires, core questions) to make fronts that matter
-- Read the narrative context: what has happened recently? What loose threads exist? Ensure fronts are updated based on what already happened.
-- If this is an on-demand session (not an `advance`), ask the user if goal unclear: what do they need? New content? Updates? Something specific?
+The `front._template` layout is in RELEVANT KNOWLEDGE. Assess the current state before changing anything.
 
-Then groom what already exists before inventing more:
-- Has the situation changed? Update phases, reflect PC actions, note what's resolved
-- Should it spawn a DERIVED front? A derived front inherits the original's secret seed (see CREATING FRONTS below) and represents escalation or complication — the same underlying tension manifesting in a new form
-- Is it resolved or stale? Close it: note the outcome. Emit a `kb` fenced code block with `id: timeline.<name>`, `remove-tags: [front.<name>]`, and empty body — this removes the front from the timeline's active set without altering the front's content. The resolved front still exists in the KB for reference.
-- Does it need new supporting objects? See below for rules.
+Get your footing:
+- Read the timeline. Its tags list the active front IDs, and those fronts are already in your context — but their backs are not, since they arrive by expansion rather than as pins. `kb_get` the fronts you are grooming and each comes back with its `-arc` facet (the prep).
+- Read the narrative. What did the PCs resolve, provoke, or walk away from? Fronts must reflect it.
+- If the goal is unclear, ask: new pressure on stage, updates to what is there, or something specific.
 
-Aim for 2-4 active fronts at any time. Fewer means the story lacks tension; more fragments attention.
+Groom what exists before putting anything new on stage:
+- Has the situation changed? Update phases, reflect PC actions, note what is resolved.
+- Should the next piece of prep come forward? Promoting a piece from the back into the front's visible text is the ordinary way a front develops, and `advance` does it too — you do it when the story, rather than the calendar, moved.
+- Should it spawn a DERIVED front? A derived front carries the parent's seed into a new form. Whether an arc derives is a story decision taken from the material; *when* it reaches the stage is yours.
+- Resolved or stale? Close it (see TIMELINE below) and note the outcome. The front object survives for reference.
 
-When new fronts are needed — because others resolved, the PCs moved into fresh territory, or the user wants new hooks — build them with care.
+HOW MUCH IS LIVE: 2-4 FRONTS
 
-Every front you create MUST have three layers. This is not optional.
+A scheduling number, not a creative quota: it asks how much prepared material should be pressing on the party right now, not how much tension to invent. Under two and the world stops pushing; over four and nothing lands.
 
-**Layer 1 — Surface**: the visible hook or premise. Something actionable to the player, well-embedded in the setting. This is what the player sees and engages with. Examples: a merchant guild is undercutting local shops, a ruin has been unsealed by an earthquake, soldiers are deserting a border fort.
-
-**Layer 2 — Adventure Core Question** (encode as `ai:secret`): the editorial intent hiding inside this front. This is what makes the front MATTER beyond its surface — it's the thematic engine that turns a simple situation into a story worth telling. This question:
-- Is about the human condition, NOT a genre trope or story pattern
-- Is DISSONANT with the surface premise — a lateral combination the player won't expect. The more mundane or lighthearted the surface, the more profound the buried question can be
-- Draws on classical literature, philosophy, and the complexity of real human experience
-- Is genuinely arguable — no obviously-correct moral answer
-- Is never heard by the player as a slogan — they only feel it through consequences and difficult choices
-- RESONATES with (but does not duplicate) the character core questions from the PC lore objects — like intertwined melodies
-
-Examples of strong dissonance (exaggerated to demonstrate):
-- Surface: a goblin bake-off. Question: "If ending one life would stop generations of abuse, could you ever be right to do it?"
-- Surface: a whimsical dungeon crawl rescuing stolen dreams. Question: "If a culture only survives by rewriting its past, is that survival or slow extinction?"
-- Surface: escorting a pampered royal cat. Question: "If suffering always returns in a new form, does individual heroism matter or is it self-comfort?"
-
-**Layer 3 — Twist or Revelation** (encode as `ai:secret`): a dramatic mid-story subversion that "breaks the promise of the premise." If the front develops into a mature arc (through derived fronts over time), this twist eventually surfaces and changes everything. It leverages the dissonance between surface and core question:
-- For the bake-off: the "winner's privilege" is naming an elder for quiet culling
-- For the dream dungeon: the "bad dreams" cut away are actually true history — finishing the job means burning it
-- For the cat escort: every disaster prevented reappears elsewhere, tied to the cat's remaining lives
-
-The twist is a ONE-SENTENCE idea tucked into the secret layer. It doesn't need to be elaborate — it's a seed that grows through play.
-
-**Key principle**: if a player never follows up on a front, it was ALWAYS just what it appeared on the surface. Only threads the PCs pull actually develop into grand arcs. The three-layer structure gives every front the POTENTIAL for depth without requiring it.
+Under the number with material waiting? Bring a piece on stage. Under the number with nothing prepared? **Say so and stop** — that is a planning session. A front invented to fill a slot is exactly the disconnected quest hook this system exists to avoid.
 
 MAKE IT MOVE ON ITS OWN
 
-The three layers make a front *matter*. They do not make it *advance*. `advance` runs with the front and two random numbers, and it can only do something if the front says what changes when time passes. A front without that is a premise that will sit at the same state forever.
-
-Give every front at least one of:
+This is the artifact this module produces, and a front without it is unfinished — a premise that will sit at the same state forever. Give every front at least one of:
 
 - **A count with a consequence.** "Council members turned: 3 of 7. At 5 the vote is lost and the levy doubles." Not "the council is being corrupted".
 - **A phase with a trigger.** "Phase 2 when the party is seen at the bridge, or on day 20, whichever is first."
-- **A chance rule the luck rolls can resolve.** "Every third day, on 60+, another caravan is taken." State the period and the threshold; `advance` supplies the number and will not invent the rule.
+- **A chance rule.** "Every third day, on 60+, another caravan is taken." State both the period and the threshold; a rule missing either half will never fire, and nothing downstream will supply it.
 
-State it in the front's own terms, not as an explanation of how clocks work — that is procedure, and it belongs to the rules, not here. Keep the whole thing compact: the surface is 2-4 sentences, each secret layer is one, and the artifact is one line.
+The number is yours — nobody hands you "5 of 7", and picking it is the work. What the count is *of* is not: take that from the material.
 
-**Derived fronts** inherit the core question and twist from their parent front. They represent the same underlying tension in a new form — escalated, complicated, or viewed from a different angle. The surface changes; the secret seed persists.
+Make it perceivable. A count the party cannot see moving is bookkeeping, not pressure. Say how a tick shows up in the world — a shuttered shop, a name missing from the roll, a patrol that was not there last week — so they can feel it and act against it instead of being handed a resolved state.
 
-**Fresh vs. derived**: when creating a new front, decide whether it's a fresh arc seed (new question, new twist) or a derived front (inheriting from an existing one). Base this on story context — if an existing arc is developing, derive from it. If the story needs a completely new thread, seed a fresh one. The player doesn't need to know which is which.
+Write it in the front's own terms. How clocks work as a procedure belongs to the rules, not here. Keep the whole front compact: the situation in 2-4 sentences, the motion in one line.
 
-Fronts may need objects that do not exist yet:
-- Named NPCs (recurring non-player characters) have `npc.*` objects
-- Factions use `faction.*` objects
-- Locations: if the front relates to specific, sufficiently complex, and recurring locations, they will have a `location.*` object.
+THE ARC (Back prep Object)
 
-Missing an NPC, faction, or location object? Do not create it here — say what you want to introduce and let the user load that module. If they decline, name the person or place inside the front's own text.
+A front is the likeliest object in this system to have one. The front object is the play surface — the visible situation, its state, and what moves it. Everything else the arc knows goes in `front.<key>-arc`: the buried question, the twist, which complication is queued behind this one, why this piece sits where it does. Every design and advance session sees it; `play` never does.
 
-Before closing, do a quick pressure check:
-- List all fronts created/updated/closed with their IDs
-- Are 2-4 fronts active?
-- Do active fronts collectively challenge multiple PCs? (Check against their core questions)
-- Are the timeline's tags correct (active fronts present, closed fronts absent)?
+You do not author that material, but you maintain it: mark a piece spent when it comes forward, strike one the PCs have made impossible. A front with no arc is fine — many fronts are exactly what they appear to be — but a front whose arc prep is *empty* has stopped developing, and that is worth saying out loud.
 
-TIMELINE AWARENESS — CRITICAL:
-The timeline object's tags are what keep fronts active. Your job is to manage the tags: when you create a front or close one, update the timeline's tag set. That's it.
+Nothing `play` must act on during a scene goes in the back. Facts a GM needs live in the front itself, written so the visible text reads correctly whether or not they surface.
 
-**Rule**: `advance` updates front **content** (clocks, phases, resolution notes) but NEVER changes the tag set. You are the lifecycle operator — only you add or remove tags.
+SUPPORTING OBJECTS
 
-When creating a new front, you MUST do TWO things:
-1. Emit a `kb` fenced code block for the front object itself (with full content, three layers, etc.)
-2. Emit a `kb` fenced code block with ``id: timeline.<name>``, ``tags: [front.<name>]``, and EMPTY body to add the front to the timeline's active set
+A front may want an `npc.*`, a `faction.*`, or a `location.*` that does not exist. Do not create it here — say what you would introduce and let the user load that module. If they decline, name the person or place inside the front's own text.
 
-   ```kb
-   ---
-   id: timeline.epic
-   tags: [front.goblins]
-   ---
-   ```
+TIMELINE AWARENESS — CRITICAL
 
-   (Empty body + tags adds the tags without altering the timeline's day counter.)
+The timeline's tags are what keep fronts active, and you are the only operator that touches them. `advance` updates front *content* and never the tag set.
 
-To close a front:
-1. Emit a `kb` fenced code block with ``id: timeline.<name>``, ``remove-tags: [front.<name>]``, empty body
+Creating a front is TWO blocks — the front itself (content and tags), plus a tags-only block _adding_ it to the timeline:
 
-   ```kb
-   ---
-   id: timeline.epic
-   remove-tags: [front.goblins]
-   ---
-   ```
+```kb
+---
+id: timeline.epic
+tags: [front.goblins]
+---
+```
 
-   (This removes the front from the timeline's active set. The front object stays intact for reference.)
+Closing a front is then also a tags-only block removing it from the timeline:
 
-Optionally tag supporting objects (locations, factions, NPCs) on the timeline for rich context:
-   ```kb
-   ---
-   id: timeline.epic
-   tags: [location.goblin-camp, faction.red-fang]
-   ---
-   ```
-   These become visible alongside fronts during play. Only tag objects important enough to be in every scene. If in doubt, keep the timeline lean and inline context in the front's own content.
+```kb
+---
+id: timeline.epic
+remove-tags: [front.goblins]
+---
+```
 
-GUIDELINES:
-- The player does not see or know about the three-layer structure. They experience it as "the AI makes interesting fronts." Do not explain the mechanics — just apply them.
-- Not every front needs to develop into a grand arc. Some fronts are small and resolve quickly. The three layers ensure they COULD develop, not that they must.
-- When the user asks for "something to do" or "new hooks," that's your cue to create fronts. Always seed them properly.
-- Fronts are compact. The surface should be 2-4 sentences. The secret layers are one sentence each. If a front needs detailed plans, link to a `lore.*` object.
-- Check existing objects before creating new ones. You can use `kb_get` to look up objects not already in your context (e.g. NPCs, factions, locations mentioned in passing).
+An empty body (front-matter only) leaves the timeline's day counter and text untouched. You may also tag supporting objects (`location.*`, `faction.*`, `npc.*`) onto the timeline so they ride along into play — only ones important enough for every scene; otherwise keep the timeline lean and inline the context in the front.
+
+Before closing: list every front you created, updated, or closed with its ID; confirm 2-4 are active; confirm each states what changes when time passes; confirm the timeline's tags match.
 
 What this is not:
 - Not a pile of disconnected quest hooks.
 - Not a plot outline the PCs are meant to obey.
-- Not theme recited as slogans; the deep layer should pressure play, not explain itself.
+- Not the place to invent themes; that is planning, and it happens before you.
+- Not a front only a GM can tell is moving.

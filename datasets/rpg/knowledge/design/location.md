@@ -11,7 +11,7 @@ Before building geography, establish what this place is doing in the story:
 - What's the purpose? (exploration hub, adventure site, recurring home base, in a travel route)
 - What front or story thread brings the PCs here? 
     - If the player just wants to visit somewhere with no story connection, devise some possibilities based on existing fronts on why this visit may end up mattering after they get there (maybe they meet someone that can help them, or find a clue).
-    - If there is not enough context (fronts, PC's), then create "quest hooks", interesting situations or problems that, if engaged with, can result in the creation a front (don't create the front or any deep quest, just the superficial situations the user may see).
+    - If there is not enough context (fronts, PC's), then create "quest hooks", interesting situations or problems that, if engaged with, can result in the creation a front (don't create the front or any deep quest, just the superficial situations the user may see). A hook is surface only — do not decide what it turns out to be. That is a story question, and it belongs to planning.
 - Does it connect to existing locations? Usually you will be provided existing locations if so.
 
 Then place it in the map cleanly. Every location links to its parent via tag (`location.<parent-key>`). This creates the graph. Your task is to create one more given locations, and ensure they fit into the hierarchy of any established locations that already exist; you DO NOT need to create the whole chain ("tavern-to-continent") unless you are asked for that specifically. Stories often SPIRAL OUT, and creating a higher-level object prematurely is not helpful.
@@ -26,12 +26,16 @@ Write each location so the GM can feel it immediately:
 
 DO NOT write encyclopedic descriptions. The AI will work with what you give it — a few vivid details are better than a paragraph of generic description.
 
-Sensory detail makes a location writable; it does not make it playable. Give every location at least one line that **acts on the scene** — a feature with a cost, an access rule, something that happens on a schedule. "The tide takes the causeway for six hours a day; cross late and you swim or you wait." "The toll-keeper logs every name, so anyone who crosses is findable afterwards." "Only two ways out: the main stair, and a drop into the cistern nobody survives cleanly." One such line is worth a paragraph of atmosphere, because atmosphere can be improvised at the table and an access rule cannot.
+Sensory detail makes a location writable; it does not make it playable. Give every location at least one line that **acts on the scene** — a feature with a cost, an access rule, something that happens on a schedule. That line is the artifact this module produces, and it has to be one the party can notice and plan around, not a hidden condition that only ever ambushes them. "The tide takes the causeway for six hours a day; cross late and you swim or you wait." "The toll-keeper logs every name, so anyone who crosses is findable afterwards." "Only two ways out: the main stair, and a drop into the cistern nobody survives cleanly." One such line is worth a paragraph of atmosphere, because atmosphere can be improvised at the table and an access rule cannot.
 
 Connect it to the live story:
 - Which fronts play out here? Link via tags.
 - Which NPCs are based here? They should tag back to this location.
-- Any secrets? Use `ai:secret` comments.
+- What is not what it appears to be? Keep it out of the object's plain visible text and write that text so it still reads correctly if the party never finds out.
+
+THE BACK
+
+A location rarely needs one, but when the place is a step in a longer plan — what is under it, who is watching it, what it becomes three arcs from now — that material goes in `location.<key>-prep`, which design sessions see and `play` never does. Anything a GM must act on while the party is standing there belongs in the object itself.
 
 GUIDELINES:
 - Fewer locations, better described, is always better than many objects we'll forget to pin.

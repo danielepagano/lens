@@ -16,7 +16,7 @@ Let's look at some GM tasks, and how Lens with AI handles them:
 - **Bring the world to life in an actionable way to players through words, and have it react appropriately**: the pinning system surfaces the right details for the current scene. An encounter object carries the specific interaction hooks — the same bridge can be a peaceful crossing or an ambush depending on what's prepared. `play` reads the encounter and adapts.
 - **Enforce the world's continuity**: When something interesting happens, we have mechanisms to remember it in the KB; maybe a location changed, or an NPC has something new to remember. This is on top of fractal summarization, which keeps more relevant details closer and keeps the context size small for the far past.
 - **Let players have agency while also letting the story move forward**: the player drives all action through `play`; preparation through encounter objects and fronts ensures the world has momentum and surprises. The `advance` operator moves fronts forward when time passes, creating pressure and consequences without the player having to manage it.
-- **Put the players in interesting and difficult situations so they can use their skills and guile to succeed**: this is the job of `design` — building encounter objects that are fun, fair, and have secrets. The encounter object is the DM's prep; `play` is the DM's execution. Secrets can be encoded so even the player running `design` doesn't see them until play reveals them.
+- **Put the players in interesting and difficult situations so they can use their skills and guile to succeed**: this is the job of `design` — building encounter objects that are fun, fair, and know something the party does not. The encounter object is the DM's prep; `play` is the DM's execution. Material the party must not read yet is either kept in the object's [back](#the-play-surface-and-the-prep-surface), where `play` cannot reach it at all, or encoded in place so it does not read as plain text to the person running `design` (see [What `ai:secret` is for](#what-aisecret-is-for)).
 
 ### The Player-AI Contract
 
@@ -43,6 +43,7 @@ The key design impetus of Lens is to curate and constrain the knowledge set and 
 
 To this extent, we divide our experience in two alternating phases:  
   - **Planning**: during planning we don't directly generate narrative, we instead reflect on the current state using various methods and with various goals (possibly over multiple LLM calls) with the effect of creating and changing KB objects instead. This can be done directly by the user, with LLM assistance, or by the AI autonomously (depending on the task). Planning can occur in a separate narrative tree for pre-adventure setup, or within a narrative tree (and thus aware of the place in the story) to remember changes, add plans, etc. In-narrative planning may also add details or generate an operator call ("in the morning, you were awakened by...").
+    Planning itself splits again, into ideation and artifact design — see [Two prep phases](#two-prep-phases-planning-then-artifacts) below. The split is what keeps the second half honest.
   - **Play**: The AI does not update KB objects during normal play, it's too specific of a task. The user can always change objects directly, but it's not something the LLM tries to do, it just focuses on executing. We want triggers and mechanics to switch to planning, however. When we do play, the player may be controlling multiple characters; they need to specify who is acting as if there were multiple people talking at the table. They can 100% just say "Elara wants to..." but it may be more fun for them to pick a character and talk first person: it's where the "Role" part of roleplay comes out. This is orthogonal to operators, so it needs to be supported by Lens, but it's also quite simple because all it does is add a character marker to the request. 
 
 ## RPG Objects Design
@@ -58,15 +59,98 @@ We also have three **layers** of objects:
 
 Each layer is (at least) one Lens `dataset`.
 
+### Two prep phases: planning, then artifacts
+
+"Planning" above names the operator mode. Inside it there are two genuinely different jobs, and running them together is what makes prep sessions vague.
+
+**Planning proper** is the ideation: the themes, the arc, the buried question, who this story is about. It produces writing and decisions, not artifacts, and it is deliberately free-form. It can be done entirely by a human, or outside Lens, or in a `design --module planning` session that behaves much more like a coding agent's plan mode than like the other modules — propose, argue, get approval, and only then write anything down.
+
+**Artifact design** invents nothing major. It takes themes and arcs that are already reasonably concrete and turns them into playable objects: fronts that move on their own, balanced encounters, clocks with consequences, NPCs with limits. Its rule is one line:
+
+> **The fiction is given. The mechanism is yours — and inventing it is the whole job, not a fallback.**
+
+Load-bearing story facts are never invented: who someone really is, what a faction actually wants, what the reveal turns out to be. Numbers, triggers, limits, floors, and end conditions always are — nobody hands you "clock 6", and picking it *is* the work. Local colour (a guard's name, what is on the table) is free.
+
+When translation hits something it cannot mechanise without deciding a story fact, the correct move is to **say so and stop**. That report is the only gate in the system, and it is where the human comes back in. It is also why the split pays for itself: a model asked to do both jobs at once will always paper over the missing decision, because it has been given permission to invent stories.
+
+The boundary is kept on purpose rather than automated away. The first phase is a different problem — it wants breadth, taste, and argument — and naming the line produces both better input and a much simpler job for the model doing the second half.
+
+There is deliberately **no `planning` type**. The material lives in whatever type the user likes (`lore.*`, `prep.*`, `plan.*`), because nothing mechanical keys off it. What matters is *where* it lands, which is the next section.
+
+### The play surface and the prep surface
+
+Artifacts have a front and a back.
+
+**The front** is the play surface — what is currently active, driving the present and the immediate horizon. `play` sees this and only this, so by construction it stays small and pertinent.
+
+**The back** is the prep — the whole plot, the next piece to move, why this piece sits where it does. It is still design output, and it is *more* specific than the story material that generated both halves. It must never reach play space. It is an optional addition, not a requirement: sometimes a door is just a door.
+
+#### `-` is a facet separator
+
+The mechanism is a naming convention, not a type. `-` is a hierarchical content separator in KB ids — the UI already treats it as one for autocomplete grouping — and it now means something mechanically:
+
+```
+front.problem      front.problem-prep
+pc.amy             pc.amy-background
+lore.world         lore.world-plots
+```
+
+`design` and `advance` **facet-expand**: a root pin also pulls the same-type `<id>-*` objects. `play` does not. Because `lore.world` is pinned at the narrative root, `lore.world-plots` is automatically in scope for every design and advance session and in none of play's — no tagging, no bookkeeping, nothing to remember.
+
+**"Root pin" is really "an id someone named."** A front is the case that makes the distinction matter. It reaches context through `timeline.<id>+`, so it is not pinned and its back does not ride along — but naming it does bring the back, and there are four ways to name an id, all of which honour the rule:
+
+| naming an id | brings its facets |
+|---|---|
+| ancestor `kb_pin` / `--pin` | ✅ |
+| `--module <key>` | ✅ |
+| `lens kb get <id> -f` | ✅ |
+| the model's own `kb_get` tool | ✅ |
+
+So `advance` and `design --module front` reach a front's back by asking for the front by name — one ordinary `kb_get`, no facet id to guess, no bookkeeping. What is still deliberately excluded is the *unnamed* id: anything arriving by `+`, a tag, a mention, or an include brings no facets, which is what keeps a linked `stat.guard` from dragging in `stat.guard-captain`.
+
+Three of those four surfaces were unwired when the feature shipped; see the note under [Not `+`, and root pins only](#not--and-root-pins-only).
+
+It also works on **missing roots**: `lore.world-geography` and `lore.world-factions` reach design sessions whether or not a `lore.world` object exists, because expansion is a lexical prefix scan over the store rather than a walk over links. Pinning `lore.world` for `play` still pulls nothing — the same pin means "and its prep" to a prep operator and "just this" to everything else.
+
+#### Not `+`, and root pins only
+
+This is deliberately not `+`. `+` expands dot-tag links and works in play space. Facet expansion is implicit, operator-gated, and never typed as a suffix by the user.
+
+**Facets expand for root pins only** — ancestor `kb_pin`, runtime `--pin`, `--module` — and never for ids that arrive via `+`, tags, mentions, or includes. That rule is load-bearing rather than tidy: `-` is already the word separator in 755 objects in `datasets/lens-dnd/`, with 14 genuine collisions between unrelated objects (`stat.guard` / `stat.guard-captain`, `spell.shield` / `spell.shield-of-faith`, `stat.vampire` / `stat.vampire-spawn`, …). Reference objects like those always arrive by expansion or mention, never as root pins — and where one legitimately *is* a root pin, such as a design session that wants every vampire at once, pulling the family is the desired behaviour. So the rule neutralises every collision without a hardcoded type list and without an opt-in tag.
+
+`lens explain` reports facets with their own provenance kind (`'-' facet of front.problem`), so a facet never reads as something the user pinned by hand. `lens kb get -f <id>` applies the same expansion at the command line, with the same root-only rule.
+
+**What shipped, and what did not.** The feature landed with the rule implemented once and applied to two of its four surfaces. Ancestor pins expanded; `lens kb get -f` expanded. `--module` did not — modules never reach the pin resolver, and the transform that does resolve them had no facet handling — and neither did the model's own `kb_get` tool, whose section header claimed it delegated to the CLI's implementation while calling the store directly. The tests that shipped were thorough about the *rule* (root pin yes, `+` link no, unpin wins, multi-level facets) and pinned `front.problem` outright in every case, so nothing exercised the topology a real campaign has — a timeline hub, fronts arriving by expansion, and a model reaching for a back by name. That is why a fully tested feature was unreachable in practice from the two surfaces the model actually uses.
+
+#### The escape hatch stays open
+
+A facet is an ordinary KB object. `@pc.amy-background` mid-scene, or pinning it into an intimate conversation, works exactly as it always did. Deliberate reveals remain available; accidental ones stop.
+
+#### What `ai:secret` is for
+
+The facet split is about *scope*: the back is invisible to `play` because it is never assembled into the prompt. `ai:secret` is a different and much smaller thing, and the two got conflated as guidance accreted around them.
+
+`ai:secret` encodes an HTML comment so it does not read as plain text to a human scrolling the file. That is the entire guarantee. It defends against casual peeking by the person at the keyboard — who is, after all, both the GM and the player here — and against nothing else. It is not access control, it is visible to every model that reads the object, and nothing may be built on it staying hidden.
+
+That was always the intention, and the guidance around it grew well past it. So it is now confined to the `md_html_comments` modality, which a project can turn off outright — and when it is off, no prompt mentions it at all. **No design module, template, or operator prompt references it.** The one genuinely good use is small and scene-local: a fact the current beat will settle either way, like which door is trapped or whether the offer is genuine. A model that has the modality will reach for it there on its own, because it is obviously the right shape; asking for it in ten modules only produced ten places for the claim to grow.
+
+The corollary matters more than the mechanism: anything whose secrecy is load-bearing over time belongs in the back, not in an encoded comment.
+
+#### What this gives `advance`
+
+`advance` has always had a conflict about what it is supposed to invent as time passes. The front/back split resolves it: **nothing**. It modifies what is in play only by pulling from what is prepped, and it does not need to go looking — by convention, and critically by how `design` is instructed to operate, if an object is in scope then its prep arrived with it. Promoting a piece of the back into the front's visible text is the main thing `advance` does. When a front runs out of prep, it says so in the summary and leaves the front alone; the user runs a design session.
+
 ### Artifacts, Modules, Rules, and Templates
 
 Four things carry the weight of RPG prep, and they are constantly confused with one another. The distinction is worth being pedantic about, because each is read by a different consumer at a different time.
 
-**An artifact** is the thing prep actually produces: something named, with a shape you can check and content you can act on. A concession budget. A walk-away condition. A clock with a stated consequence per tick. An alarm that means *reinforcements*, not *detection*. The test is whether a play operator, mid-beat, can look at it and find it either satisfied or not. "Let the conversation breathe" fails that test — it is guidance, and guidance evaporates under pressure. "Two concessions, then he walks" survives it.
+**An artifact** is the thing prep actually produces: something named, with a shape you can check, content you can act on, and a presence the player can feel. A concession budget. A walk-away condition. A clock with a stated consequence per tick. An alarm that means *reinforcements*, not *detection*. The first test is whether a play operator, mid-beat, can look at it and find it either satisfied or not. "Let the conversation breathe" fails that test — it is guidance, and guidance evaporates under pressure. "Two concessions, then he walks" survives it.
+
+The second test is **perceivability**, and it is the one that gets skipped. `play` must be able to check the artifact; the *player* must be able to feel it. A concession budget nobody can sense is fiat with extra steps — the scene plays out identically whether or not it exists, and the player never gets to push against it. This is also the one thing encounter balancing cannot buy back: a fight tuned to the last hit point is still arbitrary if nothing tells the party which way it is going. So every artifact needs a tell: the pause before the third question, the shuttered shop, the price named out loud, the visible tick.
 
 An artifact does **not** have to be its own KB object, and usually should not be. One concrete line inside the encounter is an artifact.
 
-**A design module** (`design.*`) is instruction for making one: the stance to take, the structure to fill, what makes a good one, worked examples, and what it is not. A module is not ready until it names an artifact and says how to check it. Modules are read by `design`, never by `play`.
+**A design module** (`design.*`) is instruction for making one: the stance to take, the structure to fill, what makes a good one, worked examples, and what it is not. A module is not ready until it names an artifact and says how to check it. Modules are read by `design`, never by `play`. `design.planning` is the deliberate exception — it produces the material the others build from, and its output is not an artifact at all.
 
 **A rules booklet** (`rules.*`) is how to *use* an artifact once the scene is live: how to engage with it, which triggers bring it into play, what a full clock means procedurally. A booklet is written for `play`. `design` reads booklets too — it has to, since it is authoring an object that will be read against them — but it writes *against* a booklet, never *out of* one, and nothing a booklet says should end up copied into an emitted object. Not every artifact needs one — sometimes the usage is obvious, and sometimes stating usage right next to the definition is simply easier for a model to associate than a separate document would be. So a `rules.*` object may not exist at all, or may exist mainly as a shelf of ready-made phrasings to quote next to an artifact.
 
@@ -192,7 +276,7 @@ The sub-node is created automatically on the first call, with an ID derived from
 
 The operator needs to design objects tailored to play use: concise and appropriately linked and tagged. The player should be able to start playing by pinning an expanded object like `location.owl-rest-tavern+` or `front.goblin-raids+` and the links (plus the baseline rules and pc pins _should_ be sufficient to get things playing).
 
-The operator _does not_ author static high-level objects like `lore.world` that set up the general setting and tone. Those are added by the player, or they can use a normal edit operator for assistance.
+Static high-level material — `lore.world`, the arcs, the buried questions — is not artifact design and does not belong to the artifact modules. The player can write it by hand, bring it from outside Lens, or work it out in a `design --module planning` session; the artifact modules then read it and never re-derive it.
 
 Other Considerations:
   - Ideally we'll want the LLM to perform "scene changes" by using sections with new pins, for example if the tavern is `location.springfield` by the rules of `location` there will be an edge to it, so when the players leave the tavern the scene can pin Springfield instead.
@@ -200,7 +284,9 @@ Other Considerations:
 
 #### Design Modules
 
-Each design module is a `design.*` KB object that contains instructions for the AI on how to approach a specific build-out task — what to ask, what to look up, and above all which artifact to produce. Selecting a module with `--module <key>` records `design.<key>` on the session's open annotation so it resolves into every subsequent call's context, together with its `+` links and its `<key>._template`.
+Each design module is a `design.*` KB object that contains instructions for the AI on how to approach a specific build-out task — what to ask, what to look up, and above all which artifact to produce. Selecting a module with `--module <key>` records `design.<key>` on the session's open annotation so it resolves into every subsequent call's context, together with its `+` links, its `-` facets, and its `<key>._template`.
+
+`design.planning` is the one module that does not name an artifact, because it is the other phase: it produces the material the artifact modules consume. It is also much more interactive than the rest — it proposes, argues, and emits `kb` blocks only once the user has approved a plan. That gate is requested clearly and not enforced anywhere, which is the right trade for a low-stakes problem: the cost of an unapproved emission is an object the user edits or deletes.
 
 The flag repeats. `--module encounter --module tracker` runs one session against both modules and both templates; passing `--module` again on a later call *replaces* the active set rather than appending, so the flag always reads as "these are the modules now". Keys are validated before anything is written, so a typo in the second module cannot open a session against only the first.
 
@@ -228,7 +314,7 @@ Key tenet: **an encounter object is not "combat." It's any prepared situation.**
 This is powerful because:
 1. **The encounter carries its own rules.** If combat is complex, the object says so and links the relevant stat blocks. If it's a simple bar chat, the object just describes the principal NPC's goals and what they know. No operator switch needed.
 2. **Situations mix naturally.** An encounter that starts as dialog can have a secret trigger for combat. A chase can pause when the quarry turns to negotiate. The object describes the full possibility space; `play` navigates it.
-3. **Secrets stay secret.** The player can tell `design` "I'm going to the bridge to meet the informant" and the encounter object can encode that the informant is actually an ambush. The player doesn't see the encounter object contents during design — they see the design conversation. During play, the AI sees the encounter and acts accordingly.
+3. **The object knows more than the player.** The player can tell `design` "I'm going to the bridge to meet the informant" and the encounter object can hold that the informant is actually an ambush. What the player reads is the design conversation, not the emitted object. During play, the AI sees the encounter and acts accordingly.
 4. **Reuse and adaptation.** An encounter object can be re-used (the patrol at the checkpoint is the same every time) or adapted (the party's reputation has changed, so the guards react differently — update the encounter or let `play` figure it out from the pinned front).
 
 
@@ -286,9 +372,13 @@ For particularly heavy encounters (a major boss fight with many stat blocks and 
 
 ## Pass The Time with `advance`
 
-The world takes its turn. Unlike `play` or `design`, `advance` is a **content-only** operator: it updates front content (clocks, phases, timers) but NEVER changes which fronts are active. Active fronts are determined by the timeline's tags, and only `design --module front` manages those.
+The world takes its turn. `advance` is a **content-only** operator: it changes what objects say, never which objects exist or which are active. Active fronts are determined by the timeline's tags, and only `design --module front` manages those.
 
-**Requirements**: The `design.front` module is auto-pinned on the advance sub-node. A `timeline.*` object must be pinned on an ancestor node (typically at the narrative root with `+` suffix — but any form works for the requirement check).
+**It is not fronts-only.** Fronts are the common case, but the job is *everything time was waiting on*: a clock inside an `encounter.*`, a `state`-tagged tracker, a faction operation with a stated schedule, a construction that takes six days. The test is whether the object's own body says what a day costs it — if it does, that statement is the instruction, and `advance` is the only pass in the system that reads it. Restricting it to `front.*` was never a mechanical constraint (`kb_extract` applies any block); it was the prompt being narrower than the operator.
+
+**It invents nothing.** This was the operator's long-standing ambiguity — how much is it allowed to author as time passes? — and the front/back split answers it: nothing at all. `advance` changes what is in play by pulling from what is prepped. It does not have to go looking for that prep, because facet expansion puts each front's `-prep` facet in its context alongside the front itself. Promoting a prepared piece into the front's visible text is the main move; marking that piece spent in the facet is the bookkeeping. A front that needs a development nobody prepared gets its stated mechanics advanced and a line in the summary saying it is out of prep, and nothing else.
+
+**Requirements**: a `timeline.*` object pinned on an ancestor node (typically at the narrative root with `+` suffix — any form satisfies the check). Nothing else: `advance` pins **no module**. It is spawned as a child of the narrative node that already carries the fronts, and having one job means there is nothing for a module to select between — the procedure lives in `advance.system`. Like `design`, it sets `expand_facets`, so every root pin brings its `-` facets.
 
 **How fronts reach context**: The user pins `timeline.<id>+` at the narrative root. The `+` suffix triggers a one-hop expansion that follows the timeline's dot-tags, pulling in all tagged front objects (and any tagged supporting objects). No explicit front pinning is needed — the timeline is the hub.
 
@@ -304,7 +394,7 @@ The world takes its turn. Unlike `play` or `design`, `advance` is a **content-on
 
 **How does it run**:  
 
-  1. Builds **context**: Fronts are already in the crawl from the ancestor-chain `timeline.<id>+` expansion (the timeline's dot-tags list active front IDs, which `+` expansion follows). The `design.front` module is auto-pinned on the sub-node. **Narrative** uses a **narrative slice** (see `design.md` § *Narrative slices*) anchored at the previous completed `advance` for the same timeline, rather than a standard full-ancestor crawl. This gives the AI exactly the fiction that transpired since the calendar last moved — enough to update fronts and evaluate interruptions — without the full story-so-far that `play` needs. See *How `advance` finds its anchor* below for how the anchor is located and validated.
+  1. Builds **context**: Fronts are already in the crawl — pinned on the narrative, or reached from the ancestor-chain `timeline.<id>+` expansion (the timeline's dot-tags list active front IDs, which `+` expansion follows). A pinned front brings its `-` prep facet; an expanded one gives it up to a `kb_get`. No module is pinned. **Narrative** uses a **narrative slice** (see `design.md` § *Narrative slices*) anchored at the previous completed `advance` for the same timeline, rather than a standard full-ancestor crawl. This gives the AI exactly the fiction that transpired since the calendar last moved — enough to update fronts and evaluate interruptions — without the full story-so-far that `play` needs. See *How `advance` finds its anchor* below for how the anchor is located and validated.
   2. Generates "luck rolls", consisting of two random numbers from 1 to 100 for each front in the crawl (filtered from the pinned IDs); these are invisibly passed to the AI in the prompt. The AI can use them to determine how some chance-based clocks advance, using the second number in case a front has reference tables, etc. The front itself describes if/how these are used, for example a travel front roll to determine weather, or one about random encounters could roll to see if an encounter DOES happen, then roll again on an encounter table if it does. Since the AI does not roll, we just always roll and use the number only if needed.
   3. Calls the AI with all the above, with thinking mode, and determines  
     - One day has passed, so what? Update any fronts that care. Regardless of the time increment, it needs to always account for what has transpired in the narrative. So for example if we defeated a baddie, a front can now resolve, etc. If something should have visibly transpired that day but did not yet (was missed during play), we need to trigger the consequence.
@@ -324,6 +414,8 @@ Advance and design are deliberately separated:
 | Aspect | `advance` | `design --module front` |
 |--------|-----------|------------------------|
 | Updates front content | Yes | Yes |
+| Promotes prep into the front | Yes | Yes |
+| Invents new developments | No | No (that is `design --module planning`) |
 | Creates fronts | No | Yes |
 | Retires/removes fronts | No | Yes (removes timeline tag) |
 | Manages timeline tags | No | Yes |
@@ -353,15 +445,17 @@ An adventure is a story ABOUT THE PCs, so what happens HAS to be centered and de
   c. Our story: this is where we bend the setting to our will, firmly inserting the PCs not only in the setting, but also crafting fronts that are ultimately ABOUT the PCs. Not necessarily in a "the PC is important" kind of way, although that's an option, but it has to be a story that uniquely resonates with what the character is about. As characters engage with the story and advance in capability, their power and the stakes have to escalate naturally, because they are more and more entwined in it.
 
 So, the order of operations is:  
-  1. Grab the setting plus any player preferences and make an appropriate but essentially character-agnostic `lore.world`. This can be its own design module.
+  1. Grab the setting plus any player preferences and make an appropriate but essentially character-agnostic `lore.world`. This is planning, not artifact design: it belongs to `design.planning` (or to the user's own notes), and whatever is too heavy for a play-pinned object goes into `lore.world-*` facets that only prep sessions ever see.
   2. Grab the PCs and flesh out their place in the world. This has two objects: `pc.name` (what we use during play, the "surface" of the PC), and `lore.name` (the DEPTH of the PCs, all the backstory and details that the play operator should not waste time thinking about, but it DOES inform how the story evolves and how the player themselves plays the character). We need the PC module to be good at this, working one PC at a time. The user may start filling in `pc` objects in advance or not, but at the end of designing a PC we need two complete, role-separated objects. The PC-lore objects have their own content requirements (not a template... the module can tell us what the template is really), and need to be filled in appropriately.
-  3. Develop fronts. As we'll see below, fronts are both surface and engagement and a plan.
+  3. Work out the arcs — the questions, the twists, what each thread is really about — then develop fronts from them. Those are two steps, not one: the first is planning and the second is scheduling. A front is the surface and the engagement; the plan behind it lives in its `-prep` facet.
   4. Add content. Whenever we create/update content, it needs to be about what the PCs are doing, which usually has to do with fronts:  
     - Locations may be derived from the setting's geography, but they are faceted for our story
     - Factions are what is relevant to what the PCs are doing (their backstory, fronts they are facing) not just "all the factions in the world" (those are lore, not faction objects)
     - Obviously, encounters are already specific. We'll only create encounters for interesting parts of the story.
 
 ### Turning Fronts Into Arcs
+
+Everything in this section is **planning**, and it lives in `design.planning`. `design.front` deliberately does not carry it: a module that both invents themes and schedules pressure will always do the first badly and skip the second. Front grooming asks how much of this material is live right now and what makes each live piece checkable; where the material came from is not its problem.
 
 #### First, Introduce Character Core Questions
 
@@ -371,7 +465,7 @@ Consider the PCs' emotional wounds, flaws, secret wants, a line they would not c
 - “Can you be loved if you’re not useful?”
 - “Is staying gentle still good when gentleness stops working?”
 
-These can be stored as secrets in the character's `lore` object (NOT the `pc` object). It's important that these questions are NOT meant to be answered, nor even have clear-cut answers; the point is only that they challenge the character.
+These are stored in the character's `lore` object (NOT the `pc` object) — the PC's back, which never reaches a play beat. It's important that these questions are NOT meant to be answered, nor even have clear-cut answers; the point is only that they challenge the character.
 
 #### Seed Arcs Into All Fronts
 
@@ -380,7 +474,7 @@ Based on the PCs' set of questions, we can then seed arcs into fronts; we do thi
   2. Come up with an **adventure core question** inside each front; it secretly lurks within and guides the flow of the story; it's the DM's "editorial intent". This component is crucial to make the adventure MATTER to the characters (and the player) and not just be a sequence of superficial beats like a budget action movie.
   3. Finally add a **twist or revelation** that, if the front is developed into a mature arc (over subsequent fronts) subverts the expectation set in the original front, and resonates with the adventure core question.
 
-So, each front is something actionable now and _also_ contains a secret question and twist, which are just one-sentence ideas, not elaborate narratives, so they are easy to tuck in there and keep in mind whenever the front is loaded.
+So, each front is something actionable now and _also_ carries a buried question and twist, which are just one-sentence ideas, not elaborate narratives. They live in the front's back (`front.<key>-prep`), where every prep session finds them automatically and no play beat ever does.
 
 To turn into an arc, the original front must develop into other fronts over time, which advance the story. All these derived fronts also carry the original seed of question+twist within them. These new fronts can be normal escalations or complications, but then at some point the twist will be revealed. It's important to be patient about this! A character could start at level 1 and travel the whole world and be quite powerful when they discover "oh crap, THAT first quest was the thread I pulled to get to this shocking, world-altering revelation!", and with this system we can accomplish this without having ANY IDEA of what specific stories players will follow or what choices they'll make over time.
 

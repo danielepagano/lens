@@ -1,6 +1,6 @@
 # [DESIGN MODULE]: PLAYER CHARACTER
 
-Help the user split one character into two useful kinds of truth: `pc.<name>` for play at the table, and `lore.<name>` for the deeper pressures story design will lean on later. These serve different jobs and must stay separate. The `pc.` object may already be provided, in which case just work on the `lore` object.
+Help the user split one character into two useful kinds of truth: `pc.<name>` for play at the table, and `pc.<name>-<facet>` for back objects you regularly want design and advance objects to see, plus `lore.<name>` for the deeper pressures story design will lean on later (you can include these when needed) – these are referred to as lore objects in the aggregate. These serve different jobs and must stay separate. 
 
 The `pc._template` layout is included in RELEVANT KNOWLEDGE when you use this module. Lore objects don't have any specific template.
 
@@ -25,8 +25,8 @@ The tension: enough detail that the AI writes distinctively ("Alice deftly jumpe
 
 TAGGING: Tag `pc.<name>` with a level or tier indicator if such a concept is present in the system, e.g. `level:N` for total character level in D&D. Link to any faction/crew the PC belongs to. The user can add mechanical condition tags during play (e.g. `speed:flying`, `concentrating`).
 
-THE DEPTH (`lore.<name>`)
-The lore object contains everything about the character that informs how the STORY evolves — the material that other design modules use to create content that resonates with this character. It is not referenced during normal play.
+THE DEPTH (`lore.<name>` and `pc.<name>-<facet>`)
+This is the character's **back**: everything that informs how the STORY evolves, which planning and the other design modules read to create content that resonates with this character. It is never pinned during play and must not be — the play surface is `pc.<name>`, and the depth reaching a beat is exactly the failure this split exists to prevent. A design session reaches it with `kb_get`.
 
 Probe conversationally for pressure points:
 - Full backstory: origin, formative events, key relationships from the past
@@ -59,20 +59,18 @@ Assemble and review:
 
 `pc.<name>`: lean, play-optimized. Tag with `level:N` and faction links. (only if not already provided)
 
-`lore.<name>`: rich, planning-optimized. Include backstory, wounds, flaws, desires, red lines, misconceptions. Do NOT tag `lore.<name>` to `pc.<name>` or to general lore objects; it stays isolated until needed.
+lore objects: rich, planning-optimized. Include backstory, wounds, flaws, desires, red lines, misconceptions. Do NOT tag `lore.<name>` to `pc.<name>` or to lore objects; it stays isolated until needed.
 
 Review:
 - Is `pc.<name>` under ~200 words? Could the AI voice this character distinctively from just this object?
-- Does `lore.<name>` give `design.front` enough material to create fronts that challenge this character?
+- Do lore objects give the appropriate planning sessions enough material to build arcs that challenge this character?
 - Are the core questions genuinely difficult? Or are they morality checkboxes with obvious answers?
-- Does `pc.<name>` accidentally contain depth that belongs in `lore.<name>`?
 
 GUIDELINES:
 - Work one PC at a time. Each character deserves a focused session.
 - The user may arrive with a character sheet, a vague concept, or something in between. Meet them where they are.
 - Voice is the most important thing in `pc.<name>`. If the AI can't speak AS this character distinctively, the object needs more personality details and fewer facts.
 - Goals in `pc.<name>` should be actionable: not "wants peace" but "is trying to negotiate a ceasefire with the hill clans before the duke sends the army."
-- The `lore.<name>` object is the user's partner in storytelling — it helps the AI challenge the character in ways that feel earned and personal. Treat it with care.
 
 What this is not:
 - Not one blended object trying to do both jobs.
