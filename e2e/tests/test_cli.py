@@ -174,6 +174,19 @@ class TestCliKbBundled:
         assert r.returncode == 0
         assert r.stdout.strip() == ""
 
+    def test_kb_get_facet_expand(self, cli_project: Path) -> None:
+        """``--facet-expand`` adds the `-` facets that design/advance see."""
+        r = _lens("kb", "add", "person.amy-prep", "Amy prep material.", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+
+        plain = _lens("kb", "get", "person.amy", cwd=cli_project)
+        assert plain.returncode == 0, plain.stderr
+        assert "Amy prep material." not in plain.stdout
+
+        expanded = _lens("kb", "get", "person.amy", "--facet-expand", cwd=cli_project)
+        assert expanded.returncode == 0, expanded.stderr
+        assert "Amy prep material." in expanded.stdout
+
 
 # ---------------------------------------------------------------------------
 # Write operator via CLI

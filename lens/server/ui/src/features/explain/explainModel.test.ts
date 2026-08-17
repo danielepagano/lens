@@ -202,12 +202,13 @@ describe('componentRows', () => {
           component({ id: 'rules-companion:rules.encounter', provenance_kind: 'rules_companion', order: 2 }),
           component({ id: 'modality-addenda', provenance_kind: 'modality', order: 3 }),
           component({ id: 'mention-kb:spell.bless', provenance_kind: 'mention', order: 4 }),
+          component({ id: 'kb:front.problem-prep', provenance_kind: 'facet', order: 5 }),
         ],
       }),
       report([]),
       'tokens'
     )
-    expect(rows.map((row) => row.derived)).toEqual([false, true, true, true, false])
+    expect(rows.map((row) => row.derived)).toEqual([false, true, true, true, false, true])
   })
 })
 
@@ -215,6 +216,10 @@ describe('isDerived', () => {
   it('keys off provenance_kind, not the component id', () => {
     expect(isDerived(component({ id: 'kb:x', provenance_kind: 'expansion' }))).toBe(true)
     expect(isDerived(component({ id: 'rules-companion:x', provenance_kind: 'node_pin' }))).toBe(false)
+  })
+
+  it('treats a `-` facet as derived: it follows its parent pin, not a pin of its own', () => {
+    expect(isDerived(component({ id: 'kb:front.problem-prep', provenance_kind: 'facet' }))).toBe(true)
   })
 })
 

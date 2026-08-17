@@ -222,10 +222,22 @@ def get(
         help="Object ID(s); append + for one-hop linked objects, or ++ for full linked traversal",
     ),
     include_comments: bool = typer.Option(True, "--include-comments", help="Keep markdown comments in output"),
+    facet_expand: bool = typer.Option(
+        False,
+        "-f",
+        "--facet-expand",
+        help="Also fetch each id's '-' facets (front.problem -> front.problem-prep)",
+    ),
 ) -> None:
-    """Fetch and print knowledge objects."""
+    """Fetch and print knowledge objects.
+
+    ``--facet-expand`` adds the ``-`` facets of each requested id — the prep-side
+    material that ``design`` and ``advance`` pull automatically and ``play``
+    never sees.  Only the ids you asked for gain facets; objects reached through
+    ``+`` do not, so a linked ``stat.guard`` never drags in ``stat.guard-captain``.
+    """
     try:
-        ordered_ids, objects = kb_get(ids)
+        ordered_ids, objects = kb_get(ids, facets=facet_expand)
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)

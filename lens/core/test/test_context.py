@@ -218,6 +218,213 @@ class TestCrawlExtraPins(unittest.TestCase):
             self.assertEqual(len(r.knowledge), 1)
 
 
+class TestCrawlFacets(unittest.TestCase):
+    """Facet expansion on ``-``: implicit, root-pins-only, operator-gated.
+
+    See ``KnowledgeStore.list_facet_ids`` and the ``expand_facets`` handling
+    in ``_resolve_pins_for_ancestors`` / ``crawl``.
+    """
+
+    def _component_metadata(self, r: CrawlResult, kb_id: str) -> dict[str, str]:
+        for component in r.graph.components:
+            if component.metadata.get("kb_id") == kb_id:
+                return component.metadata
+        raise AssertionError(f"no knowledge component for {kb_id!r}")
+
+    def test_design_crawl_gets_facet_of_root_pin(self) -> None:
+        from lens.core.operators.design import DesignOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node, operator=DesignOperator)
+            self.assertEqual(r.pinned_ids, ["front.problem", "front.problem-prep"])
+
+    def test_advance_crawl_gets_facet_of_root_pin(self) -> None:
+        from lens.rpg.operators.advance import AdvanceOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node, operator=AdvanceOperator)
+            self.assertEqual(r.pinned_ids, ["front.problem", "front.problem-prep"])
+
+    def test_play_crawl_does_not_get_facet(self) -> None:
+        from lens.rpg.operators.play import PlayOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node, operator=PlayOperator)
+            self.assertEqual(r.pinned_ids, ["front.problem"])
+
+    def test_write_crawl_does_not_get_facet(self) -> None:
+        """No ``operator`` set at all (write's usual crawl shape) is also unaffected."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node)
+            self.assertEqual(r.pinned_ids, ["front.problem"])
+
+    def test_facet_of_plus_linked_object_not_pulled_in(self) -> None:
+        """The 14-collision case: a facet-shaped id reached only via ``+`` link
+        expansion (never as a root pin) must not gain its own facets."""
+        from lens.core.operators.design import DesignOperator
+        from lens.core.knowledge import KnowledgeStore
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "party", "roster", "The roster.")
+            _add_kb(root, "stat", "guard", "A guard.")
+            _add_kb(root, "stat", "guard-captain", "An unrelated monster stat block.")
+            KnowledgeStore.clear_registry()
+            kb = KnowledgeStore.for_project(root)
+            kb.add_tags("party.roster", ["stat.guard"])
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - party.roster+\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            KnowledgeStore.clear_registry()
+            r = crawl(node, operator=DesignOperator)
+            self.assertEqual(
+                sorted(r.pinned_ids), ["party.roster", "stat.guard"]
+            )
+            self.assertNotIn("stat.guard-captain", r.pinned_ids)
+
+    def test_root_pin_with_plus_gets_both_facets_and_links(self) -> None:
+        from lens.core.operators.design import DesignOperator
+        from lens.core.knowledge import KnowledgeStore
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            _add_kb(root, "person", "villain", "The villain.")
+            KnowledgeStore.clear_registry()
+            kb = KnowledgeStore.for_project(root)
+            kb.add_tags("front.problem", ["person.villain"])
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem+\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            KnowledgeStore.clear_registry()
+            r = crawl(node, operator=DesignOperator)
+            self.assertEqual(
+                sorted(r.pinned_ids),
+                ["front.problem", "front.problem-prep", "person.villain"],
+            )
+
+    def test_explicit_unpin_of_facet_suppresses_it(self) -> None:
+        from lens.core.operators.design import DesignOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n"
+                "  kb_unpin:\n    - front.problem-prep\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node, operator=DesignOperator)
+            self.assertEqual(r.pinned_ids, ["front.problem"])
+
+    def test_multi_level_facet_arrives_for_root(self) -> None:
+        from lens.core.operators.design import DesignOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            _add_kb(root, "front", "problem-prep-notes", "Deeper notes.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node, operator=DesignOperator)
+            self.assertEqual(
+                r.pinned_ids,
+                ["front.problem", "front.problem-prep", "front.problem-prep-notes"],
+            )
+
+    def test_object_with_no_facets_is_unaffected(self) -> None:
+        from lens.core.operators.design import DesignOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node, operator=DesignOperator)
+            self.assertEqual(r.pinned_ids, ["front.problem"])
+
+    def test_facet_provenance_metadata(self) -> None:
+        from lens.core.operators.design import DesignOperator
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root, node = _make_project(_init_repo(Path(tmp)))
+            _add_kb(root, "front", "problem", "The problem.")
+            _add_kb(root, "front", "problem-prep", "Prep notes.")
+            root_node = NarrativeNode(narrative_root=node.narrative_root, key_path=())
+            root_node.md_path().write_text(
+                "[\n  kb_pin:\n    - front.problem\n]: #\n\n# test\n"
+            )
+            _commit(root)
+            r = crawl(node, operator=DesignOperator)
+
+            parent_meta = self._component_metadata(r, "front.problem")
+            facet_meta = self._component_metadata(r, "front.problem-prep")
+
+            self.assertNotIn("facet_of", parent_meta)
+            self.assertEqual(facet_meta.get("facet_of"), "front.problem")
+            # The facet carries the parent's origin fields (same ancestor pin).
+            self.assertEqual(
+                facet_meta.get("pin_source"), parent_meta.get("pin_source")
+            )
+            self.assertEqual(
+                facet_meta.get("pin_node"), parent_meta.get("pin_node")
+            )
+            self.assertEqual(facet_meta.get("pin_raw"), "front.problem")
+
+            for component in r.graph.components:
+                if component.metadata.get("kb_id") == "front.problem-prep":
+                    assert component.source is not None
+                    self.assertEqual(
+                        component.source.metadata.get("facet_of"), "front.problem"
+                    )
+
+
 def _write_node(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)

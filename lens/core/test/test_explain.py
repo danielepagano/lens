@@ -601,6 +601,66 @@ class TestExplainHelpers(unittest.TestCase):
         self.assertEqual(BLOCK_CONVERSATION, "conversation")
 
 
+class TestFacetsInTheReport(unittest.TestCase):
+    """A `-` facet must be its own itemized, classified, counted row.
+
+    Facets reach the prompt for `design`/`advance` only, and they arrive with
+    their parent's pin origin — so the risk is that they are either invisible
+    in the report or silently folded in with the pin that pulled them.
+    """
+
+    session: ProjectSession
+    tmp: str
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        cls.tmp = tempfile.mkdtemp(prefix="lens_explain_facets_")
+        cls.session = setup_test_project(
+            Path(cls.tmp), "http://127.0.0.1:1/v1", opening_write=False
+        )
+        store = KnowledgeStore.for_project(Path(cls.tmp))
+        store.store_object(
+            "person.amy-prep", "Prep material for Amy that play must not see."
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+    def _knowledge_rows(self, operator: str) -> dict[str, ExplainBlock]:
+        report = explain_context(self.session, operator=operator)
+        knowledge = _block(report, BLOCK_KNOWLEDGE)
+        assert knowledge is not None
+        return {c.id: c for c in knowledge.components}  # type: ignore[misc]
+
+    def test_design_report_itemizes_the_facet(self) -> None:
+        rows = self._knowledge_rows("design")
+        self.assertIn("kb:person.amy-prep", rows)
+
+    def test_facet_row_is_classified_as_a_facet(self) -> None:
+        row = self._knowledge_rows("design")["kb:person.amy-prep"]
+        self.assertEqual(row.provenance_kind, "facet")  # type: ignore[attr-defined]
+        self.assertIn("person.amy", row.provenance)  # type: ignore[attr-defined]
+
+    def test_facet_row_is_counted(self) -> None:
+        row = self._knowledge_rows("design")["kb:person.amy-prep"]
+        self.assertGreater(row.bytes, 0)  # type: ignore[attr-defined]
+        self.assertGreater(row.tokens, 0)  # type: ignore[attr-defined]
+
+    def test_parent_stays_a_node_pin(self) -> None:
+        rows = self._knowledge_rows("design")
+        self.assertEqual(rows["kb:person.amy"].provenance_kind, "node_pin")  # type: ignore[attr-defined]
+
+    def test_write_report_has_no_facet_row(self) -> None:
+        rows = self._knowledge_rows("write")
+        self.assertIn("kb:person.amy", rows)
+        self.assertNotIn("kb:person.amy-prep", rows)
+
+
 class TestProvenance(unittest.TestCase):
     """``component_provenance`` maps graph components to a human 'why'."""
 
@@ -642,6 +702,46 @@ class TestProvenance(unittest.TestCase):
         kind, why = self._why(component)
         self.assertEqual(kind, "expansion")
         self.assertIn("person.bob", why)
+
+    def test_facet_names_the_parent(self) -> None:
+        component = self._component(
+            "kb:front.problem-prep",
+            "knowledge",
+            kb_id="front.problem-prep",
+            pin_source="node",
+            pin_node="story",
+            facet_of="front.problem",
+        )
+        kind, why = self._why(component)
+        self.assertEqual(kind, "facet")
+        self.assertIn("front.problem", why)
+        self.assertIn("story", why)
+
+    def test_facet_is_not_reported_as_a_hand_written_pin(self) -> None:
+        """A facet carries its parent's pin origin, so without a branch of its
+        own it would read as a `kb_pin` the user typed."""
+        component = self._component(
+            "kb:front.problem-prep",
+            "knowledge",
+            kb_id="front.problem-prep",
+            pin_source="node",
+            pin_node="story",
+            facet_of="front.problem",
+        )
+        kind, _why = self._why(component)
+        self.assertNotEqual(kind, "node_pin")
+
+    def test_facet_detail_carries_the_parent_id(self) -> None:
+        component = self._component(
+            "kb:front.problem-prep",
+            "knowledge",
+            kb_id="front.problem-prep",
+            facet_of="front.problem",
+        )
+        _kind, _why, detail = component_provenance(
+            component, operator_name="design", modality_pins={}
+        )
+        self.assertEqual(detail.get("facet_of"), "front.problem")
 
     def test_rules_companion(self) -> None:
         component = self._component(

@@ -23,7 +23,7 @@ export type ExplainUnit = 'tokens' | 'bytes'
 export const MIN_SEGMENT_WIDTH = 2.5
 
 /** Provenance kinds that follow from something else rather than a pin of their own. */
-const DERIVED_KINDS = new Set(['expansion', 'rules_companion', 'modality'])
+const DERIVED_KINDS = new Set(['expansion', 'facet', 'rules_companion', 'modality'])
 
 /**
  * Colour slot per block id.
