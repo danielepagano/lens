@@ -35,6 +35,7 @@ datasets = ["rpg", "my-ruleset"]
 | `knowledge/design/front.md` | Design module: front grooming (schedules prepared pressure; makes each front move on its own) |
 | `knowledge/design/encounter.md` | Design module: encounter design (any prepared situation; scene rules quoted or invented, deltas only; arc-aware) |
 | `knowledge/design/_template.md` | What a design module must contain — chiefly the named artifact it produces for play to act on |
+| `knowledge/rules/advance.md` | Operator module for `advance`: what a time step moves, what it must not, how to read a count/phase/chance rule |
 | `knowledge/rules/rpg.md` | Rules of Engagement — AI-GM behavioral contract (authority boundaries, gates, conduct) |
 | `knowledge/rules/system.md` | System stub: Lasers & Feelings (CC BY 4.0; overridable by a higher-priority dataset) |
 
@@ -93,7 +94,7 @@ This is the backbone of your campaign's pressure system.
 
 | Operator | What it does |
 |----------|-------------|
-| `lens advance` | Moves the calendar, updates front content (clocks, phases, timers), rolls for random events, and promotes the next prepared piece from a front's `-prep` facet. It does not invent developments, and does not create or retire fronts
+| `lens advance` | Moves the calendar and everything waiting on it — front clocks and phases, trackers, any object whose body states a time cost — and promotes the next prepared piece from a `-prep` facet. It invents nothing, and creates or retires nothing
 | `lens design --module front` | Creates new fronts, closes resolved ones, manages the active fronts in the timeline
 
 **The loop**: play → call advance when you go to sleep (fronts evolve, time passes) → play → advance → ... → design (close resolved fronts, create the next pressure) → play → advance → ...
@@ -107,6 +108,8 @@ See [docs/rpg-design.md](../../docs/rpg-design.md) for the full design rationale
 An object may have a **back**: a same-type object whose key is the object's key plus a `-` suffix. `front.harbour-prep`, `pc.amy-background`, `lore.world-plots`. `design` and `advance` expand the facets of every root pin automatically; `play` never does. So the front object a GM reads is the play surface, and everything the arc knows but the table must not is one id away, with no tagging and no pinning to remember.
 
 `design --module planning` writes into the back. `design --module front` and `advance` read from it and promote pieces of it forward. Nothing enforces this — a facet is an ordinary KB object, so `@front.harbour-prep` in a play prompt still works when you want a deliberate reveal.
+
+One caveat: expansion covers **pinned** objects only. Fronts reach context through `timeline.<id>+`, not as pins, so their prep does not ride along and the operator fetches it (`kb_with_tag ["front"]`). See the *Known gap* note in the design doc.
 
 Full rationale: [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
 
