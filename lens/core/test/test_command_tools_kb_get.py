@@ -125,5 +125,68 @@ class TestKbGetDesignTemplateCompanion(unittest.TestCase):
         self.assertNotIn("SHOULD NOT APPEAR", out)
 
 
+class TestKbGetFacetsThroughTheBundle(unittest.TestCase):
+    """The model-facing route to a facet.
+
+    A `front.*` reaches the crawl through `timeline.<id>+`, which is not a root
+    pin, so its back never arrives by pinning. Asking for the front by name is
+    the only route left — and the bundle has to hand the prep-side operators a
+    `kb_get` that honours facets, or there is no route at all.
+    """
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        KnowledgeStore.clear_registry()
+        self.root = _make_project(Path(self._tmp.name))
+        _write(self.root, "front.blight", "THE BLIGHT")
+        _write(self.root, "front.blight-prep", "QUEUED DEVELOPMENTS")
+        KnowledgeStore.clear_registry()
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+        KnowledgeStore.clear_registry()
+
+    def _run(self, *, expand_facets: bool) -> str:
+        from lens.core.llm import build_command_tools_bundle
+
+        bundle = build_command_tools_bundle(self.root, expand_facets=expand_facets)
+        assert bundle.handlers is not None
+        handler = bundle.handlers["kb_get"]
+
+        async def _go() -> str:
+            return await handler({"ids": ["front.blight"]}, self.root)
+
+        return asyncio.run(_go())
+
+    def test_prep_operator_gets_the_back_by_naming_the_front(self) -> None:
+        out = self._run(expand_facets=True)
+        self.assertIn("THE BLIGHT", out)
+        self.assertIn("QUEUED DEVELOPMENTS", out)
+
+    def test_default_bundle_leaves_the_back_alone(self) -> None:
+        out = self._run(expand_facets=False)
+        self.assertIn("THE BLIGHT", out)
+        self.assertNotIn("QUEUED DEVELOPMENTS", out)
+
+    def test_design_operator_bundle_expands(self) -> None:
+        """The wiring, not just the flag: `design` must pass its own value."""
+        from lens.core.llm import CommandToolsBundle
+        from lens.core.operators.design import DesignOperator
+
+        build = getattr(DesignOperator, "_inline_command_tools_bundle")
+        bundle: CommandToolsBundle | None = build(self.root, {})
+        self.assertIsNotNone(bundle)
+        assert bundle is not None
+        handlers = bundle.handlers
+        self.assertIsNotNone(handlers)
+        assert handlers is not None
+        handler = handlers["kb_get"]
+
+        async def _go() -> str:
+            return await handler({"ids": ["front.blight"]}, self.root)
+
+        self.assertIn("QUEUED DEVELOPMENTS", asyncio.run(_go()))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -10,7 +10,7 @@ WHERE THE MATERIAL LIVES
 
 There is no dedicated planning type, and none is needed — nothing mechanical keys off the type here. What matters is that the material lands where prep sessions will find it and play sessions will not:
 
-- **Facets of the thing it is about.** A `-` suffix on a same-type key (`lore.world-plots`, `front.harbour-prep`, `pc.amy-background`) marks it as prep: design and advance can read it, `play` never can. Facets of a **pinned** object come into scope on their own, which is why `lore.world-*` and `pc.<name>-*` need no bookkeeping at all; a front's prep is one `kb_get` away, since fronts reach context through the timeline rather than as pins.
+- **Facets of the thing it is about.** A `-` suffix on a same-type key (`lore.world-plots`, `front.harbour-prep`, `pc.amy-background`) marks it as prep: design and advance can read it, `play` never can. Naming an id is what brings its facets, so a pinned `lore.world` or `pc.<name>` carries its back with no bookkeeping at all, and a front — which reaches context through the timeline rather than as a pin — gives up its back to a plain `kb_get`.
 - **Plain `lore.*` objects**, tagged to their subject, when the material is about a topic rather than an object — a faction's real history, a region's politics.
 
 The facet works even when the root does not exist. `lore.world-plots` and `lore.world-factions` reach every design session whether or not there is a `lore.world`, as long as `lore.world` is pinned at the narrative root — and none of them reach play.

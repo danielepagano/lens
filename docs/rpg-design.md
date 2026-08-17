@@ -97,12 +97,18 @@ lore.world         lore.world-plots
 
 `design` and `advance` **facet-expand**: a root pin also pulls the same-type `<id>-*` objects. `play` does not. Because `lore.world` is pinned at the narrative root, `lore.world-plots` is automatically in scope for every design and advance session and in none of play's — no tagging, no bookkeeping, nothing to remember.
 
-**Fronts are the case the rule does not reach.** A front is not a root pin — it arrives through `timeline.<id>+` — so `front.blight-prep` does not come with `front.blight`. That is the root-pins-only rule working as specified, not a bug in it, but it does mean the arrangement this convention was introduced for is the one that needs a hand:
+**"Root pin" is really "an id someone named."** A front is the case that makes the distinction matter. It reaches context through `timeline.<id>+`, so it is not pinned and its back does not ride along — but naming it does bring the back, and there are four ways to name an id, all of which honour the rule:
 
-- **Working on a front deliberately?** Pin it (`lens design --module front --pin front.blight`). A named id is a root pin, and its back arrives.
-- **`advance`, which reaches fronts only through the hub?** `rules.advance` tells it to fetch: `kb_with_tag ["front"]` lists every front *and* every `-prep` facet in one call (a bare type name matches every object of that type), then `kb_get` on the ones it is moving. One round trip, and it depends on the model making it.
+| naming an id | brings its facets |
+|---|---|
+| ancestor `kb_pin` / `--pin` | ✅ |
+| `--module <key>` | ✅ |
+| `lens kb get <id> -f` | ✅ |
+| the model's own `kb_get` tool | ✅ |
 
-Making it automatic means either loosening the rule for `+` results (which reintroduces the collisions below) or having `advance` pin the fronts it discovers so they become root pins by the existing rule. The second stays inside the design; it is a change to the operator, not to the convention, and it has not been made.
+So `advance` and `design --module front` reach a front's back by asking for the front by name — one ordinary `kb_get`, no facet id to guess, no bookkeeping. What is still deliberately excluded is the *unnamed* id: anything arriving by `+`, a tag, a mention, or an include brings no facets, which is what keeps a linked `stat.guard` from dragging in `stat.guard-captain`.
+
+Three of those four surfaces were unwired when the feature shipped; see the note under [Not `+`, and root pins only](#not--and-root-pins-only).
 
 It also works on **missing roots**: `lore.world-geography` and `lore.world-factions` reach design sessions whether or not a `lore.world` object exists, because expansion is a lexical prefix scan over the store rather than a walk over links. Pinning `lore.world` for `play` still pulls nothing — the same pin means "and its prep" to a prep operator and "just this" to everything else.
 
@@ -113,6 +119,8 @@ This is deliberately not `+`. `+` expands dot-tag links and works in play space.
 **Facets expand for root pins only** — ancestor `kb_pin`, runtime `--pin`, `--module` — and never for ids that arrive via `+`, tags, mentions, or includes. That rule is load-bearing rather than tidy: `-` is already the word separator in 755 objects in `datasets/lens-dnd/`, with 14 genuine collisions between unrelated objects (`stat.guard` / `stat.guard-captain`, `spell.shield` / `spell.shield-of-faith`, `stat.vampire` / `stat.vampire-spawn`, …). Reference objects like those always arrive by expansion or mention, never as root pins — and where one legitimately *is* a root pin, such as a design session that wants every vampire at once, pulling the family is the desired behaviour. So the rule neutralises every collision without a hardcoded type list and without an opt-in tag.
 
 `lens explain` reports facets with their own provenance kind (`'-' facet of front.problem`), so a facet never reads as something the user pinned by hand. `lens kb get -f <id>` applies the same expansion at the command line, with the same root-only rule.
+
+**What shipped, and what did not.** The feature landed with the rule implemented once and applied to two of its four surfaces. Ancestor pins expanded; `lens kb get -f` expanded. `--module` did not — modules never reach the pin resolver, and the transform that does resolve them had no facet handling — and neither did the model's own `kb_get` tool, whose section header claimed it delegated to the CLI's implementation while calling the store directly. The tests that shipped were thorough about the *rule* (root pin yes, `+` link no, unpin wins, multi-level facets) and pinned `front.problem` outright in every case, so nothing exercised the topology a real campaign has — a timeline hub, fronts arriving by expansion, and a model reaching for a back by name. That is why a fully tested feature was unreachable in practice from the two surfaces the model actually uses.
 
 #### The escape hatch stays open
 
@@ -370,7 +378,7 @@ The world takes its turn. `advance` is a **content-only** operator: it changes w
 
 **It invents nothing.** This was the operator's long-standing ambiguity — how much is it allowed to author as time passes? — and the front/back split answers it: nothing at all. `advance` changes what is in play by pulling from what is prepped. It does not have to go looking for that prep, because facet expansion puts each front's `-prep` facet in its context alongside the front itself. Promoting a prepared piece into the front's visible text is the main move; marking that piece spent in the facet is the bookkeeping. A front that needs a development nobody prepared gets its stated mechanics advanced and a line in the summary saying it is out of prep, and nothing else.
 
-**Requirements**: The `rules.advance` module is auto-pinned on the advance sub-node. A `timeline.*` object must be pinned on an ancestor node (typically at the narrative root with `+` suffix — but any form works for the requirement check). Like `design`, `advance` sets `expand_facets`, so every root pin brings its `-` facets and the prep arrives with the front.
+**Requirements**: a `timeline.*` object pinned on an ancestor node (typically at the narrative root with `+` suffix — any form satisfies the check). Nothing else: `advance` pins **no module**. It is spawned as a child of the narrative node that already carries the fronts, and having one job means there is nothing for a module to select between — the procedure lives in `advance.system`. Like `design`, it sets `expand_facets`, so every root pin brings its `-` facets.
 
 **How fronts reach context**: The user pins `timeline.<id>+` at the narrative root. The `+` suffix triggers a one-hop expansion that follows the timeline's dot-tags, pulling in all tagged front objects (and any tagged supporting objects). No explicit front pinning is needed — the timeline is the hub.
 
@@ -386,7 +394,7 @@ The world takes its turn. `advance` is a **content-only** operator: it changes w
 
 **How does it run**:  
 
-  1. Builds **context**: Fronts are already in the crawl from the ancestor-chain `timeline.<id>+` expansion (the timeline's dot-tags list active front IDs, which `+` expansion follows), each with its `-` prep facet. The `rules.advance` module is auto-pinned on the sub-node. **Narrative** uses a **narrative slice** (see `design.md` § *Narrative slices*) anchored at the previous completed `advance` for the same timeline, rather than a standard full-ancestor crawl. This gives the AI exactly the fiction that transpired since the calendar last moved — enough to update fronts and evaluate interruptions — without the full story-so-far that `play` needs. See *How `advance` finds its anchor* below for how the anchor is located and validated.
+  1. Builds **context**: Fronts are already in the crawl — pinned on the narrative, or reached from the ancestor-chain `timeline.<id>+` expansion (the timeline's dot-tags list active front IDs, which `+` expansion follows). A pinned front brings its `-` prep facet; an expanded one gives it up to a `kb_get`. No module is pinned. **Narrative** uses a **narrative slice** (see `design.md` § *Narrative slices*) anchored at the previous completed `advance` for the same timeline, rather than a standard full-ancestor crawl. This gives the AI exactly the fiction that transpired since the calendar last moved — enough to update fronts and evaluate interruptions — without the full story-so-far that `play` needs. See *How `advance` finds its anchor* below for how the anchor is located and validated.
   2. Generates "luck rolls", consisting of two random numbers from 1 to 100 for each front in the crawl (filtered from the pinned IDs); these are invisibly passed to the AI in the prompt. The AI can use them to determine how some chance-based clocks advance, using the second number in case a front has reference tables, etc. The front itself describes if/how these are used, for example a travel front roll to determine weather, or one about random encounters could roll to see if an encounter DOES happen, then roll again on an encounter table if it does. Since the AI does not roll, we just always roll and use the number only if needed.
   3. Calls the AI with all the above, with thinking mode, and determines  
     - One day has passed, so what? Update any fronts that care. Regardless of the time increment, it needs to always account for what has transpired in the narrative. So for example if we defeated a baddie, a front can now resolve, etc. If something should have visibly transpired that day but did not yet (was missed during play), we need to trigger the consequence.

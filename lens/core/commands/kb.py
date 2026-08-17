@@ -236,22 +236,23 @@ def kb_patch(
     return KbPatchResult(obj, "patched")
 
 
-def kb_get(
-    ids: list[str], *, facets: bool = False
+def resolve_ids_with_facets(
+    kb: KnowledgeStore, ids: list[str]
 ) -> tuple[list[str], dict[str, KnowledgeObject]]:
-    """Fetch objects for *ids* (``+``/``++`` suffixes expand linked objects).
+    """Resolve *ids* (``+``/``++`` expand links) and add each root's ``-`` facets.
 
-    With *facets*, each **requested** id also pulls its same-type ``<id>-*``
-    facets (``front.problem`` -> ``front.problem-prep``), each landing directly
-    after its parent.  This mirrors the root-pins-only rule that governs facet
-    expansion during a crawl: objects reached through ``+`` do not themselves
-    gain facets, so ``stat.guard`` pulled in as a link never drags in the
-    unrelated ``stat.guard-captain``.
+    Every **requested** id also pulls its same-type ``<id>-*`` facets
+    (``front.problem`` -> ``front.problem-prep``), each landing directly after
+    its parent.  This is the root-pins-only rule in its other form: naming an id
+    is what earns its facets, so objects reached through ``+`` do not gain any
+    and a linked ``stat.guard`` never drags in the unrelated
+    ``stat.guard-captain``.
+
+    Takes the store explicitly so every caller shares one implementation — the
+    CLI, which resolves the store from the cwd, and the model-facing ``kb_get``
+    command tool, which is handed a project root.
     """
-    kb = get_store()
     ordered_ids, objects = kb.get_objects_with_links(ids)
-    if not facets:
-        return ordered_ids, objects
 
     facets_by_root: dict[str, list[str]] = {}
     for raw in ids:
@@ -292,6 +293,20 @@ def kb_get(
         _emit_facets(root)
 
     return ordered, objects
+
+
+def kb_get(
+    ids: list[str], *, facets: bool = False
+) -> tuple[list[str], dict[str, KnowledgeObject]]:
+    """Fetch objects for *ids* (``+``/``++`` suffixes expand linked objects).
+
+    With *facets*, each requested id also pulls its ``-`` facets; see
+    :func:`resolve_ids_with_facets`.
+    """
+    kb = get_store()
+    if not facets:
+        return kb.get_objects_with_links(ids)
+    return resolve_ids_with_facets(kb, ids)
 
 
 @dataclass

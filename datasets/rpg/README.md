@@ -35,7 +35,6 @@ datasets = ["rpg", "my-ruleset"]
 | `knowledge/design/front.md` | Design module: front grooming (schedules prepared pressure; makes each front move on its own) |
 | `knowledge/design/encounter.md` | Design module: encounter design (any prepared situation; scene rules quoted or invented, deltas only; arc-aware) |
 | `knowledge/design/_template.md` | What a design module must contain — chiefly the named artifact it produces for play to act on |
-| `knowledge/rules/advance.md` | Operator module for `advance`: what a time step moves, what it must not, how to read a count/phase/chance rule |
 | `knowledge/rules/rpg.md` | Rules of Engagement — AI-GM behavioral contract (authority boundaries, gates, conduct) |
 | `knowledge/rules/system.md` | System stub: Lasers & Feelings (CC BY 4.0; overridable by a higher-priority dataset) |
 
@@ -109,7 +108,7 @@ An object may have a **back**: a same-type object whose key is the object's key 
 
 `design --module planning` writes into the back. `design --module front` and `advance` read from it and promote pieces of it forward. Nothing enforces this — a facet is an ordinary KB object, so `@front.harbour-prep` in a play prompt still works when you want a deliberate reveal.
 
-One caveat: expansion covers ids someone **named** — an ancestor `kb_pin`, `--pin`, `--module`. Fronts reach context through `timeline.<id>+` instead, so their prep does not ride along: pin a front outright to get its back, or let `advance` fetch it (`kb_with_tag ["front"]`). See the design doc.
+Expansion covers ids someone **named** — an ancestor `kb_pin`, `--pin`, `--module`, `lens kb get -f`, or the model's own `kb_get`. A front pinned on the narrative carries its back; one reached only through `timeline.<id>+` has not been named, so its prep arrives when something asks for the front by name. See the design doc.
 
 Full rationale: [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
 

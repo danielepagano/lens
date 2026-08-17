@@ -45,7 +45,7 @@ Default: append one or more player lines (blockquotes) without calling the GM / 
 **Requirements**:
 - At least one `timeline.*` pinned on an ancestor node
 
-**Module**: `advance` pins **`rules.advance`** on its sub-node — its own operator module, not a design module. It used to pin `design.front`, which meant every advance carried front *authoring* instructions (timeline tag management, create/close boilerplate) that advance is forbidden to act on.
+**No module.** `advance` is spawned as a child of the narrative node that already carries the fronts, and it has exactly one job, so there is nothing for a module to select between — its whole procedure is in `advance.system`. It used to pin `design.front`, which meant every advance carried front *authoring* instructions (timeline tag management, create/close boilerplate) it is forbidden to act on.
 
 **Front discovery**: The user pins `timeline.<id>+` on the narrative root. The `+` suffix does a one-hop expansion following the timeline's dot-tags, which list the active front IDs. Fronts are automatically in context for every crawl — no manual pinning/unpinning needed.
 
@@ -79,7 +79,7 @@ The `+` expansion follows the timeline's dot-tags, pulling in all active fronts 
 
 `design` and `advance` also **facet-expand** every root pin: a pinned `lore.world` brings `lore.world-plots`, a pinned `pc.amy` brings `pc.amy-background`. `play` never does, so the same pin set gives the GM only the play surface — no tagging, nothing pinned by hand.
 
-**Fronts are the exception.** They arrive through `timeline.<id>+` rather than as pins, and facets expand for root pins only — so `front.harbour-prep` does not ride along. Pin a front outright when you are working on it and its back arrives; `advance`, which only ever sees fronts through the hub, is told to fetch (`kb_with_tag ["front"]`, then `kb_get`). See [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
+A front **pinned on the narrative** brings its back with it. One reached only through the timeline's `+` expansion has not been named, so `front.harbour-prep` does not ride along until something asks for `front.harbour` by name — which `advance` is told to do before it moves anything. See [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
 
 Either way this is what gives `advance` a definite job: it does not invent what happens next, it promotes the next prepared piece into the visible text. When prep runs out, `advance` says so and the user runs `lens design --module front`.
 

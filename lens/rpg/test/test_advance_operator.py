@@ -228,7 +228,7 @@ class TestReadCurrentDay(unittest.TestCase):
 
 
 class TestCheckRequirements(unittest.TestCase):
-    def test_timeline_only_passes_without_operator_module(self) -> None:
+    def test_timeline_alone_is_enough(self) -> None:
         cr = CrawlResult.from_text_fields(
             knowledge=[],
             pinned_ids=["timeline.epic"],
@@ -240,7 +240,7 @@ class TestCheckRequirements(unittest.TestCase):
     def test_missing_timeline(self) -> None:
         cr = CrawlResult.from_text_fields(
             knowledge=[],
-            pinned_ids=["rules.advance"],
+            pinned_ids=["lore.world"],
             previous_summaries=[],
             current_content="",
         )
@@ -248,10 +248,10 @@ class TestCheckRequirements(unittest.TestCase):
             AdvanceOperator.check_requirements(cr)
         self.assertIn("timeline", str(ctx.exception))
 
-    def test_passes_with_timeline_and_optional_operator_module(self) -> None:
+    def test_passes_with_timeline_among_other_pins(self) -> None:
         cr = CrawlResult.from_text_fields(
             knowledge=[],
-            pinned_ids=["rules.advance", "timeline.epic"],
+            pinned_ids=["lore.world", "timeline.epic"],
             previous_summaries=[],
             current_content="",
         )

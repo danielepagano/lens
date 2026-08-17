@@ -1203,7 +1203,9 @@ class Operator(ABC):
             tools_payload = override.tools
             command_handlers = override.handlers
         elif cls.use_command_tools:
-            bundle = build_command_tools_bundle(project_root)
+            bundle = build_command_tools_bundle(
+                project_root, expand_facets=cls.expand_facets
+            )
             tools_payload = bundle.tools
             command_handlers = bundle.handlers
         if module_sink is not None and cls.supports_module_requests:

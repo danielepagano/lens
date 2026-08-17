@@ -1,7 +1,7 @@
 """Advance operator: pass the time, update fronts.
 
 ``lens advance [--days N]`` creates an ``advance-day-*`` sub-node and runs the
-LLM with the ``rules.advance`` module. Active fronts are pulled into context
+LLM against the fronts already pinned on the narrative. Active fronts are pulled into context
 automatically via ``timeline.<id>+`` expansion on the ancestor chain. KB
 updates and the timeline day counter apply only after ``lens advance --end``
 (with the cursor in that sub-node). Use ``lens advance --retry`` to discard.
@@ -9,8 +9,8 @@ updates and the timeline day counter apply only after ``lens advance --end``
 Dataset-gated: requires the ``rpg`` dataset.
 
 Requirements: at least one ``timeline.*`` must be pinned on the node where you
-start advance. The operator pins ``rules.advance`` on the advance sub-node; do
-not add ``design.*`` pins to story nodes yourself (that conflicts with play).
+start advance. The operator pins no module of its own; do not add ``design.*``
+pins to story nodes yourself either (that conflicts with play).
 """
 
 from __future__ import annotations
@@ -43,11 +43,6 @@ from lens.core.storage import Storage
 
 logger = logging.getLogger(__name__)
 
-# The operator's own module.  `design.front` used to sit here, which meant every
-# advance paid for front *authoring* instructions — timeline tag management, the
-# create/close kb-block boilerplate — that advance is explicitly forbidden to act
-# on.  `rules.advance` is the reading half: what a time step moves and how.
-OPERATOR_MODULE_PIN = "rules.advance"
 DEFAULT_MESSAGE = " day(s) have passed."
 
 # ---------------------------------------------------------------------------
@@ -714,9 +709,12 @@ class AdvanceOperator(Operator):
 
         child_node = op.create_subnode(cursor, advance_id, params=ann_params)
 
+        # No module pin.  `advance` is spawned as a child of the narrative node
+        # that already carries the fronts, and its whole procedure lives in
+        # `advance.system` — it has exactly one job, so there is nothing for a
+        # module to select between.  Pinning one (`design.front`, historically)
+        # only ever added instructions written for a different caller.
         all_pins = list(pins)
-        if OPERATOR_MODULE_PIN not in pre_crawl.pinned_ids:
-            all_pins.append(OPERATOR_MODULE_PIN)
         if all_pins:
             pin_node(child_node, all_pins, storage)
         if unpins:

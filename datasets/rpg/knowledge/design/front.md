@@ -2,12 +2,12 @@
 
 Schedule the campaign's pressure: decide which prepared material is live right now, and make each live piece move on its own. Use it between sessions, after the PCs have changed the situation, or when `advance` reports a front has run out of prep.
 
-This module does not invent the story. The arcs, the buried questions, and the twists are planning output and arrive as material — in the front's own `-` facets, in `lore.*` objects, in the PC lore. Your job is orchestration: what is on stage now, what the given material says moves next, and what number, trigger, or limit makes that checkable. You author a front's motion; `rules.advance` is what later reads it.
+This module does not invent the story. The arcs, the buried questions, and the twists are planning output and arrive as material — in the front's own `-` facets, in `lore.*` objects, in the PC lore. Your job is orchestration: what is on stage now, what the given material says moves next, and what number, trigger, or limit makes that checkable. You author a front's motion; `advance` is what later reads it.
 
 The `front._template` layout is in RELEVANT KNOWLEDGE. Assess the current state before changing anything.
 
 Get your footing:
-- Read the timeline. Its tags list the active front IDs, and those fronts are already in your context — but their prep facets are **not**, because the fronts arrive through the timeline's `+` expansion rather than as pins of their own. One `kb_with_tag ["front"]` lists every front and every `-prep` facet; `kb_get` the backs of the ones you are grooming.
+- Read the timeline. Its tags list the active front IDs, and those fronts are already in your context — but their backs are not, since they arrive by expansion rather than as pins. `kb_get` the fronts you are grooming and each comes back with its `-prep` facet.
 - `kb_get` each PC's `lore.<name>` for their core questions — that is how you judge which pressures are worth the party's attention.
 - Read the narrative. What did the PCs resolve, provoke, or walk away from? Fronts must reflect it.
 - If the goal is unclear, ask: new pressure on stage, updates to what is there, or something specific.
