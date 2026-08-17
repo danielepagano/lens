@@ -109,7 +109,7 @@ An object may have a **back**: a same-type object whose key is the object's key 
 
 `design --module planning` writes into the back. `design --module front` and `advance` read from it and promote pieces of it forward. Nothing enforces this — a facet is an ordinary KB object, so `@front.harbour-prep` in a play prompt still works when you want a deliberate reveal.
 
-One caveat: expansion covers **pinned** objects only. Fronts reach context through `timeline.<id>+`, not as pins, so their prep does not ride along and the operator fetches it (`kb_with_tag ["front"]`). See the *Known gap* note in the design doc.
+One caveat: expansion covers ids someone **named** — an ancestor `kb_pin`, `--pin`, `--module`. Fronts reach context through `timeline.<id>+` instead, so their prep does not ride along: pin a front outright to get its back, or let `advance` fetch it (`kb_with_tag ["front"]`). See the design doc.
 
 Full rationale: [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
 

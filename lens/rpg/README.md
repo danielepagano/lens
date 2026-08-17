@@ -79,7 +79,7 @@ The `+` expansion follows the timeline's dot-tags, pulling in all active fronts 
 
 `design` and `advance` also **facet-expand** every root pin: a pinned `lore.world` brings `lore.world-plots`, a pinned `pc.amy` brings `pc.amy-background`. `play` never does, so the same pin set gives the GM only the play surface — no tagging, nothing pinned by hand.
 
-**Fronts are the exception, for now.** They arrive through `timeline.<id>+` rather than as pins, and facets expand for root pins only — so `front.harbour-prep` does not ride along. `rules.advance` and `design.front` tell the model to fetch it (`kb_with_tag ["front"]`, then `kb_get`). See the *Known gap* note in [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
+**Fronts are the exception.** They arrive through `timeline.<id>+` rather than as pins, and facets expand for root pins only — so `front.harbour-prep` does not ride along. Pin a front outright when you are working on it and its back arrives; `advance`, which only ever sees fronts through the hub, is told to fetch (`kb_with_tag ["front"]`, then `kb_get`). See [docs/rpg-design.md](../../docs/rpg-design.md#the-play-surface-and-the-prep-surface).
 
 Either way this is what gives `advance` a definite job: it does not invent what happens next, it promotes the next prepared piece into the visible text. When prep runs out, `advance` says so and the user runs `lens design --module front`.
 

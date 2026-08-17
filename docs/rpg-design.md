@@ -97,9 +97,12 @@ lore.world         lore.world-plots
 
 `design` and `advance` **facet-expand**: a root pin also pulls the same-type `<id>-*` objects. `play` does not. Because `lore.world` is pinned at the narrative root, `lore.world-plots` is automatically in scope for every design and advance session and in none of play's — no tagging, no bookkeeping, nothing to remember.
 
-**Known gap: fronts do not get this.** Facets expand for root pins only (next section), and fronts are not root pins — they reach context through `timeline.<id>+`, so `front.blight-prep` does *not* arrive alongside `front.blight`. This is exactly the case the convention was introduced for, and it is the one case it does not currently cover. Until it does, `design.front` and `rules.advance` instruct the model to fetch the back itself: `kb_with_tag ["front"]` lists every front and every `-prep` facet in one call (a bare type name matches every object of that type), and `kb_get` pulls the ones it needs. That works, but it costs a round trip and depends on the model making it.
+**Fronts are the case the rule does not reach.** A front is not a root pin — it arrives through `timeline.<id>+` — so `front.blight-prep` does not come with `front.blight`. That is the root-pins-only rule working as specified, not a bug in it, but it does mean the arrangement this convention was introduced for is the one that needs a hand:
 
-Closing the gap properly means picking one of: expanding facets one hop off `+` results for prep operators (reintroduces the collision problem below), a per-type opt-in, or having `advance` pin the fronts it discovered so they become root pins. That is a design decision, not a tidy-up.
+- **Working on a front deliberately?** Pin it (`lens design --module front --pin front.blight`). A named id is a root pin, and its back arrives.
+- **`advance`, which reaches fronts only through the hub?** `rules.advance` tells it to fetch: `kb_with_tag ["front"]` lists every front *and* every `-prep` facet in one call (a bare type name matches every object of that type), then `kb_get` on the ones it is moving. One round trip, and it depends on the model making it.
+
+Making it automatic means either loosening the rule for `+` results (which reintroduces the collisions below) or having `advance` pin the fronts it discovers so they become root pins by the existing rule. The second stays inside the design; it is a change to the operator, not to the convention, and it has not been made.
 
 It also works on **missing roots**: `lore.world-geography` and `lore.world-factions` reach design sessions whether or not a `lore.world` object exists, because expansion is a lexical prefix scan over the store rather than a walk over links. Pinning `lore.world` for `play` still pulls nothing — the same pin means "and its prep" to a prep operator and "just this" to everything else.
 

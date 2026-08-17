@@ -441,6 +441,9 @@ def component_provenance(
     if cid.startswith("module:"):
         role = meta.get("module_role", "module")
         linked_from = meta.get("module_linked_from")
+        facet_of = meta.get("facet_of")
+        if facet_of:
+            return "facet", f"'-' facet of session module {facet_of}", detail
         if linked_from:
             return "module", f"'+' expansion of session module {linked_from}", detail
         return "module", f"session {role}: {kb_id}", detail

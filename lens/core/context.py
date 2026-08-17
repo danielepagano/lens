@@ -517,14 +517,17 @@ def _resolve_pins_for_ancestors(
 ) -> tuple[list[str], list[str], list[CrawlComponent]]:
     """Resolve pins/unpins across *ancestors* and optional extras.
 
-    When *expand_facets* is true, every **root pin** (an id resolved directly
-    from ancestor ``kb_pin``, ``extra_pins``, or ``--module`` — never an id
-    reached through ``+`` link expansion) also pulls in its same-type
-    ``<id>-*`` facets (see
+    When *expand_facets* is true, every **root pin** resolved here (ancestor
+    ``kb_pin`` or ``extra_pins`` — never an id reached through ``+`` link
+    expansion) also pulls in its same-type ``<id>-*`` facets (see
     :meth:`~lens.core.knowledge.KnowledgeStore.list_facet_ids`). A root pin
     written with a trailing ``+`` still counts as a root pin for this purpose:
     its base id gets facets *and* its ``+`` link expansion, but the objects
     pulled in by ``+`` do not themselves get facets.
+
+    ``--module`` is a root pin too, but modules never reach this function —
+    :class:`~lens.core.crawl_transforms.ModuleTransform` resolves them against
+    the store on its own, and applies the same rule there.
     """
     kb_store = KnowledgeStore.for_project(project_root)
 
@@ -596,7 +599,12 @@ def _resolve_pins_for_ancestors(
         base = raw.rstrip("+")
         origin = _pin_origin_fields(level, raw, ancestors)
         if not raw.endswith("+"):
-            effective_ids.append(base)
+            # Guard the same way the `+` branch does: an id can legitimately be
+            # named twice (reached through an ancestor's `timeline.x+`, then
+            # pinned outright at the cursor), and without this it renders its
+            # whole KB block twice in the prompt.
+            if base not in effective_ids:
+                effective_ids.append(base)
             pin_origin.setdefault(base, origin)
             objs = kb_store.get_objects([base])
             all_objects.update(objs)
@@ -1151,6 +1159,7 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
             module_ids=spec.modules,
             project_root=project_root,
             storage=local_storage,
+            expand_facets=expand_facets,
         ).apply(graph)
 
     graph = _apply_default_transforms(

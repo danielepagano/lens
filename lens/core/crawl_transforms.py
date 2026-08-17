@@ -564,6 +564,12 @@ class ModuleTransform:
 
     Already-pinned modules and templates are skipped — the transform is a
     no-op for ids resolved through normal ``kb_pin`` front-matter chains.
+
+    With *expand_facets* (set by the prep-side operators, never by ``play``) a
+    module id also pulls its ``-`` facets, exactly as an ancestor ``kb_pin``
+    does: ``--module`` names an id directly, so it is a root pin and the
+    root-pins-only rule includes it.  Facets are taken off the module id
+    itself, never off the objects its ``+`` links reach.
     """
 
     name = "module"
@@ -574,22 +580,29 @@ class ModuleTransform:
         module_ids: Iterable[str],
         project_root: Path,
         storage: Storage,
+        expand_facets: bool = False,
     ) -> None:
         self._module_ids = [m for m in module_ids if m]
         self._project_root = project_root
         self._storage = storage
+        self._expand_facets = expand_facets
         self._kb = KnowledgeStore.for_project(project_root)
 
     def apply(self, graph: CrawlGraph) -> CrawlGraph:
         for module_id in self._module_ids:
             self._add_module_component(graph, module_id, role="module")
+            if self._expand_facets:
+                for facet_id in self._kb.list_facet_ids(module_id):
+                    self._add_module_component(
+                        graph, facet_id, role="module-facet", facet_of=module_id
+                    )
             template_id = _template_companion_id(module_id)
             if template_id:
                 self._add_module_component(graph, template_id, role="template")
         return graph
 
     def _add_module_component(
-        self, graph: CrawlGraph, kb_id: str, *, role: str
+        self, graph: CrawlGraph, kb_id: str, *, role: str, facet_of: str | None = None
     ) -> None:
         if kb_id in graph.pinned_ids:
             return
@@ -602,7 +615,9 @@ class ModuleTransform:
             if obj is None:
                 continue
             if obj.id == kb_id:
-                self._add_component(graph, obj, role=role, linked_from=None)
+                self._add_component(
+                    graph, obj, role=role, linked_from=None, facet_of=facet_of
+                )
             else:
                 self._add_component(graph, obj, role=f"{role}-link", linked_from=kb_id)
 
@@ -613,6 +628,7 @@ class ModuleTransform:
         *,
         role: str,
         linked_from: str | None,
+        facet_of: str | None = None,
     ) -> None:
         if obj.id in graph.pinned_ids:
             return
@@ -642,6 +658,7 @@ class ModuleTransform:
                     "tags": ",".join(obj.tags),
                     "module_role": role,
                     **({"module_linked_from": linked_from} if linked_from else {}),
+                    **({"facet_of": facet_of} if facet_of else {}),
                     "expansion_policy": expansion_policy_from_tags(obj.tags).mode,
                 },
             )
