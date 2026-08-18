@@ -68,23 +68,42 @@ Runtime procedures for the AI DM during play:
 - **Initiative and turn structure** — the player runs all dice and tracks turn order; the AI controls creature choices when meaningful tactical decisions arise
 - **Encounter flow** — entry → mid-encounter triggers → resolution → post-encounter consequences
 
-### 4. Balance tool — `balance_encounter`
+### 4. Stat proofreader — `check_stat`
+
+An LLM command tool and a CLI command — `lens dnd check-stat stat.goblin-boss` for a stored object, a file path, or the block on stdin. Pass the text of a `stat.*` block; it reports every attack bonus, save DC, damage average, and tag that does not follow from the block's own ability scores and CR, then shows what published blocks at that CR look like.
+
+Its whole promise is that it has **no opinion**: every check was kept only because it fires on almost none of the 511 published blocks in the bundled dataset plus `lens-dnd-ext`. Sweeping that corpus produces four findings — three blocks whose secondary effect has a deliberately lower DC than their main one, and `stat.giant-crocodile`, which is corrupt (`HP unknown`, CHA 50, `Languages Elfish`). `lens/dnd/test/test_check_stat.py` runs the sweep as a test, so a check that starts flagging real monsters fails CI.
+
+One check was tried and dropped for failing that bar: escape and skill DCs derived from ability + PB, because published blocks set those independently — a water elemental with Strength +4 and PB +3 has save DC 15 and escape DC 14.
+
+**A caution about auditing against this corpus.** The DDB import is lossy: it drops the ability table's `Save` column, the hit-dice expression next to HP, Initiative, Resistances/Immunities, Gear, and the XP/PB detail on the CR line. An audit that treats a missing line as evidence of a convention will reach the wrong conclusion — the hit-dice check was dropped once on exactly that mistake (compounded by a rounding bug) before being reinstated at a 0.8% miss rate.
+
+### 5. Balance tool — `balance_encounter`
 
 An LLM command tool (invoked by `design --module encounter`) and standalone CLI command:
 
-**`balance_encounter` (LLM tool)** — called during the design module's combat balancing step. Accepts:
-- `required` — must-include stat blocks with counts
+**`balance_encounter` (LLM tool)** — called during the design module's combat balancing step, and repeatedly: iterating over mixes is what it is for. Accepts:
+- `required` — must-include enemies with counts
 - `optional` — ranked candidate list to fill remaining budget
 - `difficulty` — low / moderate / high (single-encounter XP budget per D&D 2024)
 - `pcs` — array of PC levels (one per party member)
-- `allies` — allied stat blocks in `{id, count}` form; their `cr:` tags add XP to the budget
+- `allies` — combatants on the party's side, `{id, count}`; their XP is added to the budget
 
-Returns up to three encounter proposals sorted by XP-budget fit, with warnings for oversized enemy groups or insufficient candidates.
+**A slot is a stat id or a bare challenge rating.** `"stat.zombie"` prices from the object's `cr:` tag; `"3"`, `"1/2"`, and `"cr:5"` price a creature that does not exist — which is the case that matters during `design --module stat`, where the block being built has no id until the session ends. Rating slots come back named `CR 3 creature` instead of an id, so a proposal can mix "one CR 3 boss" with real blocks for its minions. Ratings work in `allies` too.
+
+Returns up to three encounter proposals sorted by XP-budget fit, with warnings for oversized enemy groups, insufficient candidates, and slots that priced at nothing — an unknown id or a stat block with no `cr:` tag, which used to count as 0 in silence.
 
 ```bash
 # Standalone CLI equivalent (JSON on stdin):
 echo '{ "required": [{"id": "stat.zombie", "count": 10}],
         "optional": ["stat.wight", "stat.ghast"],
+        "difficulty": "moderate",
+        "pcs": [5, 5, 5, 5],
+        "allies": [] }' | lens dnd balance
+
+# What a custom boss can afford to be, before it is written:
+echo '{ "required": [{"id": "3", "count": 1}],
+        "optional": ["stat.zombie", "stat.skeleton"],
         "difficulty": "moderate",
         "pcs": [5, 5, 5, 5],
         "allies": [] }' | lens dnd balance
@@ -109,13 +128,15 @@ The ruleset is **dense where it is cheap and sparse where it is expensive**. `de
 | `rules.system` | modality auto-pin | every `play` beat |
 | `rules.combat`, `rules.chase` | `[[dataset.modules]]` → `load_module` | the model recognises the scene turned into a fight or a pursuit; latches as `[include: …]: #` for the rest of the node. The model also sees each object's first three lines, which tell it what the module is for. |
 | `rules.combat`, `rules.chase`, `rules.environment` | `+` expansion of a tag on an `encounter.*` | a prepared scene is pinned as `encounter.foo+` — no round trip, and the module drops off the `load_module` menu |
-| `rules.encounter`, `rules.stat`, `rules.tracker` | `rules.<type>` companion | any `encounter.*` / `stat.*` / `tracker.*` object is pinned |
-| `rules.system`, `rules.encounter` | `+` expansion of `design.encounter` | a `lens design --module encounter` session opens |
+| `rules.encounter`, `rules.stat`, `rules.tracker` | `rules.<type>` companion | any `encounter.*` / `stat.*` / `tracker.*` object is in scope on a play beat |
+| `rules.encounter`, `rules.stat`, `rules.tracker` | `rules.<type>` companion | `lens design --module encounter` / `stat` / `tracker` opens — the module's own type only, alongside `<type>._template` |
+| `rules.system` | `+` expansion of `design.encounter` | a `lens design --module encounter` session opens (`system` is not a type, so it needs the tag) |
 | `rules.combat`, `rules.chase`, `rules.environment` | `kb_get` by `design`, or `--include` / `@rules.*` from the user | that session's scene calls for it |
 | scene-specific procedures | written into the `encounter.*` object by `design` | the encounter is in play |
 
-Two consequences worth knowing:
+Consequences worth knowing:
 
+- **`rules.<type>` is never tagged on `design.<type>`.** It arrives by naming convention on both sides. The only rules tags on a design module are the ones no convention could find — `rules.system` on `design.encounter`, whose key is not a type.
 - **`rules.*` objects carry no tags pointing at each other.** `play --module combat` resolves with `+` like any module pin, so a link between two rules objects would drag the second one in. Links live on `design.*` modules and on `encounter.*` objects.
 - **Modules are for systems, not situations.** A fight and a chase are systems: big, structured, self-contained, with a clear trigger. A specific hazard or negotiation is a situation — known at prep time, small, different every scene — so it travels inside the prepared object instead. Every registered module costs a catalog line on every beat until it is loaded.
 - **A registered module's catalog entry is its own first three lines.** `rules.combat` and `rules.chase` open with what they cover and when to load them, because that text — not a `description` in `lens.toml` — is what `load_module` offers the model. See [first three lines](../../docs/configuration.md#first-three-lines).

@@ -26,7 +26,7 @@ WHAT NOT TO DO
 - Do not put HP, AC, or resource counters on a PC entry. The player tracks their own sheet, and duplicating it creates two truths.
 - Do not paste stat block content into the tracker. It links to the block; it does not restate it.
 - Do not build a tracker for a fight the player can hold in their head. Three goblins do not need one.
-- Do not emit KB objects for anything but the tracker. If the fight needs an encounter, an NPC, or a stat block that does not exist, say so and let the user load the module for it.
+- A tracker is a transcription job, so it is almost always the only object worth emitting. If the fight is missing an encounter, an NPC, or a stat block, say so — and build it here only if the user asked for that too, with `kb_get design.<key>` for the module that covers it.
 
 UPDATING AN EXISTING TRACKER
 

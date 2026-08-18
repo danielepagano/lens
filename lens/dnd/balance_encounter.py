@@ -144,6 +144,47 @@ def _stat_xp(stat_id: str, kb: KnowledgeStore) -> int:
     return 0
 
 
+def parse_cr_token(token: str) -> float | None:
+    """Read a token as a challenge rating, or return ``None`` if it names an object.
+
+    A roster slot may be a stat id (``stat.zombie``) or a bare challenge rating,
+    which is how a creature that does not exist yet gets priced — the usual case
+    during ``design --module stat``, where the block being built has no id until
+    the session ends.  Accepts ``cr:3`` and ``cr:1-2`` (the dataset's tag forms),
+    ``3``, ``1/2``, and ``0.5``.
+    """
+    raw = token.strip().lower()
+    if not raw:
+        return None
+    if raw.startswith("cr:"):
+        return cr_tag_to_float(raw)
+    if "." in raw and not raw.replace(".", "", 1).isdigit():
+        return None  # an id like `stat.zombie`
+    return cr_str_to_float(raw)
+
+
+def _cr_display(cr: float) -> str:
+    for value, tag in CR_TAG_ORDER:
+        if value == cr:
+            frac = tag[3:]
+            return frac.replace("-", "/") if "-" in frac else frac
+    return f"{cr:g}"
+
+
+def _token_label(token: str) -> str:
+    """How a roster slot is named back to the caller."""
+    cr = parse_cr_token(token)
+    return f"CR {_cr_display(cr)} creature" if cr is not None else token.strip()
+
+
+def _token_xp(token: str, kb: KnowledgeStore) -> int:
+    """XP for a roster slot, whether it names a stat block or a challenge rating."""
+    cr = parse_cr_token(token)
+    if cr is not None:
+        return CR_XP.get(cr, 0)
+    return _stat_xp(token, kb)
+
+
 @dataclass
 class RequiredEntry:
     id: str
@@ -159,9 +200,12 @@ class CandidateSolution:
     def serialize(self, kb: KnowledgeStore) -> str:
         lines: list[str] = []
         for e in self.entries:
-            tags = kb.get_tags(e.id)
-            tag_str = " ".join(sorted(tags))
-            lines.append(f"[{e.count}] {e.id} {tag_str}")
+            label = _token_label(e.id)
+            if parse_cr_token(e.id) is not None:
+                lines.append(f"[{e.count}] {label}")
+                continue
+            tag_str = " ".join(sorted(kb.get_tags(e.id)))
+            lines.append(f"[{e.count}] {label} {tag_str}")
         return "\n".join(lines)
 
 
@@ -170,7 +214,7 @@ def _reduce_candidates(
 ) -> list[CandidateSolution]:
     solutions: list[CandidateSolution] = []
 
-    total_xp = sum(e.count * _stat_xp(e.id, kb) for e in required)
+    total_xp = sum(e.count * _token_xp(e.id, kb) for e in required)
     original_solution = CandidateSolution(entries=list(required), total_xp=total_xp)
 
     reduction_possible = False
@@ -178,7 +222,7 @@ def _reduce_candidates(
 
     for i, e in enumerate(required):
         if e.count > 1:
-            xp = _stat_xp(e.id, kb)
+            xp = _token_xp(e.id, kb)
             if xp == 0:
                 continue
             sum_other = total_xp - (e.count * xp)
@@ -250,7 +294,7 @@ def _fill_candidates(
             return solutions
 
         for e in required:
-            xp = _stat_xp(e.id, kb)
+            xp = _token_xp(e.id, kb)
             if xp == 0:
                 continue
             extra = math.floor(remaining / xp)
@@ -258,7 +302,7 @@ def _fill_candidates(
                 new_entries = list(required)
                 idx = new_entries.index(e)
                 new_entries[idx] = RequiredEntry(id=e.id, count=e.count + extra)
-                total_xp = sum(x.count * _stat_xp(x.id, kb) for x in new_entries)
+                total_xp = sum(x.count * _token_xp(x.id, kb) for x in new_entries)
                 solutions.append(CandidateSolution(entries=new_entries, total_xp=total_xp))
         return solutions
 
@@ -267,7 +311,7 @@ def _fill_candidates(
         rem = remaining
         fill_entries: list[RequiredEntry] = []
         for t in types_to_add:
-            xp = _stat_xp(t, kb)
+            xp = _token_xp(t, kb)
             if xp == 0:
                 continue
             count = math.floor(rem / xp)
@@ -276,7 +320,7 @@ def _fill_candidates(
                 fill_entries.append(RequiredEntry(id=t, count=count))
 
             min_xp = min(
-                (_stat_xp(opt, kb) for opt in optional if _stat_xp(opt, kb) > 0),
+                (_token_xp(opt, kb) for opt in optional if _token_xp(opt, kb) > 0),
                 default=0,
             )
             if min_xp > 0 and rem < min_xp:
@@ -284,14 +328,14 @@ def _fill_candidates(
 
         if fill_entries:
             combined = list(required) + fill_entries
-            total_xp = sum(e.count * _stat_xp(e.id, kb) for e in combined)
+            total_xp = sum(e.count * _token_xp(e.id, kb) for e in combined)
             solutions.append(CandidateSolution(entries=combined, total_xp=total_xp))
 
     if remaining > 0 and optional:
         rem = remaining
         fill_entries = []
         for opt in optional:
-            xp = _stat_xp(opt, kb)
+            xp = _token_xp(opt, kb)
             if xp == 0:
                 continue
             count = math.floor(rem / xp)
@@ -302,7 +346,7 @@ def _fill_candidates(
                 break
         if fill_entries:
             combined = list(required) + fill_entries
-            total_xp = sum(e.count * _stat_xp(e.id, kb) for e in combined)
+            total_xp = sum(e.count * _token_xp(e.id, kb) for e in combined)
             solutions.append(CandidateSolution(entries=combined, total_xp=total_xp))
 
     return solutions
@@ -381,7 +425,7 @@ def compute_encounters(
             budget += XP_BUDGET[pc_lvl][difficulty]
 
     ally_entries = _entries_from_raw(allies_raw)
-    ally_xp = sum(e.count * _stat_xp(e.id, kb) for e in ally_entries)
+    ally_xp = sum(e.count * _token_xp(e.id, kb) for e in ally_entries)
 
     adjusted_budget = budget + ally_xp
 
@@ -393,7 +437,7 @@ def compute_encounters(
 
     required = _entries_from_raw(required_raw)
 
-    committed_xp = sum(e.count * _stat_xp(e.id, kb) for e in required)
+    committed_xp = sum(e.count * _token_xp(e.id, kb) for e in required)
 
     solutions: list[CandidateSolution] = []
 
@@ -407,8 +451,8 @@ def compute_encounters(
             if required:
                 solutions = [CandidateSolution(entries=required, total_xp=committed_xp)]
             elif optional:
-                cheapest = min(optional, key=lambda x: _stat_xp(x, kb))
-                xp = _stat_xp(cheapest, kb)
+                cheapest = min(optional, key=lambda x: _token_xp(x, kb))
+                xp = _token_xp(cheapest, kb)
                 if xp > 0:
                     solutions = [
                         CandidateSolution(
@@ -421,15 +465,30 @@ def compute_encounters(
     if not solutions:
         return "Error: Could not generate any encounter proposals."
 
+    unpriced = [
+        tok
+        for tok in [e.id for e in required] + list(optional) + [e.id for e in ally_entries]
+        if _token_xp(tok, kb) == 0
+    ]
+
     ranked = _rank_solutions(solutions, adjusted_budget)
 
     party_size = len(pcs) + sum(e.count for e in ally_entries)
 
     output: list[str] = [
         "Encounter Proposals",
-        "Line format: [creature qty] stat.id ..tags..",
+        "Line format: [creature qty] stat.id ..tags.. (or 'CR N creature' for a rating you passed)",
         "",
     ]
+    if unpriced:
+        output.insert(
+            1,
+            "Warning: no XP for "
+            + ", ".join(dict.fromkeys(unpriced))
+            + " — an id that does not exist, a stat block with no `cr:` tag, or a "
+            "rating outside CR 0-30. Each counted as 0, so the budget below is wrong "
+            "by whatever they are worth.",
+        )
 
     options = ["A", "B", "C"]
     for i, sol in enumerate(ranked):
@@ -452,8 +511,8 @@ def compute_encounters(
             and not [
                 e
                 for e in required
-                if _stat_xp(e.id, kb) > 0
-                and math.floor(remaining / _stat_xp(e.id, kb)) >= 1
+                if _token_xp(e.id, kb) > 0
+                and math.floor(remaining / _token_xp(e.id, kb)) >= 1
             ]
         ):
             remarks.append(
@@ -472,7 +531,11 @@ def compute_encounters(
     return "\n".join(output)
 
 
-BALANCE_ENCOUNTER_DESCRIPTION = """Use balance_encounter to generate up to three balanced encounter proposals from a ranked candidate list. Pass PC levels explicitly from context (level:N tags on pinned pc.* objects). If NPCs fight on the party's side, pass `allies` as an array of `{ "id": "stat.…", "count": N }` — same shape as `required` — using the exact stat blocks you intend for allies; the tool reads their `cr:` tags and adds XP so enemies scale to PCs **and** those allies. The tool uses D&D 2024 XP budget math (no monster-count multiplier)."""
+BALANCE_ENCOUNTER_DESCRIPTION = """Use balance_encounter to generate up to three balanced encounter proposals from a ranked candidate list. Pass PC levels explicitly from context (level:N tags on pinned pc.* objects).
+
+Every roster slot — in `required`, `optional`, and `allies` alike — is either a **stat block id** (`stat.zombie`) or a **bare challenge rating** (`3`, `1/2`, `cr:5`). The rating form prices a creature that does not exist yet, which is how you weigh a block you are still designing, or ask a shape question: `required: [{"id": "3", "count": 1}]` with `optional: ["stat.zombie", "stat.skeleton"]` asks "one CR 3 enemy plus zombies and skeletons — how many fit?". Proposals name a rating slot back as `CR 3 creature` instead of an id.
+
+Call it as often as you need; iterating over mixes is what it is for. If NPCs fight on the party's side, pass `allies` in the same shape, and their XP is added to the budget so enemies scale to PCs **and** those allies. The tool uses D&D 2024 XP budget math (no monster-count multiplier)."""
 
 BALANCE_ENCOUNTER_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -482,22 +545,23 @@ BALANCE_ENCOUNTER_SCHEMA: dict[str, Any] = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "string", "description": "Stat block ID, e.g. 'stat.vampire'"},
+                    "id": {"type": "string", "description": "Stat block id ('stat.vampire') **or** a bare challenge rating ('3', '1/2', 'cr:5') for a creature that does not exist yet"},
                     "count": {"type": "integer", "minimum": 1},
                 },
                 "required": ["id", "count"],
             },
             "description": (
-                "Enemy stat blocks that must appear with specific counts. Same entry shape "
-                "as `allies`. Can be empty if the AI has no fixed requirements."
+                "Enemies that must appear, with counts. Same entry shape as `allies`. Each "
+                "entry is a stat id or a challenge rating, so a block you are still designing "
+                "can be weighed as its rating. Can be empty if you have no fixed requirements."
             ),
         },
         "optional": {
             "type": "array",
             "items": {"type": "string"},
             "description": (
-                "Ranked list of stat block IDs to fill out the encounter (most preferred first). "
-                "The tool picks counts."
+                "Ranked list of stat block ids, or bare challenge ratings, to fill out the "
+                "encounter (most preferred first). The tool picks counts."
             ),
         },
         "difficulty": {
@@ -517,15 +581,15 @@ BALANCE_ENCOUNTER_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "id": {
                         "type": "string",
-                        "description": "Stat block ID for an NPC fighting on the party's side",
+                        "description": "For an NPC fighting on the party's side: Stat block id ('stat.vampire') **or** a bare challenge rating ('3', '1/2', 'cr:5') for a creature that does not exist yet",
                     },
                     "count": {"type": "integer", "minimum": 1},
                 },
                 "required": ["id", "count"],
             },
             "description": (
-                "Allied combatants: same entry shape as `required`. Build XP is read from "
-                "each stat's `cr:` tags. Use [] when no allies fight."
+                "Allied combatants: same entry shape as `required`. Build XP comes from the "
+                "stat's `cr:` tags, or from the rating you passed. Use [] when no allies fight."
             ),
         },
     },

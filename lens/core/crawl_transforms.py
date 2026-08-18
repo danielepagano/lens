@@ -552,9 +552,16 @@ class ModuleTransform:
     A *module* is a KB id (e.g. ``design.encounter``) that drives a session's
     behaviour.  This transform looks up each module id, formats it as a
     knowledge block, and adds it to the graph with ``module`` provenance.  It
-    also tries to resolve a sibling ``<key>._template`` companion (where
-    ``<key>`` is the part after the last ``.`` in the module id) and includes
-    it when present.
+    also resolves two siblings of ``<key>`` (the part after the last ``.`` in
+    the module id) and includes each when it exists: ``<key>._template``, which
+    says how to *create* an object of that type, and ``rules.<key>``, which
+    says how ``play`` will *use* one.  That pair is the same convention
+    :class:`RulesCompanionTransform` applies on the play side, deliberately
+    scoped here to the type the session is authoring rather than to everything
+    pinned: a prep session's pins are broad and uncurated, so keying off them
+    would make the cost of a session depend on whatever the user brought along.
+    Ship ``rules/<type>.md`` and both consumers activate, with nothing to tag
+    and nothing to keep in sync.
 
     **Modules always resolve with ``+``.**  A module's dot-tags pointing at
     other KB objects (``rules.system`` on ``design.encounter``, say) are
@@ -599,6 +606,9 @@ class ModuleTransform:
             template_id = _template_companion_id(module_id)
             if template_id:
                 self._add_module_component(graph, template_id, role="template")
+            rules_id = _rules_companion_id(module_id)
+            if rules_id and self._kb.exists(rules_id):
+                self._add_module_component(graph, rules_id, role="rules companion")
         return graph
 
     def _add_module_component(
@@ -672,6 +682,21 @@ class ModuleTransform:
                 source_component_id=component_id,
             )
         )
+
+
+def _rules_companion_id(module_id: str) -> str | None:
+    """Return ``rules.<key>`` for a module id (``design.stat`` -> ``rules.stat``).
+
+    ``None`` for ids without a ``.``, and for modules that are ``rules.*``
+    themselves — ``play --module combat`` resolves ``rules.combat``, whose
+    companion would be itself.
+    """
+    if "." not in module_id:
+        return None
+    obj_type, key = module_id.rsplit(".", 1)
+    if not key or obj_type.lower() == "rules":
+        return None
+    return f"rules.{key}"
 
 
 def _template_companion_id(module_id: str) -> str | None:

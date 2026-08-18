@@ -24,7 +24,7 @@ Assemble the participants cleanly. They include any given PCs, plus:
 - Factions, both as context and to control the rules of groups of creatures, have `faction.*` objects
 - Locations: if the encounter occurs in a specific, sufficiently complex, and recurring location, it will have a `location.*` object.
 
-Missing an NPC, faction, or location object? Do not create it here — say what you want to introduce and let the user load that module.
+Missing an NPC, faction, or location object? If the request covers it, `kb_get design.<key>` and build it here alongside the encounter. If it is your idea rather than theirs, say what you would introduce and let the user decide.
 
 Write the encounter object like a playable script, not a story recap:
 - Situation: one or two sentences

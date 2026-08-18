@@ -9,6 +9,7 @@ from lens.dnd.balance_encounter import (
     cr_tag_to_float,
     cr_str_to_float,
     compute_encounters,
+    parse_cr_token,
     _reduce_candidates,  # pyright: ignore[reportPrivateUsage]
     _fill_candidates,  # pyright: ignore[reportPrivateUsage]
     _rank_solutions,  # pyright: ignore[reportPrivateUsage]
@@ -47,6 +48,71 @@ class TestBalanceEncounter(unittest.TestCase):
 
         kb.get_tags.side_effect = get_tags
         return kb
+
+    def test_parse_cr_token(self) -> None:
+        """A roster slot is a rating or an id, and telling them apart is lexical."""
+        self.assertEqual(parse_cr_token("3"), 3.0)
+        self.assertEqual(parse_cr_token("1/2"), 0.5)
+        self.assertEqual(parse_cr_token("0.25"), 0.25)
+        self.assertEqual(parse_cr_token("cr:5"), 5.0)
+        self.assertEqual(parse_cr_token("cr:1-4"), 0.25)
+        self.assertIsNone(parse_cr_token("stat.zombie"))
+        self.assertIsNone(parse_cr_token("stat.cr"))
+        self.assertIsNone(parse_cr_token(""))
+
+    def test_rating_slot_prices_a_creature_that_does_not_exist(self) -> None:
+        """The block being designed has no id until the session ends, so it is
+        weighed as its rating instead."""
+        kb = self._mock_kb({"stat.zombie": ["cr:1-4"]})  # 50 XP each
+
+        out = compute_encounters(
+            [{"id": "3", "count": 1}],  # a CR 3 boss, 700 XP, not written yet
+            ["stat.zombie"],
+            "moderate",
+            [5, 5, 5, 5],  # 3000 XP budget
+            [],
+            kb,
+        )
+
+        self.assertIn("CR 3 creature", out)
+        self.assertNotIn("[1] 3 ", out)
+        self.assertIn("stat.zombie", out)
+        self.assertNotIn("Warning: no XP", out)
+
+    def test_rating_slots_work_for_allies_too(self) -> None:
+        kb = self._mock_kb({"stat.ogre": ["cr:2"]})  # 450 XP
+
+        # Allies never appear in a proposal; they raise the budget the enemies
+        # are fitted to, so the proof is that the enemy count moves.
+        with_ally = compute_encounters(
+            [{"id": "stat.ogre", "count": 1}], [], "moderate", [5, 5],
+            [{"id": "5", "count": 1}],  # one CR 5 ally nobody has statted, 1800 XP
+            kb,
+        )
+        without = compute_encounters(
+            [{"id": "stat.ogre", "count": 1}], [], "moderate", [5, 5], [], kb
+        )
+
+        self.assertIn("[7] stat.ogre", with_ally)   # (1500 + 1800) / 450
+        self.assertIn("[3] stat.ogre", without)     # 1500 / 450
+        self.assertNotIn("Warning: no XP", with_ally)
+
+    def test_unpriced_slot_is_reported_instead_of_counting_zero(self) -> None:
+        """An id that does not exist used to price at 0 in silence, which quietly
+        deflated the budget of every encounter it appeared in."""
+        kb = self._mock_kb({"stat.zombie": ["cr:1-4"]})
+
+        out = compute_encounters(
+            [{"id": "stat.zombie", "count": 2}, {"id": "stat.nonesuch", "count": 1}],
+            [],
+            "moderate",
+            [5, 5, 5, 5],
+            [],
+            kb,
+        )
+
+        self.assertIn("Warning: no XP", out)
+        self.assertIn("stat.nonesuch", out)
 
     def test_reduce_path_reducible(self) -> None:
         kb = self._mock_kb({"stat.zombie": ["cr:1-4"]})  # XP = 50

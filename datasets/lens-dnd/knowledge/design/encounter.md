@@ -36,13 +36,14 @@ Participants include any given PCs, plus:
 - Factions have `faction.*` objects
 - Locations: if the encounter is in a specific, sufficiently complex, recurring place, it may have a `location.*` object
 
-Missing an NPC, faction, or location object? Do not create it here — say what you want to introduce and let the user load that module.
+Missing an NPC, faction, or location object? If the request covers it, `kb_get design.<key>` and build it here alongside the encounter. If it is your idea rather than theirs, say what you would introduce and let the user decide.
 
 3: COMBAT BALANCING (when the scene includes the possibility of combat)
 - `kb_get` **`rules.combat`** if you need how a fight is framed at this table (unless it is already in context).
 - Take PC levels from pinned **`pc.*`** objects (e.g. tags **`level:N`**).
 - Discover enemies: `stat._template` describes conventions; use **`kb_with_tag`** to find **`stat.*`** candidates (CR, type, habitat, etc.). Rank by **narrative fit** first.
-- Use **`balance_encounter`** on your ranked list. Pass **`pcs`** as one level per PC. Pass **`allies`** in the **same shape as `required`**: `{ "id": "stat.…", "count": N }` per allied stat block that fights on the party's side. The tool reads each ally's **`cr:`** tags and adds **count × build XP** to the budget so enemy totals match **PCs plus exactly those allies** — use the same ids and counts you will list under Prep.
+- If the scene needs a creature no published block covers, `kb_get` **`design.stat`** and build it in this session — an encounter cannot be finished around a stat block that does not exist.
+- Use **`balance_encounter`** on your ranked list, as many times as the mix keeps changing. Pass **`pcs`** as one level per PC. Every slot takes a stat id **or** a bare challenge rating (`"3"`, `"1/2"`), so a creature nobody has written yet still prices — that is how you weigh a scene around a custom block before it exists. Pass **`allies`** in the **same shape as `required`**: `{ "id": "stat.…", "count": N }` per allied combatant on the party's side. The tool reads each ally's **`cr:`** tags and adds **count × build XP** to the budget so enemy totals match **PCs plus exactly those allies** — use the same ids and counts you will list under Prep.
 - If you change the ally roster after balancing, call the tool again with updated **`allies`**.
 - When the tool returns creature IDs and counts, you **must** note every fighting **`stat.*`** into **`## Prep and reference`** as **`N× KB['stat.…']`** lines (same token shape as pinned objects in context). Do **not** paste full stat text into the encounter. Do **not** use **`KB['…']`** for other object types (PCs etc.) as pins already surface those. Do **not** scatter **`KB['stat.…']`** outside **`## Prep and reference`**.
 - Also tag the encounter object with every **`stat.*`** that appears in **`## Prep and reference`**. This is not bookkeeping: the Prep roster is the human-readable script, and the **tags** are the only thing that puts those stat blocks in front of `play`, via `encounter.some-scene+`. `play` has no `kb_get` — it cannot fetch a block you forgot to tag. A roster line reading `4× KB['stat.bandit']` with no matching tag produces a GM that has been told to act from a stat block it cannot see, and it will improvise the creature instead.
@@ -74,7 +75,7 @@ A scene often needs a procedure that no module covers: the auction, the collapsi
 
 **Quoting.** When a rule you already have applies, copy it into the scene rules **verbatim, with its numbers**. Never soften a rule into a description. `Slippery Ice: Difficult Terrain. Walking requires DC 10 Acrobatics or fall Prone.` is a rule; "ice is difficult terrain and crossing it briskly risks going down" is not a rule at all — it reads like guidance, so nobody notices it is gone, and the AI cannot act on it. If a rule is not worth its numbers, leave it out rather than paraphrasing it.
 
-**Inventing.** When nothing fits, write the procedure yourself. This is allowed and encouraged: a fast model with a little structure in front of it behaves far better than one improvising, which either yes-ands everything or invents something unhinged and then commits to it for the rest of the scene. An invented rule must look like a rule:
+**Inventing.** When nothing fits, write the procedure yourself. This is allowed and encouraged: a fast model with a little structure in front of it behaves far better than one improvising, which either yes-ands everything or invents something unhinged and then commits to it for the rest of the scene. This is also where a creature's more involved riders live — a `stat.*` block is reused in scenes nobody has written, so it can only carry a one-line effect, while you know the room: "when the keeper drags someone under, this is what happens" is a scene rule, not a stat line. An invented rule must look like a rule:
 - Name the trigger, the check (ability or skill), the DC, and what happens on success and on failure.
 - Give it a cost or a clock, so it can end.
 - Keep it consistent with the base rules — you may add a procedure, not overturn how a D20 test works.

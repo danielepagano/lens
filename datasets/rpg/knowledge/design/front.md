@@ -47,7 +47,7 @@ Nothing `play` must act on during a scene goes in the back. Facts a GM needs liv
 
 SUPPORTING OBJECTS
 
-A front may want an `npc.*`, a `faction.*`, or a `location.*` that does not exist. Do not create it here — say what you would introduce and let the user load that module. If they decline, name the person or place inside the front's own text.
+A front may want an `npc.*`, a `faction.*`, or a `location.*` that does not exist. If the user's request covers it, `kb_get design.<key>` and build it in this session. If it is your idea, say what you would introduce and let them decide — and if they decline, name the person or place inside the front's own text.
 
 TIMELINE AWARENESS — CRITICAL
 
