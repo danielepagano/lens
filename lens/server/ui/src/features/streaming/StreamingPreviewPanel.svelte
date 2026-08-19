@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { streamingPreview } from '../../stores/document'
   import { cancelStream, workflowStreamAction } from '../../services/api'
   import WorkflowStepRow from './WorkflowStepRow.svelte'
@@ -11,17 +12,46 @@
   const isWaiting = $derived(
     $streamingPreview !== null && $streamingPreview.text === '' && !hasSteps
   )
-  const waitLabel = $derived(
-    $streamingPreview?.statusLine ?? (isWaiting ? 'Waiting…' : 'Streaming…')
-  )
+
+  // Coarse "now" clock — approximate rate/elapsed only need to refresh every ~1s,
+  // not on every token, so this is decoupled from the store's own update cadence.
+  let nowMs = $state(Date.now())
+  onMount(() => {
+    const id = window.setInterval(() => {
+      nowMs = Date.now()
+    }, 1000)
+    return () => window.clearInterval(id)
+  })
+
+  /** "≈340 tok · 42/s · turn 3" — approximate, from streamed byte count; omitted until there's enough to show. */
+  const statsSuffix = $derived.by(() => {
+    const preview = $streamingPreview
+    if (!preview) return null
+    const totalBytes = new TextEncoder().encode(preview.text).length + (preview.hiddenBytes ?? 0)
+    const approxTokens = Math.round(totalBytes / 4)
+    if (approxTokens < 1) return null
+    const elapsedSec = Math.max(1, (nowMs - (preview.streamStartedAt ?? nowMs)) / 1000)
+    const rate = approxTokens / elapsedSec
+    const tokenLabel = approxTokens >= 1000 ? `${(approxTokens / 1000).toFixed(1)}k` : `${approxTokens}`
+    const parts = [`≈${tokenLabel} tok`, `${rate.toFixed(rate < 10 ? 1 : 0)}/s`]
+    if ((preview.turnCount ?? 1) > 1) parts.push(`turn ${preview.turnCount}`)
+    return parts.join(' · ')
+  })
+
+  const waitLabel = $derived.by(() => {
+    const base = $streamingPreview?.statusLine ?? (isWaiting ? 'Waiting…' : 'Streaming…')
+    return statsSuffix ? `${base} · ${statsSuffix}` : base
+  })
 
   /** One-line hint from progress SSE or in-flight token preview (not a full log). */
   const activityLine = $derived.by(() => {
     const preview = $streamingPreview
     if (!preview) return null
-    if (preview.statusLine?.trim()) return preview.statusLine.trim()
-    if (activeStepId && preview.text.length > 0) return 'Writing to preview…'
-    return null
+    let base: string | null = null
+    if (preview.statusLine?.trim()) base = preview.statusLine.trim()
+    else if (activeStepId && preview.text.length > 0) base = 'Writing to preview…'
+    if (!base) return statsSuffix
+    return statsSuffix ? `${base} · ${statsSuffix}` : base
   })
 
   /** Step-scoped steps (refine) stop alone and keep their input; everything else aborts the stream. */

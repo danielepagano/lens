@@ -19,6 +19,7 @@ from lens.core.llm import (
     StreamEvent,
     _load_config,  # pyright: ignore[reportPrivateUsage]
     generate_stream,
+    llm_progress_scope,
 )
 
 
@@ -1013,6 +1014,57 @@ class TestGenerateStream(unittest.TestCase):
         self.assertEqual(final.tool_calls[0].arguments, {"id": "npc.bob"})
         self.assertEqual(final.tool_calls[1].name, "kb_get")
         self.assertEqual(final.tool_calls[1].arguments, {"id": "loc.tavern"})
+
+    def _run_with_progress(
+        self, response: _FakeResponse, **kwargs: Any
+    ) -> list[tuple[str, dict[str, Any]]]:
+        """Exhaust generate_stream with a progress hook bound, returning captured (phase, detail)."""
+        events: list[tuple[str, dict[str, Any]]] = []
+
+        async def _capture(phase: str, detail: dict[str, Any]) -> None:
+            events.append((phase, detail))
+
+        factory, _ = _fake_client_cls(response)
+
+        async def _inner() -> None:
+            async with llm_progress_scope(_capture):
+                async for _event in generate_stream(MESSAGES, self.root, **kwargs):
+                    pass
+
+        with patch("lens.core.llm.httpx.AsyncClient", factory):
+            asyncio.run(_inner())
+        return events
+
+    def test_llm_stream_progress_heartbeat_for_tool_call_only_round(self) -> None:
+        """A tool-call-only round (no content) still gets a bytes heartbeat for the UI."""
+        args = '{"id":"npc.bob"}'
+        tc = {"index": 0, "id": "call_1", "function": {"name": "kb_get", "arguments": args}}
+        resp = _FakeResponse(
+            lines=_sse({"choices": [{"delta": {"tool_calls": [tc]}, "finish_reason": "tool_calls"}]})
+        )
+        events = self._run_with_progress(resp)
+        heartbeats = [detail for phase, detail in events if phase == "llm_stream_progress"]
+        self.assertEqual(len(heartbeats), 1)
+        self.assertEqual(heartbeats[0]["round"], 0)
+        self.assertEqual(heartbeats[0]["hidden_bytes_delta"], len(args.encode("utf-8")))
+
+    def test_llm_stream_progress_heartbeat_for_reasoning(self) -> None:
+        """Reasoning-only deltas (no visible content) also get a bytes heartbeat."""
+        reasoning = "thinking about the plan"
+        resp = _FakeResponse(
+            lines=_sse({"choices": [{"delta": {"reasoning_content": reasoning}}]}, _chunk("answer"))
+        )
+        events = self._run_with_progress(resp)
+        heartbeats = [detail for phase, detail in events if phase == "llm_stream_progress"]
+        self.assertEqual(len(heartbeats), 1)
+        self.assertEqual(heartbeats[0]["hidden_bytes_delta"], len(reasoning.encode("utf-8")))
+
+    def test_llm_stream_progress_not_emitted_for_content_only_round(self) -> None:
+        """Visible content already streams as `token` events — no double counting via progress."""
+        resp = _FakeResponse(lines=_sse(_chunk("Once"), _chunk(" upon a time")))
+        events = self._run_with_progress(resp)
+        phases = [phase for phase, _detail in events]
+        self.assertNotIn("llm_stream_progress", phases)
 
 
 class CommandToolProjectRootTests(unittest.TestCase):
