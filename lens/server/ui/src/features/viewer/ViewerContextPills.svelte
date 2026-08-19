@@ -8,6 +8,7 @@
     pillKey,
     pillLabel,
     pillTitle,
+    splitPillRows,
     type KbPillRow,
   } from './contextPillRows'
 
@@ -105,6 +106,9 @@
   const cursorKbRows = $derived(
     buildCursorKbRows(cursorPins, cursorIncludes, cursorMentions),
   )
+  /** Plain ancestor pins stay behind the summary; includes, mentions, and
+   * `state`-tagged pins are notable and few, so show them without a click. */
+  const cursorSplitRows = $derived(splitPillRows(cursorKbRows, pinIsState))
   const cursorParamRows = $derived.by((): ParamPillRow[] =>
     cursorParamEntries.map(([pk, pv]) => ({ key: pk, label: `--${pk}=${pv}` })),
   )
@@ -133,7 +137,7 @@
           'pin-pill-unpin': row.unpin,
           'pin-pill--scoped': Boolean(row.scope),
           'pin-pill--remember': pinHasRememberTargets(row.id),
-          'pin-pill--state': !row.unpin && !row.scope && pinIsState(row.id),
+          'pin-pill--state': !row.unpin && pinIsState(row.id),
         },
       ]}
       title={pinTitle(row)}
@@ -175,16 +179,23 @@
 {/snippet}
 
 {#if placement === 'cursor' && hasCursorRollup}
-  <div class="cursor-indicator-preview">
-    <details class="cursor-pins-section" data-testid="cursor-context-rollups">
-      <summary class="cursor-pins-summary">
-        <span class="pins-count-label">{cursorSummaryParts.join(' · ')}</span>
-      </summary>
-      <div class="pin-pills effective-pins" data-testid="cursor-context-pills">
-        {@render pillsBlock(cursorKbRows, cursorVarEntries, cursorParamRows)}
+  <div class="cursor-indicator-preview cursor-context-stack">
+    <div class="cursor-context-row">
+      <details class="cursor-pins-section" data-testid="cursor-context-rollups">
+        <summary class="cursor-pins-summary">
+          <span class="pins-count-label">{cursorSummaryParts.join(' · ')}</span>
+        </summary>
+        <div class="pin-pills effective-pins" data-testid="cursor-context-pills">
+          {@render pillsBlock(cursorSplitRows.plain, cursorVarEntries, cursorParamRows)}
+        </div>
+      </details>
+      {#if isCursorNode}{@render contextReportButton()}{/if}
+    </div>
+    {#if cursorSplitRows.notable.length > 0}
+      <div class="pin-pills effective-pins notable-pins" data-testid="cursor-context-notable-pills">
+        {@render pillsBlock(cursorSplitRows.notable, [], [])}
       </div>
-    </details>
-    {#if isCursorNode}{@render contextReportButton()}{/if}
+    {/if}
   </div>
 {:else if placement === 'cursor' && isCursorNode}
   <div class="cursor-indicator-preview">
@@ -194,9 +205,23 @@
 {/if}
 
 <style>
-  /* The rollup row is taller than its summary line, so centring in the flex
-   * row drops the chip well below the "N pins" text it belongs to. Pin it to
-   * the top of the row and nudge it onto the summary's own line instead. */
+  /* The pins disclosure and the notable (include/mention/state) pills are two
+   * different rhythms — one static and collapsible, one small and always
+   * shown — so they get their own row each instead of fighting for space in
+   * one flex line. */
+  .cursor-context-stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  .cursor-context-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
   .context-report-btn {
     align-self: flex-start;
     background: none;

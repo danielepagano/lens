@@ -5,6 +5,7 @@ import {
   pillKey,
   pillLabel,
   pillTitle,
+  splitPillRows,
 } from './contextPillRows'
 
 const noDecorations = { isState: () => false, rememberTags: () => [] }
@@ -44,15 +45,16 @@ describe('pillTitle', () => {
     )
   })
 
-  it('does not call a scoped pill live state', () => {
-    // A state object is diverted to the tail instead of inlined, so the two
-    // decorations are mutually exclusive and the tooltip must not claim both.
+  it('notes that a state-tagged mention diverts instead of inlining', () => {
+    // Tagged `state`, the object never inlines at the annotation site — it
+    // diverts to Live State same as a state pin (mentions.py) — so the
+    // tooltip says both: why it is in scope, and where it actually renders.
     const title = pillTitle({ id: 'tracker.combat', unpin: false, scope: 'mention' }, {
       isState: () => true,
       rememberTags: () => [],
     })
     expect(title).toContain('one more AI turn')
-    expect(title).not.toContain('Live state')
+    expect(title).toContain('diverts to Live State')
   })
 
   it('still labels an ordinary state pin', () => {
@@ -71,6 +73,30 @@ describe('pillTitle', () => {
       }),
     ).toBe('remember.notes')
     expect(pillTitle({ id: 'lore.a', unpin: false }, noDecorations)).toBeUndefined()
+  })
+})
+
+describe('splitPillRows', () => {
+  const rows = cursorKbRows(['place.a', 'tracker.combat'], ['rules.grappling'], ['spell.aid'])
+  const isState = (id: string) => id === 'tracker.combat'
+
+  it('keeps ordinary pins plain and moves scoped rows to notable', () => {
+    const { plain, notable } = splitPillRows(rows, isState)
+    expect(plain).toEqual([{ id: 'place.a', unpin: false }])
+    expect(notable).toEqual([
+      { id: 'tracker.combat', unpin: false },
+      { id: 'rules.grappling', unpin: false, scope: 'include' },
+      { id: 'spell.aid', unpin: false, scope: 'mention' },
+    ])
+  })
+
+  it('never treats an unpin as notable, even if the id is tagged state', () => {
+    const { plain, notable } = splitPillRows(
+      [{ id: 'tracker.combat', unpin: true }],
+      isState,
+    )
+    expect(plain).toEqual([{ id: 'tracker.combat', unpin: true }])
+    expect(notable).toEqual([])
   })
 })
 

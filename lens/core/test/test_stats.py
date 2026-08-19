@@ -290,6 +290,39 @@ class TestStatsEffectivePins(unittest.TestCase):
       result = get_stats(session)
       self.assertEqual(result.state_pins_at_cursor, [])
 
+  def test_state_pins_at_cursor_includes_a_state_tagged_include(self) -> None:
+    """Included, not pinned: still diverts to [LIVE STATE] in the real prompt
+
+    (see ``_add_mention_state_components``), so the pin panel must agree.
+    """
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.media import MediaService
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      root = _init_repo(Path(tmpdir))
+      session, node = _make_project(root)
+      _add_kb(root, "tracker", "combat", "Goblin HP 7/7")
+
+      node.md_path().write_text(
+          "# test\n\n"
+          "[include: tracker.combat]: #\n"
+      )
+
+      import subprocess
+
+      subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True, check=True)
+      subprocess.run(
+          ["git", "commit", "-m", "include"], cwd=root, capture_output=True, check=True
+      )
+
+      _write_kb_tags_toml(root, {"tracker.combat": ["state"]})
+      KnowledgeStore.clear_registry()
+      MediaService.clear_registry()
+
+      result = get_stats(session)
+      self.assertEqual(result.include_ids_at_cursor, ["tracker.combat"])
+      self.assertEqual(result.state_pins_at_cursor, ["tracker.combat"])
+
 
   def test_includes_and_mentions_are_reported_separately_from_pins(self) -> None:
     """A different scope needs a different row: node-local, and mentions expire."""
