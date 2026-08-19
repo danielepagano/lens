@@ -22,9 +22,20 @@ Then one <details> per combatant, sorted by initiative descending:
   <details><summary>{init} - [{Name}](kb/{stat|npc|pc}.{id}) | {suffix}</summary>
   - Reaction Used: `[ ]`
   {resources}
+
   > [position] 
   > [conditions] 
   </details>
+
+**The blank line before `> [position]` is load-bearing, not decorative.**
+`<details>` opens a raw HTML block, and everything right after it stays raw
+text — no list, no blockquote — until a blank line hands control back to the
+markdown parser. Skip that blank line and `[position]`/`[conditions]` never
+become a blockquote at all: the `>` shows up as a stray character next to the
+pill instead of framing it. `> [position]` and `> [conditions] ` can butt
+directly against each other with no blank line between them, though —
+consecutive `>` lines share one blockquote either way, and each still
+renders (and edits) as its own pill.
 
 - **PCs** — `{suffix}` is `Active `[x]`` (or `[ ]``); no HP, no `{resources}` line. The player's own sheet owns that.
 - **Monsters/NPCs** — `{suffix}` is `AC: N | HP: `#current/max``; no Active marker. Add `(allied)` for an allied stat block or NPC.
@@ -44,12 +55,14 @@ FULL EXAMPLE:
 
   <details><summary>20 - [Amy](kb/pc.Amy) | Active `[x]`</summary>
   - Reaction Used: `[ ]`
+
   > [position] 
   > [conditions] 
   </details>
 
   <details><summary>15 - [Goblin 1](kb/stat.goblin-warrior) | AC: 15 | HP: `#10/10`</summary>
   - Reaction Used: `[ ]`
+
   > [position] Behind the overturned cart, 15 ft. from Amy
   > [conditions] 
   </details>
@@ -62,12 +75,14 @@ FULL EXAMPLE:
       - Scrying: `#0/1`
   - Legendary Actions Used: `#0/3`
   - Fire Breath: Charged `[x]` (on 5–6)
+
   > [position] Airborne over the lake, darkvision covers the whole cavern
   > [conditions] 
   </details>
 
 COMMON MISTAKES (shape — see `design.tracker` for the rest):
 - Writing `kb-details` as YAML (`---`) inside the body — it must be the annotation form, `[\n    kb-details: true\n]: #`. The kb fence's own `---` front matter still carries `id` and `tags: [state]` as usual.
+- No blank line between the last resource bullet and `> [position]` — the whole `<details>` stays raw text and neither line becomes a blockquote.
 - Adding HP or resources to a PC entry.
 - Adding an Active `[x]`/`[ ]` marker to a monster/NPC entry.
 - Including non-resource stat data (AC beyond the summary line, saves, skills, senses, actions, damage) — the entry links the stat block, it does not restate it.
@@ -80,6 +95,7 @@ COMMON MISTAKES (shape — see `design.tracker` for the rest):
 
 <details><summary>0 - [Name](kb/stat.slug) | AC: 0 | HP: `#0/0`</summary>
 - Reaction Used: `[ ]`
+
 > [position] 
 > [conditions] 
 </details>

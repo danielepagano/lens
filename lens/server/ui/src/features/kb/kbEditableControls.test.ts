@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { preprocessKbEditableControls, scanControlPositions, buildQuoteLinePattern } from './kbEditableControls'
-import { stripKbItemFrontMatter } from './kbViewerMarkdown'
+import { renderKbMarkdown, stripKbItemFrontMatter } from './kbViewerMarkdown'
 
 describe('preprocessKbEditableControls', () => {
   it('converts a single checkbox', () => {
@@ -105,6 +105,49 @@ describe('preprocessKbEditableControls', () => {
     const quotes = editMeta.filter((m) => m.type === 'quote')
     expect(quotes).toHaveLength(1)
     expect(quotes[0]!.value).toBe('real')
+  })
+
+  it('consecutive quote lines with no blank line between them still each render and edit independently', () => {
+    // Not a bug: markdown merges adjacent `>` lines with no blank line
+    // between them into one shared blockquote, but each quote-line button
+    // keeps its own data-kb-edit-id and its own display:block row — this is
+    // the tracker template's actual (compact, intentional) shape.
+    const md = '> [position] Airborne\n> [conditions] Prone'
+    const { html, editMeta } = renderKbMarkdown(md, null, null, true)
+    expect((html.match(/<blockquote>/g) ?? []).length).toBe(1)
+    expect(editMeta.filter((m) => m.type === 'quote')).toHaveLength(2)
+    expect(html.match(/data-kb-edit-id="quote-0"/g)).toHaveLength(1)
+    expect(html.match(/data-kb-edit-id="quote-1"/g)).toHaveLength(1)
+  })
+
+  it('regression: a quote line right after an unclosed HTML block (no blank line) never becomes a blockquote', () => {
+    // `<details>` opens a raw HTML block; CommonMark treats everything after
+    // it as literal text (no lists, no blockquotes) until a blank line hands
+    // control back to the block parser. Skipping that blank line is exactly
+    // what regressed the tracker template — the `>` stays a stray character
+    // instead of framing the pill.
+    const md = ['<details><summary>X</summary>', '- Reaction Used: `[ ]`', '> [conditions] Prone', '</details>'].join(
+      '\n',
+    )
+    const { html } = renderKbMarkdown(md, null, null, true)
+    expect(html).not.toContain('<blockquote>')
+    // The button itself still renders (our own preprocessing doesn't need
+    // markdown-it's blockquote parsing) — but a bare `>` sits in front of it.
+    expect(html).toMatch(/>\s*<button type="button" class="kb-edit-quote-line"/)
+  })
+
+  it('a blank line before the quote-line group is enough to fix it', () => {
+    const md = [
+      '<details><summary>X</summary>',
+      '- Reaction Used: `[ ]`',
+      '',
+      '> [position] Airborne',
+      '> [conditions] Prone',
+      '</details>',
+    ].join('\n')
+    const { html } = renderKbMarkdown(md, null, null, true)
+    expect((html.match(/<blockquote>/g) ?? []).length).toBe(1)
+    expect(html.match(/data-kb-edit-id="quote-[01]"/g)).toHaveLength(2)
   })
 
   it('handles multiple quote lines alongside checkboxes and counters', () => {
