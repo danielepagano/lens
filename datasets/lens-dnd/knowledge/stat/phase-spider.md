@@ -1,14 +1,14 @@
 **Phase Spider** · Large Monstrosity, Unaligned
 
-**AC** 14 · **HP** 45 · **Speed** 30 ft., climb 30 ft.
+**AC** 14 · **Initiative** +3 (13) · **HP** 45 (7d10 + 7) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 16 (+3) | 12 (+1) | 6 (-2) | 10 (+0) | 6 (-2) |
 
 **Skills** Stealth +7
-**Senses** Darkvision 60 ft.,  Passive Perception 10
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 10
+**Languages** None
 **CR** 3
 
 Ethereal Sight. The spider can see 60 feet into the Ethereal Plane while on the Material Plane and vice versa.

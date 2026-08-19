@@ -1,11 +1,12 @@
 **Pegasus** · Large Celestial, Chaotic Good
 
-**AC** 12 · **HP** 59 · **Speed** 60 ft., fly 90 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 59 (7d10 + 21) · **Speed** 60 ft., Fly 90 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 15 (+2) | 16 (+3) | 10 (+0) | 15 (+2) | 13 (+1) |
 
+**Saving Throws** DEX +4, CON +5, WIS +4, CHA +3
 **Skills** Perception +6
 **Senses** Passive Perception 16
 **Languages** Understands Celestial, Common, Elvish, and Sylvan but can’t speak

@@ -1,12 +1,13 @@
 **Druid** · Medium Or Small Humanoid, Neutral
 
-**AC** 13 · **HP** 44 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 44 (8d8 + 8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 12 (+1) | 13 (+1) | 12 (+1) | 16 (+3) | 11 (+0) |
 
 **Skills** Medicine +5, Nature +3, Perception +5
+**Gear** Studded Leather Armor
 **Senses** Passive Perception 15
 **Languages** Common, Druidic, Sylvan
 **CR** 2

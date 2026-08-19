@@ -1,13 +1,15 @@
 **Gold Dragon Wyrmling** · Medium Dragon, Lawful Good
 
-**AC** 17 · **HP** 60 · **Speed** 30 ft., fly 60 ft., swim 30 ft.
+**AC** 17 · **Initiative** +4 (14) · **HP** 60 (8d8 + 24) · **Speed** 30 ft., Fly 60 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 14 (+2) | 17 (+3) | 14 (+2) | 11 (+0) | 16 (+3) |
 
+**Saving Throws** DEX +4, WIS +2
 **Skills** Perception +4, Stealth +4
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Fire
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 3
 

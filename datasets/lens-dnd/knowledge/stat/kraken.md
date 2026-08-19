@@ -1,13 +1,15 @@
 **Kraken** · Gargantuan Monstrosity, Chaotic Evil
 
-**AC** 18 · **HP** 481 · **Speed** 30 ft., swim 120 ft.
+**AC** 18 · **Initiative** +14 (24) · **HP** 481 (26d20 + 208) · **Speed** 30 ft., Swim 120 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 30 (+10) | 11 (+0) | 26 (+8) | 22 (+6) | 18 (+4) | 20 (+5) |
 
+**Saving Throws** STR +17, DEX +7, CON +15, WIS +11
 **Skills** History +13, Perception +11
-**Senses** Truesight 120 ft.,  Passive Perception 21
+**Immunities** Cold, Lightning; Frightened, Grappled, Paralyzed, Restrained
+**Senses** Truesight 120 ft.;  Passive Perception 21
 **Languages** Telepathy 120 ft. Understands Abyssal, Celestial, Infernal, and Primordial but can’t speak
 **CR** 23
 

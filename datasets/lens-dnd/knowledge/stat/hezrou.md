@@ -1,12 +1,15 @@
 **Hezrou** · Large Fiend, Chaotic Evil
 
-**AC** 18 · **HP** 157 · **Speed** 30 ft.
+**AC** 18 · **Initiative** +6 (16) · **HP** 157 (15d10 + 75) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 17 (+3) | 20 (+5) | 5 (-3) | 12 (+1) | 13 (+1) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 11
+**Saving Throws** STR +7, CON +8, WIS +4
+**Immunities** Poison; Poisoned
+**Resistances** Cold, Fire, Lightning
+**Senses** Darkvision 120 ft.;  Passive Perception 11
 **Languages** Abyssal, Telepathy 120 ft.
 **CR** 8
 

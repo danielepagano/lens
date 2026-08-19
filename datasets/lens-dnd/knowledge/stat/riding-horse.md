@@ -1,13 +1,13 @@
 **Riding Horse** · Large Beast, Unaligned
 
-**AC** 11 · **HP** 13 · **Speed** 60 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 13 (2d10 + 2) · **Speed** 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 13 (+1) | 12 (+1) | 2 (-4) | 11 (+0) | 7 (-2) |
 
 **Senses** Passive Perception 10
-**Languages** --
+**Languages** None
 **CR** 1/4
 
 ---

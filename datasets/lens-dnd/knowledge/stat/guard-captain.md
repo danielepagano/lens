@@ -1,12 +1,13 @@
 **Guard Captain** · Medium Or Small Humanoid, Neutral
 
-**AC** 18 · **HP** 75 · **Speed** 30 ft.
+**AC** 18 · **Initiative** +4 (14) · **HP** 75 (10d8 + 30) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 14 (+2) | 16 (+3) | 12 (+1) | 14 (+2) | 13 (+1) |
 
 **Skills** Athletics +6, Perception +4
+**Gear** Breastplate, Javelins (6), Longsword, Shield
 **Senses** Passive Perception 14
 **Languages** Common
 **CR** 4

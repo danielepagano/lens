@@ -1,13 +1,15 @@
 **Bronze Dragon Wyrmling** · Medium Dragon, Lawful Good
 
-**AC** 15 · **HP** 39 · **Speed** 30 ft., fly 60 ft., swim 30 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 39 (6d8 + 12) · **Speed** 30 ft., Fly 60 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 10 (+0) | 15 (+2) | 12 (+1) | 11 (+0) | 15 (+2) |
 
+**Saving Throws** DEX +2, WIS +2
 **Skills** Perception +4, Stealth +2
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Lightning
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 2
 

@@ -1,12 +1,13 @@
 **Noble** · Medium Or Small Humanoid, Neutral
 
-**AC** 15 · **HP** 9 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +1 (11) · **HP** 9 (2d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 12 (+1) | 11 (+0) | 12 (+1) | 14 (+2) | 16 (+3) |
 
 **Skills** Deception +5, Insight +4, Persuasion +5
+**Gear** Breastplate, Rapier
 **Senses** Passive Perception 12
 **Languages** Common plus two other languages
 **CR** 1/8

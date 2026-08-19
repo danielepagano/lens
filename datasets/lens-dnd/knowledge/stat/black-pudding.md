@@ -1,12 +1,13 @@
 **Black Pudding** · Large Ooze, Unaligned
 
-**AC** 7 · **HP** 68 · **Speed** 20 ft., climb 20 ft.
+**AC** 7 · **Initiative** −3 (7) · **HP** 68 (8d10 + 24) · **Speed** 20 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 5 (-3) | 16 (+3) | 1 (-5) | 6 (-2) | 1 (-5) |
 
-**Senses** Blindsight 60 ft.,  Passive Perception 8
+**Immunities** Acid, Cold, Lightning, Slashing; Charmed, Deafened, Exhaustion, Frightened, Grappled, Prone, Restrained
+**Senses** Blindsight 60 ft.;  Passive Perception 8
 **Languages** --
 **CR** 4
 

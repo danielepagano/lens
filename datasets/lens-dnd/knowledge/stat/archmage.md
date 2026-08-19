@@ -1,12 +1,15 @@
 **Archmage** · Medium Or Small Humanoid, Neutral
 
-**AC** 17 · **HP** 170 · **Speed** 30 ft.
+**AC** 17 · **Initiative** +7 (17) · **HP** 170 (31d8 + 31) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 14 (+2) | 12 (+1) | 20 (+5) | 15 (+2) | 16 (+3) |
 
+**Saving Throws** INT +9, WIS +6
 **Skills** Arcana +13, History +9, Perception +6
+**Immunities** Psychic; Charmed
+**Gear** Wand
 **Senses** Passive Perception 16
 **Languages** Common plus five other languages
 **CR** 12

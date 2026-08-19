@@ -129,9 +129,10 @@ class TestCheckStatBlock(unittest.TestCase):
         self.assertNotIn("hit dice", out)
 
     def test_saving_throw_line_is_checked_when_present(self) -> None:
-        """No published block has this line, so the check cannot fire on the
-        corpus — but hand-built and PC-shaped blocks carry one, and that is
-        where the arithmetic drifts. Saves are mod + PB; expertise never applies."""
+        """Published blocks do carry saves — in a column of the ability table that
+        the DDB import dropped for a long time — so blocks stored before that fix
+        show none and this check stays quiet on them. Saves are mod + PB;
+        expertise never applies."""
         block = _swap(
             GOBLIN_BOSS,
             "**Skills** Stealth +6",
@@ -144,14 +145,77 @@ class TestCheckStatBlock(unittest.TestCase):
 
     def test_hp_dice_expression_is_checked_when_present(self) -> None:
         """`**HP** 73 (7d8 + 42)` averages correctly and still cannot be right:
-        seven hit dice at CON +2 is +14. Published blocks print no hit dice, so
-        this too is silent on the corpus."""
+        seven hit dice at CON +2 is +14. Published blocks do print hit dice; the
+        import used to drop them, so older stored blocks have nothing to check."""
         out = check_stat_block(_swap(GOBLIN_BOSS, "**HP** 21", "**HP** 73 (7d8 + 42)"))
         self.assertIn("7 hit dice at CON +0 is +0", out)
 
     def test_hp_dice_average_must_match(self) -> None:
         out = check_stat_block(_swap(GOBLIN_BOSS, "**HP** 21", "**HP** 45 (9d8)"))
         self.assertIn("averages 40", out)
+
+    def test_reads_the_extractor_s_current_block_shape(self) -> None:
+        """The 2024 shape the DDB extractor emits: Initiative between AC and HP,
+        hit dice on the HP value, a Saving Throws line, Immunities/Resistances/
+        Vulnerabilities/Gear lines, and a repeatable `size:` tag for a creature
+        that is 'Medium or Small'. All of it must parse and none of it flag."""
+        assassin = """---
+id: stat.assassin
+tags:
+  - cr:8
+  - type:humanoid
+  - size:medium
+  - size:small
+  - habitat:any
+---
+**Assassin** \u00b7 Medium Or Small Humanoid, Neutral
+
+**AC** 16 \u00b7 **Initiative** +10 (20) \u00b7 **HP** 97 (15d8 + 30) \u00b7 **Speed** 30 ft.
+
+| STR | DEX | CON | INT | WIS | CHA |
+|-----|-----|-----|-----|-----|-----|
+| 11 (+0) | 18 (+4) | 14 (+2) | 16 (+3) | 11 (+0) | 10 (+0) |
+
+**Saving Throws** DEX +7, INT +6
+**Skills** Acrobatics +7, Perception +6, Stealth +10
+**Resistances** Poison
+**Gear** Light Crossbow, Shortsword, Studded Leather Armor
+**Senses** Passive Perception 16
+**Languages** Common, Thieves' Cant
+**CR** 8
+
+---
+**Actions**
+
+Shortsword. Melee Attack Roll: +7, reach 5 ft. Hit: 7 (1d6 + 4) Piercing damage plus 17 (5d6) Poison damage.
+"""
+        out = check_stat_block(assassin)
+        self.assertTrue(out.startswith("Nothing to fix"), out)
+        self.assertIn("Published blocks at CR 8", out)
+
+    def test_multi_size_block_passes_on_either_hit_die(self) -> None:
+        """97 is 15d8 + 30 at CON +2 — reachable on d8, not on d6. A block tagged
+        both `size:medium` and `size:small` must not be judged on whichever tag
+        happens to come first."""
+        both = """---
+id: stat.x
+tags:
+  - cr:8
+  - type:humanoid
+  - size:small
+  - size:medium
+---
+**X** \u00b7 Medium Or Small Humanoid, Neutral
+
+**AC** 16 \u00b7 **HP** 97 \u00b7 **Speed** 30 ft.
+
+| STR | DEX | CON | INT | WIS | CHA |
+|-----|-----|-----|-----|-----|-----|
+| 11 (+0) | 18 (+4) | 14 (+2) | 16 (+3) | 11 (+0) | 10 (+0) |
+
+**CR** 8
+"""
+        self.assertTrue(check_stat_block(both).startswith("Nothing to fix"))
 
     def test_reports_when_it_cannot_read_the_block(self) -> None:
         out = check_stat_block("just some prose about a monster")

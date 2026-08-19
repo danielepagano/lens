@@ -1,12 +1,14 @@
 **Fire Elemental** · Large Elemental, Neutral
 
-**AC** 13 · **HP** 93 · **Speed** 50 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 93 (11d10 + 33) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 17 (+3) | 16 (+3) | 6 (-2) | 10 (+0) | 7 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Fire, Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Ignan)
 **CR** 5
 

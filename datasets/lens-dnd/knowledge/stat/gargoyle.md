@@ -1,13 +1,14 @@
 **Gargoyle** · Medium Elemental, Chaotic Evil
 
-**AC** 15 · **HP** 67 · **Speed** 30 ft., fly 60 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 67 (9d8 + 27) · **Speed** 30 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 11 (+0) | 16 (+3) | 6 (-2) | 11 (+0) | 7 (-2) |
 
 **Skills** Stealth +4
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Poison; Exhaustion, Petrified, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Terran)
 **CR** 2
 

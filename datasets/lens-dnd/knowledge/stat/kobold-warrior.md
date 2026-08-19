@@ -1,12 +1,13 @@
 **Kobold Warrior** · Small Dragon, Neutral
 
-**AC** 14 · **HP** 7 · **Speed** 30 ft.
+**AC** 14 · **Initiative** +2 (12) · **HP** 7 (3d6 − 3) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 7 (-2) | 15 (+2) | 9 (-1) | 8 (-1) | 7 (-2) | 8 (-1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 8
+**Gear** Daggers (3)
+**Senses** Darkvision 60 ft.;  Passive Perception 8
 **Languages** Common, Draconic
 **CR** 1/8
 

@@ -1,12 +1,13 @@
 **Priest** · Medium Or Small Humanoid, Neutral
 
-**AC** 13 · **HP** 38 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +0 (10) · **HP** 38 (7d8 + 7) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 10 (+0) | 12 (+1) | 13 (+1) | 16 (+3) | 13 (+1) |
 
 **Skills** Medicine +7, Perception +5, Religion +5
+**Gear** Chain Shirt, Holy Symbol, Mace
 **Senses** Passive Perception 15
 **Languages** Common plus one other language
 **CR** 2

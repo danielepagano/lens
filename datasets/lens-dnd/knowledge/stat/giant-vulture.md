@@ -1,13 +1,14 @@
 **Giant Vulture** · Large Monstrosity, Neutral Evil
 
-**AC** 10 · **HP** 25 · **Speed** 10 ft., fly 60 ft.
+**AC** 10 · **Initiative** +0 (10) · **HP** 25 (3d10 + 9) · **Speed** 10 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 10 (+0) | 16 (+3) | 6 (-2) | 12 (+1) | 7 (-2) |
 
 **Skills** Perception +3
-**Senses** Darkvision 60 ft.,  Passive Perception 13
+**Resistances** Necrotic
+**Senses** Darkvision 60 ft.;  Passive Perception 13
 **Languages** Understands Common but can’t speak
 **CR** 1
 

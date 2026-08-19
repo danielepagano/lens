@@ -1,14 +1,15 @@
 **Crocodile** · Large Beast, Unaligned
 
-**AC** 12 · **HP** 13 · **Speed** 20 ft., swim 30 ft.
+**AC** 12 · **Initiative** +0 (10) · **HP** 13 (2d10 + 2) · **Speed** 20 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 10 (+0) | 13 (+1) | 2 (-4) | 10 (+0) | 5 (-3) |
 
+**Saving Throws** CON +3
 **Skills** Stealth +2
 **Senses** Passive Perception 10
-**Languages** --
+**Languages** None
 **CR** 1/2
 
 Hold Breath. The crocodile can hold its breath for 1 hour.

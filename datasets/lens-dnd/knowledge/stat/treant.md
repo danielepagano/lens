@@ -1,11 +1,13 @@
 **Treant** · Huge Plant, Chaotic Good
 
-**AC** 16 · **HP** 138 · **Speed** 30 ft.
+**AC** 16 · **Initiative** +3 (13) · **HP** 138 (12d12 + 60) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 23 (+6) | 8 (-1) | 21 (+5) | 12 (+1) | 16 (+3) | 12 (+1) |
 
+**Resistances** Bludgeoning, Piercing
+**Vulnerabilities** Fire
 **Senses** Passive Perception 13
 **Languages** Common, Druidic, Elvish, Sylvan
 **CR** 9

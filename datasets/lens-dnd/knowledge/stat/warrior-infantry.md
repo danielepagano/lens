@@ -1,11 +1,12 @@
 **Warrior Infantry** · Medium Or Small Humanoid, Neutral
 
-**AC** 16 · **HP** 14 · **Speed** 30 ft.
+**AC** 16 · **Initiative** +0 (10) · **HP** 14 (3d8 + 2) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 11 (+0) | 11 (+0) | 8 (-1) | 11 (+0) | 8 (-1) |
 
+**Gear** Chain Shirt, Spear
 **Senses** Passive Perception 10
 **Languages** Common
 **CR** 1/2

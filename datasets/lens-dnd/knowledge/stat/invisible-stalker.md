@@ -1,13 +1,15 @@
 **Invisible Stalker** · Large Elemental, Neutral
 
-**AC** 14 · **HP** 97 · **Speed** 50 ft., fly 50 ft. (hover)
+**AC** 14 · **Initiative** +7 (17) · **HP** 97 (13d10 + 26) · **Speed** 50 ft., Fly 50 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 19 (+4) | 14 (+2) | 10 (+0) | 15 (+2) | 11 (+0) |
 
 **Skills** Perception +8, Stealth +10
-**Senses** Darkvision 60 ft.,  Passive Perception 18
+**Immunities** Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Darkvision 60 ft.;  Passive Perception 18
 **Languages** Common, Primordial (Auran)
 **CR** 6
 

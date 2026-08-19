@@ -1,13 +1,15 @@
 **Green Dragon Wyrmling** · Medium Dragon, Lawful Evil
 
-**AC** 17 · **HP** 38 · **Speed** 30 ft., fly 60 ft., swim 30 ft.
+**AC** 17 · **Initiative** +3 (13) · **HP** 38 (7d8 + 7) · **Speed** 30 ft., Fly 60 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 12 (+1) | 13 (+1) | 14 (+2) | 11 (+0) | 13 (+1) |
 
+**Saving Throws** DEX +3, WIS +2
 **Skills** Perception +4, Stealth +3
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Poison; Poisoned
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 2
 

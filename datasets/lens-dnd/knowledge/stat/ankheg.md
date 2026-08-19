@@ -1,13 +1,13 @@
 **Ankheg** · Large Monstrosity, Unaligned
 
-**AC** 14 · **HP** 45 · **Speed** 30 ft., burrow 10 ft.
+**AC** 14 · **Initiative** +0 (10) · **HP** 45 (6d10 + 12) · **Speed** 30 ft., Burrow 10 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 11 (+0) | 14 (+2) | 1 (-5) | 13 (+1) | 6 (-2) |
 
-**Senses** Darkvision 60 ft., Tremorsense 60 ft.,  Passive Perception 11
-**Languages** --
+**Senses** Darkvision 60 ft., Tremorsense 60 ft.;  Passive Perception 11
+**Languages** None
 **CR** 2
 
 Tunneler. The ankheg can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.

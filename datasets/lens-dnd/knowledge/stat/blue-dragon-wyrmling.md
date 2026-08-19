@@ -1,13 +1,15 @@
 **Blue Dragon Wyrmling** · Medium Dragon, Lawful Evil
 
-**AC** 17 · **HP** 65 · **Speed** 30 ft., burrow 15 ft., fly 60 ft.
+**AC** 17 · **Initiative** +2 (12) · **HP** 65 (10d8 + 20) · **Speed** 30 ft., Burrow 15 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 10 (+0) | 15 (+2) | 12 (+1) | 11 (+0) | 15 (+2) |
 
+**Saving Throws** DEX +2, WIS +2
 **Skills** Perception +4, Stealth +2
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Lightning
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 3
 

@@ -1,12 +1,14 @@
 **Efreeti** · Large Elemental, Neutral
 
-**AC** 17 · **HP** 212 · **Speed** 40 ft., fly 60 ft. (hover)
+**AC** 17 · **Initiative** +1 (11) · **HP** 212 (17d10 + 119) · **Speed** 40 ft., Fly 60 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 22 (+6) | 12 (+1) | 24 (+7) | 16 (+3) | 15 (+2) | 19 (+4) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 12
+**Saving Throws** WIS +6, CHA +8
+**Immunities** Fire
+**Senses** Darkvision 120 ft.;  Passive Perception 12
 **Languages** Primordial (Ignan)
 **CR** 11
 

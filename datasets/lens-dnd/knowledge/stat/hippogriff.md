@@ -1,6 +1,6 @@
 **Hippogriff** · Large Monstrosity, Unaligned
 
-**AC** 11 · **HP** 26 · **Speed** 40 ft., fly 60 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 26 (4d10 + 4) · **Speed** 40 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +5
 **Senses** Passive Perception 15
-**Languages** --
+**Languages** None
 **CR** 1
 
 Flyby. The hippogriff doesn’t provoke an Opportunity Attack when it flies out of an enemy’s reach.

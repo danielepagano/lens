@@ -1,13 +1,16 @@
 **Pit Fiend** · Large Fiend, Lawful Evil
 
-**AC** 21 · **HP** 337 · **Speed** 30 ft., fly 60 ft.
+**AC** 21 · **Initiative** +14 (24) · **HP** 337 (27d10 + 189) · **Speed** 30 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 26 (+8) | 14 (+2) | 24 (+7) | 22 (+6) | 18 (+4) | 24 (+7) |
 
+**Saving Throws** DEX +8, WIS +10
 **Skills** Perception +10, Persuasion +19
-**Senses** Truesight 120 ft.,  Passive Perception 20
+**Immunities** Fire, Poison; Poisoned
+**Resistances** Cold
+**Senses** Truesight 120 ft.;  Passive Perception 20
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 20
 

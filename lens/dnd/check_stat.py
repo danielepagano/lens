@@ -246,10 +246,11 @@ def check_stat_block(block: str) -> str:
                     "that is not what you meant, it is a typo."
                 )
 
-    # Neither of the next two lines appears anywhere in the 511 published blocks
-    # (they fold saves into the ability table and never print hit dice), so these
-    # checks cannot fire on the corpus.  They fire on hand-built and PC-shaped
-    # blocks, which is exactly where the arithmetic drifts.
+    # Published blocks carry both of these — saves in a column of the ability
+    # table, hit dice beside the HP total — but the DDB import dropped them for a
+    # long time, so blocks stored before that fix show neither and these checks
+    # stay silent on them.  They fire on freshly extracted, hand-built, and
+    # PC-shaped blocks, which is where the arithmetic drifts anyway.
     if mods and cr is not None:
         pb = pb_for_cr(cr)
         saves = SAVES_LINE.search(block)
@@ -284,8 +285,7 @@ def check_stat_block(block: str) -> str:
             findings.append(
                 f"**HP** {printed_total} ({dice}d{faces}{flat:+d}) — {dice} hit dice at CON "
                 f"{mods['CON']:+d} is {expected_flat:+d}, not {flat:+d}; the printed bonus "
-                f"implies CON {implied:+.0f}. Published blocks print no hit dice at all, so "
-                "either fix the expression or drop it and keep the total."
+                f"implies CON {implied:+.0f}. Either the expression or the CON score is wrong."
             )
 
     for match in DAMAGE_EXPR.finditer(block):
@@ -307,18 +307,26 @@ def check_stat_block(block: str) -> str:
     # An earlier version of this check divided the total by a per-die average and
     # so failed on every odd dice count — it reported 31% and was dropped for it.
     if mods and m_hp and not hp_dice:
-        size_tags = [t[5:] for t in tags if t.startswith("size:")]
-        die = HIT_DIE_BY_SIZE.get(size_tags[0]) if size_tags else None
-        if die:
+        # `size:` is repeatable — a "Medium or Small" creature carries both — so the
+        # total need only be reachable on one of the dice those sizes imply.
+        dice = [
+            HIT_DIE_BY_SIZE[t[5:]]
+            for t in tags
+            if t.startswith("size:") and t[5:] in HIT_DIE_BY_SIZE
+        ]
+        if dice:
             total = int(m_hp.group(1))
             con = mods["CON"]
             if not any(
-                int(n * (die + 1) / 2) + con * n == total for n in range(1, 200)
+                int(n * (die + 1) / 2) + con * n == total
+                for die in dice
+                for n in range(1, 200)
             ):
+                sizes = " or ".join(f"d{d}" for d in sorted(set(dice)))
                 findings.append(
-                    f"**HP** {total} is not reachable by any number of d{die} hit dice at "
+                    f"**HP** {total} is not reachable by any number of {sizes} hit dice at "
                     f"CON {con:+d} — the nearest are "
-                    f"{_nearest_hp_totals(die, con, total)}. Published blocks are all "
+                    f"{_nearest_hp_totals(dice[0], con, total)}. Published blocks are all "
                     "Nd(size) + CON per die."
                 )
 

@@ -1,13 +1,14 @@
 **Half-Dragon** · Medium Dragon, Neutral
 
-**AC** 18 · **HP** 105 · **Speed** 40 ft.
+**AC** 18 · **Initiative** +5 (15) · **HP** 105 (14d8 + 42) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 14 (+2) | 16 (+3) | 10 (+0) | 15 (+2) | 14 (+2) |
 
+**Saving Throws** DEX +5, WIS +5
 **Skills** Athletics +7, Perception +5, Stealth +5
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 15
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 15
 **Languages** Common, Draconic
 **CR** 5
 

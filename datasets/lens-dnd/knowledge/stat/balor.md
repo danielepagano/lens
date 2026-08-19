@@ -1,13 +1,16 @@
 **Balor** · Huge Fiend, Chaotic Evil
 
-**AC** 19 · **HP** 287 · **Speed** 40 ft., fly 80 ft.
+**AC** 19 · **Initiative** +14 (24) · **HP** 287 (23d12 + 138) · **Speed** 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 26 (+8) | 15 (+2) | 22 (+6) | 20 (+5) | 16 (+3) | 22 (+6) |
 
+**Saving Throws** CON +12, WIS +9
 **Skills** Perception +9
-**Senses** Truesight 120 ft.,  Passive Perception 19
+**Immunities** Fire, Poison; Charmed, Frightened, Poisoned
+**Resistances** Cold, Lightning
+**Senses** Truesight 120 ft.;  Passive Perception 19
 **Languages** Abyssal, Telepathy 120 ft.
 **CR** 19
 

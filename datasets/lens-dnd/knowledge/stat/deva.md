@@ -1,13 +1,16 @@
 **Deva** · Medium Celestial, Lawful Good
 
-**AC** 17 · **HP** 229 · **Speed** 30 ft., fly 90 ft. (hover)
+**AC** 17 · **Initiative** +4 (14) · **HP** 229 (27d8 + 108) · **Speed** 30 ft., Fly 90 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 18 (+4) | 18 (+4) | 17 (+3) | 20 (+5) | 20 (+5) |
 
+**Saving Throws** WIS +9, CHA +9
 **Skills** Insight +9, Perception +9
-**Senses** Darkvision 120 ft.,  Passive Perception 19
+**Immunities** Charmed, Exhaustion, Frightened
+**Resistances** Radiant
+**Senses** Darkvision 120 ft.;  Passive Perception 19
 **Languages** All, Telepathy 120 ft.
 **CR** 10
 

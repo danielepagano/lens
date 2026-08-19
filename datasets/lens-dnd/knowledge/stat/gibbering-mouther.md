@@ -1,13 +1,14 @@
 **Gibbering Mouther** · Medium Aberration, Chaotic Neutral
 
-**AC** 9 · **HP** 52 · **Speed** 20 ft., swim 20 ft.
+**AC** 9 · **Initiative** −1 (9) · **HP** 52 (7d8 + 21) · **Speed** 20 ft., Swim 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 8 (-1) | 16 (+3) | 3 (-4) | 10 (+0) | 6 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
-**Languages** --
+**Immunities** Prone
+**Senses** Darkvision 60 ft.;  Passive Perception 10
+**Languages** None
 **CR** 2
 
 Aberrant Ground. The ground in a 10-foot Emanation originating from the mouther is Difficult Terrain.

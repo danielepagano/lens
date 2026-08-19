@@ -1,14 +1,16 @@
 **Shambling Mound** · Large Plant, Unaligned
 
-**AC** 15 · **HP** 110 · **Speed** 30 ft., swim 20 ft.
+**AC** 15 · **Initiative** −1 (9) · **HP** 110 (13d10 + 39) · **Speed** 30 ft., Swim 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 8 (-1) | 16 (+3) | 5 (-3) | 10 (+0) | 5 (-3) |
 
 **Skills** Stealth +3
-**Senses** Blindsight 60 ft.,  Passive Perception 10
-**Languages** --
+**Immunities** Lightning; Deafened, Exhaustion
+**Resistances** Cold, Fire
+**Senses** Blindsight 60 ft.;  Passive Perception 10
+**Languages** None
 **CR** 5
 
 Lightning Absorption. Whenever the shambling mound is subjected to Lightning damage, it regains a number of Hit Points equal to the Lightning damage dealt.

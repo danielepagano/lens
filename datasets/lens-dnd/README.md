@@ -72,11 +72,13 @@ Runtime procedures for the AI DM during play:
 
 An LLM command tool and a CLI command — `lens dnd check-stat stat.goblin-boss` for a stored object, a file path, or the block on stdin. Pass the text of a `stat.*` block; it reports every attack bonus, save DC, damage average, and tag that does not follow from the block's own ability scores and CR, then shows what published blocks at that CR look like.
 
+After re-importing a re-extracted corpus, re-run the sweep in `lens/dnd/test/test_check_stat.py`: the saving-throw check will meet real data for the first time, and the allowlist should shrink (a corrupt `stat.giant-crocodile` and three unreachable HP totals are in it today).
+
 Its whole promise is that it has **no opinion**: every check was kept only because it fires on almost none of the 511 published blocks in the bundled dataset plus `lens-dnd-ext`. Sweeping that corpus produces four findings — three blocks whose secondary effect has a deliberately lower DC than their main one, and `stat.giant-crocodile`, which is corrupt (`HP unknown`, CHA 50, `Languages Elfish`). `lens/dnd/test/test_check_stat.py` runs the sweep as a test, so a check that starts flagging real monsters fails CI.
 
 One check was tried and dropped for failing that bar: escape and skill DCs derived from ability + PB, because published blocks set those independently — a water elemental with Strength +4 and PB +3 has save DC 15 and escape DC 14.
 
-**A caution about auditing against this corpus.** The DDB import is lossy: it drops the ability table's `Save` column, the hit-dice expression next to HP, Initiative, Resistances/Immunities, Gear, and the XP/PB detail on the CR line. An audit that treats a missing line as evidence of a convention will reach the wrong conclusion — the hit-dice check was dropped once on exactly that mistake (compounded by a rounding bug) before being reinstated at a 0.8% miss rate.
+**A caution about auditing against this corpus.** The DDB import used to be lossy — it dropped the ability table's `Save` column, the hit-dice expression beside HP, Initiative, Resistances/Immunities/Vulnerabilities, Gear, and the XP/PB detail on the CR line. That is fixed in the extractor, but blocks stored before the fix still lack those lines, and the lesson outlives the bug: **a line missing from every stored block is not evidence of a convention.** The hit-dice check was dropped once on exactly that reasoning — a missing line plus a rounding bug that put the floor per-die instead of at the end — and reported 31% when the true miss rate is 0.8%.
 
 ### 5. Balance tool — `balance_encounter`
 

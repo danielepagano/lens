@@ -1,6 +1,6 @@
 **Otherworldly Steed** · Large Celestial, Fey, or Fiend (Your Choice), Neutral
 
-**AC** 10 + 1 per spell level · **HP** 5 + 10 per spell level (the steed has a number of Hit Dice [d10s] equal to the spell’s level) · **Speed** 60 ft., fly 60 ft. (requires level 4+ spell)
+**AC** 10 + 1 per spell level · **HP** 5 + 10 per spell level (the steed has a number of Hit Dice [d10s] equal to the spell’s level) · **Speed** 60 ft., Fly 60 ft. (requires level 4+ spell)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Senses** Passive Perception 11
 **Languages** Telepathy 1 mile (works only with you)
-**CR** None (XP 0; PB equals your Proficiency Bonus)
+**CR** None (PB equals your Proficiency Bonus)
 
 Life Bond. When you regain Hit Points from a level 1+ spell, the steed regains the same number of Hit Points if you’re within 5 feet of it.
 
@@ -29,4 +29,4 @@ Healing Touch (Celestial Only; Recharges after a Long Rest). One creature within
 ---
 **Description**
 
-Otherworldly Steed is the creature summoned by the Find Steed spell. Its exact form, and the flavor of several of its abilities, depend on which of three creature types the caster chooses when the spell is cast — Celestial, Fey, or Fiend — while its Armor Class, Hit Points, and combat prowess scale with the level of the spell slot used to summon it.
+Otherworldly Steed is the creature summoned by the Find Steed spell. Its exact form, and the flavor of several of its abilities, depend on which of three creature types the caster chooses when the spell is cast — Celestial, Fey, or Fiend — while its Armor Class, Hit Points, and combat prowess scale with the level of the spell slot used to summon it. The block has no Initiative of its own: the steed shares its summoner's Initiative count, and acts immediately after them, independently, if they have the Incapacitated condition.

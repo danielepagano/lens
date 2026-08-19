@@ -1,12 +1,14 @@
 **Dragon Turtle** · Gargantuan Dragon, Neutral
 
-**AC** 20 · **HP** 356 · **Speed** 20 ft., swim 50 ft.
+**AC** 20 · **Initiative** +6 (16) · **HP** 356 (23d20 + 115) · **Speed** 20 ft., Swim 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 25 (+7) | 10 (+0) | 20 (+5) | 10 (+0) | 12 (+1) | 12 (+1) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 11
+**Saving Throws** CON +11, WIS +7
+**Resistances** Fire
+**Senses** Darkvision 120 ft.;  Passive Perception 11
 **Languages** Draconic, Primordial (Aquan)
 **CR** 17
 

@@ -1,13 +1,16 @@
 **Glabrezu** · Large Fiend, Chaotic Evil
 
-**AC** 17 · **HP** 189 · **Speed** 40 ft.
+**AC** 17 · **Initiative** +6 (16) · **HP** 189 (18d10 + 90) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 20 (+5) | 15 (+2) | 21 (+5) | 19 (+4) | 17 (+3) | 16 (+3) |
 
+**Saving Throws** STR +9, CON +9, WIS +7, CHA +7
 **Skills** Deception +7, Perception +7
-**Senses** Truesight 120 ft.,  Passive Perception 17
+**Immunities** Poison; Poisoned
+**Resistances** Cold, Fire, Lightning
+**Senses** Truesight 120 ft.;  Passive Perception 17
 **Languages** Abyssal, Telepathy 120 ft.
 **CR** 9
 

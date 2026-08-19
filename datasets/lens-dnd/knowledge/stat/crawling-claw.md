@@ -1,12 +1,13 @@
 **Crawling Claw** · Tiny Undead, Neutral Evil
 
-**AC** 12 · **HP** 2 · **Speed** 20 ft., climb 20 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 2 (1d4) · **Speed** 20 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 14 (+2) | 11 (+0) | 5 (-3) | 10 (+0) | 4 (-3) |
 
-**Senses** Blindsight 30 ft.,  Passive Perception 10
+**Immunities** Necrotic, Poison; Charmed, Exhaustion, Frightened, Incapacitated, Poisoned
+**Senses** Blindsight 30 ft.;  Passive Perception 10
 **Languages** Understands Common but can’t speak
 **CR** 0
 

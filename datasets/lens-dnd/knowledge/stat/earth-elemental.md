@@ -1,12 +1,14 @@
 **Earth Elemental** · Large Elemental, Neutral
 
-**AC** 17 · **HP** 147 · **Speed** 30 ft., burrow 30 ft.
+**AC** 17 · **Initiative** −1 (9) · **HP** 147 (14d10 + 70) · **Speed** 30 ft., Burrow 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 20 (+5) | 8 (-1) | 20 (+5) | 5 (-3) | 10 (+0) | 5 (-3) |
 
-**Senses** Darkvision 60 ft., Tremorsense 60 ft.,  Passive Perception 10
+**Immunities** Poison; Exhaustion, Paralyzed, Petrified, Poisoned, Unconscious
+**Vulnerabilities** Thunder
+**Senses** Darkvision 60 ft., Tremorsense 60 ft.;  Passive Perception 10
 **Languages** Primordial (Terran)
 **CR** 5
 

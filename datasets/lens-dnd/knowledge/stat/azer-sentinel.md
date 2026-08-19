@@ -1,11 +1,13 @@
 **Azer Sentinel** · Medium Elemental, Lawful Neutral
 
-**AC** 17 · **HP** 39 · **Speed** 30 ft.
+**AC** 17 · **Initiative** +1 (11) · **HP** 39 (6d8 + 12) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 12 (+1) | 15 (+2) | 12 (+1) | 13 (+1) | 10 (+0) |
 
+**Saving Throws** CON +4
+**Immunities** Fire, Poison; Poisoned
 **Senses** Passive Perception 11
 **Languages** Primordial (Ignan)
 **CR** 2

@@ -1,6 +1,6 @@
 **Plesiosaurus** · Large Beast, Unaligned
 
-**AC** 13 · **HP** 68 · **Speed** 20 ft., swim 40 ft.
+**AC** 13 · **Initiative** +2 (12) · **HP** 68 (8d10 + 24) · **Speed** 20 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +3, Stealth +4
 **Senses** Passive Perception 13
-**Languages** --
+**Languages** None
 **CR** 2
 
 Hold Breath. The plesiosaurus can hold its breath for 1 hour.

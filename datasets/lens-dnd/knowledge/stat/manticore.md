@@ -1,12 +1,12 @@
 **Manticore** · Large Monstrosity, Lawful Evil
 
-**AC** 14 · **HP** 68 · **Speed** 30 ft., fly 50 ft.
+**AC** 14 · **Initiative** +3 (13) · **HP** 68 (8d10 + 24) · **Speed** 30 ft., Fly 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 16 (+3) | 17 (+3) | 7 (-2) | 12 (+1) | 8 (-1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 11
+**Senses** Darkvision 60 ft.;  Passive Perception 11
 **Languages** Common
 **CR** 3
 

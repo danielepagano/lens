@@ -1,12 +1,15 @@
 **Ghast** · Medium Undead, Chaotic Evil
 
-**AC** 13 · **HP** 36 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 36 (8d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 17 (+3) | 10 (+0) | 11 (+0) | 10 (+0) | 8 (-1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Saving Throws** WIS +2
+**Immunities** Poison; Charmed, Exhaustion, Poisoned
+**Resistances** Necrotic
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Common
 **CR** 2
 

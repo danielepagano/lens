@@ -1,12 +1,14 @@
 **Frost Giant** · Huge Giant, Neutral Evil
 
-**AC** 15 · **HP** 149 · **Speed** 40 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 149 (13d12 + 65) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 23 (+6) | 9 (-1) | 21 (+5) | 9 (-1) | 10 (+0) | 12 (+1) |
 
+**Saving Throws** CON +8, WIS +3, CHA +4
 **Skills** Athletics +9, Perception +3
+**Immunities** Cold
 **Senses** Passive Perception 13
 **Languages** Giant
 **CR** 8

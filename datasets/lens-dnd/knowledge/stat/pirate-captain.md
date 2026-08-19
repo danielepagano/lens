@@ -1,12 +1,14 @@
 **Pirate Captain** · Medium Or Small Humanoid, Neutral
 
-**AC** 17 · **HP** 84 · **Speed** 30 ft.
+**AC** 17 · **Initiative** +7 (17) · **HP** 84 (13d8 + 26) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 18 (+4) | 14 (+2) | 10 (+0) | 14 (+2) | 17 (+3) |
 
+**Saving Throws** STR +3, DEX +7, WIS +5, CHA +6
 **Skills** Acrobatics +7, Perception +5
+**Gear** Pistol, Rapier
 **Senses** Passive Perception 15
 **Languages** Common plus one other language
 **CR** 6

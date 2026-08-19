@@ -1,13 +1,13 @@
 **Scorpion** · Tiny Beast, Unaligned
 
-**AC** 11 · **HP** 1 · **Speed** 10 ft.
+**AC** 11 · **Initiative** +0 (10) · **HP** 1 (1d4 − 1) · **Speed** 10 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 2 (-4) | 11 (+0) | 8 (-1) | 1 (-5) | 8 (-1) | 2 (-4) |
 
-**Senses** Blindsight 10 ft.,  Passive Perception 9
-**Languages** --
+**Senses** Blindsight 10 ft.;  Passive Perception 9
+**Languages** None
 **CR** 0
 
 ---

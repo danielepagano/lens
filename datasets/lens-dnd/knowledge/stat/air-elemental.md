@@ -1,12 +1,14 @@
 **Air Elemental** · Large Elemental, Neutral
 
-**AC** 15 · **HP** 90 · **Speed** 10 ft., fly 90 ft. (hover)
+**AC** 15 · **Initiative** +5 (15) · **HP** 90 (12d10 + 24) · **Speed** 10 ft., Fly 90 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 20 (+5) | 14 (+2) | 6 (-2) | 10 (+0) | 6 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Poison, Thunder; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Bludgeoning, Lightning, Piercing, Slashing
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Auran)
 **CR** 5
 
@@ -28,9 +30,9 @@ Energetic spirits from the Elemental Plane of Air, air elementals gather clouds 
 
 Air elementals often have distinctive compositions. Roll on or choose a result from the Air Elemental Compositions table to inspire the elemental’s appearance.
 
-Aboleth Schemes
+Air Elemental Compositions
 
-| 1d6 | The Air Elemental’s Body Features ... |
+| 1d6 | The Air Elemental’s Body Features... |
 | --- | --- |
 | 1 | Cumulus or cirrus clouds. |
 | 2 | A mixture of vibrantly colored gases. |

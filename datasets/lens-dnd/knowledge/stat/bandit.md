@@ -1,11 +1,12 @@
 **Bandit** · Medium Or Small Humanoid, Neutral
 
-**AC** 12 · **HP** 11 · **Speed** 30 ft.
+**AC** 12 · **Initiative** +1 (11) · **HP** 11 (2d8 + 2) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 12 (+1) | 12 (+1) | 10 (+0) | 10 (+0) | 10 (+0) |
 
+**Gear** Leather Armor, Light Crossbow, Scimitar
 **Senses** Passive Perception 10
 **Languages** Common, Thieves' Cant
 **CR** 1/8

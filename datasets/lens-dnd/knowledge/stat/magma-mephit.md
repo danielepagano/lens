@@ -1,13 +1,15 @@
 **Magma Mephit** · Small Elemental, Neutral Evil
 
-**AC** 11 · **HP** 18 · **Speed** 30 ft., fly 30 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 18 (4d6 + 4) · **Speed** 30 ft., Fly 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 8 (-1) | 12 (+1) | 12 (+1) | 7 (-2) | 10 (+0) | 10 (+0) |
 
 **Skills** Stealth +3
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Fire, Poison; Exhaustion, Poisoned
+**Vulnerabilities** Cold
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Ignan, Terran)
 **CR** 1/2
 

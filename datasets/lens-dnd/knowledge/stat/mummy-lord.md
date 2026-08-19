@@ -1,13 +1,16 @@
 **Mummy Lord** · Medium Or Small Undead, Lawful Evil
 
-**AC** 17 · **HP** 187 · **Speed** 30 ft.
+**AC** 17 · **Initiative** +10 (20) · **HP** 187 (25d8 + 75) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 10 (+0) | 17 (+3) | 11 (+0) | 19 (+4) | 16 (+3) |
 
+**Saving Throws** INT +5, WIS +9
 **Skills** History +5, Perception +9, Religion +5
-**Senses** Truesight 60 ft.,  Passive Perception 19
+**Immunities** Necrotic, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned
+**Vulnerabilities** Fire
+**Senses** Truesight 60 ft.;  Passive Perception 19
 **Languages** Common plus three other languages
 **CR** 15
 

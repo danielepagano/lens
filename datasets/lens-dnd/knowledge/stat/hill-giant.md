@@ -1,6 +1,6 @@
 **Hill Giant** · Huge Giant, Chaotic Evil
 
-**AC** 13 · **HP** 105 · **Speed** 40 ft.
+**AC** 13 · **Initiative** +2 (12) · **HP** 105 (10d12 + 40) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

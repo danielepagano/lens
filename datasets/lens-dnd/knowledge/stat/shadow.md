@@ -1,14 +1,17 @@
 **Shadow** · Medium Undead, Chaotic Evil
 
-**AC** 12 · **HP** 27 · **Speed** 40 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 27 (5d8 + 5) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 6 (-2) | 14 (+2) | 13 (+1) | 6 (-2) | 10 (+0) | 8 (-1) |
 
 **Skills** Stealth +6
-**Senses** Darkvision 60 ft.,  Passive Perception 10
-**Languages** --
+**Immunities** Necrotic, Poison; Exhaustion, Frightened, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Acid, Cold, Fire, Lightning, Thunder
+**Vulnerabilities** Radiant
+**Senses** Darkvision 60 ft.;  Passive Perception 10
+**Languages** None
 **CR** 1/2
 
 Amorphous. The shadow can move through a space as narrow as 1 inch without expending extra movement to do so.

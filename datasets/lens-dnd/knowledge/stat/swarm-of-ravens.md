@@ -1,14 +1,16 @@
 **Swarm of Ravens** · Medium Swarm Of Tiny Beasts, Unaligned
 
-**AC** 12 · **HP** 11 · **Speed** 10 ft., fly 50 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 11 (2d8 + 2) · **Speed** 10 ft., Fly 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 6 (-2) | 14 (+2) | 12 (+1) | 5 (-3) | 12 (+1) | 6 (-2) |
 
 **Skills** Perception +5
+**Immunities** Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned
+**Resistances** Bludgeoning, Piercing, Slashing
 **Senses** Passive Perception 15
-**Languages** --
+**Languages** None
 **CR** 1/4
 
 Swarm. The swarm can occupy another creature’s space and vice versa, and the swarm can move through any opening large enough for a Tiny raven. The swarm can’t regain Hit Points or gain Temporary Hit Points.

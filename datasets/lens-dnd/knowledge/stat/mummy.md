@@ -1,12 +1,15 @@
 **Mummy** · Medium Or Small Undead, Lawful Evil
 
-**AC** 11 · **HP** 58 · **Speed** 20 ft.
+**AC** 11 · **Initiative** −1 (9) · **HP** 58 (9d8 + 18) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 8 (-1) | 15 (+2) | 6 (-2) | 12 (+1) | 12 (+1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 11
+**Saving Throws** WIS +3
+**Immunities** Necrotic, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned
+**Vulnerabilities** Fire
+**Senses** Darkvision 60 ft.;  Passive Perception 11
 **Languages** Common plus two other languages
 **CR** 3
 

@@ -1,13 +1,14 @@
 **Werewolf** · Medium Or Small Monstrosity, Chaotic Evil
 
-**AC** 15 · **HP** 71 · **Speed** 30 ft., 40 ft. (wolf form only)
+**AC** 15 · **Initiative** +4 (14) · **HP** 71 (11d8 + 22) · **Speed** 30 ft., 40 ft. (wolf form only)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 14 (+2) | 14 (+2) | 10 (+0) | 11 (+0) | 10 (+0) |
 
 **Skills** Perception +4, Stealth +4
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Gear** Longbow
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Common (can’t speak in wolf form)
 **CR** 3
 

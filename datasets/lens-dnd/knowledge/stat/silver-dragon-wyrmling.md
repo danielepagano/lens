@@ -1,13 +1,15 @@
 **Silver Dragon Wyrmling** · Medium Dragon, Lawful Good
 
-**AC** 17 · **HP** 45 · **Speed** 30 ft., fly 60 ft.
+**AC** 17 · **Initiative** +2 (12) · **HP** 45 (6d8 + 18) · **Speed** 30 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 10 (+0) | 17 (+3) | 12 (+1) | 11 (+0) | 15 (+2) |
 
+**Saving Throws** DEX +2, WIS +2
 **Skills** Perception +4, Stealth +2
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Cold
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 2
 

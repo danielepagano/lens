@@ -1,6 +1,6 @@
 **Giant Ape** · Huge Beast, Unaligned
 
-**AC** 12 · **HP** 168 · **Speed** 40 ft., climb 40 ft.
+**AC** 12 · **Initiative** +5 (15) · **HP** 168 (16d12 + 64) · **Speed** 40 ft., Climb 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Athletics +9, Perception +4, Survival +4
 **Senses** Passive Perception 14
-**Languages** --
+**Languages** None
 **CR** 7
 
 ---

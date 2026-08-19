@@ -1,13 +1,15 @@
 **Ancient Brass Dragon** · Gargantuan Dragon, Chaotic Good
 
-**AC** 20 · **HP** 332 · **Speed** 40 ft., burrow 40 ft., fly 80 ft.
+**AC** 20 · **Initiative** +12 (22) · **HP** 332 (19d20 + 133) · **Speed** 40 ft., Burrow 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 27 (+8) | 10 (+0) | 25 (+7) | 16 (+3) | 15 (+2) | 22 (+6) |
 
+**Saving Throws** DEX +6, WIS +8
 **Skills** History +9, Perception +14, Persuasion +12, Stealth +6
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 24
+**Immunities** Fire
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 24
 **Languages** Common, Draconic
 **CR** 20
 

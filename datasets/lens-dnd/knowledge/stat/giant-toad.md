@@ -1,13 +1,13 @@
 **Giant Toad** · Large Beast, Unaligned
 
-**AC** 11 · **HP** 39 · **Speed** 30 ft., swim 30 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 39 (6d10 + 6) · **Speed** 30 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 13 (+1) | 13 (+1) | 2 (-4) | 10 (+0) | 3 (-4) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 10
+**Languages** None
 **CR** 1
 
 Amphibious. The toad can breathe air and water.

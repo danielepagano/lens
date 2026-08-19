@@ -1,13 +1,14 @@
 **Medusa** · Medium Monstrosity, Lawful Evil
 
-**AC** 15 · **HP** 127 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +6 (16) · **HP** 127 (17d8 + 51) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 17 (+3) | 16 (+3) | 12 (+1) | 13 (+1) | 15 (+2) |
 
+**Saving Throws** WIS +4
 **Skills** Deception +5, Perception +4, Stealth +6
-**Senses** Darkvision 150 ft.,  Passive Perception 14
+**Senses** Darkvision 150 ft.;  Passive Perception 14
 **Languages** Common plus one other language
 **CR** 6
 

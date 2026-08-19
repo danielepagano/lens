@@ -1,11 +1,13 @@
 **Pirate** · Medium Or Small Humanoid, Neutral
 
-**AC** 14 · **HP** 33 · **Speed** 30 ft.
+**AC** 14 · **Initiative** +5 (15) · **HP** 33 (6d8 + 6) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 16 (+3) | 12 (+1) | 8 (-1) | 12 (+1) | 14 (+2) |
 
+**Saving Throws** DEX +5, CHA +4
+**Gear** Daggers (6), Leather Armor
 **Senses** Passive Perception 11
 **Languages** Common plus one other language
 **CR** 1

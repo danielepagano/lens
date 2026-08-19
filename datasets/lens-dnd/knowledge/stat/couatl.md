@@ -1,12 +1,15 @@
 **Couatl** · Medium Celestial, Lawful Good
 
-**AC** 19 · **HP** 60 · **Speed** 30 ft., fly 90 ft.
+**AC** 19 · **Initiative** +5 (15) · **HP** 60 (8d8 + 24) · **Speed** 30 ft., Fly 90 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 20 (+5) | 17 (+3) | 18 (+4) | 20 (+5) | 18 (+4) |
 
-**Senses** Truesight 120 ft.,  Passive Perception 15
+**Saving Throws** CON +5, WIS +7
+**Immunities** Psychic, Radiant
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Truesight 120 ft.;  Passive Perception 15
 **Languages** All, Telepathy 120 ft.
 **CR** 4
 

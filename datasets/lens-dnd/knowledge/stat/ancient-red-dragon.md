@@ -1,13 +1,15 @@
 **Ancient Red Dragon** · Gargantuan Dragon, Chaotic Evil
 
-**AC** 22 · **HP** 507 · **Speed** 40 ft., climb 40 ft., fly 80 ft.
+**AC** 22 · **Initiative** +14 (24) · **HP** 507 (26d20 + 234) · **Speed** 40 ft., Climb 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 30 (+10) | 10 (+0) | 29 (+9) | 18 (+4) | 15 (+2) | 27 (+8) |
 
+**Saving Throws** DEX +7, WIS +9
 **Skills** Perception +16, Stealth +7
-**Senses** Blindsight 60, Darkvision 120 ft.,  Passive Perception 26
+**Immunities** Fire
+**Senses** Blindsight 60, Darkvision 120 ft.;  Passive Perception 26
 **Languages** Common, Draconic
 **CR** 24
 

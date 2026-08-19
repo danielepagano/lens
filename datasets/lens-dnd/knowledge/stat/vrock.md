@@ -1,12 +1,15 @@
 **Vrock** · Large Fiend, Chaotic Evil
 
-**AC** 15 · **HP** 152 · **Speed** 40 ft., fly 60 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 152 (16d10 + 64) · **Speed** 40 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 15 (+2) | 18 (+4) | 8 (-1) | 13 (+1) | 8 (-1) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 11
+**Saving Throws** DEX +5, WIS +4, CHA +2
+**Immunities** Poison; Poisoned
+**Resistances** Cold, Fire, Lightning
+**Senses** Darkvision 120 ft.;  Passive Perception 11
 **Languages** Abyssal, Telepathy 120 ft.
 **CR** 6
 

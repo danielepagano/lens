@@ -1,6 +1,6 @@
 **Eagle** · Small Beast, Unaligned
 
-**AC** 12 · **HP** 4 · **Speed** 10 ft., fly 60 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 4 (1d6 + 1) · **Speed** 10 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +6
 **Senses** Passive Perception 16
-**Languages** --
+**Languages** None
 **CR** 0
 
 ---

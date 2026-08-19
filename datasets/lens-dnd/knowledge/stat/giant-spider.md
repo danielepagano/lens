@@ -1,14 +1,14 @@
 **Giant Spider** · Large Beast, Unaligned
 
-**AC** 14 · **HP** 26 · **Speed** 30 ft., climb 30 ft.
+**AC** 14 · **Initiative** +3 (13) · **HP** 26 (4d10 + 4) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 16 (+3) | 12 (+1) | 2 (-4) | 11 (+0) | 4 (-3) |
 
 **Skills** Perception +4, Stealth +7
-**Senses** Darkvision 60 ft.,  Passive Perception 14
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 14
+**Languages** None
 **CR** 1
 
 Spider Climb. The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.

@@ -1,12 +1,14 @@
 **Wraith** · Medium Or Small Undead, Neutral Evil
 
-**AC** 13 · **HP** 67 · **Speed** 5 ft., fly 60 ft. (hover)
+**AC** 13 · **Initiative** +3 (13) · **HP** 67 (9d8 + 27) · **Speed** 5 ft., Fly 60 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 6 (-2) | 16 (+3) | 16 (+3) | 12 (+1) | 14 (+2) | 15 (+2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 12
+**Immunities** Necrotic, Poison; Charmed, Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Acid, Bludgeoning, Cold, Fire, Piercing, Slashing
+**Senses** Darkvision 60 ft.;  Passive Perception 12
 **Languages** Common plus two other languages
 **CR** 5
 

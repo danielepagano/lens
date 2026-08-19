@@ -1,13 +1,13 @@
 **Basilisk** · Medium Monstrosity, Unaligned
 
-**AC** 15 · **HP** 52 · **Speed** 20 ft.
+**AC** 15 · **Initiative** −1 (9) · **HP** 52 (8d8 + 16) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 8 (-1) | 15 (+2) | 2 (-4) | 8 (-1) | 7 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 9
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 9
+**Languages** None
 **CR** 3
 
 ---

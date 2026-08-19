@@ -1,13 +1,13 @@
 **Blink Dog** · Medium Fey, Lawful Good
 
-**AC** 13 · **HP** 22 · **Speed** 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 22 (4d8 + 4) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 12 (+1) | 17 (+3) | 12 (+1) | 10 (+0) | 13 (+1) | 11 (+0) |
 
 **Skills** Perception +5, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 15
+**Senses** Darkvision 60 ft.;  Passive Perception 15
 **Languages** Understands Elvish and Sylvan but can’t speak them
 **CR** 1/4
 

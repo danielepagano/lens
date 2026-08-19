@@ -1,11 +1,12 @@
 **Nightmare** · Large Fiend, Neutral Evil
 
-**AC** 13 · **HP** 68 · **Speed** 60 ft., fly 90 ft. (hover)
+**AC** 13 · **Initiative** +2 (12) · **HP** 68 (8d10 + 24) · **Speed** 60 ft., fly 90 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 15 (+2) | 16 (+3) | 10 (+0) | 13 (+1) | 15 (+2) |
 
+**Immunities** Fire
 **Senses** Passive Perception 11
 **Languages** Understands Abyssal, Common, and Infernal but can’t speak
 **CR** 3

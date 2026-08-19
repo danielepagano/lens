@@ -1,13 +1,15 @@
 **Gray Ooze** · Medium Ooze, Unaligned
 
-**AC** 9 · **HP** 22 · **Speed** 10 ft., climb 10 ft.
+**AC** 9 · **Initiative** −2 (8) · **HP** 22 (3d8 + 9) · **Speed** 10 ft., Climb 10 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 12 (+1) | 6 (-2) | 16 (+3) | 1 (-5) | 6 (-2) | 2 (-4) |
 
 **Skills** Stealth +2
-**Senses** Blindsight 60 ft.,  Passive Perception 8
+**Immunities** Blinded, Charmed, Deafened, Exhaustion, Frightened, Grappled, Prone, Restrained
+**Resistances** Acid, Cold, Fire
+**Senses** Blindsight 60 ft.;  Passive Perception 8
 **Languages** None
 **CR** 1/2
 

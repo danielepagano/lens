@@ -1,6 +1,6 @@
 **Giant Crocodile** · Huge Beast, Unaligned
 
-**AC** 14 · **HP** unknown · **Speed** 300 ft., swim 500 ft.
+**AC** 14 · **Initiative** -1 (9) · **HP** unknown (1d4-1) · **Speed** 300 ft., swim 500 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

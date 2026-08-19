@@ -1,13 +1,14 @@
 **Goblin Boss** · Small Fey, Chaotic Neutral
 
-**AC** 17 · **HP** 21 · **Speed** 30 ft.
+**AC** 17 · **Initiative** +2 (12) · **HP** 21 (6d6) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 15 (+2) | 10 (+0) | 10 (+0) | 8 (-1) | 10 (+0) |
 
 **Skills** Stealth +6
-**Senses** Darkvision 60 ft.,  Passive Perception 9
+**Gear** Chain Shirt, Scimitar, Shield, Shortbow
+**Senses** Darkvision 60 ft.;  Passive Perception 9
 **Languages** Common, Goblin
 **CR** 1
 

@@ -1,13 +1,15 @@
 **Young Green Dragon** · Large Dragon, Lawful Evil
 
-**AC** 18 · **HP** 136 · **Speed** 40 ft., fly 80 ft., swim 40 ft.
+**AC** 18 · **Initiative** +4 (14) · **HP** 136 (16d10 + 48) · **Speed** 40 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 12 (+1) | 17 (+3) | 16 (+3) | 13 (+1) | 15 (+2) |
 
+**Saving Throws** DEX +4, WIS +4
 **Skills** Deception +5, Perception +7, Stealth +4
-**Senses** Blindsight 30 ft., Darkvision 120 ft.,  Passive Perception 17
+**Immunities** Poison; Poisoned
+**Senses** Blindsight 30 ft., Darkvision 120 ft.;  Passive Perception 17
 **Languages** Common, Draconic
 **CR** 8
 

@@ -1,13 +1,15 @@
 **Ettin** · Large Giant, Chaotic Evil
 
-**AC** 12 · **HP** 85 · **Speed** 40 ft.
+**AC** 12 · **Initiative** −1 (9) · **HP** 85 (10d10 + 30) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 21 (+5) | 8 (-1) | 17 (+3) | 6 (-2) | 10 (+0) | 8 (-1) |
 
 **Skills** Perception +4
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Blinded, Charmed, Deafened, Frightened, Stunned, Unconscious
+**Gear** Battleaxe, Morningstar
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Giant
 **CR** 4
 

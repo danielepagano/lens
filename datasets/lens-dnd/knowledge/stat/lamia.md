@@ -1,13 +1,13 @@
 **Lamia** · Large Fiend, Chaotic Evil
 
-**AC** 13 · **HP** 97 · **Speed** 40 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 97 (13d10 + 26) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 13 (+1) | 15 (+2) | 14 (+2) | 15 (+2) | 16 (+3) |
 
 **Skills** Deception +7, Insight +4, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 12
+**Senses** Darkvision 60 ft.;  Passive Perception 12
 **Languages** Abyssal, Common
 **CR** 4
 

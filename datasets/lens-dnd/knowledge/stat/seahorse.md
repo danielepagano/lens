@@ -1,6 +1,6 @@
 **Seahorse** · Tiny Beast, Unaligned
 
-**AC** 12 · **HP** 1 · **Speed** 5 ft., swim 20 ft.
+**AC** 12 · **Initiative** +1 (11) · **HP** 1 (1d4 − 1) · **Speed** 5 ft., Swim 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +2, Stealth +5
 **Senses** Passive Perception 12
-**Languages** --
+**Languages** None
 **CR** 0
 
 Water Breathing. The seahorse can breathe only underwater.

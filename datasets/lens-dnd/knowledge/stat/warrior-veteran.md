@@ -1,12 +1,13 @@
 **Warrior Veteran** · Medium Or Small Humanoid, Neutral
 
-**AC** 17 · **HP** 65 · **Speed** 30 ft.
+**AC** 17 · **Initiative** +3 (13) · **HP** 65 (10d8 + 20) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 13 (+1) | 14 (+2) | 10 (+0) | 11 (+0) | 10 (+0) |
 
 **Skills** Athletics +5, Perception +2
+**Gear** Greatsword, Heavy Crossbow, Splint Armor
 **Senses** Passive Perception 12
 **Languages** Common plus one other language
 **CR** 3

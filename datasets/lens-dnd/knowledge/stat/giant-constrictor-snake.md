@@ -1,14 +1,14 @@
 **Giant Constrictor Snake** · Huge Beast, Unaligned
 
-**AC** 12 · **HP** 60 · **Speed** 30 ft., swim 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 60 (8d12 + 8) · **Speed** 30 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 14 (+2) | 12 (+1) | 1 (-5) | 10 (+0) | 3 (-4) |
 
 **Skills** Perception +2
-**Senses** Blindsight 10 ft.,  Passive Perception 12
-**Languages** --
+**Senses** Blindsight 10 ft.;  Passive Perception 12
+**Languages** None
 **CR** 2
 
 ---

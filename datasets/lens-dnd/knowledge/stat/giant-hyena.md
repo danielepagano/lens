@@ -1,14 +1,14 @@
 **Giant Hyena** · Large Beast, Unaligned
 
-**AC** 12 · **HP** 45 · **Speed** 50 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 45 (6d10 + 12) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 14 (+2) | 14 (+2) | 2 (-4) | 12 (+1) | 7 (-2) |
 
 **Skills** Perception +3
-**Senses** Darkvision 60 ft.,  Passive Perception 13
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 13
+**Languages** None
 **CR** 1
 
 ---

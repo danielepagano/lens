@@ -1,13 +1,13 @@
 **Minotaur of Baphomet** · Large Monstrosity, Chaotic Evil
 
-**AC** 14 · **HP** 85 · **Speed** 40 ft.
+**AC** 14 · **Initiative** +0 (10) · **HP** 85 (10d10 + 30) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 11 (+0) | 16 (+3) | 6 (-2) | 16 (+3) | 9 (-1) |
 
 **Skills** Perception +7, Survival +7
-**Senses** Darkvision 60 ft.,  Passive Perception 17
+**Senses** Darkvision 60 ft.;  Passive Perception 17
 **Languages** Abyssal
 **CR** 3
 

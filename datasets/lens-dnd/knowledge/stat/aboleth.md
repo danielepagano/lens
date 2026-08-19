@@ -1,13 +1,14 @@
 **Aboleth** · Large Aberration, Lawful Evil
 
-**AC** 17 · **HP** 150 · **Speed** 10 ft., swim 40 ft.
+**AC** 17 · **Initiative** +7 (17) · **HP** 150 (20d10 + 40) · **Speed** 10 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 21 (+5) | 9 (-1) | 15 (+2) | 18 (+4) | 15 (+2) | 18 (+4) |
 
+**Saving Throws** DEX +3, CON +6, INT +8, WIS +6
 **Skills** History +12, Perception +10
-**Senses** Darkvision 120 ft.,  Passive Perception 20
+**Senses** Darkvision 120 ft.;  Passive Perception 20
 **Languages** Deep Speech, Telepathy 120 ft.
 **CR** 10
 

@@ -1,11 +1,14 @@
 **Knight** · Medium Or Small Humanoid, Neutral
 
-**AC** 18 · **HP** 52 · **Speed** 30 ft.
+**AC** 18 · **Initiative** +0 (10) · **HP** 52 (8d8 + 16) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 11 (+0) | 14 (+2) | 11 (+0) | 11 (+0) | 15 (+2) |
 
+**Saving Throws** CON +4, WIS +2
+**Immunities** Frightened
+**Gear** Greatsword, Heavy Crossbow, Plate Armor
 **Senses** Passive Perception 10
 **Languages** Common plus one other language
 **CR** 3

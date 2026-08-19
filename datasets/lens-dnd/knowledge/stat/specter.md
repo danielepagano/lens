@@ -1,12 +1,14 @@
 **Specter** · Medium Undead, Chaotic Evil
 
-**AC** 12 · **HP** 22 · **Speed** 30 ft., fly 50 ft. (hover)
+**AC** 12 · **Initiative** +2 (12) · **HP** 22 (5d8) · **Speed** 30 ft., Fly 50 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 1 (-5) | 14 (+2) | 11 (+0) | 10 (+0) | 10 (+0) | 11 (+0) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Necrotic, Poison; Charmed, Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Acid, Bludgeoning, Cold, Fire, Lightning, Piercing, Slashing, Thunder
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Understands Common plus one other language but can’t speak
 **CR** 1
 

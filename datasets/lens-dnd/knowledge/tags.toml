@@ -2279,28 +2279,63 @@ ritual = [
 ]
 "size:small" = [
     "stat.animated-flying-sword",
+    "stat.archmage",
+    "stat.assassin",
     "stat.awakened-shrub",
     "stat.baboon",
+    "stat.bandit",
+    "stat.bandit-captain",
+    "stat.berserker",
     "stat.blood-hawk",
     "stat.cockatrice",
+    "stat.cultist",
+    "stat.cultist-fanatic",
     "stat.darkmantle",
     "stat.dretch",
+    "stat.druid",
     "stat.dust-mephit",
     "stat.eagle",
     "stat.giant-centipede",
     "stat.giant-fire-beetle",
     "stat.giant-rat",
+    "stat.gladiator",
     "stat.goblin-boss",
     "stat.goblin-minion",
     "stat.goblin-warrior",
+    "stat.guard",
+    "stat.guard-captain",
     "stat.ice-mephit",
     "stat.jackal",
+    "stat.knight",
     "stat.kobold-warrior",
+    "stat.mage",
     "stat.magma-mephit",
     "stat.magmin",
+    "stat.mummy",
+    "stat.mummy-lord",
+    "stat.noble",
     "stat.octopus",
+    "stat.pirate",
+    "stat.pirate-captain",
+    "stat.priest",
+    "stat.priest-acolyte",
+    "stat.scout",
+    "stat.spy",
     "stat.steam-mephit",
+    "stat.tough",
+    "stat.tough-boss",
     "stat.troll-limb",
+    "stat.vampire",
+    "stat.vampire-familiar",
+    "stat.vampire-spawn",
+    "stat.warrior-infantry",
+    "stat.warrior-veteran",
+    "stat.werebear",
+    "stat.wereboar",
+    "stat.wererat",
+    "stat.weretiger",
+    "stat.werewolf",
+    "stat.wraith",
 ]
 "size:tiny" = [
     "stat.badger",
@@ -3262,6 +3297,7 @@ ritual = [
     "cr:1",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.giant-octopus" = [
@@ -3292,6 +3328,7 @@ ritual = [
     "cr:1",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.ghoul" = [
@@ -3491,6 +3528,7 @@ ritual = [
     "cr:1-2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.shadow" = [
@@ -3563,6 +3601,7 @@ ritual = [
     "cr:1-2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.magma-mephit" = [
@@ -3575,6 +3614,7 @@ ritual = [
     "cr:1-2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.ice-mephit" = [
@@ -3723,6 +3763,7 @@ ritual = [
     "cr:1-4",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.giant-bat" = [
@@ -3905,6 +3946,7 @@ ritual = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.kobold-warrior" = [
@@ -3933,6 +3975,7 @@ ritual = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.venomous-snake" = [
@@ -3964,6 +4007,7 @@ ritual = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.goblin-minion" = [
@@ -3988,6 +4032,7 @@ ritual = [
     "cr:1-8",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.flying-snake" = [
@@ -4098,6 +4143,7 @@ ritual = [
     "cr:12",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.nalfeshnee" = [
@@ -4137,6 +4183,7 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
+    "size:small",
     "type:undead",
 ]
 "stat.ice-devil" = [
@@ -4175,6 +4222,7 @@ ritual = [
     "habitat:desert",
     "habitat:swamp",
     "size:medium",
+    "size:small",
     "type:undead",
 ]
 "stat.adult-bronze-dragon" = [
@@ -4253,6 +4301,7 @@ ritual = [
     "cr:2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.swarm-of-venomous-snakes" = [
@@ -4308,12 +4357,14 @@ ritual = [
     "cr:2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.cultist-fanatic" = [
     "cr:2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.mimic" = [
@@ -4357,6 +4408,7 @@ ritual = [
     "cr:2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.grick" = [
@@ -4385,6 +4437,7 @@ ritual = [
     "habitat:forest",
     "habitat:urban",
     "size:medium",
+    "size:small",
     "type:monstrosity",
 ]
 "stat.black-dragon-wyrmling" = [
@@ -4409,6 +4462,7 @@ ritual = [
     "cr:2",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.ankheg" = [
@@ -4648,12 +4702,14 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:medium",
+    "size:small",
     "type:monstrosity",
 ]
 "stat.warrior-veteran" = [
     "cr:3",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.gold-dragon-wyrmling" = [
@@ -4668,6 +4724,7 @@ ritual = [
     "habitat:desert",
     "habitat:swamp",
     "size:medium",
+    "size:small",
     "type:undead",
 ]
 "stat.bugbear-stalker" = [
@@ -4700,6 +4757,7 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.doppelganger" = [
@@ -4825,6 +4883,7 @@ ritual = [
     "cr:3",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.tarrasque" = [
@@ -4874,6 +4933,7 @@ ritual = [
     "cr:4",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.weretiger" = [
@@ -4882,6 +4942,7 @@ ritual = [
     "habitat:forest",
     "habitat:grassland",
     "size:medium",
+    "size:small",
     "type:monstrosity",
 ]
 "stat.archelon" = [
@@ -4923,6 +4984,7 @@ ritual = [
     "cr:4",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.ghost" = [
@@ -4938,6 +5000,7 @@ ritual = [
     "habitat:grassland",
     "habitat:hill",
     "size:medium",
+    "size:small",
     "type:monstrosity",
 ]
 "stat.elephant" = [
@@ -4951,6 +5014,7 @@ ritual = [
     "habitat:planar-shadowfell",
     "habitat:underdark",
     "size:medium",
+    "size:small",
     "type:undead",
 ]
 "stat.hill-giant" = [
@@ -4983,6 +5047,7 @@ ritual = [
     "habitat:underdark",
     "habitat:urban",
     "size:medium",
+    "size:small",
     "type:undead",
 ]
 "stat.night-hag" = [
@@ -5004,6 +5069,7 @@ ritual = [
     "habitat:forest",
     "habitat:hill",
     "size:medium",
+    "size:small",
     "type:monstrosity",
 ]
 "stat.fire-elemental" = [
@@ -5017,6 +5083,7 @@ ritual = [
     "cr:5",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.barbed-devil" = [
@@ -5132,12 +5199,14 @@ ritual = [
     "cr:6",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.pirate-captain" = [
     "cr:6",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.drider" = [
@@ -5240,6 +5309,7 @@ ritual = [
     "cr:8",
     "habitat:any",
     "size:medium",
+    "size:small",
     "type:humanoid",
 ]
 "stat.tyrannosaurus-rex" = [

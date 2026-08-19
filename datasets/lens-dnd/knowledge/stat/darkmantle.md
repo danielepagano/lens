@@ -1,13 +1,13 @@
 **Darkmantle** · Small Aberration, Unaligned
 
-**AC** 11 · **HP** 22 · **Speed** 10 ft., fly 30 ft.
+**AC** 11 · **Initiative** +3 (13) · **HP** 22 (5d6 + 5) · **Speed** 10 ft., Fly 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 12 (+1) | 13 (+1) | 2 (-4) | 10 (+0) | 5 (-3) |
 
 **Skills** Stealth +3
-**Senses** Blindsight 60 ft.,  Passive Perception 10
+**Senses** Blindsight 60 ft.;  Passive Perception 10
 **Languages** None
 **CR** 1/2
 

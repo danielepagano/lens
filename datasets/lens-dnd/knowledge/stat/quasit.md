@@ -1,13 +1,15 @@
 **Quasit** · Tiny Fiend, Chaotic Evil
 
-**AC** 13 · **HP** 25 · **Speed** 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 25 (10d4) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 5 (-3) | 17 (+3) | 10 (+0) | 7 (-2) | 10 (+0) | 10 (+0) |
 
 **Skills** Stealth +5
-**Senses** Darkvision 120 ft.,  Passive Perception 10
+**Immunities** Poison; Poisoned
+**Resistances** Cold, Fire, Lightning
+**Senses** Darkvision 120 ft.;  Passive Perception 10
 **Languages** Abyssal, Common
 **CR** 1
 

@@ -1,13 +1,15 @@
 **Ice Devil** · Large Fiend, Lawful Evil
 
-**AC** 18 · **HP** 228 · **Speed** 40 ft.
+**AC** 18 · **Initiative** +7 (17) · **HP** 228 (24d10 + 96) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 21 (+5) | 14 (+2) | 18 (+4) | 18 (+4) | 15 (+2) | 18 (+4) |
 
+**Saving Throws** DEX +7, CON +9, WIS +7, CHA +9
 **Skills** Insight +7, Perception +7, Persuasion +9
-**Senses** Blindsight 120 ft.,  Passive Perception 17
+**Immunities** Cold, Fire, Poison; Poisoned
+**Senses** Blindsight 120 ft.;  Passive Perception 17
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 14
 

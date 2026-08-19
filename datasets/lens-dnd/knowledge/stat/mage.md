@@ -1,12 +1,14 @@
 **Mage** · Medium Or Small Humanoid, Neutral
 
-**AC** 15 · **HP** 81 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 81 (18d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 9 (-1) | 14 (+2) | 11 (+0) | 17 (+3) | 12 (+1) | 11 (+0) |
 
+**Saving Throws** INT +6, WIS +4
 **Skills** Arcana +6, History +6, Perception +4
+**Gear** Wand
 **Senses** Passive Perception 14
 **Languages** Common and any three languages
 **CR** 6

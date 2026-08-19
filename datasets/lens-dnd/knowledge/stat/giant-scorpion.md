@@ -1,13 +1,13 @@
 **Giant Scorpion** · Large Beast, Unaligned
 
-**AC** 15 · **HP** 52 · **Speed** 40 ft.
+**AC** 15 · **Initiative** +1 (11) · **HP** 52 (7d10 + 14) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 13 (+1) | 15 (+2) | 1 (-5) | 9 (-1) | 3 (-4) |
 
-**Senses** Blindsight 60 ft.,  Passive Perception 9
-**Languages** --
+**Senses** Blindsight 60 ft.;  Passive Perception 9
+**Languages** None
 **CR** 3
 
 ---

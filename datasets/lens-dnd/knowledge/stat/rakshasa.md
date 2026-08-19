@@ -1,13 +1,15 @@
 **Rakshasa** · Medium Fiend, Lawful Evil
 
-**AC** 17 · **HP** 221 · **Speed** 40 ft.
+**AC** 17 · **Initiative** +8 (18) · **HP** 221 (26d8 + 104) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 17 (+3) | 18 (+4) | 13 (+1) | 16 (+3) | 20 (+5) |
 
 **Skills** Deception +10, Insight +8, Perception +8
-**Senses** Truesight 60 ft.,  Passive Perception 18
+**Immunities** Charmed, Frightened
+**Vulnerabilities** Piercing damage from weapons wielded by creatures under the effect of a Bless spell
+**Senses** Truesight 60 ft.;  Passive Perception 18
 **Languages** Common, Infernal
 **CR** 13
 

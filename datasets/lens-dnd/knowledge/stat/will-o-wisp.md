@@ -1,12 +1,14 @@
 **Will-o’-Wisp** · Tiny Undead, Chaotic Evil
 
-**AC** 19 · **HP** 27 · **Speed** 5 ft., fly 50 ft. (hover)
+**AC** 19 · **Initiative** +9 (19) · **HP** 27 (11d4) · **Speed** 5 ft., Fly 50 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 1 (-5) | 28 (+9) | 10 (+0) | 13 (+1) | 14 (+2) | 11 (+0) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 12
+**Immunities** Lightning, Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Acid, Bludgeoning, Cold, Fire, Necrotic, Piercing, Slashing
+**Senses** Darkvision 120 ft.;  Passive Perception 12
 **Languages** Common plus one other language
 **CR** 2
 

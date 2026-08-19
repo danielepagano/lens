@@ -1,13 +1,14 @@
 **Xorn** · Medium Elemental, Neutral
 
-**AC** 19 · **HP** 84 · **Speed** 20 ft., burrow 20 ft.
+**AC** 19 · **Initiative** +0 (10) · **HP** 84 (8d8 + 48) · **Speed** 20 ft., Burrow 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 10 (+0) | 22 (+6) | 11 (+0) | 10 (+0) | 11 (+0) |
 
 **Skills** Perception +6, Stealth +6
-**Senses** Darkvision 60 ft., Tremorsense 60 ft.,  Passive Perception 16
+**Immunities** Poison; Paralyzed, Petrified, Poisoned
+**Senses** Darkvision 60 ft., Tremorsense 60 ft.;  Passive Perception 16
 **Languages** Primordial (Terran)
 **CR** 5
 

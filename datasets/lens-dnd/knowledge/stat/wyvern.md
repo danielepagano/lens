@@ -1,14 +1,14 @@
 **Wyvern** · Large Dragon, Unaligned
 
-**AC** 14 · **HP** 127 · **Speed** 30 ft., fly 80 ft.
+**AC** 14 · **Initiative** +0 (10) · **HP** 127 (15d10 + 45) · **Speed** 30 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 10 (+0) | 16 (+3) | 5 (-3) | 12 (+1) | 6 (-2) |
 
 **Skills** Perception +4
-**Senses** Darkvision 120 ft.,  Passive Perception 14
-**Languages** --
+**Senses** Darkvision 120 ft.;  Passive Perception 14
+**Languages** None
 **CR** 6
 
 ---

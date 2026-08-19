@@ -1,12 +1,13 @@
 **Priest Acolyte** · Medium Or Small Humanoid, Neutral
 
-**AC** 13 · **HP** 11 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +0 (10) · **HP** 11 (2d8 + 2) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 10 (+0) | 12 (+1) | 10 (+0) | 14 (+2) | 11 (+0) |
 
 **Skills** Medicine +4, Religion +2
+**Gear** Chain Shirt, Holy Symbol, Mace
 **Senses** Passive Perception 12
 **Languages** Common
 **CR** 1/4

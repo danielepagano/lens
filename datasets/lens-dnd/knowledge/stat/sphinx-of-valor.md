@@ -1,13 +1,16 @@
 **Sphinx of Valor** · Large Celestial, Lawful Neutral
 
-**AC** 17 · **HP** 199 · **Speed** 40 ft., fly 60 ft.
+**AC** 17 · **Initiative** +12 (22) · **HP** 199 (19d10 + 95) · **Speed** 40 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 22 (+6) | 10 (+0) | 20 (+5) | 16 (+3) | 23 (+6) | 18 (+4) |
 
+**Saving Throws** DEX +6, CON +11, INT +9, WIS +12
 **Skills** Arcana +9, Perception +12, Religion +15
-**Senses** Truesight 120 ft.,  Passive Perception 22
+**Immunities** Psychic; Charmed, Frightened
+**Resistances** Necrotic, Radiant
+**Senses** Truesight 120 ft.;  Passive Perception 22
 **Languages** Celestial, Common
 **CR** 17
 

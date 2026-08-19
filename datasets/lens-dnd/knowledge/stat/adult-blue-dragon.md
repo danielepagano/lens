@@ -1,13 +1,15 @@
 **Adult Blue Dragon** · Huge Dragon, Lawful Evil
 
-**AC** 19 · **HP** 212 · **Speed** 40 ft., burrow 30 ft., fly 80 ft.
+**AC** 19 · **Initiative** +10 (20) · **HP** 212 (17d12 + 102) · **Speed** 40 ft., Burrow 30 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 25 (+7) | 10 (+0) | 23 (+6) | 16 (+3) | 15 (+2) | 20 (+5) |
 
+**Saving Throws** DEX +5, WIS +7
 **Skills** Perception +12, Stealth +5
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 22
+**Immunities** Lightning
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 22
 **Languages** Common, Draconic
 **CR** 16
 

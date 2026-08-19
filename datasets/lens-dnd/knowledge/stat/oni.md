@@ -1,13 +1,15 @@
 **Oni** · Large Fiend, Lawful Evil
 
-**AC** 17 · **HP** 119 · **Speed** 30 ft., fly 30 ft. (hover)
+**AC** 17 · **Initiative** +0 (10) · **HP** 119 (14d10 + 42) · **Speed** 30 ft., Fly 30 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 11 (+0) | 16 (+3) | 14 (+2) | 12 (+1) | 15 (+2) |
 
+**Saving Throws** DEX +3, CON +6, WIS +4, CHA +5
 **Skills** Arcana +5, Deception +8, Perception +4
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Resistances** Cold
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Common, Giant
 **CR** 7
 

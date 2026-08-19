@@ -1,12 +1,13 @@
 **Winter Wolf** · Large Monstrosity, Neutral Evil
 
-**AC** 13 · **HP** 75 · **Speed** 50 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 75 (10d10 + 20) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 13 (+1) | 14 (+2) | 7 (-2) | 12 (+1) | 8 (-1) |
 
 **Skills** Perception +5, Stealth +5
+**Immunities** Cold
 **Senses** Passive Perception 15
 **Languages** Common, Giant
 **CR** 3

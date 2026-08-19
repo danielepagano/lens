@@ -1,13 +1,14 @@
 **Goblin Warrior** · Small Fey, Chaotic Neutral
 
-**AC** 15 · **HP** 10 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 10 (3d6) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 8 (-1) | 15 (+2) | 10 (+0) | 10 (+0) | 8 (-1) | 8 (-1) |
 
 **Skills** Stealth +6
-**Senses** Darkvision 60 ft.,  Passive Perception 9
+**Gear** Leather Armor, Scimitar, Shield, Shortbow
+**Senses** Darkvision 60 ft.;  Passive Perception 9
 **Languages** Common, Goblin
 **CR** 1/4
 

@@ -1,12 +1,13 @@
 **Iron Golem** · Large Construct, Unaligned
 
-**AC** 20 · **HP** 252 · **Speed** 30 ft.
+**AC** 20 · **Initiative** +9 (19) · **HP** 252 (24d10 + 120) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 24 (+7) | 9 (-1) | 20 (+5) | 3 (-4) | 11 (+0) | 1 (-5) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 10
+**Immunities** Fire, Poison, Psychic; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned
+**Senses** Darkvision 120 ft.;  Passive Perception 10
 **Languages** Understands Common plus two other languages but can’t speak
 **CR** 16
 

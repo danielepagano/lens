@@ -1,14 +1,15 @@
 **Mimic** · Medium Monstrosity, Neutral
 
-**AC** 12 · **HP** 58 · **Speed** 20 ft.
+**AC** 12 · **Initiative** +3 (13) · **HP** 58 (9d8 + 18) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 12 (+1) | 15 (+2) | 5 (-3) | 13 (+1) | 8 (-1) |
 
 **Skills** Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 11
-**Languages** --
+**Immunities** Acid; Prone
+**Senses** Darkvision 60 ft.;  Passive Perception 11
+**Languages** None
 **CR** 2
 
 Adhesive (Object Form Only). The mimic adheres to anything that touches it. A Huge or smaller creature adhered to the mimic has the Grappled condition (escape DC 13). Ability checks made to escape this grapple have Disadvantage.

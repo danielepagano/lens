@@ -1,13 +1,13 @@
 **Rust Monster** · Medium Monstrosity, Unaligned
 
-**AC** 14 · **HP** 33 · **Speed** 40 ft.
+**AC** 14 · **Initiative** +1 (11) · **HP** 33 (6d8 + 6) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 12 (+1) | 13 (+1) | 2 (-4) | 13 (+1) | 6 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 11
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 11
+**Languages** None
 **CR** 1/2
 
 Iron Scent. The rust monster can pinpoint the location of ferrous metal within 30 feet of itself.

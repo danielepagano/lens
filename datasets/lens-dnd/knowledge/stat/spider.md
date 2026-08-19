@@ -1,14 +1,14 @@
 **Spider** · Tiny Beast, Unaligned
 
-**AC** 12 · **HP** 1 · **Speed** 20 ft., climb 20 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 1 (1d4 − 1) · **Speed** 20 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 2 (-4) | 14 (+2) | 8 (-1) | 1 (-5) | 10 (+0) | 2 (-4) |
 
 **Skills** Stealth +4
-**Senses** Darkvision 30 ft.,  Passive Perception 10
-**Languages** --
+**Senses** Darkvision 30 ft.;  Passive Perception 10
+**Languages** None
 **CR** 0
 
 Spider Climb. The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.

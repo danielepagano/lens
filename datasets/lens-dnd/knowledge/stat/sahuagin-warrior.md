@@ -1,13 +1,14 @@
 **Sahuagin Warrior** · Medium Fiend, Lawful Evil
 
-**AC** 12 · **HP** 22 · **Speed** 30 ft., swim 40 ft.
+**AC** 12 · **Initiative** +0 (10) · **HP** 22 (4d8 + 4) · **Speed** 30 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 11 (+0) | 12 (+1) | 12 (+1) | 13 (+1) | 9 (-1) |
 
 **Skills** Perception +5
-**Senses** Darkvision 120 ft.,  Passive Perception 15
+**Resistances** Acid, Cold
+**Senses** Darkvision 120 ft.;  Passive Perception 15
 **Languages** Sahuagin
 **CR** 1/2
 

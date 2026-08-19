@@ -1,13 +1,14 @@
 **Sphinx of Wonder** · Tiny Celestial, Lawful Good
 
-**AC** 13 · **HP** 24 · **Speed** 20 ft., fly 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 24 (7d4 + 7) · **Speed** 20 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 6 (-2) | 17 (+3) | 13 (+1) | 15 (+2) | 12 (+1) | 11 (+0) |
 
 **Skills** Arcana +4, Religion +4, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 11
+**Resistances** Necrotic, Psychic, Radiant
+**Senses** Darkvision 60 ft.;  Passive Perception 11
 **Languages** Celestial, Common
 **CR** 1
 

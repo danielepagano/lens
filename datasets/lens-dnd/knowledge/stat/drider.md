@@ -1,13 +1,13 @@
 **Drider** · Large Monstrosity, Chaotic Evil
 
-**AC** 19 · **HP** 123 · **Speed** 30 ft., climb 30 ft.
+**AC** 19 · **Initiative** +4 (14) · **HP** 123 (13d10 + 52) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 19 (+4) | 18 (+4) | 13 (+1) | 16 (+3) | 12 (+1) |
 
 **Skills** Perception +6, Stealth +10
-**Senses** Darkvision 120 ft.,  Passive Perception 16
+**Senses** Darkvision 120 ft.;  Passive Perception 16
 **Languages** Elvish, Undercommon
 **CR** 6
 

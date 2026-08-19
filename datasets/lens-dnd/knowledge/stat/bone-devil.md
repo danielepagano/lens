@@ -1,13 +1,16 @@
 **Bone Devil** · Large Fiend, Lawful Evil
 
-**AC** 16 · **HP** 161 · **Speed** 40 ft., fly 40 ft.
+**AC** 16 · **Initiative** +7 (17) · **HP** 161 (17d10 + 68) · **Speed** 40 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 16 (+3) | 18 (+4) | 13 (+1) | 14 (+2) | 16 (+3) |
 
+**Saving Throws** STR +8, INT +5, WIS +6, CHA +7
 **Skills** Deception +7, Insight +6
-**Senses** Darkvision 120 ft. (unimpeded by magical Darkness),  Passive Perception 12
+**Immunities** Fire, Poison; Poisoned
+**Resistances** Cold
+**Senses** Darkvision 120 ft. (unimpeded by magical Darkness);  Passive Perception 12
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 9
 

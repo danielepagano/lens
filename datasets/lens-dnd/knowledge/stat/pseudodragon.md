@@ -1,13 +1,13 @@
 **Pseudodragon** · Tiny Dragon, Neutral Good
 
-**AC** 14 · **HP** 10 · **Speed** 15 ft., fly 60 ft.
+**AC** 14 · **Initiative** +2 (12) · **HP** 10 (3d4 + 3) · **Speed** 15 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 6 (-2) | 15 (+2) | 13 (+1) | 10 (+0) | 12 (+1) | 10 (+0) |
 
 **Skills** Perception +5, Stealth +4
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 15
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 15
 **Languages** Understands Common and Draconic but can’t speak
 **CR** 1/4
 

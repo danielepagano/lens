@@ -1,13 +1,14 @@
 **Behir** · Huge Monstrosity, Neutral Evil
 
-**AC** 17 · **HP** 168 · **Speed** 50 ft., climb 50 ft.
+**AC** 17 · **Initiative** +3 (13) · **HP** 168 (16d12 + 64) · **Speed** 50 ft., Climb 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 23 (+6) | 16 (+3) | 18 (+4) | 7 (-2) | 14 (+2) | 12 (+1) |
 
 **Skills** Perception +6, Stealth +7
-**Senses** Darkvision 90 ft.,  Passive Perception 16
+**Immunities** Lightning
+**Senses** Darkvision 90 ft.;  Passive Perception 16
 **Languages** Draconic
 **CR** 11
 

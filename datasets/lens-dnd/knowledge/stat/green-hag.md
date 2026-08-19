@@ -1,13 +1,13 @@
 **Green Hag** · Medium Fey, Neutral Evil
 
-**AC** 17 · **HP** 82 · **Speed** 30 ft., swim 30 ft.
+**AC** 17 · **Initiative** +1 (11) · **HP** 82 (11d8 + 33) · **Speed** 30 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 12 (+1) | 16 (+3) | 13 (+1) | 14 (+2) | 14 (+2) |
 
 **Skills** Arcana +5, Deception +4, Perception +4, Stealth +3
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Common, Elvish, Sylvan
 **CR** 3
 

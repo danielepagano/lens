@@ -1,13 +1,14 @@
 **Bugbear Warrior** · Medium Fey, Chaotic Evil
 
-**AC** 14 · **HP** 33 · **Speed** 30 ft.
+**AC** 14 · **Initiative** +2 (12) · **HP** 33 (6d8 + 6) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 14 (+2) | 13 (+1) | 8 (-1) | 11 (+0) | 9 (-1) |
 
 **Skills** Stealth +6, Survival +2
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Gear** Hide Armor, Light Hammers (3)
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Common, Goblin
 **CR** 1
 

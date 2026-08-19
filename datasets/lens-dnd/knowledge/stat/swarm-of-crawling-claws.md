@@ -1,12 +1,14 @@
 **Swarm of Crawling Claws** · Medium Swarm Of Tiny Undead, Neutral Evil
 
-**AC** 12 · **HP** 49 · **Speed** 30 ft., climb 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 49 (11d8) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 14 (+2) | 11 (+0) | 5 (-3) | 10 (+0) | 4 (-3) |
 
-**Senses** Blindsight 30 ft.,  Passive Perception 10
+**Immunities** Necrotic, Poison; Charmed, Exhaustion, Frightened, Grappled, Incapacitated, Paralyzed, Petrified, Poisoned, Prone, Restrained, Stunned
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Blindsight 30 ft.;  Passive Perception 10
 **Languages** Understands Common but can’t speak
 **CR** 3
 

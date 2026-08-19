@@ -1,13 +1,15 @@
 **Guardian Naga** · Large Celestial, Lawful Good
 
-**AC** 18 · **HP** 136 · **Speed** 40 ft., climb 40 ft., swim 40 ft.
+**AC** 18 · **Initiative** +4 (14) · **HP** 136 (16d10 + 48) · **Speed** 40 ft., Climb 40 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 18 (+4) | 16 (+3) | 16 (+3) | 19 (+4) | 18 (+4) |
 
+**Saving Throws** DEX +8, CON +7, INT +7, WIS +8, CHA +8
 **Skills** Arcana +11, History +11, Religion +11
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Poison; Charmed, Paralyzed, Poisoned, Restrained
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Celestial, Common
 **CR** 10
 

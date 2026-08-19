@@ -1,14 +1,15 @@
 **Tyrannosaurus Rex** · Huge Beast, Unaligned
 
-**AC** 13 · **HP** 136 · **Speed** 50 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 136 (13d12 + 52) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 25 (+7) | 10 (+0) | 19 (+4) | 2 (-4) | 12 (+1) | 9 (-1) |
 
+**Saving Throws** STR +10, WIS +4
 **Skills** Perception +4
 **Senses** Passive Perception 14
-**Languages** --
+**Languages** None
 **CR** 8
 
 ---

@@ -1,12 +1,13 @@
 **Unicorn** · Large Celestial, Lawful Good
 
-**AC** 12 · **HP** 97 · **Speed** 50 ft.
+**AC** 12 · **Initiative** +8 (18) · **HP** 97 (13d10 + 26) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 14 (+2) | 15 (+2) | 11 (+0) | 17 (+3) | 16 (+3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 13
+**Immunities** Poison; Charmed, Paralyzed, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 13
 **Languages** Celestial, Elvish, Sylvan, Telepathy 120 ft.
 **CR** 5
 

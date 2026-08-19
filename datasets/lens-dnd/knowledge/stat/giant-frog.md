@@ -1,14 +1,14 @@
 **Giant Frog** · Medium Beast, Unaligned
 
-**AC** 11 · **HP** 18 · **Speed** 30 ft., swim 30 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 18 (4d8) · **Speed** 30 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 12 (+1) | 13 (+1) | 11 (+0) | 2 (-4) | 10 (+0) | 3 (-4) |
 
 **Skills** Perception +2, Stealth +4
-**Senses** Darkvision 30 ft.,  Passive Perception 12
-**Languages** --
+**Senses** Darkvision 30 ft.;  Passive Perception 12
+**Languages** None
 **CR** 1/4
 
 Amphibious. The frog can breathe air and water.

@@ -1,13 +1,15 @@
 **Ice Mephit** · Small Elemental, Neutral Evil
 
-**AC** 11 · **HP** 21 · **Speed** 30 ft., fly 30 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 21 (6d6) · **Speed** 30 ft., Fly 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 7 (-2) | 13 (+1) | 10 (+0) | 9 (-1) | 11 (+0) | 12 (+1) |
 
 **Skills** Perception +2, Stealth +3
-**Senses** Darkvision 60 ft.,  Passive Perception 12
+**Immunities** Cold, Poison; Exhaustion, Poisoned
+**Vulnerabilities** Fire
+**Senses** Darkvision 60 ft.;  Passive Perception 12
 **Languages** Primordial (Aquan, Auran)
 **CR** 1/2
 

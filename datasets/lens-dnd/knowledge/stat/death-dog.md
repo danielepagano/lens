@@ -1,13 +1,14 @@
 **Death Dog** · Medium Monstrosity, Neutral Evil
 
-**AC** 12 · **HP** 39 · **Speed** 40 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 39 (6d8 + 12) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 14 (+2) | 14 (+2) | 3 (-4) | 13 (+1) | 6 (-2) |
 
 **Skills** Perception +5, Stealth +4
-**Senses** Darkvision 120 ft.,  Passive Perception 15
+**Immunities** Blinded, Charmed, Deafened, Frightened, Stunned, Unconscious
+**Senses** Darkvision 120 ft.;  Passive Perception 15
 **Languages** None
 **CR** 1
 

@@ -1,13 +1,14 @@
 **Stone Giant** · Huge Giant, Neutral
 
-**AC** 17 · **HP** 126 · **Speed** 40 ft.
+**AC** 17 · **Initiative** +5 (15) · **HP** 126 (11d12 + 55) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 23 (+6) | 15 (+2) | 20 (+5) | 10 (+0) | 12 (+1) | 9 (-1) |
 
+**Saving Throws** DEX +5, CON +8, WIS +4
 **Skills** Athletics +12, Perception +4, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Giant
 **CR** 7
 

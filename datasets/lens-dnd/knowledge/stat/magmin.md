@@ -1,12 +1,13 @@
 **Magmin** · Small Elemental, Chaotic Neutral
 
-**AC** 14 · **HP** 13 · **Speed** 30 ft.
+**AC** 14 · **Initiative** +2 (12) · **HP** 13 (3d6 + 3) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 7 (-2) | 15 (+2) | 12 (+1) | 8 (-1) | 11 (+0) | 10 (+0) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Fire
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Ignan)
 **CR** 1/2
 

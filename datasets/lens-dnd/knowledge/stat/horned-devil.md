@@ -1,12 +1,15 @@
 **Horned Devil** · Large Fiend, Lawful Evil
 
-**AC** 18 · **HP** 199 · **Speed** 30 ft., fly 60 ft.
+**AC** 18 · **Initiative** +7 (17) · **HP** 199 (19d10 + 95) · **Speed** 30 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 22 (+6) | 17 (+3) | 21 (+5) | 12 (+1) | 16 (+3) | 18 (+4) |
 
-**Senses** Darkvision 150 ft. (unimpeded by magical Darkness),  Passive Perception 13
+**Saving Throws** STR +10, DEX +7, WIS +7, CHA +8
+**Immunities** Fire, Poison; Poisoned
+**Resistances** Cold
+**Senses** Darkvision 150 ft. (unimpeded by magical Darkness);  Passive Perception 13
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 11
 

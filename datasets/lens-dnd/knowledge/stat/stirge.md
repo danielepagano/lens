@@ -1,13 +1,13 @@
 **Stirge** · Tiny Monstrosity, Unaligned
 
-**AC** 13 · **HP** 5 · **Speed** 10 ft., fly 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 5 (2d4) · **Speed** 10 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 4 (-3) | 16 (+3) | 11 (+0) | 2 (-4) | 8 (-1) | 6 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 9
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 9
+**Languages** None
 **CR** 1/8
 
 ---
