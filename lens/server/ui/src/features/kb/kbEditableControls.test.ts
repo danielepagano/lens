@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { preprocessKbEditableControls, scanControlPositions } from './kbEditableControls'
+import { preprocessKbEditableControls, scanControlPositions, buildQuoteLinePattern } from './kbEditableControls'
 import { stripKbItemFrontMatter } from './kbViewerMarkdown'
 
 describe('preprocessKbEditableControls', () => {
@@ -60,14 +60,74 @@ describe('preprocessKbEditableControls', () => {
     expect(processed).not.toContain('checked')
   })
 
-  it('skips content inside notes fences', () => {
-    const md = '```notes\n`[x]` and `#42`\n```'
-    const { processed, editMeta } = preprocessKbEditableControls(md)
-    expect(processed).toContain('<textarea')
-    // inner backtick patterns are consumed by the notes fence
-    const notesMeta = editMeta.filter((m) => m.type === 'notes')
-    expect(notesMeta).toHaveLength(1)
-    expect(editMeta.filter((m) => m.type !== 'notes')).toHaveLength(0)
+  it('converts a quote line into a tappable pill button', () => {
+    const { processed, editMeta } = preprocessKbEditableControls('> [conditions] Prone')
+    expect(processed).toContain('<button type="button" class="kb-edit-quote-line"')
+    expect(processed).toContain('class="quote-pill"')
+    expect(processed).toContain('conditions')
+    expect(processed).toContain('Prone')
+    expect(processed).not.toContain('> [conditions] Prone')
+    expect(editMeta).toHaveLength(1)
+    expect(editMeta[0]!.type).toBe('quote')
+    expect(editMeta[0]!.slug).toBe('conditions')
+    expect(editMeta[0]!.value).toBe('Prone')
+  })
+
+  it('renders an empty quote line with a placeholder', () => {
+    const { processed, editMeta } = preprocessKbEditableControls('> [conditions] ')
+    expect(processed).toContain('kb-edit-quote-text--empty')
+    expect(editMeta[0]!.value).toBe('')
+  })
+
+  it('does not treat an indented `>` line as a quote control (chevron must be at column 0)', () => {
+    const { editMeta } = preprocessKbEditableControls('  > [conditions] Prone')
+    expect(editMeta.filter((m) => m.type === 'quote')).toHaveLength(0)
+  })
+
+  it('requires the slug to have no whitespace', () => {
+    const { editMeta } = preprocessKbEditableControls('> [not a slug] text')
+    expect(editMeta.filter((m) => m.type === 'quote')).toHaveLength(0)
+  })
+
+  it('skips checkbox/counter patterns inside a quote line\'s own text', () => {
+    // A combatant's free-typed condition text could itself contain `[x]`/`#5` —
+    // those must stay literal text inside the pill button, not become nested controls.
+    const { processed, editMeta } = preprocessKbEditableControls('> [conditions] wearing `[x]` armor, `#5` charges left')
+    expect(editMeta).toHaveLength(1)
+    expect(editMeta[0]!.type).toBe('quote')
+    expect(processed).not.toContain('<input type="checkbox"')
+    expect(processed).not.toContain('kb-edit-counter')
+  })
+
+  it('skips quote-line patterns inside fenced code blocks', () => {
+    const md = '```\n> [conditions] example\n```\n> [conditions] real'
+    const { editMeta } = preprocessKbEditableControls(md)
+    const quotes = editMeta.filter((m) => m.type === 'quote')
+    expect(quotes).toHaveLength(1)
+    expect(quotes[0]!.value).toBe('real')
+  })
+
+  it('handles multiple quote lines alongside checkboxes and counters', () => {
+    const md = [
+      '<details><summary>13 - [Bandit 1](kb/stat.bandit). HP: `#11/11`</summary>',
+      '- Reaction Used: `[ ]`',
+      '> [conditions] ',
+      '</details>',
+      '',
+      '<details><summary>13 - [Bandit 2](kb/stat.bandit). HP: `#3/11`</summary>',
+      '- Reaction Used: `[x]`',
+      '> [conditions] Prone',
+      '</details>',
+    ].join('\n')
+    const { editMeta } = preprocessKbEditableControls(md)
+    const quotes = editMeta.filter((m) => m.type === 'quote')
+    const checkboxes = editMeta.filter((m) => m.type === 'checkbox')
+    const counters = editMeta.filter((m) => m.type === 'counter')
+    expect(quotes).toHaveLength(2)
+    expect(checkboxes).toHaveLength(2)
+    expect(counters).toHaveLength(2)
+    expect(quotes[0]!.id).toBe('quote-0')
+    expect(quotes[1]!.id).toBe('quote-1')
   })
 
   it('returns correct editMeta offsets', () => {
@@ -87,125 +147,33 @@ describe('preprocessKbEditableControls', () => {
   it('assigns per-type sequence IDs', () => {
     const md = 'a: `[x]`\nb: `#1`\nc: `[ ]`\nd: `#2`'
     const { editMeta } = preprocessKbEditableControls(md)
-    // editMeta order follows scan order: notes → checkboxes → counters
+    // editMeta order follows scan order: quote lines → checkboxes → counters
     expect(editMeta[0]!.id).toBe('checkbox-0')
     expect(editMeta[1]!.id).toBe('checkbox-1')
     expect(editMeta[2]!.id).toBe('counter-0')
     expect(editMeta[3]!.id).toBe('counter-1')
   })
 
-  it('assigns per-type sequence IDs for notes alongside inline controls', () => {
-    const md = '```notes\nx\n```\nHP: `#10`'
+  it('assigns per-type sequence IDs for quote lines alongside inline controls', () => {
+    const md = '> [conditions] x\nHP: `#10`'
     const { editMeta } = preprocessKbEditableControls(md)
-    expect(editMeta[0]!.id).toBe('notes-0')
+    expect(editMeta[0]!.id).toBe('quote-0')
     expect(editMeta[1]!.id).toBe('counter-0')
   })
 
-  it('counters before empty notes blocks survive position shift from earlier notes', () => {
-    // Notes block BEFORE the details group causes a position shift that
-    // pushes subsequent counters beyond the original notes-block start,
-    // but they should NOT be incorrectly identified as inside the notes block.
-    const md = [
-      'before: `[x]`',
-      '',
-      '```notes',
-      'longer content here',
-      '```',
-      '',
-      '<details><summary>Bandit. HP: `#11/11`</summary>',
-      '```notes',
-      '```',
-      '</details>',
-    ].join('\n')
-    const { editMeta } = preprocessKbEditableControls(md)
-    const counters = editMeta.filter((m) => m.type === 'counter')
-    // The counter must be found (should NOT be falsely excluded)
-    expect(counters).toHaveLength(1)
-    const notes = editMeta.filter((m) => m.type === 'notes')
-    expect(notes).toHaveLength(2)
-  })
-
-  it('converts all counters in multi-bandit details with mix of empty and non-empty notes', () => {
-    // Reproduction of the user's scenario
-    const md = [
-      '```notes',
-      'content',
-      '```',
-      '',
-      '<details><summary>B1. HP: `#11/11`</summary>',
-      '```notes',
-      '```',
-      '</details>',
-      '',
-      '<details><summary>B2. HP: `#3/11`</summary>',
-      '```notes',
-      'prone',
-      '```',
-      '</details>',
-      '',
-      '<details><summary>B3. HP: `#10/11`</summary>',
-      '```notes',
-      '```',
-      '</details>',
-    ].join('\n')
-    const { editMeta } = preprocessKbEditableControls(md)
-    const counters = editMeta.filter((m) => m.type === 'counter')
-    expect(counters).toHaveLength(3)
-  })
-
-  it('editing empty notes content produces valid markdown', () => {
-    const body = [
-      '<details><summary>13 - [Bandit 1](kb/stat.bandit). HP: `#11/11`</summary>Conditions: ',
-      '```notes',
-      '```',
-      '</details>',
-      '',
-      '<details><summary>13 - [Bandit 2](kb/stat.bandit). HP: `#3/11`</summary>Conditions: ',
-      '```notes',
-      'Prone',
-      '```',
-      '</details>',
-    ].join('\n')
-
-    const { editMeta } = preprocessKbEditableControls(body)
-    const notesMeta = editMeta.find((m) => m.type === 'notes' && editMeta.indexOf(m) === 0)!
-    expect(notesMeta.value).toBe('')
-    expect(notesMeta.rawEnd - notesMeta.rawStart).toBe(12)
-
-    // Simulate save handler: replace empty notes with "stunned"
-    const text = 'stunned'
-    const pattern = '```notes\n' + text + '\n```'
-    const newContent =
-      body.slice(0, notesMeta.rawStart) + pattern + body.slice(notesMeta.rawEnd)
-
-    // Bandit 1's notes block must close correctly
-    const b1Match = newContent.match(/Bandit 1[\s\S]*?```notes\n([\s\S]*?)\n```/)
-    expect(b1Match).not.toBeNull()
-    expect(b1Match![1]).toBe('stunned')
-    // Bandit 2 must survive untouched
-    expect(newContent).toContain('Bandit 2')
-    expect(newContent).toContain('Prone')
-    // No broken fences
-    expect(newContent).not.toMatch(/```nned/)
-    expect(newContent).not.toMatch(/```nails/)
-  })
-
-  it('editing notes through renderKbMarkdown bodyOffset preserves integrity', () => {
+  it('editing a quote line through renderKbMarkdown bodyOffset preserves integrity', () => {
     // Full content with front matter — what renderKbMarkdown receives
     const fullContent = [
       '[',
       '    kb-details: true',
       ']: #',
       '',
-      '<details><summary>13 - [Bandit 1](kb/stat.bandit). HP: `#11/11`</summary>Conditions: ',
-      '```notes',
-      '```',
+      '<details><summary>13 - [Bandit 1](kb/stat.bandit). HP: `#11/11`</summary>',
+      '> [conditions] ',
       '</details>',
       '',
-      '<details><summary>13 - [Bandit 2](kb/stat.bandit). HP: `#3/11`</summary>Conditions: ',
-      '```notes',
-      'Prone',
-      '```',
+      '<details><summary>13 - [Bandit 2](kb/stat.bandit). HP: `#3/11`</summary>',
+      '> [conditions] Prone',
       '</details>',
     ].join('\n')
 
@@ -222,25 +190,38 @@ describe('preprocessKbEditableControls', () => {
       m.rawEnd += bodyOffset
     }
 
-    // Now simulate the save handler with FULL content (what getContent() returns)
-    const notesMeta = editMeta.find((m) => m.type === 'notes' && m.id === 'notes-0')!
-    expect(notesMeta.value).toBe('')
+    const quoteMeta = editMeta.find((m) => m.type === 'quote' && m.id === 'quote-0')!
+    expect(quoteMeta.value).toBe('')
+    expect(quoteMeta.slug).toBe('conditions')
 
-    const text = 'stunned'
-    const pattern = '```notes\n' + text + '\n```'
-    const newContent =
-      fullContent.slice(0, notesMeta.rawStart) + pattern + fullContent.slice(notesMeta.rawEnd)
+    const pattern = buildQuoteLinePattern(quoteMeta.slug!, 'stunned')
+    const newContent = fullContent.slice(0, quoteMeta.rawStart) + pattern + fullContent.slice(quoteMeta.rawEnd)
 
-    // Bandit 1's notes must close correctly
-    const b1Match = newContent.match(/Bandit 1[\s\S]*?```notes\n([\s\S]*?)\n```/)
-    expect(b1Match).not.toBeNull()
-    expect(b1Match![1]).toBe('stunned')
-    // Bandit 2 must survive
+    // Bandit 1's line updates in place
+    expect(newContent).toContain('> [conditions] stunned')
+    // Bandit 2 survives untouched
     expect(newContent).toContain('Bandit 2')
-    expect(newContent).toContain('Prone')
-    // No corruption — "nned" must not appear on the `` ``` `` fence line itself
-    expect(newContent).not.toMatch(/```nned/)
+    expect(newContent).toContain('> [conditions] Prone')
   })
+})
+
+describe('buildQuoteLinePattern', () => {
+  it('always keeps a space after the closing bracket, even for empty text', () => {
+    expect(buildQuoteLinePattern('conditions', '')).toBe('> [conditions] ')
+  })
+
+  it('serializes slug and text', () => {
+    expect(buildQuoteLinePattern('conditions', 'Prone, Restrained')).toBe('> [conditions] Prone, Restrained')
+  })
+
+  it('round-trips through scanControlPositions', () => {
+    const pattern = buildQuoteLinePattern('notes', 'stunned')
+    const meta = scanControlPositions(pattern)
+    expect(meta).toHaveLength(1)
+    expect(meta[0]!.slug).toBe('notes')
+    expect(meta[0]!.value).toBe('stunned')
+  })
+})
 
 describe('scanControlPositions', () => {
   it('returns correct positions for a counter', () => {
@@ -290,18 +271,18 @@ describe('scanControlPositions', () => {
     expect(newContent).toBe('HP: `#8/11`\n\nAC: `#8`')
   })
 
-  it('does not match controls inside notes fences', () => {
-    const content = '```notes\n`[x]` and `#42`\n```\nOutside: `#1`'
+  it('does not match controls inside a quote line', () => {
+    const content = '> [conditions] `[x]` and `#42`\nOutside: `#1`'
     const meta = scanControlPositions(content)
-    const notes = meta.filter((m) => m.type === 'notes')
+    const quotes = meta.filter((m) => m.type === 'quote')
     const counters = meta.filter((m) => m.type === 'counter')
-    expect(notes).toHaveLength(1)
+    expect(quotes).toHaveLength(1)
     expect(counters).toHaveLength(1)
     expect(counters[0]!.value).toBe('1')
   })
 
   it('returns correct positions with front matter present', () => {
-    // scanControlPositions returns in type-group order: notes → checkboxes → counters
+    // scanControlPositions returns in type-group order: quote lines → checkboxes → counters
     const full = [
       '[',
       '    kb-details: true',
@@ -324,49 +305,31 @@ describe('scanControlPositions', () => {
     expect(full.slice(meta[1]!.rawStart, meta[1]!.rawEnd)).toBe('`#11/11`')
   })
 
-  it('preserves correct positions for notes after a length-changing counter edit', () => {
-    // scanControlPositions returns in type-group order: notes → checkboxes → counters
-    // So meta[0] is notes, meta[1] is counter.
-    const initial = 'HP: `#11/11`\n\n```notes\nfoo\n```'
+  it('preserves correct positions for a quote line after a length-changing counter edit', () => {
+    // scanControlPositions returns in type-group order: quote lines → counters
+    // So meta[0] is the quote line, meta[1] is the counter.
+    const initial = 'HP: `#11/11`\n\n> [conditions] Prone'
     const meta0 = scanControlPositions(initial)
     expect(meta0).toHaveLength(2)
-    expect(meta0[0]!.type).toBe('notes')
+    expect(meta0[0]!.type).toBe('quote')
     expect(meta0[1]!.type).toBe('counter')
-    const notesStart0 = meta0[0]!.rawStart
-    const notesLen0 = meta0[0]!.rawEnd - meta0[0]!.rawStart
+    const quoteStart0 = meta0[0]!.rawStart
+    const quoteLen0 = meta0[0]!.rawEnd - meta0[0]!.rawStart
 
-    // Edit counter-0: #11/11 → #8/11 (shorter by 1) — shifts notes by -1
-    const modified = 'HP: `#8/11`\n\n```notes\nfoo\n```'
+    // Edit counter-0: #11/11 → #8/11 (shorter by 1) — shifts the quote line by -1
+    const modified = 'HP: `#8/11`\n\n> [conditions] Prone'
     const meta1 = scanControlPositions(modified)
     expect(meta1).toHaveLength(2)
     expect(meta1[1]!.rawEnd - meta1[1]!.rawStart).toBe(7) // `#8/11`
-    // Notes block shifted by -1
-    expect(meta1[0]!.rawStart).toBe(notesStart0 - 1)
-    expect(meta1[0]!.rawEnd - meta1[0]!.rawStart).toBe(notesLen0)
+    expect(meta1[0]!.rawStart).toBe(quoteStart0 - 1)
+    expect(meta1[0]!.rawEnd - meta1[0]!.rawStart).toBe(quoteLen0)
   })
-})
 
-  it('merges adjacent notes blocks (no closing ``` between them) into one textarea', () => {
-    // When two notes blocks are adjacent — i.e. the first closes with ` ``` `
-    // but the next line immediately opens ` ```notes ` — we get the ambiguous
-    // pattern `\n```notes\ncontent1\n```notes\ncontent2\n```\n`.  The regex
-    // `^```\s*$` does not match a line with ` ```notes `, so the lazy
-    // matcher consumes everything up to the final ``` on its own line.
-    const md = [
-      '<details><summary>B1. HP: `#1/5`</summary>',
-      '```notes',
-      'stunned',
-      '```notes',    // no proper closing before second opening
-      'Prone',
-      '```',
-      '</details>',
-    ].join('\n')
-    const { editMeta } = preprocessKbEditableControls(md)
-    const notes = editMeta.filter((m) => m.type === 'notes')
-    expect(notes).toHaveLength(1)
-    expect(notes[0]!.value).toBe('stunned\n```notes\nProne')
-    const counters = editMeta.filter((m) => m.type === 'counter')
-    expect(counters).toHaveLength(1)
-    expect(counters[0]!.value).toBe('1')
+  it('applying a quote-line edit via rawStart/rawEnd reproduces buildQuoteLinePattern', () => {
+    const content = 'Before\n> [conditions] Prone\nAfter'
+    const meta = scanControlPositions(content).find((m) => m.type === 'quote')!
+    const newLine = buildQuoteLinePattern(meta.slug!, 'Stunned, Prone')
+    const newContent = content.slice(0, meta.rawStart) + newLine + content.slice(meta.rawEnd)
+    expect(newContent).toBe('Before\n> [conditions] Stunned, Prone\nAfter')
   })
 })

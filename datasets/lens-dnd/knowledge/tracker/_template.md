@@ -9,7 +9,7 @@ IMPORTANT: Emit ONLY the final tracker markdown — no reasoning, no commentary 
 
 A tracker is live state, updated every round: always include `tags: [state]` in the kb fence when creating one (this template's own front matter declares the same default, applied automatically if the object is created outside the design flow — but the kb-fence extractor does not read it, so put it in your own block).
 
-Every combatant is a <details> element sorted by initiative count (descending). PCs get an Active [x]/[ ] marker, reaction tracker, and a conditions textarea only. Monsters/NPCs get AC, HP, resource/condition bullets, and a conditions textarea.
+Every combatant is a <details> element sorted by initiative count (descending). PCs get an Active [x]/[ ] marker, reaction tracker, and a conditions pill only. Monsters/NPCs get AC, HP, resource/condition bullets, and a conditions pill.
 
 Start every tracker with:
 
@@ -23,9 +23,7 @@ ENTRY FORMAT
   - Reaction Used: `[ ]`
   {resources}
 
-  Conditions:
-  ```notes
-  ```
+  > [conditions] 
   </details>
 
   - PCs: suffix is `Active `[x]`` (or `[ ]`). No HP, no resource bullets.
@@ -75,25 +73,19 @@ FULL EXAMPLE (for reference — a completed tracker with multiple entries):
   <details><summary>20 - [Amy](kb/pc.Amy) | Active `[x]`</summary>
   - Reaction Used `[ ]`  
 
-  Conditions:
-  ```notes
-  ```
+  > [conditions] 
   </details>
 
   <details><summary>15 - [Goblin 1](kb/stat.goblin-warrior) | AC: 15 | HP: `#10/10`</summary>
   - Reaction Used `[ ]`  
 
-  Conditions:
-  ```notes
-  ```
+  > [conditions] 
   </details>
 
   <details><summary>14 - [Bob](kb/pc.Bob) | Active `[x]`</summary>
   -  Reaction Used `[ ]`  
 
-  Conditions:
-  ```notes
-  ```
+  > [conditions] 
   </details>
 
   <details><summary>11 - [Kurmat](kb/stat.ancient-red-dragon) | AC: 22 | HP: `#507/507`</summary>
@@ -105,9 +97,7 @@ FULL EXAMPLE (for reference — a completed tracker with multiple entries):
   - Legendary Actions Used: `#0/3` (reset at start of turn)
   - Fire Breath: Charged `[x]` (on 5–6)
 
-  Conditions:
-  ```notes
-  ```
+  > [conditions] 
   </details>
 
   <details><summary>10 - [Velthor](kb/npc.velthor) ([mage](kb/stat.mage)) (allied) | AC: 12 | HP: `#81/81`</summary>
@@ -119,9 +109,7 @@ FULL EXAMPLE (for reference — a completed tracker with multiple entries):
       - Cone of Cold: `#0/1`
   - Protective Magic: `#0/3`
 
-  Conditions:
-  ```notes
-  ```
+  > [conditions] 
   </details>
 
 The `kb-details: true` annotation block at the top of the body enables master/detail view, so KB links open in a detail panel under the main content. It is a Lens annotation, not front matter — see the mistake below.
@@ -147,7 +135,5 @@ COMMON MISTAKES:
 <details><summary>0 - [Name](kb/stat.slug) | AC: 0 | HP: `#0/0`</summary>
 - Reaction Used: `[ ]`
 
-Conditions:
-```notes
-```
+> [conditions] 
 </details>

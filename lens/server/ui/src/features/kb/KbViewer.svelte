@@ -30,11 +30,12 @@
   } from './kbViewerMarkdown'
   import type { KbLinkHandler, DiceRollMode } from './kbViewerMarkdown'
   import { cliInputAppend } from '../../stores/ui'
-  import { attachKbEditableControls } from './kbEditableControls'
+  import { attachKbEditableControls, scanControlPositions, buildQuoteLinePattern } from './kbEditableControls'
   import type { KbEditMeta } from './kbEditableControls'
   import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
   import KbViewerMetaSection from './KbViewerMetaSection.svelte'
   import KbDetailView from './KbDetailView.svelte'
+  import KbQuoteEditDialog from './KbQuoteEditDialog.svelte'
 
   let item = $state.raw<KbItemDetail | null>(null)
   let editMode = $state(false)
@@ -96,11 +97,14 @@
       : attachKbMarkdownClicks(viewerHashBase),
   )
 
+  let quoteEditMeta = $state<KbEditMeta | null>(null)
+
   const editableControlsAttach = $derived(
     attachKbEditableControls(
       editMeta,
       () => item?.content ?? '',
       (newContent) => saveInlineEdit(newContent),
+      (meta) => { quoteEditMeta = meta },
     ),
   )
 
@@ -114,6 +118,25 @@
     if (!item) return
     item = { ...item, content: newContent }
     saveKbItemSilent(item.id, newContent)
+  }
+
+  function saveQuoteEdit(text: string) {
+    if (!item || !quoteEditMeta) return
+    const fullContent = item.content
+    // Rescan rather than trusting the meta captured when the dialog opened —
+    // another control's debounced save could have shifted offsets meanwhile.
+    const freshMeta = scanControlPositions(fullContent).find(
+      (m) => m.id === quoteEditMeta!.id && m.type === 'quote',
+    )
+    quoteEditMeta = null
+    if (!freshMeta) return
+    const pattern = buildQuoteLinePattern(freshMeta.slug ?? '', text)
+    const newContent = fullContent.slice(0, freshMeta.rawStart) + pattern + fullContent.slice(freshMeta.rawEnd)
+    saveInlineEdit(newContent)
+  }
+
+  function cancelQuoteEdit() {
+    quoteEditMeta = null
   }
 
   let splitRatio = $state(0.5)
@@ -508,3 +531,5 @@
     {/if}
   {/if}
 </div>
+
+<KbQuoteEditDialog meta={quoteEditMeta} onSave={saveQuoteEdit} onCancel={cancelQuoteEdit} />

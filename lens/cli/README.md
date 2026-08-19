@@ -226,7 +226,7 @@ KB items can also include interactive inline controls if rendered in the UI in p
 | `` `[ ]` `[x]` `` | Unchecked or checked checkbox |
 | `` `#5` `` | Number input (0–∞) |
 | `` `#3/10` `` | Number input (0–max, clamped) |
-| ` ```notes` … ` ``` ` | Auto-growing `<textarea>` |
+| `> [slug] text` | Attributed-blockquote pill (chevron at column 0, a bracketed slug with no whitespace, then free text to end of line). Tap the line to edit in a dialog — always one line, no fenced block, so it nests safely inside a ` ```kb ` fence. On save, a single space is kept after the closing `]`. |
 
 
 ### `lens kb get`

@@ -1,12 +1,15 @@
 import type { Attachment } from 'svelte/attachments'
+import { quotePillHslVars } from '../../utils/markdown'
 
 export interface KbEditMeta {
   id: string
-  type: 'checkbox' | 'counter' | 'notes'
+  type: 'checkbox' | 'counter' | 'quote'
   rawStart: number
   rawEnd: number
   value: string
   max?: number
+  /** `type: 'quote'` only — the bracketed label, e.g. `notes` in `> [notes] text`. */
+  slug?: string
 }
 
 function escapeHtml(s: string): string {
@@ -15,36 +18,83 @@ function escapeHtml(s: string): string {
 
 const CHECKBOX_RE = /`\[([ x])]`/g
 const COUNTER_RE = /`#(-?\d+)(?:\/(\d+))?`/g
-const NOTES_BLOCK_RE = /^```notes\s*$\n?([\s\S]*?)\n?^```\s*$/gm
+
+// One editable line: chevron at column 0, a bracketed slug (no whitespace,
+// at least one char), then free text to end of line (may be empty).
+// `> [slug] text` — the same shape as the narrative attributed-blockquote
+// pill (see `preprocessBlockquotePills` in utils/markdown.ts), reused here
+// so KB "live state" fields (tracker conditions, notes, …) render as a pill
+// instead of a fenced code block (fenced blocks can't nest inside the outer
+// ```kb fence the design operator emits).
+const QUOTE_LINE_RE = /^> \[([^\s\]]+)\] ?(.*)$/
+const FENCE_MARKER_RE = /^\s*(`{3,}|~{3,})/
+
+/** Line-based scan for `> [slug] text` rows, skipping lines inside fenced code blocks. */
+function scanQuoteLines(content: string): { id: string; slug: string; text: string; start: number; end: number }[] {
+  const out: { id: string; slug: string; text: string; start: number; end: number }[] = []
+  const lines = content.split('\n')
+  let offset = 0
+  let inFence = false
+  let quoteIdx = 0
+  for (const line of lines) {
+    if (FENCE_MARKER_RE.test(line)) {
+      inFence = !inFence
+    } else if (!inFence) {
+      const m = QUOTE_LINE_RE.exec(line)
+      if (m) {
+        out.push({
+          id: `quote-${quoteIdx++}`,
+          slug: m[1]!,
+          text: m[2] ?? '',
+          start: offset,
+          end: offset + line.length,
+        })
+      }
+    }
+    offset += line.length + 1
+  }
+  return out
+}
+
+/** Serialize a quote-line control back to raw markdown; always keeps the space after `]`. */
+export function buildQuoteLinePattern(slug: string, text: string): string {
+  return `> [${slug}] ${text}`
+}
+
+function buildQuoteLineHtml(id: string, slug: string, text: string): string {
+  const { accent, border } = quotePillHslVars(slug)
+  const style = `--quote-pill-accent:${accent};--quote-pill-border:${border}`
+  const textHtml = text
+    ? `<span class="kb-edit-quote-text">${escapeHtml(text)}</span>`
+    : `<span class="kb-edit-quote-text kb-edit-quote-text--empty">Tap to edit</span>`
+  return `<button type="button" class="kb-edit-quote-line" data-kb-edit-id="${id}"><span class="quote-pill" style="${style}">${escapeHtml(slug)}</span> ${textHtml}</button>`
+}
 
 export function scanControlPositions(content: string): KbEditMeta[] {
   const meta: KbEditMeta[] = []
-  let notesIdx = 0
   let checkboxIdx = 0
   let counterIdx = 0
 
-  const notesRanges: { start: number; end: number }[] = []
-  let m: RegExpExecArray | null
-
-  NOTES_BLOCK_RE.lastIndex = 0
-  while ((m = NOTES_BLOCK_RE.exec(content)) !== null) {
-    const id = `notes-${notesIdx++}`
-    const raw = m[0]
-    const inner = m[1]!
+  const quoteLines = scanQuoteLines(content)
+  const quoteRanges: { start: number; end: number }[] = []
+  for (const q of quoteLines) {
     meta.push({
-      id,
-      type: 'notes',
-      rawStart: m.index,
-      rawEnd: m.index + raw.length,
-      value: inner,
+      id: q.id,
+      type: 'quote',
+      rawStart: q.start,
+      rawEnd: q.end,
+      value: q.text,
+      slug: q.slug,
     })
-    notesRanges.push({ start: m.index, end: m.index + raw.length })
+    quoteRanges.push({ start: q.start, end: q.end })
   }
+
+  let m: RegExpExecArray | null
 
   CHECKBOX_RE.lastIndex = 0
   while ((m = CHECKBOX_RE.exec(content)) !== null) {
     if (
-      notesRanges.some(
+      quoteRanges.some(
         (r) => m!.index >= r.start && m!.index < r.end,
       )
     )
@@ -63,7 +113,7 @@ export function scanControlPositions(content: string): KbEditMeta[] {
   COUNTER_RE.lastIndex = 0
   while ((m = COUNTER_RE.exec(content)) !== null) {
     if (
-      notesRanges.some(
+      quoteRanges.some(
         (r) => m!.index >= r.start && m!.index < r.end,
       )
     )
@@ -91,44 +141,47 @@ export function preprocessKbEditableControls(content: string): {
   const meta = scanControlPositions(content)
 
   // ── Phase 3: build HTML ────────────────────────────────────────────
-  // 3a. Replace notes blocks with <textarea>
-  const notesReplacements: { start: number; end: number; html: string }[] = meta
-    .filter((m) => m.type === 'notes')
+  // 3a. Replace quote-line rows with a tappable pill button. The leading
+  // `> ` stays in place so markdown-it still wraps the line in <blockquote>.
+  const quoteReplacements: { start: number; end: number; html: string }[] = meta
+    .filter((m) => m.type === 'quote')
     .map((m) => ({
       start: m.rawStart,
       end: m.rawEnd,
-      html: `<textarea class="kb-edit-notes" data-kb-edit-id="${m.id}">${escapeHtml(m.value)}</textarea>`,
+      html: '> ' + buildQuoteLineHtml(m.id, m.slug ?? '', m.value),
     }))
 
-  let afterNotes = content
-  for (let i = notesReplacements.length - 1; i >= 0; i--) {
-    const r = notesReplacements[i]!
-    afterNotes = afterNotes.slice(0, r.start) + r.html + afterNotes.slice(r.end)
+  let afterQuotes = content
+  for (let i = quoteReplacements.length - 1; i >= 0; i--) {
+    const r = quoteReplacements[i]!
+    afterQuotes = afterQuotes.slice(0, r.start) + r.html + afterQuotes.slice(r.end)
   }
 
-  // 3b. Build notes ranges in afterNotes coordinates for inline exclusion
-  const afterNotesRanges: { start: number; end: number }[] = []
+  // 3b. Build quote-button ranges in afterQuotes coordinates for inline exclusion
+  // (a combatant's free-typed condition text could itself contain `[x]`/`#5`
+  // patterns — those must not turn into nested interactive controls).
+  const afterQuoteRanges: { start: number; end: number }[] = []
   {
-    const notesRe = /<textarea\b/g
+    const quoteRe = /<button type="button" class="kb-edit-quote-line"/g
     let tm: RegExpExecArray | null
-    while ((tm = notesRe.exec(afterNotes)) !== null) {
-      const close = afterNotes.indexOf('</textarea>', tm.index)
+    while ((tm = quoteRe.exec(afterQuotes)) !== null) {
+      const close = afterQuotes.indexOf('</button>', tm.index)
       if (close !== -1) {
-        afterNotesRanges.push({ start: tm.index, end: close + '</textarea>'.length })
+        afterQuoteRanges.push({ start: tm.index, end: close + '</button>'.length })
       }
     }
   }
 
-  // 3c. Scan afterNotes for inline patterns — generate HTML controls
+  // 3c. Scan afterQuotes for inline patterns — generate HTML controls
   const inlineReplacements: { start: number; end: number; html: string }[] = []
   let checkboxIdx = 0
   let counterIdx = 0
 
   CHECKBOX_RE.lastIndex = 0
   let m: RegExpExecArray | null
-  while ((m = CHECKBOX_RE.exec(afterNotes)) !== null) {
+  while ((m = CHECKBOX_RE.exec(afterQuotes)) !== null) {
     if (
-      afterNotesRanges.some(
+      afterQuoteRanges.some(
         (r) => m!.index >= r.start && m!.index < r.end,
       )
     )
@@ -143,9 +196,9 @@ export function preprocessKbEditableControls(content: string): {
   }
 
   COUNTER_RE.lastIndex = 0
-  while ((m = COUNTER_RE.exec(afterNotes)) !== null) {
+  while ((m = COUNTER_RE.exec(afterQuotes)) !== null) {
     if (
-      afterNotesRanges.some(
+      afterQuoteRanges.some(
         (r) => m!.index >= r.start && m!.index < r.end,
       )
     )
@@ -169,7 +222,7 @@ export function preprocessKbEditableControls(content: string): {
   }
 
   // 3d. Apply inline replacements (descending position to avoid shift)
-  let result = afterNotes
+  let result = afterQuotes
   const sorted = [...inlineReplacements].sort((a, b) => b.start - a.start)
   for (const r of sorted) {
     result = result.slice(0, r.start) + r.html + result.slice(r.end)
@@ -182,6 +235,7 @@ export function attachKbEditableControls(
   editMeta: KbEditMeta[],
   getContent: () => string,
   saveContent: (newContent: string) => void,
+  openQuoteEditor: (meta: KbEditMeta) => void,
 ): Attachment<HTMLDivElement> {
   if (editMeta.length === 0) return () => () => {}
 
@@ -243,12 +297,8 @@ export function attachKbEditableControls(
           pattern +
           fullContent.slice(meta.rawEnd)
       } else {
-        const text = (target as HTMLTextAreaElement).value
-        const pattern = '```notes\n' + text + '\n```'
-        newContent =
-          fullContent.slice(0, meta.rawStart) +
-          pattern +
-          fullContent.slice(meta.rawEnd)
+        // Quote lines are edited via dialog (see handleClick), never inline.
+        return
       }
 
       const existing = timers.get(editId)
@@ -264,6 +314,19 @@ export function attachKbEditableControls(
 
     function handleClick(e: Event) {
       const target = e.target as HTMLElement
+
+      const quoteBtn = target.closest('.kb-edit-quote-line') as HTMLElement | null
+      if (quoteBtn) {
+        const editId = quoteBtn.getAttribute('data-kb-edit-id')
+        if (!editId) return
+        // Rescan for a fresh position — earlier edits on the same node can
+        // have shifted this line since editMeta was first computed.
+        const freshMeta = scanControlPositions(getContent())
+        const meta = freshMeta.find((em) => em.id === editId && em.type === 'quote')
+        if (meta) openQuoteEditor(meta)
+        return
+      }
+
       if (target.getAttribute('data-kb-edit-action')) {
         handleEvent(e)
       }
