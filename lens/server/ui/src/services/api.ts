@@ -624,6 +624,8 @@ export interface OperatorProgressEvent {
   elapsed_ms?: number
   interrupted?: boolean
   step_id?: string
+  /** Bytes of reasoning/tool-call-argument content streamed since the last heartbeat (not visible text). */
+  hidden_bytes_delta?: number
 }
 
 /** Post-operator notice (e.g. auto-compress ran but model did not collate). */

@@ -61,6 +61,9 @@ function previewBase(partial: Partial<StreamingPreviewState>): StreamingPreviewS
     targetNode: '',
     text: '',
     steps: [],
+    streamStartedAt: Date.now(),
+    hiddenBytes: 0,
+    turnCount: 1,
     ...partial,
   }
 }
@@ -85,6 +88,9 @@ function applyWorkflowEvent(event: OperatorWorkflowEvent): void {
         ...base,
         activeStepId: event.step_id,
         text: '',
+        streamStartedAt: Date.now(),
+        hiddenBytes: 0,
+        turnCount: 1,
         steps: base.steps.map((s) =>
           s.id === event.step_id ? { ...s, status: 'running' as const } : s
         ),
@@ -645,17 +651,31 @@ const handler: CommandHandler = async (
       })
       requestAnimationFrame(scrollPreviewIntoView)
     } else if (event.type === 'progress') {
-      const label = progressLabel(event)
-      streamingPreview.update((prev) => {
-        if (prev) {
+      if (event.phase === 'llm_stream_progress') {
+        // Heartbeat only — reasoning/tool-call bytes, no visible text or status change.
+        streamingPreview.update((prev) => {
+          const base = prev ?? previewBase({ activeStepId: event.step_id })
           return {
-            ...prev,
-            statusLine: label,
-            activeStepId: event.step_id ?? prev.activeStepId,
+            ...base,
+            activeStepId: event.step_id ?? base.activeStepId,
+            hiddenBytes: (base.hiddenBytes ?? 0) + (event.hidden_bytes_delta ?? 0),
           }
-        }
-        return previewBase({ statusLine: label, activeStepId: event.step_id })
-      })
+        })
+      } else {
+        const label = progressLabel(event)
+        streamingPreview.update((prev) => {
+          const base = prev ?? previewBase({})
+          return {
+            ...base,
+            statusLine: label,
+            activeStepId: event.step_id ?? base.activeStepId,
+            turnCount:
+              event.phase === 'llm_round'
+                ? Math.max(base.turnCount ?? 1, (event.iteration ?? 0) + 1)
+                : base.turnCount,
+          }
+        })
+      }
     } else if (event.type === 'info') {
       const msg = typeof event.message === 'string' ? event.message.trim() : ''
       if (msg) postOpInfoMessage = msg

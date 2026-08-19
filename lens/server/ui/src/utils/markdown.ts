@@ -64,17 +64,40 @@ export function quotePillHslVars(label: string): { accent: string; border: strin
  * Run before preprocessAnnotations.
  */
 export function preprocessBlockquotePills(markdown: string): string {
-  return markdown
-    .split('\n')
-    .map((line) => {
-      const m = line.match(BLOCKQUOTE_PILL_LINE_RE)
-      if (!m) return line
-      const [, prefix, label, rest] = m
-      const { accent, border } = quotePillHslVars(label)
-      const style = `--quote-pill-accent:${accent};--quote-pill-border:${border}`
-      return `${prefix}<span class="quote-pill" style="${style}">${escapeHtmlText(label)}</span> ${rest}`
-    })
-    .join('\n')
+  const lines = markdown.split('\n')
+  const out: string[] = []
+  let inFence = false
+  let fenceMarker: '`' | '~' = '`'
+  let fenceLen = 3
+
+  for (const line of lines) {
+    if (inFence) {
+      if (isFenceCloser(line, fenceMarker, fenceLen)) inFence = false
+      out.push(line)
+      continue
+    }
+
+    const info = fenceInfo(line)
+    if (info) {
+      inFence = true
+      fenceMarker = info.marker
+      fenceLen = info.length
+      out.push(line)
+      continue
+    }
+
+    const m = line.match(BLOCKQUOTE_PILL_LINE_RE)
+    if (!m) {
+      out.push(line)
+      continue
+    }
+    const [, prefix, label, rest] = m
+    const { accent, border } = quotePillHslVars(label)
+    const style = `--quote-pill-accent:${accent};--quote-pill-border:${border}`
+    out.push(`${prefix}<span class="quote-pill" style="${style}">${escapeHtmlText(label)}</span> ${rest}`)
+  }
+
+  return out.join('\n')
 }
 
 // Canonical id with exactly one `.` (type.key); no dots inside type or key segments.

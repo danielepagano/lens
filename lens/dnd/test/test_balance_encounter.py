@@ -179,6 +179,11 @@ class TestBalanceEncounter(unittest.TestCase):
         self.assertEqual(len(solutions), 1)
         self.assertEqual(solutions[0].entries[0].count, 40)
         self.assertEqual(solutions[0].total_xp, 2000)
+        # The count silently changed from what was requested (20 -> 40); the
+        # solution must say so, the same way an over-budget requirement does.
+        assert solutions[0].remark is not None
+        self.assertIn("optional was empty", solutions[0].remark)
+        self.assertIn("asked for 20", solutions[0].remark)
 
     def test_fill_path_with_optional(self) -> None:
         kb = self._mock_kb({
@@ -305,6 +310,20 @@ class TestBalanceEncounter(unittest.TestCase):
         res = compute_encounters(["stat.zombie"], [], "moderate", [3], [], kb)
         self.assertIn("Error:", res)
         self.assertIn("each 'required' entry", res)
+
+    def test_bare_cr_count_bump_is_surfaced(self) -> None:
+        """A bare-CR required slot with an empty `optional` list and budget to
+        spare does not silently return more creatures than asked for — the
+        proposal must say the count changed and by how much. Regression for
+        a real repro: {"id": "1/2", "count": 2} with no optional came back
+        with 13, then 23, creatures with no indication the count was not 2."""
+        kb = self._mock_kb({})
+        required = [{"id": "1/2", "count": 2}]
+        res = compute_encounters(required, [], "moderate", [5, 5, 5, 5], [], kb)
+
+        self.assertNotIn("Error:", res)
+        self.assertIn("optional was empty", res)
+        self.assertIn("asked for 2", res)
 
 
 class TestBalanceEncounterCommandToolRegistration(unittest.TestCase):

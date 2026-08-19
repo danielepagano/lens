@@ -15,6 +15,12 @@ export interface StreamingPreviewState {
   pausedStepId?: string
   /** Keep panel visible after stream ends when workflow had failures */
   sticky?: boolean
+  /** Client clock when the current step's generation began (for elapsed/rate display) */
+  streamStartedAt?: number
+  /** Cumulative reasoning/tool-call-argument bytes for the current step (not in `text`) */
+  hiddenBytes?: number
+  /** Highest LLM round-trip number seen for the current step (1 = single round) */
+  turnCount?: number
 }
 
 export const streamingPreview = writable<StreamingPreviewState | null>(null)

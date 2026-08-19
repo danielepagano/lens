@@ -12,6 +12,7 @@ import {
   prefixMountUrlsInRenderedHtml,
   parseChatDividerParams,
   preprocessAnnotations,
+  preprocessBlockquotePills,
   preprocessKbMarkdownLinks,
   preprocessThinkingTags,
   type NodeTransactionOverlay,
@@ -275,6 +276,37 @@ describe('preprocessKbMarkdownLinks', () => {
     const input = '~~~\n[secret](kb/npc.hidden)\n~~~'
     const result = preprocessKbMarkdownLinks(input)
     expect(result).toBe(input)
+  })
+})
+
+describe('preprocessBlockquotePills', () => {
+  it('turns > [label] rest into a quote-pill span', () => {
+    const input = '> [position] On the road mid-line'
+    const result = preprocessBlockquotePills(input)
+    expect(result).toContain('<span class="quote-pill"')
+    expect(result).toContain('>position<')
+    expect(result).toContain('On the road mid-line')
+  })
+
+  it('skips blockquote-pill lines inside fenced code blocks', () => {
+    const input = '```\n> [position] On the road mid-line\n```'
+    const result = preprocessBlockquotePills(input)
+    expect(result).toBe(input)
+  })
+
+  it('skips blockquote-pill lines inside tilde-fenced code blocks', () => {
+    const input = '~~~\n> [position] On the road mid-line\n~~~'
+    const result = preprocessBlockquotePills(input)
+    expect(result).toBe(input)
+  })
+
+  it('still transforms pill lines outside the fence', () => {
+    const input = '> [position] before\n```\n> [inside] fenced\n```\n> [conditions] after'
+    const result = preprocessBlockquotePills(input)
+    expect(result).toContain('>position<')
+    expect(result).toContain('>conditions<')
+    expect(result).toContain('> [inside] fenced')
+    expect(result).not.toContain('>inside<')
   })
 })
 

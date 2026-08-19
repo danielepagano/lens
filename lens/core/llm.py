@@ -694,6 +694,12 @@ async def _stream_once_http(
 
     tool_calls_by_index: dict[int, dict[str, Any]] = {}
 
+    # Reasoning/tool-call-argument bytes carry no `token` SSE event of their own
+    # (unlike `content`), so a tool-call-only round would otherwise go silent
+    # client-side. Throttle-emit their volume as a heartbeat instead.
+    hidden_bytes_since_emit = 0
+    last_hidden_emit_t = time.monotonic()
+
     host = _llm_api_host(cfg.base_url)
     model_label = cfg.model or "(unspecified)"
     first_token_budget = float(cfg.first_token_timeout_seconds)
@@ -867,6 +873,8 @@ async def _stream_once_http(
                     reasoning_content: str | None = delta.get("reasoning_content")
                     if reasoning_content and verbose:
                         logger.info("LLM REASONING — %s", reasoning_content)
+                    if reasoning_content:
+                        hidden_bytes_since_emit += len(reasoning_content.encode("utf-8"))
                     if content:
                         chunks.append(content)
                         preview, mid_comment = _strip_preview(content, mid_comment)
@@ -891,6 +899,18 @@ async def _stream_once_http(
                             acc["name"] = fn["name"]
                         if fn.get("arguments"):
                             acc["arguments_fragments"].append(fn["arguments"])
+                            hidden_bytes_since_emit += len(fn["arguments"].encode("utf-8"))
+
+                    if (
+                        hidden_bytes_since_emit > 0
+                        and time.monotonic() - last_hidden_emit_t >= 1.5
+                    ):
+                        await _emit_llm_progress(
+                            "llm_stream_progress",
+                            {"round": round_index, "hidden_bytes_delta": hidden_bytes_since_emit},
+                        )
+                        hidden_bytes_since_emit = 0
+                        last_hidden_emit_t = time.monotonic()
             finally:
                 await response.aclose()
 
@@ -912,6 +932,13 @@ async def _stream_once_http(
             exc,
         )
         raise LLMError(f"LLM request failed: {exc}") from exc
+
+    if hidden_bytes_since_emit > 0:
+        await _emit_llm_progress(
+            "llm_stream_progress",
+            {"round": round_index, "hidden_bytes_delta": hidden_bytes_since_emit},
+        )
+        hidden_bytes_since_emit = 0
 
     elapsed = time.monotonic() - t0
     logger.info(
