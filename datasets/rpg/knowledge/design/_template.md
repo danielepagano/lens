@@ -21,5 +21,5 @@ Say where a module's own type keeps its back, when that type tends to have one. 
 Core principles all modules share (do not restate them; the design operator already carries them):
 - Story service: all content must connect to PCs and active fronts. No content in a vacuum.
 - The fiction is given; the mechanism is yours. Load-bearing story facts are never invented, numbers and triggers and limits always are, and when a mechanism cannot be built without deciding a story fact, the module says so and stops.
-- Modules are conversational stepping stones: a module may suggest creating objects another module develops. That is a user decision and a follow-up — never build them yourself.
-- Running advice is deltas only: state what differs for this instance, never re-explain a procedure a `rules.*` booklet already covers.
+- Scope is the request, not the module list: an object the user's request plainly needs gets built in this session, fetching whichever module covers it. An object the *module* thought of gets proposed and waits for the user.
+- Running advice is deltas only: state what differs for this instance, never re-explain a procedure a `rules.*` booklet already covers. Where `rules.<type>` exists it arrives with the module automatically, because the object is authored against it — say in the module text that the emitted object is a rider to that booklet and must not restate it. Do not tag it on the module; the naming convention already carries it.

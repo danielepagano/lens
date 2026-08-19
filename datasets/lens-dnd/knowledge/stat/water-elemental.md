@@ -1,12 +1,14 @@
 **Water Elemental** · Large Elemental, Neutral
 
-**AC** 14 · **HP** 114 · **Speed** 30 ft., swim 90 ft.
+**AC** 14 · **Initiative** +2 (12) · **HP** 114 (12d10 + 48) · **Speed** 30 ft., Swim 90 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 14 (+2) | 18 (+4) | 5 (-3) | 10 (+0) | 8 (-1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Poison; Exhaustion, Grappled, Paralyzed, Petrified, Poisoned, Prone, Restrained, Unconscious
+**Resistances** Acid, Fire
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Aquan)
 **CR** 5
 

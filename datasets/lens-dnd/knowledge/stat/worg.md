@@ -1,13 +1,13 @@
 **Worg** · Large Fey, Neutral Evil
 
-**AC** 13 · **HP** 26 · **Speed** 50 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 26 (4d10 + 4) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 13 (+1) | 13 (+1) | 7 (-2) | 11 (+0) | 8 (-1) |
 
 **Skills** Perception +4
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Goblin, Worg
 **CR** 1/2
 

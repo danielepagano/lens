@@ -1,12 +1,14 @@
 **Fire Giant** · Huge Giant, Lawful Evil
 
-**AC** 18 · **HP** 162 · **Speed** 30 ft.
+**AC** 18 · **Initiative** +3 (13) · **HP** 162 (13d12 + 78) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 25 (+7) | 9 (-1) | 23 (+6) | 10 (+0) | 14 (+2) | 13 (+1) |
 
+**Saving Throws** DEX +3, CON +10, CHA +5
 **Skills** Athletics +11, Perception +6
+**Immunities** Fire
 **Senses** Passive Perception 16
 **Languages** Giant
 **CR** 9

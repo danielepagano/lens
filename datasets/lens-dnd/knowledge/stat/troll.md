@@ -1,13 +1,13 @@
 **Troll** · Large Giant, Chaotic Evil
 
-**AC** 15 · **HP** 94 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +1 (11) · **HP** 94 (9d10 + 45) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 13 (+1) | 20 (+5) | 7 (-2) | 9 (-1) | 7 (-2) |
 
 **Skills** Perception +5
-**Senses** Darkvision 60 ft.,  Passive Perception 15
+**Senses** Darkvision 60 ft.;  Passive Perception 15
 **Languages** Giant
 **CR** 5
 

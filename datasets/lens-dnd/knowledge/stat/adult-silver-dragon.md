@@ -1,13 +1,15 @@
 **Adult Silver Dragon** · Huge Dragon, Lawful Good
 
-**AC** 19 · **HP** 216 · **Speed** 40 ft., fly 80 ft.
+**AC** 19 · **Initiative** +10 (20) · **HP** 216 (16d12 + 112) · **Speed** 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 27 (+8) | 10 (+0) | 25 (+7) | 16 (+3) | 13 (+1) | 22 (+6) |
 
+**Saving Throws** DEX +5, WIS +6
 **Skills** History +8, Perception +11, Stealth +5
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 21
+**Immunities** Cold
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 21
 **Languages** Common, Draconic
 **CR** 16
 

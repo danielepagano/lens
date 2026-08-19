@@ -1,12 +1,14 @@
 **Bandit Captain** · Medium Or Small Humanoid, Neutral
 
-**AC** 15 · **HP** 52 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +3 (13) · **HP** 52 (8d8 + 16) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 16 (+3) | 14 (+2) | 14 (+2) | 11 (+0) | 14 (+2) |
 
+**Saving Throws** STR +4, DEX +5, WIS +2
 **Skills** Athletics +4, Deception +4
+**Gear** Pistol, Scimitar, Studded Leather Armor
 **Senses** Passive Perception 10
 **Languages** Common, Thieves' Cant
 **CR** 2

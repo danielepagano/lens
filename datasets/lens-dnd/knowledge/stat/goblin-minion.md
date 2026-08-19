@@ -1,13 +1,14 @@
 **Goblin Minion** · Small Fey, Chaotic Neutral
 
-**AC** 12 · **HP** 7 · **Speed** 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 7 (2d6) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 8 (-1) | 15 (+2) | 10 (+0) | 10 (+0) | 8 (-1) | 8 (-1) |
 
 **Skills** Stealth +6
-**Senses** Darkvision 60 ft.,  Passive Perception 9
+**Gear** Daggers 3
+**Senses** Darkvision 60 ft.;  Passive Perception 9
 **Languages** Common, Goblin
 **CR** 1/8
 

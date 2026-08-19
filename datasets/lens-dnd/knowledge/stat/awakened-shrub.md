@@ -1,11 +1,13 @@
 **Awakened Shrub** · Small Plant, Neutral
 
-**AC** 9 · **HP** 10 · **Speed** 20 ft.
+**AC** 9 · **Initiative** -1 (9) · **HP** 10 (3d6) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 3 (-4) | 8 (-1) | 11 (+0) | 10 (+0) | 10 (+0) | 6 (-2) |
 
+**Resistances** Piercing
+**Vulnerabilities** Fire
 **Senses** Passive Perception 10
 **Languages** Common plus one other language
 **CR** 0

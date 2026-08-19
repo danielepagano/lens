@@ -1,12 +1,14 @@
 **Cultist Fanatic** · Medium Or Small Humanoid, Neutral
 
-**AC** 13 · **HP** 44 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +2 (12) · **HP** 44 (8d8 + 8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 14 (+2) | 12 (+1) | 10 (+0) | 14 (+2) | 13 (+1) |
 
+**Saving Throws** WIS +4
 **Skills** Deception +3, Persuasion +3, Religion +2
+**Gear** Holy Symbol, Leather Armor
 **Senses** Passive Perception 12
 **Languages** Common
 **CR** 2

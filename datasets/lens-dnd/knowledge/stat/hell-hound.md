@@ -1,13 +1,14 @@
 **Hell Hound** · Medium Fiend, Lawful Evil
 
-**AC** 15 · **HP** 58 · **Speed** 50 ft.
+**AC** 15 · **Initiative** +1 (11) · **HP** 58 (9d8 + 18) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 12 (+1) | 14 (+2) | 6 (-2) | 13 (+1) | 6 (-2) |
 
 **Skills** Perception +5
-**Senses** Darkvision 60 ft.,  Passive Perception 15
+**Immunities** Fire
+**Senses** Darkvision 60 ft.;  Passive Perception 15
 **Languages** Understands Infernal but can’t speak
 **CR** 3
 

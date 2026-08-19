@@ -1,14 +1,14 @@
 **Grimlock** · Medium Aberration, Neutral Evil
 
-**AC** 11 · **HP** 11 · **Speed** 30 ft., climb 30 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 11 (2d8 + 2) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 12 (+1) | 12 (+1) | 9 (-1) | 8 (-1) | 6 (-2) |
 
 **Skills** Athletics +5, Perception +3, Stealth +5
-**Senses** Blindsight 30 ft.,  Passive Perception 13
-**Languages** --
+**Senses** Blindsight 30 ft.;  Passive Perception 13
+**Languages** None
 **CR** 1/4
 
 ---

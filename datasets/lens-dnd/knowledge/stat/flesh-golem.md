@@ -1,12 +1,13 @@
 **Flesh Golem** · Medium Construct, Neutral
 
-**AC** 9 · **HP** 127 · **Speed** 30 ft.
+**AC** 9 · **Initiative** -1 (9) · **HP** 127 (15d8 + 60) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 9 (-1) | 18 (+4) | 6 (-2) | 10 (+0) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Lightning, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Understands Common plus one other language but can't speak
 **CR** 5
 

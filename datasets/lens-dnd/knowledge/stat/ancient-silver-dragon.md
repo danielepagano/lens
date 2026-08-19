@@ -1,13 +1,15 @@
 **Ancient Silver Dragon** · Gargantuan Dragon, Lawful Good
 
-**AC** 22 · **HP** 468 · **Speed** 40 ft., fly 80 ft.
+**AC** 22 · **Initiative** +14 (24) · **HP** 468 (24d20 + 216) · **Speed** 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 30 (+10) | 10 (+0) | 29 (+9) | 18 (+4) | 15 (+2) | 26 (+8) |
 
+**Saving Throws** DEX +7, WIS +9
 **Skills** History +11, Perception +16, Stealth +7
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 26
+**Immunities** Cold
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 26
 **Languages** Common, Draconic
 **CR** 23
 

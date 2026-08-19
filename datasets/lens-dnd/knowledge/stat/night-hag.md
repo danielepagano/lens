@@ -1,13 +1,15 @@
 **Night Hag** · Medium Fiend, Neutral Evil
 
-**AC** 17 · **HP** 112 · **Speed** 30 ft.
+**AC** 17 · **Initiative** +5 (15) · **HP** 112 (15d8 + 45) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 15 (+2) | 16 (+3) | 16 (+3) | 14 (+2) | 16 (+3) |
 
 **Skills** Deception +6, Insight +5, Perception +5, Stealth +5
-**Senses** Darkvision 120 ft.,  Passive Perception 15
+**Immunities** Charmed
+**Resistances** Cold, Fire
+**Senses** Darkvision 120 ft.;  Passive Perception 15
 **Languages** Abyssal, Common, Infernal, Primordial
 **CR** 5
 

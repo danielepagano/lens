@@ -1,12 +1,14 @@
 **Lemure** · Medium Fiend, Lawful Evil
 
-**AC** 9 · **HP** 9 · **Speed** 20 ft.
+**AC** 9 · **Initiative** -3 (7) · **HP** 9 (2d8) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 5 (-3) | 11 (+0) | 1 (-5) | 11 (+0) | 3 (-4) |
 
-**Senses** Darkvision 120 ft. (unimpeded by magical Darkness),  Passive Perception 10
+**Immunities** Fire, Poison; Charmed, Frightened, Poisoned
+**Resistances** Cold
+**Senses** Darkvision 120 ft. (unimpeded by magical Darkness);  Passive Perception 10
 **Languages** Understands Infernal but can’t speak
 **CR** 0
 

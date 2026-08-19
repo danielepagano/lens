@@ -1,12 +1,14 @@
-**Djinni** · Large Elemental, Chaotic Good
+**Djinni** · Large Elemental, Neutral
 
-**AC** 17 · **HP** 218 · **Speed** 30 ft., fly 90 ft. (hover)
+**AC** 17 · **Initiative** +2 (12) · **HP** 218 (19d10 + 114) · **Speed** 30 ft., Fly 90 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 21 (+5) | 15 (+2) | 22 (+6) | 15 (+2) | 16 (+3) | 20 (+5) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 13
+**Saving Throws** DEX +6, WIS +7
+**Immunities** Lightning, Thunder
+**Senses** Darkvision 120 ft.;  Passive Perception 13
 **Languages** Primordial (Auran)
 **CR** 11
 

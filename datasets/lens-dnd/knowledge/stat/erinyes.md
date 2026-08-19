@@ -1,13 +1,16 @@
 **Erinyes** · Medium Fiend, Lawful Evil
 
-**AC** 18 · **HP** 178 · **Speed** 30 ft., fly 60 ft.
+**AC** 18 · **Initiative** +7 (17) · **HP** 178 (21d8 + 84) · **Speed** 30 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 16 (+3) | 18 (+4) | 14 (+2) | 14 (+2) | 18 (+4) |
 
+**Saving Throws** DEX +7, CON +8, CHA +8
 **Skills** Perception +6, Persuasion +8
-**Senses** Truesight 120 ft.,  Passive Perception 16
+**Immunities** Fire, Poison; Poisoned
+**Resistances** Cold
+**Senses** Truesight 120 ft.;  Passive Perception 16
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 12
 

@@ -1,12 +1,15 @@
 **Assassin** · Medium Or Small Humanoid, Neutral
 
-**AC** 16 · **HP** 97 · **Speed** 30 ft.
+**AC** 16 · **Initiative** +10 (20) · **HP** 97 (15d8 + 30) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 18 (+4) | 14 (+2) | 16 (+3) | 11 (+0) | 10 (+0) |
 
+**Saving Throws** DEX +7, INT +6
 **Skills** Acrobatics +7, Perception +6, Stealth +10
+**Resistances** Poison
+**Gear** Light Crossbow, Shortsword, Studded Leather Armor
 **Senses** Passive Perception 16
 **Languages** Common, Thieves' Cant
 **CR** 8

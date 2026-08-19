@@ -1,13 +1,15 @@
 **Vampire** · Medium Or Small Undead, Lawful Evil
 
-**AC** 16 · **HP** 195 · **Speed** 40 ft., climb 40 ft.
+**AC** 16 · **Initiative** +14 (24) · **HP** 195 (23d8 + 92) · **Speed** 40 ft., Climb 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 18 (+4) | 18 (+4) | 17 (+3) | 15 (+2) | 18 (+4) |
 
+**Saving Throws** DEX +9, CON +9, WIS +7, CHA +9
 **Skills** Perception +7, Stealth +9
-**Senses** Darkvision 120 ft.,  Passive Perception 17
+**Resistances** Necrotic
+**Senses** Darkvision 120 ft.;  Passive Perception 17
 **Languages** Common plus two other languages
 **CR** 13
 

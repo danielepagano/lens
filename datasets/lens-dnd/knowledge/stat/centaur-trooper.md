@@ -1,12 +1,13 @@
 **Centaur Trooper** · Large Fey, Neutral Good
 
-**AC** 16 · **HP** 45 · **Speed** 50 ft.
+**AC** 16 · **Initiative** +2 (12) · **HP** 45 (6d10 + 12) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 14 (+2) | 14 (+2) | 9 (-1) | 13 (+1) | 11 (+0) |
 
 **Skills** Athletics +6, Perception +3
+**Gear** Breastplate, Longbow, Pike
 **Senses** Passive Perception 13
 **Languages** Elvish, Sylvan
 **CR** 2

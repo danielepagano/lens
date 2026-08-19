@@ -1,13 +1,15 @@
 **Young Red Dragon** · Large Dragon, Chaotic Evil
 
-**AC** 18 · **HP** 178 · **Speed** 40 ft., climb 40 ft., fly 80 ft.
+**AC** 18 · **Initiative** +4 (14) · **HP** 178 (17d10 + 85) · **Speed** 40 ft., Climb 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 23 (+6) | 10 (+0) | 21 (+5) | 14 (+2) | 11 (+0) | 19 (+4) |
 
+**Saving Throws** DEX +4, WIS +4
 **Skills** Perception +8, Stealth +4
-**Senses** Blindsight 30 ft., Darkvision 120 ft.,  Passive Perception 18
+**Immunities** Fire
+**Senses** Blindsight 30 ft., Darkvision 120 ft.;  Passive Perception 18
 **Languages** Common, Draconic
 **CR** 10
 

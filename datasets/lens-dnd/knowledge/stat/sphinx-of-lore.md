@@ -1,13 +1,15 @@
 **Sphinx of Lore** · Large Celestial, Lawful Neutral
 
-**AC** 17 · **HP** 170 · **Speed** 40 ft., fly 60 ft.
+**AC** 17 · **Initiative** +10 (20) · **HP** 170 (20d10 + 60) · **Speed** 40 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 15 (+2) | 16 (+3) | 18 (+4) | 18 (+4) | 18 (+4) |
 
 **Skills** Arcana +12, History +12, Perception +8, Religion +12
-**Senses** Truesight 120 ft.,  Passive Perception 18
+**Immunities** Psychic; Charmed, Frightened
+**Resistances** Necrotic, Radiant
+**Senses** Truesight 120 ft.;  Passive Perception 18
 **Languages** Celestial, Common
 **CR** 11
 

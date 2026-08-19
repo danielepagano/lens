@@ -1,12 +1,15 @@
 **Chain Devil** · Medium Fiend, Lawful Evil
 
-**AC** 15 · **HP** 85 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +5 (15) · **HP** 85 (10d8 + 40) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 15 (+2) | 18 (+4) | 11 (+0) | 12 (+1) | 14 (+2) |
 
-**Senses** Darkvision 120 ft. (unimpeded by magical darkness),  Passive Perception 11
+**Saving Throws** CON +7, WIS +4
+**Immunities** Fire, Poison; Poisoned
+**Resistances** Bludgeoning, Cold, Piercing, Slashing
+**Senses** Darkvision 120 ft. (unimpeded by magical darkness);  Passive Perception 11
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 8
 

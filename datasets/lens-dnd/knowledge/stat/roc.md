@@ -1,14 +1,15 @@
 **Roc** · Gargantuan Monstrosity, Unaligned
 
-**AC** 15 · **HP** 248 · **Speed** 20 ft., fly 120 ft.
+**AC** 15 · **Initiative** +8 (18) · **HP** 248 (16d20 + 80) · **Speed** 20 ft., Fly 120 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 28 (+9) | 10 (+0) | 20 (+5) | 3 (-4) | 10 (+0) | 9 (-1) |
 
+**Saving Throws** DEX +4, WIS +4
 **Skills** Perception +8
 **Senses** Passive Perception 18
-**Languages** --
+**Languages** None
 **CR** 11
 
 ---

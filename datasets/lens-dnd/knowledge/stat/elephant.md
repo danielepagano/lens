@@ -1,13 +1,13 @@
 **Elephant** · Huge Beast, Unaligned
 
-**AC** 12 · **HP** 76 · **Speed** 40 ft.
+**AC** 12 · **Initiative** -1 (9) · **HP** 76 (8d12 + 24) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 22 (+6) | 9 (-1) | 17 (+3) | 3 (-4) | 11 (+0) | 6 (-2) |
 
 **Senses** Passive Perception 10
-**Languages** --
+**Languages** None
 **CR** 4
 
 ---

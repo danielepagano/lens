@@ -1,14 +1,14 @@
 **Giant Octopus** · Large Beast, Unaligned
 
-**AC** 11 · **HP** 45 · **Speed** 10 ft., swim 60 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 45 (7d10 + 7) · **Speed** 10 ft., Swim 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 13 (+1) | 13 (+1) | 5 (-3) | 10 (+0) | 4 (-3) |
 
 **Skills** Perception +4, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 14
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 14
+**Languages** None
 **CR** 1
 
 Water Breathing. The octopus can breathe only underwater. It can hold its breath for 1 hour outside water.

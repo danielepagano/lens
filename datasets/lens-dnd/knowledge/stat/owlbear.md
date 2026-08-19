@@ -1,14 +1,14 @@
 **Owlbear** · Large Monstrosity, Unaligned
 
-**AC** 13 · **HP** 59 · **Speed** 40 ft., climb 40 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 59 (7d10 + 21) · **Speed** 40 ft., Climb 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 20 (+5) | 12 (+1) | 17 (+3) | 3 (-4) | 12 (+1) | 7 (-2) |
 
 **Skills** Perception +5
-**Senses** Darkvision 60 ft.,  Passive Perception 15
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 15
+**Languages** None
 **CR** 3
 
 ---

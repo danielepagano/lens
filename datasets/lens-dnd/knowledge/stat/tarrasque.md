@@ -1,14 +1,17 @@
 **Tarrasque** · Gargantuan Monstrosity, Unaligned
 
-**AC** 25 · **HP** 697 · **Speed** 60 ft., burrow 40 ft., climb 60 ft.
+**AC** 25 · **Initiative** +18 (28) · **HP** 697 (34d20 + 340) · **Speed** 60 ft., Burrow 40 ft., Climb 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 30 (+10) | 11 (+0) | 30 (+10) | 3 (-4) | 11 (+0) | 11 (+0) |
 
+**Saving Throws** DEX +9, INT +5, WIS +9, CHA +9
 **Skills** Perception +9
-**Senses** Blindsight 120 ft.,  Passive Perception 19
-**Languages** --
+**Immunities** Fire, Poison; Charmed, Deafened, Frightened, Paralyzed, Poisoned
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Blindsight 120 ft.;  Passive Perception 19
+**Languages** None
 **CR** 30
 
 Legendary Resistance (6/Day). If the tarrasque fails a saving throw, it can choose to succeed instead.

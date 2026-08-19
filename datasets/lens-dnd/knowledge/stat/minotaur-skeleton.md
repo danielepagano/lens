@@ -1,12 +1,14 @@
 **Minotaur Skeleton** · Large Undead, Lawful Evil
 
-**AC** 12 · **HP** 45 · **Speed** 40 ft.
+**AC** 12 · **Initiative** +0 (10) · **HP** 45 (6d10 + 12) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 11 (+0) | 15 (+2) | 6 (-2) | 8 (-1) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 9
+**Immunities** Poison; Exhaustion, Poisoned
+**Vulnerabilities** Bludgeoning
+**Senses** Darkvision 60 ft.;  Passive Perception 9
 **Languages** Understands Abyssal but can’t speak
 **CR** 2
 

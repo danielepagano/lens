@@ -1,12 +1,13 @@
 **Wereboar** · Medium Or Small Monstrosity, Neutral Evil
 
-**AC** 15 · **HP** 97 · **Speed** 30 ft., 40 ft. (boar form only)
+**AC** 15 · **Initiative** +2 (12) · **HP** 97 (15d8 + 30) · **Speed** 30 ft., 40 ft. (boar form only)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 10 (+0) | 15 (+2) | 10 (+0) | 11 (+0) | 8 (-1) |
 
 **Skills** Perception +2
+**Gear** Javelins (6)
 **Senses** Passive Perception 12
 **Languages** Common (can’t speak in boar form)
 **CR** 4

@@ -1,13 +1,15 @@
 **Swarm of Insects** · Medium Swarm Of Tiny Beasts, Unaligned
 
-**AC** 11 · **HP** 19 · **Speed** 20 ft., Climb or Fly 20 ft. (DM's choice)
+**AC** 11 · **Initiative** +1 (11) · **HP** 19 (3d8 + 6) · **Speed** 20 ft., Climb or Fly 20 ft. (DM's choice)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 3 (-4) | 13 (+1) | 14 (+2) | 1 (-5) | 7 (-2) | 1 (-5) |
 
-**Senses** Blindsight 30 ft.,  Passive Perception 8
-**Languages** --
+**Immunities** Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Blindsight 30 ft.;  Passive Perception 8
+**Languages** None
 **CR** 1/2
 
 Spider Climb. If the swarm has a Climb Speed, the swarm can climb difficult surfaces, including along ceilings, without needing to make an ability check.

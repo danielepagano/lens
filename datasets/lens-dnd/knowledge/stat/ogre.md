@@ -1,12 +1,13 @@
 **Ogre** · Large Giant, Chaotic Evil
 
-**AC** 11 · **HP** 68 · **Speed** 40 ft.
+**AC** 11 · **Initiative** -1 (9) · **HP** 68 (8d10 + 24) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 8 (-1) | 16 (+3) | 5 (-3) | 7 (-2) | 7 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 8
+**Gear** Greatclub, Javelins (3)
+**Senses** Darkvision 60 ft.;  Passive Perception 8
 **Languages** Common, Giant
 **CR** 2
 

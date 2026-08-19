@@ -1,12 +1,12 @@
 **Sea Hag** · Medium Fey, Chaotic Evil
 
-**AC** 14 · **HP** 52 · **Speed** 30 ft., swim 40 ft.
+**AC** 14 · **Initiative** +1 (11) · **HP** 52 (7d8 + 21) · **Speed** 30 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 13 (+1) | 16 (+3) | 12 (+1) | 12 (+1) | 13 (+1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 11
+**Senses** Darkvision 60 ft.;  Passive Perception 11
 **Languages** Common, Giant, Primordial (Aquan)
 **CR** 2
 

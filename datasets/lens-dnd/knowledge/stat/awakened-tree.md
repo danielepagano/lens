@@ -1,11 +1,13 @@
 **Awakened Tree** · Huge Plant, Neutral
 
-**AC** 13 · **HP** 59 · **Speed** 20 ft.
+**AC** 13 · **Initiative** -2 (8) · **HP** 59 (7d12 + 14) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 6 (-2) | 15 (+2) | 10 (+0) | 10 (+0) | 7 (-2) |
 
+**Resistances** Bludgeoning, Piercing
+**Vulnerabilities** Fire
 **Senses** Passive Perception 10
 **Languages** Common plus one other language
 **CR** 2

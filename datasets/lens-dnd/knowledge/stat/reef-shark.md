@@ -1,14 +1,14 @@
 **Reef Shark** · Medium Beast, Unaligned
 
-**AC** 12 · **HP** 22 · **Speed** 5 ft., swim 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 22 (4d8 + 4) · **Speed** 5 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 15 (+2) | 13 (+1) | 1 (-5) | 10 (+0) | 4 (-3) |
 
 **Skills** Perception +2
-**Senses** Blindsight 30 ft.,  Passive Perception 12
-**Languages** --
+**Senses** Blindsight 30 ft.;  Passive Perception 12
+**Languages** None
 **CR** 1/2
 
 Pack Tactics. The shark has Advantage on an attack roll against a creature if at least one of the shark’s allies is within 5 feet of the creature and the ally doesn’t have the Incapacitated condition.

@@ -1,14 +1,15 @@
 **Goat** · Medium Beast, Unaligned
 
-**AC** 10 · **HP** 4 · **Speed** 40 ft., climb 30 ft.
+**AC** 10 · **Initiative** +0 (10) · **HP** 4 (1d8) · **Speed** 40 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 10 (+0) | 11 (+0) | 2 (-4) | 10 (+0) | 5 (-3) |
 
+**Saving Throws** STR +2
 **Skills** Perception +2
-**Senses** Darkvision 60 ft.,  Passive Perception 12
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 12
+**Languages** None
 **CR** 0
 
 ---

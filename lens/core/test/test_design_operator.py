@@ -475,6 +475,50 @@ class TestDesignCompanionTemplatePin(unittest.TestCase):
             self.assertIn("design.clock", content)
             self.assertIn("clock._template", content)
 
+    def test_pins_rules_companion_for_the_type_being_authored(self) -> None:
+        """``rules.<key>`` rides along with ``design.<key>`` by naming convention.
+
+        ``<key>._template`` says how to *create* the object; ``rules.<key>``
+        says how ``play`` will *use* it, and the session is authoring against
+        that.  Shipping the file is the whole activation — no tag on the
+        module, which is what went stale before.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "stat.md").write_text("[DESIGN MODULE]: STAT\n")
+            (root / "knowledge" / "rules").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "rules" / "stat.md").write_text("USING A STAT BLOCK\n")
+
+            content = self._captured_user_content(root, narrative, "stat")
+
+            self.assertIn("design.stat", content)
+            self.assertIn("rules.stat", content)
+            self.assertIn("USING A STAT BLOCK", content)
+
+    def test_no_rules_companion_when_missing(self) -> None:
+        """Types with no booklet cost nothing — most of them have none."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root, narrative = _make_project(_init_repo(Path(tmp)))
+            (root / "knowledge" / "design").mkdir(parents=True, exist_ok=True)
+            (root / "knowledge" / "design" / "faction.md").write_text("[DESIGN MODULE]: F\n")
+
+            content = self._captured_user_content(root, narrative, "faction")
+
+            self.assertIn("design.faction", content)
+            self.assertNotIn("rules.faction", content)
+
+    def test_rules_module_does_not_companion_itself(self) -> None:
+        """``play --module combat`` resolves ``rules.combat``; its companion
+        would be itself, so the id is skipped rather than added twice."""
+        from lens.core.crawl_transforms import (
+            _rules_companion_id,  # pyright: ignore[reportPrivateUsage]
+        )
+
+        self.assertIsNone(_rules_companion_id("rules.combat"))
+        self.assertIsNone(_rules_companion_id("combat"))
+        self.assertEqual(_rules_companion_id("design.stat"), "rules.stat")
+
     def test_module_switch_replaces_template_pin(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root, narrative = _make_project(_init_repo(Path(tmp)))

@@ -1,13 +1,15 @@
 **Swarm of Piranhas** · Medium Swarm Of Tiny Beasts, Unaligned
 
-**AC** 13 · **HP** 28 · **Speed** 5 ft., swim 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 28 (8d8 - 8) · **Speed** 5 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 16 (+3) | 9 (-1) | 1 (-5) | 7 (-2) | 2 (-4) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 8
-**Languages** --
+**Immunities** Charmed, Frightened, Grappled, Paralyzed, Petrified, Prone, Restrained, Stunned
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Darkvision 60 ft.;  Passive Perception 8
+**Languages** None
 **CR** 1
 
 Swarm. The swarm can occupy another creature’s space and vice versa, and the swarm can move through any opening large enough for a Tiny piranha. The swarm can’t regain Hit Points or gain Temporary Hit Points.

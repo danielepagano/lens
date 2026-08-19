@@ -1,13 +1,15 @@
 **Young Copper Dragon** · Large Dragon, Chaotic Good
 
-**AC** 17 · **HP** 119 · **Speed** 40 ft., climb 40 ft., fly 80 ft.
+**AC** 17 · **Initiative** +4 (14) · **HP** 119 (14d10 + 42) · **Speed** 40 ft., Climb 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 12 (+1) | 17 (+3) | 16 (+3) | 13 (+1) | 15 (+2) |
 
+**Saving Throws** DEX +4, WIS +4
 **Skills** Deception +5, Perception +7, Stealth +4
-**Senses** Blindsight 30 ft., Darkvision 120 ft.,  Passive Perception 17
+**Immunities** Acid
+**Senses** Blindsight 30 ft., Darkvision 120 ft.;  Passive Perception 17
 **Languages** Common, Draconic
 **CR** 7
 

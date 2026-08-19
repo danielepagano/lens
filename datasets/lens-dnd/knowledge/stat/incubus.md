@@ -1,13 +1,14 @@
 **Incubus** · Medium Fiend, Neutral Evil
 
-**AC** 15 · **HP** 66 · **Speed** 30 ft., fly 60 ft.
+**AC** 15 · **Initiative** +3 (13) · **HP** 66 (12d8 + 12) · **Speed** 30 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 8 (-1) | 17 (+3) | 13 (+1) | 15 (+2) | 12 (+1) | 20 (+5) |
 
 **Skills** Deception +9, Insight +5, Perception +5, Persuasion +9, Stealth +7
-**Senses** Darkvision 60 ft.,  Passive Perception 15
+**Resistances** Cold, Fire, Poison, Psychic
+**Senses** Darkvision 60 ft.;  Passive Perception 15
 **Languages** Abyssal, Common, Infernal, Telepathy 60 ft.
 **CR** 4
 

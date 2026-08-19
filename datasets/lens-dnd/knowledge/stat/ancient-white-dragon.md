@@ -1,13 +1,15 @@
 **Ancient White Dragon** · Gargantuan Dragon, Chaotic Evil
 
-**AC** 20 · **HP** 333 · **Speed** 40 ft., burrow 40 ft., fly 80 ft., swim 40 ft.
+**AC** 20 · **Initiative** +12 (22) · **HP** 333 (18d20 + 144) · **Speed** 40 ft., Burrow 40 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 26 (+8) | 10 (+0) | 26 (+8) | 10 (+0) | 13 (+1) | 18 (+4) |
 
+**Saving Throws** DEX +6, WIS +7
 **Skills** Perception +13, Stealth +6
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 23
+**Immunities** Cold
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 23
 **Languages** Common, Draconic
 **CR** 20
 

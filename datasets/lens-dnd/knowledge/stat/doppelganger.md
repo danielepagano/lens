@@ -1,13 +1,14 @@
 **Doppelganger** · Medium Monstrosity, Neutral
 
-**AC** 14 · **HP** 52 · **Speed** 30 ft.
+**AC** 14 · **Initiative** +4 (14) · **HP** 52 (8d8 + 16) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 18 (+4) | 14 (+2) | 11 (+0) | 12 (+1) | 14 (+2) |
 
 **Skills** Deception +6, Insight +3
-**Senses** Darkvision 60 ft.,  Passive Perception 11
+**Immunities** Charmed
+**Senses** Darkvision 60 ft.;  Passive Perception 11
 **Languages** Common plus three other languages
 **CR** 3
 

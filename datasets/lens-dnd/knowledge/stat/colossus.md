@@ -1,12 +1,15 @@
 **Colossus** · Gargantuan Construct, Unaligned
 
-**AC** 23 · **HP** 553 · **Speed** 60 ft.
+**AC** 23 · **Initiative** +16 (26) · **HP** 553 (27d20 + 270) · **Speed** 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 30 (+10) | 11 (+0) | 30 (+10) | 3 (-4) | 11 (+0) | 8 (-1) |
 
-**Senses** Truesight 300 ft.,  Passive Perception 10
+**Saving Throws** DEX +8, WIS +8
+**Immunities** Poison, Psychic; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned, Stunned, Unconscious
+**Resistances** Necrotic, Radiant
+**Senses** Truesight 300 ft.;  Passive Perception 10
 **Languages** Understands Celestial and Common but can’t speak
 **CR** 25
 

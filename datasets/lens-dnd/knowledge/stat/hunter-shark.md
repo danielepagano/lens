@@ -1,14 +1,14 @@
 **Hunter Shark** · Large Beast, Unaligned
 
-**AC** 12 · **HP** 45 · **Speed** 5 ft., swim 40 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 45 (6d10 + 12) · **Speed** 5 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 14 (+2) | 15 (+2) | 1 (-5) | 10 (+0) | 4 (-3) |
 
 **Skills** Perception +2
-**Senses** Blindsight 60 ft.,  Passive Perception 12
-**Languages** --
+**Senses** Blindsight 60 ft.;  Passive Perception 12
+**Languages** None
 **CR** 2
 
 Water Breathing. The shark can breathe only underwater.

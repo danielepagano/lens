@@ -1,14 +1,14 @@
 **Roper** · Large Aberration, Neutral Evil
 
-**AC** 20 · **HP** 93 · **Speed** 10 ft., climb 20 ft.
+**AC** 20 · **Initiative** +5 (15) · **HP** 93 (11d10 + 33) · **Speed** 10 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 8 (-1) | 17 (+3) | 7 (-2) | 16 (+3) | 6 (-2) |
 
 **Skills** Perception +6, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 16
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 16
+**Languages** None
 **CR** 5
 
 Spider Climb. The roper can climb difficult surfaces, including along ceilings, without needing to make an ability check.

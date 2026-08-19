@@ -1,6 +1,6 @@
 **Sprite** · Tiny Fey, Neutral Good
 
-**AC** 15 · **HP** 10 · **Speed** 10 ft., fly 40 ft.
+**AC** 15 · **Initiative** +4 (14) · **HP** 10 (4d4) · **Speed** 10 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

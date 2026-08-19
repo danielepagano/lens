@@ -1,13 +1,15 @@
 **Adult Brass Dragon** · Huge Dragon, Chaotic Good
 
-**AC** 18 · **HP** 172 · **Speed** 40 ft., burrow 30 ft., fly 80 ft.
+**AC** 18 · **Initiative** +10 (20) · **HP** 172 (15d12 + 75) · **Speed** 40 ft., Burrow 30 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 23 (+6) | 10 (+0) | 21 (+5) | 14 (+2) | 13 (+1) | 17 (+3) |
 
+**Saving Throws** DEX +5, WIS +6
 **Skills** History +7, Perception +11, Persuasion +8, Stealth +5
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 21
+**Immunities** Fire
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 21
 **Languages** Common, Draconic
 **CR** 13
 

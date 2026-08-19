@@ -1,11 +1,12 @@
 **Commoner** · Medium Humanoid, Neutral
 
-**AC** 10 · **HP** 4 · **Speed** 30 ft.
+**AC** 10 · **Initiative** +0 (10) · **HP** 4 (1d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 10 (+0) | 10 (+0) | 10 (+0) | 10 (+0) | 10 (+0) |
 
+**Gear** Club
 **Senses** Passive Perception 10
 **Languages** Common
 **CR** 0

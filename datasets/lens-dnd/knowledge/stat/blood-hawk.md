@@ -1,6 +1,6 @@
 **Blood Hawk** · Small Beast, Unaligned
 
-**AC** 12 · **HP** 7 · **Speed** 10 ft., fly 60 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 7 (2d6) · **Speed** 10 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +6
 **Senses** Passive Perception 16
-**Languages** --
+**Languages** None
 **CR** 1/8
 
 Pack Tactics. The hawk has Advantage on an attack roll against a creature if at least one of the hawk’s allies is within 5 feet of the creature and the ally doesn’t have the Incapacitated condition.

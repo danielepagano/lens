@@ -1,13 +1,14 @@
 **Chuul** · Large Aberration, Chaotic Evil
 
-**AC** 16 · **HP** 76 · **Speed** 30 ft., swim 30 ft.
+**AC** 16 · **Initiative** +0 (10) · **HP** 76 (9d10 + 27) · **Speed** 30 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 10 (+0) | 16 (+3) | 5 (-3) | 11 (+0) | 5 (-3) |
 
 **Skills** Perception +4
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Poison; Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Understands Deep Speech but can't speak
 **CR** 4
 

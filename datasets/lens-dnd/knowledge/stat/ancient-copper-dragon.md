@@ -1,13 +1,15 @@
 **Ancient Copper Dragon** · Gargantuan Dragon, Chaotic Good
 
-**AC** 21 · **HP** 367 · **Speed** 40 ft., climb 40 ft., fly 80 ft.
+**AC** 21 · **Initiative** +15 (25) · **HP** 367 (21d20 + 147) · **Speed** 40 ft., Climb 40 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 27 (+8) | 12 (+1) | 25 (+7) | 20 (+5) | 17 (+3) | 22 (+6) |
 
+**Saving Throws** DEX +8, WIS +10
 **Skills** Deception +13, Perception +17, Stealth +8
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 27
+**Immunities** Acid
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 27
 **Languages** Common, Draconic
 **CR** 21
 

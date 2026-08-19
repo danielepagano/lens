@@ -1,13 +1,15 @@
 **Young Blue Dragon** · Large Dragon, Lawful Evil
 
-**AC** 18 · **HP** 152 · **Speed** 40 ft., burrow 20 ft., fly 80 ft.
+**AC** 18 · **Initiative** +4 (14) · **HP** 152 (16d10 + 64) · **Speed** 40 ft., Burrow 20 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 21 (+5) | 10 (+0) | 19 (+4) | 14 (+2) | 13 (+1) | 17 (+3) |
 
+**Saving Throws** DEX +4, WIS +5
 **Skills** Perception +9, Stealth +4
-**Senses** Blindsight 30 ft., Darkvision 120 ft.,  Passive Perception 19
+**Immunities** Lightning
+**Senses** Blindsight 30 ft., Darkvision 120 ft.;  Passive Perception 19
 **Languages** Common, Draconic
 **CR** 9
 

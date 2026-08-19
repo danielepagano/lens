@@ -1,14 +1,14 @@
 **Griffon** · Large Monstrosity, Unaligned
 
-**AC** 12 · **HP** 59 · **Speed** 30 ft., fly 80 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 59 (7d10 + 21) · **Speed** 30 ft., Fly 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 15 (+2) | 16 (+3) | 2 (-4) | 13 (+1) | 8 (-1) |
 
 **Skills** Perception +5
-**Senses** Darkvision 60 ft.,  Passive Perception 15
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 15
+**Languages** None
 **CR** 2
 
 ---

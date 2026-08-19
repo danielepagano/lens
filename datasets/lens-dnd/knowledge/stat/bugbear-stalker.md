@@ -1,13 +1,15 @@
 **Bugbear Stalker** · Medium Fey, Chaotic Evil
 
-**AC** 15 · **HP** 65 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 65 (10d8 + 20) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 14 (+2) | 14 (+2) | 11 (+0) | 12 (+1) | 11 (+0) |
 
+**Saving Throws** CON +4, WIS +3
 **Skills** Stealth +6, Survival +3
-**Senses** Darkvision 60 ft.,  Passive Perception 11
+**Gear** Chain Shirt, Javelins (6), Morningstar
+**Senses** Darkvision 60 ft.;  Passive Perception 11
 **Languages** Common, Goblin
 **CR** 3
 

@@ -1,13 +1,13 @@
 **Boar** · Medium Beast, Unaligned
 
-**AC** 11 · **HP** 13 · **Speed** 40 ft.
+**AC** 11 · **Initiative** +0 (10) · **HP** 13 (2d8 + 4) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 11 (+0) | 14 (+2) | 2 (-4) | 9 (-1) | 5 (-3) |
 
 **Senses** Passive Perception 9
-**Languages** --
+**Languages** None
 **CR** 1/4
 
 Bloodied Fury. While Bloodied, the boar has Advantage on attack rolls.

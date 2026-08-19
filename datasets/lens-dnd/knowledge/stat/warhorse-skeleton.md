@@ -1,13 +1,15 @@
 **Warhorse Skeleton** · Large Undead, Lawful Evil
 
-**AC** 13 · **HP** 22 · **Speed** 60 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 22 (3d10 + 6) · **Speed** 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 12 (+1) | 15 (+2) | 2 (-4) | 8 (-1) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 9
-**Languages** --
+**Immunities** Poison; Exhaustion, Poisoned
+**Vulnerabilities** Bludgeoning
+**Senses** Darkvision 60 ft.;  Passive Perception 9
+**Languages** None
 **CR** 1/2
 
 ---

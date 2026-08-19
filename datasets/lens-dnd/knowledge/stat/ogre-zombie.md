@@ -1,12 +1,14 @@
 **Ogre Zombie** · Large Undead, Neutral Evil
 
-**AC** 8 · **HP** 85 · **Speed** 30 ft.
+**AC** 8 · **Initiative** -2 (8) · **HP** 85 (9d10 + 36) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 6 (-2) | 18 (+4) | 3 (-4) | 6 (-2) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 8
+**Saving Throws** WIS +0
+**Immunities** Poison; Exhaustion, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 8
 **Languages** Understands Common and Giant but can’t speak
 **CR** 2
 

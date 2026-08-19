@@ -1,6 +1,6 @@
 **Harpy** · Medium Monstrosity, Chaotic Evil
 
-**AC** 11 · **HP** 38 · **Speed** 20 ft., fly 40 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 38 (7d8 + 7) · **Speed** 20 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

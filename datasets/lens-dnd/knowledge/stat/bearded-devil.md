@@ -1,12 +1,15 @@
 **Bearded Devil** · Medium Fiend, Lawful Evil
 
-**AC** 13 · **HP** 58 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +2 (12) · **HP** 58 (9d8 + 18) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 15 (+2) | 15 (+2) | 9 (-1) | 11 (+0) | 14 (+2) |
 
-**Senses** Darkvision 120 ft. (unimpeded by magical Darkness),  Passive Perception 10
+**Saving Throws** STR +5, CON +4, CHA +4
+**Immunities** Fire, Poison; Frightened, Poisoned
+**Resistances** Cold
+**Senses** Darkvision 120 ft. (unimpeded by magical Darkness);  Passive Perception 10
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 3
 

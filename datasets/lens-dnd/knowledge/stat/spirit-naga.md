@@ -1,12 +1,14 @@
 **Spirit Naga** · Large Fiend, Chaotic Evil
 
-**AC** 17 · **HP** 135 · **Speed** 40 ft.
+**AC** 17 · **Initiative** +3 (13) · **HP** 135 (18d10 + 36) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 17 (+3) | 14 (+2) | 16 (+3) | 15 (+2) | 16 (+3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 12
+**Saving Throws** DEX +6, CON +5, WIS +5, CHA +6
+**Immunities** Poison; Charmed, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 12
 **Languages** Abyssal, Common
 **CR** 8
 

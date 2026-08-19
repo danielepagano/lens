@@ -1,13 +1,15 @@
 **Young Gold Dragon** · Large Dragon, Lawful Good
 
-**AC** 18 · **HP** 178 · **Speed** 40 ft., fly 80 ft., swim 40 ft.
+**AC** 18 · **Initiative** +6 (16) · **HP** 178 (17d10 + 85) · **Speed** 40 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 23 (+6) | 14 (+2) | 21 (+5) | 16 (+3) | 13 (+1) | 20 (+5) |
 
+**Saving Throws** DEX +6, WIS +5
 **Skills** Insight +5, Perception +9, Persuasion +9, Stealth +6
-**Senses** Blindsight 30 ft., Darkvision 120 ft.,  Passive Perception 19
+**Immunities** Fire
+**Senses** Blindsight 30 ft., Darkvision 120 ft.;  Passive Perception 19
 **Languages** Common, Draconic
 **CR** 10
 

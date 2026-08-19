@@ -1,12 +1,14 @@
 **Salamander** · Large Elemental, Neutral Evil
 
-**AC** 15 · **HP** 90 · **Speed** 30 ft., climb 30 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 90 (12d10 + 24) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 14 (+2) | 15 (+2) | 11 (+0) | 10 (+0) | 12 (+1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Fire
+**Vulnerabilities** Cold
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Ignan)
 **CR** 5
 

@@ -1,14 +1,14 @@
 **Lion** · Large Beast, Unaligned
 
-**AC** 12 · **HP** 22 · **Speed** 50 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 22 (4d10) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 15 (+2) | 11 (+0) | 3 (-4) | 12 (+1) | 8 (-1) |
 
 **Skills** Perception +3, Stealth +4
-**Senses** Darkvision 60 ft.,  Passive Perception 13
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 13
+**Languages** None
 **CR** 1
 
 Pack Tactics. The lion has Advantage on an attack roll against a creature if at least one of the lion’s allies is within 5 feet of the creature and the ally doesn’t have the Incapacitated condition.

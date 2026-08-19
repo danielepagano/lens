@@ -1,14 +1,15 @@
 **Giant Rat** · Small Beast, Unaligned
 
-**AC** 13 · **HP** 7 · **Speed** 30 ft., climb 30 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 7 (2d6) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 7 (-2) | 16 (+3) | 11 (+0) | 2 (-4) | 10 (+0) | 4 (-3) |
 
+**Saving Throws** DEX +5
 **Skills** Perception +2
-**Senses** Darkvision 60 ft.,  Passive Perception 12
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 12
+**Languages** None
 **CR** 1/8
 
 Pack Tactics. The rat has Advantage on an attack roll against a creature if at least one of the rat’s allies is within 5 feet of the creature and the ally doesn’t have the Incapacitated condition.

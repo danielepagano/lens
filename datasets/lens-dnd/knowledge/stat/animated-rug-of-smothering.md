@@ -1,13 +1,14 @@
 **Animated Rug of Smothering** · Large Construct, Unaligned
 
-**AC** 12 · **HP** 27 · **Speed** 10 ft.
+**AC** 12 · **Initiative** +4 (14) · **HP** 27 (5d10) · **Speed** 10 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 14 (+2) | 10 (+0) | 1 (-5) | 3 (-4) | 1 (-5) |
 
-**Senses** Blindsight 60 ft.,  Passive Perception 6
-**Languages** --
+**Immunities** Poison, Psychic; Charmed, Deafened, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned
+**Senses** Blindsight 60 ft.;  Passive Perception 6
+**Languages** None
 **CR** 2
 
 ---

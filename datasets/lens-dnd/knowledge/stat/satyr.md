@@ -1,6 +1,6 @@
 **Satyr** · Medium Fey, Chaotic Neutral
 
-**AC** 13 · **HP** 31 · **Speed** 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 31 (7d8) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

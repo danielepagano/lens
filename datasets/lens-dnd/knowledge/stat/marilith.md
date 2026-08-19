@@ -1,13 +1,16 @@
 **Marilith** · Large Fiend, Chaotic Evil
 
-**AC** 16 · **HP** 220 · **Speed** 40 ft., climb 40 ft.
+**AC** 16 · **Initiative** +10 (20) · **HP** 220 (21d10 + 105) · **Speed** 40 ft., Climb 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 20 (+5) | 20 (+5) | 18 (+4) | 16 (+3) | 20 (+5) |
 
+**Saving Throws** STR +9, CON +10, WIS +8, CHA +10
 **Skills** Perception +8
-**Senses** Truesight 120 ft.,  Passive Perception 18
+**Immunities** Poison; Poisoned
+**Resistances** Cold, Fire, Lightning
+**Senses** Truesight 120 ft.;  Passive Perception 18
 **Languages** Abyssal, Telepathy 120 ft.
 **CR** 16
 

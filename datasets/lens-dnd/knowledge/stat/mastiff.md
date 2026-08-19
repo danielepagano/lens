@@ -1,14 +1,14 @@
 **Mastiff** · Medium Beast, Unaligned
 
-**AC** 12 · **HP** 5 · **Speed** 40 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 5 (1d8 + 1) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 14 (+2) | 12 (+1) | 3 (-4) | 12 (+1) | 7 (-2) |
 
 **Skills** Perception +5
-**Senses** Darkvision 60 ft.,  Passive Perception 15
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 15
+**Languages** None
 **CR** 1/8
 
 ---

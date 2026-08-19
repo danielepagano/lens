@@ -1,6 +1,6 @@
 **Allosaurus** · Large Beast, Unaligned
 
-**AC** 13 · **HP** 51 · **Speed** 60 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 51 (6d10 + 18) · **Speed** 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +5
 **Senses** Passive Perception 15
-**Languages** --
+**Languages** None
 **CR** 2
 
 ---

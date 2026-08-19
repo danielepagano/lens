@@ -1,12 +1,13 @@
 **Stone Golem** · Large Construct, Unaligned
 
-**AC** 18 · **HP** 220 · **Speed** 30 ft.
+**AC** 18 · **Initiative** +3 (13) · **HP** 220 (21d10 + 105) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 22 (+6) | 9 (-1) | 20 (+5) | 3 (-4) | 11 (+0) | 1 (-5) |
 
-**Senses** Darkvision 120 ft.,  Passive Perception 10
+**Immunities** Poison, Psychic; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned
+**Senses** Darkvision 120 ft.;  Passive Perception 10
 **Languages** Understands Common plus two other languages but can’t speak
 **CR** 10
 

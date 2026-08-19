@@ -1,13 +1,15 @@
 **Dust Mephit** · Small Elemental, Neutral Evil
 
-**AC** 12 · **HP** 17 · **Speed** 30 ft., fly 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 17 (5d6) · **Speed** 30 ft., Fly 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 5 (-3) | 14 (+2) | 10 (+0) | 9 (-1) | 11 (+0) | 10 (+0) |
 
 **Skills** Perception +2, Stealth +4
-**Senses** Darkvision 60 ft.,  Passive Perception 12
+**Immunities** Poison; Exhaustion, Poisoned
+**Vulnerabilities** Fire
+**Senses** Darkvision 60 ft.;  Passive Perception 12
 **Languages** Primordial (Auran, Terran)
 **CR** 1/2
 

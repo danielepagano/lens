@@ -1,13 +1,13 @@
 **Dryad** · Medium Fey, Neutral
 
-**AC** 16 · **HP** 22 · **Speed** 30 ft.
+**AC** 16 · **Initiative** +1 (11) · **HP** 22 (5d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 12 (+1) | 11 (+0) | 14 (+2) | 15 (+2) | 18 (+4) |
 
 **Skills** Perception +4, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Elvish, Sylvan
 **CR** 1
 

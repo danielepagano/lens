@@ -1,11 +1,12 @@
 **Tough** · Medium Or Small Humanoid, Neutral
 
-**AC** 12 · **HP** 32 · **Speed** 30 ft.
+**AC** 12 · **Initiative** +1 (11) · **HP** 32 (5d8 + 10) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 12 (+1) | 14 (+2) | 10 (+0) | 10 (+0) | 11 (+0) |
 
+**Gear** Heavy Crossbow, Leather Armor, Mace
 **Senses** Passive Perception 10
 **Languages** Common
 **CR** 1/2

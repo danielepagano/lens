@@ -1,13 +1,15 @@
 **Ancient Bronze Dragon** · Gargantuan Dragon, Lawful Good
 
-**AC** 22 · **HP** 444 · **Speed** 40 ft., fly 80 ft., swim 40 ft.
+**AC** 22 · **Initiative** +14 (24) · **HP** 444 (24d20 + 192) · **Speed** 40 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 29 (+9) | 10 (+0) | 27 (+8) | 18 (+4) | 17 (+3) | 25 (+7) |
 
+**Saving Throws** DEX +7, WIS +10
 **Skills** Insight +10, Perception +17, Stealth +7
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 27
+**Immunities** Lightning
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 27
 **Languages** Common, Draconic
 **CR** 22
 

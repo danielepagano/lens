@@ -1,12 +1,13 @@
 **Shield Guardian** · Large Construct, Unaligned
 
-**AC** 17 · **HP** 142 · **Speed** 30 ft.
+**AC** 17 · **Initiative** -1 (9) · **HP** 142 (15d10 + 60) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 8 (-1) | 18 (+4) | 7 (-2) | 10 (+0) | 3 (-4) |
 
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Poison; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 10
 **Languages** Understands commands given in any language but can’t speak
 **CR** 7
 

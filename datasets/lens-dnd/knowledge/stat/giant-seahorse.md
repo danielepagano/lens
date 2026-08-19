@@ -1,13 +1,13 @@
 **Giant Seahorse** · Large Beast, Unaligned
 
-**AC** 14 · **HP** 16 · **Speed** 5 ft., swim 40 ft.
+**AC** 14 · **Initiative** +1 (11) · **HP** 16 (3d10) · **Speed** 5 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 12 (+1) | 11 (+0) | 2 (-4) | 12 (+1) | 5 (-3) |
 
 **Senses** Passive Perception 11
-**Languages** --
+**Languages** None
 **CR** 1/2
 
 Water Breathing. The seahorse can breathe only underwater.

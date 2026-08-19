@@ -1,11 +1,12 @@
 **Cloud Giant** · Huge Giant, Neutral
 
-**AC** 14 · **HP** 200 · **Speed** 40 ft., fly 20 ft.
+**AC** 14 · **Initiative** +4 (14) · **HP** 200 (16d12 + 96) · **Speed** 40 ft., Fly 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 27 (+8) | 10 (+0) | 22 (+6) | 12 (+1) | 16 (+3) | 16 (+3) |
 
+**Saving Throws** CON +10, WIS +7
 **Skills** Insight +7, Perception +11
 **Senses** Passive Perception 21
 **Languages** Common, Giant

@@ -1,19 +1,21 @@
 **Ancient Black Dragon** · Gargantuan Dragon, Chaotic Evil
 
-**AC** 22 · **HP** 367 · **Speed** 40 ft., fly 80 ft., swim 40 ft.
+**AC** 22 · **Initiative** +16 (26) · **HP** 367 (21d20 + 147) · **Speed** 40 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 27 (+8) | 14 (+2) | 25 (+7) | 16 (+3) | 15 (+2) | 22 (+6) |
 
+**Saving Throws** DEX +9, WIS +9
 **Skills** Perception +16, Stealth +9
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 26
+**Immunities** Acid
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 26
 **Languages** Common, Draconic
 **CR** 21
 
 Amphibious. The dragon can breathe air and water.
 
-Legendary Resistance (3/Day, or 5/Day in Lair). If the dragon fails a saving throw, it can choose to succeed instead.
+Legendary Resistance (4/Day, or 5/Day in Lair). If the dragon fails a saving throw, it can choose to succeed instead.
 
 ---
 **Actions**

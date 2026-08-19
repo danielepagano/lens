@@ -1,13 +1,15 @@
 **Imp** · Tiny Fiend, Lawful Evil
 
-**AC** 13 · **HP** 21 · **Speed** 20 ft., fly 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 21 (6d4 + 6) · **Speed** 20 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 6 (-2) | 17 (+3) | 13 (+1) | 11 (+0) | 12 (+1) | 14 (+2) |
 
 **Skills** Deception +4, Insight +3, Stealth +5
-**Senses** Darkvision 120 ft. (unimpeded by magical Darkness),  Passive Perception 11
+**Immunities** Fire, Poison; Poisoned
+**Resistances** Cold
+**Senses** Darkvision 120 ft. (unimpeded by magical Darkness);  Passive Perception 11
 **Languages** Common, Infernal
 **CR** 1
 

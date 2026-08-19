@@ -1,13 +1,14 @@
 **Remorhaz** · Huge Monstrosity, Unaligned
 
-**AC** 17 · **HP** 195 · **Speed** 40 ft., burrow 30 ft.
+**AC** 17 · **Initiative** +5 (15) · **HP** 195 (17d12 + 85) · **Speed** 40 ft., Burrow 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 24 (+7) | 13 (+1) | 21 (+5) | 4 (-3) | 10 (+0) | 5 (-3) |
 
-**Senses** Darkvision 60 ft., Tremorsense 60 ft.,  Passive Perception 10
-**Languages** --
+**Immunities** Cold, Fire
+**Senses** Darkvision 60 ft., Tremorsense 60 ft.;  Passive Perception 10
+**Languages** None
 **CR** 11
 
 Heat Aura. At the end of each of the remorhaz’s turns, each creature in a 5-foot Emanation originating from the remorhaz takes 16 (3d10) Fire damage.

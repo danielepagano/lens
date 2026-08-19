@@ -1,13 +1,14 @@
 **Steam Mephit** · Small Elemental, Neutral Evil
 
-**AC** 10 · **HP** 17 · **Speed** 30 ft., fly 30 ft.
+**AC** 10 · **Initiative** +0 (10) · **HP** 17 (5d6) · **Speed** 30 ft., Fly 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 5 (-3) | 11 (+0) | 10 (+0) | 11 (+0) | 10 (+0) | 12 (+1) |
 
 **Skills** Stealth +2
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Fire, Poison; Exhaustion, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Primordial (Aquan, Ignan)
 **CR** 1/4
 

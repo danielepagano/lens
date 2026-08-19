@@ -264,8 +264,8 @@ CI files installed for github:
 
 [release] enabled  (repo: git@github.com:my/lens.git)
 
-Dataset repo:  lens-dnd-ext
-  url: https://github.com/user/lens-dnd-ext.git
+Dataset repo:  my-dataset
+  url: https://github.com/user/my-dataset.git
   ref: main  (new)
   ⚠ HTTPS — switch to SSH or confirm it's a public repo (edit lens.toml [[dataset_repo]])
 

@@ -1,13 +1,15 @@
 **Copper Dragon Wyrmling** · Medium Dragon, Chaotic Good
 
-**AC** 16 · **HP** 22 · **Speed** 30 ft., climb 30 ft., fly 60 ft.
+**AC** 16 · **Initiative** +3 (13) · **HP** 22 (4d8 + 4) · **Speed** 30 ft., Climb 30 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 12 (+1) | 13 (+1) | 14 (+2) | 11 (+0) | 13 (+1) |
 
+**Saving Throws** DEX +3, WIS +2
 **Skills** Perception +4, Stealth +3
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Acid
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 1
 

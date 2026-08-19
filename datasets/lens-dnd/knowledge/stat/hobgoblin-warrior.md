@@ -1,12 +1,13 @@
 **Hobgoblin Warrior** · Medium Fey, Lawful Evil
 
-**AC** 18 · **HP** 11 · **Speed** 30 ft.
+**AC** 18 · **Initiative** +3 (13) · **HP** 11 (2d8 + 2) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 12 (+1) | 12 (+1) | 10 (+0) | 10 (+0) | 9 (-1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Gear** Half Plate Armor, Longbow, Longsword, Shield
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Common, Goblin
 **CR** 1/2
 

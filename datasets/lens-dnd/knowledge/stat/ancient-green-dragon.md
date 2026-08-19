@@ -1,13 +1,15 @@
 **Ancient Green Dragon** · Gargantuan Dragon, Lawful Evil
 
-**AC** 21 · **HP** 402 · **Speed** 40 ft., fly 80 ft., swim 40 ft.
+**AC** 21 · **Initiative** +15 (25) · **HP** 402 (23d20 + 161) · **Speed** 40 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 27 (+8) | 12 (+1) | 25 (+7) | 20 (+5) | 17 (+3) | 22 (+6) |
 
+**Saving Throws** DEX +8, WIS +10
 **Skills** Deception +13, Perception +17, Persuasion +13, Stealth +8
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 27
+**Immunities** Poison; Poisoned
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 27
 **Languages** Common, Draconic
 **CR** 22
 

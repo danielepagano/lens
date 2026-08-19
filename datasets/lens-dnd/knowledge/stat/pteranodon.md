@@ -1,6 +1,6 @@
 **Pteranodon** · Medium Beast, Unaligned
 
-**AC** 13 · **HP** 13 · **Speed** 10 ft., fly 60 ft.
+**AC** 13 · **Initiative** +2 (12) · **HP** 13 (3d8) · **Speed** 10 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +1
 **Senses** Passive Perception 11
-**Languages** --
+**Languages** None
 **CR** 1/4
 
 Flyby. The pteranodon doesn’t provoke an Opportunity Attack when it flies out of an enemy’s reach.

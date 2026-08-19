@@ -1,13 +1,15 @@
 **Adult White Dragon** · Huge Dragon, Chaotic Evil
 
-**AC** 18 · **HP** 200 · **Speed** 40 ft., burrow 30 ft., fly 80 ft., swim 40 ft.
+**AC** 18 · **Initiative** +10 (20) · **HP** 200 (16d12 + 96) · **Speed** 40 ft., Burrow 30 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 22 (+6) | 10 (+0) | 22 (+6) | 8 (-1) | 12 (+1) | 12 (+1) |
 
+**Saving Throws** DEX +5, WIS +6
 **Skills** Perception +11, Stealth +5
-**Senses** Blindsight 60 ft., Darkvision 120 ft.,  Passive Perception 21
+**Immunities** Cold
+**Senses** Blindsight 60 ft., Darkvision 120 ft.;  Passive Perception 21
 **Languages** Common, Draconic
 **CR** 13
 

@@ -1,13 +1,14 @@
 **Weretiger** · Medium Or Small Monstrosity, Neutral
 
-**AC** 12 · **HP** 120 · **Speed** 30 ft., 40 ft. (tiger form only)
+**AC** 12 · **Initiative** +2 (12) · **HP** 120 (16d8 + 48) · **Speed** 30 ft., 40 ft. (tiger form only)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 15 (+2) | 16 (+3) | 10 (+0) | 13 (+1) | 11 (+0) |
 
 **Skills** Perception +5, Stealth +4
-**Senses** Darkvision 60 ft.,  Passive Perception 15
+**Gear** Longbow
+**Senses** Darkvision 60 ft.;  Passive Perception 15
 **Languages** Common (can’t speak in tiger form)
 **CR** 4
 

@@ -1,13 +1,14 @@
 **Solar** · Large Celestial, Lawful Good
 
-**AC** 21 · **HP** 297 · **Speed** 50 ft., fly 150 ft. (hover)
+**AC** 21 · **Initiative** +20 (30) · **HP** 297 (22d10 + 176) · **Speed** 50 ft., Fly 150 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 26 (+8) | 22 (+6) | 26 (+8) | 25 (+7) | 25 (+7) | 30 (+10) |
 
 **Skills** Perception +14
-**Senses** Truesight 120 ft.,  Passive Perception 24
+**Immunities** Poison, Radiant; Charmed, Exhaustion, Frightened, Poisoned
+**Senses** Truesight 120 ft.;  Passive Perception 24
 **Languages** All, Telepathy 120 ft.
 **CR** 21
 

@@ -1,12 +1,12 @@
 **Gnoll Warrior** · Medium Fiend, Chaotic Evil
 
-**AC** 15 · **HP** 27 · **Speed** 30 ft.
+**AC** 15 · **Initiative** +1 (11) · **HP** 27 (6d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 12 (+1) | 11 (+0) | 6 (-2) | 10 (+0) | 7 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Gnoll
 **CR** 1/2
 

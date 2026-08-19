@@ -1,14 +1,14 @@
 **Giant Wolf Spider** · Medium Beast, Unaligned
 
-**AC** 13 · **HP** 11 · **Speed** 40 ft., climb 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 11 (2d8 + 2) · **Speed** 40 ft., Climb 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 12 (+1) | 16 (+3) | 13 (+1) | 3 (-4) | 12 (+1) | 4 (-3) |
 
 **Skills** Perception +3, Stealth +7
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 13
-**Languages** --
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 13
+**Languages** None
 **CR** 1/4
 
 Spider Climb. The spider can climb difficult surfaces, including along ceilings, without needing to make an ability check.

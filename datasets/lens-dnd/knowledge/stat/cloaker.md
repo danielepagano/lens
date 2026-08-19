@@ -1,13 +1,14 @@
 **Cloaker** · Large Aberration, Chaotic Neutral
 
-**AC** 14 · **HP** 91 · **Speed** 10 ft., fly 40 ft.
+**AC** 14 · **Initiative** +5 (15) · **HP** 91 (14d10 + 14) · **Speed** 10 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 15 (+2) | 12 (+1) | 13 (+1) | 14 (+2) | 7 (-2) |
 
 **Skills** Stealth +5
-**Senses** Darkvision 120 ft.,  Passive Perception 12
+**Immunities** Frightened
+**Senses** Darkvision 120 ft.;  Passive Perception 12
 **Languages** Deep Speech, Undercommon
 **CR** 8
 

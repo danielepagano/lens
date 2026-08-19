@@ -1,13 +1,15 @@
 **Brass Dragon Wyrmling** · Medium Dragon, Chaotic Good
 
-**AC** 15 · **HP** 22 · **Speed** 30 ft., burrow 15 ft., fly 60 ft.
+**AC** 15 · **Initiative** +2 (12) · **HP** 22 (4d8 + 4) · **Speed** 30 ft., Burrow 15 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 10 (+0) | 13 (+1) | 10 (+0) | 11 (+0) | 13 (+1) |
 
+**Saving Throws** DEX +2, WIS +2
 **Skills** Perception +4, Stealth +2
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Fire
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 1
 

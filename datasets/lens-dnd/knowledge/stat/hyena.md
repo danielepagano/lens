@@ -1,14 +1,14 @@
 **Hyena** · Medium Beast, Unaligned
 
-**AC** 11 · **HP** 5 · **Speed** 50 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 5 (1d8 + 1) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 13 (+1) | 12 (+1) | 2 (-4) | 12 (+1) | 5 (-3) |
 
 **Skills** Perception +3
-**Senses** Darkvision 60 ft.,  Passive Perception 13
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 13
+**Languages** None
 **CR** 0
 
 Pack Tactics. The hyena has Advantage on an attack roll against a creature if at least one of the hyena’s allies is within 5 feet of the creature and the ally doesn’t have the Incapacitated condition.

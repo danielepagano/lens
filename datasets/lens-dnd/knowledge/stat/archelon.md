@@ -1,6 +1,6 @@
 **Archelon** · Huge Beast, Unaligned
 
-**AC** 17 · **HP** 90 · **Speed** 20 ft., swim 80 ft.
+**AC** 17 · **Initiative** +3 (13) · **HP** 90 (12d12 + 12) · **Speed** 20 ft., Swim 80 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Stealth +5
 **Senses** Passive Perception 12
-**Languages** --
+**Languages** None
 **CR** 4
 
 Amphibious. The archelon can breathe air and water.

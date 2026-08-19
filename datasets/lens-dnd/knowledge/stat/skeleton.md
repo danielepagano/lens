@@ -1,12 +1,15 @@
 **Skeleton** · Medium Undead, Lawful Evil
 
-**AC** 14 · **HP** 13 · **Speed** 30 ft.
+**AC** 14 · **Initiative** +3 (13) · **HP** 13 (2d8 + 4) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 16 (+3) | 15 (+2) | 6 (-2) | 8 (-1) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 9
+**Immunities** Poison; Exhaustion, Poisoned
+**Vulnerabilities** Bludgeoning
+**Gear** Shortbow, Shortsword
+**Senses** Darkvision 60 ft.;  Passive Perception 9
 **Languages** Understands Common plus one other language but can’t speak
 **CR** 1/4
 

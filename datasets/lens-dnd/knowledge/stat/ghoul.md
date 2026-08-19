@@ -1,12 +1,13 @@
 **Ghoul** · Medium Undead, Chaotic Evil
 
-**AC** 12 · **HP** 22 · **Speed** 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 22 (5d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 15 (+2) | 10 (+0) | 7 (-2) | 10 (+0) | 6 (-2) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Immunities** Poison; Charmed, Exhaustion, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Common
 **CR** 1
 

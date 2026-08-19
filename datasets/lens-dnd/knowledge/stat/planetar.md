@@ -1,13 +1,16 @@
 **Planetar** · Large Celestial, Lawful Good
 
-**AC** 19 · **HP** 262 · **Speed** 40 ft., fly 120 ft. (hover)
+**AC** 19 · **Initiative** +10 (20) · **HP** 262 (21d10 + 147) · **Speed** 40 ft., Fly 120 ft. (hover)
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 24 (+7) | 20 (+5) | 24 (+7) | 19 (+4) | 22 (+6) | 25 (+7) |
 
+**Saving Throws** STR +12, CON +12, WIS +11, CHA +12
 **Skills** Perception +11
-**Senses** Truesight 120 ft.,  Passive Perception 21
+**Immunities** Charmed, Exhaustion, Frightened
+**Resistances** Radiant
+**Senses** Truesight 120 ft.;  Passive Perception 21
 **Languages** All, Telepathy 120 ft.
 **CR** 16
 

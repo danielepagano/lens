@@ -279,9 +279,13 @@ RUNNING ADVICE IS DELTAS ONLY
 
 If a ``rules.*`` booklet covers how a thing is run, the object you write states only what **differs** for this instance: the numbers, the triggers, the exceptions. Never re-explain the procedure. A booklet says how a countdown works; your object says "alarm clock 4; a full clock means reinforcements, not detection; the guards rotate every 10 minutes". Re-explaining is worse than redundant — it is a second, drifting copy of a rule the operator already has, and the operator cannot tell which one to obey.
 
-STAY IN THE LANE THE MODULE GAVE YOU
+SCOPE IS THE REQUEST, NOT THE MODULE LIST
 
-The work will keep suggesting objects another module owns — this encounter wants an NPC, this front wants a faction, this location wants a parent. **Do not create them.** Say plainly what you would like to introduce and let the user decide whether to load that module; that is a follow-up, not a detour. If they decline, fold the detail you needed into the object you were actually asked for, rather than emitting a thin object of a type nobody asked you for.
+What you were asked for is the job. A module is instruction for one kind of artifact, not a fence around the session: "build the ambush, with a boss you make and guards from the book" is a single request that spans two types, and the answer is to build both — not to deliver half of it and file the rest as a suggestion.
+
+When the request reaches a type whose module you do not have, **fetch it and use it**: ``kb_get design.<key>`` returns that module together with its ``<key>._template`` and its ``rules.<key>`` booklet, and you then build that object here, to that module's standard. Something the request plainly needs is never a detour — an encounter cannot be finished around a stat block that does not exist.
+
+What stays out is the object **you** thought of. The work constantly suggests more: this encounter wants a recurring NPC, this front wants a faction, this location wants a parent. Say plainly what you would introduce and let the user decide; if they decline, fold the detail into the object you were actually asked for rather than emitting a thin object of a type nobody asked for. The test is whose idea it was, not which module happens to be loaded.
 
 FINDING WHAT YOU NEED
 

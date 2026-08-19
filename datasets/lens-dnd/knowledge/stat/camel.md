@@ -1,13 +1,14 @@
 **Camel** · Large Beast, Unaligned
 
-**AC** 10 · **HP** 17 · **Speed** 50 ft.
+**AC** 10 · **Initiative** -1 (9) · **HP** 17 (2d10 + 6) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 8 (-1) | 17 (+3) | 2 (-4) | 11 (+0) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
-**Languages** --
+**Saving Throws** CON +5
+**Senses** Darkvision 60 ft.;  Passive Perception 10
+**Languages** None
 **CR** 1/8
 
 ---

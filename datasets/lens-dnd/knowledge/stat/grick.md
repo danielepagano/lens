@@ -1,14 +1,14 @@
 **Grick** · Medium Aberration, Unaligned
 
-**AC** 14 · **HP** 54 · **Speed** 30 ft., climb 30 ft.
+**AC** 14 · **Initiative** +2 (12) · **HP** 54 (12d8) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 14 (+2) | 11 (+0) | 3 (-4) | 14 (+2) | 5 (-3) |
 
 **Skills** Stealth +4
-**Senses** Darkvision 60 ft.,  Passive Perception 12
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 12
+**Languages** None
 **CR** 2
 
 ---

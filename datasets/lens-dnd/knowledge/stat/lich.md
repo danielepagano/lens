@@ -1,13 +1,17 @@
 **Lich** · Medium Undead, Neutral Evil
 
-**AC** 20 · **HP** 315 · **Speed** 30 ft.
+**AC** 20 · **Initiative** +17 (27) · **HP** 315 (42d8 + 126) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 16 (+3) | 16 (+3) | 21 (+5) | 14 (+2) | 16 (+3) |
 
+**Saving Throws** DEX +10, CON +10, INT +12, WIS +9
 **Skills** Arcana +19, History +12, Insight +9, Perception +9
-**Senses** Truesight 120 ft.,  Passive Perception 19
+**Immunities** Necrotic, Poison; Charmed, Exhaustion, Frightened, Paralyzed, Poisoned
+**Resistances** Cold, Lightning
+**Gear** Component Pouch
+**Senses** Truesight 120 ft.;  Passive Perception 19
 **Languages** All
 **CR** 21
 

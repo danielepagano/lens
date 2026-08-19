@@ -1,13 +1,17 @@
 **Vampire Familiar** · Medium Or Small Humanoid, Neutral Evil
 
-**AC** 15 · **HP** 65 · **Speed** 30 ft., climb 30 ft.
+**AC** 15 · **Initiative** +5 (15) · **HP** 65 (10d8 + 20) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 16 (+3) | 15 (+2) | 10 (+0) | 10 (+0) | 14 (+2) |
 
+**Saving Throws** DEX +5, WIS +2
 **Skills** Perception +4, Persuasion +4, Stealth +7
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Charmed
+**Resistances** Necrotic
+**Gear** Daggers (10)
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Common plus one other language
 **CR** 3
 

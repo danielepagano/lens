@@ -1,6 +1,6 @@
 **Raven** · Tiny Beast, Unaligned
 
-**AC** 12 · **HP** 2 · **Speed** 10 ft., fly 50 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 2 (1d4) · **Speed** 10 ft., Fly 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Perception +3
 **Senses** Passive Perception 13
-**Languages** --
+**Languages** None
 **CR** 0
 
 Mimicry. The raven can mimic simple sounds it has heard, such as a whisper or chitter. A hearer can discern the sounds are imitations with a successful DC 10 Wisdom (Insight) check.

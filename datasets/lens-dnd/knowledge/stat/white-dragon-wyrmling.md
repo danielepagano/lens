@@ -1,13 +1,15 @@
 **White Dragon Wyrmling** · Medium Dragon, Chaotic Evil
 
-**AC** 16 · **HP** 32 · **Speed** 30 ft., burrow 15 ft., fly 60 ft., swim 30 ft.
+**AC** 16 · **Initiative** +2 (12) · **HP** 32 (5d8 + 10) · **Speed** 30 ft., Burrow 15 ft., Fly 60 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 10 (+0) | 14 (+2) | 5 (-3) | 10 (+0) | 11 (+0) |
 
+**Saving Throws** DEX +2, WIS +2
 **Skills** Perception +4, Stealth +2
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Cold
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 2
 

@@ -1,13 +1,13 @@
 **Troll Limb** · Small Giant, Chaotic Evil
 
-**AC** 13 · **HP** 14 · **Speed** 20 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 14 (4d6) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 12 (+1) | 10 (+0) | 1 (-5) | 9 (-1) | 1 (-5) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 9
-**Languages** --
+**Senses** Darkvision 60 ft.;  Passive Perception 9
+**Languages** None
 **CR** 1/2
 
 Regeneration. The limb regains 5 Hit Points at the start of each of its turns. If the limb takes Acid or Fire damage, this trait doesn’t function on the limb’s next turn. The limb dies only if it starts its turn with 0 Hit Points and doesn’t regenerate.

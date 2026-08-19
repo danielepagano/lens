@@ -1,13 +1,16 @@
 **Storm Giant** · Huge Giant, Chaotic Good
 
-**AC** 16 · **HP** 230 · **Speed** 50 ft., fly 25 ft. (hover), swim 50 ft.
+**AC** 16 · **Initiative** +7 (17) · **HP** 230 (20d12 + 100) · **Speed** 50 ft., Fly 25 ft. (hover), Swim 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 29 (+9) | 14 (+2) | 20 (+5) | 16 (+3) | 20 (+5) | 18 (+4) |
 
+**Saving Throws** STR +14, CON +10, WIS +10, CHA +9
 **Skills** Arcana +8, Athletics +14, History +8, Perception +10
-**Senses** Darkvision 120 ft., Truesight 30 ft.,  Passive Perception 20
+**Immunities** Lightning, Thunder
+**Resistances** Cold
+**Senses** Darkvision 120 ft., Truesight 30 ft.;  Passive Perception 20
 **Languages** Common, Giant
 **CR** 13
 

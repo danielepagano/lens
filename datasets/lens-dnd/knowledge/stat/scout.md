@@ -1,12 +1,13 @@
 **Scout** · Medium Or Small Humanoid, Neutral
 
-**AC** 13 · **HP** 16 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +2 (12) · **HP** 16 (3d8 + 3) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 14 (+2) | 12 (+1) | 11 (+0) | 13 (+1) | 11 (+0) |
 
 **Skills** Nature +4, Perception +5, Stealth +6, Survival +5
+**Gear** Leather Armor, Longbow, Shortsword
 **Senses** Passive Perception 15
 **Languages** Common plus one other language
 **CR** 1/2

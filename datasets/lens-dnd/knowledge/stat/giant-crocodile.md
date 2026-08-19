@@ -1,14 +1,14 @@
 **Giant Crocodile** · Huge Beast, Unaligned
 
-**AC** 14 · **HP** unknown · **Speed** 300 ft., swim 500 ft.
+**AC** 14 · **Initiative** -1 (9) · **HP** 85 (9d12 + 27) · **Speed** 30 ft., Swim 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
-| 21 (+5) | 9 (-1) | 17 (+3) | 2 (-4) | 10 (+0) | 50 (+20) |
+| 21 (+5) | 9 (-1) | 17 (+3) | 2 (-4) | 10 (+0) | 7 (-2) |
 
-**Skills** Stealth +50
-**Senses** Passive Perception -10
-**Languages** Elfish
+**Skills** Stealth +5
+**Senses** Passive Perception 10
+**Languages** None
 **CR** 5
 
 Hold Breath. The crocodile can hold its breath for 1 hour.

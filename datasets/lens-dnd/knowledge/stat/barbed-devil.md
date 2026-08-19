@@ -1,13 +1,16 @@
 **Barbed Devil** · Medium Fiend, Lawful Evil
 
-**AC** 15 · **HP** 110 · **Speed** 30 ft., climb 30 ft.
+**AC** 15 · **Initiative** +3 (13) · **HP** 110 (13d8 + 52) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 17 (+3) | 18 (+4) | 12 (+1) | 14 (+2) | 14 (+2) |
 
+**Saving Throws** STR +6, CON +7, WIS +5, CHA +5
 **Skills** Deception +5, Insight +5, Perception +8
-**Senses** Darkvision 120 ft. (unimpeded by magical Darkness),  Passive Perception 18
+**Immunities** Fire, Poison; Poisoned
+**Resistances** Cold
+**Senses** Darkvision 120 ft. (unimpeded by magical Darkness);  Passive Perception 18
 **Languages** Infernal, Telepathy 120 ft.
 **CR** 5
 

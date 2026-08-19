@@ -1,13 +1,14 @@
 **Giant Boar** · Large Beast, Unaligned
 
-**AC** 13 · **HP** 42 · **Speed** 40 ft.
+**AC** 13 · **Initiative** +0 (10) · **HP** 42 (5d10 + 15) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 10 (+0) | 16 (+3) | 2 (-4) | 7 (-2) | 5 (-3) |
 
+**Saving Throws** STR +5
 **Senses** Passive Perception 8
-**Languages** --
+**Languages** None
 **CR** 2
 
 Bloodied Fury. The boar has Advantage on melee attack rolls while it is Bloodied.

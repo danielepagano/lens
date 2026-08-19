@@ -1,6 +1,6 @@
 **Ape** · Medium Beast, Unaligned
 
-**AC** 12 · **HP** 19 · **Speed** 30 ft., climb 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 19 (3d8 + 6) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -8,7 +8,7 @@
 
 **Skills** Athletics +5, Perception +3
 **Senses** Passive Perception 13
-**Languages** --
+**Languages** None
 **CR** 1/2
 
 ---

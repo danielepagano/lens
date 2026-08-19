@@ -1,12 +1,14 @@
 **Cultist** · Medium Or Small Humanoid, Neutral
 
-**AC** 12 · **HP** 9 · **Speed** 30 ft.
+**AC** 12 · **Initiative** +1 (11) · **HP** 9 (2d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 11 (+0) | 12 (+1) | 10 (+0) | 10 (+0) | 11 (+0) | 10 (+0) |
 
+**Saving Throws** WIS +2
 **Skills** Deception +2, Religion +2
+**Gear** Leather Armor, Sickle
 **Senses** Passive Perception 10
 **Languages** Common
 **CR** 1/8

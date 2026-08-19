@@ -1,13 +1,14 @@
 **Gelatinous Cube** · Large Ooze, Unaligned
 
-**AC** 6 · **HP** 63 · **Speed** 15 ft.
+**AC** 6 · **Initiative** -4 (6) · **HP** 63 (6d10 + 30) · **Speed** 15 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 14 (+2) | 3 (-4) | 20 (+5) | 1 (-5) | 6 (-2) | 1 (-5) |
 
-**Senses** Blindsight 60 ft.,  Passive Perception 8
-**Languages** --
+**Immunities** Acid; Blinded, Charmed, Deafened, Exhaustion, Frightened, Prone
+**Senses** Blindsight 60 ft.;  Passive Perception 8
+**Languages** None
 **CR** 2
 
 Ooze Cube. The cube fills its entire space and is transparent. Other creatures can enter that space, but a creature that does so is subjected to the cube’s Engulf and has Disadvantage on the saving throw.

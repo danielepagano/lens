@@ -1,11 +1,12 @@
 **Berserker** · Medium Or Small Humanoid, Neutral
 
-**AC** 13 · **HP** 67 · **Speed** 30 ft.
+**AC** 13 · **Initiative** +1 (11) · **HP** 67 (9d8 + 27) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 16 (+3) | 12 (+1) | 17 (+3) | 9 (-1) | 11 (+0) | 9 (-1) |
 
+**Gear** Greataxe, Hide Armor
 **Senses** Passive Perception 10
 **Languages** Common
 **CR** 2

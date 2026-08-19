@@ -1,13 +1,15 @@
 **Black Dragon Wyrmling** · Medium Dragon, Chaotic Evil
 
-**AC** 17 · **HP** 33 · **Speed** 30 ft., fly 60 ft., swim 30 ft.
+**AC** 17 · **Initiative** +4 (14) · **HP** 33 (6d8 + 6) · **Speed** 30 ft., Fly 60 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 14 (+2) | 13 (+1) | 10 (+0) | 11 (+0) | 13 (+1) |
 
+**Saving Throws** DEX +4, WIS +2
 **Skills** Perception +4, Stealth +4
-**Senses** Blindsight 10 ft., Darkvision 60 ft.,  Passive Perception 14
+**Immunities** Acid
+**Senses** Blindsight 10 ft., Darkvision 60 ft.;  Passive Perception 14
 **Languages** Draconic
 **CR** 2
 

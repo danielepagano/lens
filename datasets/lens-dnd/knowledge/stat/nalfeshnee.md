@@ -1,12 +1,15 @@
 **Nalfeshnee** · Large Fiend, Chaotic Evil
 
-**AC** 18 · **HP** 184 · **Speed** 20 ft., fly 30 ft.
+**AC** 18 · **Initiative** +5 (15) · **HP** 184 (16d10 + 96) · **Speed** 20 ft., Fly 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 21 (+5) | 10 (+0) | 22 (+6) | 19 (+4) | 12 (+1) | 15 (+2) |
 
-**Senses** Truesight 120 ft.,  Passive Perception 11
+**Saving Throws** CON +11, INT +9, WIS +6, CHA +7
+**Immunities** Poison; Frightened, Poisoned
+**Resistances** Cold, Fire, Lightning
+**Senses** Truesight 120 ft.;  Passive Perception 11
 **Languages** Abyssal, Telepathy 120 ft.
 **CR** 13
 

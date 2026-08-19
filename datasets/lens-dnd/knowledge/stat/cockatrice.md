@@ -1,12 +1,13 @@
 **Cockatrice** · Small Monstrosity, Unaligned
 
-**AC** 11 · **HP** 22 · **Speed** 20 ft., fly 40 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 22 (5d6 + 5) · **Speed** 20 ft., Fly 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 6 (-2) | 12 (+1) | 12 (+1) | 2 (-4) | 13 (+1) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 11
+**Immunities** Petrified
+**Senses** Darkvision 60 ft.;  Passive Perception 11
 **Languages** --
 **CR** 1/2
 

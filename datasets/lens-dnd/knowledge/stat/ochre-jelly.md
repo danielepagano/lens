@@ -1,13 +1,15 @@
 **Ochre Jelly** · Large Ooze, Unaligned
 
-**AC** 8 · **HP** 52 · **Speed** 20 ft., climb 20 ft.
+**AC** 8 · **Initiative** -2 (8) · **HP** 52 (7d10 + 14) · **Speed** 20 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 15 (+2) | 6 (-2) | 14 (+2) | 2 (-4) | 6 (-2) | 1 (-5) |
 
-**Senses** Blindsight 60 ft.,  Passive Perception 8
-**Languages** --
+**Immunities** Lightning, Slashing; Charmed, Deafened, Exhaustion, Frightened, Grappled, Prone, Restrained
+**Resistances** Acid
+**Senses** Blindsight 60 ft.;  Passive Perception 8
+**Languages** None
 **CR** 2
 
 Amorphous. The jelly can move through a space as narrow as 1 inch without expending extra movement to do so.

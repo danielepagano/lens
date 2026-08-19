@@ -1,12 +1,14 @@
 **Clay Golem** · Large Construct, Unaligned
 
-**AC** 14 · **HP** 123 · **Speed** 20 ft.
+**AC** 14 · **Initiative** +3 (13) · **HP** 123 (13d10 + 52) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 20 (+5) | 9 (-1) | 18 (+4) | 3 (-4) | 8 (-1) | 1 (-5) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 9
+**Immunities** Acid, Poison, Psychic; Charmed, Exhaustion, Frightened, Paralyzed, Petrified, Poisoned
+**Resistances** Bludgeoning, Piercing, Slashing
+**Senses** Darkvision 60 ft.;  Passive Perception 9
 **Languages** Common plus one other language
 **CR** 9
 

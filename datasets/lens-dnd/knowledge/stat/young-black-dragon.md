@@ -1,13 +1,15 @@
 **Young Black Dragon** · Large Dragon, Chaotic Evil
 
-**AC** 18 · **HP** 127 · **Speed** 40 ft., fly 80 ft., swim 40 ft.
+**AC** 18 · **Initiative** +5 (15) · **HP** 127 (15d10 + 45) · **Speed** 40 ft., Fly 80 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 19 (+4) | 14 (+2) | 17 (+3) | 12 (+1) | 11 (+0) | 15 (+2) |
 
+**Saving Throws** DEX +5, WIS +3
 **Skills** Perception +6, Stealth +5
-**Senses** Blindsight 30 ft., Darkvision 120 ft.,  Passive Perception 16
+**Immunities** Acid
+**Senses** Blindsight 30 ft., Darkvision 120 ft.;  Passive Perception 16
 **Languages** Common, Draconic
 **CR** 7
 

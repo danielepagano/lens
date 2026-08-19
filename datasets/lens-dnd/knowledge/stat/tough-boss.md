@@ -1,11 +1,13 @@
 **Tough Boss** · Medium Or Small Humanoid, Neutral
 
-**AC** 16 · **HP** 82 · **Speed** 30 ft.
+**AC** 16 · **Initiative** +2 (12) · **HP** 82 (11d8 + 33) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 17 (+3) | 14 (+2) | 16 (+3) | 11 (+0) | 10 (+0) | 11 (+0) |
 
+**Saving Throws** STR +5, CON +5, CHA +2
+**Gear** Chain Mail, Heavy Crossbow, Warhammer
 **Senses** Passive Perception 10
 **Languages** Common plus one other language
 **CR** 4

@@ -1,12 +1,12 @@
 **Merrow** · Large Monstrosity, Chaotic Evil
 
-**AC** 13 · **HP** 45 · **Speed** 10 ft., swim 40 ft.
+**AC** 13 · **Initiative** +2 (12) · **HP** 45 (6d10 + 12) · **Speed** 10 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 18 (+4) | 15 (+2) | 15 (+2) | 8 (-1) | 10 (+0) | 9 (-1) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 10
+**Senses** Darkvision 60 ft.;  Passive Perception 10
 **Languages** Abyssal, Primordial (Aquan)
 **CR** 2
 

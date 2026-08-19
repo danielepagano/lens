@@ -1,13 +1,13 @@
 **Venomous Snake** · Tiny Beast, Unaligned
 
-**AC** 12 · **HP** 5 · **Speed** 30 ft., swim 30 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 5 (2d4) · **Speed** 30 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 2 (-4) | 15 (+2) | 11 (+0) | 1 (-5) | 10 (+0) | 3 (-4) |
 
-**Senses** Blindsight 10 ft.,  Passive Perception 10
-**Languages** --
+**Senses** Blindsight 10 ft.;  Passive Perception 10
+**Languages** None
 **CR** 1/8
 
 ---

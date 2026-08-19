@@ -1,12 +1,14 @@
 **Zombie** · Medium Undead, Neutral Evil
 
-**AC** 8 · **HP** 15 · **Speed** 20 ft.
+**AC** 8 · **Initiative** -2 (8) · **HP** 15 (2d8 + 6) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 13 (+1) | 6 (-2) | 16 (+3) | 3 (-4) | 6 (-2) | 5 (-3) |
 
-**Senses** Darkvision 60 ft.,  Passive Perception 8
+**Saving Throws** WIS +0
+**Immunities** Poison; Exhaustion, Poisoned
+**Senses** Darkvision 60 ft.;  Passive Perception 8
 **Languages** Understands Common plus one other language but can’t speak
 **CR** 1/4
 

@@ -1,13 +1,14 @@
 **Purple Worm** · Gargantuan Monstrosity, Unaligned
 
-**AC** 18 · **HP** 247 · **Speed** 50 ft., burrow 50 ft.
+**AC** 18 · **Initiative** +3 (13) · **HP** 247 (15d20 + 90) · **Speed** 50 ft., Burrow 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 28 (+9) | 7 (-2) | 22 (+6) | 1 (-5) | 8 (-1) | 4 (-3) |
 
-**Senses** Blindsight 30 ft., Tremorsense 60 ft.,  Passive Perception 9
-**Languages** --
+**Saving Throws** CON +11, WIS +4
+**Senses** Blindsight 30 ft., Tremorsense 60 ft.;  Passive Perception 9
+**Languages** None
 **CR** 15
 
 Tunneler. The worm can burrow through solid rock at half its Burrow Speed and leaves a 10-foot-diameter tunnel in its wake.

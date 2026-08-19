@@ -1,6 +1,6 @@
 **Merfolk Skirmisher** · Medium Elemental, Neutral
 
-**AC** 11 · **HP** 11 · **Speed** 10 ft., swim 40 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 11 (2d8 + 2) · **Speed** 10 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

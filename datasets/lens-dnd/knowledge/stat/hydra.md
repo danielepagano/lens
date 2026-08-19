@@ -1,14 +1,15 @@
 **Hydra** · Huge Monstrosity, Unaligned
 
-**AC** 15 · **HP** 184 · **Speed** 40 ft., swim 40 ft.
+**AC** 15 · **Initiative** +4 (14) · **HP** 184 (16d12 + 80) · **Speed** 40 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 20 (+5) | 12 (+1) | 20 (+5) | 2 (-4) | 10 (+0) | 7 (-2) |
 
 **Skills** Perception +6
-**Senses** Darkvision 60 ft.,  Passive Perception 16
-**Languages** --
+**Immunities** Blinded, Charmed, Deafened, Frightened, Stunned, Unconscious
+**Senses** Darkvision 60 ft.;  Passive Perception 16
+**Languages** None
 **CR** 8
 
 Hold Breath. The hydra can hold its breath for 1 hour.

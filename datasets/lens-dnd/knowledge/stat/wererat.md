@@ -1,13 +1,14 @@
 **Wererat** · Medium Or Small Monstrosity, Lawful Evil
 
-**AC** 13 · **HP** 60 · **Speed** 30 ft., climb 30 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 60 (11d8 + 11) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
 | 10 (+0) | 16 (+3) | 12 (+1) | 11 (+0) | 10 (+0) | 8 (-1) |
 
 **Skills** Perception +4, Stealth +5
-**Senses** Darkvision 60 ft.,  Passive Perception 14
+**Gear** Hand Crossbow
+**Senses** Darkvision 60 ft.;  Passive Perception 14
 **Languages** Common (can’t speak in rat form)
 **CR** 2
 
