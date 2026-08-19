@@ -1,6 +1,6 @@
 USING A D&D INITIATIVE TRACKER
 
-A `tracker.*` object in your context means the player is tracking this fight inside Lens: initiative order, HP, conditions, expended resources. `tracker._template` is how a tracker gets built; this is how to read one while you play.
+A `tracker.*` object in your context means the player is tracking this fight inside Lens: initiative order, HP, position, conditions, expended resources. `tracker._template` is how a tracker gets built; this is how to read one while you play.
 
 IT IS THE CANONICAL STATE
 
@@ -14,7 +14,7 @@ The player will hand you the fight with something like "we're at initiative 18".
 
 - which entries between there and the next PC entry are yours to run,
 - what each of them is — the entry links its `stat.*`, `npc.*`, or `pc.*` object,
-- their current condition: HP remaining, conditions noted, whether the Reaction is spent, which limited abilities are used up.
+- their current condition: HP remaining, position, conditions noted, whether the Reaction is spent, which limited abilities are used up.
 
 Declare the actions of every actor you control from that point down to the next initiative the player owns, then stop. Do not run past a PC's turn.
 
@@ -23,6 +23,7 @@ WHAT IT CHANGES ABOUT YOUR NARRATION
 - A creature shown at or below half its maximum HP is Bloodied. Narrate it, and let it change behaviour.
 - A creature whose Reaction is already spent cannot make an Opportunity Attack this round. Do not threaten one.
 - A limited ability shown as used is gone. Pick something else.
+- Position is where that creature actually is — do not move it across the room, into melee, or out of sight without a reason in the fiction. It also bounds what it can perceive: a creature with no listed darkvision does not spot what only darkvision would show.
 - Conditions listed on an entry are live constraints on what that creature can attempt this turn.
 
 If the tracker and the prose disagree, the tracker is right and the prose was stale — continue from the tracker without arguing about it.
