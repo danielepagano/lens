@@ -7,6 +7,7 @@ from typing import Any
 
 from lens.core.address import NarrativeAddress
 from lens.core.context import CrawlSpec, collect_vars, crawl
+from lens.core.crawl_transforms import is_state_tags
 from lens.core.modalities.bootstrap import ensure_modalities_registered
 from lens.core.modalities.registry import registered_ids
 from lens.core.modalities.resolve import resolve_modalities
@@ -109,6 +110,26 @@ def _scoped_ids_at_cursor(node: NarrativeNode) -> tuple[list[str], list[str]]:
         if ref.kb_id not in bucket:
             bucket.append(ref.kb_id)
     return includes, mentions
+
+
+def _state_tagged_ids(kb_store: KnowledgeStore, ids: list[str]) -> list[str]:
+    """Which of *ids* carry the `state` tag, canonical id, in given order.
+
+    ``pin_crawl.state_pins`` only sees pinned objects — includes and mentions
+    never become pins (see :mod:`lens.core.mentions`), so a `state`-tagged
+    include/mention is otherwise invisible to ``state_pins_at_cursor`` even
+    though :func:`~lens.core.context._add_mention_state_components` diverts it
+    into ``[LIVE STATE]`` for the real prompt just the same.
+    """
+    if not ids:
+        return []
+    objects = kb_store.get_objects(ids)
+    result: list[str] = []
+    for kid in ids:
+        obj = objects.get(kid) or objects.get(kid.lower())
+        if obj is not None and is_state_tags(obj.tags):
+            result.append(obj.id)
+    return result
 
 
 def _operator_context_at_cursor(
@@ -254,6 +275,11 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             # Only the live ones — an expired mention stays in the text (that
             # is what makes rewind work) but is no longer in scope.
             include_ids_at_cursor, mention_ids_at_cursor = _scoped_ids_at_cursor(node)
+            for kid in _state_tagged_ids(
+                kb_store, [*include_ids_at_cursor, *mention_ids_at_cursor]
+            ):
+                if kid not in state_pins_at_cursor:
+                    state_pins_at_cursor.append(kid)
             effective_vars_at_cursor = dict(collect_vars(node))
             effective_params_at_cursor = effective_param_bindings_at_cursor(
                 root, node, active

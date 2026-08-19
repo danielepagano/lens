@@ -31,8 +31,10 @@ export function pillKey(row: KbPillRow, index: number): string {
 
 /**
  * One tooltip per pill, so the decorations cannot fight over `title`.
- * Scope wins over `state`: an object cannot be inlined *and* diverted to the
- * tail, so labelling a scoped pill as live state would be a lie.
+ * A `state`-tagged include/mention is diverted to the tail same as a state
+ * pin — see `_add_mention_state_components` — so both lines apply: the scope
+ * line says why it is in view, the state line says it does not inline where
+ * that annotation sits.
  */
 export function pillTitle(
   row: KbPillRow,
@@ -40,8 +42,12 @@ export function pillTitle(
 ): string | undefined {
   const lines: string[] = []
   if (row.scope) lines.push(SCOPE_TITLE[row.scope])
-  else if (opts.isState(row.id)) {
-    lines.push('Live state — sent after the last turn, re-sent every beat')
+  if (!row.unpin && opts.isState(row.id)) {
+    lines.push(
+      row.scope
+        ? 'Tagged `state` — diverts to Live State instead of inlining here'
+        : 'Live state — sent after the last turn, re-sent every beat',
+    )
   }
   lines.push(...opts.rememberTags(row.id))
   return lines.length > 0 ? lines.join('\n') : undefined
@@ -58,6 +64,26 @@ export function cursorKbRows(
     ...includes.map((id) => ({ id, unpin: false, scope: 'include' as const })),
     ...mentions.map((id) => ({ id, unpin: false, scope: 'mention' as const })),
   ]
+}
+
+/**
+ * Split rows into the ancestor pins (usually unchanged node to node — fine to
+ * fold behind the expandable summary) and the notable ones: scoped rows
+ * (include/mention, node-local and short-lived) plus `state`-tagged pins
+ * (mutable, re-sent every beat). The notable group is small and worth
+ * surfacing without a click.
+ */
+export function splitPillRows(
+  rows: KbPillRow[],
+  isState: (id: string) => boolean,
+): { plain: KbPillRow[]; notable: KbPillRow[] } {
+  const plain: KbPillRow[] = []
+  const notable: KbPillRow[] = []
+  for (const row of rows) {
+    const isNotable = Boolean(row.scope) || (!row.unpin && isState(row.id))
+    ;(isNotable ? notable : plain).push(row)
+  }
+  return { plain, notable }
 }
 
 function plural(count: number, word: string): string {
