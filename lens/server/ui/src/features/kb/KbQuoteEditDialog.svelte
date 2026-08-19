@@ -70,10 +70,13 @@
   onclick={handleBackdropClick}
 >
   {#if meta}
-    <div class="kb-quote-edit-body">
-      {#if meta.slug}
-        <span class="kb-quote-edit-pill" style={pillStyle}>{meta.slug}</span>
-      {/if}
+    <article class="kb-quote-edit-article">
+      <header class="kb-quote-edit-header">
+        {#if meta.slug}
+          <span class="kb-quote-edit-pill" style={pillStyle}>{meta.slug}</span>
+        {/if}
+      </header>
+
       <textarea
         bind:this={textareaEl}
         class="kb-quote-edit-input"
@@ -82,41 +85,35 @@
         oninput={handleInput}
         onkeydown={handleKeydown}
       ></textarea>
-    </div>
-    <div class="kb-quote-edit-actions">
-      <button type="button" class="kb-quote-edit-btn" onclick={onCancel}>Cancel</button>
-      <button type="button" class="kb-quote-edit-btn kb-quote-edit-btn-primary" onclick={handleSave}>Save</button>
-    </div>
+
+      <footer class="kb-quote-edit-footer">
+        <button type="button" class="secondary" onclick={onCancel}>Cancel</button>
+        <button type="button" onclick={handleSave}>Save</button>
+      </footer>
+    </article>
   {/if}
 </dialog>
 
 <style>
-  .kb-quote-edit-dialog {
-    border: none;
-    border-radius: var(--pico-border-radius, 6px);
-    padding: 0;
-    width: min(28rem, 92vw);
-    background: var(--pico-background-color);
-    color: var(--pico-color);
-  }
-
   .kb-quote-edit-dialog::backdrop {
     background: rgba(0, 0, 0, 0.7);
   }
 
-  .kb-quote-edit-body {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    padding: 1rem;
+  /* Pico's `dialog > article` gives the floating-card centering/max-height —
+     this only narrows it to a compact width and tightens the padding. */
+  .kb-quote-edit-article {
+    width: min(92vw, 480px);
+    padding: 0.85rem 1rem;
+  }
+
+  .kb-quote-edit-header {
+    margin-bottom: 0.5rem;
   }
 
   /* Mirrors `.content blockquote .quote-pill` in app.css (out of that
      ancestor context here, inside the dialog, so it needs its own rule). */
   .kb-quote-edit-pill {
-    flex-shrink: 0;
     display: inline-block;
-    margin-top: 0.35rem;
     border-radius: 0.5rem;
     padding: 0.08rem 0.4rem;
     font-size: 1rem;
@@ -131,14 +128,15 @@
   }
 
   .kb-quote-edit-input {
-    flex: 1;
+    width: 100%;
     resize: none;
     overflow: hidden;
-    min-height: 2.2rem;
+    min-height: 2.4rem;
     max-height: 40vh;
     font: inherit;
     line-height: 1.4;
     padding: 0.35rem 0.5rem;
+    box-sizing: border-box;
     border: 1px solid var(--pico-muted-border-color);
     border-radius: 4px;
     background: var(--pico-background-color);
@@ -150,38 +148,13 @@
     border-color: var(--pico-primary-background);
   }
 
-  .kb-quote-edit-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--pico-muted-border-color);
+  .kb-quote-edit-footer {
+    margin-top: 0.5rem;
   }
 
-  .kb-quote-edit-btn {
-    height: 1.9rem;
-    padding: 0 0.75rem;
+  .kb-quote-edit-footer button {
+    padding: 0.35rem 0.75rem;
     font-size: 0.85rem;
-    border-radius: 3px;
-    border: 1px solid var(--pico-muted-border-color);
-    background: none;
-    color: var(--pico-muted-color);
-    cursor: pointer;
-  }
-
-  .kb-quote-edit-btn:hover {
-    background: var(--pico-secondary-hover-background);
-    color: var(--pico-color);
-  }
-
-  .kb-quote-edit-btn-primary {
-    border-color: var(--pico-primary-background);
-    background: var(--pico-primary-background);
-    color: var(--pico-primary-inverse);
-  }
-
-  .kb-quote-edit-btn-primary:hover {
-    opacity: 0.9;
-    color: var(--pico-primary-inverse);
+    min-height: 2rem;
   }
 </style>
