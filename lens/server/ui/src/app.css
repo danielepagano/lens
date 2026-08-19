@@ -1521,30 +1521,19 @@ details[open]>summary {
 
 .streaming-panel {
   position: fixed;
-  bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
-  left: 8px;
-  width: min(320px, calc(100vw - 16px));
+  top: calc(42px + env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: rgba(16, 40, 80, 0.95);
-  border: 1px solid var(--pico-primary);
-  border-top-right-radius: 6px;
-  border-bottom-right-radius: 6px;
+  border: none;
+  border-bottom: 1px solid var(--pico-primary);
   z-index: 300;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-@media (max-width: 949px) {
-  .streaming-panel {
-    top: calc(42px + env(safe-area-inset-top, 0px));
-    bottom: auto;
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid var(--pico-primary);
-    border-radius: 0;
-  }
 }
 
 .streaming-label {
