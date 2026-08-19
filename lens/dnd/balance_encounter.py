@@ -315,7 +315,17 @@ def _fill_candidates(
                 idx = new_entries.index(e)
                 new_entries[idx] = RequiredEntry(id=e.id, count=e.count + extra)
                 total_xp = sum(x.count * _token_xp(x.id, kb) for x in new_entries)
-                solutions.append(CandidateSolution(entries=new_entries, total_xp=total_xp))
+                solutions.append(
+                    CandidateSolution(
+                        entries=new_entries,
+                        total_xp=total_xp,
+                        remark=(
+                            f"optional was empty, so {extra} more {_token_label(e.id)} "
+                            f"were added to spend the rest of the budget — you asked "
+                            f"for {e.count}, not {e.count + extra}"
+                        ),
+                    )
+                )
         return solutions
 
     for _ in range(3):

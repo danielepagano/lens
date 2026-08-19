@@ -1,6 +1,6 @@
 # [DESIGN MODULE]: CUSTOM STAT BLOCK
 
-Build a `stat.*` block for a creature the reference material does not have — a boss, a named NPC's sheet, a themed variant, a creature built around a mechanic you want in play. Reach for it when a scene needs a creature nobody wrote, including mid-session when the encounter you are building turns out to need one.
+Build a `stat.*` block for a creature the reference material does not have — a boss, a named NPC's sheet, a themed variant, a creature built around a mechanic you want in play. Reach for it when a scene needs a creature nobody wrote, including mid-session when the encounter you are building turns out to need one. That premise is what step 3 tests, not what landing in this module already proves — most of the time the honest answer is that something already written does the job.
 
 `stat._template` has the shape and the tag vocabulary. What follows is the order of the work, which is where custom creatures actually go wrong: everything before the writing.
 
@@ -29,14 +29,18 @@ How the creature behaves is **mechanism, and therefore yours**: what it opens wi
 
 So ask about the situation, which only the user has: the party, how many of these there are, what winning means here. Do not ask what its escalation looks like, how hard it hits, or what it does when the trigger fires — "what happens when it stops holding back?" is not a story question, it is the block you were asked for. And read what is already in front of you before asking anything: a pinned encounter usually states the stakes and the way the scene ends.
 
-3: HARVEST FIRST
+3: HARVEST FIRST — AND THE DEFAULT ANSWER IS NO
 
 Nothing gets written until real blocks are in front of you, and that is two different searches:
 
 - **At the CR** — `kb_with_tag ["stat", "(cr:4 cr:5 cr:6)"]`, then `kb_get` two or three. These are the real numbers at this CR, and they beat any table.
 - **On theme** — `type:`, `habitat:`, or the closest published creature by concept. These are the pieces worth taking: the mechanic, the reaction, the phrasing that already works.
 
-A published block with a new name and one ability swapped is often the better answer, and it has already been played.
+The ideal outcome of this search is that nothing else in this module ever runs. Most encounters that feel bespoke at the table are a stat block someone else already wrote, with nothing changed but a name and a line of flavor — that is not a compromise, it is how most of this actually gets built, and it is exactly what `design --module encounter` already tries in its own step 3, before this module is ever reached. Landing here is not a verdict that a new block is needed. It only means nobody has checked yet, or checked and did not write down why.
+
+So check, out loud: what is wrong with the closest real block? Not "a unique one would be nicer" — the specific thing this situation needs that nothing on the shelf does. "I want something built around dragging people underwater" survives that question. "It's the boss, so it should have its own block" does not — most published bosses are an existing creature with the numbers moved and one ability made memorable, and reusing one unmodified, under a new name, is a finished answer here, not a shortcut past the module. If you cannot name what is missing, stop: hand back the id, reflavored if the name does not fit the scene, and skip everything from here on.
+
+What survives that question is also what makes the new block sharp. The complaint against the nearest existing creature is the brief for this one: it hands you the one or two things it has to do that nothing else does, instead of a blank page filled in from habit.
 
 4: COHESION
 
