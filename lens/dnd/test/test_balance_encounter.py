@@ -114,6 +114,29 @@ class TestBalanceEncounter(unittest.TestCase):
         self.assertIn("Warning: no XP", out)
         self.assertIn("stat.nonesuch", out)
 
+    def test_two_cr_tags_are_reported_not_silently_resolved(self) -> None:
+        """`kb extract` applies tags additively, so a corrected CR leaves the old
+        tag behind and the object sits in two buckets. Pricing then depends on
+        tag order — a Warrior Infantry corrected from CR 1/2 to CR 1/8 kept both
+        and cost four times what it should."""
+        kb = self._mock_kb({"stat.warrior": ["cr:1-2", "cr:1-8"]})
+
+        out = compute_encounters(
+            [{"id": "stat.warrior", "count": 4}], [], "moderate", [5, 5], [], kb
+        )
+
+        self.assertIn("more than one `cr:` tag", out)
+        self.assertIn("cr:1-2", out)
+        self.assertIn("cr:1-8", out)
+        self.assertIn("--remove", out)
+
+    def test_single_cr_tag_says_nothing(self) -> None:
+        kb = self._mock_kb({"stat.warrior": ["cr:1-8", "type:humanoid"]})
+        out = compute_encounters(
+            [{"id": "stat.warrior", "count": 4}], [], "moderate", [5, 5], [], kb
+        )
+        self.assertNotIn("more than one", out)
+
     def test_reduce_path_reducible(self) -> None:
         kb = self._mock_kb({"stat.zombie": ["cr:1-4"]})  # XP = 50
         required = [RequiredEntry(id="stat.zombie", count=80)]

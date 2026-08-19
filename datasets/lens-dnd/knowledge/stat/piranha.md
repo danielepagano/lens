@@ -1,6 +1,6 @@
 **Piranha** · Tiny Beast, Unaligned
 
-**AC** 13 · **Initiative** +3 (13) · **HP** 1 (1d4 − 1) · **Speed** 5 ft., Swim 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 1 (1d4 - 1) · **Speed** 5 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

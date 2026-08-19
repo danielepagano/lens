@@ -1,6 +1,6 @@
 **Hawk** · Tiny Beast, Unaligned
 
-**AC** 13 · **Initiative** +3 (13) · **HP** 1 (1d4 − 1) · **Speed** 10 ft., Fly 60 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 1 (1d4 - 1) · **Speed** 10 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

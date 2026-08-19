@@ -1,6 +1,6 @@
 **Shield Guardian** · Large Construct, Unaligned
 
-**AC** 17 · **Initiative** −1 (9) · **HP** 142 (15d10 + 60) · **Speed** 30 ft.
+**AC** 17 · **Initiative** -1 (9) · **HP** 142 (15d10 + 60) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

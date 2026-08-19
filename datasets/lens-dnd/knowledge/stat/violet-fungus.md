@@ -1,6 +1,6 @@
 **Violet Fungus** · Medium Plant, Unaligned
 
-**AC** 5 · **Initiative** −5 (5) · **HP** 18 (4d8) · **Speed** 5 ft.
+**AC** 5 · **Initiative** -5 (5) · **HP** 18 (4d8) · **Speed** 5 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

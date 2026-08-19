@@ -243,8 +243,8 @@ class TestSilentOnPublishedBlocks(unittest.TestCase):
 
     A new check that flags real monsters has become an opinion, and this test is
     where that shows up. The sweep runs against the bundled dataset only; the
-    same sweep over the bundled + `lens-dnd-ext` corpora (511 blocks) reports 4,
-    all listed in the module docstring.
+    same sweep over a wider corpus (511 blocks, including a larger private
+    dataset) reports the same kinds, all named in the module docstring.
     """
 
     KNOWN = {
@@ -260,13 +260,18 @@ class TestSilentOnPublishedBlocks(unittest.TestCase):
         "stat.adult-bronze-dragon",
         "stat.ancient-white-dragon",
         "stat.sphinx-of-valor",
-        # Four totals no hit-dice count reaches: two size-variant blocks whose
-        # `size:` tag does not match the die the variant was built on, a scaling
-        # summon, and one import oddity. All data, not check.
+        # A hand-made convenience block for a summoning spell: its hit points are
+        # "5 + 10 per spell level", so no fixed dice count reaches them.
+        #
+        # Four blocks have left this list as the corpus improved, and each one
+        # left for a reason worth remembering. `stat.dracolich-gargantuan` and
+        # `stat.shadow-dragon-large` went when re-extraction brought hit dice and
+        # the check stopped guessing a die from the `size:` tag. `stat.giant-
+        # crocodile` and `stat.warrior-infantry` went when a scraper bug was
+        # fixed: page comments containing homebrew copies of a stat block were
+        # overwriting the real one, because the parser queried `document` rather
+        # than the stat block element.
         "stat.otherworldly-steed",
-        "stat.warrior-infantry",
-        "stat.dracolich-gargantuan",
-        "stat.shadow-dragon-large",
     }
 
     def test_published_blocks_produce_no_findings(self) -> None:

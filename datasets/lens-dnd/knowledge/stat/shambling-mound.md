@@ -1,6 +1,6 @@
 **Shambling Mound** · Large Plant, Unaligned
 
-**AC** 15 · **Initiative** −1 (9) · **HP** 110 (13d10 + 39) · **Speed** 30 ft., Swim 20 ft.
+**AC** 15 · **Initiative** -1 (9) · **HP** 110 (13d10 + 39) · **Speed** 30 ft., Swim 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

@@ -1,6 +1,6 @@
 **Gelatinous Cube** · Large Ooze, Unaligned
 
-**AC** 6 · **Initiative** −4 (6) · **HP** 63 (6d10 + 30) · **Speed** 15 ft.
+**AC** 6 · **Initiative** -4 (6) · **HP** 63 (6d10 + 30) · **Speed** 15 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

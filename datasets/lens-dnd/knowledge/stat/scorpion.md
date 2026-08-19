@@ -1,6 +1,6 @@
 **Scorpion** · Tiny Beast, Unaligned
 
-**AC** 11 · **Initiative** +0 (10) · **HP** 1 (1d4 − 1) · **Speed** 10 ft.
+**AC** 11 · **Initiative** +0 (10) · **HP** 1 (1d4 - 1) · **Speed** 10 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

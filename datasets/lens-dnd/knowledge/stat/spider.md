@@ -1,6 +1,6 @@
 **Spider** · Tiny Beast, Unaligned
 
-**AC** 12 · **Initiative** +2 (12) · **HP** 1 (1d4 − 1) · **Speed** 20 ft., Climb 20 ft.
+**AC** 12 · **Initiative** +2 (12) · **HP** 1 (1d4 - 1) · **Speed** 20 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

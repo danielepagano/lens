@@ -1,6 +1,6 @@
 **Hippopotamus** · Large Beast, Unaligned
 
-**AC** 14 · **Initiative** −2 (8) · **HP** 82 (11d10 + 22) · **Speed** 30 ft., Swim 30 ft.
+**AC** 14 · **Initiative** -2 (8) · **HP** 82 (11d10 + 22) · **Speed** 30 ft., Swim 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

@@ -1,6 +1,6 @@
 **Basilisk** · Medium Monstrosity, Unaligned
 
-**AC** 15 · **Initiative** −1 (9) · **HP** 52 (8d8 + 16) · **Speed** 20 ft.
+**AC** 15 · **Initiative** -1 (9) · **HP** 52 (8d8 + 16) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

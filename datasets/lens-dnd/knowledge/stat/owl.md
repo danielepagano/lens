@@ -1,6 +1,6 @@
 **Owl** · Tiny Beast, Unaligned
 
-**AC** 11 · **Initiative** +1 (11) · **HP** 1 (1d4 − 1) · **Speed** 5 ft., Fly 60 ft.
+**AC** 11 · **Initiative** +1 (11) · **HP** 1 (1d4 - 1) · **Speed** 5 ft., Fly 60 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

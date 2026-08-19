@@ -1,6 +1,6 @@
 **Awakened Shrub** · Small Plant, Neutral
 
-**AC** 9 · **Initiative** −1 (9) · **HP** 10 (3d6) · **Speed** 20 ft.
+**AC** 9 · **Initiative** -1 (9) · **HP** 10 (3d6) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

@@ -1,6 +1,6 @@
 **Ochre Jelly** · Large Ooze, Unaligned
 
-**AC** 8 · **Initiative** −2 (8) · **HP** 52 (7d10 + 14) · **Speed** 20 ft., Climb 20 ft.
+**AC** 8 · **Initiative** -2 (8) · **HP** 52 (7d10 + 14) · **Speed** 20 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

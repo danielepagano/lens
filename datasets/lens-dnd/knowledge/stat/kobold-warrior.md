@@ -1,6 +1,6 @@
 **Kobold Warrior** · Small Dragon, Neutral
 
-**AC** 14 · **Initiative** +2 (12) · **HP** 7 (3d6 − 3) · **Speed** 30 ft.
+**AC** 14 · **Initiative** +2 (12) · **HP** 7 (3d6 - 3) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

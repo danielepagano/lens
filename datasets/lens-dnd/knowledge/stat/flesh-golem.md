@@ -1,6 +1,6 @@
 **Flesh Golem** · Medium Construct, Neutral
 
-**AC** 9 · **Initiative** −1 (9) · **HP** 127 (15d8 + 60) · **Speed** 30 ft.
+**AC** 9 · **Initiative** -1 (9) · **HP** 127 (15d8 + 60) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

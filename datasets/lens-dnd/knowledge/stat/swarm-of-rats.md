@@ -1,6 +1,6 @@
 **Swarm of Rats** · Medium Swarm Of Tiny Beasts, Unaligned
 
-**AC** 10 · **Initiative** +0 (10) · **HP** 14 (4d8 − 4) · **Speed** 30 ft., Climb 30 ft.
+**AC** 10 · **Initiative** +0 (10) · **HP** 14 (4d8 - 4) · **Speed** 30 ft., Climb 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

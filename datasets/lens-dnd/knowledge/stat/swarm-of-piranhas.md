@@ -1,6 +1,6 @@
 **Swarm of Piranhas** · Medium Swarm Of Tiny Beasts, Unaligned
 
-**AC** 13 · **Initiative** +3 (13) · **HP** 28 (8d8 − 8) · **Speed** 5 ft., Swim 40 ft.
+**AC** 13 · **Initiative** +3 (13) · **HP** 28 (8d8 - 8) · **Speed** 5 ft., Swim 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

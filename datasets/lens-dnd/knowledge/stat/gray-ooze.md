@@ -1,6 +1,6 @@
 **Gray Ooze** · Medium Ooze, Unaligned
 
-**AC** 9 · **Initiative** −2 (8) · **HP** 22 (3d8 + 9) · **Speed** 10 ft., Climb 10 ft.
+**AC** 9 · **Initiative** -2 (8) · **HP** 22 (3d8 + 9) · **Speed** 10 ft., Climb 10 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

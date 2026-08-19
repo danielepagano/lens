@@ -1,6 +1,6 @@
 **Lemure** · Medium Fiend, Lawful Evil
 
-**AC** 9 · **Initiative** −3 (7) · **HP** 9 (2d8) · **Speed** 20 ft.
+**AC** 9 · **Initiative** -3 (7) · **HP** 9 (2d8) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

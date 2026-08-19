@@ -1,6 +1,6 @@
 **Gibbering Mouther** · Medium Aberration, Chaotic Neutral
 
-**AC** 9 · **Initiative** −1 (9) · **HP** 52 (7d8 + 21) · **Speed** 20 ft., Swim 20 ft.
+**AC** 9 · **Initiative** -1 (9) · **HP** 52 (7d8 + 21) · **Speed** 20 ft., Swim 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

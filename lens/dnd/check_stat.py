@@ -1,8 +1,8 @@
 """Arithmetic proofreader for a `stat.*` block being designed.
 
-Every check here was audited against the 511 published blocks in the lens-dnd
-corpora and only kept where it fires on **none** of them (or, for save DCs,
-0.4% after a one-point tolerance).  That rule is what makes the tool usable
+Every check here was audited against 511 published stat blocks — this dataset
+plus a larger private one — and only kept where it fires on **none** of them
+(or, for save DCs, 0.4% after a one-point tolerance).  That rule is what makes the tool usable
 inside a design session: a finding always means the block departs from what
 published blocks do, never that it departs from something invented here.
 
@@ -39,21 +39,21 @@ PB_BY_CR: tuple[tuple[float, int], ...] = (
     (4, 2), (8, 3), (12, 4), (16, 5), (20, 6), (24, 7), (28, 8), (30, 9),
 )
 
-# Generated from every published block in the lens-dnd corpora (bundled +
-# lens-dnd-ext), which is close to the whole official 2024 set.  Baked rather
+# Generated from 511 published blocks — this dataset plus a larger private one —
+# which together are close to the whole official 2024 set.  Baked rather
 # than computed at run time: the tool is offered to every D&D design session
 # and must not read 500 files to answer.  Regenerate when the corpus grows.
 CR_BENCH: dict[float, tuple[int, int, int, int, int, int, int]] = {
     #  CR: (blocks, hp_median, hp_low, hp_high, ac_median, atk_median, dc_median)
     0.0: (32, 3, 1, 9, 12, 2, 12),
-    0.125: (23, 7, 5, 11, 12, 4, 10),
+    0.125: (24, 8, 5, 11, 12, 4, 10),
     0.25: (44, 13, 10, 19, 12, 4, 11),
-    0.5: (35, 19, 13, 27, 12, 4, 11),
+    0.5: (34, 19, 13, 27, 12, 4, 11),
     1.0: (42, 26, 22, 40, 13, 4, 11),
     2.0: (59, 45, 32, 63, 13, 5, 12),
     3.0: (41, 65, 49, 76, 14, 5, 12),
     4.0: (27, 71, 45, 97, 15, 5, 13),
-    5.0: (35, 94, 76, 127, 15, 7, 15),
+    5.0: (36, 94, 76, 127, 15, 7, 15),
     6.0: (23, 110, 82, 127, 15, 7, 15),
     7.0: (16, 126, 105, 161, 16, 7, 15),
     8.0: (23, 136, 97, 157, 16, 7, 15),
@@ -141,6 +141,13 @@ def _dice_average(count: int, faces: int, modifier: int) -> int:
 
 def check_stat_block(block: str) -> str:
     """Proofread one stat block's own arithmetic. Returns a plain-text report."""
+    # Normalise the typographic minus once, here, rather than teaching each
+    # pattern about it.  A pattern that quietly fails to match looks exactly like
+    # a block with nothing to check, so the cost of missing one is silence rather
+    # than an error — the same shape as a scraper that reads a page comment
+    # instead of the stat block.  U+2212 only: the en dash is load-bearing
+    # elsewhere ("Recharge 5-6") and must survive.
+    block = block.replace("\u2212", "-")
     findings: list[str] = []
     notes: list[str] = []
 
@@ -166,7 +173,7 @@ def check_stat_block(block: str) -> str:
     cells = _ABILITY_CELL.findall(block)
     mods: dict[str, int] = {}
     if len(cells) >= 6:
-        values = [int(c.replace("−", "-")) for c in cells[:6]]
+        values = [int(c) for c in cells[:6]]
         mods = dict(zip(ABILITY_NAMES, values))
     else:
         findings.append(

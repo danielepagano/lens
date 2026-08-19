@@ -1,6 +1,6 @@
 **Ettin** · Large Giant, Chaotic Evil
 
-**AC** 12 · **Initiative** −1 (9) · **HP** 85 (10d10 + 30) · **Speed** 40 ft.
+**AC** 12 · **Initiative** -1 (9) · **HP** 85 (10d10 + 30) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

@@ -1,6 +1,6 @@
 **Ogre** · Large Giant, Chaotic Evil
 
-**AC** 11 · **Initiative** −1 (9) · **HP** 68 (8d10 + 24) · **Speed** 40 ft.
+**AC** 11 · **Initiative** -1 (9) · **HP** 68 (8d10 + 24) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

@@ -1,6 +1,6 @@
 **Triceratops** · Huge Beast, Unaligned
 
-**AC** 14 · **Initiative** −1 (9) · **HP** 114 (12d12 + 36) · **Speed** 50 ft.
+**AC** 14 · **Initiative** -1 (9) · **HP** 114 (12d12 + 36) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

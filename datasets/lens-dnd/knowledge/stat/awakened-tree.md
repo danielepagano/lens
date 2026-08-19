@@ -1,6 +1,6 @@
 **Awakened Tree** · Huge Plant, Neutral
 
-**AC** 13 · **Initiative** −2 (8) · **HP** 59 (7d12 + 14) · **Speed** 20 ft.
+**AC** 13 · **Initiative** -2 (8) · **HP** 59 (7d12 + 14) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

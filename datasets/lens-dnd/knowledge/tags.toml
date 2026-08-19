@@ -197,7 +197,6 @@
     "stat.troll-limb",
     "stat.warhorse",
     "stat.warhorse-skeleton",
-    "stat.warrior-infantry",
     "stat.worg",
 ]
 "cr:1-4" = [
@@ -253,6 +252,7 @@
     "stat.pony",
     "stat.stirge",
     "stat.venomous-snake",
+    "stat.warrior-infantry",
 ]
 "cr:10" = [
     "stat.aboleth",
@@ -3525,7 +3525,7 @@ ritual = [
     "type:beast",
 ]
 "stat.warrior-infantry" = [
-    "cr:1-2",
+    "cr:1-8",
     "habitat:any",
     "size:medium",
     "size:small",

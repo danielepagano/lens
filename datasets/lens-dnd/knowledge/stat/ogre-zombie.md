@@ -1,6 +1,6 @@
 **Ogre Zombie** · Large Undead, Neutral Evil
 
-**AC** 8 · **Initiative** −2 (8) · **HP** 85 (9d10 + 36) · **Speed** 30 ft.
+**AC** 8 · **Initiative** -2 (8) · **HP** 85 (9d10 + 36) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

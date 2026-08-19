@@ -1,6 +1,6 @@
 **Rhinoceros** · Large Beast, Unaligned
 
-**AC** 13 · **Initiative** −1 (9) · **HP** 45 (6d10 + 12) · **Speed** 40 ft.
+**AC** 13 · **Initiative** -1 (9) · **HP** 45 (6d10 + 12) · **Speed** 40 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

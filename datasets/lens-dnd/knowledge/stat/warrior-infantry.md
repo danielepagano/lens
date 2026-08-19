@@ -1,6 +1,6 @@
 **Warrior Infantry** · Medium Or Small Humanoid, Neutral
 
-**AC** 16 · **Initiative** +0 (10) · **HP** 14 (3d8 + 2) · **Speed** 30 ft.
+**AC** 13 · **Initiative** +0 (10) · **HP** 9 (2d8) · **Speed** 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|
@@ -9,7 +9,7 @@
 **Gear** Chain Shirt, Spear
 **Senses** Passive Perception 10
 **Languages** Common
-**CR** 1/2
+**CR** 1/8
 
 Pack Tactics. The warrior has Advantage on an attack roll against a creature if at least one of the warrior’s allies is within 5 feet of the creature and the ally doesn’t have the Incapacitated condition.
 

@@ -1,6 +1,6 @@
 **Black Pudding** · Large Ooze, Unaligned
 
-**AC** 7 · **Initiative** −3 (7) · **HP** 68 (8d10 + 24) · **Speed** 20 ft., Climb 20 ft.
+**AC** 7 · **Initiative** -3 (7) · **HP** 68 (8d10 + 24) · **Speed** 20 ft., Climb 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

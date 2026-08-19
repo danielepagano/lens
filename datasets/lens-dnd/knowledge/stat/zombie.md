@@ -1,6 +1,6 @@
 **Zombie** · Medium Undead, Neutral Evil
 
-**AC** 8 · **Initiative** −2 (8) · **HP** 15 (2d8 + 6) · **Speed** 20 ft.
+**AC** 8 · **Initiative** -2 (8) · **HP** 15 (2d8 + 6) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

@@ -1,6 +1,6 @@
 **Earth Elemental** · Large Elemental, Neutral
 
-**AC** 17 · **Initiative** −1 (9) · **HP** 147 (14d10 + 70) · **Speed** 30 ft., Burrow 30 ft.
+**AC** 17 · **Initiative** -1 (9) · **HP** 147 (14d10 + 70) · **Speed** 30 ft., Burrow 30 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

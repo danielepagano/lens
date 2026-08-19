@@ -1,6 +1,6 @@
 **Mummy** · Medium Or Small Undead, Lawful Evil
 
-**AC** 11 · **Initiative** −1 (9) · **HP** 58 (9d8 + 18) · **Speed** 20 ft.
+**AC** 11 · **Initiative** -1 (9) · **HP** 58 (9d8 + 18) · **Speed** 20 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

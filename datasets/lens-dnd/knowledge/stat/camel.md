@@ -1,6 +1,6 @@
 **Camel** · Large Beast, Unaligned
 
-**AC** 10 · **Initiative** −1 (9) · **HP** 17 (2d10 + 6) · **Speed** 50 ft.
+**AC** 10 · **Initiative** -1 (9) · **HP** 17 (2d10 + 6) · **Speed** 50 ft.
 
 | STR | DEX | CON | INT | WIS | CHA |
 |-----|-----|-----|-----|-----|-----|

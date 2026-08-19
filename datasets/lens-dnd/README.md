@@ -72,9 +72,9 @@ Runtime procedures for the AI DM during play:
 
 An LLM command tool and a CLI command — `lens dnd check-stat stat.goblin-boss` for a stored object, a file path, or the block on stdin. Pass the text of a `stat.*` block; it reports every attack bonus, save DC, damage average, and tag that does not follow from the block's own ability scores and CR, then shows what published blocks at that CR look like.
 
-After re-importing a re-extracted corpus, re-run the sweep in `lens/dnd/test/test_check_stat.py`: the saving-throw check will meet real data for the first time, and the allowlist should shrink (a corrupt `stat.giant-crocodile` and three unreachable HP totals are in it today).
+Both of the strict checks have since met real data: 203 blocks carry a `**Saving Throws**` line and **none** fails `save == modifier + PB`; all 511 carry hit dice and none fails `flat == CON x dice`. The one block that did fail turned out to be a scraper bug rather than a monster.
 
-Its whole promise is that it has **no opinion**: every check was kept only because it fires on almost none of the 511 published blocks in the bundled dataset plus `lens-dnd-ext`. Sweeping that corpus produces four findings — three blocks whose secondary effect has a deliberately lower DC than their main one, and `stat.giant-crocodile`, which is corrupt (`HP unknown`, CHA 50, `Languages Elfish`). `lens/dnd/test/test_check_stat.py` runs the sweep as a test, so a check that starts flagging real monsters fails CI.
+Its whole promise is that it has **no opinion**: every check was kept only because it fires on almost none of 511 published blocks — this dataset plus a larger private one. Sweeping that corpus produces four findings across four blocks (0.8%): three whose secondary effect has a deliberately lower DC than their main one, and one hand-made block for a summoning spell whose hit points are "5 + 10 per spell level". `lens/dnd/test/test_check_stat.py` runs the sweep as a test, so a check that starts flagging real monsters fails CI.
 
 One check was tried and dropped for failing that bar: escape and skill DCs derived from ability + PB, because published blocks set those independently — a water elemental with Strength +4 and PB +3 has save DC 15 and escape DC 14.
 

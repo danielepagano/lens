@@ -135,13 +135,25 @@ def cr_str_to_float(cr_str: str) -> float | None:
 
 
 def _stat_xp(stat_id: str, kb: KnowledgeStore) -> int:
-    tags = kb.get_tags(stat_id)
-    for tag in tags:
+    for tag in kb.get_tags(stat_id):
         if tag.startswith("cr:"):
             cr_float = cr_tag_to_float(tag)
             if cr_float is not None and cr_float in CR_XP:
                 return CR_XP[cr_float]
     return 0
+
+
+def _conflicting_cr_tags(stat_id: str, kb: KnowledgeStore) -> list[str]:
+    """Every ``cr:`` tag on an object, when it carries more than one.
+
+    ``kb extract`` applies tags additively, so re-importing a block whose CR was
+    corrected leaves the old tag in place and the object ends up in two buckets.
+    :func:`_stat_xp` then takes whichever comes first and prices the creature
+    silently wrong — a Warrior Infantry corrected from CR 1/2 to CR 1/8 kept both
+    and cost four times what it should.
+    """
+    cr_tags = [t for t in kb.get_tags(stat_id) if t.startswith("cr:")]
+    return cr_tags if len(cr_tags) > 1 else []
 
 
 def parse_cr_token(token: str) -> float | None:
@@ -465,10 +477,14 @@ def compute_encounters(
     if not solutions:
         return "Error: Could not generate any encounter proposals."
 
-    unpriced = [
-        tok
-        for tok in [e.id for e in required] + list(optional) + [e.id for e in ally_entries]
-        if _token_xp(tok, kb) == 0
+    all_tokens = [e.id for e in required] + list(optional) + [e.id for e in ally_entries]
+    unpriced = [tok for tok in all_tokens if _token_xp(tok, kb) == 0]
+    ambiguous = [
+        (tok, tags)
+        for tok in dict.fromkeys(all_tokens)
+        if parse_cr_token(tok) is None
+        for tags in [_conflicting_cr_tags(tok, kb)]
+        if tags
     ]
 
     ranked = _rank_solutions(solutions, adjusted_budget)
@@ -480,6 +496,15 @@ def compute_encounters(
         "Line format: [creature qty] stat.id ..tags.. (or 'CR N creature' for a rating you passed)",
         "",
     ]
+    if ambiguous:
+        output.insert(
+            1,
+            "Warning: "
+            + "; ".join(f"{tok} carries {', '.join(tags)}" for tok, tags in ambiguous)
+            + " — more than one `cr:` tag, so it was priced as the first. Tags are "
+            "additive on import, so a corrected CR leaves the old one behind; remove it "
+            "with `lens kb tag <id> --remove <tag>`.",
+        )
     if unpriced:
         output.insert(
             1,
