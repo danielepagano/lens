@@ -5,18 +5,19 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from lens.core.commands.kb import (
     kb_copy,
     kb_delete,
     kb_rename,
+    kb_source_payload,
     kb_tag,
     kb_template,
     kb_with_tag,
 )
 from lens.core.exceptions import LensException
-from lens.core.knowledge import KnowledgeStore, parse_id, validate_ids_exist
+from lens.core.knowledge import KbSource, KnowledgeStore, parse_id, validate_ids_exist
 from lens.core.llm import llm_progress_scope
 from lens.core.now import set_request_timezone
 from lens.core.project import ProjectSession
@@ -39,9 +40,24 @@ def _direct_edit_kb(session: ProjectSession) -> KnowledgeStore:
     )
 
 
+class KbSourceOut(BaseModel):
+    """Which store a KB item resolves from; see ``lens.core.knowledge.KbSource``."""
+
+    kind: str
+    dataset: str | None = None
+    shadows: list[str] = Field(default_factory=list)
+    label: str
+
+
+def _source_out(source: KbSource | None) -> KbSourceOut | None:
+    payload = kb_source_payload(source)
+    return KbSourceOut(**payload) if payload is not None else None
+
+
 class KbItemOut(BaseModel):
     id: str
     tags: list[str]
+    source: KbSourceOut | None = None
 
 
 class KbItemDetailOut(BaseModel):
@@ -49,6 +65,7 @@ class KbItemDetailOut(BaseModel):
     type: str
     content: str
     tags: list[str]
+    source: KbSourceOut | None = None
 
 
 class KbItemSaveResponse(BaseModel):
@@ -129,7 +146,12 @@ def kb_items(
             ids = [i for i in ids if i.startswith(type_prefix)]
     else:
         ids = kb.list_ids(type_filter=type, include_templates=True)
-    return [KbItemOut(id=id_, tags=kb.get_tags(id_)) for id_ in ids]
+    # One scan for the whole listing rather than a per-id probe (see source_index).
+    sources = kb.source_index(type_filter=type, include_templates=True)
+    return [
+        KbItemOut(id=id_, tags=kb.get_tags(id_), source=_source_out(sources.get(id_)))
+        for id_ in ids
+    ]
 
 
 @router.get("/kb/item/{id:path}")
@@ -146,7 +168,13 @@ def kb_get_item(
     obj = objs.get(id)
     if obj is None:
         raise HTTPException(status_code=404, detail=f"KB item not found: {id}")
-    return KbItemDetailOut(id=obj.id, type=obj.type, content=obj.text, tags=obj.tags)
+    return KbItemDetailOut(
+        id=obj.id,
+        type=obj.type,
+        content=obj.text,
+        tags=obj.tags,
+        source=_source_out(obj.source),
+    )
 
 
 class KbSaveRequest(BaseModel):
@@ -326,7 +354,13 @@ def kb_with_tag_query(
         objects_out = None
         if result.objects is not None:
             objects_out = {
-                obj_id: KbItemDetailOut(id=obj.id, type=obj.type, content=obj.text, tags=obj.tags)
+                obj_id: KbItemDetailOut(
+                    id=obj.id,
+                    type=obj.type,
+                    content=obj.text,
+                    tags=obj.tags,
+                    source=_source_out(obj.source),
+                )
                 for obj_id, obj in result.objects.items()
             }
         return KbWithTagResponse(

@@ -8,7 +8,7 @@ import tomllib
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar, Literal, cast
 from lens.core.annotations import pop_front_matter_key
 from lens.core.exceptions import LensException
 from lens.core.project import get_selected_datasets, resolve_dataset_path
@@ -78,19 +78,75 @@ def _normalize_template_tags(raw: Any) -> list[str]:
     return [str(raw)]
 
 
+SourceKind = Literal["project", "dataset"]
+
+
+@dataclass(frozen=True)
+class KbSource:
+    """Which store an object was read from, and which stores it overrides.
+
+    A project's knowledge is the merge of its own ``knowledge/`` tree with the
+    read-only trees of every selected dataset — project wins, and among
+    datasets the later entry in ``[project] datasets`` wins. That resolution is
+    invisible on disk: a dataset lives outside the project entirely (see
+    :func:`~lens.core.project.resolve_dataset_path`), so "where did this text
+    come from, and is editing it a copy-on-write fork" cannot be answered by
+    looking at the repo. This answers it.
+
+    Deliberately absent from the crawl: during generation the model is being
+    told what is true in the world, and which tree the sentence was stored in
+    is not part of that. It belongs to the tools people and agents *browse*
+    with — ``lens kb``, the ``kb_get`` command tool, the KB UI.
+
+    ``shadows`` names the datasets that also hold this id and lost, nearest
+    loser first — non-empty only when something is being overridden.
+    """
+
+    kind: SourceKind
+    dataset: str | None = None
+    shadows: tuple[str, ...] = ()
+
+    @property
+    def label(self) -> str:
+        """One-line rendering: ``project``, ``dataset:rpg``, ``project (shadows dataset:rpg)``."""
+        base = "project" if self.kind == "project" else f"dataset:{self.dataset}"
+        if not self.shadows:
+            return base
+        overridden = ", ".join(f"dataset:{name}" for name in self.shadows)
+        return f"{base} (shadows {overridden})"
+
+
 @dataclass
 class KnowledgeObject:
     type: str
     id: str
     text: str
     tags: list[str] = field(default_factory=lambda: cast(list[str], []))
+    source: KbSource | None = None
+    """Where this object was read from; see :class:`KbSource`.
+
+    ``None`` when the object was built outside a resolving fetch (a dataset
+    store queried directly, a hand-constructed object in a test). Display code
+    treats that as "unknown" and says nothing, never as "project".
+    """
 
     def format(
-        self, *, include_comments: bool = False, strip_html_comments: bool = False
+        self,
+        *,
+        include_comments: bool = False,
+        strip_html_comments: bool = False,
+        include_source: bool = False,
     ) -> str:
         """Format the object as a header line followed by the body.
 
         The header is ``KB['<id>']``, optionally suffixed with ``  TAGS=...``.
+
+        ``include_source`` appends ``  SOURCE=<label>`` (see :class:`KbSource`)
+        and is **off by default on purpose**: this method is on the crawl path
+        (:class:`~lens.core.crawl_transforms.KbTransform`), and the rendered
+        block there is what the model reads as world truth. Only the browsing
+        surfaces — ``lens kb``, the ``kb_get`` command tool, the KB UI — turn
+        it on. An object with no known source prints no ``SOURCE=`` at all.
 
         When ``include_comments`` is true, the body is ``self.text`` unchanged
         (aside from ``rstrip("\\n")`` on the body segment). When false, the body
@@ -112,6 +168,7 @@ class KnowledgeObject:
             tags=self.tags,
             include_comments=include_comments,
             strip_html=strip_html_comments,
+            source=self.source.label if (include_source and self.source) else None,
         )
 
     def headline(self) -> str:
@@ -135,8 +192,14 @@ class KnowledgeStore:
         root: Path,
         storage: Storage | None = None,
         dataset_stores: list[KnowledgeStore] | None = None,
+        dataset_name: str | None = None,
     ) -> None:
         self._root = root
+        # Set only on a dataset store, by _build_dataset_stores. A store cannot
+        # otherwise name itself: it is constructed from a resolved path, and the
+        # dataset name is not recoverable from that path (a sibling checkout or
+        # a lens.local.toml override need not be named after the dataset).
+        self._dataset_name = dataset_name
         self._knowledge = root / "knowledge"
         self._tags_path = self._knowledge / "tags.toml"
         self._tags_cache: tuple[dict[str, set[str]], dict[str, set[str]]] | None = None
@@ -153,7 +216,7 @@ class KnowledgeStore:
         for name in dataset_names:
             path = resolve_dataset_path(project_root, name)
             if path is not None:
-                stores.append(cls(path, storage=None))
+                stores.append(cls(path, storage=None, dataset_name=name))
         return stores
 
     @classmethod
@@ -884,15 +947,24 @@ class KnowledgeStore:
 
         Among datasets the *last* entry in the list wins (later datasets shadow
         earlier ones), matching the import-order precedence rule.
+
+        The winner is stamped with its :class:`KbSource` here rather than in
+        :meth:`_fetch_local`, because only the resolving store knows what lost.
         """
-        obj = self._fetch_local(canonical_id)
-        if obj is not None:
-            return obj
+        holders: list[str | None] = []
+        winner: KnowledgeObject | None = self._fetch_local(canonical_id)
+        if winner is not None:
+            holders.append(None)
         for ds in reversed(self._dataset_stores):
-            obj = ds._fetch_local(canonical_id)
-            if obj is not None:
-                return obj
-        return None
+            if not ds._is_local(canonical_id):
+                continue
+            holders.append(ds._dataset_name)
+            if winner is None:
+                winner = ds._fetch_local(canonical_id)
+        if winner is None:
+            return None
+        winner.source = self._source_from_holders(holders)
+        return winner
 
     def _is_local(self, canonical_id: str) -> bool:
         """Return True if *canonical_id* exists in this store's own knowledge dir."""
@@ -921,6 +993,64 @@ class KnowledgeStore:
             if ds._fetch_local(canonical_id) is not None:
                 return ds
         return None
+
+    def _source_from_holders(self, holders: list[str | None]) -> KbSource | None:
+        """Build a :class:`KbSource` from stores holding an id, best first.
+
+        ``None`` in *holders* means this store itself, which is the project
+        unless this store *is* a dataset queried directly.
+        """
+        if not holders:
+            return None
+        winner, losers = holders[0], holders[1:]
+        shadows = tuple(name for name in losers if name is not None)
+        if winner is None and self._dataset_name is None:
+            return KbSource(kind="project", shadows=shadows)
+        name = winner if winner is not None else self._dataset_name
+        return KbSource(kind="dataset", dataset=name, shadows=shadows)
+
+    def describe_source(self, canonical_id: str) -> KbSource | None:
+        """Where *canonical_id* resolves from, or None if it exists nowhere.
+
+        Mirrors :meth:`_fetch_one`'s precedence exactly — project first, then
+        datasets last-wins — so the reported source is always the store whose
+        text a fetch would actually return.
+        """
+        holders: list[str | None] = []
+        if self._is_local(canonical_id):
+            holders.append(None)
+        for ds in reversed(self._dataset_stores):
+            if ds._is_local(canonical_id):
+                holders.append(ds._dataset_name)
+        return self._source_from_holders(holders)
+
+    def source_index(
+        self,
+        type_filter: str | None = None,
+        include_templates: bool = False,
+    ) -> dict[str, KbSource]:
+        """Sources for every visible id, from one directory scan per store.
+
+        :meth:`describe_source` per id costs a stat per store per id; listing a
+        whole KB that way is the kind of thing that makes a browser feel slow.
+        This pays one glob per store instead and answers for everything.
+        """
+        own = self._local_ids(type_filter, include_templates)
+        per_dataset = [
+            (ds._dataset_name, ds._local_ids(type_filter, include_templates))
+            for ds in reversed(self._dataset_stores)
+        ]
+        every_id = set(own)
+        for _, ids in per_dataset:
+            every_id |= ids
+        out: dict[str, KbSource] = {}
+        for cid in every_id:
+            holders: list[str | None] = [None] if cid in own else []
+            holders.extend(name for name, ids in per_dataset if cid in ids)
+            source = self._source_from_holders(holders)
+            if source is not None:
+                out[cid] = source
+        return out
 
     def ensure_local_copy(self, canonical_id: str) -> None:
         """Materialize a project-local copy if the object exists only in a dataset.
@@ -1092,31 +1222,36 @@ class KnowledgeStore:
             types.update(ds.list_types())
         return sorted(types)
 
+    def _local_ids(
+        self,
+        type_filter: str | None = None,
+        include_templates: bool = False,
+    ) -> set[str]:
+        """Canonical IDs held by *this* store's own knowledge dir (no datasets)."""
+        ids: set[str] = set()
+        if not self._knowledge.exists():
+            return ids
+        type_lower = type_filter.lower() if type_filter else None
+        dirs = [self._knowledge / type_lower] if type_lower else (
+            [d for d in self._knowledge.iterdir() if d.is_dir() and d.name != "__pycache__"]
+        )
+        for type_dir in dirs:
+            if not type_dir.is_dir():
+                continue
+            for f in type_dir.glob("*.md"):
+                if include_templates or f.stem != "_template":
+                    ids.add(f"{type_dir.name}.{f.stem}")
+        return ids
+
     def list_ids(
         self,
         type_filter: str | None = None,
         include_templates: bool = False,
     ) -> list[str]:
         """Return all canonical IDs, optionally filtered by type, across project and datasets."""
-        ids: set[str] = set()
-        type_lower = type_filter.lower() if type_filter else None
-
-        def _scan_store(store: "KnowledgeStore") -> None:
-            if not store._knowledge.exists():
-                return
-            dirs = [store._knowledge / type_lower] if type_lower else (
-                [d for d in store._knowledge.iterdir() if d.is_dir() and d.name != "__pycache__"]
-            )
-            for type_dir in dirs:
-                if not type_dir.is_dir():
-                    continue
-                for f in type_dir.glob("*.md"):
-                    if include_templates or f.stem != "_template":
-                        ids.add(f"{type_dir.name}.{f.stem}")
-
-        _scan_store(self)
+        ids = self._local_ids(type_filter, include_templates)
         for ds in self._dataset_stores:
-            _scan_store(ds)
+            ids |= ds._local_ids(type_filter, include_templates)
         return sorted(ids)
 
     def list_facet_ids(self, canonical_id: str) -> list[str]:

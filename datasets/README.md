@@ -67,6 +67,8 @@ Resolution order for each name (first match wins):
 
 Later names in the `datasets` list **shadow** earlier ones for the same KB id. Anything you edit in the project is stored under `knowledge/` in **your** repo (copy-on-write); dataset files are never modified in place.
 
+To see which store an object actually resolves from, read the `SOURCE=` field `lens kb get` prints for it — see [Where an object comes from](../lens/cli/README.md#where-an-object-comes-from).
+
 ## Sibling layout (recommended for your own datasets)
 
 If you develop Lens from a clone and keep private datasets next to it:

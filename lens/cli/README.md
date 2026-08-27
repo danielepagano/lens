@@ -238,12 +238,16 @@ lens kb get person.hero
 lens kb get person.hero+ place.tavern++
 lens kb get front.problem -f                    # also its '-' facets (front.problem-prep, …)
 lens kb get person.hero --no-include-comments   # strip markdown comments
+lens kb get person.hero --json                  # structured output for tooling
 ```
+
+Each object prints as `KB['<id>']  SOURCE=<where>  TAGS=<tags>` followed by its body. See [Where an object comes from](#where-an-object-comes-from).
 
 Options:
 
 - `--include-comments` (default: true) — keep markdown comments in the output.
 - `-f` / `--facet-expand` — also fetch each requested id's `-` facets: the prep-side material `design` and `advance` pull automatically and `play` never sees. Only the ids you asked for gain facets, so a `stat.guard` reached through `+` never drags in `stat.guard-captain`. See [configuration.md](../../docs/configuration.md#knowledge-pins).
+- `--json` — emit `{ids, items}` instead of formatted text; each item carries `id`, `type`, `tags`, `source`, `headline`, and `content`.
 
 ### `lens kb template`
 
@@ -387,7 +391,7 @@ lens kb list-tags --start-with cr:          # Tags starting with cr: (e.g. cr:1,
 lens kb list-tags -t stat -s cr:            # CR tags on stat objects
 ```
 
-Options: `-t` / `--type` (object type), `-s` / `--start-with` (tag prefix).
+Options: `-t` / `--type` (object type), `-s` / `--start-with` (tag prefix), `--json` (emit `{tags: [...]}`).
 
 ### `lens kb with-tag`
 
@@ -411,7 +415,7 @@ lens kb with-tag "(cr:1-2 cr:1-4)" "(type:undead type:humanoid)" size:large
 - Base form prints object IDs with their tags, then each object's **first three lines** indented beneath — by convention its name and what it is for, so a wide search is readable without expanding it:
 
   ```
-  stat.ghoul  [cr:1 type:undead]
+  stat.ghoul  [cr:1 type:undead]  SOURCE=dataset:lens-dnd
       **Ghoul** · Medium Undead, Chaotic Evil
       **AC** 12 · **HP** 22 · **Speed** 30 ft.
   ```
@@ -422,6 +426,7 @@ lens kb with-tag "(cr:1-2 cr:1-4)" "(type:undead type:humanoid)" size:large
 - `-e/--expand` prints objects in the same `KB['id']` format as `lens kb get`.
 - `-r/--recurse` follows dot-tags from objects (and object IDs used as tags, e.g. for Up-style location maps) breadth-first, avoiding cycles. Optional numeric argument limits depth (e.g. `-r 2`); `0` means full traversal.
 - `-s/--same-type` filters by object type when the starting tag is a dot-tag: root IDs and recursive layers include only IDs whose type matches. For non-dot tags, `-s` is ignored.
+- `--json` emits `{ids, layers, items}`. Every item carries `id`, `type`, `tags`, `source`, and `headline`; with `-e/--expand` it carries `content` too.
 
 ## KB Datasets
 
@@ -438,6 +443,27 @@ datasets  = ["testing"]          # one or more dataset names
 ```
 
 Datasets are resolved in order: **later entries shadow earlier ones**, and **project-local items always win** over any dataset. So you can import a dataset and safely override individual objects by creating a project-local copy.
+
+### Where an object comes from
+
+That merge is invisible on disk. A dataset lives outside your repo — bundled with Lens, cloned beside it, or pointed at from `lens.local.toml` — so no amount of looking around the project tells you whether `rules.system` is yours, and editing it by hand may be editing a *shared* dataset rather than forking a copy. Every retrieval says which store won:
+
+```
+$ lens kb get rules.system
+KB['rules.system']  SOURCE=dataset:rpg (shadows dataset:testing)
+…
+
+$ lens kb get pc.alice
+KB['pc.alice']  SOURCE=project
+```
+
+| Label | Meaning |
+|---|---|
+| `project` | Stored in this repo's `knowledge/`. Yours to edit in place. |
+| `dataset:<name>` | Read-only, from that dataset. Changing it through Lens writes a project-local copy (copy-on-write); changing the file directly edits the dataset for every project using it. |
+| `… (shadows dataset:<name>, …)` | Something else holds the same id and lost — the copy-on-write fork already happened, or a later dataset overrode an earlier one. |
+
+The same information reaches `lens kb with-tag` listings, the `--json` output of both (as a `source` object with `kind`, `dataset`, `shadows`, and `label`), the `kb_get` command tool a model calls mid-session, and the KB browser in the web UI. It is deliberately **absent from assembled prompts**: during generation a KB object is world truth, and which tree it was stored in is not part of that. Use `lens explain` to see what actually reaches the model.
 
 ### Lookup and copy-on-write
 

@@ -188,5 +188,38 @@ class TestKbGetFacetsThroughTheBundle(unittest.TestCase):
         self.assertIn("QUEUED DEVELOPMENTS", asyncio.run(_go()))
 
 
+class TestKbGetReportsSource(unittest.TestCase):
+    """A model exploring the store should know whose text it is looking at.
+
+    ``design`` reads booklets it may then be asked to change. Editing a dataset
+    object forks a project copy; editing a project one does not. That is worth
+    the handful of tokens here — and is still kept out of the crawl, where the
+    same objects arrive as world truth rather than as something to browse.
+    """
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        KnowledgeStore.clear_registry()
+        self.root = Path(self._tmp.name)
+        _make_project(self.root)
+        (self.root / "lens.toml").write_text('[project]\ndatasets = ["testing"]\n')
+
+    def tearDown(self) -> None:
+        KnowledgeStore.clear_registry()
+        self._tmp.cleanup()
+
+    def test_a_dataset_object_arrives_labelled(self) -> None:
+        out = _get(self.root, ["person.hero"])
+
+        self.assertIn("SOURCE=dataset:testing", out)
+
+    def test_a_project_object_arrives_labelled(self) -> None:
+        _write(self.root, "place.nyc", "NYC\n")
+
+        out = _get(self.root, ["place.nyc"])
+
+        self.assertIn("SOURCE=project", out)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import typer
 from pathlib import Path
 
@@ -19,6 +21,7 @@ from lens.cli.help_strings import (
     ARG_MEDIA_SOURCE as ARG_EXTRACT_SOURCE,
     CMD_KB,
     HELP_OPTS,
+    OPT_KB_JSON,
     OPT_LLM,
     OPT_REASONING,
     OPT_RETRY_PROPOSE,
@@ -26,8 +29,10 @@ from lens.cli.help_strings import (
 from lens.cli.options import pin_option, unpin_option
 from lens.core.knowledge import KnowledgeObject, validate_ids_exist
 from lens.core.commands.kb import (
+    format_with_tag_id_line,
     kb_add,
     kb_extract,
+    kb_get_payload,
     kb_template,
     kb_tag,
     kb_delete,
@@ -37,6 +42,7 @@ from lens.core.commands.kb import (
     kb_list_tags,
     kb_with_tag,
     check_invalid_tags,
+    with_tag_payload,
 )
 from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
@@ -228,6 +234,7 @@ def get(
         "--facet-expand",
         help="Also fetch each id's '-' facets (front.problem -> front.problem-prep)",
     ),
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
 ) -> None:
     """Fetch and print knowledge objects.
 
@@ -242,8 +249,17 @@ def get(
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 
+    if as_json:
+        typer.echo(
+            json.dumps(
+                kb_get_payload(ordered_ids, objects, include_comments=include_comments),
+                indent=2,
+            )
+        )
+        return
+
     def _print(obj: KnowledgeObject) -> None:
-        typer.echo(obj.format(include_comments=include_comments))
+        typer.echo(obj.format(include_comments=include_comments, include_source=True))
         if obj.tags:
             try:
                 invalid = check_invalid_tags(obj.tags)
@@ -261,6 +277,7 @@ def get(
 def list_tags(
     type_filter: str | None = typer.Option(None, "--type", "-t", help=ARG_TYPE_FILTER),
     start_with: str | None = typer.Option(None, "--start-with", "-s", help=ARG_TAG_PREFIX),
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
 ) -> None:
     """List unique tag values, optionally filtered by type or prefix."""
     try:
@@ -268,6 +285,9 @@ def list_tags(
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
+    if as_json:
+        typer.echo(json.dumps({"tags": tags}, indent=2))
+        return
     for tag in tags:
         typer.echo(tag)
 
@@ -297,6 +317,7 @@ def with_tag(
         "-t",
         help="Only return objects of this type (e.g. --type front)",
     ),
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
 ) -> None:
     """List object IDs matching tag groups (AND across, OR within parens); optionally expand or recurse by dot-tags.
 
@@ -319,8 +340,12 @@ def with_tag(
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 
+    if as_json:
+        typer.echo(json.dumps(with_tag_payload(result), indent=2))
+        return
+
     def _print_obj(obj: KnowledgeObject) -> None:
-        typer.echo(obj.format(include_comments=True))
+        typer.echo(obj.format(include_comments=True, include_source=True))
         if obj.tags:
             try:
                 invalid = check_invalid_tags(obj.tags)
@@ -330,16 +355,7 @@ def with_tag(
                 pass
 
     def _format_id_with_tags(cid: str) -> str:
-        line = cid
-        if result.id_to_tags and cid in result.id_to_tags:
-            tag_str = " ".join(result.id_to_tags[cid])
-            if tag_str:
-                line = f"{cid}  [{tag_str}]"
-        headline = (result.id_to_headline or {}).get(cid)
-        if headline:
-            indented = "\n".join(f"    {ln}" for ln in headline.split("\n"))
-            line = f"{line}\n{indented}"
-        return line
+        return format_with_tag_id_line(result, cid)
 
     if recurse is None:
         if not expand:

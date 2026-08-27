@@ -549,12 +549,15 @@ class TestWithTagCli(unittest.TestCase):
                 try:
                     buf = StringIO()
                     sys.stdout = buf
+                    # Typer command called as a plain function: an Option left
+                    # unset stays an OptionInfo, which is truthy. Pass the flag.
                     with_tag(
                         tags,
                         expand=expand,
                         recurse=recurse,
                         same_type_only=same_type_only,
                         type_filter=type_filter,
+                        as_json=False,
                     )
                     return buf.getvalue()
                 finally:
@@ -566,7 +569,7 @@ class TestWithTagCli(unittest.TestCase):
         out = self._run_with_tag_cli(["featured"])
         self.assertEqual(
             out.strip(),
-            "place.nyc  [featured]\n    NYC\n    A city that never sleeps.",
+            "place.nyc  [featured]  SOURCE=project\n    NYC\n    A city that never sleeps.",
         )
         self.assertNotIn("Body.", out)
 
@@ -628,7 +631,7 @@ class TestWithTagCli(unittest.TestCase):
         self.store.add_tags("place.boston", ["featured"])
         self.store.add_tags("place.chicago", ["pc"])
         out = self._run_with_tag_cli(["featured", "pc"])
-        self.assertEqual(out.strip(), "place.nyc  [featured pc]\n    NYC")
+        self.assertEqual(out.strip(), "place.nyc  [featured pc]  SOURCE=project\n    NYC")
 
     def test_cli_recurse_depth_1_omits_deeper_children(self) -> None:
         _build_map_fixture(self.store)
@@ -725,12 +728,15 @@ class TestKbWithTagDatasets(unittest.TestCase):
                 try:
                     buf = StringIO()
                     sys.stdout = buf
+                    # Typer command called as a plain function: an Option left
+                    # unset stays an OptionInfo, which is truthy. Pass the flag.
                     with_tag(
                         tags,
                         expand=expand,
                         recurse=recurse,
                         same_type_only=same_type_only,
                         type_filter=type_filter,
+                        as_json=False,
                     )
                     return buf.getvalue()
                 finally:

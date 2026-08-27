@@ -252,6 +252,11 @@ OPT_RESET = (
 
 OPT_JSON = "Output structured JSON on stdout; human summary on stderr."
 
+OPT_KB_JSON = (
+    "Emit the result as JSON instead of formatted text (id, type, tags, "
+    "source, headline, and body)."
+)
+
 # ── lens explain ──────────────────────────────────────────────────
 OPT_EXPLAIN_OPERATOR = (
     "Assemble the prompt as this operator instead of the one detected at the "
