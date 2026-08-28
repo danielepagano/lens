@@ -16,6 +16,7 @@ import tempfile
 import unittest
 from io import StringIO
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 from lens.core.commands.kb import kb_object_payload, kb_source_payload
@@ -312,7 +313,7 @@ class TestCliOutput(_ProjectCase):
 class TestWithTagJson(_ProjectCase):
     datasets = ["testing"]
 
-    def _run_with_tag(self, tags: list[str], *, expand: bool = False) -> object:
+    def _run_with_tag(self, tags: list[str], *, expand: bool = False) -> dict[str, Any]:
         with patch("lens.core.commands.kb.get_store", return_value=self.store):
             with patch(
                 "lens.core.commands.kb.find_project_root", return_value=self.root
@@ -337,18 +338,16 @@ class TestWithTagJson(_ProjectCase):
 
     def test_listing_items_carry_source_and_headline_without_a_body(self) -> None:
         payload = self._run_with_tag(["protagonist"])
-        assert isinstance(payload, dict)
 
         self.assertEqual(payload["ids"], ["person.hero"])
-        item = payload["items"][0]
+        item: dict[str, Any] = payload["items"][0]
         self.assertEqual(item["source"]["label"], "dataset:testing")
         self.assertNotIn("content", item)
 
     def test_expanded_items_carry_the_body(self) -> None:
         payload = self._run_with_tag(["protagonist"], expand=True)
-        assert isinstance(payload, dict)
 
-        item = payload["items"][0]
+        item: dict[str, Any] = payload["items"][0]
         self.assertIn("content", item)
         self.assertEqual(item["source"]["label"], "dataset:testing")
 
