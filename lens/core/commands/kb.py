@@ -520,25 +520,44 @@ def kb_with_tag(
     )
 
 
-def format_with_tag_id_line(result: WithTagResult, cid: str) -> str:
-    """One ``kb with-tag`` listing line: id, tags, source, then the headline.
+def format_kb_listing_line(
+    cid: str,
+    *,
+    tags: list[str] | None = None,
+    source: KbSource | None = None,
+    headline: str = "",
+) -> str:
+    """One listing line: ``id  [tags]  SOURCE=…``, then the headline indented.
 
-    Shared by the CLI and the ``kb_with_tag`` command tool so a person reading a
-    terminal and a model reading a tool result are looking at the same thing.
+    Every surface that answers "which of these do I want" prints this shape —
+    ``kb with-tag``, ``kb list``, the per-object header ``kb search --headline``
+    puts above its hits — so a reader who has learned to skim one has learned
+    all of them. Absent parts are dropped rather than rendered empty.
     """
     line = cid
-    if result.id_to_tags and cid in result.id_to_tags:
-        tag_str = " ".join(result.id_to_tags[cid])
-        if tag_str:
-            line = f"{line}  [{tag_str}]"
-    source = (result.id_to_source or {}).get(cid)
+    tag_str = " ".join(tags or [])
+    if tag_str:
+        line = f"{line}  [{tag_str}]"
     if source is not None:
         line = f"{line}  SOURCE={source.label}"
-    headline = (result.id_to_headline or {}).get(cid)
     if headline:
         indented = "\n".join(f"    {ln}" for ln in headline.split("\n"))
         line = f"{line}\n{indented}"
     return line
+
+
+def format_with_tag_id_line(result: WithTagResult, cid: str) -> str:
+    """One ``kb with-tag`` listing line.
+
+    Shared by the CLI and the ``kb_with_tag`` command tool so a person reading a
+    terminal and a model reading a tool result are looking at the same thing.
+    """
+    return format_kb_listing_line(
+        cid,
+        tags=(result.id_to_tags or {}).get(cid),
+        source=(result.id_to_source or {}).get(cid),
+        headline=(result.id_to_headline or {}).get(cid, ""),
+    )
 
 
 def with_tag_ordered_ids(result: WithTagResult) -> list[str]:

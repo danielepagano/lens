@@ -864,3 +864,27 @@ PIN_KB_ID_OPT = "Knowledge object ID (type.key); omit to see usage"
 PIN_NODE = "Target node address (default: cursor)"
 PIN_EXTRA_IDS = "Additional ID(s) (repeatable)"
 PIN_NODE_OPT = "Target node address (use the positional argument instead)"
+
+# ── lens kb search / list / refs ──────────────────────────────────
+OPT_KB_SEARCH_TYPE = "Only objects of this type (e.g. --type rules)."
+OPT_KB_SEARCH_TAG = (
+    "Only objects carrying this tag; repeatable and ANDed. A bare type name "
+    "works as a tag."
+)
+OPT_KB_SEARCH_SOURCE = (
+    "Which store an object must resolve from: project, dataset, or all "
+    "(default)."
+)
+OPT_KB_SEARCH_CONTEXT = "Print N lines of context either side of each body match."
+OPT_KB_IDS_ONLY = "Print matching object IDs only, one per line."
+OPT_KB_HEADLINE = (
+    "Print each object's first three lines — by convention what it is and when "
+    "it applies."
+)
+OPT_KB_INCLUDE_TEMPLATES = "Include '_template' objects, which are skipped by default."
+OPT_KB_SHADOWED = (
+    "Only objects whose resolution overrides a copy in another store (a "
+    "project fork of a dataset object, or a dataset overriding an earlier one)."
+)
+OPT_KB_REFS_OUT = "Only outgoing links: what this object pulls in with it."
+OPT_KB_REFS_IN = "Only incoming links: who pays if this object is rewritten."

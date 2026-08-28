@@ -189,6 +189,9 @@ Discard the pending transaction. For inline operators (e.g. `write`), reverts un
 | `edit`    | AI: edit or create objects      |
 | `extract` | Bulk-import objects from a structured markdown file |
 | `get`     | Fetch objects (append `+` for directly linked, `++` for full tree traversal) |
+| `search`  | Regex over ids, types, tags and bodies of the merged store |
+| `list`    | Enumerate the merged store (project + datasets, shadowing applied) |
+| `refs`    | What an object links to, and what links to it |
 | `list-tags` | List unique tag values, optionally by type or prefix |
 | `with-tag`| List/expand objects by tag; optionally recurse via dot-tags |
 | `template`| Manage type templates            |
@@ -248,6 +251,110 @@ Options:
 - `--include-comments` (default: true) — keep markdown comments in the output.
 - `-f` / `--facet-expand` — also fetch each requested id's `-` facets: the prep-side material `design` and `advance` pull automatically and `play` never sees. Only the ids you asked for gain facets, so a `stat.guard` reached through `+` never drags in `stat.guard-captain`. See [configuration.md](../../docs/configuration.md#knowledge-pins).
 - `--json` — emit `{ids, items}` instead of formatted text; each item carries `id`, `type`, `tags`, `source`, `headline`, and `content`.
+
+### Finding things (`search`, `list`, `refs`)
+
+`grep -r` over a checkout is not a search of the knowledge store, and the gap is not small:
+
+- **Dataset objects live outside the repo.** Nothing in the project tree points at a bundled dataset, a sibling checkout, or a `lens.local.toml` override, so a recursive grep silently misses every `rules.*`, every `design.*` module, and every template.
+- **The merge is a computation, not a directory.** Project beats dataset; among datasets, later entries in `[project] datasets` beat earlier ones. Grepping three trees yields three hits and no way to tell which one an operator would read.
+- **The index is not in the files.** Tags live in `knowledge/tags.toml`; add type-as-tag, dot-tag links, `-` facets and `rules.` companions, and the relationships between objects are unreachable from the text on disk.
+
+These three commands close it. All are read-only, need no `[[llm]]` configured, and are pure Python — no `rg` on `PATH` required.
+
+### `lens kb search`
+
+Regex over the ids, types, tags and bodies of the **merged** store, shadowing applied — one hit per id, from the file that wins.
+
+```bash
+lens kb search 'grappl' -i                  # id:line:matched-text
+lens kb search 'advantage' -t rules -C 2    # type filter, context lines
+lens kb search 'exhaust' --tag state -l     # tag-filtered, ids only
+lens kb search 'front' --source dataset     # project | dataset | all (default all)
+lens kb search '^## Limits' --headline      # each hit's first three lines
+lens kb search 'grappl' -l | xargs lens kb get
+```
+
+Output is `id:line:text`, so it pipes into the tools you already use. **Results are in id order, then line order** — predictable grep order, no ranking.
+
+A match on what an object *is* rather than what it says has no line of its own, so it reports line `0` and names the field:
+
+```
+person.rowan:0:[id] person.rowan
+person.rowan:0:[tag] pc
+person.rowan:4:She grapples the guard.
+```
+
+An id match subsumes the type match (the type is the id's prefix), so `kb search person` reports each object once. With `-C`, context lines use grep's `-` separator (`id-3-text`) and `--` marks a gap between groups.
+
+Options:
+
+- `-i` / `--ignore-case`, `-F` / `--fixed-string` (literal, not regex), `-w` / `--word` (whole words only).
+- `-t` / `--type` — one object type.
+- `--tag` — repeatable and ANDed. A bare type name works as a tag, as everywhere else.
+- `-C` / `--context N` — lines either side of each body match.
+- `-l` / `--ids-only` — bare ids, one per line.
+- `--source project|dataset|all` — which store the object must resolve *from*.
+- `--headline` — print a `id  [tags]  SOURCE=…` header plus the object's [first three lines](../../docs/configuration.md#first-three-lines) above its hits.
+- `--include-templates` — `_template` objects, skipped by default.
+- `--json` — `{pattern, scanned, count, items}`; each item carries `id`, `type`, `tags`, `source`, `headline`, and its `matches` with per-match context.
+
+**Performance.** No index is built or written. Body scanning fans out across processes once the store is large enough to be worth it (a project-sized tree stays serial), and falls back to a serial scan wherever a process pool cannot start. Set `LENS_KB_SEARCH_WORKERS` to pin the worker count; `1` forces the serial path.
+
+### `lens kb list`
+
+Enumerate the merged store — every id the project can see, from project and datasets together.
+
+```bash
+lens kb list                                # id, tags, source, headline
+lens kb list -t front --ids-only
+lens kb list --source dataset --shadowed    # dataset objects overriding an earlier dataset
+lens kb list --source project --shadowed    # project copies overriding a dataset
+```
+
+Each object prints in the same listing shape `kb with-tag` uses:
+
+```
+stat.ghoul  [cr:1 type:undead]  SOURCE=dataset:lens-dnd
+    **Ghoul** · Medium Undead, Chaotic Evil
+    **AC** 12 · **HP** 22 · **Speed** 30 ft.
+```
+
+Options: `-t` / `--type`, `--tag` (repeatable, ANDed), `-l` / `--ids-only` (skips reading bodies), `--source`, `--include-templates`, `--json`.
+
+`--shadowed` keeps only the ids where one store overrides another — the copy-on-write forks and the dataset-over-dataset overrides. `--source` filters on the store that *won*, so pair it with `--source project` to find forks that have quietly diverged from their dataset. See [Where an object comes from](#where-an-object-comes-from).
+
+### `lens kb refs`
+
+The relationships around an object, without paying for the bodies.
+
+```bash
+lens kb refs front.problem            # both directions
+lens kb refs rules.grappling --out    # what it pulls in with it
+lens kb refs rules.grappling --in     # who pays if I rewrite this
+```
+
+```
+front.problem  [place.tavern]  SOURCE=project
+
+OUT
+  tag-link        place.tavern
+  facet           front.problem-prep
+  rules-companion rules.front  (every front.* in scope pulls it)
+  hop++           region.north  (reached by ++ only)
+
+IN
+  tag-link        plot.act-one
+  module          dataset:rpg  (loadable by design)
+  narrative       story/chapter-1@1  (kb_pin via person.hero+)
+  narrative       story/chapter-1@12  (mention)
+```
+
+**`--out`** is the shape around an object: its dot-tags (with dangling ones called out), its `-` facets, the `rules.<type>` companion and type template that travel with it, and what a `++` hop reaches beyond one level. `kb get id++` answers this too — by dumping every linked body, which is expensive and hard to read when the question is structural.
+
+**`--in`** is where an object is *used*: other objects that dot-tag it, `kb_pin` / `kb_unpin` front matters across every narrative tree, `[mention:]` / `[include:]` annotations, session `module:` params, and `[[dataset.modules]]` registrations in manifests that live outside the repository. Crucially it reports the **route** for references that never name the id — a pin written `person.hero+`, a `-` facet of a pinned object, or the `rules.<type>` companion an object's type drags in — which is exactly what a plain grep for the id cannot find.
+
+An id that resolves to nothing still reports its inbound references, since a pin or dot-tag pointing at a deleted object is the thing an audit is looking for. `--json` emits `{id, exists, source, tags, refs}` with a `direction`, `kind`, `target` and `detail` per edge.
 
 ### `lens kb template`
 

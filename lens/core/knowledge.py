@@ -116,6 +116,22 @@ class KbSource:
         return f"{base} (shadows {overridden})"
 
 
+@dataclass(frozen=True)
+class ResolvedObject:
+    """One visible id, the file that wins for it, and where that file lives.
+
+    What :meth:`KnowledgeStore.resolved_index` returns. Deliberately not a
+    :class:`KnowledgeObject`: the point is to enumerate the merged store
+    without reading a single body, so a caller can decide which bodies are
+    worth the read.
+    """
+
+    id: str
+    type: str
+    path: Path
+    source: KbSource
+
+
 @dataclass
 class KnowledgeObject:
     type: str
@@ -1024,6 +1040,55 @@ class KnowledgeStore:
                 holders.append(ds._dataset_name)
         return self._source_from_holders(holders)
 
+    def resolved_index(
+        self,
+        type_filter: str | None = None,
+        include_templates: bool = False,
+    ) -> dict[str, ResolvedObject]:
+        """The merged store as a listing: id -> winning file and source.
+
+        The merge is a computation, not a directory — project beats dataset,
+        and among datasets the later entry in ``[project] datasets`` wins — so
+        there is nowhere on disk to point a tool that wants to walk everything
+        the project can see. This is that walk, one glob per store, with the
+        precedence already applied: the path is the file a fetch would read.
+
+        :meth:`describe_source` per id costs a stat per store per id, which is
+        what makes listing a whole KB that way feel slow; everything that
+        enumerates (``kb list``, ``kb search``, the KB UI) should come here.
+        """
+        own = self._local_id_paths(type_filter, include_templates)
+        per_dataset = [
+            (ds._dataset_name, ds._local_id_paths(type_filter, include_templates))
+            for ds in reversed(self._dataset_stores)
+        ]
+        every_id = set(own)
+        for _, paths in per_dataset:
+            every_id |= set(paths)
+        out: dict[str, ResolvedObject] = {}
+        for cid in every_id:
+            holders: list[str | None] = [None] if cid in own else []
+            holders.extend(name for name, paths in per_dataset if cid in paths)
+            source = self._source_from_holders(holders)
+            if source is None:
+                continue
+            path = own.get(cid)
+            if path is None:
+                for _, paths in per_dataset:
+                    path = paths.get(cid)
+                    if path is not None:
+                        break
+            if path is None:
+                continue
+            try:
+                type_name, _ = parse_id(cid)
+            except ValueError:
+                continue
+            out[cid] = ResolvedObject(
+                id=cid, type=type_name, path=path, source=source
+            )
+        return out
+
     def source_index(
         self,
         type_filter: str | None = None,
@@ -1031,26 +1096,13 @@ class KnowledgeStore:
     ) -> dict[str, KbSource]:
         """Sources for every visible id, from one directory scan per store.
 
-        :meth:`describe_source` per id costs a stat per store per id; listing a
-        whole KB that way is the kind of thing that makes a browser feel slow.
-        This pays one glob per store instead and answers for everything.
+        A view over :meth:`resolved_index` so the two cannot disagree about
+        precedence.
         """
-        own = self._local_ids(type_filter, include_templates)
-        per_dataset = [
-            (ds._dataset_name, ds._local_ids(type_filter, include_templates))
-            for ds in reversed(self._dataset_stores)
-        ]
-        every_id = set(own)
-        for _, ids in per_dataset:
-            every_id |= ids
-        out: dict[str, KbSource] = {}
-        for cid in every_id:
-            holders: list[str | None] = [None] if cid in own else []
-            holders.extend(name for name, ids in per_dataset if cid in ids)
-            source = self._source_from_holders(holders)
-            if source is not None:
-                out[cid] = source
-        return out
+        return {
+            cid: entry.source
+            for cid, entry in self.resolved_index(type_filter, include_templates).items()
+        }
 
     def ensure_local_copy(self, canonical_id: str) -> None:
         """Materialize a project-local copy if the object exists only in a dataset.
@@ -1222,15 +1274,20 @@ class KnowledgeStore:
             types.update(ds.list_types())
         return sorted(types)
 
-    def _local_ids(
+    def _local_id_paths(
         self,
         type_filter: str | None = None,
         include_templates: bool = False,
-    ) -> set[str]:
-        """Canonical IDs held by *this* store's own knowledge dir (no datasets)."""
-        ids: set[str] = set()
+    ) -> dict[str, Path]:
+        """Canonical ID -> file, for *this* store's own knowledge dir (no datasets).
+
+        The path is the point: a caller that wants to read many objects (search,
+        a listing with headlines) would otherwise re-derive it per id, and only
+        the resolving store knows which store's file won.
+        """
+        paths: dict[str, Path] = {}
         if not self._knowledge.exists():
-            return ids
+            return paths
         type_lower = type_filter.lower() if type_filter else None
         dirs = [self._knowledge / type_lower] if type_lower else (
             [d for d in self._knowledge.iterdir() if d.is_dir() and d.name != "__pycache__"]
@@ -1240,8 +1297,16 @@ class KnowledgeStore:
                 continue
             for f in type_dir.glob("*.md"):
                 if include_templates or f.stem != "_template":
-                    ids.add(f"{type_dir.name}.{f.stem}")
-        return ids
+                    paths[f"{type_dir.name}.{f.stem}"] = f
+        return paths
+
+    def _local_ids(
+        self,
+        type_filter: str | None = None,
+        include_templates: bool = False,
+    ) -> set[str]:
+        """Canonical IDs held by *this* store's own knowledge dir (no datasets)."""
+        return set(self._local_id_paths(type_filter, include_templates))
 
     def list_ids(
         self,
