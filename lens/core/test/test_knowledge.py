@@ -698,7 +698,9 @@ class TestKbCli(unittest.TestCase):
             try:
                 buf = StringIO()
                 sys.stdout = buf
-                get(ids, include_comments)
+                # Typer command called as a plain function: every Option left
+                # unset stays an OptionInfo, which is truthy. Pass the flags.
+                get(ids, include_comments, facet_expand=False, as_json=False)
                 return buf.getvalue()
             finally:
                 sys.stdout = old

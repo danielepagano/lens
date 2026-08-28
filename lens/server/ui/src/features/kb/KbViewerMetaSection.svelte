@@ -1,8 +1,10 @@
 <script lang="ts">
   import { openKbItemFromLinkClick } from './kbViewerMarkdown'
+  import type { KbSource } from '../../services/api'
 
   type Props = {
     tags: string[]
+    source: KbSource | null
     linkedFrom: string[]
     metaOpen: boolean
     metaSummary: string
@@ -21,6 +23,7 @@
 
   let {
     tags,
+    source,
     linkedFrom,
     metaOpen,
     metaSummary,
@@ -40,6 +43,17 @@
   function isDotTag(tag: string): boolean {
     return tag.includes('.')
   }
+
+  // A dataset item is read-only until edited: saving forks a project copy.
+  // Saying which dataset, and what a project copy overrides, is the whole point.
+  const sourceText = $derived.by(() => {
+    if (!source) return ''
+    if (source.kind === 'dataset') return `From dataset ${source.dataset}`
+    if (source.shadows.length > 0) {
+      return `In this project · overrides ${source.shadows.join(', ')}`
+    }
+    return 'In this project'
+  })
 </script>
 
 <details class="kb-meta-section" open={metaOpen} ontoggle={(event) => onMetaOpenChange((event.currentTarget as HTMLDetailsElement).open)}>
@@ -88,6 +102,14 @@
         </span>
         <button type="button" class="kb-meta-small-btn" onclick={onEnterTagsEdit}>Edit tags</button>
       </div>
+      {#if sourceText}
+        <div class="kb-meta-source-row">
+          <span class="kb-meta-source-label">Source:</span>
+          <span class="kb-meta-source-value" class:kb-meta-source-dataset={source?.kind === 'dataset'}
+            >{sourceText}</span
+          >
+        </div>
+      {/if}
       {#if linkedFrom.length > 0}
         <div class="kb-meta-linked-row">
           <span class="kb-linked-from-label">Linked from:</span>

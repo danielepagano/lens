@@ -22,7 +22,7 @@ from lens.core.context import (
 )
 from lens.core.crawl_graph import CrawlComponent, ComponentSource
 from lens.core.exceptions import LensException
-from lens.core.knowledge import KnowledgeObject, KnowledgeStore, parse_id
+from lens.core.knowledge import KbSource, KnowledgeObject, KnowledgeStore, parse_id
 from lens.core.llm import build_command_tools_bundle
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.project import find_git_root_from, find_project_root, is_dataset_root, resolve_address
@@ -35,6 +35,41 @@ def get_store() -> KnowledgeStore:
     except RuntimeError as e:
         raise LensException(str(e)) from e
     return KnowledgeStore.for_project(root)
+
+def kb_source_payload(source: KbSource | None) -> dict[str, Any] | None:
+    """Serialize a :class:`~lens.core.knowledge.KbSource` for JSON consumers.
+
+    ``label`` is carried alongside the parts so a caller that only wants to
+    print something does not have to re-implement the formatting the CLI uses.
+    """
+    if source is None:
+        return None
+    return {
+        "kind": source.kind,
+        "dataset": source.dataset,
+        "shadows": list(source.shadows),
+        "label": source.label,
+    }
+
+
+def kb_object_payload(
+    obj: KnowledgeObject, *, include_comments: bool = True
+) -> dict[str, Any]:
+    """One KB object as JSON: identity, tags, source, headline, body.
+
+    ``content`` is storage form — ``ai:secret`` blocks stay encoded, exactly as
+    :meth:`KnowledgeObject.format` leaves them (see its docstring).
+    """
+    text = obj.text if include_comments else strip_markdown_comments(obj.text)
+    return {
+        "id": obj.id,
+        "type": obj.type,
+        "tags": list(obj.tags),
+        "source": kb_source_payload(obj.source),
+        "headline": obj.headline(),
+        "content": text,
+    }
+
 
 def kb_add(id: str, content: str | None, use_template: bool) -> None:
     try:
@@ -323,6 +358,22 @@ class WithTagResult:
     then has to fetch candidates one at a time to find out. Populated only when
     ``expand`` is false; with full bodies on screen the headline is already there.
     """
+    id_to_source: dict[str, KbSource] | None = None
+    """Where each match resolves from (see :class:`~lens.core.knowledge.KbSource`).
+
+    Always populated. On ``expand`` the objects carry their own source too, but
+    a caller rendering the id list should not have to reach into them for it.
+    """
+
+
+def _sources_for(kb: KnowledgeStore, ids: list[str]) -> dict[str, KbSource]:
+    """Source per id, skipping ids that resolve to nothing."""
+    out: dict[str, KbSource] = {}
+    for oid in ids:
+        source = kb.describe_source(oid)
+        if source is not None:
+            out[oid] = source
+    return out
 
 
 def _headlines_for(kb: KnowledgeStore, ids: list[str]) -> dict[str, str]:
@@ -409,9 +460,15 @@ def kb_with_tag(
                 ids=ids,
                 id_to_tags=id_to_tags,
                 id_to_headline=_headlines_for(kb, ids),
+                id_to_source=_sources_for(kb, ids),
             )
         objects = kb.get_objects(ids)
-        return WithTagResult(ids=ids, objects=objects, id_to_tags=id_to_tags)
+        return WithTagResult(
+            ids=ids,
+            objects=objects,
+            id_to_tags=id_to_tags,
+            id_to_source=_sources_for(kb, ids),
+        )
 
     max_depth: int | None = None
     if recurse > 0:
@@ -451,9 +508,100 @@ def kb_with_tag(
             layers=layers,
             id_to_tags=id_to_tags,
             id_to_headline=_headlines_for(kb, all_ids),
+            id_to_source=_sources_for(kb, all_ids),
         )
     objects = kb.get_objects(all_ids)
-    return WithTagResult(ids=root_ids, layers=layers, objects=objects, id_to_tags=id_to_tags)
+    return WithTagResult(
+        ids=root_ids,
+        layers=layers,
+        objects=objects,
+        id_to_tags=id_to_tags,
+        id_to_source=_sources_for(kb, all_ids),
+    )
+
+
+def format_with_tag_id_line(result: WithTagResult, cid: str) -> str:
+    """One ``kb with-tag`` listing line: id, tags, source, then the headline.
+
+    Shared by the CLI and the ``kb_with_tag`` command tool so a person reading a
+    terminal and a model reading a tool result are looking at the same thing.
+    """
+    line = cid
+    if result.id_to_tags and cid in result.id_to_tags:
+        tag_str = " ".join(result.id_to_tags[cid])
+        if tag_str:
+            line = f"{line}  [{tag_str}]"
+    source = (result.id_to_source or {}).get(cid)
+    if source is not None:
+        line = f"{line}  SOURCE={source.label}"
+    headline = (result.id_to_headline or {}).get(cid)
+    if headline:
+        indented = "\n".join(f"    {ln}" for ln in headline.split("\n"))
+        line = f"{line}\n{indented}"
+    return line
+
+
+def with_tag_ordered_ids(result: WithTagResult) -> list[str]:
+    """Root ids followed by layer children, de-duplicated, in listing order."""
+    ordered: list[str] = list(result.ids)
+    seen = set(ordered)
+    for _, child_ids in result.layers or []:
+        for cid in child_ids:
+            if cid not in seen:
+                seen.add(cid)
+                ordered.append(cid)
+    return ordered
+
+
+def kb_get_payload(
+    ordered_ids: list[str],
+    objects: dict[str, KnowledgeObject],
+    *,
+    include_comments: bool = True,
+) -> dict[str, Any]:
+    """``lens kb get --json`` body: resolved ids plus one record per object."""
+    return {
+        "ids": [cid for cid in ordered_ids if cid in objects],
+        "items": [
+            kb_object_payload(objects[cid], include_comments=include_comments)
+            for cid in ordered_ids
+            if cid in objects
+        ],
+    }
+
+
+def with_tag_payload(result: WithTagResult) -> dict[str, Any]:
+    """``lens kb with-tag --json`` body.
+
+    ``items`` covers roots and layer children alike; each carries ``content``
+    only when the result was expanded, matching what the text output printed.
+    """
+    items: list[dict[str, Any]] = []
+    for cid in with_tag_ordered_ids(result):
+        obj = (result.objects or {}).get(cid)
+        if obj is not None:
+            items.append(kb_object_payload(obj))
+            continue
+        type_part = cid.split(".", 1)[0] if "." in cid else ""
+        source = (result.id_to_source or {}).get(cid)
+        items.append(
+            {
+                "id": cid,
+                "type": type_part,
+                "tags": list((result.id_to_tags or {}).get(cid, [])),
+                "source": kb_source_payload(source),
+                "headline": (result.id_to_headline or {}).get(cid, ""),
+            }
+        )
+    return {
+        "ids": list(result.ids),
+        "layers": (
+            [{"parent": parent, "children": list(children)} for parent, children in result.layers]
+            if result.layers
+            else None
+        ),
+        "items": items,
+    }
 
 
 def kb_list_tags(

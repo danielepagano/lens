@@ -948,9 +948,20 @@ export const runCompress = (
 
 // ---- KB API ----
 
+/** Which store a KB item resolves from: the project's own knowledge tree, or a
+ *  dataset outside it. `shadows` names datasets holding the same id that lost
+ *  the merge — so a project item that forks a dataset one says so. */
+export interface KbSource {
+  kind: 'project' | 'dataset'
+  dataset: string | null
+  shadows: string[]
+  label: string
+}
+
 export interface KbItem {
   id: string
   tags: string[]
+  source: KbSource | null
 }
 
 export interface KbItemDetail {
@@ -958,6 +969,7 @@ export interface KbItemDetail {
   type: string
   content: string
   tags: string[]
+  source: KbSource | null
 }
 
 export const getKbTags = (params?: { type?: string; prefix?: string }): Promise<string[]> => {

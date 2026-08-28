@@ -34,7 +34,7 @@ from typing import Any, cast
 
 from lens.core.annotations import decode_ai_secrets, encode_ai_secrets_for_persist
 from lens.core.commands.kb import kb_patch as _cmd_kb_patch
-from lens.core.commands.kb import resolve_ids_with_facets
+from lens.core.commands.kb import format_with_tag_id_line, resolve_ids_with_facets
 from lens.core.commands.kb import kb_with_tag as _cmd_kb_with_tag
 from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
@@ -96,8 +96,13 @@ def format_objects_for_model(objects: dict[str, KnowledgeObject]) -> str:
     ``KnowledgeObject.format`` returns storage form.  Handing that to the model
     would show it ROT13 gibberish where crawl shows plaintext, and anything it
     echoed back would be encoded a second time on persist — i.e. leaked.
+
+    ``SOURCE=`` is included here and nowhere in the crawl: these tools are how
+    a model *explores* the store, and whether a booklet is the project's own or
+    a dataset's changes what editing it means (see
+    :class:`~lens.core.knowledge.KbSource`).
     """
-    parts = [obj.format() for obj in objects.values()]
+    parts = [obj.format(include_source=True) for obj in objects.values()]
     return decode_ai_secrets("\n\n".join(parts)) if parts else ""
 
 
@@ -221,16 +226,7 @@ async def _kb_with_tag(args: dict[str, Any], project_root: Path) -> str:
         return f"(no KB objects found with tags: {', '.join(tags)})"
 
     def _format_id_line(cid: str) -> str:
-        line = cid
-        if result.id_to_tags and cid in result.id_to_tags:
-            tag_str = " ".join(result.id_to_tags[cid])
-            if tag_str:
-                line = f"{cid}  [{tag_str}]"
-        headline = (result.id_to_headline or {}).get(cid)
-        if headline:
-            indented = "\n".join(f"    {ln}" for ln in headline.split("\n"))
-            line = f"{line}\n{indented}"
-        return line
+        return format_with_tag_id_line(result, cid)
 
     if expand:
         parts: list[str] = []

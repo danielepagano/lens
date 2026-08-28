@@ -2651,6 +2651,20 @@ ul.kb-item-list {
   color: var(--pico-color);
 }
 
+.kb-meta-source-row {
+  font-size: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+
+.kb-meta-source-label {
+  color: var(--pico-muted-color);
+  margin-right: 0.25rem;
+}
+
+.kb-meta-source-dataset {
+  font-style: italic;
+}
+
 .kb-meta-linked-row {
   font-size: 0.75rem;
 }

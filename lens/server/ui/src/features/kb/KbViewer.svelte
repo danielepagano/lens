@@ -513,6 +513,7 @@
     {#if !editMode}
       <KbViewerMetaSection
         tags={item.tags}
+        source={item.source}
         {linkedFrom}
         {metaOpen}
         {metaSummary}

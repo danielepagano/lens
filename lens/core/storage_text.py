@@ -203,13 +203,22 @@ def format_kb_prompt_block(
     tags: list[str],
     include_comments: bool = False,
     strip_html: bool = False,
+    source: str | None = None,
 ) -> str:
-    """Format a KB object body for prompt display."""
+    """Format a KB object body for prompt display.
+
+    ``source`` adds a ``SOURCE=`` field to the header, naming the store the
+    object was read from. Browsing surfaces pass it; the crawl does not, and
+    the ``_from_normalized`` variant it uses takes no such argument at all —
+    see :class:`~lens.core.knowledge.KbSource`.
+    """
     normalized = normalize_storage_text(text)
     body = text if include_comments else normalized.strip_comments_text
     if strip_html:
         body = strip_html_comments(body)
     header = f"KB[{canonical_id!r}]"
+    if source:
+        header += f"  SOURCE={source}"
     if tags:
         header += f"  TAGS={', '.join(tags)}"
     body = body.rstrip("\n")
