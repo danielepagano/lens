@@ -14,14 +14,31 @@ if TYPE_CHECKING:
     from typer import Typer
 
 
-def _discover_commands() -> Iterator[tuple[str, Typer, str | None]]:
+#: Fallback panel for a module that declares no ``help_panel``.
+_DEFAULT_PANEL = "Project"
+
+#: Commands contributed by a dataset extension, which exist only here.
+_EXTENSION_PANEL = "Dataset commands"
+
+
+def _discover_commands() -> Iterator[tuple[str, Typer, str | None, str]]:
+    """Every command module: its name, app, dataset gate, and help panel.
+
+    A module opts into a panel with a module-level ``help_panel`` string, the
+    same shape as ``required_dataset``. Panels are what keep ``lens --help``
+    skimmable at 25-odd commands: without them a reader looking for the
+    knowledge store reads past every deploy subcommand to find it. The order the
+    panels print in is decided by ``LensGroup`` in :mod:`lens.cli.main`, not by
+    registration order.
+    """
     for _importer, modname, _ in pkgutil.iter_modules(__path__, __name__ + "."):
         mod = importlib.import_module(modname)
         app = getattr(mod, "app", None)
         if app is not None and isinstance(app, typer.Typer):
             name = modname.split(".")[-1]
             required_dataset: str | None = getattr(mod, "required_dataset", None)
-            yield name, app, required_dataset
+            panel: str = getattr(mod, "help_panel", None) or _DEFAULT_PANEL
+            yield name, app, required_dataset, panel
 
 
 def register_commands(main_app: typer.Typer) -> None:
@@ -34,7 +51,7 @@ def register_commands(main_app: typer.Typer) -> None:
         project_root = None
         selected = []
 
-    for name, app, required_dataset in _discover_commands():
+    for name, app, required_dataset, panel in _discover_commands():
         if required_dataset is not None and required_dataset not in selected:
             continue
         if name == "media" and (
@@ -48,11 +65,11 @@ def register_commands(main_app: typer.Typer) -> None:
             if callback is not None:
                 help_text = app.registered_callback.help
                 if isinstance(help_text, str):
-                    main_app.command(name, help=help_text)(callback)
+                    main_app.command(name, help=help_text, rich_help_panel=panel)(callback)
                 else:
-                    main_app.command(name)(callback)
+                    main_app.command(name, rich_help_panel=panel)(callback)
                 continue
-        main_app.add_typer(app, name=name)
+        main_app.add_typer(app, name=name, rich_help_panel=panel)
 
     if project_root is not None:
         from lens.core.dataset_extensions import (
@@ -65,6 +82,6 @@ def register_commands(main_app: typer.Typer) -> None:
             if not ext_app.registered_commands and ext_app.registered_callback:
                 callback = ext_app.registered_callback.callback
                 if callback is not None:
-                    main_app.command(ext_name)(callback)
+                    main_app.command(ext_name, rich_help_panel=_EXTENSION_PANEL)(callback)
                     continue
-            main_app.add_typer(ext_app, name=ext_name)
+            main_app.add_typer(ext_app, name=ext_name, rich_help_panel=_EXTENSION_PANEL)

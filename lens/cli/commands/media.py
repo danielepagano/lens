@@ -46,6 +46,8 @@ from lens.core.project import (
 from .attach import attach_app
 from .media_composite import composite_app
 
+help_panel = "Media"
+
 app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,

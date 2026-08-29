@@ -213,3 +213,53 @@ class TestCliWrite:
         stats = _lens("stats", cwd=cli_project)
         # stats prints "Open transaction: yes"
         assert "Open transaction: yes" in stats.stdout
+
+
+# ---------------------------------------------------------------------------
+# Agent onboarding
+# ---------------------------------------------------------------------------
+
+
+class TestCliSkill:
+    """`lens skill` against a real project, which is the only place it is true.
+
+    The unit tests build their own projects; this one runs against the same
+    `setup_test_project` shape everything else here uses, so what an agent
+    checking out a Lens project would actually read is what is asserted.
+    """
+
+    def test_setup_installs_the_pointer_and_it_is_current(self, cli_project: Path) -> None:
+        pointer = cli_project / ".claude" / "skills" / "lens" / "SKILL.md"
+        assert pointer.is_file()
+
+        r = _lens("skill", "--check", cwd=cli_project)
+        assert r.returncode == 0, r.stdout
+
+    def test_it_reports_the_datasets_that_resolve_outside_the_checkout(
+        self, cli_project: Path
+    ) -> None:
+        r = _lens("skill", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+
+        assert "## This project" in r.stdout
+        assert "`rpg`" in r.stdout
+        assert "`testing`" in r.stdout
+        # The rpg dataset ships its own conventions layer.
+        assert "Conventions of the `rpg` dataset" in r.stdout
+
+    def test_it_lists_the_design_modules_and_requestable_modules(
+        self, cli_project: Path
+    ) -> None:
+        r = _lens("skill", cwd=cli_project)
+
+        assert "### Design modules" in r.stdout
+        assert "rules.skirmish" in r.stdout
+
+    def test_it_does_not_leak_the_guidance_into_the_committed_pointer(
+        self, cli_project: Path
+    ) -> None:
+        """The pointer is compared byte for byte; project facts would break that."""
+        pointer = (cli_project / ".claude" / "skills" / "lens" / "SKILL.md").read_text()
+
+        assert "## This project" not in pointer
+        assert "rules.skirmish" not in pointer

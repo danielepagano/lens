@@ -6,7 +6,9 @@ import logging
 import sys
 from pathlib import Path
 
+import click
 import typer
+from typer.core import TyperGroup
 
 from lens.cli.commands import register_commands
 from lens.cli.help_strings import APP, HELP_OPTS
@@ -23,8 +25,45 @@ ensure_modalities_registered()
 
 _DATASET_ALLOWED = frozenset({"stats", "kb", "prompt", "commit", "rollback", "serve", "dev", "check"})
 
+#: Reading order for the panels in ``lens --help``: set the project up, do the
+#: work, then the material the work reads.  Anything unlisted sorts to the end.
+PANEL_ORDER: tuple[str, ...] = (
+    "Project",
+    "Operators",
+    "Knowledge",
+    "Media",
+    "Dataset commands",
+    "Serving & deploy",
+)
+
+
+class LensGroup(TyperGroup):
+    """Top-level group that prints its help panels in a fixed reading order.
+
+    Rich builds one panel per ``rich_help_panel`` in the order commands come out
+    of :meth:`list_commands`, and Typer emits every plain command before every
+    sub-group.  That makes panel order an accident of which modules happen to
+    register a group, so it is decided here instead — alphabetically within each
+    panel, which is the order a reader scans for a name they already half know.
+    """
+
+    def list_commands(self, ctx: click.Context) -> list[str]:
+        names = super().list_commands(ctx)
+
+        def _rank(name: str) -> tuple[int, str]:
+            command = self.get_command(ctx, name)
+            panel = getattr(command, "rich_help_panel", None) or ""
+            index = (
+                PANEL_ORDER.index(panel) if panel in PANEL_ORDER else len(PANEL_ORDER)
+            )
+            return index, name
+
+        return sorted(names, key=_rank)
+
+
 app = typer.Typer(
     name="lens",
+    cls=LensGroup,
     help=APP,
     no_args_is_help=True,
     add_completion=False,
@@ -44,6 +83,13 @@ def _preflight(ctx: typer.Context) -> None:  # pyright: ignore[reportUnusedFunct
             err=True,
         )
         raise typer.Exit(1)
+    if sub == "skill":
+        # Deliberately outside every gate below. The command's whole job is to
+        # teach an agent that has just arrived, which is exactly when the
+        # project may not be initialized, may be a dataset checkout, or may
+        # have no active narrative — and a guide that refuses to print in those
+        # cases is a guide nobody reads.
+        return
     if sub in ("init", "use", "serve", "dev", "deploy", "release"):
         # `release` resolves its own project root (possibly a multi-project
         # deploy directory with no `lens.toml` of its own — see

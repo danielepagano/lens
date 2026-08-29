@@ -28,6 +28,8 @@ from lens.core.commands.deploy import (
 )
 from lens.core.exceptions import LensException
 
+help_panel = "Serving & deploy"
+
 app = typer.Typer(
     no_args_is_help=True,
     help=CMD_DEPLOY,

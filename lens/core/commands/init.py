@@ -4,11 +4,19 @@ import io
 from pathlib import Path
 import tomli_w
 
+from lens.core.commands.skill import install_skill
 from lens.core.project import find_git_root
 from lens.core.storage import Storage
 from lens.core.exceptions import LensException
 
-def init_project() -> Path:
+def init_project(*, skill: bool = True) -> Path:
+    """Create the project scaffold, and by default the agent skill pointer.
+
+    The pointer is installed by default because the failure it prevents is an
+    agent that never learns the project has a CLI at all — and nobody
+    remembers to opt in to that.  It is a pointer, not guidance, so it does not
+    age (see :mod:`lens.core.commands.skill`).
+    """
     try:
         root = find_git_root()
     except RuntimeError as e:
@@ -27,4 +35,7 @@ def init_project() -> Path:
         storage.write_file_bytes(tags_toml, buf.getvalue())
 
     storage.mkdir(root / "narrative")
+
+    if skill:
+        install_skill(root, storage=storage)
     return root

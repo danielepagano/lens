@@ -25,6 +25,7 @@ from lens.core.project import (
     require_cloud_compatible_mount,
     resolve_dataset_path,
 )
+from lens.core.commands.skill import check_skill
 from lens.core.prompts import prompt_pack_file
 
 
@@ -228,6 +229,15 @@ def run_project_check(project_root: Path, *, skip_network: bool = False) -> Proj
                 "narrative",
                 f"{slug!r}: {nd} is not an existing directory (run lens use?)",
             )
+
+    # Drift detection is only worth having if something runs it, and `lens
+    # check` is the thing already wired into CI.  A warning, never an error: an
+    # agent pointer that lags a Lens upgrade is a stale document, not a broken
+    # project.
+    skill_state = check_skill(project_root)
+    result.add(
+        "ok" if skill_state.ok else "warn", "agent skill", skill_state.message()
+    )
 
     release_cfg = parse_release_config(config)
     dataset_repos = parse_dataset_repo_configs(config)

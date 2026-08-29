@@ -67,6 +67,8 @@ from lens.core.commands.kb_search import (
 from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
 
+help_panel = "Knowledge"
+
 app = typer.Typer(
     no_args_is_help=True,
     help=CMD_KB,
