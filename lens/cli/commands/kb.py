@@ -21,7 +21,17 @@ from lens.cli.help_strings import (
     ARG_MEDIA_SOURCE as ARG_EXTRACT_SOURCE,
     CMD_KB,
     HELP_OPTS,
+    OPT_KB_HEADLINE,
+    OPT_KB_IDS_ONLY,
+    OPT_KB_INCLUDE_TEMPLATES,
     OPT_KB_JSON,
+    OPT_KB_REFS_IN,
+    OPT_KB_REFS_OUT,
+    OPT_KB_SEARCH_CONTEXT,
+    OPT_KB_SEARCH_SOURCE,
+    OPT_KB_SEARCH_TAG,
+    OPT_KB_SEARCH_TYPE,
+    OPT_KB_SHADOWED,
     OPT_LLM,
     OPT_REASONING,
     OPT_RETRY_PROPOSE,
@@ -29,6 +39,7 @@ from lens.cli.help_strings import (
 from lens.cli.options import pin_option, unpin_option
 from lens.core.knowledge import KnowledgeObject, validate_ids_exist
 from lens.core.commands.kb import (
+    format_kb_listing_line,
     format_with_tag_id_line,
     kb_add,
     kb_extract,
@@ -43,6 +54,15 @@ from lens.core.commands.kb import (
     kb_with_tag,
     check_invalid_tags,
     with_tag_payload,
+)
+from lens.core.commands.kb_refs import format_ref_line, kb_refs, refs_payload
+from lens.core.commands.kb_search import (
+    SourceFilter,
+    format_hit_lines,
+    kb_list,
+    kb_search,
+    list_payload,
+    search_payload,
 )
 from lens.core.exceptions import LensException
 from lens.core.project import find_project_root
@@ -271,6 +291,175 @@ def get(
     for cid in ordered_ids:
         if cid in objects:
             _print(objects[cid])
+
+
+def _source_filter(value: str) -> SourceFilter:
+    if value not in ("project", "dataset", "all"):
+        typer.echo(
+            f"Error: --source must be project, dataset, or all (got {value!r})",
+            err=True,
+        )
+        raise typer.Exit(1)
+    return value
+
+
+@app.command(no_args_is_help=True)
+def search(
+    pattern: str = typer.Argument(..., help="Regex (or fixed string with -F) to match"),
+    ignore_case: bool = typer.Option(False, "-i", "--ignore-case", help="Case-insensitive match"),
+    fixed_string: bool = typer.Option(False, "-F", "--fixed-string", help="Treat PATTERN as a literal, not a regex"),
+    word: bool = typer.Option(False, "-w", "--word", help="Match whole words only"),
+    type_filter: str | None = typer.Option(None, "--type", "-t", help=OPT_KB_SEARCH_TYPE),
+    tag: list[str] = typer.Option([], "--tag", help=OPT_KB_SEARCH_TAG),
+    context: int = typer.Option(0, "-C", "--context", help=OPT_KB_SEARCH_CONTEXT),
+    ids_only: bool = typer.Option(False, "-l", "--ids-only", help=OPT_KB_IDS_ONLY),
+    source: str = typer.Option("all", "--source", help=OPT_KB_SEARCH_SOURCE),
+    headline: bool = typer.Option(False, "--headline", help=OPT_KB_HEADLINE),
+    include_templates: bool = typer.Option(False, "--include-templates", help=OPT_KB_INCLUDE_TEMPLATES),
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
+) -> None:
+    """Search ids, types, tags and bodies of the merged knowledge store.
+
+    The project's own files are greppable; the merged store is not — datasets
+    resolve outside the repository, and which copy of an id wins is a
+    computation, not a directory. This searches what an operator would actually
+    read: one hit per id, from the store that wins, in id then line order.
+
+    Output is ``id:line:text``, so it pipes into the tools you already use.
+    Identity matches (on an id, a type, or a tag) report line ``0`` and name the
+    field they matched, since they have no line of their own.
+    """
+    try:
+        result = kb_search(
+            pattern,
+            ignore_case=ignore_case,
+            fixed_string=fixed_string,
+            word=word,
+            type_filter=type_filter,
+            tags=list(tag),
+            context=context,
+            source=_source_filter(source),
+            include_templates=include_templates,
+            headlines=headline or as_json,
+        )
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    if as_json:
+        typer.echo(json.dumps(search_payload(result), indent=2))
+        return
+
+    if ids_only:
+        for hit in result.hits:
+            typer.echo(hit.id)
+        return
+
+    for index, hit in enumerate(result.hits):
+        if context and index:
+            typer.echo("--")
+        if headline:
+            typer.echo(
+                format_kb_listing_line(
+                    hit.id, tags=hit.tags, source=hit.source, headline=hit.headline
+                )
+            )
+        for line in format_hit_lines(hit):
+            typer.echo(line)
+
+
+@app.command("list")
+def list_objects(
+    type_filter: str | None = typer.Option(None, "--type", "-t", help=OPT_KB_SEARCH_TYPE),
+    tag: list[str] = typer.Option([], "--tag", help=OPT_KB_SEARCH_TAG),
+    ids_only: bool = typer.Option(False, "-l", "--ids-only", help=OPT_KB_IDS_ONLY),
+    source: str = typer.Option("all", "--source", help=OPT_KB_SEARCH_SOURCE),
+    shadowed: bool = typer.Option(False, "--shadowed", help=OPT_KB_SHADOWED),
+    include_templates: bool = typer.Option(False, "--include-templates", help=OPT_KB_INCLUDE_TEMPLATES),
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
+) -> None:
+    """Enumerate the merged knowledge store — every id the project can see.
+
+    Each object prints as ``id  [tags]  SOURCE=<where>`` followed by its first
+    three lines, the same listing shape ``kb with-tag`` uses. ``--shadowed``
+    narrows to the ids where one store overrides another, which is the only way
+    to find a copy-on-write fork that has quietly diverged from its dataset.
+    """
+    try:
+        entries = kb_list(
+            type_filter=type_filter,
+            tags=list(tag),
+            source=_source_filter(source),
+            shadowed=shadowed,
+            include_templates=include_templates,
+            headlines=not ids_only,
+        )
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    if as_json:
+        typer.echo(json.dumps(list_payload(entries), indent=2))
+        return
+    for entry in entries:
+        if ids_only:
+            typer.echo(entry.id)
+            continue
+        typer.echo(
+            format_kb_listing_line(
+                entry.id,
+                tags=entry.tags,
+                source=entry.source,
+                headline=entry.headline,
+            )
+        )
+
+
+@app.command(no_args_is_help=True)
+def refs(
+    id: str = typer.Argument(..., help=ARG_ID),
+    out: bool = typer.Option(False, "--out", help=OPT_KB_REFS_OUT),
+    incoming: bool = typer.Option(False, "--in", help=OPT_KB_REFS_IN),
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
+) -> None:
+    """Show what an object links to, and what links to it — without the bodies.
+
+    ``--out`` is the shape around an object: its dot-tags, its ``-`` facets, the
+    ``rules.<type>`` companion and type template that travel with it, and what a
+    ``++`` hop would drag in beyond one level. ``kb get id++`` answers this too,
+    by printing every linked body.
+
+    ``--in`` is who pays if you rewrite it: objects that dot-tag it, narrative
+    nodes that pin, mention or include it, and ``[[dataset.modules]]``
+    registrations. Pins that reach it by ``+`` expansion, by facet, or as a
+    rules companion are reported with the route, since a grep for the id would
+    never have found them.
+
+    With neither flag, both directions are shown.
+    """
+    want_out = out or not (out or incoming)
+    want_in = incoming or not (out or incoming)
+    try:
+        result = kb_refs(id, outgoing=want_out, incoming=want_in)
+    except LensException as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+
+    if as_json:
+        typer.echo(json.dumps(refs_payload(result), indent=2))
+        return
+
+    typer.echo(
+        format_kb_listing_line(result.id, tags=result.tags, source=result.source)
+    )
+    if not result.exists:
+        typer.echo("  (no such object — inbound references are dangling)")
+    for label, group in (("OUT", result.outgoing()), ("IN", result.incoming())):
+        if not group:
+            continue
+        typer.echo(f"\n{label}")
+        for ref in group:
+            typer.echo(format_ref_line(ref))
 
 
 @app.command("list-tags")

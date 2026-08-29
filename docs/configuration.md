@@ -703,7 +703,7 @@ An object's **first three lines** are read as its self-description — by conven
 
 Two mechanisms read exactly those lines:
 
-- `lens kb with-tag` and the `kb_with_tag` tool print them under every match, so a search over dozens of candidates says what each one *is* without expanding any of them.
+- Every listing surface prints them under each match — `lens kb with-tag` and the `kb_with_tag` tool, `lens kb list`, and `lens kb search --headline` — so a search over dozens of candidates says what each one *is* without expanding any of them.
 - [`[[dataset.modules]]`](#datasetmodules-dataset-lenstoml) uses them as the module's catalog entry — the text the model decides on when choosing whether to pull a ruleset into scope. **Only registered modules need to be written for this**; nothing else changes behaviour based on its opening lines.
 
 Lens annotation blocks (`[ … ]: #`) are skipped before counting, so a template declaring default tags still gets its three lines. A line that is entirely one HTML comment is unwrapped, so a type template's `<!-- … -->` usage note reads as its description.
@@ -712,7 +712,7 @@ Nothing enforces this, and an object that opens some other way is only harder to
 
 ### Reserved KB tags
 
-An object's **type is a searchable tag**: `lens kb with-tag design` returns every `design.*` object, `with-tag rules` every `rules.*` one, with no tagging required and nothing to keep in sync. This is how `design` discovers which modules and rulesets a project has. Types also appear in `lens kb list-tags`. Explicit tags still work normally and combine with a type in the usual way (`with-tag rules combat-ready` ANDs them).
+An object's **type is a searchable tag**: `lens kb with-tag design` returns every `design.*` object, `with-tag rules` every `rules.*` one, with no tagging required and nothing to keep in sync. This is how `design` discovers which modules and rulesets a project has. Types also appear in `lens kb list-tags`, and work as `--tag` / `--type` filters on `lens kb search` and `lens kb list`. Explicit tags still work normally and combine with a type in the usual way (`with-tag rules combat-ready` ANDs them).
 
 Two further tags change how an object renders rather than what it means. Both are engine-level and work regardless of which dataset the object comes from or how it entered scope.
 
