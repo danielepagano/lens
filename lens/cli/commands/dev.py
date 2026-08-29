@@ -14,6 +14,8 @@ from lens.cli.help_strings import CMD_DEV, HELP_OPTS, MEDIA_SERVER_HOST, MEDIA_S
 _LENS_ROOT = Path(__file__).resolve().parent.parent.parent
 _UI_DIR = _LENS_ROOT / "server" / "ui"
 
+help_panel = "Serving & deploy"
+
 app = typer.Typer(
     help=CMD_DEV,
     add_completion=False,

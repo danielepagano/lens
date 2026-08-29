@@ -231,6 +231,16 @@ def dataset_modules(project_root: Path) -> tuple[ModuleDecl, ...]:
     return decls
 
 
+def dataset_own_modules(dataset_path: Path) -> tuple[ModuleDecl, ...]:
+    """Modules a dataset registers in its *own* manifest, read directly.
+
+    :func:`dataset_modules` answers "what did this project opt into", which is
+    empty inside a dataset checkout — and that is exactly where somebody is
+    editing the objects whose first three lines become the catalog entries.
+    """
+    return tuple(_parse_dataset_modules(dataset_path.name, dataset_path))
+
+
 def modules_for_operator(project_root: Path, operator_name: str) -> tuple[ModuleDecl, ...]:
     """Declarations targeting *operator_name*, in declaration order."""
     return tuple(

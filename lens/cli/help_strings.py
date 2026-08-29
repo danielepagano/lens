@@ -15,7 +15,12 @@ HELP_OPTS = ["-h", "--help"]
 # ═══════════════════════════════════════════════════════════════════
 #  App
 # ═══════════════════════════════════════════════════════════════════
-APP = "Lens: narrative engine with fractal summarization."
+APP = (
+    "Lens: narrative engine with fractal summarization.\n\n"
+    "New to this project — human or agent? Run `lens skill`: it prints how this\n"
+    "project is put together (datasets, types, tags, modules) and the conventions\n"
+    "that break silently, generated now rather than committed and left to go stale."
+)
 
 # ═══════════════════════════════════════════════════════════════════
 #  Top-level commands  (lens <command>)
@@ -34,8 +39,14 @@ CMD_REWIND = "Move the cursor backward in the narrative tree, discarding all con
 CMD_EXPLAIN = "Show what is in the prompt at a cursor: size and provenance, component by component."
 CMD_ROLLBACK = "Undo the last AI operation and restore the narrative to its previous state."
 CMD_KB = (
-    "Manage knowledge objects "
-    "(add, edit, get, tag, template, copy, rename, delete, with-tag, extract)."
+    "The knowledge store: the merge of this project's `knowledge/` tree with "
+    "every active dataset's.\n\n"
+    "Find what you cannot name: `search` (ids, types, tags, bodies), `list` "
+    "(everything visible), `with-tag` / `list-tags`, `refs` (what links to an "
+    "object, and by which route). Read: `get`. Change: `add`, `edit` (AI), "
+    "`tag`, `template`, `copy`, `rename`, `delete`, `extract`.\n\n"
+    "Datasets resolve outside this repository, so `grep` over the checkout is "
+    "not a substitute; `SOURCE=` on every result says which store won."
 )
 CMD_PIN = (
     "Declare which knowledge objects, variables, and operator settings apply "
@@ -43,6 +54,12 @@ CMD_PIN = (
     "they inherit from root to cursor."
 )
 CMD_PROMPT = "Manage operator prompts and project-local prompt overrides."
+CMD_SKILL = (
+    "Print what an agent needs to know about this project, generated now.\n\n"
+    "Composed from bundled invariants, this project's live shape, dataset\n"
+    "conventions, and project house rules in `skill/skill.md`. Use --install\n"
+    "to commit a thin pointer that tells an agent to run this command."
+)
 CMD_MEDIA = "Image generation, TTS, attachment, and related commands."
 CMD_MEDIA_COMPOSITE = "Background-removal / layering tools for Visual Novel compositing."
 CMD_RENAME = "Rename a narrative node."
@@ -232,6 +249,17 @@ OPT_SKIP_NETWORK = (
     "Skip TCP reachability checks for LLM base_url "
     "(env and paths still verified)."
 )
+
+# --install / --check / --sources  (skill)
+OPT_SKILL_INSTALL = (
+    "Write .claude/skills/lens/SKILL.md: a thin, durable pointer telling an "
+    "agent to run `lens skill` for the current guidance."
+)
+OPT_SKILL_CHECK = (
+    "Exit non-zero when the installed pointer is missing or differs from what "
+    "this Lens would write. For CI and session-start hooks."
+)
+OPT_SKILL_SOURCES = "List the layers that make up the output and where each came from."
 
 # --no-push  (checkpoint)
 OPT_NO_PUSH = "Do not push to remote after committing."
@@ -665,6 +693,8 @@ DESC_DEV = (
 )
 
 DESC_INIT = "Initialize a Lens project in the current git repo."
+
+OPT_INIT_SKILL = "Install the agent skill pointer (.claude/skills/lens/SKILL.md)."
 
 DESC_WRITE = (
     "Stream generated narrative text into the cursor node.\n\n"

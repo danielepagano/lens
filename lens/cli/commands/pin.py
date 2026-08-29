@@ -33,6 +33,8 @@ from lens.core.exceptions import LensException
 from lens.core.mentions import MentionKind
 from lens.core.project import ProjectSession
 
+help_panel = "Knowledge"
+
 app = typer.Typer(
     no_args_is_help=True,
     help=CMD_PIN,

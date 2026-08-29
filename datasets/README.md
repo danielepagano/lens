@@ -24,13 +24,30 @@ my-ruleset/
     rules/
       system.md      # example KB object id: rules.system
     pc/_template.md
+  prompts/prompts.toml # optional: operator prompt text this dataset ships
+  skill/skill.md       # optional: conventions an agent must not break
 ```
 
 Typical contents:
 
 - **`knowledge/{type}/{key}.md`** — KB objects (rules, templates, meta pins, design interview modules under `knowledge/design/`, …)
 - **`knowledge/tags.toml`** — bidirectional tag index (optional but usual)
-- **`lens.toml`** — only `[dataset]` today (dataset marker for the CLI)
+- **`lens.toml`** — `[dataset]` marker, optional `extension`, optional `[[dataset.modules]]`
+- **`prompts/prompts.toml`** — operator prompt overrides (see [configuration.md](../docs/configuration.md))
+- **`skill/skill.md`** — this dataset's conventions, emitted by `lens skill` in any project that selects it
+
+### Agent conventions (`skill/skill.md`)
+
+A dataset is the thing that knows its own conventions, and the ones that matter
+are the ones that break *silently* — a naming rule an operator keys off, a tag
+that must not be applied, a budget that is paid on every beat. Write those here
+and `lens skill` emits them to any agent working in a project that selects this
+dataset, after the bundled invariants and the project's live shape. Ordinary
+reference material belongs in the README instead: this text is read on every
+agent session, so it pays the same length discipline a rules booklet does.
+
+The same path in a *project* holds house rules, and in a dataset checkout it is
+the layer being edited — `lens skill --sources` says which is which.
 
 ### Templates (`{type}/_template.md`)
 

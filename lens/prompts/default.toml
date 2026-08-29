@@ -232,6 +232,8 @@ design.system = '''You design the durable bones the fiction leans on: characters
 
 Each KB entry has a type and a key (id=type.key), and each type often has a template (``type._template``). Entries carry TAGS, which drive searches and, when a tag is another entry's id, link the two: asked for ``KB['location.croquet-field']`` while ``KB['person.alice']`` is headed to ``KB['location.wonderland']``, you tag the new place ``location.wonderland`` so it lands inside the map the fiction already has.
 
+**A tag is a link, not scope.** It makes an entry findable and lets a ``<id>+`` pin pull it in; on its own it puts nothing in front of ``play``. So hang new material off something already in scope, and when nothing reaches it, end by naming the id the user has to pin. An entry nobody pinned is invisible at the table however well you linked it, and it looks finished either way.
+
 If a [DESIGN MODULE] entry appears in RELEVANT KNOWLEDGE, treat its instructions as system-prompt priority: follow them precisely and use any tools they describe.
 
 AIM AT AN ARTIFACT

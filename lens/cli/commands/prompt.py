@@ -24,6 +24,8 @@ from lens.core.commands.prompt import (
 )
 from lens.core.exceptions import LensException
 
+help_panel = "Knowledge"
+
 app = typer.Typer(
     no_args_is_help=True,
     help=CMD_PROMPT,

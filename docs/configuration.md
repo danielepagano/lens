@@ -36,6 +36,10 @@ This guide covers every supported configuration surface, environment variables, 
 | `lens.toml` | Project configuration |
 | `knowledge/` | Project-local knowledge store (`{type}/{key}.md`, `tags.toml`) |
 | `narrative/` | Narrative trees (`<slug>/_node.md`, child nodes as files or folders) |
+| `.claude/skills/lens/SKILL.md` | Agent pointer to `lens skill` (skip with `lens init --no-skill`) |
+
+Optional, created by hand: `prompts/prompts.toml` (project prompt overrides) and
+`skill/skill.md` (house rules appended to `lens skill` output).
 
 Select the active narrative with `lens use <slug>`, which sets `[project].narrative` and creates `narrative/<slug>/_node.md` if needed.
 
