@@ -8,11 +8,12 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import httpx
 
+from lens.core.annotations import strip_markdown_comments
 from lens.core.llm import (
     LLMError,
     FinalPayload,
@@ -559,7 +560,9 @@ class TestGenerateStream(unittest.TestCase):
         self.assertEqual("".join(previews), "text")
         self.assertIsNotNone(final)
         assert final is not None
-        self.assertEqual(final.text, "text")
+        # Usage is now recorded in the trace comment below the prose rather than
+        # logged and dropped; the prose itself is still exactly the content.
+        self.assertEqual(strip_markdown_comments(final.text).strip(), "text")
         usage_logs = [m for m in log.output if "usage" in m.lower()]
         self.assertTrue(usage_logs, "expected usage to be logged")
         self.assertIn("10", usage_logs[0])
@@ -728,21 +731,30 @@ class TestGenerateStream(unittest.TestCase):
         with self.assertRaises(LLMError):
             asyncio.run(anext(gen))
 
-    def test_verbose_logs_prompt_and_response(self) -> None:
+    def test_verbose_logs_reasoning_not_prompt_or_response(self) -> None:
+        """verbose_llm means *reasoning*.
+
+        The prompt is reconstructible with ``lens explain`` and the response
+        moves the narrative, so neither needed a log line.  The thinking stream
+        is the one thing that is otherwise unrecoverable.
+        """
         (self.root / "lens.toml").write_text(
             "[project]\nverbose_llm = true\n\n"
             "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
         )
-        resp = _FakeResponse(lines=_sse(_chunk("narrate"), _chunk(" this")))
+        thinking = {"choices": [{"delta": {"reasoning": "weighing the options"}}]}
+        resp = _FakeResponse(lines=_sse(thinking, _chunk("narrate"), _chunk(" this")))
         with self.assertLogs("lens.core.llm", level="INFO") as log:
             self._run(resp)
         combined = "\n".join(log.output)
-        self.assertIn("PROMPT", combined)
-        self.assertIn("RESPONSE", combined)
-        self.assertIn("narrate this", combined)
+        self.assertIn("LLM REASONING", combined)
+        self.assertIn("weighing the options", combined)
+        self.assertNotIn("LLM PROMPT", combined)
+        self.assertNotIn("LLM RESPONSE", combined)
+        self.assertNotIn("narrate this", combined)
 
-    def test_reasoning_content_verbose_only_not_in_final_text(self) -> None:
-        """reasoning_content is verbose-logged per delta; main content is final.text only."""
+    def test_reasoning_never_enters_narrative_text(self) -> None:
+        """The thinking stream is logged and measured, never persisted as prose."""
         (self.root / "lens.toml").write_text(
             "[project]\nverbose_llm = true\n\n"
             "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
@@ -755,8 +767,326 @@ class TestGenerateStream(unittest.TestCase):
         self.assertIn("LLM REASONING", combined)
         self.assertIn("think think", combined)
         assert final is not None
-        self.assertEqual(final.text, "answer")
+        # The prose is exactly the content; the trace is appended below it and
+        # in "stats" mode reports only how much thinking there was.
         self.assertNotIn("think think", final.text)
+        self.assertTrue(final.text.startswith("answer"))
+        self.assertIn("[llm-trace", final.text)
+        self.assertIn("chars: 11", final.text)
+
+    def test_reasoning_field_names_are_not_double_counted(self) -> None:
+        """OpenRouter sends `reasoning` and `reasoning_details` on the same delta."""
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        both = {
+            "choices": [
+                {
+                    "delta": {
+                        "reasoning": "abcde",
+                        "reasoning_details": [
+                            {"type": "reasoning.text", "text": "abcde", "index": 0}
+                        ],
+                    }
+                }
+            ]
+        }
+        resp = _FakeResponse(lines=_sse(both, _chunk("answer")))
+        _, final, _ = self._run(resp)
+        assert final is not None
+        self.assertIn("chars: 5", final.text)
+
+    def test_trace_omitted_when_provider_reports_nothing(self) -> None:
+        """No usage and no thinking means no measurement — and no block."""
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        resp = _FakeResponse(lines=_sse(_chunk("answer")))
+        _, final, _ = self._run(resp)
+        assert final is not None
+        self.assertEqual(final.text, "answer")
+
+    def test_trace_records_usage_and_is_invisible_to_the_model(self) -> None:
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        resp = _FakeResponse(lines=_sse(_chunk("answer"), _usage_chunk(prompt=120, completion=8)))
+        _, final, _ = self._run(resp)
+        assert final is not None
+        self.assertIn("prompt_tokens: 120", final.text)
+        self.assertIn("completion_tokens: 8", final.text)
+        # Structurally a markdown comment, so the passage a model reads back
+        # keeps the prose and nothing else.
+        self.assertEqual(strip_markdown_comments(final.text).strip(), "answer")
+
+    def test_trace_mode_off_writes_nothing(self) -> None:
+        (self.root / "lens.toml").write_text(
+            "[project]\nllm_trace = \"off\"\n\n"
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        resp = _FakeResponse(lines=_sse(_chunk("answer"), _usage_chunk()))
+        _, final, _ = self._run(resp)
+        assert final is not None
+        self.assertEqual(final.text, "answer")
+
+    def test_trace_block_never_contains_a_blank_line(self) -> None:
+        """A blank line stops the block being a link reference definition.
+
+        ``[label]: #`` is CommonMark's link reference definition, which is why
+        every markdown renderer hides an annotation block with no code stripping
+        it.  A link label may not span a blank line, so one blank line turns the
+        whole trace back into prose and renders it to the reader.  Model
+        reasoning arrives in paragraphs, so this is the common case.
+        """
+        from lens.core.llm_trace import LlmTrace
+
+        trace = LlmTrace(
+            model="m",
+            elapsed_ms=1,
+            usage_reported=True,
+            prompt_tokens=9,
+            reasoning_chars=40,
+            reasoning="first paragraph\n\n  second paragraph\n\n\nthird",
+        )
+        rendered = trace.render("full")
+        self.assertIn("first paragraph", rendered)
+        self.assertIn("third", rendered)
+        for line in rendered.rstrip("\n").split("\n"):
+            self.assertTrue(line.strip(), f"blank line in trace block: {rendered!r}")
+
+    def test_trace_reasoning_cannot_close_the_block_early(self) -> None:
+        """Free-form output containing `]: #` must not terminate the trace."""
+        from lens.core.llm_trace import LlmTrace
+
+        trace = LlmTrace(
+            model="m",
+            elapsed_ms=1,
+            usage_reported=True,
+            prompt_tokens=9,
+            reasoning_chars=30,
+            reasoning="I should emit [write]: #\nthen keep going",
+        )
+        node = trace.render("full") + "\nvisible prose\n"
+        # Everything between the brackets is stripped; only real prose survives.
+        self.assertEqual(strip_markdown_comments(node).strip(), "visible prose")
+
+    def test_trace_mode_full_includes_the_thinking_stream(self) -> None:
+        (self.root / "lens.toml").write_text(
+            "[project]\nllm_trace = \"full\"\n\n"
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        thinking = {"choices": [{"delta": {"reasoning": "the ravine is narrow"}}]}
+        resp = _FakeResponse(lines=_sse(thinking, _chunk("answer")))
+        _, final, _ = self._run(resp)
+        assert final is not None
+        self.assertIn("the ravine is narrow", final.text)
+        # Still a comment: full mode changes what is recorded, not who sees it.
+        self.assertEqual(strip_markdown_comments(final.text).strip(), "answer")
+
+    def test_reasoning_is_replayed_across_tool_rounds(self) -> None:
+        """A tool round is the same reply resumed, so the thinking goes back with it.
+
+        Withholding it makes the model re-derive its own reasoning every round —
+        worse decisions, and thinking tokens paid for twice.  Replaying the
+        provider-native blocks verbatim is also what lets them extend the cached
+        prefix instead of invalidating it.
+        """
+        import asyncio as _asyncio
+
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        tc = {
+            "index": 0,
+            "id": "call_r1",
+            "function": {"name": "kb_get", "arguments": '{"id":"npc.villain"}'},
+        }
+        round1 = {
+            "choices": [
+                {
+                    "delta": {
+                        "content": "Checking.",
+                        "tool_calls": [tc],
+                        "reasoning": "the villain's motive matters here",
+                        "reasoning_details": [
+                            {
+                                "type": "reasoning.text",
+                                "text": "the villain's motive matters here",
+                                "index": 0,
+                            }
+                        ],
+                    }
+                }
+            ]
+        }
+        sent_payloads: list[dict[str, Any]] = []
+        call_count = 0
+
+        class _Resp:
+            status_code = 200
+
+            async def aread(self) -> bytes:
+                return b""
+
+            async def aiter_lines(self):  # type: ignore[return]
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    yield f"data: {json.dumps(round1)}"
+                    yield "data: [DONE]"
+                else:
+                    for line in _sse(_chunk("Answered.")):
+                        yield line
+
+            async def __aenter__(self) -> _Resp:
+                return self
+
+            async def __aexit__(self, *_: Any) -> None:
+                pass
+
+            async def aclose(self) -> None:
+                pass
+
+        class _Client:
+            def build_request(self, _m: str, _u: str, **kw: Any) -> object:
+                sent_payloads.append(cast(dict[str, Any], kw.get("json") or {}))
+                return object()
+
+            async def send(self, _req: object, *, stream: bool = False) -> _Resp:
+                _ = stream
+                return _Resp()
+
+            async def __aenter__(self) -> _Client:
+                return self
+
+            async def __aexit__(self, *_: Any) -> None:
+                pass
+
+        async def _handler(_args: dict[str, Any], _root: Any) -> str:
+            return "kb content"
+
+        async def _inner() -> None:
+            async for _event in generate_stream(
+                MESSAGES, self.root, command_tool_handlers={"kb_get": _handler}
+            ):
+                pass
+
+        def _client_factory(**_kw: Any) -> _Client:
+            return _Client()
+
+        with patch("lens.core.llm.httpx.AsyncClient", _client_factory):
+            _asyncio.run(_inner())
+
+        self.assertEqual(len(sent_payloads), 2)
+        replayed = [
+            m
+            for m in sent_payloads[1]["messages"]
+            if m.get("role") == "assistant"
+        ]
+        self.assertEqual(len(replayed), 1)
+        assistant = replayed[0]
+        # Structured blocks, reassembled — not the flat string, and not dropped.
+        self.assertIn("reasoning_details", assistant)
+        self.assertEqual(
+            assistant["reasoning_details"],
+            [
+                {
+                    "type": "reasoning.text",
+                    "text": "the villain's motive matters here",
+                    "index": 0,
+                }
+            ],
+        )
+        # The first round is not repeated as a fresh turn: prose and tool call
+        # travel with it.
+        self.assertEqual(assistant["content"], "Checking.")
+        self.assertTrue(assistant["tool_calls"])
+
+    def test_reasoning_replay_falls_back_to_flat_text(self) -> None:
+        """Providers that send only `reasoning_content` still get their thinking back."""
+        import asyncio as _asyncio
+
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+        )
+        tc = {
+            "index": 0,
+            "id": "call_r2",
+            "function": {"name": "kb_get", "arguments": "{}"},
+        }
+        round1 = {
+            "choices": [
+                {
+                    "delta": {
+                        "content": "Looking.",
+                        "tool_calls": [tc],
+                        "reasoning_content": "local model thinking",
+                    }
+                }
+            ]
+        }
+        sent_payloads: list[dict[str, Any]] = []
+        call_count = 0
+
+        class _Resp:
+            status_code = 200
+
+            async def aread(self) -> bytes:
+                return b""
+
+            async def aiter_lines(self):  # type: ignore[return]
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    yield f"data: {json.dumps(round1)}"
+                    yield "data: [DONE]"
+                else:
+                    for line in _sse(_chunk("Done.")):
+                        yield line
+
+            async def __aenter__(self) -> _Resp:
+                return self
+
+            async def __aexit__(self, *_: Any) -> None:
+                pass
+
+            async def aclose(self) -> None:
+                pass
+
+        class _Client:
+            def build_request(self, _m: str, _u: str, **kw: Any) -> object:
+                sent_payloads.append(cast(dict[str, Any], kw.get("json") or {}))
+                return object()
+
+            async def send(self, _req: object, *, stream: bool = False) -> _Resp:
+                _ = stream
+                return _Resp()
+
+            async def __aenter__(self) -> _Client:
+                return self
+
+            async def __aexit__(self, *_: Any) -> None:
+                pass
+
+        async def _handler(_args: dict[str, Any], _root: Any) -> str:
+            return "kb content"
+
+        async def _inner() -> None:
+            async for _event in generate_stream(
+                MESSAGES, self.root, command_tool_handlers={"kb_get": _handler}
+            ):
+                pass
+
+        def _client_factory(**_kw: Any) -> _Client:
+            return _Client()
+
+        with patch("lens.core.llm.httpx.AsyncClient", _client_factory):
+            _asyncio.run(_inner())
+
+        assistant = [
+            m for m in sent_payloads[1]["messages"] if m.get("role") == "assistant"
+        ][0]
+        self.assertEqual(assistant["reasoning"], "local model thinking")
 
     def test_command_tool_text_accumulated_into_final(self) -> None:
         """Text emitted before a command tool call must appear in final.text."""

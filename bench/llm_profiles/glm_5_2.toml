@@ -1,0 +1,8 @@
+# GLM 5.2 (Z.ai) — TOOL-USE
+[llm]
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPEN_ROUTER_API_KEY"
+model = "z-ai/glm-5.2"
+temperature = 0.9
+timeout_seconds = 600
+first_token_timeout_seconds = 120
