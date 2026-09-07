@@ -58,6 +58,14 @@ class GenerationArtifacts:
     segments: list[GenerationSegment] = field(default_factory=lambda: list[GenerationSegment]())
     failure_result_fences: list[str] = field(default_factory=lambda: list[str]())
     interrupted: bool = False
+    trace: str = ""
+    """Rendered ``[llm-trace …]: #`` block, or ``""``.
+
+    Not a segment: it is a measurement of the generation, not part of it, and
+    every compose policy appends it identically.  Deliberately excluded from
+    :meth:`has_content` — a generation that produced only a trace produced
+    nothing, and must not be persisted as though it had.
+    """
 
     def has_content(self) -> bool:
         if self.failure_result_fences:
@@ -213,12 +221,29 @@ def compose_generation_artifacts(
     audit_comment_tag: str = "remember",
 ) -> str:
     if policy == ComposePolicy.NARRATIVE:
-        return _compose_narrative(artifacts)
-    if policy == ComposePolicy.PROSE_ONLY:
-        return _compose_prose_only(artifacts)
-    if policy == ComposePolicy.AUDIT_COMMENT:
-        return _compose_audit_comment(artifacts, tag=audit_comment_tag)
-    raise ValueError(f"unknown compose policy: {policy!r}")
+        body = _compose_narrative(artifacts)
+    elif policy == ComposePolicy.PROSE_ONLY:
+        body = _compose_prose_only(artifacts)
+    elif policy == ComposePolicy.AUDIT_COMMENT:
+        body = _compose_audit_comment(artifacts, tag=audit_comment_tag)
+    else:
+        raise ValueError(f"unknown compose policy: {policy!r}")
+    return _with_trace(body, artifacts.trace)
+
+
+def _with_trace(body: str, trace: str) -> str:
+    """Append the trace block below the composed body.
+
+    Policy-independent on purpose: the trace measures the generation, so it is
+    the same fact whichever shape the output took.  It sits *inside* the
+    operator's block so that ``write_discard`` drops it along with the attempt
+    it describes — a retry must not inherit the previous try's numbers.
+    """
+    if not trace:
+        return body
+    if not body.strip():
+        return body
+    return body.rstrip("\n") + "\n\n" + trace
 
 
 def _compose_prose_only(artifacts: GenerationArtifacts) -> str:

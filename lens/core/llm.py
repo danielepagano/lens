@@ -31,6 +31,7 @@ from lens.core.annotations import (
     encode_ai_secrets_for_persist,
     ends_inside_ai_secret,
 )
+from lens.core.llm_trace import LlmTrace, TraceMode, parse_trace_mode
 from lens.core.generation_artifacts import (
     ComposePolicy,
     GenerationArtifacts,
@@ -38,7 +39,6 @@ from lens.core.generation_artifacts import (
     compose_generation_artifacts,
     compose_tool_call_for_stream,
     format_tool_call_fence,
-    format_tool_event_for_log,
     wrap_command_tool_handlers_for_audit,
 )
 
@@ -118,6 +118,7 @@ class _LLMConfig:
     enable_thinking: bool
     extra_headers: dict[str, str]
     extra_payload: dict[str, Any]
+    trace_mode: TraceMode
 
 
 def _parse_payload_value(value: Any, *, key: str) -> Any:
@@ -184,6 +185,9 @@ def _load_config(
         config: dict[str, Any] = tomllib.load(f)
 
     verbose_llm: bool = bool(config.get("project", {}).get("verbose_llm", False)) or bool(config.get("dataset", {}).get("verbose_llm", False))
+    trace_mode: TraceMode = parse_trace_mode(
+        config.get("project", {}).get("llm_trace", "stats")
+    )
 
     # Per-operator overrides from [operator.<name>] section.
     op_cfg: dict[str, Any] = {}
@@ -245,6 +249,7 @@ def _load_config(
             enable_thinking=bool(op_cfg.get("reasoning", raw.get("reasoning", False))),
             extra_headers=_parse_extra_headers(raw.get("extra_headers")),
             extra_payload=_parse_extra_payload(raw.get("extra_payload")),
+            trace_mode=trace_mode,
         ),
         verbose_llm,
     )
@@ -263,6 +268,17 @@ class FinalPayload:
     tool_calls: list[ToolCall]
     usage: dict[str, int] | None
     interrupted: bool
+    reasoning: str = ""
+    """Thinking stream for this round. Never enters ``artifacts`` — it is not prose."""
+    reasoning_details: list[dict[str, Any]] = dataclasses.field(
+        default_factory=lambda: list[dict[str, Any]]()
+    )
+    """Provider-native reasoning blocks, reassembled from the stream.
+
+    Replayed verbatim on the assistant message in the tool loop — this is the
+    form providers expect back, and the one that can carry a signature.
+    """
+    elapsed_ms: int = 0
 
     @property
     def text(self) -> str:
@@ -498,17 +514,6 @@ async def generate_artifacts(
         raise
 
 
-def _format_messages(messages: list[dict[str, Any]]) -> str:
-    """Format messages as a human-readable block for logging."""
-    sep = "─" * 60
-    parts: list[str] = []
-    for msg in messages:
-        role = msg.get("role", "unknown").upper()
-        content = msg.get("content", "")
-        parts.append(f"[{role}]\n{content}")
-    return f"{sep}\n" + f"\n{sep}\n".join(parts) + f"\n{sep}"
-
-
 def _strip_preview(chunk: str, mid_comment: bool) -> tuple[str, bool]:
     """Strip HTML comments from chunk for safe streaming preview.
 
@@ -539,6 +544,86 @@ def _strip_preview(chunk: str, mid_comment: bool) -> tuple[str, bool]:
             return ("".join(result), True)
         i = end_idx + 3
     return ("".join(result), False)
+
+
+def _reasoning_from_delta(delta: dict[str, Any]) -> str:
+    """Thinking text from one SSE delta, whichever name the provider uses.
+
+    Three shapes are in play and they are not interchangeable:
+
+    * ``reasoning`` — what OpenRouter normalises to, so this is the one that
+      matters for every cloud profile in ``bench/llm_profiles/``;
+    * ``reasoning_content`` — DeepSeek's own API, vLLM and LM Studio, i.e. the
+      local profiles;
+    * ``reasoning_details`` — OpenRouter's structured array, carrying the same
+      text as ``reasoning`` alongside provider metadata.
+
+    Read in that order and stop at the first hit: OpenRouter sends ``reasoning``
+    *and* ``reasoning_details`` on the same delta, so taking both would count
+    every thinking token twice.
+    """
+    for key in ("reasoning", "reasoning_content"):
+        value = delta.get(key)
+        if isinstance(value, str) and value:
+            return value
+    details = delta.get("reasoning_details")
+    if isinstance(details, list):
+        parts: list[str] = []
+        for entry in cast(list[Any], details):
+            if not isinstance(entry, dict):
+                continue
+            text = cast(dict[str, Any], entry).get("text")
+            if isinstance(text, str):
+                parts.append(text)
+        return "".join(parts)
+    return ""
+
+
+def _merge_reasoning_details(
+    delta: dict[str, Any], acc: dict[int, dict[str, Any]]
+) -> None:
+    """Accumulate streamed ``reasoning_details`` fragments into whole blocks.
+
+    Each fragment carries an ``index`` identifying which block it belongs to and
+    a ``text`` slice of it; everything else (``type``, ``format``, and any
+    signature a provider attaches) is block-level metadata that repeats, so the
+    first fragment establishes it and later ones only extend the text.
+    """
+    details = delta.get("reasoning_details")
+    if not isinstance(details, list):
+        return
+    for entry in cast(list[Any], details):
+        if not isinstance(entry, dict):
+            continue
+        block = cast(dict[str, Any], entry)
+        idx = block.get("index")
+        key = idx if isinstance(idx, int) else 0
+        existing = acc.get(key)
+        if existing is None:
+            acc[key] = dict(block)
+            continue
+        fragment = block.get("text")
+        if isinstance(fragment, str) and fragment:
+            existing["text"] = str(existing.get("text", "")) + fragment
+        for meta_key, meta_value in block.items():
+            if meta_key not in ("text", "index") and meta_key not in existing:
+                existing[meta_key] = meta_value
+
+
+def _finalize_trace(
+    trace: LlmTrace,
+    reasoning_rounds: list[str],
+    usage_totals: dict[str, int],
+) -> None:
+    """Fold the per-round measurements into the trace, at any of the three exits."""
+    trace.reasoning = "".join(reasoning_rounds)
+    trace.reasoning_chars = len(trace.reasoning)
+    if usage_totals:
+        trace.usage_reported = True
+        trace.prompt_tokens = usage_totals.get("prompt_tokens")
+        trace.completion_tokens = usage_totals.get("completion_tokens")
+        trace.total_tokens = usage_totals.get("total_tokens")
+        trace.cached_tokens = usage_totals.get("cached_tokens")
 
 
 def _is_transient_llm_error(exc: LLMError) -> bool:
@@ -688,6 +773,10 @@ async def _stream_once_http(
         headers["Authorization"] = f"Bearer {cfg.api_key}"
 
     chunks: list[str] = []
+    reasoning_chunks: list[str] = []
+    # Structured blocks arrive as fragments tagged with an ``index``; merge on
+    # that so the assistant message replays whole blocks, not stream shrapnel.
+    reasoning_details_by_index: dict[int, dict[str, Any]] = {}
     usage: dict[str, int] | None = None
     mid_comment = False
     interrupted = False
@@ -870,11 +959,11 @@ async def _stream_once_http(
                     delta = choice.get("delta", {})
 
                     content: str | None = delta.get("content")
-                    reasoning_content: str | None = delta.get("reasoning_content")
-                    if reasoning_content and verbose:
-                        logger.info("LLM REASONING — %s", reasoning_content)
-                    if reasoning_content:
-                        hidden_bytes_since_emit += len(reasoning_content.encode("utf-8"))
+                    _merge_reasoning_details(delta, reasoning_details_by_index)
+                    reasoning_text = _reasoning_from_delta(delta)
+                    if reasoning_text:
+                        reasoning_chunks.append(reasoning_text)
+                        hidden_bytes_since_emit += len(reasoning_text.encode("utf-8"))
                     if content:
                         chunks.append(content)
                         preview, mid_comment = _strip_preview(content, mid_comment)
@@ -980,13 +1069,12 @@ async def _stream_once_http(
                 )
             )
 
-    if verbose:
+    reasoning_text = "".join(reasoning_chunks)
+    if verbose and reasoning_text.strip():
         sep = "─" * 60
-        log_body = "".join(chunks)
-        for tc in parsed_tool_calls:
-            log_body += f"\n[{format_tool_event_for_log(tc.name, tc.arguments, response_char_len=None)}]\n"
-        if log_body.strip():
-            logger.info("LLM RESPONSE\n%s\n%s\n%s", sep, log_body, sep)
+        logger.info(
+            "LLM REASONING round=%s\n%s\n%s\n%s", round_index, sep, reasoning_text, sep
+        )
 
     yield StreamEvent(
         final=FinalPayload(
@@ -1000,6 +1088,11 @@ async def _stream_once_http(
             tool_calls=parsed_tool_calls,
             usage=usage,
             interrupted=interrupted,
+            reasoning=reasoning_text,
+            reasoning_details=[
+                reasoning_details_by_index[i] for i in sorted(reasoning_details_by_index)
+            ],
+            elapsed_ms=int(elapsed * 1000),
         )
     )
 
@@ -1064,11 +1157,17 @@ async def generate_stream(
         },
     )
 
-    if verbose:
-        logger.info("LLM PROMPT\n%s", _format_messages(messages))
-
     working_messages: list[dict[str, Any]] = list(messages)
     last_usage: dict[str, int] | None = None
+    trace = LlmTrace(
+        model=model_label,
+        host=host,
+        temperature=cfg.temperature,
+        thinking=eff_thinking,
+        reasoning_effort=cfg.reasoning_effort if eff_thinking else "",
+    )
+    usage_totals: dict[str, int] = {}
+    reasoning_rounds: list[str] = []
     segments: list[GenerationSegment] = []
     failure_result_fences: list[str] = []
     if command_tool_handlers:
@@ -1112,8 +1211,15 @@ async def generate_stream(
                 yield event
             elif event.final:
                 final = event.final
+                trace.rounds = iteration + 1
+                trace.elapsed_ms += event.final.elapsed_ms
+                if event.final.reasoning:
+                    reasoning_rounds.append(event.final.reasoning)
                 if event.final.usage:
                     last_usage = event.final.usage
+                    # Per round, not cumulative — a tool loop bills each one.
+                    for key, value in event.final.usage.items():
+                        usage_totals[key] = usage_totals.get(key, 0) + value
 
         if final is None:
             logger.error(
@@ -1127,11 +1233,14 @@ async def generate_stream(
         if final.interrupted:
             if final.text:
                 segments.append(GenerationSegment("prose", final.text))
+            trace.interrupted = True
+            _finalize_trace(trace, reasoning_rounds, usage_totals)
             yield StreamEvent(
                 final=FinalPayload(
                     artifacts=GenerationArtifacts(
                         segments=list(segments),
                         failure_result_fences=list(failure_result_fences),
+                        trace=trace.render(cfg.trace_mode),
                     ),
                     tool_calls=final.tool_calls,
                     usage=last_usage,
@@ -1158,6 +1267,7 @@ async def generate_stream(
             tool_results: list[dict[str, Any]] = []
             tool_markdowns: list[str] = []
             for tc in command_tcs:
+                trace.tool_calls.append(tc.name)
                 handler = command_tool_handlers[tc.name]
                 result = await handler(tc.arguments, project_root)
                 if not warned_at_half and iteration + 1 >= half_limit:
@@ -1215,19 +1325,28 @@ async def generate_stream(
                 segments.append(GenerationSegment("prose", final.text))
             for md in tool_markdowns:
                 segments.append(GenerationSegment("tool_call", md))
-            working_messages.append(
-                {
-                    "role": "assistant",
-                    # Replaying the round to the model that wrote it: model form,
-                    # or it reads back its own secret as ROT13 and re-emitting
-                    # that into a kb fence would encode it a second time.
-                    "content": decode_ai_secrets_for_model(
-                        final.text, inside_secret=inside_secret
-                    )
-                    or None,
-                    "tool_calls": assistant_tool_calls,
-                }
-            )
+            assistant_msg: dict[str, Any] = {
+                "role": "assistant",
+                # Replaying the round to the model that wrote it: model form,
+                # or it reads back its own secret as ROT13 and re-emitting
+                # that into a kb fence would encode it a second time.
+                "content": decode_ai_secrets_for_model(
+                    final.text, inside_secret=inside_secret
+                )
+                or None,
+                "tool_calls": assistant_tool_calls,
+            }
+            # A tool round is not a new turn — it is the same reply, resumed.
+            # Handing back the prose and the tool call but withholding the
+            # thinking that produced them makes the model re-derive its own
+            # reasoning every round: worse decisions and paid-for tokens spent
+            # twice.  Replayed verbatim, the blocks also extend the cached
+            # prefix instead of invalidating it.
+            if final.reasoning_details:
+                assistant_msg["reasoning_details"] = final.reasoning_details
+            elif final.reasoning:
+                assistant_msg["reasoning"] = final.reasoning
+            working_messages.append(assistant_msg)
             working_messages.extend(tool_results)
             inside_secret = open_secret
             continue
@@ -1251,11 +1370,13 @@ async def generate_stream(
             # skip — no event to yield
         if final.text:
             segments.append(GenerationSegment("prose", final.text))
+        _finalize_trace(trace, reasoning_rounds, usage_totals)
         yield StreamEvent(
             final=FinalPayload(
                 artifacts=GenerationArtifacts(
                     segments=list(segments),
                     failure_result_fences=list(failure_result_fences),
+                    trace=trace.render(cfg.trace_mode),
                 ),
                 tool_calls=final.tool_calls,
                 usage=last_usage,
@@ -1274,11 +1395,13 @@ async def generate_stream(
             "You have exceeded the maximum number of tool calls per response "
             f"(limit: {command_tool_limit})."
         )
+        _finalize_trace(trace, reasoning_rounds, usage_totals)
         yield StreamEvent(
             final=FinalPayload(
                 artifacts=GenerationArtifacts(
                     segments=[GenerationSegment("prose", limit_msg)],
                     failure_result_fences=list(failure_result_fences),
+                    trace=trace.render(cfg.trace_mode),
                 ),
                 tool_calls=[],
                 usage=last_usage,

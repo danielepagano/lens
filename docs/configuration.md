@@ -73,7 +73,8 @@ Array sections (`[[llm]]`, `[[image]]`, `[[speech]]`) use the **first entry as t
 narrative    = "my-campaign"      # active narrative slug (also set by `lens use`)
 datasets     = ["rpg", "companion"] # dataset names; later entries shadow earlier
 mount_point  = "media"            # optional: local path or s3:// URI
-verbose_llm  = true               # log full prompts/responses at INFO
+verbose_llm  = true               # log the reasoning stream at INFO
+llm_trace    = "stats"            # per-generation diagnostics: off | stats | full
 prompt_pack  = "default"          # optional: override bundled prompt templates
 locale       = "en-US"            # BCP-47 tag for formatting (default en-US)
 ```
@@ -122,7 +123,35 @@ The index is all-or-nothing on purpose: search is served entirely from it and ne
 
 ### `verbose_llm`
 
-When `true`, each LLM call logs `[SYSTEM]` / `[USER]` / `[ASSISTANT]` blocks at INFO (no raw SSE noise).
+When `true`, each LLM call logs its reasoning stream at INFO. Providers that expose no reasoning log nothing. Prompts and responses are not logged — use `lens explain` for the assembled prompt, and [`llm_trace`](#llm_trace) for token counts.
+
+### `llm_trace`
+
+What to record about each generation, written as an `[llm-trace …]: #` comment inside the operator's block. It is a markdown comment, so it is never sent to a model, and a retry discards it along with the attempt it measures.
+
+| Value | Effect |
+|-------|--------|
+| `"stats"` *(default)* | Model, host, elapsed time, rounds, temperature, thinking mode, tool calls, and the provider's token usage including `cached_tokens`. |
+| `"full"` | Adds the thinking stream. |
+| `"off"` | No block. |
+
+Nothing is written when the provider reports neither usage nor reasoning.
+
+```
+[llm-trace
+  model: z-ai/glm-5.3-flash
+  host: openrouter.ai
+  elapsed_ms: 4210
+  temperature: 0.9
+  thinking: false
+  usage:
+    prompt_tokens: 18422
+    completion_tokens: 640
+    total_tokens: 19062
+    cached_tokens: 16100
+    cached_pct: 87.4
+]: #
+```
 
 ### `prompt_pack`
 
@@ -507,7 +536,7 @@ Optional top-level section for dataset-scoped project flags:
 verbose_llm = true
 ```
 
-Currently used with the same effect as `[project].verbose_llm` for LLM logging (either can enable verbose prompts).
+Currently used with the same effect as `[project].verbose_llm` for LLM logging (either can enable reasoning logging).
 
 ### `[[dataset.modules]]` (dataset `lens.toml` only)
 

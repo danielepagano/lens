@@ -475,6 +475,43 @@ Some narrative content.`
     expect(result).not.toContain('transaction-removed')
   })
 
+  it('consumes a non-annotation comment block such as [llm-trace]', () => {
+    // `strip_markdown_comments` in Python is structural: it removes ANY `[…]: #`
+    // block, so the model never sees one.  The annotation regexes here are
+    // grammar-based and match only valid operator names, so a hyphenated key
+    // falls through them.  A well-formed trace is already hidden by markdown-it
+    // (it is a link reference definition); this is the safety net for one that
+    // has been malformed by free-form content.
+    const markdown = `Prose before.
+
+[llm-trace
+  model: z-ai/glm-5.3-flash
+  elapsed_ms: 4210
+
+  reasoning:
+    chars: 12
+]: #
+
+Prose after.`
+    const result = preprocessAnnotations(markdown, 'test')
+    expect(result).not.toContain('llm-trace')
+    expect(result).not.toContain('elapsed_ms')
+    expect(result).toContain('Prose before.')
+    expect(result).toContain('Prose after.')
+  })
+
+  it('does not swallow prose that merely starts with a bracket', () => {
+    // The block is never closed, so nothing may be consumed — over-stripping
+    // here would blank out the reader's own writing.
+    const markdown = `[Amy] said something
+    and this line is indented
+
+Later prose.`
+    const result = preprocessAnnotations(markdown, 'test')
+    expect(result).toContain('said something')
+    expect(result).toContain('Later prose.')
+  })
+
   it('handles section annotations with body content', () => {
     const markdown = `[section:ch1]: #
 

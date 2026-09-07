@@ -18,6 +18,19 @@ const ANNOTATION_END_RE = /^\s*\]:\s*#\s*$/
 // These blocks contain YAML-like content (kb_pin, kb_unpin) and close with `]: #`.
 const FRONT_MATTER_OPEN_RE = /^\s*\[\s*$/
 
+// Mirrors Python's `_is_comment_block` (annotations.py), which is STRUCTURAL:
+// any `[…` block terminated by a line ending in `]: #` is a markdown comment and
+// is stripped, whether or not it parses as an annotation.  The annotation
+// regexes above are grammar-based and match only valid operator names
+// (`[a-zA-Z_][a-zA-Z0-9_]*`), so a block whose key is deliberately outside that
+// grammar — `[llm-trace …]: #`, hyphenated precisely so cursor detection cannot
+// mistake it for an open operator — is invisible to them and would render as
+// prose.  The UI must hide exactly what `strip_markdown_comments` removes from
+// the prompt, or the reader sees text the model never did.
+const COMMENT_END_RE = /\]:\s*#\s*$/
+const REFERENCE_LINK_RE = /\]:\s*(?!\s*#\s*$)/
+const COMMENT_BLOCK_OPEN_RE = /^\s*\[/
+
 // Blockquote line: `> [label] rest` (nested `> >` allowed). Label becomes a pill in HTML output.
 const BLOCKQUOTE_PILL_LINE_RE = /^(\s*(?:>\s*)+)\[([^\]]+)\]\s+(.*)$/
 
@@ -802,6 +815,34 @@ export function preprocessAnnotations(
       result.push(...output)
       i = nextI
       continue
+    }
+
+    // --- Any other markdown comment block: `[…` … `]: #`
+    // Structural, matching Python.  Placed after the annotation branches so
+    // recognised annotations keep their own rendering; this only catches blocks
+    // no annotation grammar claims.
+    if (COMMENT_BLOCK_OPEN_RE.test(line) && !REFERENCE_LINK_RE.test(line)) {
+      if (COMMENT_END_RE.test(line)) {
+        flushAddedTransactionRun(result, addedRun)
+        i++
+        continue
+      }
+      const next = lines[i + 1]
+      if (next !== undefined && (ANNOTATION_END_RE.test(next) || /^[ \t]/.test(next))) {
+        // Deliberate divergence from Python: only consume a block that actually
+        // closes.  The Python walk runs to EOF on an unterminated block, which is
+        // harmless when stripping for a prompt but destructive here — a stray `[`
+        // above an indented line would blank the rest of the reader's own text.
+        let end = i + 1
+        while (end < lines.length && !COMMENT_END_RE.test(lines[end]!)) {
+          end++
+        }
+        if (end < lines.length) {
+          flushAddedTransactionRun(result, addedRun)
+          i = end + 1
+          continue
+        }
+      }
     }
 
     // --- Regular content line: apply diff overlay if present

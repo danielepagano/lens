@@ -1,0 +1,8 @@
+# Kimi K2.5 (Moonshot)
+[llm]
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPEN_ROUTER_API_KEY"
+model = "moonshotai/kimi-k2.5"
+temperature = 0.9
+timeout_seconds = 300
+first_token_timeout_seconds = 60

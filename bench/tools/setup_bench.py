@@ -160,6 +160,15 @@ def _apply_bench_lens_config(
         "temperature",
         "timeout_seconds",
         "first_token_timeout_seconds",
+        # Provider routing / vendor extensions.  These are the one class of
+        # setting with no other home: `[operator.<name>]` can override
+        # temperature, timeouts and reasoning, but NOT these — they exist only
+        # on the `[[llm]]` row.  Thinking mode is deliberately absent: it is a
+        # per-operator policy (`[operator.*] reasoning`, `[params]`, front
+        # matter), not a property of the endpoint, and baking it into a profile
+        # would force one answer on every operator that uses the model.
+        "extra_headers",
+        "extra_payload",
     ):
         if key in profile:
             bench_entry[key] = profile[key]
