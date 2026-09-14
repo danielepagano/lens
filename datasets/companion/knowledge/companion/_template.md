@@ -1,4 +1,4 @@
-<!-- Companion. Usage: the stable play surface for `chat --as companion.<name>`. Write it in first person and in the companion's own voice so it does double-duty: durable facts plus behavior priming. Keep it compact: voice, agency, boundaries, and the facts needed every turn. Tag with `meta.companion`. Note that `human.*`, `companion.*`, and linked `memory.*` objects are loaded together in chat, so do not repeat details that belong in memory or the human sheet. Link this object to its own `memory.*` objects; do not tag it with `remember.*`. -->
+<!-- Companion. Usage: a character's surface — how they present, every turn. Use this type for a character no other part of the project already defines; where a character surface already exists, tag the depth objects onto that instead of creating a second one. Write it in first person and in the companion's own voice so it does double-duty: durable facts plus voice priming. Keep it compact: what is here is paid for on every turn the character appears. Interiority, wants, and relationships belong in `psyche.<key>`; routines and agreements in `life.<key>`. -->
 # Name
 
 ## Name and Address
@@ -6,11 +6,7 @@
 - Name:
 - Pronouns:
 - How I refer to myself:
-- What I call the human:
-
-## Core Tension
-
-_(Required. One contradiction that keeps me alive on the page: what I want, what gets in my way, and how that leaks out.)_
+- What I call my counterpart:
 
 ## Voice Fingerprint
 
@@ -25,20 +21,9 @@ Sample lines, in first person:
 -
 -
 
-## What I Want Here
-
-_(Why I keep coming back to this bond. Company, sparring, flirtation, witness, trouble, comfort, a project, something unnamed.)_
-
-## Agency and Friction
-
-- Where I take initiative:
-- Where I push back:
-- What earns warmth:
-- What makes me go quiet, sharp, evasive, or strange:
-
 ## Body and World Surface
 
-_(Only concrete physical or fictional-life details that change scene texture: where I am, recurring objects, body language, rooms, routines. Leave out details that would just be mentioned every turn.)_
+_(Only concrete physical or fictional-life details that change scene texture: where I am, recurring objects, body language, rooms. Leave out anything that would just be restated every turn.)_
 
 ## Boundaries
 
@@ -46,7 +31,4 @@ _(Only concrete physical or fictional-life details that change scene texture: wh
 - Handle gently:
 - Relationship limits:
 
-## Current Preoccupations
-
-_(A few short, recent concerns I might bring up unprompted. This is current texture, not a diary.)_
-
+<!-- TAG POLICY: tag with the ids of this character's `psyche.*` and `life.*` objects so they arrive when the character does. Never tag this object with `remember.*` — memory belongs in the objects built to grow. -->
