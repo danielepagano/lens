@@ -365,6 +365,66 @@ class TestList(_ProjectCase):
         self.assertIn("person._template", self._list(include_templates=True))
 
 
+class TestNamedDatasetFilter(_ProjectCase):
+    """``dataset`` alone is near-useless once several are stacked.
+
+    With two datasets behind the project, almost every id is in *some*
+    dataset; the question worth asking is which one contributes what.
+    """
+
+    datasets = ["testing", "rpg"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.store.store_object("person.rowan", "ROWAN\nA ranger.\n")
+
+    def _list(self, **kwargs: Any) -> list[str]:
+        return [e.id for e in kb_list(store=self.store, **kwargs)]
+
+    def test_a_named_dataset_keeps_only_that_dataset(self) -> None:
+        entries = kb_list(store=self.store, source="dataset:testing")
+
+        self.assertTrue(entries)
+        self.assertTrue(all(e.source.dataset == "testing" for e in entries))
+        self.assertIn("person.hero", [e.id for e in entries])
+
+    def test_the_named_datasets_partition_the_bare_dataset_filter(self) -> None:
+        both = set(self._list(source="dataset"))
+        testing = set(self._list(source="dataset:testing"))
+        rpg = set(self._list(source="dataset:rpg"))
+
+        self.assertEqual(testing | rpg, both)
+        self.assertEqual(testing & rpg, set())
+
+    def test_it_reports_the_winner_not_every_store_holding_the_id(self) -> None:
+        """A project fork is ``project``; the shadowed dataset no longer claims it."""
+        self.store.store_object("person.hero", "My own hero.\n")
+
+        self.assertNotIn("person.hero", self._list(source="dataset:testing"))
+        self.assertIn("person.hero", self._list(source="project"))
+
+    def test_search_takes_the_named_dataset_too(self) -> None:
+        result = kb_search(
+            "the", ignore_case=True, source="dataset:rpg", store=self.store
+        )
+
+        self.assertTrue(result.hits)
+        self.assertTrue(all(h.source.dataset == "rpg" for h in result.hits))
+
+    def test_an_unknown_dataset_is_an_error_not_an_empty_result(self) -> None:
+        with self.assertRaises(LensException) as caught:
+            self._list(source="dataset:no-such-set")
+
+        message = str(caught.exception)
+        self.assertIn("no-such-set", message)
+        self.assertIn("testing", message)
+        self.assertIn("rpg", message)
+
+    def test_a_malformed_filter_is_an_error(self) -> None:
+        with self.assertRaises(LensException):
+            self._list(source="everywhere")
+
+
 class TestRefsOutgoing(_ProjectCase):
     def setUp(self) -> None:
         super().setUp()

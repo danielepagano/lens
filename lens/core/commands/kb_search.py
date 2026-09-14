@@ -39,7 +39,19 @@ from lens.core.knowledge import KbSource, KnowledgeStore, ResolvedObject
 from lens.core.storage_text import kb_headline
 
 MatchField = Literal["id", "type", "tag", "body"]
-SourceFilter = Literal["project", "dataset", "all"]
+
+SourceFilter = str
+"""Which store an object must resolve from.
+
+``all``, ``project``, ``dataset`` (any of them), or ``dataset:<name>`` for one
+named dataset. The bare ``dataset`` is near-useless on a project with several
+stacked datasets, where almost everything is in *some* dataset; the named form
+is what answers "what does ``lens-dnd-ext`` actually contribute".
+
+Filters on the store that *won*: a project fork of a dataset object is
+``project``, not the dataset it shadows. ``kb_list(shadowed=True)`` is the
+question about the losing side.
+"""
 
 _PARALLEL_MIN_FILES = 96
 """Below this, a process pool costs more to start than the scan it would run.
@@ -103,6 +115,40 @@ def _resolve_store(store: KnowledgeStore | None) -> KnowledgeStore:
     return store if store is not None else get_store()
 
 
+def _source_matches(entry_source: KbSource, source: SourceFilter) -> bool:
+    if source in ("project", "dataset"):
+        return entry_source.kind == source
+    return (
+        entry_source.kind == "dataset"
+        and entry_source.dataset == source.split(":", 1)[1]
+    )
+
+
+def _validate_source(kb: KnowledgeStore, source: SourceFilter) -> None:
+    """Reject a source filter that can never match, rather than return zero hits.
+
+    An unknown dataset name and a dataset holding nothing look identical in the
+    output, and the first is a typo the caller wants told about.
+    """
+    if source in ("all", "project", "dataset"):
+        return
+    if not source.startswith("dataset:"):
+        raise LensException(
+            f"source must be all, project, dataset, or dataset:<name> (got {source!r})"
+        )
+    name = source.split(":", 1)[1]
+    known = kb.dataset_names
+    if name in known:
+        return
+    if not known:
+        raise LensException(
+            f"unknown dataset {name!r}: this project selects no datasets"
+        )
+    raise LensException(
+        f"unknown dataset {name!r}: selected datasets are {', '.join(known)}"
+    )
+
+
 def _filtered_index(
     kb: KnowledgeStore,
     *,
@@ -117,13 +163,16 @@ def _filtered_index(
     so a bare type name works as a tag here exactly as it does everywhere else,
     and repeated tags are ANDed.
     """
+    _validate_source(kb, source)
     index = kb.resolved_index(type_filter, include_templates)
     if tags:
         allowed = set(kb.get_ids_with_tag_groups([[tag] for tag in tags]))
         index = {cid: entry for cid, entry in index.items() if cid in allowed}
     if source != "all":
         index = {
-            cid: entry for cid, entry in index.items() if entry.source.kind == source
+            cid: entry
+            for cid, entry in index.items()
+            if _source_matches(entry.source, source)
         }
     return [index[cid] for cid in sorted(index)]
 

@@ -1010,6 +1010,19 @@ class KnowledgeStore:
                 return ds
         return None
 
+    @property
+    def dataset_names(self) -> tuple[str, ...]:
+        """Names of the datasets merged into this store, in selection order.
+
+        The names a :class:`KbSource` can report — a dataset that failed to
+        resolve contributes no store and so is absent here too. Callers that
+        let a user *name* a dataset (``kb list --source dataset:<name>``) need
+        this to tell a typo from an empty result.
+        """
+        return tuple(
+            ds._dataset_name for ds in self._dataset_stores if ds._dataset_name
+        )
+
     def _source_from_holders(self, holders: list[str | None]) -> KbSource | None:
         """Build a :class:`KbSource` from stores holding an id, best first.
 

@@ -146,6 +146,19 @@ class TestListOutput(_KbCliCase):
         payload = json.loads(result.stdout)
         self.assertIn("person.rowan", payload["ids"])
 
+    def test_a_named_dataset_narrows_to_that_dataset(self) -> None:
+        lines = self.lines("list", "--source", "dataset:testing", "-l")
+
+        self.assertIn("person.hero", lines)
+        self.assertNotIn("person.rowan", lines)
+
+    def test_an_unknown_dataset_name_names_the_ones_that_exist(self) -> None:
+        result = self.run_kb("list", "--source", "dataset:nope")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("nope", result.stderr)
+        self.assertIn("testing", result.stderr)
+
 
 class TestRefsOutput(_KbCliCase):
     def test_it_groups_the_two_directions_under_headers(self) -> None:
