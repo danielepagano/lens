@@ -762,6 +762,76 @@ lens kb tag tracker.combat --add state
 
 The divert is a render decision only — the object is still pinned, still deduped against other scopes, and `lens explain` still reports it (in the `live_state` block, marked volatile). Tagging an object that never changes just makes it uncacheable for no benefit.
 
+### Reserved KB types
+
+Four **names** change behaviour on their own — no tag, no config entry, nothing
+to register. They are engine-level: they work in every Lens project whatever
+datasets are active, they are matched by name and nothing else, and getting one
+wrong fails *silently* — the object is simply never delivered.
+
+| Name | Read by | Effect |
+|------|---------|--------|
+| `rules.<type>` | every crawl-based operator | Added to the crawl whenever any `<type>.*` object is in scope |
+| `<type>._template` | object creation, `design`, session modules, remember | The shape of an object of that type; may declare default tags |
+| `remember.<key>` | the remember pass at summarize boundaries | Instructions for updating objects tagged `remember.<key>` |
+| `design.<key>` | `design --module <key>` | A Session Zero module, discovered by type-as-tag |
+
+**`rules.<type>` — the type companion.** `<type>._template` says how to
+*create* an object of a type; `rules.<type>` says how to *use* one. Ship
+`knowledge/rules/<type>.md` and it activates: whenever any `<type>.*` object
+reaches the prompt — as a pin, through a `+` expansion, as a session module, or
+as an `@` mention / `include` mid-node — the companion is added alongside it.
+`rules.*` objects never pull companions of their own, so nothing recurses, and
+an object already in scope by another route is not added twice.
+
+This is where per-type usage guidance belongs instead of being repeated in
+every object of that type. It is also a **budget** decision: the booklet is
+paid on every beat where one of its objects is in scope, so it is the expensive
+place to add a paragraph. `lens explain` reports these rows with a
+`rules_companion` provenance, and `lens kb refs <id>` names the route in both
+directions.
+
+One special case sits next to it rather than inside it: a session module
+resolves `rules.<key>` off the module's **key**, not its type, so
+`design --module stat` brings `rules.stat` (the booklet for the objects it is
+about to author) rather than `rules.design`. Both paths dedupe against each
+other.
+
+**`<type>._template` — the shape of the type.** `_template` is a reserved key
+in every type's namespace, never an object in its own right: it is excluded
+from listings, from facet expansion, and from `+` results. It is read when an
+object is created from a template (`lens kb add <id> -t`, the KB UI checkbox,
+any `store_object(use_template=True)`), when a session module resolves
+`<key>._template` alongside the module, when `design`'s `kb_get` fetches a
+`design.<key>` module, and when the remember pass looks for format hints. Its
+own front matter can declare default tags — see [Template default
+tags](#template-default-tags) below.
+
+**`remember.<key>` — memory instructions.** A `remember.<key>` **tag** on a
+pinned object marks that object as a *target* of the remember pass at
+summarize boundaries; the tag's own id names a KB object holding the
+*instructions*, and `<key>._template` supplies format hints. Neither has to be
+pinned — the pass fetches what it needs. Nothing is a target without the tag, and
+a tag whose `remember.<key>` object does not exist degrades to using the key
+itself as a loose guideline rather than failing.
+
+**`design.<key>` — Session Zero modules.** The core `design` operator's
+`--module <key>` resolves `design.<key>`; the model discovers what exists by
+type-as-tag (`kb_with_tag design`), not from a hand-maintained list, so a new
+`design.*` object is discoverable the moment it exists. Fetching one also
+returns `<key>._template`, because a module and the template for the type it
+produces are two halves of one instruction. Session operators from a dataset
+may reserve a namespace of their own the same way — the RPG `play` operator's
+`--module` resolves `rules.<key>` — but only `design.` ships with the engine.
+
+**The other half is tags.** `state` and `inline` are the reserved *tags*; see
+[Reserved KB tags](#reserved-kb-tags) above. Between them, that is everything
+Lens itself treats specially. Every other convention you will meet belongs to a
+dataset and is opt-in with it: `rules.system` and `rules.rpg` are auto-pinned by
+`play` because the `rpg` dataset says so, and `meta.*`, `pc.*`, `front.*`,
+`companion.*` and the rest are ordinary types reached by ordinary pins — the
+engine has no idea what they mean.
+
 ### Template default tags
 
 A type's `_template.md` can declare a default tag set in its own front matter, alongside `kb-details` if present:

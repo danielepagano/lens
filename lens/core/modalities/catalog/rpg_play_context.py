@@ -1,10 +1,15 @@
-"""Play: auto-pin core rules + rules-type companions for pinned objects."""
+"""Play: auto-pin the core RPG rules.
+
+Type companions (``rules.<type>`` for every ``<type>.*`` object in scope) used
+to be contributed here too, which silently made them a ``play``-only feature.
+They are engine behaviour now and run inside :func:`~lens.core.context.crawl`
+for every operator; what stays here is the part that really is RPG-specific —
+the two booklets a play beat is always run against.
+"""
 
 from __future__ import annotations
 
-from lens.core.crawl_transforms import RulesCompanionTransform
 from lens.core.modalities.base import Modality
-from lens.core.modalities.catalog._prompts import storage_for_ctx
 from lens.core.modalities.registry import register_modality
 from lens.core.modalities.types import CrawlContribution, ModalityContext
 
@@ -17,16 +22,7 @@ class RpgPlayContextModality(Modality):
     def crawl_contributions(self, ctx: ModalityContext) -> CrawlContribution:
         if ctx.operator_name != "play":
             return CrawlContribution()
-        storage = storage_for_ctx(ctx)
-        return CrawlContribution(
-            extra_pins=PLAY_AUTO_PINS,
-            transforms=(
-                RulesCompanionTransform(
-                    project_root=ctx.project_root,
-                    storage=storage,
-                ),
-            ),
-        )
+        return CrawlContribution(extra_pins=PLAY_AUTO_PINS)
 
 
 register_modality(RpgPlayContextModality())

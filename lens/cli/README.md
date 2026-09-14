@@ -123,7 +123,7 @@ Each row reports the component id (`kb:pc.alice`, `rules-companion:rules.encount
 | `expansion` | pulled in by a `+` suffix on another pin |
 | `facet` | a `-` facet of a root pin (`front.problem-prep`), expanded only for `design` and `advance` |
 | `mention` | an `@` mention in the narrative or prompt |
-| `rules_companion` | `rules.<type>` auto-added for pinned objects of that type |
+| `rules_companion` | `rules.<type>` auto-added for any object of that type in scope, on every operator |
 | `module` | the active session module (or its template) |
 | `modality` | pinned by an active modality |
 | `operator_pin` / `operator` | the operator's own pins, system prompt, or instruction |

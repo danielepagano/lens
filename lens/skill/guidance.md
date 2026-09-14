@@ -68,10 +68,11 @@ list that would go stale — so a new object of an existing type is discoverable
 the moment it exists, and a new *type* is a bigger decision than it looks.
 
 **6. Guidance is paid at different rates.** Text in a `rules.*` booklet is paid
-on *every* beat of play; text in a `design.*` module is paid once per design
-session; text in an ordinary object is paid only when that object is in scope.
-Adding a paragraph to a booklet is the expensive edit, and booklets are already
-the majority of a play prompt. Cut whole rules rather than diluting the ones you
+on *every* beat that has an object of that type in scope, whichever operator is
+running; text in a `design.*` module is paid once per design session; text in an
+ordinary object is paid only when that object is in scope. Adding a paragraph to
+a booklet is the expensive edit, and booklets are already the majority of a play
+prompt. Cut whole rules rather than diluting the ones you
 keep: numbers and thresholds are the part that must survive verbatim.
 
 **7. The diff is not the artifact — the assembled prompt is.** Editing a KB
@@ -107,10 +108,36 @@ well it is linked — which looks identical, in the repo, to material that works
 - **`state`-tagged objects** are rendered at the tail of the prompt, next to the
   task, instead of in the knowledge block. Anything a person updates mid-session
   belongs there; up front it would invalidate the prompt cache on every edit.
-- **`rules.<type>` companions** arrive by naming convention, never by a tag: to
-  a play beat whenever any `<type>.*` object is in scope, and to a
-  `design --module <type>` session alongside `<type>._template`. That is where
-  per-type usage guidance belongs instead of being repeated in every object.
+- **`rules.<type>` companions** arrive by naming convention, never by a tag —
+  see *Names the engine reserves* below.
+
+## Names the engine reserves
+
+Four names change behaviour on their own — no tag, no config, nothing to
+register — in every Lens project, whatever datasets are active. They are matched
+by name and nothing else, so a near miss fails silently: the object is simply
+never delivered.
+
+- **`rules.<type>`** — the type companion. `<type>._template` says how to
+  *create* an object of a type; `rules.<type>` says how to *use* one. Whenever
+  any `<type>.*` object is in scope, by any route, the companion comes with it —
+  for every operator, not just play. Per-type usage guidance belongs here instead
+  of being repeated in every object, and it is the expensive place to write —
+  see rates, above.
+- **`<type>._template`** — the shape of the type. A reserved key in every type's
+  namespace, not an object: it is read when an object is created from it, when a
+  session module resolves one, and when the remember pass wants format hints. Its
+  front matter may declare default tags for objects created from it.
+- **`remember.<key>`** — memory instructions. A `remember.<key>` *tag* on a
+  pinned object makes that object a target of the remember pass at summarize
+  boundaries; the tag's own id names the object holding the instructions.
+- **`design.<key>`** — a Session Zero module, selected with `design --module
+  <key>` and discovered by type-as-tag. Fetching one also returns
+  `<key>._template`.
+
+`state` and `inline` are the reserved *tags* (see Scope above). That is the whole
+list. Everything else — `rules.system`, `meta.*`, `pc.*` and the rest — belongs
+to a dataset, not to Lens, and means nothing without it.
 
 ## Prompts
 

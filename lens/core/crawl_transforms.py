@@ -448,11 +448,18 @@ class AtExpansionTransform:
 class RulesCompanionTransform:
     """Add `rules.<type>` KB companions for every non-rules object in scope.
 
-    ``<type>._template`` tells ``design`` how to *create* an object of a type;
-    ``rules.<type>`` tells ``play`` how to *use* one.  Ship the file and it
+    ``<type>._template`` tells an operator how to *create* an object of a type;
+    ``rules.<type>`` tells it how to *use* one.  Ship the file and it
     activates — no tagging, nothing for an author to remember — which is the
     whole point: per-type running guidance lives once here instead of being
     restated in every object of that type.
+
+    This runs for **every** crawl-based operator, from
+    :func:`~lens.core.context.crawl` itself, not from a modality.  How an
+    object of a type is handled does not depend on who is holding it: a
+    ``stat.*`` block in a ``write`` beat or a ``chat`` turn needs the same
+    booklet a ``play`` beat needs, and scoping the companion to one operator
+    made the file's presence mean different things in different sessions.
 
     "In scope" has to mean every route, not just pins.  An object reaches the
     model as a front-matter pin, as a ``+`` link off one, as a session module,
@@ -555,12 +562,17 @@ class ModuleTransform:
     also resolves two siblings of ``<key>`` (the part after the last ``.`` in
     the module id) and includes each when it exists: ``<key>._template``, which
     says how to *create* an object of that type, and ``rules.<key>``, which
-    says how ``play`` will *use* one.  That pair is the same convention
-    :class:`RulesCompanionTransform` applies on the play side, deliberately
-    scoped here to the type the session is authoring rather than to everything
-    pinned: a prep session's pins are broad and uncurated, so keying off them
-    would make the cost of a session depend on whatever the user brought along.
-    Ship ``rules/<type>.md`` and both consumers activate, with nothing to tag
+    says how it will later be *used*.
+
+    That second one reads the module's **key**, where
+    :class:`RulesCompanionTransform` reads an object's **type**, and the two do
+    not overlap: ``design.stat`` is a ``design.*`` object, so the engine-wide
+    pass would offer ``rules.design``, while what a session authoring stat
+    blocks actually needs is ``rules.stat``.  Only the module knows the type it
+    is about to write, which is why it resolves that one itself.  When the two
+    do land on the same id, this transform runs first and appends it to
+    ``graph.pinned_ids``, so the companion pass sees it in scope and skips it.
+    Ship ``rules/<type>.md`` and every consumer activates, with nothing to tag
     and nothing to keep in sync.
 
     **Modules always resolve with ``+``.**  A module's dot-tags pointing at

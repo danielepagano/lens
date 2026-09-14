@@ -30,6 +30,7 @@ from lens.core.crawl_transforms import (
     AtExpansionTransform,
     ModuleTransform,
     ParticipantTransform,
+    RulesCompanionTransform,
     SecretDecodeTransform,
     StripStandaloneMountEmbedsTransform,
     expansion_policy_from_tags,
@@ -405,7 +406,7 @@ class CrawlResult:
         Used to answer "is this object already in scope by *any* route", which
         is what decides whether a module is still worth offering to the model
         (see :mod:`lens.core.module_requests`) and which ``rules.<type>``
-        companions play should bring along.
+        companions a crawl should bring along.
         """
         scoped = {kid.rstrip("+").lower() for kid in self.graph.pinned_ids}
         scoped.update(
@@ -1165,6 +1166,16 @@ def crawl(spec: CrawlSpec | NarrativeNode, **kwargs: Any) -> CrawlResult:
     graph = _apply_default_transforms(
         graph, project_root=project_root, storage=local_storage
     )
+    # `rules.<type>` is engine behaviour, not one operator's: an object of a
+    # type is run the same way whoever is holding it, so every crawl-based
+    # operator gets the companion, not just `play`.  It runs *last* because it
+    # reads what is already in scope: pins and their `+` links, session modules,
+    # and the mention / include / inline expansions that only exist as render
+    # effects once `_apply_default_transforms` has run.  Its own additions are
+    # `rules.*`, which the transform skips, so nothing recurses.
+    graph = RulesCompanionTransform(
+        project_root=project_root, storage=local_storage
+    ).apply(graph)
     result = CrawlResult(
         graph,
         project_root=project_root,
