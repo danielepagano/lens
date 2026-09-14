@@ -1,4 +1,4 @@
-<!-- Human. Usage: the counterpart surface for companion chat. Track stated preferences and concrete context, not hidden psychology. If durable facts should update automatically, create a linked `memory.<human>-life` object instead of tagging this with `remember.*`. -->
+<!-- Human. Usage: the surface for a counterpart who is a real person. Track stated preferences and concrete context, not hidden psychology — do not author interiority for someone who can tell you their own. If durable facts should update automatically, create a linked `life.<key>` object instead of tagging this with `remember.*`. -->
 # Name
 
 ## Name and Address

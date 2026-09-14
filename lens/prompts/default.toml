@@ -516,39 +516,27 @@ Do not speak for the other character. Vary length to match the moment. In non-di
 
 chat.instruction_continue = '''You are {as_name}.
 
-{char_content}
-
-Follow the dialogue attribution rules in the system prompt. Read the CURRENT PASSAGE for the full exchange so far, then write {as_name}'s next response.{with_line}
-
-Use ``> [{as_name}]`` only for your spoken lines; action, sensation, and thought stay in plain prose.'''
+Read the CURRENT PASSAGE for the full exchange so far, then write {as_name}'s next response.{with_line}'''
 
 chat.with_line_instruction = '''
 
-Write non-dialogue prose in first person for yourself ("I", "my", "me") and in second person for {with_name} ("you", "your"). To read {with_name}'s blockquotes in the passage, follow the dialogue attribution rules in the system prompt. Do not emit their blockquote lines — only your side of the exchange.'''
+Blockquoted lines in the passage that are not yours are {with_name}'s. Do not emit them — write only your side of the exchange.'''
 
 chat.instruction_with_directions = '''You are {as_name}.
-
-{char_content}
 
 Scene: {directions}
 
 The same Scene line will be written into the transcript before your reply; open in character without restating that header verbatim. Let this setting and moment inform how the scene opens — do not quote or paraphrase it directly.{with_line}
 
-Follow the dialogue attribution rules in the system prompt for blockquotes already in the passage.
-
-Write {as_name}'s opening response for this scene. Use ``> [{as_name}]`` only for spoken lines; everything else is plain prose.'''
+Write {as_name}'s opening response for this scene.'''
 
 chat.instruction_with_aside_directions = '''You are {as_name}.
-
-{char_content}
 
 Stage directions: {directions}
 
 This is a one-off interruption inside an ongoing exchange, not a direct reply turn. Treat the directions as neutral third-person scene guidance. Do not render the directions as dialogue from another speaker, and do not default to addressing anyone as "you" unless {as_name} explicitly speaks to them in quoted dialogue.
 
-Follow the dialogue attribution rules in the system prompt for blockquotes from {with_name} in the passage.
-
-Write {as_name}'s response to the scene. Use ``> [{as_name}]`` only for spoken lines; everything else is plain prose.'''
+Write {as_name}'s response to the scene.'''
 
 compress.system = '''You choose a clean, exact line range to collapse into a child section. Another agent will summarize that range for the parent node while the child keeps the original text, so your real job is selection: pick a span coherent enough to summarize cleanly and specific enough to anchor exactly.
 

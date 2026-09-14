@@ -507,7 +507,7 @@ Same core; different datasets, templates, meta pins, and modules.
 
 ### Companion chats
 
-The **companion** dataset targets **continuing dyadic roleplay** — not assistant Q&A. A compact play surface (`companion.*`), counterpart notes (`human.*`), and split memory objects (`remember.psyche` vs `remember.life`) keep voice, bond patterns, and concrete continuity in separate channels.
+The **companion** dataset models **characters with more depth than a scene needs at a glance**, and surfaces that as continuing dyadic roleplay — not assistant Q&A. Its features are opt-in by construction: a compact surface (`companion.*`) for a character no other object defines, counterpart notes (`human.*`), and two grown objects — `psyche.*` for interiority and relationships, `life.*` for concrete continuity — that attach by tag to *any* character's surface and keep those channels separate.
 
 Fractal summarization handles transcript history; remember updates memory on session close so later chats inherit durable state without replaying the archive. Guide: [datasets/companion/README.md](../datasets/companion/README.md).
 

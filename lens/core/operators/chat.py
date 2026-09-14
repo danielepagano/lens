@@ -98,16 +98,12 @@ class ChatOperator(SessionOperator):
         directions: str | None = params.get("prompt") or None
         with_line_mode = params.get("with_line_mode")
 
-        # Fetch the character's KB text and embed it directly in the task so
-        # the AI knows exactly who it is embodying without searching.
-        char_content = ""
-        if as_kb_id:
-            store = KnowledgeStore.for_project(self.project_root)
-            objects = store.get_objects(ids=[as_kb_id])
-            obj = objects.get(as_kb_id)
-            if obj:
-                char_content = obj.text.strip()
-
+        # The character sheet is NOT inlined here: ``--as`` / ``--with`` are
+        # pinned into the crawl (``chat_session_extra_pins``), so embedding the
+        # body again put a second verbatim copy in the task — in the volatile
+        # tail, re-sent uncached every turn, while the cacheable copy already
+        # sat in [RELEVANT KNOWLEDGE].  The instruction names who you are and
+        # asserts nothing about what context happens to carry.
         prompts = PromptStore(self.project_root)
         with_name = _titlecase_kb_key(with_kb_id) if with_kb_id else "the counterpart"
         with_line = ""
@@ -119,22 +115,17 @@ class ChatOperator(SessionOperator):
                 return prompts.format(
                     "chat.instruction_with_aside_directions",
                     as_name=as_name,
-                    char_content=char_content,
                     directions=directions,
-                    with_name=with_name,
                 )
             return prompts.format(
                 "chat.instruction_with_directions",
                 as_name=as_name,
-                char_content=char_content,
                 directions=directions,
                 with_line=with_line,
-                with_name=with_name,
             )
         return prompts.format(
             "chat.instruction_continue",
             as_name=as_name,
-            char_content=char_content,
             with_line=with_line,
         )
 

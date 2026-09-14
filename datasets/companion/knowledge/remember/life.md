@@ -1,4 +1,4 @@
-Update a companion's **life memory** only for concrete continuity that should still be true later.
+Update a character's **life** record only for concrete continuity that should still be true later.
 
 Track:
 
@@ -10,7 +10,7 @@ Track:
 
 Rules:
 
-- Patch only the `memory.*` target you were given. Never patch `companion.*` or `human.*`.
+- Patch only the `life.*` target you were given. Never patch a character's surface object.
 - Keep updates factual. Do not infer psychology here.
 - Prefer appending or adjusting short bullets over rewriting the whole object.
 - Do not replace entire titled sections unless you are correcting a contradiction.
