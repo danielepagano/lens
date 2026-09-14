@@ -275,7 +275,7 @@ Regex over the ids, types, tags and bodies of the **merged** store, shadowing ap
 lens kb search 'grappl' -i                  # id:line:matched-text
 lens kb search 'advantage' -t rules -C 2    # type filter, context lines
 lens kb search 'exhaust' --tag state -l     # tag-filtered, ids only
-lens kb search 'front' --source dataset     # project | dataset | all (default all)
+lens kb search 'front' --source dataset:rpg # project | dataset | dataset:<name> | all
 lens kb search '^## Limits' --headline      # each hit's first three lines
 lens kb search 'grappl' -l | xargs lens kb get
 ```
@@ -299,7 +299,7 @@ Options:
 - `--tag` — repeatable and ANDed. A bare type name works as a tag, as everywhere else.
 - `-C` / `--context N` — lines either side of each body match.
 - `-l` / `--ids-only` — bare ids, one per line.
-- `--source project|dataset|all` — which store the object must resolve *from*.
+- `--source project|dataset|dataset:<name>|all` — which store the object must resolve *from*. Name a dataset (`--source dataset:lens-dnd`) to ask what that one contributes; bare `dataset` says little once several are stacked, since almost everything is in *some* dataset. A name no selected dataset answers to is an error, not an empty result.
 - `--headline` — print a `id  [tags]  SOURCE=…` header plus the object's [first three lines](../../docs/configuration.md#first-three-lines) above its hits.
 - `--include-templates` — `_template` objects, skipped by default.
 - `--json` — `{pattern, scanned, count, items}`; each item carries `id`, `type`, `tags`, `source`, `headline`, and its `matches` with per-match context.
@@ -313,6 +313,7 @@ Enumerate the merged store — every id the project can see, from project and da
 ```bash
 lens kb list                                # id, tags, source, headline
 lens kb list -t front --ids-only
+lens kb list --source dataset:lens-dnd      # what one named dataset contributes
 lens kb list --source dataset --shadowed    # dataset objects overriding an earlier dataset
 lens kb list --source project --shadowed    # project copies overriding a dataset
 ```
@@ -327,7 +328,7 @@ stat.ghoul  [cr:1 type:undead]  SOURCE=dataset:lens-dnd
 
 Options: `-t` / `--type`, `--tag` (repeatable, ANDed), `-l` / `--ids-only` (skips reading bodies), `--source`, `--include-templates`, `--json`.
 
-`--shadowed` keeps only the ids where one store overrides another — the copy-on-write forks and the dataset-over-dataset overrides. `--source` filters on the store that *won*, so pair it with `--source project` to find forks that have quietly diverged from their dataset. See [Where an object comes from](#where-an-object-comes-from).
+`--shadowed` keeps only the ids where one store overrides another — the copy-on-write forks and the dataset-over-dataset overrides. `--source` filters on the store that *won*, so pair it with `--source project` to find forks that have quietly diverged from their dataset, and note that `--source dataset:<name>` therefore omits ids that dataset holds but lost. See [Where an object comes from](#where-an-object-comes-from).
 
 ### `lens kb refs`
 
