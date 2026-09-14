@@ -118,7 +118,9 @@ This dataset registers no `[[dataset.modules]]` — its Lasers & Feelings `rules
 
 ## `rules.<type>`: usage rules for a KB type
 
-`<type>._template` tells `design` how to **create** an object of that type. The counterpart is `rules.<type>`, which tells `play` how to **use** one: whenever any `<type>.*` object is pinned, `RulesCompanionTransform` adds `rules.<type>` to the crawl if it exists. That is convention only — ship `knowledge/rules/<type>.md` in a dataset and it activates, with no configuration and no code.
+`<type>._template` tells `design` how to **create** an object of that type. The counterpart is `rules.<type>`, which tells an operator how to **use** one: whenever any `<type>.*` object reaches the prompt — pinned, `+`-linked, a session module, or mentioned mid-node — the crawl adds `rules.<type>` if it exists. That is convention only: ship `knowledge/rules/<type>.md` in a dataset and it activates, with no configuration and no code.
+
+It is not a `play` feature. The companion is added by `crawl()` itself, so `write`, `chat`, `design` and the rest get it on the same terms — which is also the cost: a booklet is paid on every beat of any operator holding one of its objects. `rules.system` and `rules.rpg` are the RPG-specific part, auto-pinned for `play` alone by the `rpg_play_context` modality. See [Reserved KB types](../../docs/configuration.md#reserved-kb-types) for the full engine-level list.
 
 This is where per-type guidance belongs, rather than being repeated inside every object of that type. `lens-dnd` ships `rules.encounter`, `rules.stat`, and `rules.tracker` on this route.
 

@@ -435,7 +435,7 @@ def component_provenance(
     if cid.startswith("rules-companion:"):
         return (
             "rules_companion",
-            f"rules companion auto-added for pinned {kb_id.split('.', 1)[-1]}.* objects",
+            f"rules companion auto-added for {kb_id.split('.', 1)[-1]}.* objects in scope",
             detail,
         )
     if cid.startswith("module:"):

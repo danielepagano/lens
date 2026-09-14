@@ -1,4 +1,11 @@
-"""Tests for play rules companions (``rpg_play_context`` modality)."""
+"""Play's auto-pins (``rpg_play_context``) and its share of type companions.
+
+The companion mechanism itself is engine behaviour and is covered in
+``lens/core/test/test_rules_companions.py``.  What is RPG-specific, and tested
+here, is the pair of booklets every play beat is run against — plus the
+guarantee that play did not *lose* companions when they moved out of the
+modality.
+"""
 
 from __future__ import annotations
 
@@ -6,8 +13,8 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-from lens.core.context import CrawlResult
-from lens.core.crawl_graph import RenderEffect
+
+from lens.core.context import CrawlResult, CrawlSpec, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.media import MediaService
 from lens.core.modalities import (
@@ -16,8 +23,10 @@ from lens.core.modalities import (
     ensure_modalities_registered,
     resolve_modalities,
 )
+from lens.core.modalities.catalog.rpg_play_context import PLAY_AUTO_PINS
 from lens.core.modalities.types import ModalityContext
 from lens.core.narrative import NarrativeNode
+from lens.core.storage import Storage
 from lens.rpg.operators.play import PlayOperator
 
 
@@ -38,56 +47,39 @@ def _init_repo(tmp: Path) -> None:
     )
 
 
-def _make_project(tmp: Path, *, rules_types: list[str] | None = None) -> Path:
-    """Create a minimal project with optional ``rules.<type>`` KB objects."""
+def _make_project(tmp: Path, *, kb: dict[str, str] | None = None) -> NarrativeNode:
+    """Create a minimal rpg project; *kb* maps ``type.key`` ids to bodies."""
     (tmp / "lens.toml").write_text(
         '[project]\nnarrative = "test"\ndatasets = ["rpg"]\n'
         '[[llm]]\nbase_url = "https://api.example.com/v1"\nmodel = "test"\n'
     )
-    (tmp / "narrative" / "test").mkdir(parents=True)
-    (tmp / "narrative" / "test" / "_node.md").write_text("# test\n")
+    narrative_dir = tmp / "narrative" / "test"
+    narrative_dir.mkdir(parents=True)
+    (narrative_dir / "_node.md").write_text("# test\n")
     (tmp / "knowledge").mkdir(exist_ok=True)
 
-    for rtype in rules_types or []:
-        rules_dir = tmp / "knowledge" / "rules"
-        rules_dir.mkdir(parents=True, exist_ok=True)
-        (rules_dir / f"{rtype}.md").write_text(f"Rules for {rtype}\n")
+    for kb_id, body in (kb or {}).items():
+        obj_type, key = kb_id.split(".", 1)
+        type_dir = tmp / "knowledge" / obj_type
+        type_dir.mkdir(parents=True, exist_ok=True)
+        (type_dir / f"{key}.md").write_text(body if body.endswith("\n") else body + "\n")
 
     subprocess.run(["git", "add", "-A"], cwd=tmp, capture_output=True, check=True)
     subprocess.run(
         ["git", "commit", "-m", "project"], cwd=tmp, capture_output=True, check=True,
     )
-    return tmp
+    return NarrativeNode(narrative_root=narrative_dir, key_path=())
 
 
-def _apply_play_modalities(
-    cr: CrawlResult, project_root: Path, narrative: NarrativeNode
-) -> None:
-    resolved, _ = resolve_modalities(PlayOperator, narrative)
-    ctx = ModalityContext(
-        session=None,
-        narrative=narrative,
-        focus_node=narrative,
-        operator_name="play",
-        crawl_result=cr,
-        params={},
-        project_root=project_root,
-    )
-    contrib = collect_modality_crawl_contribution(resolved, ctx)
-    pinned = cr.graph.pinned_ids
-    for pin in contrib.extra_pins:
-        if pin not in pinned:
-            pinned.append(pin)
-    apply_modality_crawl(cr, resolved, ctx)
-
-
-class TestInjectRulesCompanions(unittest.TestCase):
+class TestPlayAutoPins(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         ensure_modalities_registered()
 
     def setUp(self) -> None:
         self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        _init_repo(self.root)
         KnowledgeStore.clear_registry()
         MediaService.clear_registry()
 
@@ -96,233 +88,9 @@ class TestInjectRulesCompanions(unittest.TestCase):
         MediaService.clear_registry()
         self._tmp.cleanup()
 
-    def test_injects_rules_for_pinned_encounter(self) -> None:
-        """When encounter.foo is pinned and rules.encounter exists, inject it."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["encounter"])
-        narrative = NarrativeNode(
-            narrative_root=tmp / "narrative" / "test", key_path=()
-        )
-
-        cr = CrawlResult.from_text_fields(
-            knowledge=["existing KB"],
-            previous_summaries=[],
-            current_content=None,
-            pinned_ids=["pc.alice", "encounter.bridge"],
-            project_root=tmp,
-        )
-        _apply_play_modalities(cr, tmp, narrative)
-
-        pinned = cr.graph.pinned_ids
-        self.assertIn("rules.system", pinned)
-        self.assertIn("rules.rpg", pinned)
-        self.assertIn("rules.encounter", pinned)
-        self.assertTrue(
-            any("Rules for encounter" in k for k in cr.knowledge),
-            f"rules.encounter content not found in knowledge: {cr.knowledge}",
-        )
-
-    def test_no_injection_when_rules_missing(self) -> None:
-        """When encounter.foo is pinned but rules.encounter doesn't exist, skip."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=[])
-        narrative = NarrativeNode(
-            narrative_root=tmp / "narrative" / "test", key_path=()
-        )
-
-        cr = CrawlResult.from_text_fields(
-            knowledge=[],
-            previous_summaries=[],
-            current_content=None,
-            pinned_ids=["pc.alice", "encounter.bridge"],
-            project_root=tmp,
-        )
-        _apply_play_modalities(cr, tmp, narrative)
-
-        self.assertNotIn("rules.encounter", cr.pinned_ids)
-
-    def test_no_duplicate_when_already_pinned(self) -> None:
-        """When rules.encounter is already pinned, don't add it again."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["encounter"])
-        narrative = NarrativeNode(
-            narrative_root=tmp / "narrative" / "test", key_path=()
-        )
-
-        cr = CrawlResult.from_text_fields(
-            knowledge=["already here"],
-            previous_summaries=[],
-            current_content=None,
-            pinned_ids=["rules.system", "rules.rpg", "rules.encounter", "encounter.bridge"],
-            project_root=tmp,
-        )
-        _apply_play_modalities(cr, tmp, narrative)
-
-        count = cr.pinned_ids.count("rules.encounter")
-        self.assertEqual(count, 1)
-        self.assertEqual(len(cr.knowledge), 1)
-
-    def test_multiple_types(self) -> None:
-        """Multiple pinned types each get their rules companion if it exists."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["encounter", "front"])
-        narrative = NarrativeNode(
-            narrative_root=tmp / "narrative" / "test", key_path=()
-        )
-
-        cr = CrawlResult.from_text_fields(
-            knowledge=[],
-            previous_summaries=[],
-            current_content=None,
-            pinned_ids=["pc.alice", "encounter.bridge", "front.doom"],
-            project_root=tmp,
-        )
-        _apply_play_modalities(cr, tmp, narrative)
-
-        self.assertIn("rules.encounter", cr.pinned_ids)
-        self.assertIn("rules.front", cr.pinned_ids)
-        self.assertEqual(len(cr.knowledge), 2)
-
-    def test_rules_objects_dont_trigger_recursion(self) -> None:
-        """Pinned rules.* objects don't trigger lookup for rules.rules."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=[])
-        narrative = NarrativeNode(
-            narrative_root=tmp / "narrative" / "test", key_path=()
-        )
-
-        cr = CrawlResult.from_text_fields(
-            knowledge=[],
-            previous_summaries=[],
-            current_content=None,
-            pinned_ids=["pc.alice"],
-            project_root=tmp,
-        )
-        _apply_play_modalities(cr, tmp, narrative)
-
-        self.assertEqual(len(cr.knowledge), 0)
-        self.assertIn("rules.system", cr.pinned_ids)
-
-    def _crawl_with_effect(
-        self, tmp: Path, *, pinned_ids: list[str], effect: RenderEffect
-    ) -> CrawlResult:
-        cr = CrawlResult.from_text_fields(
-            knowledge=[],
-            previous_summaries=[],
-            current_content=None,
-            pinned_ids=pinned_ids,
-            project_root=tmp,
-        )
-        cr.graph.add_effect(effect)
-        narrative = NarrativeNode(
-            narrative_root=tmp / "narrative" / "test", key_path=()
-        )
-        _apply_play_modalities(cr, tmp, narrative)
-        return cr
-
-    def test_injects_rules_for_a_mentioned_object(self) -> None:
-        """An ``@`` mention is in scope without being a pin — it still needs rules.
-
-        A player reaching for ``@stat.wolf`` mid-scene is exactly when the model
-        most needs to be told how to run one.
-        """
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["stat"])
-
-        cr = self._crawl_with_effect(
-            tmp,
-            pinned_ids=["pc.alice"],
-            effect=RenderEffect(
-                kind="kb-mention",
-                token="stat.wolf",
-                result="120",
-                source_component_id="legacy-current",
-            ),
-        )
-
-        self.assertIn("rules.stat", cr.pinned_ids)
-        self.assertTrue(any("Rules for stat" in k for k in cr.knowledge))
-
-    def test_injects_rules_for_an_included_object(self) -> None:
-        """``include`` is how a loaded module latches; same scope, same rules."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["tracker"])
-
-        cr = self._crawl_with_effect(
-            tmp,
-            pinned_ids=["pc.alice"],
-            effect=RenderEffect(
-                kind="kb-include",
-                token="tracker.bridge-fight",
-                result="200",
-                source_component_id="legacy-current",
-            ),
-        )
-
-        self.assertIn("rules.tracker", cr.pinned_ids)
-
-    def test_injects_rules_for_an_inline_expanded_object(self) -> None:
-        """``kb-inline`` carries the resolved id in ``result``, not ``token``."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["stat"])
-
-        cr = self._crawl_with_effect(
-            tmp,
-            pinned_ids=["pc.alice"],
-            effect=RenderEffect(
-                kind="kb-inline",
-                token="@stat.wolf",
-                result="stat.wolf",
-                source_component_id="legacy-current",
-            ),
-        )
-
-        self.assertIn("rules.stat", cr.pinned_ids)
-
-    def test_mentioned_rules_object_is_not_duplicated(self) -> None:
-        """A booklet already mentioned into scope is not added a second time."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["stat"])
-
-        cr = self._crawl_with_effect(
-            tmp,
-            pinned_ids=["stat.wolf"],
-            effect=RenderEffect(
-                kind="kb-include",
-                token="rules.stat",
-                result="120",
-                source_component_id="legacy-current",
-            ),
-        )
-
-        self.assertNotIn("rules.stat", cr.pinned_ids)
-        self.assertEqual(cr.knowledge, [])
-
-    def test_modality_auto_pins_use_context_project_root(self) -> None:
-        """Auto-pins apply even when ``CrawlResult.project_root`` is unset."""
-        tmp = Path(self._tmp.name)
-        _init_repo(tmp)
-        _make_project(tmp, rules_types=["encounter"])
-        narrative = NarrativeNode(
-            narrative_root=tmp / "narrative" / "test", key_path=()
-        )
-
-        cr = CrawlResult.from_text_fields(
-            knowledge=[],
-            previous_summaries=[],
-            current_content=None,
-            pinned_ids=["encounter.bridge"],
-            project_root=None,
-        )
+    def _apply_play_modalities(
+        self, cr: CrawlResult, narrative: NarrativeNode
+    ) -> None:
         resolved, _ = resolve_modalities(PlayOperator, narrative)
         ctx = ModalityContext(
             session=None,
@@ -331,7 +99,7 @@ class TestInjectRulesCompanions(unittest.TestCase):
             operator_name="play",
             crawl_result=cr,
             params={},
-            project_root=tmp,
+            project_root=self.root,
         )
         contrib = collect_modality_crawl_contribution(resolved, ctx)
         pinned = cr.graph.pinned_ids
@@ -340,8 +108,91 @@ class TestInjectRulesCompanions(unittest.TestCase):
                 pinned.append(pin)
         apply_modality_crawl(cr, resolved, ctx)
 
-        self.assertIn("rules.system", pinned)
-        self.assertIn("rules.encounter", pinned)
+    def test_core_rules_are_auto_pinned_for_play(self) -> None:
+        narrative = _make_project(self.root)
+        cr = CrawlResult.from_text_fields(
+            knowledge=[],
+            previous_summaries=[],
+            current_content=None,
+            pinned_ids=["pc.alice"],
+            project_root=self.root,
+        )
+
+        self._apply_play_modalities(cr, narrative)
+
+        for pin in PLAY_AUTO_PINS:
+            self.assertIn(pin, cr.pinned_ids)
+
+    def test_auto_pins_use_context_project_root(self) -> None:
+        """Auto-pins apply even when ``CrawlResult.project_root`` is unset."""
+        narrative = _make_project(self.root)
+        cr = CrawlResult.from_text_fields(
+            knowledge=[],
+            previous_summaries=[],
+            current_content=None,
+            pinned_ids=["encounter.bridge"],
+            project_root=None,
+        )
+
+        self._apply_play_modalities(cr, narrative)
+
+        for pin in PLAY_AUTO_PINS:
+            self.assertIn(pin, cr.pinned_ids)
+
+    def test_auto_pins_are_play_only(self) -> None:
+        """The two booklets are RPG-specific; no other operator pays for them."""
+        narrative = _make_project(self.root)
+        ctx = ModalityContext(
+            session=None,
+            narrative=narrative,
+            focus_node=narrative,
+            operator_name="write",
+            crawl_result=None,
+            params={},
+            project_root=self.root,
+        )
+        resolved, _ = resolve_modalities(PlayOperator, narrative)
+
+        contrib = collect_modality_crawl_contribution(resolved, ctx)
+
+        for pin in PLAY_AUTO_PINS:
+            self.assertNotIn(pin, contrib.extra_pins)
+
+    def test_play_still_gets_type_companions_through_the_crawl(self) -> None:
+        """Companions moved to the engine — play must not have lost them."""
+        narrative = _make_project(
+            self.root,
+            kb={
+                "encounter.bridge": "A collapsing rope bridge.",
+                "rules.encounter": "Rules for encounter",
+            },
+        )
+
+        cr = crawl(
+            CrawlSpec.of(
+                narrative,
+                operator=PlayOperator,
+                storage=Storage(self.root),
+                extra_pins=["encounter.bridge"],
+            )
+        )
+
+        self.assertIn("rules.encounter", cr.pinned_ids)
+        self.assertTrue(any("Rules for encounter" in k for k in cr.knowledge))
+
+    def test_auto_pinned_rules_do_not_pull_a_companion_of_their_own(self) -> None:
+        """``rules.*`` never recurses — ``rules.rules`` is not a thing."""
+        narrative = _make_project(self.root, kb={"rules.rules": "never wanted"})
+
+        cr = crawl(
+            CrawlSpec.of(
+                narrative,
+                operator=PlayOperator,
+                storage=Storage(self.root),
+            )
+        )
+
+        self.assertNotIn("rules.rules", cr.pinned_ids)
 
 
 if __name__ == "__main__":

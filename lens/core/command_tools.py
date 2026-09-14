@@ -129,7 +129,7 @@ def _design_template_companions(
     guess at, and the usual outcome is that it does not ask.
 
     Only the ``design.`` namespace is expanded.  ``rules.encounter`` shares the
-    shape but not the meaning — it is the play-time booklet, and the authoring
+    shape but not the meaning — it is the run-time booklet, and the authoring
     template has no business arriving with it.
     """
     companions: list[str] = []
