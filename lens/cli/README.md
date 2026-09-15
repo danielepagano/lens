@@ -23,6 +23,7 @@ Full reference for Lens commands, the knowledge store, pins, sections, and AI op
    lens skill      # what an agent needs to know about this project, generated now
    lens stats      # count objects and list narratives (-v for transaction diffs)
    lens explain    # what is in the prompt at the cursor: size and provenance per component
+   lens spine      # the story so far: the narrative from the root down to the cursor
    lens check      # verify lens.toml, API keys, mount, and paths (--skip-network optional)
    lens kb         # knowledge store (see lens kb --help)
    lens section    # start or end a section at cursor
@@ -134,6 +135,37 @@ Totals are reported per block and overall, so "my next call costs about 33k toke
 Every level reconciles: a block equals its components plus its framing (the `--- begin/end <title> ---` wrapper and separators), and the total equals the blocks plus the message separators — in both bytes and tokens. The framing and separator rows are hidden by default because they are the same handful of bytes on every run; `-v` shows them.
 
 Token counts are an estimate (characters divided by a fixed divisor) because tokenization is model-dependent and Lens ships no tokenizer; byte counts are exact. Each part is estimated on its own and aggregates are sums of their parts, so the grand total runs a few tokens above a single estimate of the whole prompt. The `cache` column is currently a heuristic (stable blocks vs per-call blocks) and will report measured prefix-cache boundaries once prompt caching lands.
+
+### `lens spine`
+
+Reconstruct the narrative spine at a cursor and print it — the chain of nodes from the narrative root down to the cursor, which is the story a model is given. Every ancestor contributes its own prose (in a collated tree, its summary); the cursor node contributes the live passage.
+
+It runs the same `crawl()` an operator would and prints the narrative components instead of assembling them into a prompt, so annotations are stripped and mentions and includes are expanded exactly as the prompt does it. A `[include: person.amy]` already covered by a pin further up is suppressed here for the same reason it is suppressed there. Read-only: nothing is written, no transaction is opened, and no model is called.
+
+```bash
+lens spine                          # the story so far, at the current cursor
+lens spine --outline                # the shape and per-node sizes, no prose
+lens spine --text                   # prose only, no headers — ready to pipe
+lens spine /chapter-1               # the spine somewhere else in the tree
+lens spine /chapter-1/scene-2 42    # with the cursor passage cut at line 42
+lens spine --json                   # the full report, for tooling
+```
+
+Arguments: `[ADDRESS] [LINE]` — the same address grammar as `lens explain` (see the table above).
+
+- `ADDRESS` — node to reconstruct the spine at. Defaults to the cursor.
+- `LINE` — optional 1-based line; truncates the cursor node's own passage there, so the spine reads as of that point. Ancestors are untouched.
+
+Options:
+
+- `--outline` — list the spine nodes with their sizes and opening line, without the prose. (No `-o` short flag: that is `--operator` on `lens explain`.)
+- `-t` / `--text` — print only the prose, no headers. Mutually exclusive with `--outline`.
+- `--json` — emit the full report instead of the table.
+- `--chars-per-token <n>` — divisor for the token estimate (default 4).
+
+A node marked `(empty)` is on the spine but contributes nothing — no prose survives comment stripping, so the model reads straight past it. That is usually the answer to "why does the model not know that".
+
+`lens spine` answers *what has the story said*; `lens explain` answers *what is in the prompt, and what does each part of it cost*. The two share their cursor resolution (`core/commands/cursor_target.py`) so they cannot disagree about where the cursor is.
 
 ### `lens commit`
 

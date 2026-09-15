@@ -27,6 +27,37 @@ applied. Options stay behind `lens <command> --help`, which is always current.
 What the rest of this text adds is the part no `--help` can tell you — the
 conventions that fail *silently*.
 
+## Orienting yourself
+
+A node file is not the story. The narrative is a tree, and what a model is given
+is the **spine**: the chain of nodes from the narrative root down to the cursor,
+where every ancestor contributes its own prose — in a collated tree, its summary
+— and only the cursor node contributes live text. Reading one file tells you
+what one beat says, not what the story has established.
+
+`lens spine` prints that chain: annotations stripped and mentions expanded
+exactly as the prompt does it, so what you read is what the next generation
+reads. `--outline` for the shape and per-node sizes alone, `--text` for the prose
+alone, and an address argument to read the spine somewhere else in the tree.
+Read it before you add anything — material an ancestor already establishes is
+in scope, and contradicting it is the expensive mistake.
+
+`lens spine` answers *what has the story said*; `lens explain` (below) answers
+*what is in the prompt, and what does each part of it cost*.
+
+Between them the two close the loop on knowledge as well. `lens explain
+-o <operator> --json` names every KB object that reaches the prompt at that
+cursor and the route it took — `pinned_ids`, a row per component (pins, `+`
+expansions, `rules.<type>` companions, session modules, `state` objects at the
+tail), and `in_place` for includes and mentions — and `lens kb get <id>` prints
+each body. **Pass the operator**: auto-pins and required modalities differ, so
+the same cursor resolves to a different set for `write` than for `play`. Two
+things that set does not cover: the bodies it reports are as the prompt frames
+them, not as `kb get` prints them (no `SOURCE=`, and facet expansion differs by
+operator), and a module the *model* pulls in mid-reply is chosen at generation
+time — it becomes visible only afterwards, as the `[include: …]` annotation Lens
+persists for it.
+
 ## What fails silently
 
 **1. `knowledge/` is not the knowledge store.** The store is a merge of this
@@ -79,8 +110,9 @@ keep: numbers and thresholds are the part that must survive verbatim.
 object or a prompt changes what a model reads in ways no test asserts on. Check
 with `lens explain`, which assembles the prompt for a cursor exactly as the
 operator would and reports every component's size and provenance instead of
-calling a model. Objects are shared: a booklet edited for one operator lands in
-every other operator that pins it.
+calling a model — or with `lens spine` for its narrative half, as prose. Objects
+are shared: a booklet edited for one operator lands in every other operator that
+pins it.
 
 **8. Verify through a fresh command, not through a process you left running.**
 The tag index is cached per project inside a running process. A freshly written

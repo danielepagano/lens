@@ -137,6 +137,70 @@ class TestCliExplain:
 
 
 # ---------------------------------------------------------------------------
+# Spine
+# ---------------------------------------------------------------------------
+
+
+class TestCliSpine:
+    """The story so far, against a project whose opening passage was generated.
+
+    Depth and truncation are covered by the unit tests; what this adds is that
+    the command reads a *real* written node — annotations, front matter and all
+    — and reports the prose a model would get from it.
+    """
+
+    def test_spine_prints_the_written_passage(self, cli_project: Path) -> None:
+        r = _lens("spine", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        assert "Spine at story" in r.stdout
+        assert "Lorem ipsum" in r.stdout
+        # Operator annotations never reach a model, so they never reach here.
+        assert "]: #" not in r.stdout
+
+    def test_spine_text_is_prose_with_no_framing(self, cli_project: Path) -> None:
+        r = _lens("spine", "--text", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        assert "Lorem ipsum" in r.stdout
+        assert "Spine at" not in r.stdout
+        assert "\u2500" not in r.stdout
+
+    def test_spine_outline_reports_sizes_without_the_prose(
+        self, cli_project: Path
+    ) -> None:
+        r = _lens("spine", "--outline", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        assert "NODE" in r.stdout
+        assert "tokens" in r.stdout
+        assert "Lorem ipsum" not in r.stdout
+
+    def test_spine_json_matches_the_narrative_and_cursor(
+        self, cli_project: Path
+    ) -> None:
+        import json
+
+        r = _lens("spine", "--json", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["narrative"] == "story"
+        assert data["nodes"], "expected at least the cursor node on the spine"
+        assert data["nodes"][-1]["role"] == "current"
+        assert data["totals"]["bytes"] == sum(n["bytes"] for n in data["nodes"])
+
+    def test_spine_does_not_dirty_the_repo(self, cli_project: Path) -> None:
+        def status() -> str:
+            return subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=cli_project,
+                capture_output=True,
+                text=True,
+            ).stdout
+
+        before = status()
+        _lens("spine", cwd=cli_project)
+        assert status() == before
+
+
+# ---------------------------------------------------------------------------
 # KB lookups against bundled rpg + testing datasets
 # ---------------------------------------------------------------------------
 

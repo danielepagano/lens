@@ -151,7 +151,7 @@ lens/
   cli/           # Typer CLI layer (argument parsing, error display)
     main.py      # Entry point + preflight callback + LensGroup (help panel order)
     command_inventory.py # The live command surface, for `lens skill`
-    commands/    # Non-AI commands (init, use, kb, pin, stats, explain, skill, rollback, commit, checkpoint, rewind, refresh, media; dataset extensions may add more)
+    commands/    # Non-AI commands (init, use, kb, pin, stats, explain, spine, skill, rollback, commit, checkpoint, rewind, refresh, media; dataset extensions may add more)
     operators/   # AI operator CLI adapters (write, edit, section, collate, compress, chat, play, design, advance)
     test/        # CLI unit tests
   core/          # Business logic (no Typer dependency)
