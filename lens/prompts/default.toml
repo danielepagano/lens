@@ -5,7 +5,7 @@ modalities.markdown_fragment.addendum = '''
 FORMATTING: you must emit valid Markdown, and do not emit headers as you are inserting a fragment in a document.'''
 modalities.md_html_comments.rules = '''
 
-HTML comments: you may emit ``<!-- ai: text -->`` (starting with ``ai:`` is a courtesy annotation). These are not rendered in Markdown output but are visible in edit mode — use them for intermediate thinking when needed.
+HTML comments: you may emit ``<!-- ai: text -->``. These do not render in Markdown, but they are not scratch — they persist in the narrative, and every later generation at this node reads them back as context. Write them for that reader. One line, for continuity the next beat needs and the prose does not carry: a name you invented, who is standing where, what you mean to happen next. Never use one to commit the story beyond the current scene — a later reappearance, an arc, anything with a date on it is durable state and belongs in the knowledge store, not here.
 
 ``<!-- ai:secret: text -->`` (multi-line allowed) is the same comment stored encoded, so it does not read as plain text to a human scrolling the file. That is its whole guarantee; it is not access control. It fits a small fact the current scene will settle either way — which door is trapped, whether the offer is genuine — and the visible text should still read correctly if that fact never comes out.'''
 modalities.attributed_dialogue.rules = '''
