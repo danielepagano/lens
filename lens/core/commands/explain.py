@@ -18,7 +18,6 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
-from lens.core.address import NarrativeAddress
 from lens.core.annotations import decode_ai_secrets
 from lens.core.mount_embed_strip import strip_standalone_lens_mount_attachment_lines
 from lens.core.context import (
@@ -33,6 +32,10 @@ from lens.core.context import (
     prompt_block_for_component,
     wrap_block,
 )
+from lens.core.commands.cursor_target import (
+    current_passage_override,
+    resolve_report_target,
+)
 from lens.core.crawl_graph import CrawlComponent, CrawlGraph
 from lens.core.exceptions import LensException
 from lens.core.mentions import MENTION_KINDS
@@ -41,12 +44,7 @@ from lens.core.operator import Operator
 from lens.core.operator_detect import detect_operator_name
 from lens.core.operator_params import collect_merged_raw
 from lens.core.operators import get_operator_class_for_name
-from lens.core.project import (
-    ProjectSession,
-    get_selected_datasets,
-    resolve_address,
-    unknown_node_hint,
-)
+from lens.core.project import ProjectSession, get_selected_datasets
 from lens.core.prompts import PromptStore
 
 BLOCK_CONVERSATION = "conversation"
@@ -294,37 +292,6 @@ def _framing_size(
 # ---------------------------------------------------------------------------
 
 
-def _resolve_target(
-    session: ProjectSession, address: str | None, line: int | None
-) -> tuple[NarrativeNode, str, int | None]:
-    """Resolve *address* (or the cursor) to a node, its address string, and a line."""
-    narrative = session.active_narrative
-    if narrative is None:
-        raise LensException("no active narrative (run 'lens use <slug>' first)")
-
-    if address is None:
-        node = narrative.find_cursor()
-        return node, str(node.to_address()), line
-
-    try:
-        addr = NarrativeAddress.parse(address)
-    except ValueError as e:
-        raise LensException(f"invalid address: {e}") from e
-    try:
-        resolved = resolve_address(addr, session.project_root)
-        node = resolved.node_only().to_node(session.project_root)
-    except (ValueError, FileNotFoundError) as e:
-        raise LensException(str(e)) from e
-    if not node.exists():
-        hint = unknown_node_hint(addr, session.project_root)
-        raise LensException(
-            f"node does not exist: {address}" + (f" — {hint}" if hint else "")
-        )
-
-    effective_line = line if line is not None else addr.line
-    return node, str(node.to_address()), effective_line
-
-
 def _resolve_operator(
     project_root: Path,
     node: NarrativeNode,
@@ -353,28 +320,6 @@ def _resolve_operator(
                 "differ from a real run"
             )
     return op_cls
-
-
-def _current_passage_override(node: NarrativeNode, line: int) -> str:
-    """Raw text of *node* truncated at *line*.
-
-    Deliberately raw: ``crawl`` expands mentions and strips comments from an
-    override, and it is the only place that knows the resolved pins, so
-    expanding here would report a block the real prompt suppresses as
-    already-pinned.  Truncating first is what makes ``--line`` answer "as of
-    that point" — a mention written later is not in scope yet, and one written
-    earlier is live or expired according to the turns above *line*.
-    """
-    try:
-        raw = node.md_path().read_text(encoding="utf-8")
-    except FileNotFoundError as e:
-        raise LensException(f"node has no file: {node.path_str()}") from e
-    lines = raw.split("\n")
-    if line < 1 or line > len(lines):
-        raise LensException(
-            f"line {line} is out of range for '{node.path_str()}' (1–{len(lines)})"
-        )
-    return "\n".join(lines[:line])
 
 
 # ---------------------------------------------------------------------------
@@ -580,7 +525,7 @@ def explain_context(
         raise LensException("no active narrative (run 'lens use <slug>' first)")
 
     warnings: list[str] = []
-    node, address_str, effective_line = _resolve_target(session, address, line)
+    node, address_str, effective_line = resolve_report_target(session, address, line)
     op_cls = _resolve_operator(session.project_root, node, operator, warnings)
 
     storage = session.new_storage(owner=None)
@@ -590,7 +535,7 @@ def explain_context(
 
     spec_kwargs: dict[str, Any] = {"storage": storage}
     if effective_line is not None:
-        spec_kwargs["current_passage_override"] = _current_passage_override(
+        spec_kwargs["current_passage_override"] = current_passage_override(
             node, effective_line
         )
 

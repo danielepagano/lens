@@ -37,6 +37,7 @@ CMD_CHECKPOINT = (
 CMD_REFRESH = "Fetch from remote and fast-forward the current branch."
 CMD_REWIND = "Move the cursor backward in the narrative tree, discarding all content that comes after."
 CMD_EXPLAIN = "Show what is in the prompt at a cursor: size and provenance, component by component."
+CMD_SPINE = "Show the story so far: the narrative from the root down to the cursor."
 CMD_ROLLBACK = "Undo the last AI operation and restore the narrative to its previous state."
 CMD_KB = (
     "The knowledge store: the merge of this project's `knowledge/` tree with "
@@ -317,6 +318,32 @@ ARG_EXPLAIN_ADDR = (
 ARG_EXPLAIN_LINE = (
     "Line number within the node (1-based).  Reports the prompt as it would "
     "be assembled with the current passage ending at that line."
+)
+
+# ── lens spine ────────────────────────────────────────────────────
+ARG_SPINE_ADDR = (
+    "Node address to reconstruct the spine at.  Defaults to the current "
+    "cursor.  Use '/' for the narrative root or '/@cursor' for the cursor."
+)
+ARG_SPINE_LINE = (
+    "Line number within the node (1-based).  Truncates the cursor node's own "
+    "passage there, so the spine reads as of that point."
+)
+OPT_SPINE_OUTLINE = (
+    "List the spine nodes with their sizes and opening line, without the prose."
+)
+OPT_SPINE_TEXT = (
+    "Print only the prose, no headers \u2014 the story so far as one document, "
+    "ready to pipe."
+)
+OPT_SPINE_JSON = "Emit the full report as JSON instead of a table."
+OPT_SPINE_CHARS_PER_TOKEN = (
+    "Characters per token for the estimate (tokenization is model-dependent; "
+    "byte counts are exact)."
+)
+SPINE_EMPTY_NOTE = (
+    "Nodes marked (empty) are on the spine but contribute nothing: no prose "
+    "survives comment stripping, so the model reads straight past them."
 )
 
 # ═══════════════════════════════════════════════════════════════════
@@ -651,6 +678,22 @@ DESC_EXPLAIN = (
     "called, so it works with no LLM configured.\n\n"
     "Token counts are an estimate (bytes divided by a fixed divisor); byte "
     "counts are exact."
+)
+
+DESC_SPINE = (
+    "Reconstruct the narrative spine at a cursor and print it: the chain of "
+    "nodes from the narrative root down to the cursor, which is the story a "
+    "model is given.\n\n"
+    "Every ancestor contributes its own prose \u2014 in a collated tree, its "
+    "summary \u2014 and the cursor node contributes the live passage. Operator "
+    "annotations and comments are stripped, and mentions and includes are "
+    "expanded, exactly as the prompt does it, so what prints is what the next "
+    "generation reads.\n\n"
+    "Pass an address to read the spine somewhere else in the tree, and a line "
+    "number to cut the cursor node's passage short.\n\n"
+    "Read-only: nothing is written, no transaction is opened, and no model is "
+    "called. For what else is in the prompt \u2014 knowledge, task framing, "
+    "sizes per component \u2014 use 'lens explain'."
 )
 
 DESC_REWIND = (
