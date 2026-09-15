@@ -98,6 +98,20 @@ DEFAULT_REMEMBER_COMMAND_TOOL_ITERATIONS = 6
 # it (e.g. OpenRouter). Medium leaves more room for visible completion than high.
 _REASONING_EFFORT = "medium"
 
+# Effort ladder, weakest first. ``reasoning_floor`` is compared against the
+# requested effort on this ladder; "none" is the bottom rung, so a row that
+# declares no floor clamps nothing.
+_REASONING_LADDER: tuple[str, ...] = ("none", "low", "medium", "high")
+
+
+def _reasoning_rank(effort: str) -> int | None:
+    """Position on :data:`_REASONING_LADDER`, or None for an unknown effort."""
+    try:
+        return _REASONING_LADDER.index(effort)
+    except ValueError:
+        return None
+
+
 CommandToolFn = Callable[[dict[str, Any], Path], Awaitable[str]]
 PreviewHandler = Callable[[str], Awaitable[None]]
 
@@ -119,6 +133,9 @@ class _LLMConfig:
     extra_headers: dict[str, str]
     extra_payload: dict[str, Any]
     trace_mode: TraceMode
+    entry_id: str = ""
+    reasoning_floor: str = "none"
+    """Lowest effort this endpoint accepts. Row-only — see ``_clamp_reasoning_to_floor``."""
 
 
 def _parse_payload_value(value: Any, *, key: str) -> Any:
@@ -170,6 +187,39 @@ def _parse_extra_headers(raw: Any) -> dict[str, str]:
             )
         result[key] = value
     return result
+
+
+def _parse_reasoning_floor(raw: Any) -> str:
+    if raw is None:
+        return "none"
+    if not isinstance(raw, str) or raw not in _REASONING_LADDER:
+        raise LLMError(
+            "[[llm]] reasoning_floor must be one of "
+            f"{list(_REASONING_LADDER)} (got {raw!r})"
+        )
+    return raw
+
+
+def _clamp_reasoning_to_floor(
+    *, enable_thinking: bool, effort: str, floor: str
+) -> tuple[bool, str]:
+    """Raise a reasoning request to *floor*. Never lowers it.
+
+    The floor describes what the endpoint will accept, not what the operator
+    wants, so it clamps rather than overrides: ``--reasoning none`` against a
+    floor of ``"low"`` yields low, and ``--reasoning high`` still yields high.
+    An effort string off the ladder (a provider-specific level Lens does not
+    know) is left alone rather than guessed at.
+    """
+    floor_rank = _reasoning_rank(floor)
+    if floor_rank is None or floor_rank == 0:
+        return enable_thinking, effort
+    if not enable_thinking:
+        return True, floor
+    requested_rank = _reasoning_rank(effort)
+    if requested_rank is None or requested_rank >= floor_rank:
+        return enable_thinking, effort
+    return True, floor
 
 
 def _load_config(
@@ -237,6 +287,9 @@ def _load_config(
             )
 
     # Precedence for each tunable field: op_cfg > [[llm]] entry > hardcoded default.
+    # `reasoning_floor` is the exception: it is read from the row only, like
+    # extra_headers/extra_payload, because it states what the endpoint accepts
+    # rather than how much thinking this operator wants.
     return (
         _LLMConfig(
             base_url=base_url,
@@ -250,6 +303,8 @@ def _load_config(
             extra_headers=_parse_extra_headers(raw.get("extra_headers")),
             extra_payload=_parse_extra_payload(raw.get("extra_payload")),
             trace_mode=trace_mode,
+            entry_id=str(raw.get("id", "")),
+            reasoning_floor=_parse_reasoning_floor(raw.get("reasoning_floor")),
         ),
         verbose_llm,
     )
@@ -1135,6 +1190,25 @@ async def generate_stream(
         else:
             cfg = dataclasses.replace(cfg, enable_thinking=True, reasoning_effort=reasoning)
     eff_thinking: bool = enable_thinking if enable_thinking is not None else cfg.enable_thinking
+
+    # The row's floor is applied last, over every other route into reasoning
+    # (CLI --reasoning, pinned params, annotations, [operator.<name>]), because
+    # it is the endpoint's constraint and none of them can know about it.
+    floored_thinking, floored_effort = _clamp_reasoning_to_floor(
+        enable_thinking=eff_thinking,
+        effort=cfg.reasoning_effort,
+        floor=cfg.reasoning_floor,
+    )
+    if (floored_thinking, floored_effort) != (eff_thinking, cfg.reasoning_effort):
+        logger.info(
+            "LLM reasoning_floor=%s on [[llm]] entry %s raised %s to effort=%s",
+            cfg.reasoning_floor,
+            cfg.entry_id or "(default)",
+            "disabled reasoning" if not eff_thinking else f"effort={cfg.reasoning_effort}",
+            floored_effort,
+        )
+        eff_thinking = floored_thinking
+        cfg = dataclasses.replace(cfg, reasoning_effort=floored_effort)
 
     host = _llm_api_host(cfg.base_url)
     model_label = cfg.model or "(unspecified)"

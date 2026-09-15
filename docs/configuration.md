@@ -198,8 +198,28 @@ api_key_env      = "OPENAI_API_KEY"
 | `timeout_seconds` | No | `120` | Max idle between stream lines after the first line |
 | `reasoning` | No | `false` | Enable provider “thinking” / reasoning mode for this entry |
 | `reasoning_effort` | No | `"medium"` | When reasoning is on: `"low"`, `"medium"`, or `"high"` |
+| `reasoning_floor` | No | `"none"` | Lowest effort this endpoint accepts: `"none"`, `"low"`, `"medium"`, `"high"`. **Row-only** |
 
 Any OpenAI-compatible `/chat/completions` endpoint works; set `base_url` to match the provider.
+
+### `reasoning_floor`
+
+Some endpoints refuse a request with reasoning disabled — OpenRouter answers `HTTP 400 Reasoning is mandatory for this endpoint and cannot be disabled` for `z-ai/glm-5.3-flash`. `reasoning` on the row is only a *default*: `--reasoning none`, a pinned `params.reasoning`, an annotation or an `[operator.<name>]` override all win over it, so one flag is enough to make such a model error out.
+
+`reasoning_floor` states the endpoint's constraint instead, and **clamps rather than overrides**: the effort actually sent is `max(requested, floor)`.
+
+```toml
+[[llm]]
+id = "glm-flash"
+base_url = "https://openrouter.ai/api/v1"
+model = "z-ai/glm-5.3-flash"
+api_key_env = "OPEN_ROUTER_API_KEY"
+reasoning_floor = "low"
+```
+
+With `reasoning_floor = "low"`: `--reasoning none` sends low, no `--reasoning` at all sends low, `--reasoning high` still sends high. When the floor forces a change it is logged once at INFO with the entry id.
+
+Like `extra_headers` / `extra_payload`, it is **not** overridable by `[operator.<name>]` or by invocation params — it describes what the endpoint will accept, not how much thinking a task wants. Prefer it to the `[llm.extra_payload] reasoning = { effort = … }` escape hatch, which is a hard pin (it silently flattens `--reasoning high` to the pinned effort).
 
 ### Extra HTTP headers and body (`[llm.extra_headers]`, `[llm.extra_payload]`)
 
@@ -264,7 +284,7 @@ Supported operator names include: `write`, `edit`, `section`, `collate`, `design
 
 **Other fields:** for the resolved `[[llm]]` entry, `[operator.<name>]` overrides `temperature`, timeouts, `reasoning`, and `reasoning_effort` (operator wins over the `[[llm]]` row).
 
-`extra_headers` / `extra_payload` are **not** overridable per operator (only on `[[llm]]`).
+`extra_headers` / `extra_payload` / [`reasoning_floor`](#reasoning_floor) are **not** overridable per operator (only on `[[llm]]`). The floor is applied after every override, and only ever raises the effort.
 
 ---
 
@@ -974,6 +994,8 @@ Image and speech backends are not fully probed here; missing keys surface when y
 ### LLM tunables (temperature, timeouts, reasoning)
 
 For the **resolved** `[[llm]]` row: `[operator.<name>]` > `[[llm]]` entry > built-in defaults.
+
+Reasoning effort has one extra step after that: `[[llm]].reasoning_floor` clamps the result upward (`max(requested, floor)`). It is row-only and cannot be lowered by an operator override or an invocation param.
 
 ### HTTP extras
 
