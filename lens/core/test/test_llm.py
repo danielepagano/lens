@@ -483,6 +483,38 @@ class TestLoadConfig(unittest.TestCase):
         self.assertEqual(cfg.extra_headers, {})
         self.assertEqual(cfg.extra_payload, {})
 
+    def test_reasoning_floor_defaults_to_none(self) -> None:
+        self._write("[[llm]]\nbase_url = \"https://api.example.com/v1\"\n")
+        cfg, _ = _load_config(self.root, None)
+        self.assertEqual(cfg.reasoning_floor, "none")
+
+    def test_reasoning_floor_read_from_row(self) -> None:
+        self._write(
+            "[[llm]]\nid = \"glm\"\nbase_url = \"https://api.example.com/v1\"\n"
+            "reasoning_floor = \"low\"\n"
+        )
+        cfg, _ = _load_config(self.root, None)
+        self.assertEqual(cfg.reasoning_floor, "low")
+        self.assertEqual(cfg.entry_id, "glm")
+
+    def test_reasoning_floor_invalid_value_raises(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+            "reasoning_floor = \"maximum\"\n"
+        )
+        with self.assertRaises(LLMError) as ctx:
+            _load_config(self.root, None)
+        self.assertIn("reasoning_floor", str(ctx.exception))
+
+    def test_reasoning_floor_not_overridable_per_operator(self) -> None:
+        self._write(
+            "[[llm]]\nbase_url = \"https://api.example.com/v1\"\n"
+            "reasoning_floor = \"medium\"\n\n"
+            "[operator.write]\nreasoning_floor = \"none\"\n"
+        )
+        cfg, _ = _load_config(self.root, None, operator_name="write")
+        self.assertEqual(cfg.reasoning_floor, "medium")
+
 
 # ---------------------------------------------------------------------------
 # generate (streaming) tests
@@ -577,6 +609,88 @@ class TestGenerateStream(unittest.TestCase):
         resp = _FakeResponse(lines=_sse(_chunk("ok")))
         _, _, client = self._run(resp)
         self.assertNotIn("stop", client.captured_kwargs.get("json", {}))
+
+    # -- reasoning_floor -------------------------------------------------
+    #
+    # Some endpoints reject a request with reasoning disabled (OpenRouter
+    # answers HTTP 400 "Reasoning is mandatory for this endpoint and cannot be
+    # disabled" for z-ai/glm-5.3-flash).  The floor is the row's statement of
+    # that constraint, so it has to survive every route into reasoning.
+
+    def _write_floor_config(self, floor: str) -> None:
+        (self.root / "lens.toml").write_text(
+            "[[llm]]\nid = \"glm\"\nbase_url = \"https://api.example.com/v1\"\n"
+            f"reasoning_floor = \"{floor}\"\n"
+        )
+
+    def test_no_floor_leaves_reasoning_disabled(self) -> None:
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp)
+        payload = client.captured_kwargs.get("json", {})
+        self.assertEqual(payload.get("reasoning"), {"effort": "none", "enabled": False})
+        self.assertIs(payload.get("enable_thinking"), False)
+
+    def test_floor_raises_row_default_off_to_floor(self) -> None:
+        self._write_floor_config("low")
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp)
+        payload = client.captured_kwargs.get("json", {})
+        self.assertEqual(payload.get("reasoning"), {"effort": "low"})
+        self.assertIs(payload.get("enable_thinking"), True)
+
+    def test_floor_overrides_reasoning_none_invocation_param(self) -> None:
+        self._write_floor_config("low")
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp, reasoning="none")
+        payload = client.captured_kwargs.get("json", {})
+        self.assertEqual(payload.get("reasoning"), {"effort": "low"})
+
+    def test_floor_clamps_rather_than_pins(self) -> None:
+        self._write_floor_config("low")
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp, reasoning="high")
+        payload = client.captured_kwargs.get("json", {})
+        self.assertEqual(payload.get("reasoning"), {"effort": "high"})
+
+    def test_floor_leaves_a_higher_request_alone(self) -> None:
+        self._write_floor_config("low")
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp, reasoning="medium")
+        self.assertEqual(
+            client.captured_kwargs.get("json", {}).get("reasoning"), {"effort": "medium"}
+        )
+
+    def test_floor_overrides_enable_thinking_false(self) -> None:
+        self._write_floor_config("medium")
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        _, _, client = self._run(resp, enable_thinking=False)
+        self.assertEqual(
+            client.captured_kwargs.get("json", {}).get("reasoning"), {"effort": "medium"}
+        )
+
+    def test_floor_logs_once_with_entry_id_when_it_changes_the_request(self) -> None:
+        self._write_floor_config("low")
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        with self.assertLogs("lens.core.llm", level="INFO") as log:
+            self._run(resp, reasoning="none")
+        floor_logs = [m for m in log.output if "reasoning_floor" in m]
+        self.assertEqual(len(floor_logs), 1, floor_logs)
+        self.assertIn("glm", floor_logs[0])
+
+    def test_floor_is_silent_when_the_request_already_clears_it(self) -> None:
+        self._write_floor_config("low")
+        resp = _FakeResponse(lines=_sse(_chunk("ok")))
+        with self.assertLogs("lens.core.llm", level="INFO") as log:
+            self._run(resp, reasoning="high")
+        self.assertEqual([m for m in log.output if "reasoning_floor" in m], [])
+
+    def test_floor_reaches_the_trace(self) -> None:
+        self._write_floor_config("low")
+        resp = _FakeResponse(lines=_sse(_chunk("ok"), _usage_chunk(10, 5)))
+        _, final, _ = self._run(resp, reasoning="none")
+        self.assertIsNotNone(final)
+        assert final is not None
+        self.assertIn("reasoning_effort: low", final.text)
 
     def test_api_key_sent_as_bearer(self) -> None:
         (self.root / "lens.toml").write_text(

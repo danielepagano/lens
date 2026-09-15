@@ -169,6 +169,10 @@ def _apply_bench_lens_config(
         # would force one answer on every operator that uses the model.
         "extra_headers",
         "extra_payload",
+        # `reasoning_floor` is row-only for the same reason, and it is not
+        # thinking mode: it says what the endpoint refuses to run below, so a
+        # profile that omits it makes the model unusable at any effort.
+        "reasoning_floor",
     ):
         if key in profile:
             bench_entry[key] = profile[key]

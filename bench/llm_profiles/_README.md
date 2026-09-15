@@ -20,6 +20,13 @@ force it on every operator that uses the model.
 `[[llm]]` row and cannot be overridden per operator, which is why provider
 pinning belongs here.
 
+`reasoning_floor` is the other exception, and it does not contradict the rule
+above: the rule is about *choosing* an effort, and a floor is about what the
+endpoint will accept. Some models refuse to run with reasoning disabled —
+`z-ai/glm-5.3-flash` answers `HTTP 400 Reasoning is mandatory for this endpoint
+and cannot be disabled` — so without the floor the profile is unusable at any
+setting. It clamps rather than pins: `--reasoning high` still gets high.
+
 ## Two things that will bite a scored run
 
 **Pin the provider for open-weight models.** The same slug is served by many

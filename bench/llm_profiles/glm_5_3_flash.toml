@@ -6,3 +6,8 @@ model = "z-ai/glm-5.3-flash"
 temperature = 0.9
 timeout_seconds = 300
 first_token_timeout_seconds = 60
+
+# OpenRouter rejects any request to this model with reasoning disabled:
+# HTTP 400 "Reasoning is mandatory for this endpoint and cannot be disabled"
+# (metadata.provider_name = null — the router refusing, not a host).
+reasoning_floor = "low"
