@@ -283,11 +283,22 @@ lens kb get person.hero --json                  # structured output for tooling
 
 Each object prints as `KB['<id>']  SOURCE=<where>  TAGS=<tags>` followed by its body. See [Where an object comes from](#where-an-object-comes-from).
 
+**An id that resolves to nothing is an error.** It is named on stderr, classified (bad shape, unknown type, or a known type with no such key), pointed at the command that would find it, and the exit code is `1`. Objects that *did* resolve are still printed, so a partial fetch is never lost:
+
+```
+$ lens kb get person.amy person.nobdy wizard.gandalf
+KB['person.amy']  SOURCE=project  TAGS=protagonist
+…
+Error: not found: person.nobdy, wizard.gandalf          # stderr, exit 1
+  person.nobdy: type 'person' exists but has no such key — try: lens kb list --type person
+  wizard.gandalf: no objects of type 'wizard' — try: lens kb search gandalf
+```
+
 Options:
 
 - `--include-comments` (default: true) — keep markdown comments in the output.
 - `-f` / `--facet-expand` — also fetch each requested id's `-` facets: the prep-side material `design` and `advance` pull automatically and `play` never sees. Only the ids you asked for gain facets, so a `stat.guard` reached through `+` never drags in `stat.guard-captain`. See [configuration.md](../../docs/configuration.md#knowledge-pins).
-- `--json` — emit `{ids, items}` instead of formatted text; each item carries `id`, `type`, `tags`, `source`, `headline`, and `content`.
+- `--json` — emit `{ids, items, missing}` instead of formatted text; each item carries `id`, `type`, `tags`, `source`, `headline`, and `content`. `missing` is always present (empty on a clean fetch) and carries `{id, reason, type}` per miss, with `reason` one of `malformed`, `unknown_type`, `unknown_key`.
 
 ### Finding things (`search`, `list`, `refs`)
 

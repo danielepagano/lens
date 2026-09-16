@@ -344,6 +344,80 @@ def kb_get(
     return resolve_ids_with_facets(kb, ids)
 
 
+@dataclass(frozen=True)
+class MissingId:
+    """A requested id that resolved to nothing, and how it failed.
+
+    ``reason`` separates the three mistakes worth telling apart, because each
+    has a different next command: ``malformed`` (not ``<type>.<key>`` at all),
+    ``unknown_type`` (nothing in the merged store has this type), and
+    ``unknown_key`` (the type exists, so the key is a typo or the object was
+    never written).
+    """
+
+    requested: str
+    """The id as typed, minus any ``+``/``++`` suffix."""
+
+    reason: Literal["malformed", "unknown_type", "unknown_key"]
+    type_part: str = ""
+    """``""`` when the id could not be parsed."""
+
+
+def kb_get_missing(
+    ids: list[str], objects: dict[str, KnowledgeObject]
+) -> list[MissingId]:
+    """Which of *ids* :func:`kb_get` returned nothing for, in request order.
+
+    A fetch that resolves nothing is indistinguishable from an object with an
+    empty body unless someone says so, and silence is the wrong default for the
+    one thing the caller cannot check for itself — whether the id exists at all.
+    Resolution is intentionally recomputed here rather than threaded through
+    :func:`kb_get`: ``+`` expansion means the returned ids are a superset of the
+    requested ones, so only the request knows what was asked for.
+
+    Classifying a miss needs the store, so it is only consulted once a miss is
+    known — a hit costs nothing extra.
+    """
+    misses: list[MissingId] = []
+    seen: set[str] = set()
+    known_types: set[str] | None = None
+
+    for raw in ids:
+        base = raw.strip()
+        if base.endswith("++"):
+            base = base[:-2]
+        elif base.endswith("+"):
+            base = base[:-1]
+        if not base:
+            continue
+        try:
+            type_part, key_part = parse_id(base)
+        except ValueError:
+            if base not in seen:
+                seen.add(base)
+                misses.append(MissingId(base, "malformed"))
+            continue
+        cid = f"{type_part}.{key_part}"
+        if cid in seen:
+            continue
+        seen.add(cid)
+        if cid in objects:
+            continue
+        if known_types is None:
+            known_types = {
+                oid.split(".", 1)[0]
+                for oid in get_store().resolved_index(include_templates=True)
+            }
+        misses.append(
+            MissingId(
+                base,
+                "unknown_key" if type_part in known_types else "unknown_type",
+                type_part,
+            )
+        )
+    return misses
+
+
 @dataclass
 class WithTagResult:
     ids: list[str]
@@ -577,14 +651,23 @@ def kb_get_payload(
     objects: dict[str, KnowledgeObject],
     *,
     include_comments: bool = True,
+    missing: list[MissingId] | None = None,
 ) -> dict[str, Any]:
-    """``lens kb get --json`` body: resolved ids plus one record per object."""
+    """``lens kb get --json`` body: resolved ids plus one record per object.
+
+    ``missing`` is always present, empty or not, so a consumer can test it
+    without also having to test for the key.
+    """
     return {
         "ids": [cid for cid in ordered_ids if cid in objects],
         "items": [
             kb_object_payload(objects[cid], include_comments=include_comments)
             for cid in ordered_ids
             if cid in objects
+        ],
+        "missing": [
+            {"id": m.requested, "reason": m.reason, "type": m.type_part}
+            for m in (missing or [])
         ],
     }
 

@@ -7,7 +7,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from lens.core.annotations import strip_markdown_comments
 from lens.core.context import CrawlResult
+from lens.core.llm_trace import split_trace_blocks
 from lens.core.operators.session import (
     MAX_SUMMARY_TITLE_WORDS,
     SummaryTitleError,
@@ -187,3 +189,85 @@ class TestFormatSummaryBlock(unittest.TestCase):
         raw = "\n\n\nTitle\n\nBody."
         block = format_summary_block("slug", raw)
         self.assertIn("### Title", block)
+
+
+_TRACE = (
+    "[llm-trace\n"
+    "  model: deepseek/deepseek-v4.1-flash\n"
+    "  elapsed_ms: 18310\n"
+    "  usage:\n"
+    "    prompt_tokens: 12325\n"
+    "]: #"
+)
+
+
+class TestSummaryTraceNotQuoted(unittest.TestCase):
+    """The summary's own ``[llm-trace …]: #`` must stay outside the blockquote.
+
+    Quoted, it survives ``strip_markdown_comments`` (which anchors on ``^\\s*\\[``)
+    and reaches the model inside the summary every descendant node reads.
+    """
+
+    def _formatted(self) -> str:
+        raw = f"The Climb\n\nFour days late on a three-day climb.\n\n{_TRACE}\n"
+        return format_summary_block("play-climb", raw)
+
+    def test_trace_emitted_at_column_zero_after_the_body(self) -> None:
+        block = self._formatted()
+        self.assertEqual(
+            block,
+            (
+                "<!-- section:play-climb -->\n"
+                "\n"
+                "### The Climb\n"
+                "\n"
+                "> Four days late on a three-day climb.\n"
+                "\n"
+                f"{_TRACE}"
+            ),
+        )
+
+    def test_no_trace_line_is_blockquoted(self) -> None:
+        for line in self._formatted().split("\n"):
+            if line.startswith(">"):
+                self.assertNotIn("llm-trace", line)
+                self.assertNotIn("prompt_tokens", line)
+
+    def test_stripper_removes_the_trace_from_the_block(self) -> None:
+        stripped = strip_markdown_comments(self._formatted())
+        self.assertNotIn("llm-trace", stripped)
+        self.assertNotIn("elapsed_ms", stripped)
+        self.assertIn("> Four days late on a three-day climb.", stripped)
+
+    def test_title_comes_from_prose_when_body_is_only_a_trace(self) -> None:
+        # A generation that produced nothing but telemetry produced nothing:
+        # the title rule must fail so the caller retries, not title the block
+        # "[llm-trace".
+        with self.assertRaises(SummaryTitleError):
+            format_summary_block("play-climb", f"{_TRACE}\n")
+
+
+class TestSplitTraceBlocks(unittest.TestCase):
+    def test_text_without_trace_is_unchanged(self) -> None:
+        text = "Title\n\nBody with a [reference]: # looking line."
+        remaining, blocks = split_trace_blocks(text)
+        self.assertEqual(remaining, text)
+        self.assertEqual(blocks, [])
+
+    def test_trailing_trace_is_lifted(self) -> None:
+        remaining, blocks = split_trace_blocks(f"Body.\n\n{_TRACE}\n")
+        self.assertEqual(remaining.strip(), "Body.")
+        self.assertEqual(blocks, [_TRACE + "\n"])
+
+    def test_unterminated_trace_consumes_to_end(self) -> None:
+        # Everything from the opener on is telemetry; leaking half a block into
+        # the quoted body is the failure this guards.
+        remaining, blocks = split_trace_blocks("Body.\n\n[llm-trace\n  model: x\n")
+        self.assertEqual(remaining.strip(), "Body.")
+        self.assertEqual(len(blocks), 1)
+        self.assertIn("model: x", blocks[0])
+
+    def test_multiple_traces_all_lifted(self) -> None:
+        remaining, blocks = split_trace_blocks(f"{_TRACE}\nBody.\n{_TRACE}\n")
+        self.assertEqual(remaining.strip(), "Body.")
+        self.assertEqual(len(blocks), 2)

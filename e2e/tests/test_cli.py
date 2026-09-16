@@ -232,11 +232,27 @@ class TestCliKbBundled:
         assert r.returncode == 0, r.stderr
         assert "Amy" in r.stdout
 
-    def test_kb_get_missing_object_returns_empty(self, cli_project: Path) -> None:
-        """Fetching a non-existent ID is not an error; it just prints nothing."""
+    def test_kb_get_missing_object_is_an_error(self, cli_project: Path) -> None:
+        """A non-existent ID names itself on stderr and exits 1.
+
+        Printing nothing and exiting 0 read as "this object is empty" rather
+        than "this object does not exist".
+        """
         r = _lens("kb", "get", "person.nobody", cwd=cli_project)
-        assert r.returncode == 0
+        assert r.returncode == 1
         assert r.stdout.strip() == ""
+        assert "person.nobody" in r.stderr
+        assert "not found" in r.stderr
+
+    def test_kb_get_partial_miss_still_prints_what_resolved(
+        self, cli_project: Path
+    ) -> None:
+        """A miss alongside a hit keeps the hit on stdout and still exits 1."""
+        r = _lens("kb", "get", "person.amy", "person.nobody", cwd=cli_project)
+        assert r.returncode == 1
+        assert "Amy" in r.stdout
+        assert "person.nobody" in r.stderr
+        assert "person.amy" not in r.stderr
 
     def test_kb_get_facet_expand(self, cli_project: Path) -> None:
         """``--facet-expand`` adds the `-` facets that design/advance see."""
