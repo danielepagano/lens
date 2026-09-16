@@ -343,13 +343,13 @@ def get(
 
 def _source_filter(value: str) -> SourceFilter:
     """Shape check only; core rejects a ``dataset:<name>`` no dataset answers to."""
-    if value in ("project", "dataset", "all") or (
+    if value in ("project", "dataset", "pending", "all") or (
         value.startswith("dataset:") and len(value) > len("dataset:")
     ):
         return value
     typer.echo(
-        f"Error: --source must be project, dataset, dataset:<name>, or all "
-        f"(got {value!r})",
+        f"Error: --source must be project, dataset, pending, dataset:<name>, "
+        f"or all (got {value!r})",
         err=True,
     )
     raise typer.Exit(1)

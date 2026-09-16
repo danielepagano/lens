@@ -946,7 +946,8 @@ OPT_KB_SEARCH_TAG = (
 )
 OPT_KB_SEARCH_SOURCE = (
     "Which store an object must resolve from: project, dataset, "
-    "dataset:<name> for one named dataset, or all (default)."
+    "dataset:<name> for one named dataset, pending for objects the open "
+    "session has proposed but not written, or all (default)."
 )
 OPT_KB_SEARCH_CONTEXT = "Print N lines of context either side of each body match."
 OPT_KB_IDS_ONLY = "Print matching object IDs only, one per line."
