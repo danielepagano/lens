@@ -181,13 +181,7 @@ def kb_patch(
     the updated :class:`KnowledgeObject` and an outcome kind.
     """
     # Lazy import keeps kb.py free of a hard dependency on text_select at module load.
-    from lens.core.text_select import Patch as _Patch
-    from lens.core.text_select import (
-        SelectionError,
-        apply_patches_to_storage_text_via_llm_view,
-        parse_patches,
-        patches_effect_already_present_in_storage_text,
-    )
+    from lens.core.text_select import SelectionError, apply_kb_patches
 
     try:
         _, key = parse_id(id)
@@ -219,51 +213,18 @@ def kb_patch(
     if existing is None:
         raise LensException(f"KB object not found: {id}")
 
-    # Normalise patch list: accept Patch instances or the raw tool-call
-    # dict shape understood by ``parse_patches``.
-    if patches is None:
-        patch_objs: list[_Patch] = []
-    elif all(isinstance(p, _Patch) for p in patches):
-        patch_objs = list(cast(list[_Patch], patches))
-    else:
-        try:
-            patch_objs = parse_patches(patches)
-        except SelectionError as e:
-            raise LensException(f"kb_patch: {e}") from e
-    if not patch_objs:
-        raise LensException("kb_patch: at least one patch is required")
-
-    if patches_effect_already_present_in_storage_text(
-        existing.text,
-        patch_objs,
-        storage=local_storage,
-        source_id=f"kb_patch:{id}",
-        insert_only=True,
-    ):
-        return KbPatchResult(existing, "already_present")
-
     try:
-        new_text = apply_patches_to_storage_text_via_llm_view(
+        new_text, kind = apply_kb_patches(
             existing.text,
-            patch_objs,
+            patches,
             storage=local_storage,
             source_id=f"kb_patch:{id}",
         )
     except SelectionError as e:
-        if patches_effect_already_present_in_storage_text(
-            existing.text,
-            patch_objs,
-            storage=local_storage,
-            source_id=f"kb_patch:{id}",
-        ):
-            return KbPatchResult(existing, "already_present")
-        raise LensException(
-            f"kb_patch: {e} — target line not found; re-read the latest "
-            "object body from the previous tool result"
-        ) from e
+        raise LensException(str(e)) from e
 
-    if new_text == existing.text:
-        return KbPatchResult(existing, "no_changes")
+    if kind != "patched":
+        return KbPatchResult(existing, kind)
 
     kb.store_object(id, new_text)
     refreshed = kb.get_objects([id]).get(id)
