@@ -103,6 +103,22 @@ def _is_informative(shingle: str) -> bool:
     return not all(word in _STOPWORDS for word in shingle.split())
 
 
+def prose_words(text: str) -> list[str]:
+    """Words of *text* with annotation blocks and HTML comments removed."""
+    return _words(strip_blocks(text))
+
+
+def informative_shingles(words: list[str], n: int = DEFAULT_N) -> set[str]:
+    """Word-shingles of *words* that are not made only of stopwords.
+
+    Shared with `model_rank.py`, which measures the same overlap against a
+    different source — an arm's own earlier beats rather than the pinned KB. The
+    stopword list and the width *are* the measurement, so a second copy would
+    quietly become a second measurement reported under one name.
+    """
+    return {s for s in _shingles(words, n) if _is_informative(s)}
+
+
 def cmd_blind(args: argparse.Namespace) -> int:
     src = Path(args.src)
     out = Path(args.out)
@@ -158,12 +174,14 @@ def cmd_screen(args: argparse.Namespace) -> int:
             return 1
         sources.extend(_kb_text(args.project, kb_id) for kb_id in args.kb)
 
-    source_shingles: set[str] = _shingles(_words("\n".join(sources)), args.n) if sources else set[str]()
+    source_shingles = (
+        informative_shingles(_words("\n".join(sources)), args.n) if sources else set[str]()
+    )
 
     rows: list[tuple[int, int, str, list[str]]] = []
     for path in sorted(Path(args.dir).glob("*.md")):
-        words = _words(strip_blocks(path.read_text(encoding="utf-8")))
-        lifted = sorted(s for s in _shingles(words, args.n) & source_shingles if _is_informative(s))
+        words = prose_words(path.read_text(encoding="utf-8"))
+        lifted = sorted(informative_shingles(words, args.n) & source_shingles)
         rows.append((len(lifted), len(words), path.name, lifted))
 
     # Worst first: a reciter is the cheapest thing to drop before reading.

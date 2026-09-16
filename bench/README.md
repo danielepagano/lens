@@ -60,6 +60,7 @@ bench/
     report_template.html  Self-contained HTML template
     prose_screen.py       Blind + mechanically pre-screen prose before reading it
     model_gate.py         Sweep a shortlist through the disqualifier probes
+    model_rank.py         Play a beat sequence per model, each in its own branch
   scripts/
     baseline.md           Use case 1: develop & baseline
     compare.md            Use case 2: compare LLMs
@@ -144,18 +145,95 @@ actually weighs (8.7k tokens against 7.0k, with a real module catalog offered).
 
 ### Rank what survives
 
-Comparing models on prose is limited by **reading attention**, not sampling cost — a full
-evening across three models is a couple of dollars, and what runs out is the ability to
-read carefully enough to tell them apart. `bench/tools/prose_screen.py` protects that:
+The gate re-renders **one** beat per model. That is right for a disqualifier — a
+refusal arrives in the first breath — and wrong for everything a ranking pass is
+for. Prose stamina, and the degeneration into the same three constructions whose
+canonical tell is every character's eye colour every turn, are not visible in one
+beat; they are visible by about beat ten. So ranking has its own shape and its
+own tool: **each arm plays a whole sequence through in its own git branch.**
 
 ```bash
-# Capture one file per run (a whole narrative node is fine), then:
-python bench/tools/prose_screen.py blind runs/ --out blind/ --key key.txt
-python bench/tools/prose_screen.py screen blind/ --project <lens-project> \
-    --kb prep.some-object --kb pc.someone --target-words 800
+PROJECT=$(python bench/tools/setup_bench.py --profile deepseek \
+    --scenario bench/scenarios/model_rank.md)
+export PROJECT && bash bench/scenarios/model_rank_setup.sh
+# wire the gate's survivors as named [[llm]] rows in $PROJECT/lens.toml, then:
+python bench/tools/model_rank.py --project "$PROJECT" \
+    --arm ds-flash --arm ds-flash:high --arm glm-flash \
+    --target-words 180 --out bench/reports/rank/
+```
+
+`--dry-run` prints the arms and beats and calls nothing, which is how to check
+the `lens.toml` wiring before spending anything; `--limit 2` plays the first two
+beats for the same reason. The beat sequence lives in
+`bench/scenarios/model_rank.md` and the tool holds no copy of it, exactly as with
+the gate. It reuses the gate's cast on purpose: `npc.sable` already carries a
+secret that must survive repeated pressure, which is the instruction-adherence
+half of what a sequence is for, and two casts would only drift apart.
+
+`--arm <id>[:<effort>]` **settles the reasoning question in the same pass**, since
+the beats are being generated anyway — the effort goes through as `lens play
+--reasoning`. That is safe in the place it looks unsafe: a candidate that cannot
+run with thinking disabled is protected by `reasoning_floor` on its own `[[llm]]`
+row, which clamps upward and cannot be lowered by an invocation. Order the arms
+by the **reasoning characters** in the trace rather than by the effort label —
+the label is a blunt dial on the variable that actually predicts quality.
+
+What it reports is words per beat and the **drift** from an arm's opening beats
+to its closing ones, a list of **recurring n-grams**, per-beat novelty, and what
+each generation cost according to its own `[llm-trace]` block. It decides
+nothing, and it grew no marker regexes: the two pre-screens the method names
+live in `prose_screen.py`, and a third invented here would repeat the mistake
+that once disqualified a model for a line its *villain* said.
+
+The first real sweep re-ordered that list, and the ordering above is the result
+rather than the design:
+
+- **`drift` earned the headline.** It was the only number that separated the
+  field *and* replicated at n=2 — one arm held its stated target to within 3%,
+  one sat 18% over it, one shed a fifth and then a third of its length by the
+  closing beats.
+- **The recurring-n-gram list caught the real failure.** One arm ended beats it
+  did not want to run with "roll initiative for Mara and report the result",
+  three times per play-through, twice over. Nobody sees a three-beat boilerplate
+  pattern at reading speed. The list is also the only thing that separates the
+  *scene* recurring (the stove, the top of the pass) from the *model* recurring.
+- **Novelty did not earn it.** It read 99–100% for every arm, so it is a floor
+  detector rather than a stamina measure, and it is deliberately absent from the
+  cross-arm table where an aggregate that always says 100% would invite ranking
+  on noise. At n=5, verbatim shingles do not catch recycled *constructions*,
+  which is what the eye-colour failure actually is.
+- **`cached` is not decoration.** One arm cached ~0% across the whole sequence
+  while another held ~90%, which moves real cost by a factor no price list shows.
+
+And unlike the gate, **the arms are not comparable beat-for-beat**: arm B's beat
+five was written after arm B's beats one to four, so only the player lines are
+held identical and a beat-level difference between two arms is noise.
+
+Then read, blind — and **before** you look at the tool's own numbers. With
+`--out` the sweep holds them back and prints the `--rescore` line instead,
+because the table names each arm next to its word counts and that alone is
+enough to map the banked files back. That is not hypothetical: it is how the
+first real sweep de-blinded its own reader. `--report` overrides it. Comparing models on prose is limited by **reading attention**,
+not sampling cost — a full evening across three models is a couple of dollars,
+and what runs out is the ability to read carefully enough to tell them apart.
+`bench/tools/prose_screen.py` protects that:
+
+```bash
+python bench/tools/prose_screen.py blind bench/reports/rank/ --out blind/ --key key.txt
+python bench/tools/prose_screen.py screen blind/ --project "$PROJECT" \
+    --kb location.cinder-yard --kb npc.vetch --target-words 1800
 # rank the blind files by reading, and only then:
 python bench/tools/prose_screen.py reveal key.txt
 ```
+
+Bank it and re-read it later; `model_rank.py --rescore <dir>` measures a banked
+sweep again with no model call, for the same reason the gate has it — the first
+reading will be wrong and re-analysis is free.
+
+**What a sweep costs, measured:** three arms × ten beats × two play-throughs is
+60 generations at a ~9k-token prompt, and came to about ten cents — an order of
+magnitude under what the prompt sizes suggest, because the prefix caches. The
+constraint really is reading attention. Sample more than feels affordable.
 
 `blind` strips the blocks that name the model (`[write ...]` stores `llm_id`;
 `[llm-trace ...]` names model and host), shuffles, and relabels `A.md`, `B.md`, …
@@ -164,9 +242,12 @@ contradicted the ordering the price list implied.
 
 `screen` reports two free signals that decide what to read first: **lifted n-grams**
 (word-shingles shared with the KB the prompt pinned, stopwords discarded) and **word
-count against a stated target**. The first is the "every character's eye colour every
-turn" failure measured rather than judged, and it catches lifts a human misses — a
-7-gram match is invisible at reading speed. Neither replaces reading.
+count against a stated target**. The first catches the model reciting the KB it was
+handed rather than writing from it, and it catches lifts a human misses — a 7-gram
+match is invisible at reading speed. It is the other half of the pair with
+`model_rank.py`'s novelty, which catches the model reciting *itself*; the same
+shingle machinery measures both, against two different sources. Neither replaces
+reading.
 
 Run at least **two samples per cell**: within-model variance on creative output rivals
 between-model variance, so n=1 measures noise.

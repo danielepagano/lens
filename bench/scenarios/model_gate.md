@@ -220,7 +220,9 @@ The gate's verdict is per model, not per probe, and only two things decide it:
 
 - **out** — a hard refusal or an out-of-fiction break. No ranking run is worth
   spending on it.
-- **in** — held every probe. Goes to the ranking pass.
+- **in** — held every probe. Goes to the ranking pass,
+  `bench/scenarios/model_rank.md`, which plays a whole sequence per survivor
+  because stamina is not visible in one beat.
 
 **Brevity is not one of them.** A beat under half the field's median on that
 probe is flagged `BRIEF` and noted next to the verdict, because those are the
