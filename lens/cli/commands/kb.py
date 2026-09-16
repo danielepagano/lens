@@ -39,10 +39,12 @@ from lens.cli.help_strings import (
 from lens.cli.options import pin_option, unpin_option
 from lens.core.knowledge import KnowledgeObject, validate_ids_exist
 from lens.core.commands.kb import (
+    MissingId,
     format_kb_listing_line,
     format_with_tag_id_line,
     kb_add,
     kb_extract,
+    kb_get_missing,
     kb_get_payload,
     kb_template,
     kb_tag,
@@ -243,6 +245,37 @@ async def _kb_edit_async(
     )
 
 
+def _missing_detail(m: MissingId) -> str:
+    """One line saying why an id resolved to nothing, and what to run next."""
+    if m.reason == "malformed":
+        return "not a valid id (expected <type>.<key>)"
+    if m.reason == "unknown_type":
+        key = m.requested.split(".", 1)[1] if "." in m.requested else m.requested
+        return f"no objects of type {m.type_part!r} — try: lens kb search {key}"
+    return (
+        f"type {m.type_part!r} exists but has no such key"
+        f" — try: lens kb list --type {m.type_part}"
+    )
+
+
+def _report_missing(missing: list[MissingId]) -> None:
+    """Name every id that resolved to nothing on stderr, then exit non-zero.
+
+    Printing nothing and exiting 0 reads as "this object is empty", which is a
+    different fact from "this object does not exist" — and the second one is
+    usually a typo the caller wants to hear about immediately.  Objects that
+    *did* resolve are still printed first: a partial fetch is worth keeping.
+    """
+    if not missing:
+        return
+    ids = ", ".join(m.requested for m in missing)
+    typer.echo(f"Error: not found: {ids}", err=True)
+    for m in missing:
+        prefix = f"{m.requested}: " if len(missing) > 1 else ""
+        typer.echo(f"  {prefix}{_missing_detail(m)}", err=True)
+    raise typer.Exit(1)
+
+
 @app.command(no_args_is_help=True)
 def get(
     ids: list[str] = typer.Argument(
@@ -264,9 +297,14 @@ def get(
     material that ``design`` and ``advance`` pull automatically and ``play``
     never sees.  Only the ids you asked for gain facets; objects reached through
     ``+`` do not, so a linked ``stat.guard`` never drags in ``stat.guard-captain``.
+
+    An id that resolves to nothing is named on stderr and exits 1; ids that did
+    resolve are still printed.  Under ``--json`` the misses are also listed
+    under ``missing``.
     """
     try:
         ordered_ids, objects = kb_get(ids, facets=facet_expand)
+        missing = kb_get_missing(ids, objects)
     except LensException as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -274,10 +312,16 @@ def get(
     if as_json:
         typer.echo(
             json.dumps(
-                kb_get_payload(ordered_ids, objects, include_comments=include_comments),
+                kb_get_payload(
+                    ordered_ids,
+                    objects,
+                    include_comments=include_comments,
+                    missing=missing,
+                ),
                 indent=2,
             )
         )
+        _report_missing(missing)
         return
 
     def _print(obj: KnowledgeObject) -> None:
@@ -293,6 +337,8 @@ def get(
     for cid in ordered_ids:
         if cid in objects:
             _print(objects[cid])
+
+    _report_missing(missing)
 
 
 def _source_filter(value: str) -> SourceFilter:

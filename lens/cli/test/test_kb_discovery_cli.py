@@ -1,4 +1,4 @@
-"""Output shape of ``lens kb search`` / ``list`` / ``refs``.
+"""Output shape of ``lens kb search`` / ``list`` / ``refs``, and ``get``'s misses.
 
 The core tests own the semantics; these own the text, because the text *is* the
 interface here. ``id:line:text`` is a contract — an agent pipes it into `cut`,
@@ -187,6 +187,76 @@ class TestRefsOutput(_KbCliCase):
         self.assertTrue(
             all(ref["direction"] in ("out", "in") for ref in payload["refs"])
         )
+
+
+class TestGetNotFound(_KbCliCase):
+    """``kb get`` on an id that resolves to nothing.
+
+    Silence plus exit 0 is ambiguous — it reads the same as an object with an
+    empty body — so the miss is named, classified, and exits non-zero.
+    """
+
+    def test_a_missing_key_names_the_id_and_exits_one(self) -> None:
+        result = self.run_kb("get", "person.nobody")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout.strip(), "")
+        self.assertIn("not found: person.nobody", _strip_ansi(result.stderr))
+
+    def test_a_known_type_suggests_listing_that_type(self) -> None:
+        stderr = _strip_ansi(self.run_kb("get", "person.nobody").stderr)
+
+        self.assertIn("lens kb list --type person", stderr)
+
+    def test_an_unknown_type_suggests_searching(self) -> None:
+        stderr = _strip_ansi(self.run_kb("get", "wizard.gandalf").stderr)
+
+        self.assertIn("no objects of type 'wizard'", stderr)
+        self.assertIn("lens kb search gandalf", stderr)
+
+    def test_a_malformed_id_says_what_the_shape_is(self) -> None:
+        stderr = _strip_ansi(self.run_kb("get", "nonsense").stderr)
+
+        self.assertIn("not a valid id", stderr)
+
+    def test_a_hit_beside_a_miss_still_prints_the_hit(self) -> None:
+        result = self.run_kb("get", "person.rowan", "person.nobody")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("A ranger.", result.stdout)
+        stderr = _strip_ansi(result.stderr)
+        self.assertIn("person.nobody", stderr)
+        self.assertNotIn("person.rowan", stderr)
+
+    def test_several_misses_are_each_explained(self) -> None:
+        stderr = _strip_ansi(self.run_kb("get", "person.nobody", "wizard.gandalf").stderr)
+
+        self.assertIn("not found: person.nobody, wizard.gandalf", stderr)
+        self.assertIn("person.nobody: ", stderr)
+        self.assertIn("wizard.gandalf: ", stderr)
+
+    def test_a_resolving_id_is_still_quiet_and_exits_zero(self) -> None:
+        result = self.run_kb("get", "person.rowan")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(_strip_ansi(result.stderr).strip(), "")
+
+    def test_json_lists_the_misses_and_still_exits_one(self) -> None:
+        result = self.run_kb("get", "person.rowan", "person.nobody", "--json")
+
+        self.assertEqual(result.returncode, 1)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["ids"], ["person.rowan"])
+        self.assertEqual(
+            payload["missing"],
+            [{"id": "person.nobody", "reason": "unknown_key", "type": "person"}],
+        )
+
+    def test_json_carries_an_empty_missing_list_on_success(self) -> None:
+        result = self.run_kb("get", "person.rowan", "--json")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["missing"], [])
 
 
 if __name__ == "__main__":

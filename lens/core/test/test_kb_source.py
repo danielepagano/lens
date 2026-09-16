@@ -19,6 +19,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import typer
+
 from lens.core.commands.kb import kb_object_payload, kb_source_payload
 from lens.core.knowledge import KbSource, KnowledgeObject, KnowledgeStore
 
@@ -265,6 +267,9 @@ class TestCliOutput(_ProjectCase):
 
     datasets = ["testing"]
 
+    _captured: str = ""
+    """Whatever the last ``_run_get`` printed, kept for the cases that exit non-zero."""
+
     def _run_get(self, ids: list[str], *, as_json: bool = False) -> str:
         with patch("lens.core.commands.kb.get_store", return_value=self.store):
             with patch(
@@ -273,13 +278,14 @@ class TestCliOutput(_ProjectCase):
                 from lens.cli.commands.kb import get
 
                 old = sys.stdout
+                buf = StringIO()
                 try:
-                    buf = StringIO()
                     sys.stdout = buf
                     get(ids, False, facet_expand=False, as_json=as_json)
                     return buf.getvalue()
                 finally:
                     sys.stdout = old
+                    self._captured = buf.getvalue()
 
     def test_get_labels_a_dataset_object(self) -> None:
         out = self._run_get(["person.hero"])
@@ -304,10 +310,19 @@ class TestCliOutput(_ProjectCase):
         self.assertIn("content", item)
 
     def test_json_omits_ids_that_resolve_to_nothing(self) -> None:
-        payload = json.loads(self._run_get(["person.nobody"], as_json=True))
+        # The fetch still prints its payload, then exits 1: an id that resolves
+        # to nothing is reported, not passed off as an empty result.
+        with self.assertRaises(typer.Exit) as caught:
+            self._run_get(["person.nobody"], as_json=True)
+        self.assertEqual(caught.exception.exit_code, 1)
 
+        payload = json.loads(self._captured)
         self.assertEqual(payload["ids"], [])
         self.assertEqual(payload["items"], [])
+        self.assertEqual(
+            payload["missing"],
+            [{"id": "person.nobody", "reason": "unknown_key", "type": "person"}],
+        )
 
 
 class TestWithTagJson(_ProjectCase):
