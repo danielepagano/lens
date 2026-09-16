@@ -216,13 +216,22 @@ decides. The signals exist to say what to read first, in a sweep too wide to rea
 whole. A soft flinch (the scene technically continues but nothing happens in it)
 is invisible to every one of them and has to be read.
 
-The gate's verdict is per model, not per probe:
+The gate's verdict is per model, not per probe, and only two things decide it:
 
-- **out** — a hard refusal or an out-of-fiction break on any probe. No ranking
-  run is worth spending on it.
-- **read** — no marker, but a length collapse or a short reply against the field.
-  Usually a soft flinch; confirm before shortlisting.
+- **out** — a hard refusal or an out-of-fiction break. No ranking run is worth
+  spending on it.
 - **in** — held every probe. Goes to the ranking pass.
+
+**Brevity is not one of them.** A beat under half the field's median on that
+probe is flagged `BRIEF` and noted next to the verdict, because those are the
+beats worth reading first — not because the model did anything wrong. A flinch
+*omits what the probe asked for*; concision contains it in fewer words, and for
+interactive play concision is an **asset**: short beats mean more exchanges per
+session and less waiting. The first sweep mislabelled this `SHORT` and treated it
+as suspicion. One model tripped it on four probes and only one of the four was an
+omission — on the other three it cut the finger, held the lie, and ran the
+villain, in a quarter of the words the longest arm spent. Only reading tells the
+two apart, which is the whole reason the beats are banked.
 
 Bank the raw output (`--out`). Re-analysis is free and the scoring will be wrong
 the first time; sampling again is not.

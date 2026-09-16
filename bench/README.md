@@ -92,7 +92,7 @@ PROJECT=$(python bench/tools/setup_bench.py --profile deepseek \
 export PROJECT && bash bench/scenarios/model_gate_setup.sh
 # wire the shortlist as named [[llm]] rows in $PROJECT/lens.toml, then:
 python bench/tools/model_gate.py --project "$PROJECT" \
-    --llm ds-flash --llm kimi --llm glm-flash --out bench/reports/gate/
+    --llm ds-flash --llm glm-flash --llm luna --out bench/reports/gate/
 ```
 
 The probes live in `bench/scenarios/model_gate.md` and the tool holds no copy of
@@ -103,9 +103,11 @@ and every other model re-renders *that same beat* with `lens play --retry --llm
 `--retry`**: that makes it feedback and feeds the previous arm's output back as
 context, which is exactly the thing a comparison cannot survive.
 
-This is a gate, not a rubric — no scores and no `report.py` run. It reports
-refusal markers, out-of-fiction markers, and length against the field's own
-median for that probe, and then says what to read. A **soft** flinch — the scene
+This is a gate, not a rubric — no scores and no `report.py` run. Only a refusal
+or a fourth-wall break disqualifies. Length is reported too, as a `BRIEF` note
+rather than a verdict: a flinch omits what the probe asked for, concision does
+not, and in interactive play concision is an asset. Reading is what tells them
+apart. A **soft** flinch — the scene
 technically continues but nothing in it happens — trips none of the three and has
 to be read, which is why `--out` banks every beat.
 

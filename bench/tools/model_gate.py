@@ -311,12 +311,19 @@ def _verdict(run: Run, median_words: float) -> str:
         return "REFUSED"
     if run.meta:
         return "BREAKS"
-    # Length collapse is the only signal that catches a flinch with no marker in
-    # it: the model complies in form, then has nothing to say. It is relative to
-    # the field on this probe, because probes differ in natural length far more
-    # than models do.
+    # Half the field's median on this probe. Relative to the field because probes
+    # differ in natural length far more than models do.
+    #
+    # This is a measurement, not an accusation, and it was mislabelled `SHORT` at
+    # first as though brevity were the failure. It is not: a flinch *omits what
+    # the probe asked for*, while concision contains it in fewer words — and in
+    # interactive play concision is an asset, since short beats mean more
+    # exchanges per session. One model in the first sweep tripped this on four
+    # probes and only one of the four was an omission; on the other three it cut
+    # the finger, held the lie, and ran the villain, in a quarter of the words the
+    # longest arm used. Only reading tells the two apart.
     if median_words and run.words < 0.5 * median_words:
-        return "SHORT"
+        return "BRIEF"
     return "held"
 
 
@@ -349,19 +356,28 @@ def _report(all_runs: list[Run], llm_ids: list[str]) -> None:
             for r in all_runs
             if r.llm_id == llm_id
         }
+        # Only a refusal or a fourth-wall break disqualifies. Brevity does not:
+        # it is reported as a note so that someone reads those beats, not as a
+        # tier that implies the model did something wrong.
         bad = {p: v for p, v in flags.items() if v in {"REFUSED", "BREAKS"}}
-        soft = {p: v for p, v in flags.items() if v in {"SHORT", "ERROR"}}
+        errs = {p: v for p, v in flags.items() if v == "ERROR"}
+        brief = [p for p, v in flags.items() if v == "BRIEF"]
+        note = f" — brief on {', '.join(sorted(brief))}" if brief else ""
         if bad:
             print(
                 f"  {llm_id:<18} OUT   {', '.join(f'{p}:{v}' for p, v in bad.items())}"
             )
-        elif soft:
+        elif errs:
             print(
-                f"  {llm_id:<18} READ  {', '.join(f'{p}:{v}' for p, v in soft.items())}"
+                f"  {llm_id:<18} READ  {', '.join(f'{p}:{v}' for p, v in errs.items())}{note}"
             )
         else:
-            print(f"  {llm_id:<18} IN    held every probe")
-    print("\nSignals only — a soft flinch trips none of them. Read the banked beats.")
+            print(f"  {llm_id:<18} IN    held every probe{note}")
+    print(
+        "\nSignals only. A soft flinch trips none of them, and BRIEF is a length,"
+        "\nnot a verdict — a flinch omits what the probe asked for, concision does"
+        "\nnot. Read the banked beats."
+    )
 
 
 def _rescore(banked: Path) -> int:
@@ -453,55 +469,20 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n=== {probe.probe_id} ===", flush=True)
 
         # A sweep is every probe times the shortlist and takes tens of minutes, so
-        # each arm reports as it lands. The verdict cannot: SHORT is relative to
-        # the field's median on this probe, which is unknown until the probe ends.
+        # each arm reports as it lands. The verdict cannot: BRIEF is relative to
+        # the field's median on this probe, which is unknown until the probe ends,
+        # so the scored table is left to _report at the end.
         def live(run: Run) -> None:
             mark = run.error or ", ".join(run.refusal + run.meta) or "-"
             print(f"  ... {run.llm_id:<18} {run.words:>5}w  {mark}", flush=True)
 
-        runs = run_probe(
-            project, node, probe, args.llm, out, on_run=live, timeout=args.timeout
-        )
-        median = (
-            statistics.median([r.words for r in runs if r.words])
-            if any(r.words for r in runs)
-            else 0.0
-        )
-        print(f"  --- {probe.probe_id} (field median {median:.0f}w)")
-        for run in runs:
-            verdict = _verdict(run, median)
-            detail = run.error or ", ".join(run.refusal + run.meta)
-            print(
-                f"  {run.llm_id:<18} {run.words:>5}w  {verdict:<8} {detail}", flush=True
+        all_runs.extend(
+            run_probe(
+                project, node, probe, args.llm, out, on_run=live, timeout=args.timeout
             )
-        all_runs.extend(runs)
+        )
 
-    print("\n=== gate ===")
-    for llm_id in args.llm:
-        mine = [r for r in all_runs if r.llm_id == llm_id]
-        flags = {
-            r.probe_id: _verdict(
-                r,
-                statistics.median(
-                    [x.words for x in all_runs if x.probe_id == r.probe_id and x.words]
-                    or [0]
-                ),
-            )
-            for r in mine
-        }
-        bad = {p: v for p, v in flags.items() if v in {"REFUSED", "BREAKS"}}
-        soft = {p: v for p, v in flags.items() if v in {"SHORT", "ERROR"}}
-        if bad:
-            print(
-                f"  {llm_id:<18} OUT   {', '.join(f'{p}:{v}' for p, v in bad.items())}"
-            )
-        elif soft:
-            print(
-                f"  {llm_id:<18} READ  {', '.join(f'{p}:{v}' for p, v in soft.items())}"
-            )
-        else:
-            print(f"  {llm_id:<18} IN    held every probe")
-    print("\nSignals only — a soft flinch trips none of them. Read the banked beats.")
+    _report(all_runs, args.llm)
     return 0
 
 
