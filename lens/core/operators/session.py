@@ -54,6 +54,7 @@ from lens.core.llm import (
     build_kb_patch_whitelist_bundle,
 )
 from lens.core.llm_run import LlmRunRequest, run_llm
+from lens.core.llm_trace import split_trace_blocks
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator, OperatorError
 from lens.core.operator_params import apply_pinned_invocation
@@ -189,6 +190,8 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
         > body line 1
         > body line 2
 
+        [llm-trace …]: #
+
     Algorithmic normalization applied:
 
     - **Title**: the first non-empty line is the title after stripping markdown
@@ -199,13 +202,20 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
     - **Body**: lines after the title, trimmed of leading/trailing blank lines,
       then passed through :func:`_blockquote_body` so the body is one blockquote
       run (blank lines are ``> ``).
+    - **Trace**: any ``[llm-trace …]: #`` block the generation appended is lifted
+      out of the text *before* quoting and re-emitted after the blockquote, at
+      column 0.  Inside the quote a ``>`` prefix hides it from
+      ``strip_markdown_comments`` — which anchors on ``^\\s*\\[`` — so the
+      summary's own telemetry would ride into ``[CURRENT PASSAGE]`` for every
+      descendant of the collated node, on every generation.
     - Exactly one blank line sits between the HTML comment and the ``###``
       header, and between the header and the body.
 
     The HTML comment always uses the full storage *slug*; LLM prompts may use
     :func:`slug_for_summary_prompt` for the ``{slug}`` template field only.
     """
-    text = (raw_summary or "").strip()
+    body_text, trace_blocks = split_trace_blocks(raw_summary or "")
+    text = body_text.strip()
     lines = text.split("\n") if text else []
 
     first_idx = 0
@@ -242,6 +252,8 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
         "",
         *quoted,
     ]
+    for block in trace_blocks:
+        parts.extend(["", block.rstrip("\n")])
     return "\n".join(parts)
 
 

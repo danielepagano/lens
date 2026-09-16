@@ -17,6 +17,12 @@ operator token, and the hyphen in ``llm-trace`` puts it outside that grammar,
 so cursor detection and ``detect_operator_name`` cannot mistake a trace for an
 open block.
 
+That strip anchors on ``^\\s*\\[``, so it holds only while the block sits at its
+own indent.  A caller that *reshapes* a composed body — quoting it, indenting
+it, wrapping it — takes the trace with it and the block stops being strippable:
+``> [llm-trace`` reaches the model as narrative text.  Any such caller must lift
+the trace out first with :func:`split_trace_blocks` and re-emit it unwrapped.
+
 It is written for a machine to read back, so the body is strict YAML at a fixed
 two-space indent — which is also what keeps the block well-formed, since a
 multi-line markdown comment continues only while its lines are indented.
@@ -27,7 +33,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-__all__ = ["LlmTrace", "TraceMode", "parse_trace_mode"]
+__all__ = ["TRACE_TAG", "LlmTrace", "TraceMode", "parse_trace_mode", "split_trace_blocks"]
+
+TRACE_TAG = "llm-trace"
+"""Operator token of the block. Hyphenated so it stays outside the annotation grammar."""
 
 TraceMode = str
 """``"off"`` | ``"stats"`` | ``"full"`` — see :func:`parse_trace_mode`."""
@@ -67,6 +76,38 @@ def parse_trace_mode(raw: object) -> TraceMode:
         return "off"
     text = str(raw).strip().lower()
     return text if text in _VALID_MODES else "off"
+
+
+def split_trace_blocks(text: str) -> tuple[str, list[str]]:
+    """Separate rendered ``[llm-trace …]: #`` blocks out of *text*.
+
+    Returns ``(remaining_text, blocks)``.  A trace is appended to whatever the
+    generation produced, so any caller that reshapes that output — notably
+    :func:`lens.core.operators.session.format_summary_block`, which quotes the
+    body — must lift the trace out first: a ``>``-prefixed annotation no longer
+    matches ``strip_markdown_comments``, and the block would reach the model as
+    narrative context.
+
+    Only unquoted blocks are recognised, which is all that exists before the
+    reshape; repairing already-quoted ones is not this function's job.
+    """
+    lines = text.split("\n")
+    kept: list[str] = []
+    blocks: list[str] = []
+    i = 0
+    while i < len(lines):
+        if lines[i].lstrip().startswith(f"[{TRACE_TAG}"):
+            j = i
+            while j < len(lines) and not _BLOCK_BREAKER.search(lines[j]):
+                j += 1
+            # An unterminated block still ends the trace: everything from the
+            # opener on is telemetry, not prose.
+            blocks.append("\n".join(lines[i : j + 1]).rstrip("\n") + "\n")
+            i = j + 1
+            continue
+        kept.append(lines[i])
+        i += 1
+    return "\n".join(kept), blocks
 
 
 def _block_safe_lines(text: str) -> list[str]:
@@ -124,7 +165,7 @@ class LlmTrace:
         if mode == "off" or not self.has_content():
             return ""
 
-        lines: list[str] = ["[llm-trace"]
+        lines: list[str] = [f"[{TRACE_TAG}"]
         add = lines.append
 
         if self.model:
