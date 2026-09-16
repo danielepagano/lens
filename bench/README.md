@@ -53,6 +53,7 @@ Read `bench/agent.md` for shared mechanics, then the script you need.
 ```
 bench/
   agent.md                Agent run: inputs, shell + lens check, outputs, reports
+  model-rating.md         Picking a play model, and re-picking as the field moves
   README.md
   tools/
     setup_bench.py        Setup script: empty project + LLM profile; narrative `default`
@@ -73,219 +74,16 @@ bench/
   reports/                Output directory (gitignored)
 ```
 
-## Re-rating models (#140)
+## Re-rating models
 
-Any model answer has a shelf life measured in weeks — twice now a shortlist has
-been not merely stale but *inverted*, a model dismissed as a floor coming back a
-minor version later and beating the reigning default. So what is checked in here
-is the **loop**, not a winner. Run it in this order: wire the arms, gate the
-field, then rank what survives.
+Picking a play model is its own workflow with its own tools, and it has one
+page: **[model-rating.md](model-rating.md)**. Read that, not this, when a new
+model lands or when you want to measure something differently.
 
-### Wire the arms
-
-```bash
-python bench/tools/llm_row.py deepseek/deepseek-v4.1-pro                    # what exists
-python bench/tools/llm_row.py deepseek/deepseek-v4.1-pro --pin deepseek --id ds-pro
-```
-
-The first form lists every endpoint with its **tag**, quantization and price,
-and flags the traps. The second emits a `[[llm]]` row pinned to one tag, at the
-canonical arm configuration. Paste it into the bench project's `lens.toml`.
-
-This is the step that recurs every time the field moves, and the step where
-every documented money-losing mistake lives — so it is executable rather than a
-paragraph of warnings:
-
-- **Pin the tag, not the provider name.** OpenAI serves `openai/flex`, `openai`
-  and `openai/fast` on one dated snapshot at a **4x price spread**, and
-  `order = ["OpenAI"]` leaves the router free among them. Flex-against-fast is a
-  latency difference, which is one of the things the ranking pass measures.
-- **Quantization is part of the price.** The listing prints the quant beside the
-  money, and says so when the cheapest endpoint is fp4 while fp8 exists.
-- **`:batch` ids and `~`-prefixed aliases are refused outright** — the first does
-  not stream and cannot be used by the Lens client at all, the second points
-  somewhere else next week.
-- **Endpoints that drop `temperature`** get a row without the field and a note,
-  because Lens records in the trace the value it *sent*, not one that was
-  honoured.
-
-`CANONICAL` in that file is the **canonical arm configuration** — temperature
-0.6, reasoning on, effort medium — and it lives there and nowhere else. A run
-configured differently cannot be compared with an earlier one, and comparison
-with an earlier run is the entire use of this loop. Change it and you have
-started a new baseline; the old numbers stop being evidence.
-
-### Gate before you rank
-
-Two things disqualify a model for `play` whatever its prose is worth: treating
-in-character adversarial behaviour as a safety problem, and refusing an R-rated
-baseline. Both are cheaper to check than a ranking pass is to *read*, so they run
-first — a model that fails here never costs anyone attention.
-
-```bash
-PROJECT=$(python bench/tools/setup_bench.py --profile deepseek \
-    --scenario bench/scenarios/model_gate.md)
-export PROJECT && bash bench/scenarios/model_gate_setup.sh
-# wire the shortlist as named [[llm]] rows in $PROJECT/lens.toml, then:
-python bench/tools/model_gate.py --project "$PROJECT" \
-    --llm ds-flash --llm glm-flash --llm luna --out bench/reports/gate/
-```
-
-The probes live in `bench/scenarios/model_gate.md` and the tool holds no copy of
-them — each step there is a `scene` block (committed into the node before the
-beat) plus the `lens play` line that runs it. The first model generates a beat
-and every other model re-renders *that same beat* with `lens play --retry --llm
-<id>`, which reuses the stored prompt and pins. **Do not pass a prompt with
-`--retry`**: that makes it feedback and feeds the previous arm's output back as
-context, which is exactly the thing a comparison cannot survive.
-
-This is a gate, not a rubric — no scores and no `report.py` run. Only a refusal
-or a fourth-wall break disqualifies. Length is reported too, as a `BRIEF` note
-rather than a verdict: a flinch omits what the probe asked for, concision does
-not, and in interactive play concision is an asset. Reading is what tells them
-apart. A **soft** flinch — the scene
-technically continues but nothing in it happens — trips none of the three and has
-to be read, which is why `--out` banks every beat.
-
-Bank it, because the first scoring pass will be wrong and re-analysis is free:
-
-```bash
-python bench/tools/model_gate.py --rescore bench/reports/gate/
-```
-
-`--rescore` re-reads a banked directory and scores it again without calling a
-model. It exists because a sweep disqualified a model for its *villain's* line —
-every out-of-fiction marker is a first-person phrase, and inside `> [Vetch] I'd
-rather hear it from you` the "I" is a character. Markers are now hunted in
-narration only, and replaying that fix over the banked beats cost nothing.
-
-Two ways a probe quietly measures nothing, both paid for in this repo already:
-
-- **The consequence is not named in prep.** The first draft of `model_gate.md`
-  left the villain's threat unstated, so the model invented a gentler one and
-  carried *that* out faithfully. Holding was free.
-- **The probe tests the operator instead of the model.** An intimacy probe that
-  never asked for the scene on the page got a fade from all four models, because
-  `play` is built to hand the moment back to the player — a fade was the correct
-  GM answer. Rewritten to ask, the same four doubled their length.
-
-So: a probe the whole field fails is far more likely to be broken than to have
-found something, and **unanimity is the shape that warrants re-reading the probe**
-before the result is written down anywhere. Budget for discarding probes.
-
-The scenario runs under `lens-dnd`, not the `rpg` dataset alone, because `rules.system`
-in `rpg` is the Lasers & Feelings one-pager. The gate has to be representative of
-instruction adherence under a *heavy* prompt, and `lens-dnd` is what a play prompt
-actually weighs (8.7k tokens against 7.0k, with a real module catalog offered).
-
-### Rank what survives
-
-The gate re-renders **one** beat per model. That is right for a disqualifier — a
-refusal arrives in the first breath — and wrong for everything a ranking pass is
-for. Prose stamina, and the degeneration into the same three constructions whose
-canonical tell is every character's eye colour every turn, are not visible in one
-beat; they are visible by about beat ten. So ranking has its own shape and its
-own tool: **each arm plays a whole sequence through in its own git branch.**
-
-```bash
-PROJECT=$(python bench/tools/setup_bench.py --profile deepseek \
-    --scenario bench/scenarios/model_rank.md)
-export PROJECT && bash bench/scenarios/model_rank_setup.sh
-# wire the gate's survivors as named [[llm]] rows in $PROJECT/lens.toml, then:
-python bench/tools/model_rank.py --project "$PROJECT" \
-    --arm ds-flash --arm ds-flash:high --arm glm-flash \
-    --target-words 180 --out bench/reports/rank/
-```
-
-`--dry-run` prints the arms and beats and calls nothing, which is how to check
-the `lens.toml` wiring before spending anything; `--limit 2` plays the first two
-beats for the same reason. The beat sequence lives in
-`bench/scenarios/model_rank.md` and the tool holds no copy of it, exactly as with
-the gate. It reuses the gate's cast on purpose: `npc.sable` already carries a
-secret that must survive repeated pressure, which is the instruction-adherence
-half of what a sequence is for, and two casts would only drift apart.
-
-`--arm <id>[:<effort>]` **settles the reasoning question in the same pass**, since
-the beats are being generated anyway — the effort goes through as `lens play
---reasoning`. That is safe in the place it looks unsafe: a candidate that cannot
-run with thinking disabled is protected by `reasoning_floor` on its own `[[llm]]`
-row, which clamps upward and cannot be lowered by an invocation. Order the arms
-by the **reasoning characters** in the trace rather than by the effort label —
-the label is a blunt dial on the variable that actually predicts quality.
-
-What it reports is words per beat and the **drift** from an arm's opening beats
-to its closing ones, a list of **recurring n-grams**, per-beat novelty, and what
-each generation cost according to its own `[llm-trace]` block. It decides
-nothing, and it grew no marker regexes: the two pre-screens the method names
-live in `prose_screen.py`, and a third invented here would repeat the mistake
-that once disqualified a model for a line its *villain* said.
-
-The first real sweep re-ordered that list, and the ordering above is the result
-rather than the design:
-
-- **`drift` earned the headline.** It was the only number that separated the
-  field *and* replicated at n=2 — one arm held its stated target to within 3%,
-  one sat 18% over it, one shed a fifth and then a third of its length by the
-  closing beats.
-- **The recurring-n-gram list caught the real failure.** One arm ended beats it
-  did not want to run with "roll initiative for Mara and report the result",
-  three times per play-through, twice over. Nobody sees a three-beat boilerplate
-  pattern at reading speed. The list is also the only thing that separates the
-  *scene* recurring (the stove, the top of the pass) from the *model* recurring.
-- **Novelty did not earn it.** It read 99–100% for every arm, so it is a floor
-  detector rather than a stamina measure, and it is deliberately absent from the
-  cross-arm table where an aggregate that always says 100% would invite ranking
-  on noise. At n=5, verbatim shingles do not catch recycled *constructions*,
-  which is what the eye-colour failure actually is.
-- **`cached` is not decoration.** One arm cached ~0% across the whole sequence
-  while another held ~90%, which moves real cost by a factor no price list shows.
-
-And unlike the gate, **the arms are not comparable beat-for-beat**: arm B's beat
-five was written after arm B's beats one to four, so only the player lines are
-held identical and a beat-level difference between two arms is noise.
-
-Then read, blind — and **before** you look at the tool's own numbers. With
-`--out` the sweep holds them back and prints the `--rescore` line instead,
-because the table names each arm next to its word counts and that alone is
-enough to map the banked files back. That is not hypothetical: it is how the
-first real sweep de-blinded its own reader. `--report` overrides it. Comparing models on prose is limited by **reading attention**,
-not sampling cost — a full evening across three models is a couple of dollars,
-and what runs out is the ability to read carefully enough to tell them apart.
-`bench/tools/prose_screen.py` protects that:
-
-```bash
-python bench/tools/prose_screen.py blind bench/reports/rank/ --out blind/ --key key.txt
-python bench/tools/prose_screen.py screen blind/ --project "$PROJECT" \
-    --kb location.cinder-yard --kb npc.vetch --target-words 1800
-# rank the blind files by reading, and only then:
-python bench/tools/prose_screen.py reveal key.txt
-```
-
-Bank it and re-read it later; `model_rank.py --rescore <dir>` measures a banked
-sweep again with no model call, for the same reason the gate has it — the first
-reading will be wrong and re-analysis is free.
-
-**What a sweep costs, measured:** three arms × ten beats × two play-throughs is
-60 generations at a ~9k-token prompt, and came to about ten cents — an order of
-magnitude under what the prompt sizes suggest, because the prefix caches. The
-constraint really is reading attention. Sample more than feels affordable.
-
-`blind` strips the blocks that name the model (`[write ...]` stores `llm_id`;
-`[llm-trace ...]` names model and host), shuffles, and relabels `A.md`, `B.md`, …
-Price and reputation bias subjective reading hard enough that the reveal has repeatedly
-contradicted the ordering the price list implied.
-
-`screen` reports two free signals that decide what to read first: **lifted n-grams**
-(word-shingles shared with the KB the prompt pinned, stopwords discarded) and **word
-count against a stated target**. The first catches the model reciting the KB it was
-handed rather than writing from it, and it catches lifts a human misses — a 7-gram
-match is invisible at reading speed. It is the other half of the pair with
-`model_rank.py`'s novelty, which catches the model reciting *itself*; the same
-shingle machinery measures both, against two different sources. Neither replaces
-reading.
-
-Run at least **two samples per cell**: within-model variance on creative output rivals
-between-model variance, so n=1 measures noise.
+In short: `llm_row.py` wires an arm, `model_gate.py` disqualifies, `model_rank.py`
+ranks what survives across a sequence of beats, and `prose_screen.py` protects
+the reading. The answers have a shelf life measured in weeks, so what is checked
+in is the loop rather than a winner.
 
 ## LLM profiles
 
