@@ -44,6 +44,8 @@ from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import crawl
 from lens.core.exceptions import ValidationError, OperatorError
 from lens.core.generation_artifacts import GenerationArtifacts
+from lens.core.kb_op_tools import KB_OP_TOOLS, render_kb_op_persist
+from lens.core.kb_pending import KbOpSink, inflight_ops
 from lens.core.command_tools import build_media_search_tool_entry
 from lens.core.llm import CommandToolsBundle, LLMError, build_command_tools_bundle
 from lens.core.llm_run import LlmRunRequest, run_llm
@@ -65,6 +67,7 @@ class DesignOperator(SessionOperator):
     name: ClassVar[str] = "design"
     requires_id: ClassVar[bool] = True
     use_command_tools: ClassVar[bool] = True
+    supports_kb_ops: ClassVar[bool] = True
     expand_facets: ClassVar[bool] = True
     module_prefix: ClassVar[str] = "design."
     required_modalities: ClassVar[frozenset[str]] = frozenset(
@@ -159,32 +162,42 @@ class DesignOperator(SessionOperator):
             session=session,
             narrative=op.narrative_root,
         )
+        kb_op_sink = KbOpSink()
         tools_payload, command_handlers = cls.merge_command_tools_for_generation(
-            resolved, ctx, session.project_root, ann_params
+            resolved, ctx, session.project_root, ann_params, kb_op_sink=kb_op_sink
         )
 
         artifacts = GenerationArtifacts()
         try:
-            artifacts = await run_llm(
-                LlmRunRequest(
-                    project_root=session.project_root,
-                    crawl_result=crawl_result,
-                    operator=op,
-                    params=ann_params,
-                    messages_append=tuple(feedback_messages) if feedback_messages else (),
-                    llm_id=llm_id,
-                    tools=tools_payload,
-                    command_tool_handlers=command_handlers,
-                    resolved_modalities=resolved,
-                    modality_context=ctx,
-                    enable_thinking=True,
-                    reasoning=reasoning,
-                    cancel_event=cancel_event,
-                    on_token=on_token,
-                    on_stream_event=on_stream_event,
-                    operator_name=cls.name,
-                ),
-            )
+            # The sink is in scope for the whole generation, not just the
+            # handlers: a `kb_get` after a `kb_add` in the same turn has to see
+            # the new object, and so does anything else that reads the store
+            # while the model is still talking.
+            with inflight_ops(session.project_root, kb_op_sink):
+                artifacts = await run_llm(
+                    LlmRunRequest(
+                        project_root=session.project_root,
+                        crawl_result=crawl_result,
+                        operator=op,
+                        params=ann_params,
+                        messages_append=(
+                            tuple(feedback_messages) if feedback_messages else ()
+                        ),
+                        llm_id=llm_id,
+                        tools=tools_payload,
+                        command_tool_handlers=command_handlers,
+                        resolved_modalities=resolved,
+                        modality_context=ctx,
+                        enable_thinking=True,
+                        reasoning=reasoning,
+                        cancel_event=cancel_event,
+                        on_token=on_token,
+                        on_stream_event=on_stream_event,
+                        operator_name=cls.name,
+                        unlogged_tool_names=KB_OP_TOOLS,
+                        tool_persist_renderer=render_kb_op_persist,
+                    ),
+                )
         except LLMError as e:
             _restore_pre_retry()
             raise OperatorError(f"LLM error: {e}") from e

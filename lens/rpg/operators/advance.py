@@ -31,6 +31,8 @@ from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
 from lens.core.context import CrawlResult, SliceAnchor, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError
+from lens.core.kb_op_tools import KB_OP_TOOLS, render_kb_op_persist
+from lens.core.kb_pending import KbOpSink, inflight_ops
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator, OperatorError, extract_annotation_content, build_feedback_messages
@@ -316,6 +318,7 @@ class AdvanceOperator(Operator):
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     use_command_tools: ClassVar[bool] = True
+    supports_kb_ops: ClassVar[bool] = True
     expand_facets: ClassVar[bool] = True
 
     @property
@@ -439,27 +442,31 @@ class AdvanceOperator(Operator):
             if pre_retry_snapshot is not None and existing_ann is not None:
                 op.storage.write_file(child_node.md_path(), pre_retry_snapshot)
 
+        kb_op_sink = KbOpSink()
         tools_payload, command_handlers = cls.merge_command_tools_for_generation(
-            resolved, ctx, session.project_root, ann_params
+            resolved, ctx, session.project_root, ann_params, kb_op_sink=kb_op_sink
         )
 
         try:
-            artifacts = await run_llm(
-                LlmRunRequest(
-                    project_root=session.project_root,
-                    messages=messages,
-                    llm_id=llm_id,
-                    tools=tools_payload,
-                    command_tool_handlers=command_handlers,
-                    resolved_modalities=resolved,
-                    modality_context=ctx,
-                    enable_thinking=True,
-                    reasoning=reasoning,
-                    cancel_event=cancel_event,
-                    on_token=on_token,
-                    operator_name=cls.name,
-                ),
-            )
+            with inflight_ops(session.project_root, kb_op_sink):
+                artifacts = await run_llm(
+                    LlmRunRequest(
+                        project_root=session.project_root,
+                        messages=messages,
+                        llm_id=llm_id,
+                        tools=tools_payload,
+                        command_tool_handlers=command_handlers,
+                        resolved_modalities=resolved,
+                        modality_context=ctx,
+                        enable_thinking=True,
+                        reasoning=reasoning,
+                        cancel_event=cancel_event,
+                        on_token=on_token,
+                        operator_name=cls.name,
+                        unlogged_tool_names=KB_OP_TOOLS,
+                        tool_persist_renderer=render_kb_op_persist,
+                    ),
+                )
         except LLMError as e:
             _restore_pre_retry()
             raise OperatorError(f"LLM error: {e}") from e

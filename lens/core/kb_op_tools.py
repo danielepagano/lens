@@ -358,7 +358,10 @@ def render_kb_op_persist(name: str, args: dict[str, Any], result: str) -> str | 
         return ""
     from lens.core.kb_pending import render_kb_op
 
-    return render_kb_op(op)
+    # Padded either side, like ``format_tool_call_fence``: the block is composed
+    # straight into the body next to prose, and a reference-style comment has to
+    # start its own block or markdown stops hiding it.
+    return "\n" + render_kb_op(op) + "\n"
 
 
 def _op_from_args(name: str, args: dict[str, Any]) -> KbOp | None:

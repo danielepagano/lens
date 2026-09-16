@@ -157,6 +157,7 @@ from lens.core.narrative import NarrativeNode, NodeSegment, parse_segments
 from lens.core.operator_params import apply_pinned_invocation
 from lens.core.project import ProjectSession, resolve_address
 from lens.core.mentions import INCLUDE, MENTION, MENTION_KINDS
+from lens.core.kb_pending import KbOpSink
 from lens.core.module_requests import (
     UNLOGGED_MODULE_TOOLS,
     ModuleRequestSink,
@@ -299,6 +300,17 @@ class Operator(ABC):
     expansion, tags, mentions, or includes. See
     :meth:`~lens.core.knowledge.KnowledgeStore.list_facet_ids` and
     ``_resolve_pins_for_ancestors`` in :mod:`lens.core.context`.
+    """
+
+    supports_kb_ops: ClassVar[bool] = False
+    """Whether this operator may propose KB writes with the four verbs.
+
+    True for the operators whose *job* is knowledge — ``design`` and
+    ``advance`` — and whose session close materializes what was proposed.  An
+    operator without that close would accumulate proposals nothing ever applies,
+    which is worse than not offering the verbs at all.  Narrative operators stay
+    out on the same reasoning that keeps command tools off them: an open-ended
+    write loop that can fire on every beat taxes every beat.
     """
 
     supports_module_requests: ClassVar[bool] = False
@@ -1187,6 +1199,7 @@ class Operator(ABC):
         params: dict[str, Any],
         *,
         module_sink: ModuleRequestSink | None = None,
+        kb_op_sink: KbOpSink | None = None,
     ) -> tuple[list[dict[str, Any]] | None, dict[str, CommandToolFn] | None]:
         """Operator command tools, registered modules, and active modality tools.
 
@@ -1195,6 +1208,10 @@ class Operator(ABC):
         persist the resulting ``include`` annotations; omit it and no module tool
         is offered, because a module loaded with nowhere to latch would have to
         be requested again on the very next beat.
+
+        *kb_op_sink* opts it into the four KB verbs (see
+        :mod:`lens.core.kb_op_tools`), on the same terms: a proposal with
+        nowhere to be persisted would vanish at the end of the turn.
         """
         tools_payload: list[dict[str, Any]] | None = None
         command_handlers: dict[str, CommandToolFn] | None = None
@@ -1208,6 +1225,13 @@ class Operator(ABC):
             )
             tools_payload = bundle.tools
             command_handlers = bundle.handlers
+        if kb_op_sink is not None and cls.supports_kb_ops:
+            from lens.core.kb_op_tools import build_kb_op_bundle
+
+            kb_ops = build_kb_op_bundle(kb_op_sink, project_root)
+            if kb_ops.tools and kb_ops.handlers:
+                tools_payload = [*(tools_payload or []), *kb_ops.tools]
+                command_handlers = {**(command_handlers or {}), **kb_ops.handlers}
         if module_sink is not None and cls.supports_module_requests:
             modules = build_module_request_bundle(
                 unloaded_modules(project_root, cls.name, ctx.crawl_result),
