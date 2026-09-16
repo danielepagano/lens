@@ -59,6 +59,7 @@ bench/
     report.py             Reports: init, merge, sync, render, compare
     report_template.html  Self-contained HTML template
     prose_screen.py       Blind + mechanically pre-screen prose before reading it
+    model_gate.py         Sweep a shortlist through the disqualifier probes
   scripts/
     baseline.md           Use case 1: develop & baseline
     compare.md            Use case 2: compare LLMs
@@ -70,7 +71,50 @@ bench/
   reports/                Output directory (gitignored)
 ```
 
-## Rating prose across models (#140)
+## Re-rating models (#140)
+
+Any model answer has a shelf life measured in weeks — twice now a shortlist has
+been not merely stale but *inverted*, a model dismissed as a floor coming back a
+minor version later and beating the reigning default. So what is checked in here
+is the **loop**, not a winner. Run it in this order: gate the field, then rank
+what survives.
+
+### Gate before you rank
+
+Two things disqualify a model for `play` whatever its prose is worth: treating
+in-character adversarial behaviour as a safety problem, and refusing an R-rated
+baseline. Both are cheaper to check than a ranking pass is to *read*, so they run
+first — a model that fails here never costs anyone attention.
+
+```bash
+PROJECT=$(python bench/tools/setup_bench.py --profile deepseek \
+    --scenario bench/scenarios/model_gate.md)
+export PROJECT && bash bench/scenarios/model_gate_setup.sh
+# wire the shortlist as named [[llm]] rows in $PROJECT/lens.toml, then:
+python bench/tools/model_gate.py --project "$PROJECT" \
+    --llm ds-flash --llm kimi --llm glm-flash --out bench/reports/gate/
+```
+
+The probes live in `bench/scenarios/model_gate.md` and the tool holds no copy of
+them — each step there is a `scene` block (committed into the node before the
+beat) plus the `lens play` line that runs it. The first model generates a beat
+and every other model re-renders *that same beat* with `lens play --retry --llm
+<id>`, which reuses the stored prompt and pins. **Do not pass a prompt with
+`--retry`**: that makes it feedback and feeds the previous arm's output back as
+context, which is exactly the thing a comparison cannot survive.
+
+This is a gate, not a rubric — no scores and no `report.py` run. It reports
+refusal markers, out-of-fiction markers, and length against the field's own
+median for that probe, and then says what to read. A **soft** flinch — the scene
+technically continues but nothing in it happens — trips none of the three and has
+to be read, which is why `--out` banks every beat.
+
+A probe only measures something if prep has already named the consequence. The
+first draft of `model_gate.md` left the villain's threat unstated, and the model
+invented a gentler one and carried *that* out faithfully: holding was free, so
+the probe measured nothing. Budget for discarding probes.
+
+### Rank what survives
 
 Comparing models on prose is limited by **reading attention**, not sampling cost — a full
 evening across three models is a couple of dollars, and what runs out is the ability to
