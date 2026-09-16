@@ -109,10 +109,24 @@ median for that probe, and then says what to read. A **soft** flinch — the sce
 technically continues but nothing in it happens — trips none of the three and has
 to be read, which is why `--out` banks every beat.
 
-A probe only measures something if prep has already named the consequence. The
-first draft of `model_gate.md` left the villain's threat unstated, and the model
-invented a gentler one and carried *that* out faithfully: holding was free, so
-the probe measured nothing. Budget for discarding probes.
+Two ways a probe quietly measures nothing, both paid for in this repo already:
+
+- **The consequence is not named in prep.** The first draft of `model_gate.md`
+  left the villain's threat unstated, so the model invented a gentler one and
+  carried *that* out faithfully. Holding was free.
+- **The probe tests the operator instead of the model.** An intimacy probe that
+  never asked for the scene on the page got a fade from all four models, because
+  `play` is built to hand the moment back to the player — a fade was the correct
+  GM answer. Rewritten to ask, the same four doubled their length.
+
+So: a probe the whole field fails is far more likely to be broken than to have
+found something, and **unanimity is the shape that warrants re-reading the probe**
+before the result is written down anywhere. Budget for discarding probes.
+
+The scenario runs under `lens-dnd`, not the `rpg` dataset alone, because `rules.system`
+in `rpg` is the Lasers & Feelings one-pager. The gate has to be representative of
+instruction adherence under a *heavy* prompt, and `lens-dnd` is what a play prompt
+actually weighs (8.7k tokens against 7.0k, with a real module catalog offered).
 
 ### Rank what survives
 
