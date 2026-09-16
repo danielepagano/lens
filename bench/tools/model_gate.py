@@ -76,6 +76,8 @@ _ONE_LINE_BLOCK = re.compile(r"^\s*>?\s*\[.*\]:\s*#\s*$")
 _BLOCK_OPEN = re.compile(r"^\s*>?\s*\[[A-Za-z0-9_:/-]*\s*$")
 _BLOCK_CLOSE = re.compile(r"^\s*>?\s*\]:\s*#\s*$")
 _PLAYER_LINE = re.compile(r"^\s*>\s*\[Player\]", re.IGNORECASE)
+# Any `> [Name]` line: an NPC, the GM, or a named PC speaking in the fiction.
+_ATTRIBUTED_LINE = re.compile(r"^\s*>\s*\[[^\]]+\]")
 
 # Probes are parsed straight out of the scenario's `## Steps` section, so the
 # file a person edits is the file that runs.
@@ -212,18 +214,34 @@ def _write_scene(project: Path, node: Path, scene: str) -> None:
     _lens(project, "commit")
 
 
+def narration_only(text: str) -> str:
+    """Drop attributed dialogue, leaving what the model says in its own voice.
+
+    Every marker here is a first-person phrase, and inside a `> [Vetch]` line the
+    "I" is a character. A villain saying "I'd rather hear it from you" is the
+    probe working, not the model breaking frame — but it matches the same regex,
+    and the first sweep to include it disqualified a model for a line its villain
+    said. Fourth-wall breaks happen in narration; that is what gets scanned.
+    """
+    return "\n".join(
+        line for line in text.splitlines() if not _ATTRIBUTED_LINE.match(line)
+    )
+
+
 def _measure(probe_id: str, llm_id: str, raw: str) -> Run:
     text = strip_blocks(raw)
+    # Word count is of the whole beat; markers are hunted only in narration.
+    voice = narration_only(text)
     return Run(
         probe_id=probe_id,
         llm_id=llm_id,
         text=text,
         words=len(text.split()),
         refusal=sorted(
-            {m.group(0).strip().lower() for m in _HARD_REFUSAL.finditer(text)}
+            {m.group(0).strip().lower() for m in _HARD_REFUSAL.finditer(voice)}
         ),
         meta=sorted(
-            {m.group(0).strip().lower() for m in _OUT_OF_FICTION.finditer(text)}
+            {m.group(0).strip().lower() for m in _OUT_OF_FICTION.finditer(voice)}
         ),
     )
 
@@ -302,19 +320,84 @@ def _verdict(run: Run, median_words: float) -> str:
     return "held"
 
 
+def _report(all_runs: list[Run], llm_ids: list[str]) -> None:
+    """Print the per-probe table and the per-model verdict."""
+    for probe_id in dict.fromkeys(r.probe_id for r in all_runs):
+        runs = [r for r in all_runs if r.probe_id == probe_id]
+        median = (
+            statistics.median([r.words for r in runs if r.words])
+            if any(r.words for r in runs)
+            else 0.0
+        )
+        print(f"\n  --- {probe_id} (field median {median:.0f}w)")
+        for run in runs:
+            detail = run.error or ", ".join(run.refusal + run.meta)
+            print(
+                f"  {run.llm_id:<18} {run.words:>5}w  {_verdict(run, median):<8} {detail}"
+            )
+
+    print("\n=== gate ===")
+    for llm_id in llm_ids:
+        flags = {
+            r.probe_id: _verdict(
+                r,
+                statistics.median(
+                    [x.words for x in all_runs if x.probe_id == r.probe_id and x.words]
+                    or [0]
+                ),
+            )
+            for r in all_runs
+            if r.llm_id == llm_id
+        }
+        bad = {p: v for p, v in flags.items() if v in {"REFUSED", "BREAKS"}}
+        soft = {p: v for p, v in flags.items() if v in {"SHORT", "ERROR"}}
+        if bad:
+            print(
+                f"  {llm_id:<18} OUT   {', '.join(f'{p}:{v}' for p, v in bad.items())}"
+            )
+        elif soft:
+            print(
+                f"  {llm_id:<18} READ  {', '.join(f'{p}:{v}' for p, v in soft.items())}"
+            )
+        else:
+            print(f"  {llm_id:<18} IN    held every probe")
+    print("\nSignals only — a soft flinch trips none of them. Read the banked beats.")
+
+
+def _rescore(banked: Path) -> int:
+    """Score an already-sampled `--out` directory again. No LLM is called."""
+    files = sorted(banked.glob("*__*.md"))
+    if not files:
+        print(f"no banked beats (<probe>__<model>.md) under {banked}", file=sys.stderr)
+        return 1
+    runs: list[Run] = []
+    for f in files:
+        probe_id, llm_id = f.stem.split("__", 1)
+        runs.append(_measure(probe_id, llm_id, f.read_text(encoding="utf-8")))
+    print(f"rescored {len(runs)} banked beat(s) from {banked}")
+    _report(runs, list(dict.fromkeys(r.llm_id for r in runs)))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "--project", required=True, help="bench project dir (from setup_bench.py)"
+        "--project", default=None, help="bench project dir (from setup_bench.py)"
     )
     parser.add_argument(
         "--llm",
         action="append",
-        required=True,
+        default=[],
         metavar="ID",
         help="an [[llm]] id in the project's lens.toml (repeatable)",
+    )
+    parser.add_argument(
+        "--rescore",
+        default=None,
+        metavar="DIR",
+        help="re-read a banked --out directory and score it again, without sampling",
     )
     parser.add_argument(
         "--scenario",
@@ -336,6 +419,16 @@ def main(argv: list[str] | None = None) -> int:
         help="seconds to allow one arm before recording it as ERROR (default: %(default)s)",
     )
     args = parser.parse_args(argv)
+
+    # Sampling costs money and re-analysis is free, which is the whole reason the
+    # beats are banked — the first scoring pass is expected to be wrong. A marker
+    # fix should be replayed over what was already paid for, never re-sampled.
+    if args.rescore:
+        return _rescore(Path(args.rescore))
+    if not args.project or not args.llm:
+        parser.error(
+            "--project and at least one --llm are required unless --rescore is given"
+        )
 
     if not shutil.which("lens"):
         print("lens is not on PATH", file=sys.stderr)
