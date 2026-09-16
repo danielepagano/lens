@@ -19,12 +19,18 @@ claim this scenario turns into a measurement.
 ```config
 datasets:
   - rpg
+  - lens-dnd
 include_testing: false
 ```
 
-`include_testing: false` because the testing dataset registers `rules.skirmish`
-as a `play` module, and a module offer the gate did not ask for is one more thing
-that differs between arms.
+`lens-dnd`, not the `rpg` dataset alone, because `rules.system` in `rpg` is the
+Lasers & Feelings stub — a real ruleset, but a one-page one, and the thing the
+gate has to be representative of is **instruction adherence under a heavy, dense
+prompt**. `lens-dnd` brings a 15KB system booklet and registers `rules.combat`
+and `rules.chase` as model-requestable modules, which is what a play prompt
+actually weighs. `include_testing: false` because the testing dataset registers
+`rules.skirmish` as a competing module, and a module offer the gate did not ask
+for is one more thing that differs between arms.
 
 **Prompt keys exercised:** `play.system`, `play.instruction_continue`
 
