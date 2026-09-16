@@ -313,7 +313,7 @@ register_command_tool(
 # ---------------------------------------------------------------------------
 
 
-def _encode_patch_contents(patches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def encode_patch_contents(patches: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Convert model-authored patch bodies to storage form.
 
     Patch *targets* need no conversion: they are resolved against the decoded
@@ -340,7 +340,7 @@ async def kb_patch_handler(args: dict[str, Any], project_root: Path) -> str:
     if not isinstance(patches, list) or not patches:
         return "(error: 'patches' must be a non-empty array)"
     store = KnowledgeStore.for_project(project_root)
-    patches_list = _encode_patch_contents(cast(list[dict[str, Any]], patches))
+    patches_list = encode_patch_contents(cast(list[dict[str, Any]], patches))
     try:
         result = _cmd_kb_patch(raw_id, patches_list, store=store)
     except LensException as e:

@@ -42,6 +42,16 @@ from lens.core.generation_artifacts import (
     wrap_command_tool_handlers_for_audit,
 )
 
+ToolPersistRenderer = Callable[[str, dict[str, Any], str], "str | None"]
+"""Per-tool override for what a call leaves in the node.
+
+Given ``(tool name, arguments, result)``, return the markdown to persist
+instead of the default ``tool-call`` fence, ``""`` to persist nothing, or
+``None`` to fall through to the default.  It exists because a KB verb's
+durable record is its ``[kb-op …]: #`` block, and a fence beside it would
+put the same body in the assistant turn every later beat reads back.
+"""
+
 logger = logging.getLogger(__name__)
 
 _HTTP_QUICK_FAIL_RETRIES = 1
@@ -495,6 +505,7 @@ async def stream_final_payload(
     on_stream_event: StreamEventHandler | None = None,
     max_command_tool_iterations: int | None = None,
     unlogged_tool_names: frozenset[str] = frozenset(),
+    tool_persist_renderer: ToolPersistRenderer | None = None,
 ) -> FinalPayload:
     """One streaming round; returns the final payload including tool calls."""
     final = await collect_final_payload(
@@ -511,6 +522,7 @@ async def stream_final_payload(
             operator_name=operator_name,
             max_command_tool_iterations=max_command_tool_iterations,
             unlogged_tool_names=unlogged_tool_names,
+            tool_persist_renderer=tool_persist_renderer,
         ),
         on_preview=on_preview,
         on_stream_event=on_stream_event,
@@ -539,6 +551,7 @@ async def generate_artifacts(
     on_llm_error: Callable[[LLMError], Exception] | None = None,
     max_command_tool_iterations: int | None = None,
     unlogged_tool_names: frozenset[str] = frozenset(),
+    tool_persist_renderer: ToolPersistRenderer | None = None,
 ) -> GenerationArtifacts:
     try:
         final = await stream_final_payload(
@@ -556,6 +569,7 @@ async def generate_artifacts(
             on_stream_event=on_stream_event,
             max_command_tool_iterations=max_command_tool_iterations,
             unlogged_tool_names=unlogged_tool_names,
+            tool_persist_renderer=tool_persist_renderer,
         )
         apply_interrupt_policy(final, interrupt_policy)
         if final.interrupted:
@@ -1166,6 +1180,7 @@ async def generate_stream(
     operator_name: str | None = None,
     max_command_tool_iterations: int | None = None,
     unlogged_tool_names: frozenset[str] = frozenset(),
+    tool_persist_renderer: ToolPersistRenderer | None = None,
 ) -> AsyncGenerator[StreamEvent, None]:
     """Stream LLM output as structured events.
 
@@ -1359,16 +1374,20 @@ async def generate_stream(
                 # writes an ``include`` annotation).  A second record would only
                 # bloat the passage and put a tool name in the transcript the
                 # model reads back on every later beat.
-                if tc.name not in unlogged_tool_names:
-                    persist_fence = encode_ai_secrets_for_persist(
+                persisted: str | None = None
+                if tool_persist_renderer is not None:
+                    persisted = tool_persist_renderer(tc.name, tc.arguments, result)
+                if persisted is None and tc.name not in unlogged_tool_names:
+                    persisted = encode_ai_secrets_for_persist(
                         format_tool_call_fence(
                             tc.name, tc.arguments, response_char_len=len(result),
                         ),
                         inside_secret=open_secret,
                     )
-                    tool_markdowns.append(persist_fence)
+                if persisted:
+                    tool_markdowns.append(persisted)
                     open_secret = ends_inside_ai_secret(
-                        persist_fence, inside_secret=open_secret
+                        persisted, inside_secret=open_secret
                     )
                 # Stream preview uses the stream composer.
                 stream_kind, stream_content = compose_tool_call_for_stream(

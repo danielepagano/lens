@@ -41,6 +41,16 @@ def _is_valid_key(value: str) -> bool:
     return bool(_KEY_PATTERN.fullmatch(value))
 
 
+def is_valid_tag(tag: str) -> bool:
+    """Whether *tag* is well formed: a bare token, ``ns:value``, or ``type.key``.
+
+    Public because a tool has to *refuse* a malformed tag and say so, where
+    :meth:`KnowledgeStore.add_tags` silently skips one — fine for a user who can
+    see the result, useless for a model that needs telling.
+    """
+    return _validate_tag(tag)
+
+
 def _validate_tag(tag: str) -> bool:
     if not tag:
         return False

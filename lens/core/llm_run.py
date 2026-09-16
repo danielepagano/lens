@@ -24,6 +24,7 @@ from lens.core.llm import (
     InterruptPolicy,
     LLMError,
     StreamEventHandler,
+    ToolPersistRenderer,
     apply_interrupt_policy,
     generate_artifacts,
     stream_final_payload,
@@ -62,6 +63,11 @@ class LlmRunRequest:
     unlogged_tool_names: frozenset[str] = frozenset()
     """Tools whose call is not persisted as a ``tool-call`` fence — they record
     themselves in the node some other way (see :mod:`lens.core.module_requests`)."""
+    tool_persist_renderer: ToolPersistRenderer | None = None
+    """What a tool call leaves in the node, when a fence is the wrong record.
+
+    The KB verbs use it to persist a ``[kb-op …]: #`` block instead (see
+    :mod:`lens.core.kb_op_tools`)."""
 
 
 def resolve_llm_run_messages(request: LlmRunRequest) -> list[dict[str, Any]]:
@@ -118,6 +124,7 @@ async def run_llm(
         on_llm_error=request.on_llm_error,
         max_command_tool_iterations=request.max_command_tool_iterations,
         unlogged_tool_names=request.unlogged_tool_names,
+        tool_persist_renderer=request.tool_persist_renderer,
     )
 
 
@@ -140,6 +147,7 @@ async def run_llm_final(request: LlmRunRequest) -> FinalPayload:
             on_stream_event=request.on_stream_event,
             max_command_tool_iterations=request.max_command_tool_iterations,
             unlogged_tool_names=request.unlogged_tool_names,
+            tool_persist_renderer=request.tool_persist_renderer,
         )
         return apply_interrupt_policy(final, request.interrupt_policy)
     except LLMError as e:

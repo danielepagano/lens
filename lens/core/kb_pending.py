@@ -57,7 +57,7 @@ Storage form
 ------------
 Tool arguments are model text taking a new path to storage, so
 ``encode_ai_secrets_for_persist`` runs before encoding — the same conversion
-``_encode_patch_contents`` already makes for ``kb_patch``.  The overlay therefore
+``encode_patch_contents`` already makes for ``kb_patch``.  The overlay therefore
 serves exactly what a file on disk would, which is what lets every existing
 decode point (``format_objects_for_model``, the secret-decode transform) keep
 working unchanged, and lets materialization write through with no second pass.
