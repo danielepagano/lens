@@ -109,6 +109,18 @@ median for that probe, and then says what to read. A **soft** flinch — the sce
 technically continues but nothing in it happens — trips none of the three and has
 to be read, which is why `--out` banks every beat.
 
+Bank it, because the first scoring pass will be wrong and re-analysis is free:
+
+```bash
+python bench/tools/model_gate.py --rescore bench/reports/gate/
+```
+
+`--rescore` re-reads a banked directory and scores it again without calling a
+model. It exists because a sweep disqualified a model for its *villain's* line —
+every out-of-fiction marker is a first-person phrase, and inside `> [Vetch] I'd
+rather hear it from you` the "I" is a character. Markers are now hunted in
+narration only, and replaying that fix over the banked beats cost nothing.
+
 Two ways a probe quietly measures nothing, both paid for in this repo already:
 
 - **The consequence is not named in prep.** The first draft of `model_gate.md`
