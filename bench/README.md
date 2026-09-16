@@ -58,6 +58,7 @@ bench/
     setup_bench.py        Setup script: empty project + LLM profile; narrative `default`
     report.py             Reports: init, merge, sync, render, compare
     report_template.html  Self-contained HTML template
+    prose_screen.py       Blind + mechanically pre-screen prose before reading it
   scripts/
     baseline.md           Use case 1: develop & baseline
     compare.md            Use case 2: compare LLMs
@@ -68,6 +69,35 @@ bench/
   projects/               Default throwaway Lens projects (gitignored)
   reports/                Output directory (gitignored)
 ```
+
+## Rating prose across models (#140)
+
+Comparing models on prose is limited by **reading attention**, not sampling cost — a full
+evening across three models is a couple of dollars, and what runs out is the ability to
+read carefully enough to tell them apart. `bench/tools/prose_screen.py` protects that:
+
+```bash
+# Capture one file per run (a whole narrative node is fine), then:
+python bench/tools/prose_screen.py blind runs/ --out blind/ --key key.txt
+python bench/tools/prose_screen.py screen blind/ --project <lens-project> \
+    --kb prep.some-object --kb pc.someone --target-words 800
+# rank the blind files by reading, and only then:
+python bench/tools/prose_screen.py reveal key.txt
+```
+
+`blind` strips the blocks that name the model (`[write ...]` stores `llm_id`;
+`[llm-trace ...]` names model and host), shuffles, and relabels `A.md`, `B.md`, …
+Price and reputation bias subjective reading hard enough that the reveal has repeatedly
+contradicted the ordering the price list implied.
+
+`screen` reports two free signals that decide what to read first: **lifted n-grams**
+(word-shingles shared with the KB the prompt pinned, stopwords discarded) and **word
+count against a stated target**. The first is the "every character's eye colour every
+turn" failure measured rather than judged, and it catches lifts a human misses — a
+7-gram match is invisible at reading speed. Neither replaces reading.
+
+Run at least **two samples per cell**: within-model variance on creative output rivals
+between-model variance, so n=1 measures noise.
 
 ## LLM profiles
 
