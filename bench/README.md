@@ -53,11 +53,16 @@ Read `bench/agent.md` for shared mechanics, then the script you need.
 ```
 bench/
   agent.md                Agent run: inputs, shell + lens check, outputs, reports
+  model-rating.md         Picking a play model, and re-picking as the field moves
   README.md
   tools/
     setup_bench.py        Setup script: empty project + LLM profile; narrative `default`
     report.py             Reports: init, merge, sync, render, compare
     report_template.html  Self-contained HTML template
+    prose_screen.py       Blind + mechanically pre-screen prose before reading it
+    model_gate.py         Sweep a shortlist through the disqualifier probes
+    model_rank.py         Play a beat sequence per model, each in its own branch
+    llm_row.py            Build a pinned [[llm]] row; refuse the known routing traps
   scripts/
     baseline.md           Use case 1: develop & baseline
     compare.md            Use case 2: compare LLMs
@@ -68,6 +73,17 @@ bench/
   projects/               Default throwaway Lens projects (gitignored)
   reports/                Output directory (gitignored)
 ```
+
+## Re-rating models
+
+Picking a play model is its own workflow with its own tools, and it has one
+page: **[model-rating.md](model-rating.md)**. Read that, not this, when a new
+model lands or when you want to measure something differently.
+
+In short: `llm_row.py` wires an arm, `model_gate.py` disqualifies, `model_rank.py`
+ranks what survives across a sequence of beats, and `prose_screen.py` protects
+the reading. The answers have a shelf life measured in weeks, so what is checked
+in is the loop rather than a winner.
 
 ## LLM profiles
 

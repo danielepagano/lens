@@ -19,6 +19,7 @@ Agent-oriented grounding for this repository. User-facing docs start at [README.
 | Cloud deploy (Fly.io reference), Caddy auth | [deploy/README.md](deploy/README.md) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Quality runs against real models | [bench/README.md](bench/README.md) |
+| Picking a model for `play`, and re-picking as the field moves | [bench/model-rating.md](bench/model-rating.md) |
 
 ## Commands
 

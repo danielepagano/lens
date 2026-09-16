@@ -2,6 +2,11 @@
 
 Task brief for any automated or semi-automated run (Cursor agent, script, or human checklist).
 
+> **Rating a model is not this workflow.** Comparing models for `play` has its
+> own page, its own tools and no `report.py` run at all — no 1–5 rubric, no
+> scored steps. If that is the task, stop here and read
+> [model-rating.md](model-rating.md).
+
 ## What a run is
 
 1. **Start from this file** — `bench/agent.md` is the entry point; read it before executing a benchmark.
