@@ -50,6 +50,12 @@ export PROJECT
 bash bench/scenarios/model_gate_setup.sh
 ```
 
+Wire each candidate as a named `[[llm]]` row with `bench/tools/llm_row.py`,
+which pins by tag and holds the canonical arm configuration (`CANONICAL`) that
+the ranking pass also uses. The gate and the ranking pass must agree on it:
+a candidate gated at one temperature and ranked at another has been measured
+twice and compared never.
+
 ## Steps
 
 Each probe runs from **its own committed scene**, written into the node before

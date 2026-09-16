@@ -129,3 +129,81 @@ def test_model_rank_novelty_catches_a_reciter() -> None:
     assert arm.beats[0].novel == 1.0
     assert arm.beats[1].novel == 0.0, "a verbatim repeat must read as no novelty"
     assert arm.beats[2].novel == 1.0
+
+
+def test_llm_row_refuses_unmeasurable_ids() -> None:
+    """A floating alias and a `:batch` variant are refused, not warned about.
+
+    Both cost money to learn. `:batch` does not stream, so the Lens client
+    cannot use it at all while its price looks like a discount; a `~`-prefixed
+    id points somewhere else next week, which makes any number measured against
+    it unreproducible. Neither is a judgement call, so neither is left to one.
+    """
+    sys.path.insert(0, str(_REPO / "bench" / "tools"))
+    from llm_row import refuse  # noqa: PLC0415
+
+    assert refuse("deepseek/deepseek-v4.1-flash") is None
+    assert "floating alias" in (refuse("~deepseek/latest") or "")
+    assert "does not stream" in (refuse("deepseek/deepseek-v4.1-flash:batch") or "")
+
+
+def test_llm_row_pins_the_tag_and_flags_the_spread() -> None:
+    """The luna trap: one provider, several tags, a 4x spread, one pin.
+
+    `provider = { order = ["OpenAI"] }` reads like a pin and is not one —
+    OpenAI serves flex, standard and fast on the same dated snapshot, and the
+    router stays free to choose. The emitted row must carry the *tag*, and the
+    listing must say the provider is not specific enough to pin by.
+    """
+    sys.path.insert(0, str(_REPO / "bench" / "tools"))
+    from llm_row import CANONICAL, Endpoint, hazards, render_row  # noqa: PLC0415
+
+    def ep(tag: str, usd: float, **kw: object) -> "Endpoint":
+        return Endpoint(
+            tag=tag,
+            provider=str(kw.get("provider", "OpenAI")),
+            quantization=str(kw.get("quant", "unknown")),
+            prompt_usd=usd,
+            completion_usd=usd * 6,
+            context=1_000_000,
+            params=frozenset(kw.get("params", {"reasoning_effort"})),  # type: ignore[arg-type]
+        )
+
+    field = [ep("openai/flex", 0.10), ep("openai", 0.20), ep("openai/fast", 0.40)]
+    notes = " ".join(hazards(field))
+    assert "4.0x price spread" in notes
+    assert "pin the TAG" in notes
+
+    row = render_row("luna", "openai/gpt-5.6-luna", field[1])
+    assert 'order = ["openai"]' in row, "the row must pin the tag, not the provider"
+    assert "allow_fallbacks = false" in row
+    # No temperature in `params`, so the field must be absent rather than sent
+    # to an endpoint that ignores it while the trace records it as honoured.
+    assert "temperature =" not in row
+    assert f'reasoning_effort = "{CANONICAL["reasoning_effort"]}"' in row
+
+
+def test_llm_row_emits_parseable_toml() -> None:
+    """The row is meant to be pasted into a lens.toml, so it has to parse."""
+    import tomllib  # noqa: PLC0415
+
+    sys.path.insert(0, str(_REPO / "bench" / "tools"))
+    from llm_row import CANONICAL, Endpoint, render_row  # noqa: PLC0415
+
+    endpoint = Endpoint(
+        tag="deepseek",
+        provider="DeepSeek",
+        quantization="unknown",
+        prompt_usd=0.15,
+        completion_usd=0.60,
+        context=1_048_576,
+        params=frozenset({"temperature", "reasoning", "reasoning_effort"}),
+    )
+    parsed = tomllib.loads(render_row("ds-flash", "deepseek/deepseek-v4.1-flash", endpoint))
+    row = parsed["llm"][0]
+    assert row["id"] == "ds-flash"
+    assert row["temperature"] == CANONICAL["temperature"]
+    assert row["extra_payload"]["provider"] == {
+        "order": ["deepseek"],
+        "allow_fallbacks": False,
+    }

@@ -204,11 +204,28 @@ lens play "I walk back to the office and I sit down in that chair myself, before
 PROJECT=$(python bench/tools/setup_bench.py --profile deepseek \
     --scenario bench/scenarios/model_rank.md)
 export PROJECT && bash bench/scenarios/model_rank_setup.sh
-# wire the gate's survivors as named [[llm]] rows in $PROJECT/lens.toml, then:
+
+# Wire each survivor as a named [[llm]] row. Generate the rows rather than
+# writing them: `llm_row.py` pins by tag, shows quantization next to price,
+# and holds the canonical arm configuration.
+python bench/tools/llm_row.py deepseek/deepseek-v4.1-flash          # what exists
+python bench/tools/llm_row.py deepseek/deepseek-v4.1-flash \
+    --pin deepseek --id ds-flash >> "$PROJECT/lens.toml"
+
 python bench/tools/model_rank.py --project "$PROJECT" \
-    --arm ds-flash --arm ds-flash:high --arm glm-flash \
+    --arm ds-flash --arm glm-flash --arm luna \
     --target-words 180 --out bench/reports/rank/
 ```
+
+**Every arm runs at the canonical configuration** — temperature 0.6, reasoning
+on, effort medium — which lives in `CANONICAL` in `bench/tools/llm_row.py` and
+nowhere else. This matters more than it looks. A run configured differently
+cannot be compared with an earlier one, and the answers here have a shelf life
+measured in weeks, so comparison against an earlier run is the *whole* use of
+the loop. Until that constant existed, the configuration of the first two sweeps
+survived only inside their banked traces, which are gitignored — recoverable by
+grepping them and not recoverable at all from a fresh clone. If you change it,
+you have started a new baseline, and the old numbers are no longer evidence.
 
 `--dry-run` prints the arms and beats and calls nothing, which is the cheap way
 to check the `lens.toml` wiring before spending anything. `--limit 2` plays the

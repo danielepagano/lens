@@ -61,6 +61,7 @@ bench/
     prose_screen.py       Blind + mechanically pre-screen prose before reading it
     model_gate.py         Sweep a shortlist through the disqualifier probes
     model_rank.py         Play a beat sequence per model, each in its own branch
+    llm_row.py            Build a pinned [[llm]] row; refuse the known routing traps
   scripts/
     baseline.md           Use case 1: develop & baseline
     compare.md            Use case 2: compare LLMs
@@ -77,8 +78,42 @@ bench/
 Any model answer has a shelf life measured in weeks — twice now a shortlist has
 been not merely stale but *inverted*, a model dismissed as a floor coming back a
 minor version later and beating the reigning default. So what is checked in here
-is the **loop**, not a winner. Run it in this order: gate the field, then rank
-what survives.
+is the **loop**, not a winner. Run it in this order: wire the arms, gate the
+field, then rank what survives.
+
+### Wire the arms
+
+```bash
+python bench/tools/llm_row.py deepseek/deepseek-v4.1-pro                    # what exists
+python bench/tools/llm_row.py deepseek/deepseek-v4.1-pro --pin deepseek --id ds-pro
+```
+
+The first form lists every endpoint with its **tag**, quantization and price,
+and flags the traps. The second emits a `[[llm]]` row pinned to one tag, at the
+canonical arm configuration. Paste it into the bench project's `lens.toml`.
+
+This is the step that recurs every time the field moves, and the step where
+every documented money-losing mistake lives — so it is executable rather than a
+paragraph of warnings:
+
+- **Pin the tag, not the provider name.** OpenAI serves `openai/flex`, `openai`
+  and `openai/fast` on one dated snapshot at a **4x price spread**, and
+  `order = ["OpenAI"]` leaves the router free among them. Flex-against-fast is a
+  latency difference, which is one of the things the ranking pass measures.
+- **Quantization is part of the price.** The listing prints the quant beside the
+  money, and says so when the cheapest endpoint is fp4 while fp8 exists.
+- **`:batch` ids and `~`-prefixed aliases are refused outright** — the first does
+  not stream and cannot be used by the Lens client at all, the second points
+  somewhere else next week.
+- **Endpoints that drop `temperature`** get a row without the field and a note,
+  because Lens records in the trace the value it *sent*, not one that was
+  honoured.
+
+`CANONICAL` in that file is the **canonical arm configuration** — temperature
+0.6, reasoning on, effort medium — and it lives there and nowhere else. A run
+configured differently cannot be compared with an earlier one, and comparison
+with an earlier run is the entire use of this loop. Change it and you have
+started a new baseline; the old numbers stop being evidence.
 
 ### Gate before you rank
 
