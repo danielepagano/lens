@@ -672,6 +672,112 @@ details[open]>summary {
   background-color: color-mix(in srgb, var(--pico-primary) 16%, transparent);
 }
 
+/* Proposed, not written: a pending KB op has not reached `knowledge/` yet —
+ * that only happens at `--end` — so it gets a warning tint rather than the
+ * diff colours (`pin-pill-var`/`pin-pill-param`) that already mean "resolved
+ * value". Solid border (unlike the dashed `--scoped` pill) says this is not a
+ * scope difference, it is unwritten content. Amber comes from the same
+ * `--explain-series-2` token the context chart uses for cost, so it cannot
+ * pick up a second meaning next to `--state`'s `--explain-series-5`. */
+.pin-pill.pin-pill--pending {
+  background-color: color-mix(in srgb, var(--explain-series-2) 14%, transparent);
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--explain-series-2) 55%, transparent);
+}
+
+.pin-pill.pin-pill--pending:hover {
+  background-color: color-mix(in srgb, var(--explain-series-2) 24%, transparent);
+  border-color: color-mix(in srgb, var(--explain-series-2) 70%, transparent);
+}
+
+/* An op whose anchor a direct edit removed — same red as `.pin-pill-unpin`,
+ * layered over the amber fill so "pending" and "broken" both stay legible. */
+.pin-pill.pin-pill--pending-error {
+  color: var(--pico-del-color);
+  border-color: var(--pico-del-color);
+}
+
+/* Chips where a `[kb-op …]: #` block was consumed.
+ *
+ * Every renderer in the stack hides those blocks on purpose — that is what the
+ * model is meant to see — which left the reader watching the model *say* it
+ * changed an object with no way to check. The chip is split because its two
+ * halves answer different questions: the body reads the proposal as written
+ * (true on any node, however old), the arrow opens the object as it stands now
+ * (which on a historical node has long since moved on). Own row so a reply
+ * that touched four objects does not reflow the prose. */
+.kb-op-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.4rem 0;
+}
+
+.kb-op-marker {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid color-mix(in srgb, var(--explain-series-2) 55%, transparent);
+  border-radius: 0.5rem;
+  background-color: color-mix(in srgb, var(--explain-series-2) 14%, transparent);
+  overflow: hidden;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.kb-op-marker button {
+  margin: 0;
+  width: auto;
+  padding: 0.1rem 0.4rem;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: var(--pico-color);
+  font-family: var(--pico-font-family-monospace, monospace);
+  font-size: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.kb-op-marker button:hover {
+  background-color: color-mix(in srgb, var(--explain-series-2) 26%, transparent);
+}
+
+/* The shortcut out of the narrative and into the knowledge base: a different
+ * destination, so a different colour and a rule between the two halves. */
+.kb-op-marker .kb-op-marker-open {
+  border-left: 1px solid color-mix(in srgb, var(--explain-series-2) 55%, transparent);
+  color: var(--pico-primary);
+}
+
+.kb-op-marker .kb-op-marker-open:hover {
+  background-color: color-mix(in srgb, var(--pico-primary) 20%, transparent);
+}
+
+/* Already written — an `applied` record, or any op on a node the cursor has
+ * left. The amber above means "not written yet" and would be a lie here, so
+ * history reads as history: dashed and muted, no tint. */
+.kb-op-marker--recorded {
+  background-color: transparent;
+  border-style: dashed;
+  border-color: var(--pico-muted-border-color);
+}
+
+.kb-op-marker--recorded button {
+  color: var(--pico-muted-color);
+}
+
+.kb-op-marker--recorded .kb-op-marker-open {
+  border-left-color: var(--pico-muted-border-color);
+}
+
+.kb-op-marker--error {
+  border-color: var(--pico-del-color);
+}
+
+.kb-op-marker--error .kb-op-marker-body {
+  color: var(--pico-del-color);
+}
+
 .pin-pill.pin-pill-var {
   background-color: rgba(34, 197, 94, 0.12);
   border-color: rgba(22, 163, 74, 0.45);
@@ -2665,6 +2771,11 @@ ul.kb-item-list {
   font-style: italic;
 }
 
+/* The body above is the proposed text, not what is on disk. */
+.kb-meta-source-pending {
+  color: var(--pico-del-color);
+}
+
 .kb-meta-linked-row {
   font-size: 0.75rem;
 }
@@ -2690,7 +2801,11 @@ ul.kb-item-list {
 
 /* ---- KB diff modal ---- */
 
-.kb-diff-dialog > article {
+/* Full-size-on-a-phone sizing, shared by the two modals that show KB material
+ * — the legacy fence diff and the `[kb-op …]: #` block viewer. Only the frame
+ * is global; each owns the rest of its styling. */
+.kb-diff-dialog > article,
+.kb-op-dialog > article {
   max-width: 95%;
   max-height: 85vh;
   overflow: hidden;

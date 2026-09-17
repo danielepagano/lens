@@ -109,11 +109,18 @@ def pending_kb_view(
     other reader agree about what the proposals currently mean.
     """
     store = KnowledgeStore.for_project(project_root)
+    narrative = get_active_narrative(project_root)
+    if narrative is None or not narrative.exists():
+        return PendingKbView()
+    cursor = narrative.find_cursor()
     if node is None:
-        narrative = get_active_narrative(project_root)
-        if narrative is None or not narrative.exists():
-            return PendingKbView()
-        node = narrative.find_cursor()
+        node = cursor
+    elif node.path_str() != cursor.path_str():
+        # The fold is the cursor's, so an op list read from any other node
+        # would be validated against the wrong stack and attributed the wrong
+        # objects.  A closed session still holds its blocks; they are history
+        # there, not proposals, and this view only speaks about proposals.
+        return PendingKbView()
     try:
         text = node.md_path().read_text(encoding="utf-8")
     except (OSError, FileNotFoundError):

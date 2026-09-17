@@ -13,6 +13,7 @@
   import MediaPreviewCarousel from './features/media/MediaPreviewCarousel.svelte'
   import MediaCompositeChromakey from './features/media/MediaCompositeChromakey.svelte'
   import KbDiffModal from './features/kb/KbDiffModal.svelte'
+  import KbOpModal from './features/kb/KbOpModal.svelte'
   import ExplainModal from './features/explain/ExplainModal.svelte'
   import GuideModal from './features/cli/GuideModal.svelte'
   import ReleaseModal from './features/release/ReleaseModal.svelte'
@@ -20,7 +21,7 @@
   import InlineEditView from './features/editor/InlineEditView.svelte'
   import VisualNovelView from './features/visualNovel/VisualNovelView.svelte'
   import { getStats, getNode, getProjects, getPlayback, onAfterMutation } from './services/api'
-  import { currentAddress, nodeContent } from './stores/document'
+  import { applyNodeData, clearNodeData, currentAddress } from './stores/document'
   import { applyStats, stats } from './stores/stats'
   import { kbPanelOpen, selectedKbId, kbDetailId, kbFilters, inlineEditMode, editorFocused, treeRefreshTrigger, scrollContentToBottom } from './stores/ui'
   import { currentProject, availableProjects } from './stores/project'
@@ -109,7 +110,7 @@
       inlineEditMode.set(null)
       const data = await getNode(addr)
       currentAddress.set(data.address)
-      nodeContent.set(data.content)
+      applyNodeData(data)
       window.location.hash = buildHash(data.address, hashKbParam(), hashKbDetailParam())
       const s = get(stats)
       if (s?.cursor === data.address) {
@@ -129,7 +130,7 @@
   async function switchProject(slug: string): Promise<void> {
     currentProject.set(slug)
     currentAddress.set(null)
-    nodeContent.set('')
+    clearNodeData()
     kbPanelOpen.set(false)
     selectedKbId.set(null)
     treeRefreshTrigger.update(n => n + 1)
@@ -146,7 +147,7 @@
     }
     try {
       const data = await getNode(addr)
-      nodeContent.set(data.content)
+      applyNodeData(data)
     } catch (e) {
       console.error('Carousel done refresh failed:', e)
     }
@@ -164,7 +165,7 @@
       if (addr) {
         try {
           const data = await getNode(addr)
-          nodeContent.set(data.content)
+          applyNodeData(data)
         } catch {
           // Node was deleted (e.g. rollback after cancel) — go to cursor.
           if (newCursor) await navigate(newCursor)
@@ -280,7 +281,7 @@
           inlineEditMode.set(null)
           const data = await getNode(path)
           currentAddress.set(data.address)
-          nodeContent.set(data.content)
+          applyNodeData(data)
           const priorHash = window.location.hash
           window.location.hash =
             '#' + hashAfterNodeResolved(selectedSlug, data.address, hashKbParam(), priorHash)
@@ -331,6 +332,7 @@
   <MediaCompositeChromakey />
   <MediaCarousel onDone={handleCarouselDone} />
   <KbDiffModal />
+  <KbOpModal />
   <ExplainModal />
   <GuideModal />
   <ReleaseModal />

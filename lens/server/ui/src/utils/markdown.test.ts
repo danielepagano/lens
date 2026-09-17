@@ -4,6 +4,7 @@ import {
   buildAnnotationLineSet,
   buildAnnotationDividerLabelHtml,
   buildAttachLinePickStates,
+  buildKbOpStatusByLine,
   buildNodeTransactionOverlay,
   collectAttachForbiddenLines,
   computeValidEndLines,
@@ -1131,5 +1132,208 @@ describe('annotation divider pills (chat)', () => {
     expect(result).toContain('chat:amy-carlos')
     expect(result).not.toContain('pin-pill-inline')
     expect(result).not.toContain('pin-pill-unpin')
+  })
+})
+
+describe('preprocessAnnotations kb-op markers', () => {
+  // One `[kb-op …]: #` block per tool call, exactly as `render_kb_op` writes it.
+  const patchBlock = `[kb-op
+  op: patch
+  id: front.loose-blade
+  patches: [{"start": {"target": "  - **Legs** travelled: \`2.0\`."}, "content": " x"}]
+]: #`
+
+  it('renders a split chip where a proposal block was consumed', () => {
+    const markdown = `The third leg is complete.
+
+${patchBlock}
+
+And the road turns north.`
+    const result = preprocessAnnotations(markdown, 'test')
+    // The block itself never reaches the reader — only the pointers do.
+    expect(result).not.toContain('patches:')
+    expect(result).not.toContain('op: patch')
+    // Body half: read the proposal as written, wherever this node is.
+    expect(result).toContain('data-kb-op-line="3"')
+    expect(result).toContain('⟲ front.loose-blade')
+    // Arrow half: the object as it stands now.
+    expect(result).toContain('data-kb-open-id="front.loose-blade"')
+    expect(result).toContain('The third leg is complete.')
+    expect(result).toContain('And the road turns north.')
+  })
+
+  it('points the body half at the block\'s real line in the node', () => {
+    const markdown = `Line one.\nLine two.\nLine three.\n\n${patchBlock}\n`
+    const result = preprocessAnnotations(markdown, 'test')
+    expect(result).toContain('data-kb-op-line="5"')
+  })
+
+  it('collapses a run of consecutive blocks into one chip row', () => {
+    const markdown = `A reply that touched two objects.
+
+${patchBlock}
+
+[kb-op
+  op: add
+  id: npc.warden
+  body: |
+    | A warden.
+]: #
+
+Prose after.`
+    const result = preprocessAnnotations(markdown, 'test')
+    expect(result.match(/class="kb-op-markers"/g)).toHaveLength(1)
+    expect(result).toContain('data-kb-open-id="front.loose-blade"')
+    expect(result).toContain('data-kb-open-id="npc.warden"')
+    // A `body: |` gutter must not leak: it is verbatim model text.
+    expect(result).not.toContain('A warden.')
+  })
+
+  it('marks an op whose patch no longer resolves', () => {
+    const markdown = `Prose.\n\n${patchBlock}\n`
+    const status = buildKbOpStatusByLine([
+      {
+        index: 1,
+        op: 'patch',
+        id: 'front.loose-blade',
+        line_start: 3,
+        line_end: 7,
+        summary: '1 patch',
+        status: 'error',
+        error: 'anchor not found',
+      },
+    ])
+    const result = preprocessAnnotations(markdown, 'test', null, null, status)
+    expect(result).toContain('kb-op-marker--error')
+    expect(result).toContain('⚠')
+    expect(result).toContain('anchor not found')
+  })
+
+  it('reads a block as history unless the payload says it is still pending', () => {
+    // The verb cannot answer this: an `add` on a closed session's node has
+    // landed exactly as much as the `applied` record beside it.
+    const markdown = `Prose.\n\n${patchBlock}\n`
+    const historical = preprocessAnnotations(markdown, 'test')
+    expect(historical).toContain('kb-op-marker--recorded')
+    expect(historical).not.toContain('kb-op-marker--pending')
+    expect(historical).toContain('Already written')
+
+    const status = buildKbOpStatusByLine([
+      {
+        index: 1,
+        op: 'patch',
+        id: 'front.loose-blade',
+        line_start: 3,
+        line_end: 7,
+        summary: '1 patch',
+        status: 'ok',
+        error: '',
+      },
+    ])
+    const live = preprocessAnnotations(markdown, 'test', null, null, status)
+    expect(live).toContain('kb-op-marker--pending')
+    expect(live).not.toContain('kb-op-marker--recorded')
+    expect(live).toContain('Proposed — not written yet')
+  })
+
+  it('never calls an `applied` record pending, even at the cursor', () => {
+    const markdown = ['[kb-op', '  op: applied', '  ids:', '    - npc.warden', ']: #', ''].join('\n')
+    const status = buildKbOpStatusByLine([
+      {
+        index: 1,
+        op: 'applied',
+        id: '',
+        line_start: 1,
+        line_end: 5,
+        summary: 'written at close: npc.warden',
+        status: 'ok',
+        error: '',
+      },
+    ])
+    const result = preprocessAnnotations(markdown, 'test', null, null, status)
+    expect(result).toContain('kb-op-marker--recorded')
+    expect(result).not.toContain('kb-op-marker--pending')
+  })
+
+  it('reads an `applied` marker as a record, and drops the arrow when it wrote several', () => {
+    const markdown = `Session closed.
+
+[kb-op
+  op: applied
+  at: "2026-09-17T10:00:00Z"
+  session: design-one
+  ids:
+    - front.loose-blade
+    - npc.warden
+]: #
+`
+    const result = preprocessAnnotations(markdown, 'test')
+    expect(result).toContain('✔ 2 written')
+    // Two ids, so no single shortcut — the block itself lists them.
+    expect(result).not.toContain('kb-op-marker-open')
+    expect(result).toContain('data-kb-op-line="3"')
+  })
+
+  it('keeps the arrow when an `applied` marker wrote exactly one object', () => {
+    const markdown = `[kb-op
+  op: applied
+  session: design-one
+  ids:
+    - npc.warden
+]: #
+`
+    const result = preprocessAnnotations(markdown, 'test')
+    expect(result).toContain('data-kb-open-id="npc.warden"')
+  })
+
+  it('emits nothing for a node with no proposals', () => {
+    const result = preprocessAnnotations('Just prose.\n', 'test')
+    expect(result).not.toContain('kb-op-marker')
+  })
+
+  // The `applied` marker a close writes goes into the *parent*, above the
+  // close tag — so it lands inside an annotation body, which is rendered by a
+  // different loop.  Before this, the block reached markdown-it as prose.
+  it('renders a chip for a block inside an annotation body', () => {
+    const markdown = [
+      '[design:session-zero]: #',
+      '',
+      'Session zero, closed.',
+      '',
+      '[kb-op',
+      '  op: applied',
+      '  ids:',
+      '    - npc.warden',
+      ']: #',
+      '',
+      '[/design:session-zero]: #',
+    ].join('\n')
+    const result = preprocessAnnotations(markdown, 'story')
+    expect(result).not.toContain('op: applied')
+    expect(result).not.toContain(']: #')
+    expect(result).toContain('kb-op-marker--recorded')
+    // Line 5 of the node, not line 1 of the body slice.
+    expect(result).toContain('data-kb-op-line="5"')
+    expect(result).toContain('data-kb-open-id="npc.warden"')
+    expect(result).toContain('Session zero, closed.')
+  })
+
+  it('hides a non-kb-op comment block inside an annotation body too', () => {
+    // Same loop, same gap: an `[llm-trace …]: #` here used to leak as prose.
+    const markdown = [
+      '[section:ch1]: #',
+      '',
+      'Chapter prose.',
+      '',
+      '[llm-trace',
+      '  model: mock',
+      ']: #',
+      '',
+      '[/section:ch1]: #',
+    ].join('\n')
+    const result = preprocessAnnotations(markdown, 'story')
+    expect(result).not.toContain('llm-trace')
+    expect(result).not.toContain('model: mock')
+    expect(result).toContain('Chapter prose.')
   })
 })

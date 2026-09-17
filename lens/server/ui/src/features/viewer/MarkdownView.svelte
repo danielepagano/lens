@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { nodeContent, currentAddress, streamingPreview } from '../../stores/document'
+  import { nodeContent, currentAddress, pendingKb, streamingPreview } from '../../stores/document'
   import { currentProject } from '../../stores/project'
   import { stats } from '../../stores/stats'
   import {
@@ -12,12 +12,19 @@
     prefixMountUrlsInRenderedHtml,
     buildNodeTransactionOverlay,
     buildAnnotationLineSet,
+    buildKbOpStatusByLine,
     buildAttachLinePickStates,
     computeValidEndLines,
     computeValidStartLines,
   } from '../../utils/markdown'
   import { syncQuoteBlockAccents } from '../../utils/quoteBlockAccent'
-  import { linePickMode, linePickSelection, scrollContentToBottom, kbDiffRequest } from '../../stores/ui'
+  import {
+    linePickMode,
+    linePickSelection,
+    scrollContentToBottom,
+    kbDiffRequest,
+    kbOpRequest,
+  } from '../../stores/ui'
   import { getKbItem } from '../../services/api'
   import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
   import ViewerContextPills from './ViewerContextPills.svelte'
@@ -25,6 +32,7 @@
   import { tick } from 'svelte'
   import { fromAction } from 'svelte/attachments'
   import { parseKbBlocks, injectKbDiffButtons, stripKbFrontMatter } from '../../utils/kbDiffAction'
+  import { kbOpBlockAtLine } from '../../utils/kbOpBlocks'
   import { parseLensNodeHeaderBlock, type ParsedNodeHeader } from '../../utils/nodeHeaderBlock'
 
   // html: true so that <!-- comments --> are rendered as real HTML comments
@@ -42,6 +50,9 @@
   const overlay = $derived(
     buildNodeTransactionOverlay($stats?.transaction?.raw_diff ?? null, $currentAddress)
   )
+  /** Decorates the `[kb-op …]: #` markers; empty away from the cursor, where
+   * the blocks are a closed session's history rather than live proposals. */
+  const kbOpStatus = $derived(buildKbOpStatusByLine($pendingKb?.ops))
   const isStreamingToCurrentNode = $derived(
     $streamingPreview !== null && $currentAddress === $streamingPreview.targetNode
   )
@@ -70,6 +81,7 @@
             $currentAddress,
             overlay,
             $stats?.cursor ?? null,
+            kbOpStatus,
           ),
         ),
       )
@@ -102,6 +114,16 @@
   const kbBlockMap = $derived($nodeContent ? parseKbBlocks($nodeContent) : new Map<string, string>())
 
   async function handleMarkdownClick(e: MouseEvent) {
+    // The body half of a kb-op chip: read the block itself. Parsed from the
+    // node on demand rather than carried in the markup — the block is model
+    // text of unbounded size and has no business in an HTML attribute.
+    const opEl = (e.target as HTMLElement).closest('[data-kb-op-line]')
+    if (opEl) {
+      e.preventDefault()
+      const line = Number(opEl.getAttribute('data-kb-op-line'))
+      if (Number.isFinite(line)) kbOpRequest.set(kbOpBlockAtLine($nodeContent, line))
+      return
+    }
     const pinEl = (e.target as HTMLElement).closest('[data-kb-open-id]')
     if (pinEl) {
       e.preventDefault()

@@ -34,6 +34,7 @@
   import type { KbEditMeta } from './kbEditableControls'
   import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
   import KbViewerMetaSection from './KbViewerMetaSection.svelte'
+  import KbPendingDiff from './KbPendingDiff.svelte'
   import KbDetailView from './KbDetailView.svelte'
   import KbQuoteEditDialog from './KbQuoteEditDialog.svelte'
 
@@ -462,6 +463,13 @@
 
     {#if saveError}
       <p class="error-state kb-save-error">{saveError}</p>
+    {/if}
+
+    <!-- A proposal over this object, if a session has one open. Above the body
+         because the body already *is* the proposed text: the store serves the
+         pending layer, so without this the reader cannot tell. -->
+    {#if !editMode}
+      <KbPendingDiff id={item.id} />
     {/if}
 
     {#if editMode}

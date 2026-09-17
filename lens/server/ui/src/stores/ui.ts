@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store'
+import type { ParsedKbOp } from '../utils/kbOpBlocks'
 import type {
   MediaGenerateParams,
   MediaStartEvent,
@@ -177,6 +178,16 @@ export interface KbDiffRequest {
   current: string
 }
 export const kbDiffRequest = writable<KbDiffRequest | null>(null)
+
+/**
+ * The `[kb-op …]: #` block a reader clicked, to show as itself.
+ *
+ * Deliberately the parsed block and not an id: away from the cursor there is
+ * no proposal left to diff — materialization leaves the blocks behind — and
+ * what survives is the intent, which is worth reading on its own. Null =
+ * modal closed.
+ */
+export const kbOpRequest = writable<ParsedKbOp | null>(null)
 
 /** Guide key to show in the CLI guide modal. Null = modal closed. */
 export const guideModalCommand = writable<string | null>(null)

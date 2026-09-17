@@ -2,9 +2,12 @@
   import type { Stats } from '../../services/api'
   import type { ParsedNodeHeader } from '../../utils/nodeHeaderBlock'
   import { explainRequest } from '../../stores/ui'
+  import { pendingKb } from '../../stores/document'
   import {
     contextSummaryParts,
     cursorKbRows as buildCursorKbRows,
+    pendingKbRows,
+    pendingPillLabel,
     pillKey,
     pillLabel,
     pillTitle,
@@ -94,13 +97,17 @@
   const cursorParamEntries = $derived(
     Object.entries(cursorParams).sort(([a], [b]) => a.localeCompare(b)),
   )
+  /** Proposals the current session would write at `--end`; served only for
+   * the cursor node, so this store is already null everywhere else. */
+  const pendingRows = $derived(pendingKbRows($pendingKb))
   const hasCursorRollup = $derived(
     isCursorNode &&
       (cursorPins.length > 0 ||
         cursorIncludes.length > 0 ||
         cursorMentions.length > 0 ||
         cursorVarEntries.length > 0 ||
-        cursorParamEntries.length > 0),
+        cursorParamEntries.length > 0 ||
+        pendingRows.length > 0),
   )
 
   const cursorKbRows = $derived(
@@ -119,6 +126,7 @@
       params: cursorParamEntries.length,
       includes: cursorIncludes.length,
       mentions: cursorMentions.length,
+      pending: pendingRows.length,
     }),
   )
 </script>
@@ -194,6 +202,23 @@
     {#if cursorSplitRows.notable.length > 0}
       <div class="pin-pills effective-pins notable-pins" data-testid="cursor-context-notable-pills">
         {@render pillsBlock(cursorSplitRows.notable, [], [])}
+      </div>
+    {/if}
+    {#if pendingRows.length > 0}
+      <div class="pin-pills effective-pins pending-kb-pills" data-testid="cursor-pending-kb-pills">
+        {#each pendingRows as row (row.id)}
+          <button
+            type="button"
+            class={[
+              'pin-pill',
+              'pin-pill--pending',
+              `pin-pill--pending-${row.change}`,
+              { 'pin-pill--pending-error': row.error },
+            ]}
+            title={row.title}
+            onclick={() => openKbItem(row.id)}
+          >{pendingPillLabel(row)}</button>
+        {/each}
       </div>
     {/if}
   </div>

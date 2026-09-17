@@ -68,7 +68,7 @@ The UI consumes this route from `features/explain/` (context modal, opened by th
 |--------|------|-------------|
 | POST | `/{slug}/narrative/narratives/active` | Switch the active narrative (`{"narrative": "<slug>"}`). |
 | GET | `/{slug}/narrative/tree` | Recursive tree of narrative nodes (address, key, children). |
-| GET | `/{slug}/narrative/node/{address}` | Node content by address. Returns `address`, `content`, `children`. 404 if not found. |
+| GET | `/{slug}/narrative/node/{address}` | Node content by address. Returns `address`, `content`, `children`, plus `pending_kb` **at the cursor only** (the proposals a `design`/`advance` session has not written yet — ops with line spans and status, and a `base`/`proposed` pair per object). 404 if not found. |
 
 ### Pinning
 
