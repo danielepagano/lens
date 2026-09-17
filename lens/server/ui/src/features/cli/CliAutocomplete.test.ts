@@ -508,7 +508,7 @@ describe('optionShouldSuggest / availability', () => {
     )
   })
 
-  it('getSuggestions: prompt slot still hides --slug when active_session_operator is play', () => {
+  it('getSuggestions: --slug still suggested when active_session_operator is play (nests a sub-session)', () => {
     const sources: DataSources = {
       kbTypes: [],
       kbKeyCache: new Map(),
@@ -530,8 +530,33 @@ describe('optionShouldSuggest / availability', () => {
     }
     const sugs = getSuggestions(st, playDef, sources)
     const flags = sugs.filter((s) => s.kind === 'flag').map((s) => s.value)
-    expect(flags).not.toContain('--slug')
+    expect(flags).toContain('--slug')
     expect(flags).toContain('--pass')
+  })
+
+  it('getSuggestions: --slug still hidden for chat when active_session_operator is chat (no nesting)', () => {
+    const sources: DataSources = {
+      kbTypes: [],
+      kbKeyCache: new Map(),
+      fetchKbKeys: () => {},
+      nodeTree: null,
+      fetchNodeTree: () => {},
+      stats: baseStats({ active_session_operator: 'chat' }),
+      mountDirCache: new Map(),
+      fetchMountDir: () => {},
+      viewingAtProjectCursor: true,
+    }
+    const st: ParseState = {
+      phase: 'positional',
+      activePayload: { name: 'prompt', valueType: 'prompt' },
+      currentToken: '',
+      completedPositional: {},
+      completedOptions: {},
+      canOfferOptions: true,
+    }
+    const sugs = getSuggestions(st, chatDef, sources)
+    const flags = sugs.filter((s) => s.kind === 'flag').map((s) => s.value)
+    expect(flags).not.toContain('--slug')
   })
 
   it('getSuggestions: prompt slot still hides --end when not in play session', () => {

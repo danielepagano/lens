@@ -763,6 +763,17 @@ class ChatOperator(SessionOperator):
         session_node, _ = cls.find_active_session(narrative)
 
         if session_node is not None:
+            if slug is not None:
+                # Unlike play/design, chat has no generic "nest a fresh
+                # session here" path: fresh chat sessions go through
+                # ``_start_fresh_session`` (requires --as, sets as_kb_id /
+                # with_kb_id on the parent annotation), which the base
+                # class's now-permissive ``run_session`` does not know to
+                # call. Reject explicitly rather than silently falling
+                # through to the generic (and wrong) fresh-session setup.
+                raise ValidationError(
+                    "--slug can only be used when starting a new session"
+                )
             # Continue inside an existing session — delegate to base class.
             return await super().run_session(
                 session=session,

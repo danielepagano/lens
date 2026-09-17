@@ -160,11 +160,11 @@ class TestSlugAndRename(unittest.TestCase):
         self.assertIn("invalid slug", str(ctx.exception))
 
     # ------------------------------------------------------------------
-    # 04 — --slug is rejected when already inside a session
+    # 04 — --slug while inside a session nests a fresh child session
     # ------------------------------------------------------------------
 
-    def test_04_slug_on_existing_session_raises(self) -> None:
-        """--slug is rejected when the cursor is already inside a session."""
+    def test_04_slug_on_existing_session_nests(self) -> None:
+        """--slug while the cursor is already inside a session starts a nested one."""
         session = self._session()
         narrative = session.active_narrative
         assert narrative is not None
@@ -179,31 +179,102 @@ class TestSlugAndRename(unittest.TestCase):
             unpins=[],
             llm_id="mock",
         ))
-        self._checkpoint("slug: design auto (for slug-on-existing test)")
-
-        # Now try to provide --slug while inside the session
+        self._checkpoint("slug: design auto (for nested-session test)")
         session = self._session()
         narrative = session.active_narrative
         assert narrative is not None
-        with self.assertRaises(ValidationError) as ctx:
-            _run(DesignOperator.run_design(
-                session=session,
-                narrative=narrative,
-                prompt="continue",
-                module_ids=None,
-                pins=[],
-                unpins=[],
-                llm_id="mock",
-                slug="other-name",
-            ))
-        self.assertIn("new session", str(ctx.exception))
+        outer_node = narrative.find_cursor()
+        outer_key_path = outer_node.key_path
 
-        # Close the session so state is clean for next tests
+        # Now provide --slug while inside the session: this should create a
+        # nested child session under the current one, not raise.
+        _run(DesignOperator.run_design(
+            session=session,
+            narrative=narrative,
+            prompt="a nested design",
+            module_ids=None,
+            pins=[],
+            unpins=[],
+            llm_id="mock",
+            slug="other-name",
+        ))
+        self._checkpoint("slug: design nested other-name")
+
+        session = self._session()
+        narrative = session.active_narrative
+        assert narrative is not None
+        nested_node = narrative.find_cursor()
+        # Nested node is a child of the outer session node, not a sibling.
+        self.assertEqual(nested_node.key_path[:-1], outer_key_path)
+        self.assertEqual(nested_node.key_path[-1], "design-other-name")
+        self.assertIn(
+            "[design:design-other-name]: #",
+            outer_node.md_path().read_text(),
+        )
+
+        # Close the nested session: cursor pops back to the still-open outer session.
         session = self._session()
         narrative = session.active_narrative
         assert narrative is not None
         _run(DesignOperator.run_session_end(session=session, narrative=narrative, llm_id="mock"))
-        self._checkpoint("design: close auto session")
+        self._checkpoint("design: close nested session")
+
+        session = self._session()
+        narrative = session.active_narrative
+        assert narrative is not None
+        self.assertEqual(narrative.find_cursor().key_path, outer_key_path)
+
+        # Close the outer session so state is clean for next tests.
+        _run(DesignOperator.run_session_end(session=session, narrative=narrative, llm_id="mock"))
+        self._checkpoint("design: close outer session")
+
+    def test_04b_slug_on_existing_chat_session_still_raises(self) -> None:
+        """Chat keeps rejecting --slug while inside a session (no nesting support)."""
+        session = self._session()
+        narrative = session.active_narrative
+        assert narrative is not None
+
+        from lens.core.operators.chat import ChatOperator
+
+        _run(ChatOperator.run_session(
+            session=session,
+            narrative=narrative,
+            prompt="hello there",
+            pins=[],
+            unpins=[],
+            llm_id="mock",
+            extra_params={"as_kb_id": "person.hero"},
+        ))
+        self._checkpoint("slug: chat session start (for chat slug-rejection test)")
+
+        session = self._session()
+        narrative = session.active_narrative
+        assert narrative is not None
+        with self.assertRaises(ValidationError) as ctx:
+            _run(ChatOperator.run_session(
+                session=session,
+                narrative=narrative,
+                prompt="continue",
+                pins=[],
+                unpins=[],
+                llm_id="mock",
+                slug="other-chat",
+                extra_params={"as_kb_id": "person.hero"},
+            ))
+        self.assertIn("new session", str(ctx.exception))
+
+        session = self._session()
+        narrative = session.active_narrative
+        assert narrative is not None
+        _run(ChatOperator.run_session(
+            session=session,
+            narrative=narrative,
+            pins=[],
+            unpins=[],
+            llm_id="mock",
+            end=True,
+        ))
+        self._checkpoint("chat: close session")
 
     # ------------------------------------------------------------------
     # 05 — rename a leaf section node

@@ -220,9 +220,8 @@ const commands: CommandDefinition[] = [
       {
         name: 'slug',
         valueType: 'slug',
-        hint: 'sub-node id (default: auto-generated)',
+        hint: 'sub-node id (nests a new session here if one is already open)',
         availability: {
-          require: { allOf: [{ statNeq: { key: 'active_session_operator', value: 'design' } }] },
           hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
           skipWhenPromptOrStringSlot: true,
         },
@@ -342,9 +341,8 @@ const commands: CommandDefinition[] = [
       {
         name: 'slug',
         valueType: 'slug',
-        hint: 'sub-node id (default: auto-generated)',
+        hint: 'sub-node id (nests a new session here if one is already open)',
         availability: {
-          require: { allOf: [{ statNeq: { key: 'active_session_operator', value: 'play' } }] },
           hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
           skipWhenPromptOrStringSlot: true,
         },
