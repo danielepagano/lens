@@ -17,6 +17,13 @@ Session lifecycle
 *  Subsequent calls inside the session → :meth:`_run_inside` (continue or
    retry).  Front-matter is updated when ``--module`` changes or new
    pins/unpins are supplied.
+*  An explicit ``--slug`` while already inside a session of this operator
+   skips :meth:`_run_inside` and instead starts a *nested* session as a child
+   of the current one, via the same :meth:`_setup_fresh_session` /
+   :meth:`_run_fresh` path a top-level fresh session uses.  Ending it
+   (``--end``) pops the cursor back to the still-open parent session, since
+   :meth:`run_session_end` derives what to close purely from the cursor's
+   immediate parent annotation.
 *  ``--end`` → :meth:`run_session_end` appends the close tag to the parent.
 
 Module handling
@@ -1133,11 +1140,7 @@ class SessionOperator(Operator):
 
         session_node, _ = cls.find_active_session(narrative)
 
-        if session_node is not None:
-            if slug is not None:
-                raise ValidationError(
-                    "--slug can only be used when starting a new session"
-                )
+        if session_node is not None and slug is None:
             return await cls._run_inside(
                 session=session,
                 narrative=narrative,
