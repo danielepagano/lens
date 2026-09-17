@@ -187,6 +187,21 @@ class TestRenderParseRoundTrip(unittest.TestCase):
         text = "[kb-op\n  op: nonsense\n  id: loc.x\n]: #\n"
         self.assertEqual(parse_kb_ops(text), [])
 
+    def test_scalars_that_yaml_would_type_coerce_stay_strings(self) -> None:
+        # An unquoted timestamp reads back as a datetime and an unquoted "12"
+        # as an int; both then str() into something other than what was
+        # written, which is a silent round-trip failure rather than an error.
+        op = KbOp(
+            op="applied",
+            at="2026-09-16T12:00:00Z",
+            session="2026-01-01",
+            ids=("loc.vault", "12", "true"),
+        )
+        parsed = parse_kb_ops(render_kb_op(op))[0]
+        self.assertEqual(parsed.at, "2026-09-16T12:00:00Z")
+        self.assertEqual(parsed.session, "2026-01-01")
+        self.assertEqual(parsed.ids, ("loc.vault", "12", "true"))
+
     def test_free_text_fields_are_flattened_rather_than_leaked(self) -> None:
         # A field can carry an embedded newline; rendering must not put a blank
         # line inside the block, and the value must still come back intact.

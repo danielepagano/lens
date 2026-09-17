@@ -67,6 +67,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import UTC, date, datetime
 from collections.abc import Generator, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -213,14 +214,25 @@ _PLAIN_SCALAR = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.:/+-]*$")
 def _scalar(value: str) -> str:
     """A one-line YAML scalar for *value*.
 
-    Plain when it is obviously safe, so the common case stays readable, and
-    ``json.dumps`` otherwise.  JSON strings are valid YAML double-quoted
-    scalars and escape every newline, which is the property that matters: a
-    scalar yaml would have folded across lines could put a blank line inside the
-    block, and a blank line is one of the two ways this channel leaks.
+    Plain when it is obviously safe *and reads back as the same string*, and
+    ``json.dumps`` otherwise.  Two different hazards:
+
+    - a scalar YAML would fold across lines can put a blank line inside the
+      block, and a blank line is one of the two ways this channel leaks;
+    - YAML type-coerces plain scalars, so an unquoted timestamp comes back as a
+      ``datetime`` and an unquoted ``12`` as an ``int``.  Both then ``str()``
+      into something that is not what was written, which is a silent
+      round-trip failure rather than an error.
+
+    JSON strings are valid YAML double-quoted scalars, escape every newline, and
+    never coerce, so they are the fallback for both.
     """
     if _PLAIN_SCALAR.match(value) and not _BLOCK_BREAKER.search(value):
-        return value
+        try:
+            if yaml.safe_load(value) == value:
+                return value
+        except Exception:
+            pass
     return json.dumps(value, ensure_ascii=False)
 
 
@@ -256,7 +268,7 @@ def render_kb_op(op: KbOp) -> str:
     if op.id:
         add(f"{_INDENT}id: {op.id}")
     if op.at:
-        add(f"{_INDENT}at: {op.at}")
+        add(f"{_INDENT}at: {_scalar(op.at)}")
     if op.session:
         add(f"{_INDENT}session: {_scalar(op.session)}")
     if op.body is not None:
@@ -319,6 +331,22 @@ def iter_kb_op_spans(text: str) -> Iterator[tuple[int, int]]:
         i += 1
 
 
+def _timestamp(raw: Any) -> str:
+    """Normalise an ``at:`` value back to an ISO-8601 ``Z`` string.
+
+    The renderer quotes it, but a hand-edited block will not be, and YAML types
+    an unquoted timestamp as a ``datetime`` whose ``str()`` is a different
+    format.  Reading it back as written is the point of the field.
+    """
+    if raw is None:
+        return ""
+    if isinstance(raw, datetime):
+        return raw.astimezone(UTC).replace(tzinfo=None).isoformat() + "Z"
+    if isinstance(raw, date):
+        return raw.isoformat()
+    return str(raw)
+
+
 def _decode_body_field(raw: str) -> str:
     """Decode a ``body: |`` literal scalar back to the original text.
 
@@ -350,7 +378,7 @@ def _op_from_mapping(data: dict[str, Any], start: int, end: int) -> KbOp | None:
         remove_tags=_str_tuple(data.get("remove-tags")),
         ids=_str_tuple(data.get("ids")),
         removed=_str_tuple(data.get("removed")),
-        at=str(data.get("at", "")) if data.get("at") is not None else "",
+        at=_timestamp(data.get("at")),
         session=str(data.get("session", "")) if data.get("session") is not None else "",
         line_start=start + 1,
         line_end=end,
