@@ -27,7 +27,11 @@ import yaml
 
 from lens.core.exceptions import ValidationError
 from lens.core.annotations import ParsedAnnotation
-from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
+from lens.core.commands.kb import (
+    KbMaterializeResult,
+    applied_marker,
+    materialize_session_kb,
+)
 from lens.core.context import CrawlResult, SliceAnchor, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError
@@ -501,7 +505,7 @@ class AdvanceOperator(Operator):
         *,
         session: ProjectSession,
         narrative: NarrativeNode,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         cursor = narrative.find_cursor()
         if not cursor.key_path:
             raise ValidationError(
@@ -560,9 +564,9 @@ class AdvanceOperator(Operator):
         days_elapsed, summary = parse_advance_result(
             child_text, requested_increment
         )
-        result = kb_extract_from_text(child_text, session.project_root, storage)
-        for err in result.errors:
-            logger.warning("advance end: %s", err)
+        result = materialize_session_kb(
+            child_text, session.project_root, storage, who="advance"
+        )
 
         update_timeline_day(
             session.kb, timeline_ids[0], days_elapsed, storage
@@ -576,6 +580,9 @@ class AdvanceOperator(Operator):
             summary_block = format_summary_block(
                 session_id, f"{fallback_title}\n\n{summary}"
             )
+        marker = applied_marker(result, session=session_id)
+        if marker:
+            op.append_to_node(parent, marker)
         op.close_subnode(parent, session_id, summary_block)
         return result
 
@@ -593,7 +600,7 @@ class AdvanceOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         cursor = narrative.find_cursor()
         _session_node, session_id = cls._find_active_session(narrative)
         if session_id is None or cursor.key_path[-1] != session_id:
@@ -661,7 +668,7 @@ class AdvanceOperator(Operator):
             feedback_messages=feedback_messages,
             pre_retry_snapshot=pre_retry_snapshot,
         )
-        return KbExtractResult()
+        return KbMaterializeResult()
 
     @classmethod
     async def _run_advance_fresh(
@@ -677,7 +684,7 @@ class AdvanceOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         cursor = narrative.find_cursor()
         if cls._unclosed_advance_on_node(cursor):
             raise ValidationError(
@@ -753,7 +760,7 @@ class AdvanceOperator(Operator):
             on_token=on_token,
             cancel_event=cancel_event,
         )
-        return KbExtractResult()
+        return KbMaterializeResult()
 
     @classmethod
     async def run_advance(
@@ -772,7 +779,7 @@ class AdvanceOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         """Run advance: fresh generation, retry, or end (apply KB + close)."""
         if end:
             return await cls._run_advance_end(

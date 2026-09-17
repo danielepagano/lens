@@ -12,6 +12,7 @@ import asyncio
 import json
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,7 +24,6 @@ from lens.core.knowledge import KnowledgeStore
 from lens.core.narrative import NarrativeNode
 from lens.core.operators.design import DesignOperator
 from lens.core.project import ProjectSession
-from lens.core.storage import Storage
 from lens.testing.fake_llm import KB_OP_TRIGGER, FakeLLMServer
 from lens.testing.project import setup_test_project
 
@@ -79,9 +79,6 @@ class TestKbOpsSession(unittest.TestCase):
     def _cursor_text(self) -> str:
         session = self._session()
         return self._narrative(session).find_cursor().md_path().read_text()
-
-    def _checkpoint(self, msg: str) -> None:
-        Storage(self._project_dir).commit(msg)
 
     # ------------------------------------------------------------------
 
@@ -227,6 +224,81 @@ class TestKbOpsSession(unittest.TestCase):
 
         self.assertEqual(self._cursor_text(), cursor_before)
         self.assertTrue(self._session().kb.exists("loc.vault"))
+
+
+    def test_10_end_materializes_into_one_pending_transaction(self) -> None:
+        session = self._session()
+        narrative = self._narrative(session)
+        result = _run(DesignOperator.run_session_end(
+            session=session, narrative=narrative, llm_id="mock"
+        ))
+
+        self.assertIn("loc.vault", result.inserted)
+        self.assertEqual(result.errors, [])
+        written = self._project_dir / "knowledge" / "loc" / "vault.md"
+        self.assertTrue(written.exists())
+        self.assertIn("The Vault", written.read_text())
+        self.assertIn("loc.vault", self._session().kb.get_ids_with_tag("sunken"))
+
+        # Uncommitted: the write is part of the close's review unit, not canon.
+        # (It lands *staged* rather than unstaged, because `stage_all` resets
+        # the ownership check and the close tag written afterwards re-stages.
+        # That predates this change — the fence path had the same shape.)
+        tracked = subprocess.run(
+            ["git", "ls-tree", "-r", "--name-only", "HEAD"],
+            cwd=self._project_dir,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        self.assertNotIn("knowledge/loc/vault.md", tracked)
+
+    def test_11_the_parent_records_that_it_applied(self) -> None:
+        session = self._session()
+        parent = self._narrative(session)
+        ops = [op for op in parse_kb_ops(parent.md_path().read_text()) if op.op == "applied"]
+        self.assertEqual(len(ops), 1)
+        self.assertIn("loc.vault", ops[0].ids)
+        self.assertTrue(ops[0].at)
+
+    def test_12_the_marker_is_invisible_like_every_other_block(self) -> None:
+        session = self._session()
+        text = self._narrative(session).md_path().read_text()
+        self.assertNotIn("kb-op", strip_markdown_comments(text))
+
+    def test_13_materialization_is_recomputed_from_the_node(self) -> None:
+        # The property rewind depends on: truncate the ops out and nothing is
+        # written, however recently the operator held them in memory.
+        session = self._session()
+        narrative = self._narrative(session)
+        _run(DesignOperator.run_design(
+            session=session,
+            narrative=narrative,
+            prompt=_trigger({
+                "tool": "kb_add",
+                "arguments": {"id": "loc.ghost", "body": "never written\n"},
+            }),
+            module_ids=None,
+            pins=[],
+            unpins=[],
+            llm_id="mock",
+            slug="ghost",
+        ))
+        cursor = self._narrative(self._session()).find_cursor()
+        self.assertIn("loc.ghost", [op.id for op in parse_kb_ops(cursor.md_path().read_text())])
+
+        # Hand-truncate the proposal out, as rewind would.
+        text = cursor.md_path().read_text()
+        start = text.index("[kb-op")
+        end = text.index("]: #", start) + len("]: #")
+        cursor.md_path().write_text(text[:start] + text[end:])
+
+        session = self._session()
+        result = _run(DesignOperator.run_session_end(
+            session=session, narrative=self._narrative(session), llm_id="mock"
+        ))
+        self.assertEqual(result.inserted, [])
+        self.assertFalse((self._project_dir / "knowledge" / "loc" / "ghost.md").exists())
 
 
 if __name__ == "__main__":

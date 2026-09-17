@@ -275,10 +275,11 @@ async def _run_operator_task(
                             done_payload["rollback_pending"] = True
                     elif isinstance(result, Storage):
                         pass
-                    # Design returns KbExtractResult
+                    # Design and advance return KbMaterializeResult
                     elif hasattr(result, "inserted"):
                         done_payload["inserted"] = result.inserted
                         done_payload["updated"] = result.updated
+                        done_payload["removed"] = getattr(result, "removed", [])
                         done_payload["errors"] = result.errors
                     # Section end returns key string
                     elif isinstance(result, str):
