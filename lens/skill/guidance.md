@@ -69,14 +69,24 @@ of the merged store, `id:line:text` output), `lens kb list` to enumerate, and
 `lens kb get <id>` to read one. `lens kb get` and `lens kb list` print a
 `SOURCE=` field saying which store won and what it shadowed.
 
-**2. Editing a dataset file edits it for every project using that dataset.** The
+**2. `lens kb get` can show you something that is not on disk yet.** While a
+`design` or `advance` session is open at the cursor, its proposed writes are a
+**pending layer** over the store: they are what every read returns — `kb get`,
+`kb list`, `kb search`, `+` expansion, the crawl — and `SOURCE=` says `pending`.
+Nothing is in `knowledge/` until the session closes with `--end`, and nothing is
+in git until then either, so a `git diff` looks clean while the store looks
+changed. `lens kb pending` lists what is proposed, where in the node each
+proposal sits, and whether it still resolves. `lens use` away and the layer is
+off; navigate back and it is on. Neither writes anything.
+
+**3. Editing a dataset file edits it for every project using that dataset.** The
 merge is invisible on disk, so an object that reads fine in `lens kb get` may
 live in a shared tree far outside this repo. Write through `lens kb add <id>
 '<content>'` (an upsert of the whole body), which always writes into *this*
 project and so forks a local copy on first write. Only a file that is already under this repository's `knowledge/`
 is safe to edit with an ordinary text editor.
 
-**3. Tags live in `knowledge/tags.toml`, not in the object files.** Writing
+**4. Tags live in `knowledge/tags.toml`, not in the object files.** Writing
 `knowledge/rules/x.md` by hand creates an object with no tags and no index
 entry — invisible to tag lookups, never reached by `+` link expansion, and
 missing from anything that discovers objects by tag. Use `lens kb tag <id> -a
@@ -85,20 +95,20 @@ is a link to that object, and `<id>+` in a pin pulls the linked objects in — t
 bare tag on its own does not, see Scope below. `lens kb refs <id>` reports both
 directions, including references that never name the id.
 
-**4. An object's first three lines are its self-description.** Every listing
+**5. An object's first three lines are its self-description.** Every listing
 (`kb list`, `kb with-tag`, `kb search --headline`) prints them under each match,
 and a dataset-registered module uses them *as* the catalog entry the model picks
 from. An object that does not open by saying what it is and when it matters will
 not read usefully in a search — and a registered module with no headline is not
 offered at all. Open with the name and the "when".
 
-**5. A type is a tag.** A bare token naming a type (`design`, `rules`) matches
+**6. A type is a tag.** A bare token naming a type (`design`, `rules`) matches
 every object of that type, unioned with the explicit tag index. That is how
 operators discover the modules and rulesets available without a hand-maintained
 list that would go stale — so a new object of an existing type is discoverable
 the moment it exists, and a new *type* is a bigger decision than it looks.
 
-**6. Guidance is paid at different rates.** Text in a `rules.*` booklet is paid
+**7. Guidance is paid at different rates.** Text in a `rules.*` booklet is paid
 on *every* beat that has an object of that type in scope, whichever operator is
 running; text in a `design.*` module is paid once per design session; text in an
 ordinary object is paid only when that object is in scope. Adding a paragraph to
@@ -106,7 +116,7 @@ a booklet is the expensive edit, and booklets are already the majority of a play
 prompt. Cut whole rules rather than diluting the ones you
 keep: numbers and thresholds are the part that must survive verbatim.
 
-**7. The diff is not the artifact — the assembled prompt is.** Editing a KB
+**8. The diff is not the artifact — the assembled prompt is.** Editing a KB
 object or a prompt changes what a model reads in ways no test asserts on. Check
 with `lens explain`, which assembles the prompt for a cursor exactly as the
 operator would and reports every component's size and provenance instead of
@@ -114,7 +124,7 @@ calling a model — or with `lens spine` for its narrative half, as prose. Objec
 are shared: a booklet edited for one operator lands in every other operator that
 pins it.
 
-**8. Verify through a fresh command, not through a process you left running.**
+**9. Verify through a fresh command, not through a process you left running.**
 The tag index is cached per project inside a running process. A freshly written
 tag can read stale, and a `+` expansion silently resolves to nothing — which is
 indistinguishable from a real bug. Run the CLI again.

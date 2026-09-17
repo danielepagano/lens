@@ -34,7 +34,13 @@ Line-level rewind
 In all cases, child nodes whose section opening annotations are no longer
 present in the file after the cut are deleted from disk.
 
-Side effects (e.g. KB objects created by ``design``) are never touched.
+Side effects (e.g. KB objects created by ``design``) are never touched — and,
+since #161, never silently.  Every region of text a rewind is about to discard
+is scanned for ``[kb-op …]: #`` blocks first: an ``applied`` marker means those
+objects were written and are still on disk, and a plain proposal means nothing
+was ever written and it is going away with the node.  The promise is unchanged;
+what changes is that the result is reported instead of left for the user to
+discover.
 """
 
 from __future__ import annotations
@@ -42,13 +48,72 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from dataclasses import dataclass, field
+
 from lens.core.annotations import ParsedAnnotation, find_front_matter_span, parse_annotations
 from lens.core.exceptions import LensException
+from lens.core.kb_pending import parse_kb_ops
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.storage import Storage
 
 if TYPE_CHECKING:
     pass
+
+
+@dataclass(frozen=True)
+class MaterializedRecord:
+    """One session close whose KB writes survive the rewind."""
+
+    node: str
+    session: str
+    ids: tuple[str, ...]
+    removed: tuple[str, ...]
+    at: str
+
+
+@dataclass
+class RewindReport:
+    """What a rewind discarded, and what it deliberately left alone.
+
+    ``rewind`` never touches the knowledge store, which is the right promise —
+    but silence about it is not.  A user who rewinds past a design session needs
+    to be told the objects it wrote are still there, because nothing else in the
+    repo will say so.
+    """
+
+    materialized: list[MaterializedRecord] = field(
+        default_factory=list[MaterializedRecord]
+    )
+    discarded_proposals: list[str] = field(default_factory=list[str])
+    """Ids proposed but never written, going away with the node."""
+
+    def note_discarded(self, node: NarrativeNode | str, text: str) -> None:
+        """Record every ``[kb-op]`` block in *text*, which is about to be lost."""
+        label = node if isinstance(node, str) else node.path_str()
+        for op in parse_kb_ops(text):
+            if op.op == "applied":
+                self.materialized.append(
+                    MaterializedRecord(
+                        node=label,
+                        session=op.session,
+                        ids=op.ids,
+                        removed=op.removed,
+                        at=op.at,
+                    )
+                )
+            elif op.id:
+                self.discarded_proposals.append(op.id)
+
+    def materialized_ids(self) -> list[str]:
+        seen: list[str] = []
+        for record in self.materialized:
+            for canonical_id in (*record.ids, *record.removed):
+                if canonical_id not in seen:
+                    seen.append(canonical_id)
+        return seen
+
+    def is_empty(self) -> bool:
+        return not self.materialized and not self.discarded_proposals
 
 
 def _is_subnode_opener(ann: ParsedAnnotation) -> bool:
@@ -64,28 +129,39 @@ def _is_subnode_opener(ann: ParsedAnnotation) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def rewind(target: NarrativeNode, line: int | None, storage: Storage) -> None:
+def rewind(
+    target: NarrativeNode, line: int | None, storage: Storage
+) -> RewindReport:
     """Rewind the narrative to *target* (and optionally to *line* within it).
 
     When *line* is None, the cursor is placed at the end of *target* (node-level).
     When *line* is set, the target's file is truncated at that line, then the
     cursor is placed at *target* (so later siblings in the parent are removed).
 
+    Returns a :class:`RewindReport` naming any KB objects a discarded session
+    had already written — they stay exactly as they are, and this is how the
+    caller gets to say so.
+
     Raises ``LensException`` if the node does not exist or rewind cannot be applied.
     """
+    report = RewindReport()
     if line is None:
-        rewind_to_node(target, storage)
+        rewind_to_node(target, storage, report=report)
     else:
-        rewind_to_line(target, line, storage)
-        rewind_to_node(target, storage)
+        rewind_to_line(target, line, storage, report=report)
+        rewind_to_node(target, storage, report=report)
+    return report
 
 
-def rewind_to_node(target: NarrativeNode, storage: Storage) -> None:
+def rewind_to_node(
+    target: NarrativeNode, storage: Storage, *, report: RewindReport | None = None
+) -> RewindReport:
     """Make *target* the cursor by opening the path to it and cleaning its tail.
 
     Raises ``LensException`` if the node does not exist or its opening
     annotation cannot be found in the parent.
     """
+    report = report if report is not None else RewindReport()
     if not target.exists():
         raise LensException(f"Node '{target.path_str()}' does not exist")
 
@@ -129,6 +205,7 @@ def rewind_to_node(target: NarrativeNode, storage: Storage) -> None:
 
         # Truncate the parent file right after the opening annotation.
         parent_lines = parent_text.split("\n")
+        report.note_discarded(parent, "\n".join(parent_lines[current_open_ann.line_end :]))
         new_lines = parent_lines[: current_open_ann.line_end]
         while new_lines and not new_lines[-1].strip():
             new_lines.pop()
@@ -138,19 +215,27 @@ def rewind_to_node(target: NarrativeNode, storage: Storage) -> None:
         for ann in parent_anns:
             if ann.line_start > current_open_ann.line_end and _is_subnode_opener(ann):
                 assert ann.id is not None  # guaranteed by _is_subnode_opener
-                _delete_node(parent.child_node(ann.id), storage)
+                _delete_node(parent.child_node(ann.id), storage, report)
 
     # Remove any unclosed section annotation at the tail of the target's file
     # so that find_cursor() lands exactly on *target*.
-    _clean_node_tail(target, storage)
+    _clean_node_tail(target, storage, report)
+    return report
 
 
-def rewind_to_line(target: NarrativeNode, line: int, storage: Storage) -> None:
+def rewind_to_line(
+    target: NarrativeNode,
+    line: int,
+    storage: Storage,
+    *,
+    report: RewindReport | None = None,
+) -> RewindReport:
     """Truncate *target*'s file at *line* (1-based) with structural adjustments.
 
     Raises ``LensException`` if the node does not exist or *line* is out of
     range.
     """
+    report = report if report is not None else RewindReport()
     if not target.exists():
         raise LensException(f"Node '{target.path_str()}' does not exist")
 
@@ -175,21 +260,23 @@ def rewind_to_line(target: NarrativeNode, line: int, storage: Storage) -> None:
         fm_last = fm_span[1]
         if fm_first <= line <= fm_last:
             # Rewind into front matter → clear the node entirely.
-            _apply_cut(target, node_lines, 0, all_anns, storage)
-            return
+            _apply_cut(target, node_lines, 0, all_anns, storage, report)
+            return report
 
     # --- Line within an annotation tag ----------------------------------------
     for ann in all_anns:
         if ann.line_start <= line <= ann.line_end:
             if ann.closing:
                 # Line is on or within a closing tag: keep it (truncate after).
-                _apply_cut(target, node_lines, ann.line_end, all_anns, storage)
+                _apply_cut(
+                    target, node_lines, ann.line_end, all_anns, storage, report
+                )
             else:
                 # Line is within an opening annotation tag: delete it and everything after.
                 _apply_cut(
-                    target, node_lines, ann.line_start - 1, all_anns, storage
+                    target, node_lines, ann.line_start - 1, all_anns, storage, report
                 )
-            return
+            return report
 
     # --- Line within an annotation body ---------------------------------------
     segments = parse_segments(node_text)
@@ -206,19 +293,31 @@ def rewind_to_line(target: NarrativeNode, line: int, storage: Storage) -> None:
                 # partial summary or leave a sub-node open without a child →
                 # delete the entire block.
                 _apply_cut(
-                    target, node_lines, open_ann.line_start - 1, all_anns, storage
+                    target,
+                    node_lines,
+                    open_ann.line_start - 1,
+                    all_anns,
+                    storage,
+                    report,
                 )
             else:
                 # write / edit / other: truncate the body at *line* and close
                 # the tag so the block remains syntactically complete.
                 close_tag = _build_close_tag(open_ann.operator, open_ann.id)
                 _apply_cut(
-                    target, node_lines, line, all_anns, storage, close_tag=close_tag
+                    target,
+                    node_lines,
+                    line,
+                    all_anns,
+                    storage,
+                    report,
+                    close_tag=close_tag,
                 )
-            return
+            return report
 
     # --- Free text (no enclosing annotation) ----------------------------------
-    _apply_cut(target, node_lines, line, all_anns, storage)
+    _apply_cut(target, node_lines, line, all_anns, storage, report)
+    return report
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +331,7 @@ def _apply_cut(
     cut_line: int,
     all_anns: list[ParsedAnnotation],
     storage: Storage,
+    report: RewindReport,
     *,
     close_tag: str | None = None,
 ) -> None:
@@ -240,6 +340,7 @@ def _apply_cut(
     *cut_line* is 1-based inclusive.  ``cut_line=0`` means keep nothing
     (clear the file).
     """
+    report.note_discarded(node, "\n".join(node_lines[cut_line:]))
     new_lines = node_lines[:cut_line]
     while new_lines and not new_lines[-1].strip():
         new_lines.pop()
@@ -256,7 +357,7 @@ def _apply_cut(
     for ann in all_anns:
         if ann.line_start > cut_line and _is_subnode_opener(ann):
             assert ann.id is not None  # guaranteed by _is_subnode_opener
-            _delete_node(node.child_node(ann.id), storage)
+            _delete_node(node.child_node(ann.id), storage, report)
 
 
 def _build_close_tag(operator: str, id: str | None) -> str:
@@ -266,7 +367,9 @@ def _build_close_tag(operator: str, id: str | None) -> str:
     return f"[/{operator}]: #"
 
 
-def _clean_node_tail(node: NarrativeNode, storage: Storage) -> None:
+def _clean_node_tail(
+    node: NarrativeNode, storage: Storage, report: RewindReport
+) -> None:
     """Remove any unclosed ``[section:…]: #`` at the tail of *node*'s file.
 
     Sections cannot be open without a child node owning the cursor.  If the
@@ -290,6 +393,7 @@ def _clean_node_tail(node: NarrativeNode, storage: Storage) -> None:
         return
 
     node_lines = node_text.split("\n")
+    report.note_discarded(node, "\n".join(node_lines[unclosed.line_start - 1 :]))
     new_lines = node_lines[: unclosed.line_start - 1]
     while new_lines and not new_lines[-1].strip():
         new_lines.pop()
@@ -298,24 +402,40 @@ def _clean_node_tail(node: NarrativeNode, storage: Storage) -> None:
         new_text += "\n"
 
     storage.write_file(node.md_path(), new_text)
-    _delete_node(node.child_node(unclosed.id), storage)
+    _delete_node(node.child_node(unclosed.id), storage, report)
 
 
-def _delete_node(node: NarrativeNode, storage: Storage) -> None:
+def _delete_node(
+    node: NarrativeNode, storage: Storage, report: RewindReport
+) -> None:
     """Delete *node* and all its descendants from the filesystem."""
     if not node.exists():
         return
     if node.is_leaf():
+        _note_file(node.md_path(), report)
         storage.delete_file(node.md_path())
     else:
-        _rmtree_via_storage(node.md_path().parent, storage)
+        _rmtree_via_storage(node.md_path().parent, storage, report)
 
 
-def _rmtree_via_storage(path: Path, storage: Storage) -> None:
+def _note_file(path: Path, report: RewindReport) -> None:
+    """Read a file about to be deleted, for its ``[kb-op]`` blocks."""
+    if path.suffix != ".md":
+        return
+    try:
+        report.note_discarded(str(path.name), path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        return
+
+
+def _rmtree_via_storage(
+    path: Path, storage: Storage, report: RewindReport
+) -> None:
     """Recursively delete *path* via storage primitives."""
     if path.is_file():
+        _note_file(path, report)
         storage.delete_file(path)
     elif path.is_dir():
         for child in sorted(path.iterdir()):
-            _rmtree_via_storage(child, storage)
+            _rmtree_via_storage(child, storage, report)
         storage.rmdir(path)

@@ -34,6 +34,7 @@ from lens.core.kb_scan import (
     build_pattern,
     pattern_flags,
     scan_files,
+    scan_text,
 )
 from lens.core.knowledge import KbSource, KnowledgeStore, ResolvedObject
 from lens.core.storage_text import kb_headline
@@ -43,8 +44,9 @@ MatchField = Literal["id", "type", "tag", "body"]
 SourceFilter = str
 """Which store an object must resolve from.
 
-``all``, ``project``, ``dataset`` (any of them), or ``dataset:<name>`` for one
-named dataset. The bare ``dataset`` is near-useless on a project with several
+``all``, ``project``, ``dataset`` (any of them), ``dataset:<name>`` for one
+named dataset, or ``pending`` for objects a session has proposed but not yet
+written. The bare ``dataset`` is near-useless on a project with several
 stacked datasets, where almost everything is in *some* dataset; the named form
 is what answers "what does ``lens-dnd-ext`` actually contribute".
 
@@ -116,7 +118,7 @@ def _resolve_store(store: KnowledgeStore | None) -> KnowledgeStore:
 
 
 def _source_matches(entry_source: KbSource, source: SourceFilter) -> bool:
-    if source in ("project", "dataset"):
+    if source in ("project", "dataset", "pending"):
         return entry_source.kind == source
     return (
         entry_source.kind == "dataset"
@@ -130,11 +132,12 @@ def _validate_source(kb: KnowledgeStore, source: SourceFilter) -> None:
     An unknown dataset name and a dataset holding nothing look identical in the
     output, and the first is a typo the caller wants told about.
     """
-    if source in ("all", "project", "dataset"):
+    if source in ("all", "project", "dataset", "pending"):
         return
     if not source.startswith("dataset:"):
         raise LensException(
-            f"source must be all, project, dataset, or dataset:<name> (got {source!r})"
+            "source must be all, project, dataset, pending, or dataset:<name> "
+            f"(got {source!r})"
         )
     name = source.split(":", 1)[1]
     known = kb.dataset_names
@@ -200,7 +203,16 @@ def _scan_bodies(
     raises on pool creation, and a search is not the place to make the user care
     about that.
     """
-    specs = [(entry.id, str(entry.path)) for entry in entries]
+    # A proposed object has no file yet, so it cannot cross into a worker.
+    # There are never many, and `scan_text` is the same matcher the pool runs.
+    pending = [entry for entry in entries if entry.text is not None]
+    found_pending: dict[str, FileMatches] = {}
+    for entry in pending:
+        matched, line_texts = scan_text(entry.text or "", source, flags, context)
+        if matched:
+            found_pending[entry.id] = (entry.id, matched, line_texts)
+
+    specs = [(entry.id, str(entry.path)) for entry in entries if entry.text is None]
     workers = _worker_count(len(specs))
     if workers > 1:
         chunk_size = max(1, len(specs) // (workers * 4))
@@ -218,10 +230,16 @@ def _scan_bodies(
                         [context] * len(chunks),
                     )
                 )
-            return {found[0]: found for chunk in results for found in chunk}
+            return {
+                **found_pending,
+                **{found[0]: found for chunk in results for found in chunk},
+            }
         except (OSError, ValueError, ImportError, NotImplementedError):
             pass
-    return {found[0]: found for found in scan_files(specs, source, flags, context)}
+    return {
+        **found_pending,
+        **{found[0]: found for found in scan_files(specs, source, flags, context)},
+    }
 
 
 def _identity_matches(
@@ -322,7 +340,7 @@ def kb_search(
         headline = ""
         if headlines:
             try:
-                headline = kb_headline(entry.path.read_text(encoding="utf-8"))
+                headline = kb_headline(entry.read_text())
             except (OSError, UnicodeDecodeError):
                 headline = ""
         hits.append(
@@ -373,7 +391,7 @@ def kb_list(
         headline = ""
         if headlines:
             try:
-                headline = kb_headline(entry.path.read_text(encoding="utf-8"))
+                headline = kb_headline(entry.read_text())
             except (OSError, UnicodeDecodeError):
                 headline = ""
         out.append(

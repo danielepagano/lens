@@ -105,6 +105,13 @@ def stats(
                     typer.echo(line)
             else:
                 typer.echo("Modalities at cursor: (none)")
+            if result.pending_kb_ops:
+                typer.echo(
+                    f"Pending KB proposals: {result.pending_kb_ops} "
+                    "(not written — see 'lens kb pending')"
+                )
+            for error in result.pending_kb_errors:
+                typer.echo(f"  ! {error}")
         else:
             typer.echo("Active narrative cursor:  (no active narrative)")
 

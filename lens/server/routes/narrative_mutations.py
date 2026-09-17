@@ -253,11 +253,19 @@ def narrative_rewind(
     storage = session.new_storage()
 
     try:
-        rewind(target_node, line, storage)
+        report = rewind(target_node, line, storage)
     except LensException as e:
         return {"status": "error", "detail": str(e)}
 
-    return {"status": "ok", "address": body.address, "line": line}
+    return {
+        "status": "ok",
+        "address": body.address,
+        "line": line,
+        # Side effects are never touched, and never silent: objects a removed
+        # session had already written are still on disk, and only this says so.
+        "kb_materialized": report.materialized_ids(),
+        "kb_discarded_proposals": list(dict.fromkeys(report.discarded_proposals)),
+    }
 
 
 class RenameNodeRequest(BaseModel):

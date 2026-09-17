@@ -27,10 +27,16 @@ import yaml
 
 from lens.core.exceptions import ValidationError
 from lens.core.annotations import ParsedAnnotation
-from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
+from lens.core.commands.kb import (
+    KbMaterializeResult,
+    applied_marker,
+    materialize_session_kb,
+)
 from lens.core.context import CrawlResult, SliceAnchor, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError
+from lens.core.kb_op_tools import KB_OP_TOOLS, render_kb_op_persist
+from lens.core.kb_pending import KbOpSink, inflight_ops
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
 from lens.core.operator import Operator, OperatorError, extract_annotation_content, build_feedback_messages
@@ -316,6 +322,10 @@ class AdvanceOperator(Operator):
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     use_command_tools: ClassVar[bool] = True
+    supports_kb_ops: ClassVar[bool] = True
+    required_modalities: ClassVar[frozenset[str]] = frozenset(
+        {"kb_ops", "tool_fence_awareness"}
+    )
     expand_facets: ClassVar[bool] = True
 
     @property
@@ -439,27 +449,31 @@ class AdvanceOperator(Operator):
             if pre_retry_snapshot is not None and existing_ann is not None:
                 op.storage.write_file(child_node.md_path(), pre_retry_snapshot)
 
+        kb_op_sink = KbOpSink()
         tools_payload, command_handlers = cls.merge_command_tools_for_generation(
-            resolved, ctx, session.project_root, ann_params
+            resolved, ctx, session.project_root, ann_params, kb_op_sink=kb_op_sink
         )
 
         try:
-            artifacts = await run_llm(
-                LlmRunRequest(
-                    project_root=session.project_root,
-                    messages=messages,
-                    llm_id=llm_id,
-                    tools=tools_payload,
-                    command_tool_handlers=command_handlers,
-                    resolved_modalities=resolved,
-                    modality_context=ctx,
-                    enable_thinking=True,
-                    reasoning=reasoning,
-                    cancel_event=cancel_event,
-                    on_token=on_token,
-                    operator_name=cls.name,
-                ),
-            )
+            with inflight_ops(session.project_root, kb_op_sink):
+                artifacts = await run_llm(
+                    LlmRunRequest(
+                        project_root=session.project_root,
+                        messages=messages,
+                        llm_id=llm_id,
+                        tools=tools_payload,
+                        command_tool_handlers=command_handlers,
+                        resolved_modalities=resolved,
+                        modality_context=ctx,
+                        enable_thinking=True,
+                        reasoning=reasoning,
+                        cancel_event=cancel_event,
+                        on_token=on_token,
+                        operator_name=cls.name,
+                        unlogged_tool_names=KB_OP_TOOLS,
+                        tool_persist_renderer=render_kb_op_persist,
+                    ),
+                )
         except LLMError as e:
             _restore_pre_retry()
             raise OperatorError(f"LLM error: {e}") from e
@@ -494,7 +508,7 @@ class AdvanceOperator(Operator):
         *,
         session: ProjectSession,
         narrative: NarrativeNode,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         cursor = narrative.find_cursor()
         if not cursor.key_path:
             raise ValidationError(
@@ -553,9 +567,9 @@ class AdvanceOperator(Operator):
         days_elapsed, summary = parse_advance_result(
             child_text, requested_increment
         )
-        result = kb_extract_from_text(child_text, session.project_root, storage)
-        for err in result.errors:
-            logger.warning("advance end: %s", err)
+        result = materialize_session_kb(
+            child_text, session.project_root, storage, who="advance"
+        )
 
         update_timeline_day(
             session.kb, timeline_ids[0], days_elapsed, storage
@@ -569,6 +583,9 @@ class AdvanceOperator(Operator):
             summary_block = format_summary_block(
                 session_id, f"{fallback_title}\n\n{summary}"
             )
+        marker = applied_marker(result, session=session_id)
+        if marker:
+            op.append_to_node(parent, marker)
         op.close_subnode(parent, session_id, summary_block)
         return result
 
@@ -586,7 +603,7 @@ class AdvanceOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         cursor = narrative.find_cursor()
         _session_node, session_id = cls._find_active_session(narrative)
         if session_id is None or cursor.key_path[-1] != session_id:
@@ -654,7 +671,7 @@ class AdvanceOperator(Operator):
             feedback_messages=feedback_messages,
             pre_retry_snapshot=pre_retry_snapshot,
         )
-        return KbExtractResult()
+        return KbMaterializeResult()
 
     @classmethod
     async def _run_advance_fresh(
@@ -670,7 +687,7 @@ class AdvanceOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None,
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         cursor = narrative.find_cursor()
         if cls._unclosed_advance_on_node(cursor):
             raise ValidationError(
@@ -746,7 +763,7 @@ class AdvanceOperator(Operator):
             on_token=on_token,
             cancel_event=cancel_event,
         )
-        return KbExtractResult()
+        return KbMaterializeResult()
 
     @classmethod
     async def run_advance(
@@ -765,7 +782,7 @@ class AdvanceOperator(Operator):
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         """Run advance: fresh generation, retry, or end (apply KB + close)."""
         if end:
             return await cls._run_advance_end(

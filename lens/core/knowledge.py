@@ -11,7 +11,18 @@ from pathlib import Path
 from typing import Any, ClassVar, Literal, cast
 from lens.core.annotations import pop_front_matter_key
 from lens.core.exceptions import LensException
-from lens.core.project import get_selected_datasets, resolve_dataset_path
+from lens.core.kb_pending import (
+    EMPTY_LAYER,
+    PendingLayer,
+    fold,
+    inflight_sink,
+    parse_kb_ops,
+)
+from lens.core.project import (
+    get_active_narrative,
+    get_selected_datasets,
+    resolve_dataset_path,
+)
 from lens.core.storage_text import format_kb_prompt_block, kb_headline
 
 import tomli_w
@@ -28,6 +39,16 @@ def _is_valid_token(value: str) -> bool:
 
 def _is_valid_key(value: str) -> bool:
     return bool(_KEY_PATTERN.fullmatch(value))
+
+
+def is_valid_tag(tag: str) -> bool:
+    """Whether *tag* is well formed: a bare token, ``ns:value``, or ``type.key``.
+
+    Public because a tool has to *refuse* a malformed tag and say so, where
+    :meth:`KnowledgeStore.add_tags` silently skips one — fine for a user who can
+    see the result, useless for a model that needs telling.
+    """
+    return _validate_tag(tag)
 
 
 def _validate_tag(tag: str) -> bool:
@@ -78,7 +99,7 @@ def _normalize_template_tags(raw: Any) -> list[str]:
     return [str(raw)]
 
 
-SourceKind = Literal["project", "dataset"]
+SourceKind = Literal["project", "dataset", "pending"]
 
 
 @dataclass(frozen=True)
@@ -105,10 +126,23 @@ class KbSource:
     kind: SourceKind
     dataset: str | None = None
     shadows: tuple[str, ...] = ()
+    base: "KbSource | None" = None
+    """For ``kind="pending"``: where the object resolves from *without* the
+    proposal, or ``None`` when the session is creating it.
+
+    A separate field rather than another entry in ``shadows``, which is
+    contractually a tuple of *dataset* names — a proposal shadows the project
+    itself.  It is also the diff pair a reviewer needs: base text on one side,
+    proposed on the other.
+    """
 
     @property
     def label(self) -> str:
         """One-line rendering: ``project``, ``dataset:rpg``, ``project (shadows dataset:rpg)``."""
+        if self.kind == "pending":
+            if self.base is None:
+                return "pending (new)"
+            return f"pending (over {self.base.label})"
         base = "project" if self.kind == "project" else f"dataset:{self.dataset}"
         if not self.shadows:
             return base
@@ -130,6 +164,21 @@ class ResolvedObject:
     type: str
     path: Path
     source: KbSource
+    text: str | None = None
+    """Set only for a pending object: the proposed body, which has no file yet.
+
+    ``path`` stays non-optional and holds the file the object *would* live in,
+    so every caller keeps typechecking; the ones that actually read bytes go
+    through :meth:`read_text` instead.  Making ``path`` optional would invite
+    ``str(None)`` into the search process pool and turn a loud
+    ``FileNotFoundError`` into a silently empty result.
+    """
+
+    def read_text(self) -> str:
+        """The winning text for this id, from the overlay or from disk."""
+        if self.text is not None:
+            return self.text
+        return self.path.read_text(encoding="utf-8")
 
 
 @dataclass
@@ -209,6 +258,7 @@ class KnowledgeStore:
         storage: Storage | None = None,
         dataset_stores: list[KnowledgeStore] | None = None,
         dataset_name: str | None = None,
+        pending: bool = True,
     ) -> None:
         self._root = root
         # Set only on a dataset store, by _build_dataset_stores. A store cannot
@@ -223,6 +273,13 @@ class KnowledgeStore:
         # Ordered list of dataset stores (project items take precedence; among
         # datasets, later entries in the list shadow earlier ones).
         self._dataset_stores: list[KnowledgeStore] = dataset_stores or []
+        # Pending KB proposals at the cursor (see :mod:`lens.core.kb_pending`).
+        # Off for dataset stores — a dataset can never hold a proposal — and off
+        # for materialization, which must see the world the proposals describe
+        # rather than the proposals themselves.
+        self._pending_enabled = pending and dataset_name is None
+        self._pending_cache: tuple[object, PendingLayer] | None = None
+        self._pending_depth = 0
 
     @classmethod
     def _build_dataset_stores(cls, project_root: Path) -> list[KnowledgeStore]:
@@ -236,11 +293,39 @@ class KnowledgeStore:
         return stores
 
     @classmethod
-    def for_project(cls, project_root: Path, storage: Storage | None = None) -> KnowledgeStore:
+    def for_project(
+        cls,
+        project_root: Path,
+        storage: Storage | None = None,
+        *,
+        pending: bool = True,
+    ) -> KnowledgeStore:
+        """The store for *project_root*.
+
+        ``pending=False`` returns a store that ignores proposals at the cursor —
+        the disk truth.  Two callers need it: materialization, which is applying
+        the proposals and must not see its own work as already done, and
+        ``lens skill``, which describes the project's durable shape and would
+        otherwise report a different object count depending on where the cursor
+        happens to be.  Such a store is never registry-cached, because the
+        registry is keyed by path alone.
+        """
         key = project_root.resolve()
         if storage is not None:
             dataset_stores = cls._build_dataset_stores(project_root)
-            return cls(project_root, storage=storage, dataset_stores=dataset_stores)
+            return cls(
+                project_root,
+                storage=storage,
+                dataset_stores=dataset_stores,
+                pending=pending,
+            )
+        if not pending:
+            return cls(
+                project_root,
+                storage=None,
+                dataset_stores=cls._build_dataset_stores(project_root),
+                pending=False,
+            )
         if key not in cls._registry:
             dataset_stores = cls._build_dataset_stores(project_root)
             cls._registry[key] = cls(project_root, storage=None, dataset_stores=dataset_stores)
@@ -318,6 +403,158 @@ class KnowledgeStore:
 
     def evict_tag_cache(self) -> None:
         self._tags_cache = None
+        self._pending_cache = None
+
+    # ------------------------------------------------------------------
+    # Pending KB proposals — one precedence layer above project-local
+    # ------------------------------------------------------------------
+
+    class _BaseView:
+        """The disk-only view of this store, handed to the pending fold.
+
+        The fold needs the text a proposal is *standing on*, so it must read
+        underneath the store's own overlay or it would consult itself.  Nested
+        inside the store because reaching for the base primitives is exactly
+        what it is for, and doing that from outside would be the bug.
+        """
+
+        __slots__ = ("_store",)
+
+        def __init__(self, store: "KnowledgeStore") -> None:
+            self._store = store
+
+        def object_text(self, canonical_id: str) -> str | None:
+            obj = self._store._fetch_one_base(canonical_id)
+            return obj.text if obj is not None else None
+
+        def object_tags(self, canonical_id: str) -> list[str]:
+            _, obj_to_tags = self._store._load_tags()
+            tags = obj_to_tags.get(canonical_id)
+            if tags is not None:
+                return sorted(tags)
+            for ds in self._store._dataset_stores:
+                _, ds_obj_to_tags = ds._load_tags()
+                tags = ds_obj_to_tags.get(canonical_id)
+                if tags is not None:
+                    return sorted(tags)
+            return []
+
+        def exists_on_disk(self, canonical_id: str) -> bool:
+            return self._store._exists_base(canonical_id)
+
+    def evict_pending(self) -> None:
+        """Drop the folded proposal layer.
+
+        The fingerprint below catches an edit through the filesystem.  This is
+        for a caller that writes the cursor node itself and then reads back in
+        the same millisecond, where ``st_mtime_ns`` may not have moved.
+        """
+        self._pending_cache = None
+
+    def _cursor_node_path(self) -> Path | None:
+        """The md file of the node the cursor is in, or ``None``.
+
+        The overlay is a pure function of this file's content, which is what
+        lets the CLI, the server and a second terminal compute the same layer
+        with no session handle and no coordination: ``find_cursor`` *derives*
+        the cursor by descending tail annotations rather than storing it.
+        """
+        try:
+            narrative = get_active_narrative(self._root)
+            if narrative is None or not narrative.exists():
+                return None
+            return narrative.find_cursor().md_path()
+        except (OSError, ValueError, FileNotFoundError):
+            return None
+
+    def _pending_layer(self) -> PendingLayer:
+        """The folded proposals visible from the current cursor.
+
+        Recomputed rather than accumulated, and cached only against a
+        fingerprint of the exact inputs — CLAUDE.md's warning about a stale tag
+        index silently resolving a ``+`` expansion to nothing is about exactly
+        this shape of cache, so there is deliberately no time-based expiry.
+        """
+        if not self._pending_enabled or self._pending_depth:
+            return EMPTY_LAYER
+        cursor_path = self._cursor_node_path()
+        sink = inflight_sink(self._root)
+        sink_key = (id(sink), sink.revision) if sink is not None else (0, 0)
+        try:
+            stat = cursor_path.stat() if cursor_path is not None else None
+        except OSError:
+            stat = None
+        fingerprint: object = (
+            str(cursor_path) if cursor_path else "",
+            stat.st_mtime_ns if stat else 0,
+            stat.st_size if stat else 0,
+            sink_key,
+        )
+        cached = self._pending_cache
+        if cached is not None and cached[0] == fingerprint:
+            return cached[1]
+
+        text = ""
+        if cursor_path is not None and stat is not None:
+            try:
+                text = cursor_path.read_text(encoding="utf-8")
+            except OSError:
+                text = ""
+        sink_ops = list(sink.ops) if sink is not None else []
+        # The escape hatch that makes this affordable: with no session open the
+        # whole thing is one substring check.
+        if "[kb-op" not in text and not sink_ops:
+            self._pending_cache = (fingerprint, EMPTY_LAYER)
+            return EMPTY_LAYER
+
+        ops = parse_kb_ops(text) + sink_ops
+        self._pending_depth += 1
+        try:
+            layer = fold(ops, KnowledgeStore._BaseView(self))
+        finally:
+            self._pending_depth -= 1
+        self._pending_cache = (fingerprint, layer)
+        return layer
+
+    def pending_layer(self) -> PendingLayer:
+        """The folded proposals, for callers that want to report on them."""
+        return self._pending_layer()
+
+    def _tags_view(
+        self,
+    ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+        """The tag index with pending tag ops folded in — **read paths only**.
+
+        :meth:`_load_tags` stays the disk truth because it is also the read half
+        of :meth:`_save_tags`: overlay data reaching it would be written back
+        into ``tags.toml``.  Every query method reads this instead, which is what
+        makes an object created this session discoverable by tag, by
+        ``+`` expansion, and by type-as-tag — rather than fetchable by name and
+        invisible to everything that enumerates.
+        """
+        tag_to_objs, obj_to_tags = self._load_tags()
+        layer = self._pending_layer()
+        if layer.is_empty():
+            return tag_to_objs, obj_to_tags
+        merged_tag_to_objs = {tag: set(ids) for tag, ids in tag_to_objs.items()}
+        merged_obj_to_tags = {oid: set(tags) for oid, tags in obj_to_tags.items()}
+
+        def _drop(oid: str) -> None:
+            for tag in merged_obj_to_tags.pop(oid, set()):
+                holders = merged_tag_to_objs.get(tag)
+                if holders is not None:
+                    holders.discard(oid)
+
+        for oid, tags in layer.tags.items():
+            _drop(oid)
+            lowered = {tag.lower() for tag in tags}
+            merged_obj_to_tags[oid] = lowered
+            for tag in lowered:
+                merged_tag_to_objs.setdefault(tag, set()).add(oid)
+        for oid in layer.removed:
+            _drop(oid)
+        return merged_tag_to_objs, merged_obj_to_tags
+
 
     def store_object(
         self,
@@ -330,7 +567,7 @@ class KnowledgeStore:
 
         template_tags: list[str] = []
         if use_template:
-            is_new = not self.exists(canonical_id)
+            is_new = not self._exists_base(canonical_id)
             template = self.get_template(type_name)
             if template is not None:
                 raw_tags, content = pop_front_matter_key(template, "tags")
@@ -345,7 +582,7 @@ class KnowledgeStore:
                 return
             content = ""
 
-        if self.exists(canonical_id) and not self._is_local(canonical_id):
+        if self._exists_base(canonical_id) and not self._is_local(canonical_id):
             self._ensure_local(canonical_id)
         self._ensure_storage().write_file(path, content)
 
@@ -383,12 +620,12 @@ class KnowledgeStore:
 
     def get_tags(self, canonical_id: str) -> list[str]:
         """Return tags for an object. Checks project first, then datasets."""
-        _, obj_to_tags = self._load_tags()
+        _, obj_to_tags = self._tags_view()
         tags = obj_to_tags.get(canonical_id)
         if tags is not None:
             return sorted(tags)
         for ds in self._dataset_stores:
-            _, ds_obj_to_tags = ds._load_tags()
+            _, ds_obj_to_tags = ds._tags_view()
             tags = ds_obj_to_tags.get(canonical_id)
             if tags is not None:
                 return sorted(tags)
@@ -418,12 +655,12 @@ class KnowledgeStore:
         objs: set[str] = set()
 
         # Project-local tags.
-        tag_to_objs, _ = self._load_tags()
+        tag_to_objs, _ = self._tags_view()
         objs.update(tag_to_objs.get(tag_l, set()))
 
         # Dataset tags (read-only).
         for ds in self._dataset_stores:
-            ds_tag_to_objs, _ = ds._load_tags()
+            ds_tag_to_objs, _ = ds._tags_view()
             objs.update(ds_tag_to_objs.get(tag_l, set()))
 
         # The type itself, for a bare token that names one.  Dot-tags (links) and
@@ -463,12 +700,12 @@ class KnowledgeStore:
             return store_result or set()
 
         # Project-local intersection.
-        tag_to_objs, _ = self._load_tags()
+        tag_to_objs, _ = self._tags_view()
         overall.update(_intersect_for_store(tag_to_objs))
 
         # Dataset intersections.
         for ds in self._dataset_stores:
-            ds_tag_to_objs, _ = ds._load_tags()
+            ds_tag_to_objs, _ = ds._tags_view()
             overall.update(_intersect_for_store(ds_tag_to_objs))
 
         return sorted(overall) if overall else []
@@ -519,10 +756,10 @@ class KnowledgeStore:
                 bucket = merged_obj_to_tags.setdefault(obj_id, set())
                 bucket.update(obj_tags)
 
-        tag_to_objs, obj_to_tags = self._load_tags()
+        tag_to_objs, obj_to_tags = self._tags_view()
         _merge_indexes(tag_to_objs, obj_to_tags)
         for ds in self._dataset_stores:
-            ds_tag_to_objs, ds_obj_to_tags = ds._load_tags()
+            ds_tag_to_objs, ds_obj_to_tags = ds._tags_view()
             _merge_indexes(ds_tag_to_objs, ds_obj_to_tags)
 
         want_type = type_filter.lower() if type_filter else None
@@ -583,10 +820,10 @@ class KnowledgeStore:
                 bucket = merged_obj_to_tags.setdefault(obj_id, set())
                 bucket.update(obj_tags)
 
-        tag_to_objs, obj_to_tags = self._load_tags()
+        tag_to_objs, obj_to_tags = self._tags_view()
         _merge_indexes(tag_to_objs, obj_to_tags)
         for ds in self._dataset_stores:
-            ds_tag_to_objs, ds_obj_to_tags = ds._load_tags()
+            ds_tag_to_objs, ds_obj_to_tags = ds._tags_view()
             _merge_indexes(ds_tag_to_objs, ds_obj_to_tags)
 
         if len(tags) == 1:
@@ -711,10 +948,10 @@ class KnowledgeStore:
                 bucket = merged_obj_to_tags.setdefault(obj_id, set())
                 bucket.update(obj_tags)
 
-        tag_to_objs, obj_to_tags = self._load_tags()
+        tag_to_objs, obj_to_tags = self._tags_view()
         _merge_indexes(tag_to_objs, obj_to_tags)
         for ds in self._dataset_stores:
-            ds_tag_to_objs, ds_obj_to_tags = ds._load_tags()
+            ds_tag_to_objs, ds_obj_to_tags = ds._tags_view()
             _merge_indexes(ds_tag_to_objs, ds_obj_to_tags)
 
         st: str | None = starting_type
@@ -816,7 +1053,7 @@ class KnowledgeStore:
     def add_tags(self, canonical_id: str, tags: list[str]) -> str | None:
         """Add tags to an object. Returns error message if object does not exist, else None."""
         parse_id(canonical_id)
-        if self._fetch_one(canonical_id) is None:
+        if self._fetch_one_base(canonical_id) is None:
             return f"Object '{canonical_id}' does not exist"
         self._ensure_local(canonical_id)
         tag_to_objs, obj_to_tags = self._load_tags()
@@ -958,7 +1195,7 @@ class KnowledgeStore:
         tags = self.get_tags(canonical_id)
         return KnowledgeObject(type=type_name, id=canonical_id, text=text, tags=tags)
 
-    def _fetch_one(self, canonical_id: str) -> KnowledgeObject | None:
+    def _fetch_one_base(self, canonical_id: str) -> KnowledgeObject | None:
         """Fetch an object, falling back to dataset stores if not found locally.
 
         Among datasets the *last* entry in the list wins (later datasets shadow
@@ -990,8 +1227,14 @@ class KnowledgeStore:
             return False
         return self._object_path(type_name, key).exists()
 
-    def exists(self, canonical_id: str) -> bool:
-        """Return True if *canonical_id* exists in this store or any dataset store."""
+    def _exists_base(self, canonical_id: str) -> bool:
+        """Whether a *file* holds this id, in this store or any dataset store.
+
+        The disk truth, with no proposals folded in.  Writers must use this:
+        ``store_object`` triggers copy-on-write off ``exists() and not
+        _is_local()``, and an overlay-aware ``exists`` would send a
+        session-created id down the copy-on-write branch.
+        """
         try:
             type_name, key = parse_id(canonical_id)
         except ValueError:
@@ -1002,6 +1245,72 @@ class KnowledgeStore:
             if ds._is_local(canonical_id):
                 return True
         return False
+
+    def exists(self, canonical_id: str) -> bool:
+        """Return True if *canonical_id* exists in this store or any dataset store."""
+        layer = self._pending_layer()
+        if canonical_id in layer.objects:
+            return True
+        if canonical_id in layer.removed:
+            # "removed" means the project file goes away, not that the id is
+            # gone: a fork over a dataset object resolves to the dataset again.
+            return any(ds._is_local(canonical_id) for ds in self._dataset_stores)
+        return self._exists_base(canonical_id)
+
+    def _fetch_from_datasets(self, canonical_id: str) -> KnowledgeObject | None:
+        """The dataset object that would win if no project file existed."""
+        holders: list[str | None] = []
+        winner: KnowledgeObject | None = None
+        for ds in reversed(self._dataset_stores):
+            if not ds._is_local(canonical_id):
+                continue
+            holders.append(ds._dataset_name)
+            if winner is None:
+                winner = ds._fetch_local(canonical_id)
+        if winner is None:
+            return None
+        winner.source = self._source_from_holders(holders)
+        return winner
+
+    def _fetch_one(self, canonical_id: str) -> KnowledgeObject | None:
+        """Fetch an object, with any pending proposal for it applied.
+
+        During generation a KB object is world truth, and a proposal is the
+        truth the session is standing in — so the body comes back folded and
+        nothing marks it as proposed *in the text*.  ``source`` carries that,
+        for the browsing surfaces; the crawl never renders it.
+        """
+        layer = self._pending_layer()
+        if canonical_id not in layer.touched_ids():
+            return self._fetch_one_base(canonical_id)
+
+        if canonical_id in layer.removed:
+            fallback = self._fetch_from_datasets(canonical_id)
+            if fallback is None:
+                return None
+            fallback.source = KbSource(kind="pending", base=fallback.source)
+            return fallback
+
+        base_obj = self._fetch_one_base(canonical_id)
+        text = layer.objects.get(canonical_id)
+        if text is None:
+            if base_obj is None:
+                return None
+            text = base_obj.text
+        try:
+            type_name, _ = parse_id(canonical_id)
+        except ValueError:
+            return None
+        obj = KnowledgeObject(
+            type=type_name,
+            id=canonical_id,
+            text=text,
+            tags=self.get_tags(canonical_id),
+        )
+        obj.source = KbSource(
+            kind="pending", base=base_obj.source if base_obj is not None else None
+        )
+        return obj
 
     def _dataset_store_for(self, canonical_id: str) -> KnowledgeStore | None:
         """Return the dataset store that owns *canonical_id* (last-wins), or None."""
@@ -1038,13 +1347,8 @@ class KnowledgeStore:
         name = winner if winner is not None else self._dataset_name
         return KbSource(kind="dataset", dataset=name, shadows=shadows)
 
-    def describe_source(self, canonical_id: str) -> KbSource | None:
-        """Where *canonical_id* resolves from, or None if it exists nowhere.
-
-        Mirrors :meth:`_fetch_one`'s precedence exactly — project first, then
-        datasets last-wins — so the reported source is always the store whose
-        text a fetch would actually return.
-        """
+    def _describe_source_base(self, canonical_id: str) -> KbSource | None:
+        """Where *canonical_id* resolves from on disk, ignoring proposals."""
         holders: list[str | None] = []
         if self._is_local(canonical_id):
             holders.append(None)
@@ -1052,6 +1356,27 @@ class KnowledgeStore:
             if ds._is_local(canonical_id):
                 holders.append(ds._dataset_name)
         return self._source_from_holders(holders)
+
+    def describe_source(self, canonical_id: str) -> KbSource | None:
+        """Where *canonical_id* resolves from, or None if it exists nowhere.
+
+        Mirrors :meth:`_fetch_one`'s precedence exactly — proposals, then
+        project, then datasets last-wins — so the reported source is always the
+        store whose text a fetch would actually return.
+        """
+        layer = self._pending_layer()
+        if canonical_id in layer.touched_ids():
+            base = self._describe_source_base(canonical_id)
+            if canonical_id in layer.removed:
+                fallback = self._dataset_store_for(canonical_id)
+                if fallback is None:
+                    return None
+                return KbSource(kind="pending", base=self._source_from_holders(
+                    [ds._dataset_name for ds in reversed(self._dataset_stores)
+                     if ds._is_local(canonical_id)]
+                ))
+            return KbSource(kind="pending", base=base)
+        return self._describe_source_base(canonical_id)
 
     def resolved_index(
         self,
@@ -1099,6 +1424,68 @@ class KnowledgeStore:
                 continue
             out[cid] = ResolvedObject(
                 id=cid, type=type_name, path=path, source=source
+            )
+        return self._apply_pending_to_index(out, type_filter, include_templates)
+
+    def _apply_pending_to_index(
+        self,
+        out: dict[str, ResolvedObject],
+        type_filter: str | None,
+        include_templates: bool,
+    ) -> dict[str, ResolvedObject]:
+        """Fold proposals into a resolved listing: add, restamp, or drop.
+
+        Done here rather than inside :meth:`_local_id_paths` because only this
+        level knows what an id resolved to *before* the proposal, which is the
+        ``base`` half of :class:`KbSource` and the diff a reviewer wants.
+        """
+        layer = self._pending_layer()
+        if layer.is_empty():
+            return out
+        wanted_type = type_filter.lower() if type_filter else None
+        for cid in sorted(layer.touched_ids()):
+            try:
+                type_name, key = parse_id(cid)
+            except ValueError:
+                continue
+            if wanted_type is not None and type_name != wanted_type:
+                continue
+            if key == "_template" and not include_templates:
+                continue
+            previous = out.get(cid)
+            if cid in layer.removed:
+                fallback = self._fetch_from_datasets(cid)
+                if fallback is None:
+                    out.pop(cid, None)
+                    continue
+                ds_store = self._dataset_store_for(cid)
+                out[cid] = ResolvedObject(
+                    id=cid,
+                    type=type_name,
+                    path=(
+                        ds_store._object_path(type_name, key)
+                        if ds_store is not None
+                        else self._object_path(type_name, key)
+                    ),
+                    source=KbSource(kind="pending", base=fallback.source),
+                    text=fallback.text,
+                )
+                continue
+            text = layer.objects.get(cid)
+            if text is None and previous is not None:
+                try:
+                    text = previous.read_text()
+                except OSError:
+                    text = None
+            out[cid] = ResolvedObject(
+                id=cid,
+                type=type_name,
+                path=self._object_path(type_name, key),
+                source=KbSource(
+                    kind="pending",
+                    base=previous.source if previous is not None else None,
+                ),
+                text=text if text is not None else "",
             )
         return out
 
@@ -1205,10 +1592,10 @@ class KnowledgeStore:
         """
         _, src_key = parse_id(source_id)
         tgt_type, tgt_key = parse_id(target_id)
-        obj = self._fetch_one(source_id)
+        obj = self._fetch_one_base(source_id)
         if obj is None:
             raise ValueError(f"Object '{source_id}' does not exist")
-        if self._fetch_one(target_id) is not None:
+        if self._fetch_one_base(target_id) is not None:
             raise ValueError(f"Object '{target_id}' already exists")
         dst_path = self._object_path(tgt_type, tgt_key)
         storage = self._ensure_storage()
@@ -1239,14 +1626,14 @@ class KnowledgeStore:
         """
         old_type, old_key = parse_id(old_id)
         new_type, new_key = parse_id(new_id)
-        if self._fetch_one(old_id) is None:
+        if self._fetch_one_base(old_id) is None:
             raise ValueError(f"Object '{old_id}' does not exist")
         if not self._is_local(old_id):
             raise ValueError(
                 f"Object '{old_id}' is from a dataset and cannot be renamed; "
                 "use 'kb copy' to create a project-local copy"
             )
-        if self._fetch_one(new_id) is not None:
+        if self._fetch_one_base(new_id) is not None:
             raise ValueError(f"Object '{new_id}' already exists")
         src_path = self._object_path(old_type, old_key)
         dst_path = self._object_path(new_type, new_key)
@@ -1285,6 +1672,12 @@ class KnowledgeStore:
                     types.add(d.name)
         for ds in self._dataset_stores:
             types.update(ds.list_types())
+        for cid in self._pending_layer().objects:
+            try:
+                type_name, _ = parse_id(cid)
+            except ValueError:
+                continue
+            types.add(type_name)
         return sorted(types)
 
     def _local_id_paths(
@@ -1330,7 +1723,37 @@ class KnowledgeStore:
         ids = self._local_ids(type_filter, include_templates)
         for ds in self._dataset_stores:
             ids |= ds._local_ids(type_filter, include_templates)
+        ids = self._apply_pending_to_ids(ids, type_filter, include_templates)
         return sorted(ids)
+
+    def _apply_pending_to_ids(
+        self,
+        ids: set[str],
+        type_filter: str | None,
+        include_templates: bool,
+    ) -> set[str]:
+        """Add ids a proposal created, and drop the ones it removes outright."""
+        layer = self._pending_layer()
+        if layer.is_empty():
+            return ids
+        wanted_type = type_filter.lower() if type_filter else None
+
+        def _wanted(cid: str) -> bool:
+            try:
+                type_name, key = parse_id(cid)
+            except ValueError:
+                return False
+            if wanted_type is not None and type_name != wanted_type:
+                return False
+            return include_templates or key != "_template"
+
+        out = set(ids)
+        out |= {cid for cid in layer.objects if _wanted(cid)}
+        for cid in layer.removed:
+            if any(ds._is_local(cid) for ds in self._dataset_stores):
+                continue
+            out.discard(cid)
+        return out
 
     def list_facet_ids(self, canonical_id: str) -> list[str]:
         """Return canonical ids of the same type whose key starts with ``<key>-``.
@@ -1369,6 +1792,15 @@ class KnowledgeStore:
         _scan_store(self)
         for ds in self._dataset_stores:
             _scan_store(ds)
+
+        layer = self._pending_layer()
+        for pending_id in layer.objects:
+            head, _, tail = pending_id.partition(".")
+            if head == type_name and tail.startswith(prefix) and tail != "_template":
+                ids.add(pending_id)
+        for removed_id in layer.removed:
+            if not any(ds._is_local(removed_id) for ds in self._dataset_stores):
+                ids.discard(removed_id)
 
         ids.discard(canonical_id.lower())
         return sorted(ids)

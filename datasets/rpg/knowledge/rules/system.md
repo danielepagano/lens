@@ -25,26 +25,11 @@ Ask the player to create at least one character by collecting a style, role, num
 >   5. **Character goal** (Choose one or create your own): Become Captain, Meet New Aliens, Shoot Bad Guys, Find New Worlds, Solve Weird Space Mysteries, Prove Yourself, or Keep Being Awesome (you have nothing to prove).
 >   *  Any other cool details you want to add!
 
-Then create a section for each character based on this template (emit the fenced section as below, filled in):
+Then create a knowledge object per character, `pc.<name-slug>`, titled with their name: Style, Role, Number, Goal, anything else they gave you, and the standard kit —
 
-```kb
----
-id: pc.<name-slug>
----
-# <Name>
-
-- Style: 
-- Role:  
-- Number:  
-- Goal:  
-
-Equipment:  
   - **Consortium uniform**: with built-in vacc-suit for space walks
   - **Comm**: a space-phone-camera-communicator-scanner thing with universal translator
   - **Variable-beam phase pistol**: set to stun, usually
-
-<Any other details>
-```
 
 Repeat this until the player has as many characters as they'd like
 
@@ -55,21 +40,9 @@ Ask the player to setup the ship by collecting strenghts and a problem. Show the
 > Pick **two strengths** for the Raptor: Fast, Nimble, Well-Armed, Powerful Shields, Superior Sensors, Cloaking Device, Fightercraft.  
 > Pick **one problem**: Fuel Hog (always needs energy crystals), Only One Medical Pod (and Captain Darcy is in it), Horrible Circuit Breakers (in battle, consoles tend to explode on the bridge), Grim Reputation (Captain Darcy did some bad stuff in the past).
 
-Then create a section for each character based on this template (emit the fenced section as below, filled in):
+Then create `lore.raptor`, titled "The Raptor": its two Strengths, its Problem, and any other details.
 
-```kb
----
-id: lore.raptor
----
-# The Raptor
-
-- Strenghts: 
-- Problem:  
-
-<Any other details>
-```
-
-Once you have emitted these (or they are ohterwise present in history), ask the player if they are ready to start, and move to GAME START.
+Once these exist (or are otherwise present in history), ask the player if they are ready to start, and move to GAME START.
 
 [GAME START]
 

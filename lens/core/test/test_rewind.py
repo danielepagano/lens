@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -941,3 +942,94 @@ class TestRewindToTextInSection(unittest.TestCase):
 
         cursor = self.narrative.find_cursor()
         self.assertEqual(cursor.key_path, ("a",))
+
+
+# ---------------------------------------------------------------------------
+# KB proposals and applied markers (#161)
+# ---------------------------------------------------------------------------
+
+
+class TestRewindReportsKbSideEffects(unittest.TestCase):
+    """Rewind still never touches the knowledge store — but it says so now.
+
+    Silence was the only unacceptable version: nothing else in the repo tells a
+    user that a session they just rewound past had already written objects.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.mkdtemp()
+        self.root = Path(self.tmp)
+        _init_repo(self.root)
+        self.narrative_dir = self.root / "narrative" / "story"
+        self.narrative_dir.mkdir(parents=True)
+        self.storage = Storage(self.root)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _node(self, key_path: tuple[str, ...] = ()) -> NarrativeNode:
+        return NarrativeNode(narrative_root=self.narrative_dir, key_path=key_path)
+
+    def _write_root(self, text: str) -> None:
+        (self.narrative_dir / "_node.md").write_text(text)
+
+    def test_discarding_a_proposal_node_reports_the_ids(self) -> None:
+        self._write_root(
+            "Prose.\n\n"
+            "[design:d1]: #\n"
+        )
+        (self.narrative_dir / "d1.md").write_text(
+            "[design\n  prompt: build\n]: #\n\n"
+            "Notes.\n\n"
+            "[kb-op\n  op: add\n  id: loc.vault\n  body: |\n    | Sealed\n]: #\n\n"
+            "[/design]: #\n"
+        )
+
+        report = rewind(self._node(), None, self.storage)
+
+        self.assertEqual(report.discarded_proposals, ["loc.vault"])
+        self.assertEqual(report.materialized, [])
+        self.assertFalse((self.narrative_dir / "d1.md").exists())
+
+    def test_rewinding_past_a_materialized_session_reports_the_ids(self) -> None:
+        self._write_root(
+            "Prose.\n\n"
+            "[design:d1]: #\n\n"
+            "[kb-op\n  op: applied\n  at: 2026-09-16T12:00:00Z\n  session: d1\n"
+            "  ids:\n    - loc.vault\n  removed:\n    - loc.draft\n]: #\n\n"
+            "[/design:d1]: #\n\n"
+            "More prose.\n"
+        )
+        (self.narrative_dir / "d1.md").write_text("[design\n  prompt: x\n]: #\n\nA.\n\n[/design]: #\n")
+
+        # Cut above the closed session: the marker is inside what goes away.
+        report = rewind(self._node(), 1, self.storage)
+
+        self.assertEqual(report.materialized_ids(), ["loc.vault", "loc.draft"])
+        self.assertEqual(report.materialized[0].session, "d1")
+        self.assertEqual(report.materialized[0].at, "2026-09-16T12:00:00Z")
+
+    def test_a_line_rewind_inside_the_child_still_reports_the_parent_marker(self) -> None:
+        # The case a marker in the child's tail would miss: the cut is inside
+        # the child, but rewind_to_node then truncates the parent at the
+        # session's opening annotation, taking the marker with it.
+        self._write_root(
+            "Prose.\n\n"
+            "[design:d1]: #\n\n"
+            "[kb-op\n  op: applied\n  at: 2026-09-16T12:00:00Z\n  session: d1\n"
+            "  ids:\n    - loc.vault\n]: #\n\n"
+            "[/design:d1]: #\n"
+        )
+        child = self.narrative_dir / "d1.md"
+        child.write_text(
+            "[design\n  prompt: x\n]: #\n\nline four\nline five\nline six\n\n[/design]: #\n"
+        )
+
+        report = rewind(self._node(("d1",)), 5, self.storage)
+
+        self.assertEqual(report.materialized_ids(), ["loc.vault"])
+
+    def test_a_clean_rewind_reports_nothing(self) -> None:
+        self._write_root("Just prose.\n\nMore.\n")
+        report = rewind(self._node(), None, self.storage)
+        self.assertTrue(report.is_empty())

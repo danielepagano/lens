@@ -196,6 +196,8 @@ lens rewind /chapter-1 42       # rewind to line 42 within chapter-1
 
 Arguments: `ADDRESS [LINE]`
 
+Rewind never touches side effects — KB objects a discarded session already wrote stay exactly as they are — but it no longer stays quiet about it. Every region it discards is scanned for `[kb-op …]: #` blocks first, so it reports proposals it is throwing away (nothing was written) and, separately and loudly, the ids a removed session had already committed. Nothing else in the repo would tell you.
+
 - `ADDRESS` — narrative node to rewind to (e.g. `/chapter-1`, `my-story/chapter-1`).
 - `LINE` — optional 1-based line number within the node.
 
@@ -300,6 +302,17 @@ Options:
 - `-f` / `--facet-expand` — also fetch each requested id's `-` facets: the prep-side material `design` and `advance` pull automatically and `play` never sees. Only the ids you asked for gain facets, so a `stat.guard` reached through `+` never drags in `stat.guard-captain`. See [configuration.md](../../docs/configuration.md#knowledge-pins).
 - `--json` — emit `{ids, items, missing}` instead of formatted text; each item carries `id`, `type`, `tags`, `source`, `headline`, and `content`. `missing` is always present (empty on a clean fetch) and carries `{id, reason, type}` per miss, with `reason` one of `malformed`, `unknown_type`, `unknown_key`.
 
+### `lens kb pending`
+
+KB changes the open session has proposed but not written. `design` and `advance` write the knowledge store through tool calls (`kb_add`, `kb_patch`, `kb_tag`, `kb_remove`), and each call is persisted into the cursor node as a markdown comment — invisible in the rendered node, and invisible to the model. This is where you read them back.
+
+```bash
+lens kb pending           # ops, their line in the node, and what each one does
+lens kb pending --json    # + base/proposed text per object, for a diff
+```
+
+A proposal that no longer resolves — a patch whose anchor you edited away by hand — is marked `!` with the reason. The blocks are plain text at a known line, so correcting one is an ordinary edit of the node; the fold re-reads it. `lens stats` reports the count at the cursor.
+
 ### Finding things (`search`, `list`, `refs`)
 
 `grep -r` over a checkout is not a search of the knowledge store, and the gap is not small:
@@ -318,7 +331,7 @@ Regex over the ids, types, tags and bodies of the **merged** store, shadowing ap
 lens kb search 'grappl' -i                  # id:line:matched-text
 lens kb search 'advantage' -t rules -C 2    # type filter, context lines
 lens kb search 'exhaust' --tag state -l     # tag-filtered, ids only
-lens kb search 'front' --source dataset:rpg # project | dataset | dataset:<name> | all
+lens kb search 'front' --source dataset:rpg # project | dataset | dataset:<name> | pending | all
 lens kb search '^## Limits' --headline      # each hit's first three lines
 lens kb search 'grappl' -l | xargs lens kb get
 ```

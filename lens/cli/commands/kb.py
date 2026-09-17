@@ -343,13 +343,13 @@ def get(
 
 def _source_filter(value: str) -> SourceFilter:
     """Shape check only; core rejects a ``dataset:<name>`` no dataset answers to."""
-    if value in ("project", "dataset", "all") or (
+    if value in ("project", "dataset", "pending", "all") or (
         value.startswith("dataset:") and len(value) > len("dataset:")
     ):
         return value
     typer.echo(
-        f"Error: --source must be project, dataset, dataset:<name>, or all "
-        f"(got {value!r})",
+        f"Error: --source must be project, dataset, pending, dataset:<name>, "
+        f"or all (got {value!r})",
         err=True,
     )
     raise typer.Exit(1)
@@ -512,6 +512,30 @@ def refs(
         typer.echo(f"\n{label}")
         for ref in group:
             typer.echo(format_ref_line(ref))
+
+
+@app.command("pending")
+def pending(
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
+) -> None:
+    """Show KB changes the open session has proposed but not written."""
+    from lens.core.commands.kb_pending_view import (
+        format_pending_lines,
+        pending_kb_view,
+        pending_payload,
+    )
+    from lens.core.project import find_project_root
+
+    try:
+        view = pending_kb_view(find_project_root())
+    except (LensException, RuntimeError) as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+    if as_json:
+        typer.echo(json.dumps(pending_payload(view), indent=2))
+        return
+    for line in format_pending_lines(view):
+        typer.echo(line)
 
 
 @app.command("list-tags")

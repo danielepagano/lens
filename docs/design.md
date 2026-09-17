@@ -210,6 +210,27 @@ Expiry cost also scales the right way, which is why there is no configurable TTL
 
 One exception, and it is the object's property rather than the mention's: an object tagged `state` is never inlined. Its content changes between beats, so it is diverted to `[LIVE STATE]` at the tail like any other state object (see below) instead of being frozen into the transcript.
 
+
+### Pending KB layer: proposals, not writes
+
+A `design` or `advance` session used to emit whole objects as fenced ` ```kb ` blocks that nothing applied until `--end`. The deferral, not the format, was the problem: nothing could be taken back (the fence grammar has no delete), failures surfaced only at close, every emitted body sat in `[CURRENT PASSAGE]` to be re-sent on every later turn, and review was all-or-nothing and after the fact.
+
+The model now **calls a tool**, and Lens persists the call into the cursor node as a `[kb-op …]: #` markdown comment — the `[llm-trace …]: #` trick, so the hyphen keeps it outside the annotation grammar while `strip_markdown_comments` still removes it. Nothing is written to `knowledge/` during the session. Instead the cursor node's ops are an **ordered log**, and the fold over them is a **pending layer** that `KnowledgeStore` serves above project-local: crawl, `kb get`, `kb search`, `kb refs`, `+` expansion, type-as-tag discovery, the command tools and the server all see the same proposed reality, stamped `KbSource(kind="pending")`.
+
+This works because `find_cursor()` *derives* the cursor from tail annotations rather than storing it. The layer is therefore a pure function of disk state: the CLI, the server and a second terminal compute the same thing with no session handle and no coordination, and it is recomputed on every read rather than accumulated — there is no incremental state to corrupt and no idempotency requirement.
+
+| Rule | |
+|---|---|
+| **Read** | The cursor node's proposals, project-wide. `lens use` away and the overlay is off; navigate back and it is on. Nothing is written either way. |
+| **Write** | When the **session block closes** (`--end`) — not when the cursor departs, which must never silently commit a half-finished design. |
+| **Recompute** | Materialization re-reads the node at that instant. Never a remembered set: `rewind` truncates the ops out and *then* the cursor lands elsewhere, so a re-reading materialization discards exactly what it was asked to. |
+
+**Composition** is per verb: patches compose in call order, each re-resolving against the already-folded text; a second `add` replaces; `remove` then `add` recreates; `add` then `remove` leaves nothing; tag ops accumulate with `remove-tags` after `tags`. A model that changes its mind calls the next operation.
+
+**A direct user edit is a rebase.** `DIRECT` storage writes `knowledge/` and stages that file alone; the ops replay onto the new text on the next read. The stack can therefore go stale — a patch whose anchor the user deleted no longer resolves — so the fold carries per-op errors, surfaced by `lens kb pending`, `lens stats`, and the node route rather than discovered at `--end`. Correcting a proposal needs no machinery: the blocks are plain text with known line spans, and the fold re-reads the node.
+
+**Rewind stays honest.** It still touches only narrative files, but every region it discards is scanned for `[kb-op]` blocks first: an `applied` marker (written into the parent at close) means those objects are on disk and unchanged, and it says so instead of staying silent.
+
 ### Crawl
 
 **Crawl** walks the tree from cursor toward root and produces two streams:
@@ -279,7 +300,7 @@ The same storage, crawl, and generation pipeline supports three modes that alter
 
 Create or refine **objects and structure**, not live scene prose.
 
-- **`design`** — conversational KB workspace; swappable modules (`design.encounter`, `design.companion`, …). The model can use tool calls to explore the KB and generate its content; the KB is not directly authored, instead the LLM emits fenced `kb` blocks into the narrative for the user to review, iterate on, and even directly edit. When the design session is completed, these blocks become KB item upserts.
+- **`design`** — conversational KB workspace; swappable modules (`design.encounter`, `design.companion`, …). The model explores the KB with tool calls and writes it with four more (`kb_add`, `kb_patch`, `kb_tag`, `kb_remove`). Nothing is written during the session: each call is a **proposal**, persisted into the narrative node as a `[kb-op …]: #` comment and folded into a pending layer every reader sees. `--end` materializes them. See [Pending KB layer](#pending-kb-layer-proposals-not-writes).
 - **Direct KB work** — manual edit, tag, template, bulk extract. This can be done directly in the file system, or via CLI or web UI.
 - Specialized: **`advance`** (RPG) — calendar and `front` updates when time passes outside play
 

@@ -268,7 +268,10 @@ def describe_project(project_root: Path) -> ProjectFacts:
                 inside = False
         facts.dataset_details.append(DatasetFact(name=name, path=path, inside_repo=inside))
 
-    store = KnowledgeStore.for_project(project_root)
+    # The disk truth on purpose: `lens skill` describes what this project *is*,
+    # and an open design session's proposals would make the object count and the
+    # type list depend on where the cursor happens to be sitting.
+    store = KnowledgeStore.for_project(project_root, pending=False)
     index = store.resolved_index()
     counts: dict[str, int] = {}
     for entry in index.values():

@@ -104,7 +104,7 @@ class TestCatalogModalityResolution(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             _root, narrative = _make_project(_init_repo(Path(tmp)))
             resolved, _ = resolve_modalities(DesignOperator, narrative)
-            for mid in ("kb_fence", "tool_fence_awareness"):
+            for mid in ("kb_ops", "tool_fence_awareness"):
                 self.assertIn(mid, resolved.active_ids)
 
     def test_play_requires_rpg_modalities(self) -> None:

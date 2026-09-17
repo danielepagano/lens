@@ -18,8 +18,8 @@ constantly confused with one another:
   live. Written for `play`. `design` reads booklets, but writes *against* them —
   nothing a booklet says should be copied into an emitted object.
 - **A template** (`<type>._template`) is the stored shape: fields, ordering, tag
-  policy. Templates are just more prompt; the fenced `kb` blocks a design
-  session emits do not pass through them.
+  policy. Templates are just more prompt; a design session composes the body it
+  passes to `kb_add`, so nothing passes through them automatically.
 
 ### Rules that break silently
 

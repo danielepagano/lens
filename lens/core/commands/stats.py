@@ -32,6 +32,7 @@ from lens.core.project import (
     list_available_llms,
 )
 from lens.core.dataset_config import get_dataset_configs
+from lens.core.commands.kb_pending_view import PendingKbView, pending_kb_view
 from lens.core.knowledge import KnowledgeStore
 from lens.core.release.config import (
     parse_dataset_repo_configs,
@@ -77,6 +78,10 @@ class StatsResult:
     reference_images_supported: bool = False
     tts_available: bool = False
     active_session_operator: str | None = None
+    pending_kb_ops: int = 0
+    """KB changes proposed at the cursor and not yet written."""
+    pending_kb_errors: list[str] = field(default_factory=list[str])
+    """Proposals that no longer resolve — a stale stack must not be silent."""
     effective_vars_at_cursor: dict[str, str] = field(default_factory=dict[str, str])
     effective_params_at_cursor: dict[str, str] = field(default_factory=dict[str, str])
     registered_modality_ids: list[str] = field(default_factory=list[str])
@@ -259,6 +264,11 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     effective_vars_at_cursor: dict[str, str] = {}
     effective_params_at_cursor: dict[str, str] = {}
     modalities_at_cursor: dict[str, dict[str, Any]] = {}
+    # Proposals are invisible in the node by design, so the one place a person
+    # checking "where am I" would otherwise never learn about them is here.
+    pending_kb = (
+        PendingKbView() if is_dataset else pending_kb_view(session.project_root)
+    )
     if not is_dataset and cursor_addr is not None:
         node_addr = cursor_addr.node_only()
         try:
@@ -347,6 +357,8 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         reference_images_supported=reference_images_supported,
         tts_available=tts_available,
         active_session_operator=active_session_operator,
+        pending_kb_ops=len(pending_kb.ops),
+        pending_kb_errors=list(pending_kb.errors),
         effective_vars_at_cursor=effective_vars_at_cursor,
         effective_params_at_cursor=effective_params_at_cursor,
         registered_modality_ids=registered_modality_ids,

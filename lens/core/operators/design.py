@@ -40,10 +40,16 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from lens.core.annotations import ParsedAnnotation
-from lens.core.commands.kb import KbExtractResult, kb_extract_from_text
+from lens.core.commands.kb import (
+    KbMaterializeResult,
+    applied_marker,
+    materialize_session_kb,
+)
 from lens.core.context import crawl
 from lens.core.exceptions import ValidationError, OperatorError
 from lens.core.generation_artifacts import GenerationArtifacts
+from lens.core.kb_op_tools import KB_OP_TOOLS, render_kb_op_persist
+from lens.core.kb_pending import KbOpSink, inflight_ops
 from lens.core.command_tools import build_media_search_tool_entry
 from lens.core.llm import CommandToolsBundle, LLMError, build_command_tools_bundle
 from lens.core.llm_run import LlmRunRequest, run_llm
@@ -65,10 +71,11 @@ class DesignOperator(SessionOperator):
     name: ClassVar[str] = "design"
     requires_id: ClassVar[bool] = True
     use_command_tools: ClassVar[bool] = True
+    supports_kb_ops: ClassVar[bool] = True
     expand_facets: ClassVar[bool] = True
     module_prefix: ClassVar[str] = "design."
     required_modalities: ClassVar[frozenset[str]] = frozenset(
-        {"kb_fence", "tool_fence_awareness"}
+        {"kb_ops", "tool_fence_awareness"}
     )
 
     @classmethod
@@ -159,32 +166,42 @@ class DesignOperator(SessionOperator):
             session=session,
             narrative=op.narrative_root,
         )
+        kb_op_sink = KbOpSink()
         tools_payload, command_handlers = cls.merge_command_tools_for_generation(
-            resolved, ctx, session.project_root, ann_params
+            resolved, ctx, session.project_root, ann_params, kb_op_sink=kb_op_sink
         )
 
         artifacts = GenerationArtifacts()
         try:
-            artifacts = await run_llm(
-                LlmRunRequest(
-                    project_root=session.project_root,
-                    crawl_result=crawl_result,
-                    operator=op,
-                    params=ann_params,
-                    messages_append=tuple(feedback_messages) if feedback_messages else (),
-                    llm_id=llm_id,
-                    tools=tools_payload,
-                    command_tool_handlers=command_handlers,
-                    resolved_modalities=resolved,
-                    modality_context=ctx,
-                    enable_thinking=True,
-                    reasoning=reasoning,
-                    cancel_event=cancel_event,
-                    on_token=on_token,
-                    on_stream_event=on_stream_event,
-                    operator_name=cls.name,
-                ),
-            )
+            # The sink is in scope for the whole generation, not just the
+            # handlers: a `kb_get` after a `kb_add` in the same turn has to see
+            # the new object, and so does anything else that reads the store
+            # while the model is still talking.
+            with inflight_ops(session.project_root, kb_op_sink):
+                artifacts = await run_llm(
+                    LlmRunRequest(
+                        project_root=session.project_root,
+                        crawl_result=crawl_result,
+                        operator=op,
+                        params=ann_params,
+                        messages_append=(
+                            tuple(feedback_messages) if feedback_messages else ()
+                        ),
+                        llm_id=llm_id,
+                        tools=tools_payload,
+                        command_tool_handlers=command_handlers,
+                        resolved_modalities=resolved,
+                        modality_context=ctx,
+                        enable_thinking=True,
+                        reasoning=reasoning,
+                        cancel_event=cancel_event,
+                        on_token=on_token,
+                        on_stream_event=on_stream_event,
+                        operator_name=cls.name,
+                        unlogged_tool_names=KB_OP_TOOLS,
+                        tool_persist_renderer=render_kb_op_persist,
+                    ),
+                )
         except LLMError as e:
             _restore_pre_retry()
             raise OperatorError(f"LLM error: {e}") from e
@@ -259,7 +276,7 @@ class DesignOperator(SessionOperator):
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
         **kwargs: Any,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         ann_params: dict[str, Any] = {}
         if prompt:
             ann_params["prompt"] = prompt
@@ -293,7 +310,7 @@ class DesignOperator(SessionOperator):
             cancel_event=cancel_event,
             workflow=kwargs.get("workflow"),
         )
-        return KbExtractResult()
+        return KbMaterializeResult()
 
     @classmethod
     async def _run_inside(
@@ -312,7 +329,7 @@ class DesignOperator(SessionOperator):
         on_token: Callable[[str], Awaitable[None]] | None,
         cancel_event: asyncio.Event | None,
         **kwargs: Any,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         probe_storage = session.new_storage()
 
         if retry:
@@ -429,7 +446,7 @@ class DesignOperator(SessionOperator):
                 workflow=kwargs.get("workflow"),
             )
 
-        return KbExtractResult()
+        return KbMaterializeResult()
 
     # ------------------------------------------------------------------
     # End session (KB extraction)
@@ -448,7 +465,7 @@ class DesignOperator(SessionOperator):
         summary_guidance: str | None = None,
         workflow: Any | None = None,
         on_status: Callable[[str], None] | None = None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         """Close the current design session.
 
         Cursor must be in the design sub-node.  Runs ``kb_extract_from_text``
@@ -477,10 +494,12 @@ class DesignOperator(SessionOperator):
         if storage.has_pending() and storage.detect_pending_owner() == owner:
             storage.stage_all()
         op = cls(storage, narrative)
-        result = kb_extract_from_text(child_text, session.project_root, storage)
-        for err in result.errors:
-            logger.warning("design end: %s", err)
-        op.append_to_node(parent, op.build_close_tag(id) + "\n")
+        result = materialize_session_kb(
+            child_text, session.project_root, storage, who="design"
+        )
+        marker = applied_marker(result, session=id)
+        suffix = f"{marker}\n" if marker else ""
+        op.append_to_node(parent, suffix + op.build_close_tag(id) + "\n")
         return result
 
     # ------------------------------------------------------------------
@@ -508,7 +527,7 @@ class DesignOperator(SessionOperator):
         on_stream_target: Callable[[str], Awaitable[None]] | None = None,
         on_stream_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
-    ) -> KbExtractResult:
+    ) -> KbMaterializeResult:
         """Run a design session (create, continue, or end).
 
         Delegates to :meth:`~SessionOperator.run_session`.
@@ -532,4 +551,4 @@ class DesignOperator(SessionOperator):
             on_stream_event=on_stream_event,
             cancel_event=cancel_event,
         )
-        return result if isinstance(result, KbExtractResult) else KbExtractResult()
+        return result if isinstance(result, KbMaterializeResult) else KbMaterializeResult()

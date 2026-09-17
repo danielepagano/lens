@@ -144,6 +144,8 @@ def design(
             typer.echo(f"KB: inserted {', '.join(result.inserted)}")
         if result.updated:
             typer.echo(f"KB: updated {', '.join(result.updated)}")
+        if result.removed:
+            typer.echo(f"KB: removed {', '.join(result.removed)}")
         if result.errors:
             for err in result.errors:
                 typer.echo(f"lens design: kb error: {err}", err=True)

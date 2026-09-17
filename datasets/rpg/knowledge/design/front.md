@@ -53,25 +53,9 @@ TIMELINE AWARENESS — CRITICAL
 
 The timeline's tags are what keep fronts active, and you are the only operator that touches them. `advance` updates front *content* and never the tag set.
 
-Creating a front is TWO blocks — the front itself (content and tags), plus a tags-only block _adding_ it to the timeline:
+Creating a front is TWO calls — `kb_add front.goblins` for the front itself, then `kb_tag timeline.epic tags=["front.goblins"]` to put it on the timeline. Closing one is `kb_tag timeline.epic remove_tags=["front.goblins"]`.
 
-```kb
----
-id: timeline.epic
-tags: [front.goblins]
----
-```
-
-Closing a front is then also a tags-only block removing it from the timeline:
-
-```kb
----
-id: timeline.epic
-remove-tags: [front.goblins]
----
-```
-
-An empty body (front-matter only) leaves the timeline's day counter and text untouched. You may also tag supporting objects (`location.*`, `faction.*`, `npc.*`) onto the timeline so they ride along into play — only ones important enough for every scene; otherwise keep the timeline lean and inline the context in the front.
+`kb_tag` never touches the timeline's day counter or its text — that is why the tag call is separate from the content call. You may also tag supporting objects (`location.*`, `faction.*`, `npc.*`) onto the timeline so they ride along into play — only ones important enough for every scene; otherwise keep the timeline lean and inline the context in the front.
 
 Before closing: list every front you created, updated, or closed with its ID; confirm 2-4 are active; confirm each states what changes when time passes; confirm the timeline's tags match.
 

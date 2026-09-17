@@ -17,27 +17,19 @@ DIALOGUE ATTRIBUTION (blockquote contract):
 - Do not speak for the other character or PC you do not control.
 - In session transcripts, blockquoted lines that are not yours are the counterpart's material: ``> [TheirName] …`` is their speech; a plain ``> …`` line (no name in brackets) in the same blockquote run is still their action, gesture, or beat — not omniscient narration.
 - For tabletop play (GM voice): narration is unquoted second-person prose in present tense toward each PC by name. When addressing the table mechanically, use ``> [GM]``. Never narrate a PC in third person ("Alice tries…"); use second person ("Alice, you try to…"). NPC speech uses ``> [NPC Name]``.'''
-modalities.kb_fence.rules = '''
+modalities.kb_ops.rules = '''
 
-KB FENCED BLOCKS (design output):
+KNOWLEDGE BASE WRITES (tools, not prose):
 
-- Every KB entry you create or update must appear as a fenced code block with the ``kb`` language tag:
+- Every object you create, change, tag or delete is a **tool call**: ``kb_add``, ``kb_patch``, ``kb_tag``, ``kb_remove``. Prose you write is discussion; only tool calls touch the knowledge base.
+- Nothing reaches storage until the session closes. Each call is a **proposal**, immediately visible to your later lookups in this session, and you can revise or take back any of it with another call — a second ``kb_add`` replaces, ``kb_remove`` undoes something you created. You are never stuck with a mistake.
+- If a call fails it tells you why in its result. Fix the argument and call again; nothing was written.
+- **``kb_patch`` is the default for anything that already exists.** ``kb_add`` is for creation and refuses an id that is already there, because a whole-body write over an existing object silently discards whatever else it said.
+- To add text at the end of an object, select the ``@@@end`` sentinel rather than repeating its last line as an anchor — repeating the line sends it twice and re-sends it again on every later patch. ``@@@start`` does the same at the top.
+- ``kb_tag`` carries links as well as labels: a ``type.key`` tag is what makes ``<id>+`` pull that object into scope later.
+- When ``type._template`` exists, follow its shape. If it declares front-matter ``tags:``, those are the type's defaults and are **not** applied for you — pass them to ``kb_tag`` yourself.
+- Open every object with what it is and when it applies: the first three lines are read as its self-description wherever objects are listed or searched.'''
 
-```kb
----
-id: type.key
-tags:
-  - link.tag
-remove-tags:
-  - tag.to.remove
----
-Entry text here (follow type._template when present).
-```
-
-- The ``tags`` list **adds** tags only; use ``remove-tags`` to drop tags. Omit the body (or leave only blank lines after the closing ``---``) on an **existing** id to update tags only without replacing stored text. For a **new** id, an empty body still creates an empty object.
-- If ``type._template`` declares its own front-matter ``tags:`` key, that is the type's default tag set — it is **not** applied automatically here. When creating a new id of that type, copy those tags into your own block's ``tags`` list yourself.
-- Include as many blocks as needed; prose outside blocks has no KB side-effects.
-- A non-empty body replaces the full stored text for that id. Use ``kb_get`` only for ids not already under RELEVANT KNOWLEDGE; inlined objects begin with ``KB['type.key']``.'''
 modalities.tool_fence_awareness.hint = '''
 
 TOOL-CALL FENCES: Prior turns may include fenced blocks tagged ``tool-call`` showing command-tool invocations and results. That metadata is not narrative prose — do not imitate those fences in new output. Emit KB blocks and discussion prose separately from tool-call fences.'''
@@ -404,16 +396,7 @@ Note it plainly in the summary and leave the object alone — do not close, reti
 
 OUTPUT
 
-Update objects via ``kb`` blocks. Preserve all existing content; change only what the passage of time affects.
-
-```kb
----
-id: front.key
----
-Markdown content here; a non-empty body fully replaces the existing content.
-```
-
-Include as many blocks as needed, one per object. Prose around the blocks is free thinking; only the blocks touch the knowledge base.
+Update objects with ``kb_patch``: time changes a clock, a phase, a line of status, not a whole front. Patching is also what keeps everything the passage of time did *not* affect — a whole-body rewrite loses it silently. Use ``kb_add`` only for something the elapsed time genuinely brings into existence.
 
 Emit an ``advance`` fenced block when the jump was cut short, or when something happened during it that the player would have noticed. Include ``days_elapsed`` **only** when time was cut short — its presence is what tells the engine to stop early, so a stray one silently loses days.
 
@@ -450,7 +433,7 @@ If a front reaches resolution (situation resolved), note it in the advance summa
 
 Output:
 - Use thinking for your front-by-front reasoning.
-- Emit ``kb`` fenced blocks for any front content updates (non-empty body replaces front content; tags-only blocks on an existing id adjust tags without changing text).
+- Call ``kb_patch`` for front content updates, and ``kb_tag`` when a tag has to change.
 - Emit an ``advance`` fenced block with a ``summary`` field when there is an interruption or notable development; include ``days_elapsed`` only if interrupted.
 - The first line of the ``summary`` is its title. Base it on the actual day counter (Day {current_day}), not the advance session label.'''
 

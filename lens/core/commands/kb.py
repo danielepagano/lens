@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from asyncio import Event
+import logging
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -27,6 +28,8 @@ from lens.core.llm import build_command_tools_bundle
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.project import find_git_root_from, find_project_root, is_dataset_root, resolve_address
 from lens.core.storage import Storage
+
+logger = logging.getLogger(__name__)
 
 
 def get_store() -> KnowledgeStore:
@@ -181,13 +184,7 @@ def kb_patch(
     the updated :class:`KnowledgeObject` and an outcome kind.
     """
     # Lazy import keeps kb.py free of a hard dependency on text_select at module load.
-    from lens.core.text_select import Patch as _Patch
-    from lens.core.text_select import (
-        SelectionError,
-        apply_patches_to_storage_text_via_llm_view,
-        parse_patches,
-        patches_effect_already_present_in_storage_text,
-    )
+    from lens.core.text_select import SelectionError, apply_kb_patches
 
     try:
         _, key = parse_id(id)
@@ -219,51 +216,18 @@ def kb_patch(
     if existing is None:
         raise LensException(f"KB object not found: {id}")
 
-    # Normalise patch list: accept Patch instances or the raw tool-call
-    # dict shape understood by ``parse_patches``.
-    if patches is None:
-        patch_objs: list[_Patch] = []
-    elif all(isinstance(p, _Patch) for p in patches):
-        patch_objs = list(cast(list[_Patch], patches))
-    else:
-        try:
-            patch_objs = parse_patches(patches)
-        except SelectionError as e:
-            raise LensException(f"kb_patch: {e}") from e
-    if not patch_objs:
-        raise LensException("kb_patch: at least one patch is required")
-
-    if patches_effect_already_present_in_storage_text(
-        existing.text,
-        patch_objs,
-        storage=local_storage,
-        source_id=f"kb_patch:{id}",
-        insert_only=True,
-    ):
-        return KbPatchResult(existing, "already_present")
-
     try:
-        new_text = apply_patches_to_storage_text_via_llm_view(
+        new_text, kind = apply_kb_patches(
             existing.text,
-            patch_objs,
+            patches,
             storage=local_storage,
             source_id=f"kb_patch:{id}",
         )
     except SelectionError as e:
-        if patches_effect_already_present_in_storage_text(
-            existing.text,
-            patch_objs,
-            storage=local_storage,
-            source_id=f"kb_patch:{id}",
-        ):
-            return KbPatchResult(existing, "already_present")
-        raise LensException(
-            f"kb_patch: {e} — target line not found; re-read the latest "
-            "object body from the previous tool result"
-        ) from e
+        raise LensException(str(e)) from e
 
-    if new_text == existing.text:
-        return KbPatchResult(existing, "no_changes")
+    if kind != "patched":
+        return KbPatchResult(existing, kind)
 
     kb.store_object(id, new_text)
     refreshed = kb.get_objects([id]).get(id)
@@ -1236,3 +1200,170 @@ def kb_extract(file_paths: list[str]) -> KbExtractResult:
     git_root = find_git_root_from(root)
     storage = Storage(git_root)
     return kb_extract_from_text(combined_text, root, storage)
+
+
+# ---------------------------------------------------------------------------
+# Materialization — proposals become files, once, at session close
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class KbMaterializeResult:
+    """What a session close wrote, and what it could not."""
+
+    inserted: list[str] = field(default_factory=list[str])
+    updated: list[str] = field(default_factory=list[str])
+    removed: list[str] = field(default_factory=list[str])
+    errors: list[str] = field(default_factory=list[str])
+
+    def touched(self) -> list[str]:
+        return [*self.inserted, *self.updated, *self.removed]
+
+    def absorb(self, extract: KbExtractResult) -> None:
+        """Merge a legacy ``kb`` fence extraction into this result."""
+        self.inserted.extend(extract.inserted)
+        self.updated.extend(extract.updated)
+        self.errors.extend(extract.errors)
+
+
+class _DiskOnlyBase:
+    """The fold's view of the world during materialization.
+
+    Every read goes through a store built with ``pending=False``, so these
+    public methods *are* the disk truth — the overlay would otherwise hand the
+    fold its own proposals and it would be replaying them onto themselves.
+    """
+
+    __slots__ = ("_kb",)
+
+    def __init__(self, kb: KnowledgeStore) -> None:
+        self._kb = kb
+
+    def object_text(self, canonical_id: str) -> str | None:
+        obj = self._kb.get_objects([canonical_id]).get(canonical_id)
+        return obj.text if obj is not None else None
+
+    def object_tags(self, canonical_id: str) -> list[str]:
+        return self._kb.get_tags(canonical_id)
+
+    def exists_on_disk(self, canonical_id: str) -> bool:
+        return self._kb.exists(canonical_id)
+
+
+def materialize_kb_ops(
+    node_text: str, project_root: Path, storage: Storage
+) -> KbMaterializeResult:
+    """Apply the proposals in *node_text* to the knowledge store.
+
+    **Recomputed from the node at this instant** — never from a remembered set,
+    and never from the operator's in-memory sink.  That is what makes rewind
+    correct for free: rewind truncates the ops out of the node and only *then*
+    does the cursor land somewhere else, so a materialization that re-reads
+    discards exactly what it was asked to discard.  Cached anywhere, it would
+    write precisely the objects the user just threw away.
+
+    Writes go through *storage*, so they join the session's one pending
+    transaction and are reviewable as a unit.
+    """
+    from lens.core.kb_pending import fold, parse_kb_ops
+
+    result = KbMaterializeResult()
+    ops = parse_kb_ops(node_text)
+    if not ops:
+        return result
+
+    kb = KnowledgeStore.for_project(project_root, storage=storage, pending=False)
+    layer = fold(ops, _DiskOnlyBase(kb))
+    result.errors.extend(str(error) for error in layer.errors)
+
+    for canonical_id, text in layer.objects.items():
+        try:
+            is_new = not kb.exists(canonical_id)
+            kb.store_object(canonical_id, text)
+        except (ValueError, LensException) as e:
+            result.errors.append(f"{canonical_id}: {e}")
+            continue
+        (result.inserted if is_new else result.updated).append(canonical_id)
+
+    for canonical_id, tags in layer.tags.items():
+        current = {tag.lower() for tag in kb.get_tags(canonical_id)}
+        wanted = {tag.lower() for tag in tags}
+        to_add = sorted(wanted - current)
+        to_remove = sorted(current - wanted)
+        if to_add:
+            error = kb.add_tags(canonical_id, to_add)
+            if error:
+                result.errors.append(error)
+        if to_remove:
+            kb.remove_tags(canonical_id, to_remove)
+        if (to_add or to_remove) and canonical_id not in result.touched():
+            result.updated.append(canonical_id)
+
+    for canonical_id in sorted(layer.removed):
+        kb.delete_object(canonical_id)
+        result.removed.append(canonical_id)
+
+    return result
+
+
+def materialize_session_kb(
+    node_text: str, project_root: Path, storage: Storage, *, who: str
+) -> KbMaterializeResult:
+    """Everything a session close writes to the knowledge store, in order.
+
+    Legacy ``kb`` fences first, then the proposal fold.  Prompts have stopped
+    asking for fences, but a session opened before this shipped still has them
+    and a project prompt override may still teach them, so they keep working —
+    with a deprecation warning, because the fold is the authoritative channel
+    and running it second lets a proposal correct a fence.
+    """
+    result = KbMaterializeResult()
+    extract = kb_extract_from_text(node_text, project_root, storage)
+    if extract.inserted or extract.updated:
+        logger.warning(
+            "%s end: applied %d legacy ``kb`` fenced block(s). The KB verbs "
+            "(kb_add / kb_patch / kb_tag / kb_remove) replace them.",
+            who,
+            len(extract.inserted) + len(extract.updated),
+        )
+    result.absorb(extract)
+    fold_result = materialize_kb_ops(node_text, project_root, storage)
+    result.inserted.extend(fold_result.inserted)
+    result.updated.extend(fold_result.updated)
+    result.removed.extend(fold_result.removed)
+    result.errors.extend(fold_result.errors)
+    for error in result.errors:
+        logger.error("%s end: %s", who, error)
+    return result
+
+
+def applied_marker(
+    result: KbMaterializeResult, *, session: str, now: str | None = None
+) -> str:
+    """The ``[kb-op op: applied …]: #`` block recording what a close wrote.
+
+    Written into the **parent**, above the close tag, and it is the only way
+    ``rewind`` can tell a node that *proposed* from one that *applied*.  The
+    parent rather than the child because a line-level rewind inside the child
+    still truncates the parent at the session's opening annotation — so a marker
+    there is always inside the region being discarded, while one in the child's
+    tail can survive above the cut and leave rewind silent about objects that
+    are still on disk.
+    """
+    from datetime import UTC, datetime
+
+    from lens.core.kb_pending import KbOp, render_kb_op
+
+    ids = [*result.inserted, *result.updated]
+    if not ids and not result.removed:
+        return ""
+    stamp = now or datetime.now(UTC).replace(microsecond=0).isoformat()
+    return render_kb_op(
+        KbOp(
+            op="applied",
+            at=stamp,
+            session=session,
+            ids=tuple(ids),
+            removed=tuple(result.removed),
+        )
+    )

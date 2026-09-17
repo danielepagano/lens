@@ -65,7 +65,7 @@ most editors treat "replace this span with this text").  Pass an empty
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from lens.core.exceptions import LensException
 from lens.core.storage_text import (
@@ -731,3 +731,86 @@ def parse_patches(data: Any) -> list[Patch]:
         except SelectionError as e:
             raise SelectionError(f"patch #{i}: {e}") from e
     return result
+
+
+KbPatchKind = Literal["patched", "no_changes", "already_present"]
+"""Outcome of :func:`apply_kb_patches`."""
+
+
+def normalize_patch_list(
+    patches: list[Patch] | list[dict[str, Any]] | None,
+) -> list[Patch]:
+    """Accept either :class:`Patch` instances or the raw tool-call dict shape.
+
+    Raises :class:`SelectionError` with the ``kb_patch:`` prefix callers expect
+    when the dict shape is malformed, and when the list is empty — a patch call
+    with nothing to apply is a mistake, not a no-op.
+    """
+    if patches is None:
+        patch_objs: list[Patch] = []
+    elif all(isinstance(p, Patch) for p in patches):
+        patch_objs = list(cast(list[Patch], patches))
+    else:
+        try:
+            patch_objs = parse_patches(cast(list[dict[str, Any]], patches))
+        except SelectionError as e:
+            raise SelectionError(f"kb_patch: {e}") from e
+    if not patch_objs:
+        raise SelectionError("kb_patch: at least one patch is required")
+    return patch_objs
+
+
+def apply_kb_patches(
+    existing_text: str,
+    patches: list[Patch] | list[dict[str, Any]] | None,
+    *,
+    storage: Storage | None = None,
+    source_id: str = "kb_patch",
+) -> tuple[str, KbPatchKind]:
+    """Resolve *patches* against *existing_text* and return the new storage text.
+
+    The pure core shared by :func:`lens.core.commands.kb.kb_patch`, which stores
+    the result, and by the pending-KB fold
+    (:mod:`lens.core.kb_pending`), which only needs the text.  Keeping it here
+    rather than in ``commands/kb.py`` is what lets the fold use it without
+    importing the knowledge store, which imports the fold.
+
+    Returns the text unchanged with ``"no_changes"`` when the patches resolve to
+    the same bytes, and with ``"already_present"`` when their effect is visibly
+    there already — an idempotency guard, not a success claim.  Raises
+    :class:`SelectionError` when a patch does not resolve.
+    """
+    patch_objs = normalize_patch_list(patches)
+
+    if patches_effect_already_present_in_storage_text(
+        existing_text,
+        patch_objs,
+        storage=storage,
+        source_id=source_id,
+        insert_only=True,
+    ):
+        return existing_text, "already_present"
+
+    try:
+        new_text = apply_patches_to_storage_text_via_llm_view(
+            existing_text,
+            patch_objs,
+            storage=storage,
+            source_id=source_id,
+        )
+    except SelectionError as e:
+        if patches_effect_already_present_in_storage_text(
+            existing_text,
+            patch_objs,
+            storage=storage,
+            source_id=source_id,
+        ):
+            return existing_text, "already_present"
+        raise SelectionError(
+            f"kb_patch: {e} — target line not found; re-read the latest "
+            "object body from the previous tool result"
+        ) from e
+
+    if new_text == existing_text:
+        return existing_text, "no_changes"
+    return new_text, "patched"

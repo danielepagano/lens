@@ -81,9 +81,28 @@ def rewind(
     storage = session.new_storage()
 
     try:
-        rewind_core(target_node, line_arg, storage)
+        report = rewind_core(target_node, line_arg, storage)
     except LensException as e:
         typer.echo(f"lens rewind: {e}", err=True)
         raise typer.Exit(1)
 
     typer.echo("Rewound.")
+    if report.discarded_proposals:
+        count = len(report.discarded_proposals)
+        typer.echo(
+            f"Discarded {count} unwritten KB proposal"
+            f"{'' if count == 1 else 's'}: "
+            f"{', '.join(dict.fromkeys(report.discarded_proposals))}"
+        )
+    materialized = report.materialized_ids()
+    if materialized:
+        # Loud on purpose. Rewind never touches side effects, and saying
+        # nothing is the only unacceptable version of keeping that promise.
+        typer.echo("")
+        typer.echo(
+            f"NOTE: {len(materialized)} knowledge object"
+            f"{'' if len(materialized) == 1 else 's'} written by the removed "
+            "session(s) are unchanged and still on disk:"
+        )
+        for canonical_id in materialized:
+            typer.echo(f"  {canonical_id}")

@@ -41,28 +41,10 @@ Nothing that belongs on the surface goes here. Appearance, voice, and hard bound
 
 ## KB Output Rules
 
-Emit fenced `kb` blocks with YAML front matter (`id`, optional `tags`, optional `remove-tags`).
+`kb_add psyche.<key>` — the seeded depth, opening with the character's name.
+Then `kb_tag psyche.<key> tags=["remember.psyche"]`.
 
-```kb
----
-id: psyche.<key>
-tags:
-  - remember.psyche
----
-# Name
-
-...seeded depth...
-```
-
-Then link it from the surface with a tag-only block, which leaves that object's body untouched:
-
-```kb
----
-id: <surfacetype>.<key>
-tags:
-  - psyche.<key>
----
-```
+Link it from the surface with `kb_tag <surfacetype>.<key> tags=["psyche.<key>"]`, which changes tags only and leaves that object's body untouched.
 
 Never tag a surface object with `remember.*`.
 

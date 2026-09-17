@@ -18,6 +18,7 @@ BENCH_SCENARIOS: list[tuple[str, bool]] = [
     ("write_coherence", False),
     ("edit_quality", True),
     ("design_instructions", False),
+    ("design_kb_ops", True),
     ("model_gate", True),
     ("model_rank", True),
 ]

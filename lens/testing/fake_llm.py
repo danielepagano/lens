@@ -36,6 +36,13 @@ Special triggers
 ``You may call kb_patch only for these targets`` (remember template)
     Empty by default; with ``tokens=…`` streams visible placeholder text so you
     can exercise cancel/skip on the remember step in the UI.
+
+``KB_OP_TRIGGER`` — ``EMIT_KB_OP {json}`` or ``EMIT_KB_OP [{json}, …]``
+    Streams the described calls as OpenAI ``tool_calls`` deltas instead of
+    prose, so the KB verbs can be exercised without a real model.  Each entry is
+    ``{"tool": "kb_add", "arguments": {…}}``.  It fires only on the first round:
+    a ``tool`` message in the conversation means the calls already ran, and
+    re-emitting them off the still-present trigger text would loop forever.
 """
 
 from __future__ import annotations
@@ -71,12 +78,66 @@ _REMEMBER_TASK_MARKER = "You may call kb_patch only for these targets"
 _MEDIA_ATTACH_OPTIONS_MARKER = "Facet options (JSON: facet name -> closed list of allowed values"
 _MEDIA_ATTACH_CURRENT_MARKER = "Currently selected facets"
 
+# Tool-call test support (the KB verbs).
+KB_OP_TRIGGER = "EMIT_KB_OP"
+
 # Secret-encoding test support.
 FAKE_SECRET_TRIGGER = "EMIT_FAKE_SECRET"
 FAKE_SECRET_PLAINTEXT = "the king betrayed everyone"
 FAKE_SECRET_ROT13 = "gur xvat orgenlrq rirelbar"
 
 MOCK_LLM_DEFAULT_PORT = 18765
+
+
+def _tool_call_chunk(calls: list[dict[str, Any]]) -> bytes:
+    payload = json.dumps({
+        "choices": [
+            {
+                "delta": {
+                    "tool_calls": [
+                        {
+                            "index": i,
+                            "id": f"call_{i}",
+                            "type": "function",
+                            "function": {
+                                "name": call.get("tool", ""),
+                                "arguments": json.dumps(call.get("arguments", {})),
+                            },
+                        }
+                        for i, call in enumerate(calls)
+                    ]
+                },
+                "finish_reason": "tool_calls",
+            }
+        ]
+    })
+    return f"data: {payload}\n\n".encode()
+
+
+def _planned_tool_calls(
+    messages: list[dict[str, Any]], msg_text: str
+) -> list[dict[str, Any]]:
+    """Calls to emit for an ``EMIT_KB_OP`` trigger, or ``[]``.
+
+    Fires only while no ``tool`` message is in the conversation.  The trigger
+    text stays in the prompt for every later round, so without that guard the
+    server would answer its own tool results with the same calls forever.
+    """
+    if KB_OP_TRIGGER not in msg_text:
+        return []
+    if any(m.get("role") == "tool" for m in messages):
+        return []
+    start = msg_text.find(KB_OP_TRIGGER) + len(KB_OP_TRIGGER)
+    rest = msg_text[start:].lstrip()
+    try:
+        data, _end = json.JSONDecoder().raw_decode(rest)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(data, dict):
+        return [cast(dict[str, Any], data)]
+    if isinstance(data, list):
+        return [c for c in cast(list[Any], data) if isinstance(c, dict)]
+    return []
 
 
 def _sse_chunk(content: str) -> bytes:
@@ -220,8 +281,24 @@ class _FakeLLMHandler(BaseHTTPRequestHandler):
             body = self.rfile.read(length)
             data: dict[str, Any] = json.loads(body) if body else {}
             messages: list[dict[str, Any]] = data.get("messages", [])
-            total_chars = sum(len(m.get("content", "")) for m in messages)
-            msg_text = " ".join(m.get("content", "") for m in messages)
+            # An assistant turn replayed after a tool round carries
+            # ``content: None`` (llm.py sends the decoded prose "or None"), so
+            # neither of these may assume a string.
+            contents = [str(m.get("content") or "") for m in messages]
+            total_chars = sum(len(c) for c in contents)
+            msg_text = " ".join(contents)
+
+            tool_calls = _planned_tool_calls(messages, msg_text)
+            if tool_calls:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                self.wfile.write(_tool_call_chunk(tool_calls))
+                self.wfile.flush()
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+                return
 
             chunk_delay, default_tokens, default_tps = _server_defaults(self)
             prefix, words, delay, empty, trailing = _plan_stream(
