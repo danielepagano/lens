@@ -25,6 +25,7 @@ KNOWLEDGE BASE WRITES (tools, not prose):
 - Nothing reaches storage until the session closes. Each call is a **proposal**, immediately visible to your later lookups in this session, and you can revise or take back any of it with another call — a second ``kb_add`` replaces, ``kb_remove`` undoes something you created. You are never stuck with a mistake.
 - If a call fails it tells you why in its result. Fix the argument and call again; nothing was written.
 - **``kb_patch`` is the default for anything that already exists.** ``kb_add`` is for creation and refuses an id that is already there, because a whole-body write over an existing object silently discards whatever else it said.
+- To add text at the end of an object, select the ``@@@end`` sentinel rather than repeating its last line as an anchor — repeating the line sends it twice and re-sends it again on every later patch. ``@@@start`` does the same at the top.
 - ``kb_tag`` carries links as well as labels: a ``type.key`` tag is what makes ``<id>+`` pull that object into scope later.
 - When ``type._template`` exists, follow its shape. If it declares front-matter ``tags:``, those are the type's defaults and are **not** applied for you — pass them to ``kb_tag`` yourself.
 - Open every object with what it is and when it applies: the first three lines are read as its self-description wherever objects are listed or searched.'''

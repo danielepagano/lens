@@ -185,6 +185,21 @@ class TestKbPatch(_ToolCase):
         self.assertIn("kb_add", result)
         self.assertEqual(self.sink.ops, [])
 
+    def test_the_end_sentinel_appends(self) -> None:
+        # The modality tells the model to append with @@@end rather than repeat
+        # the last line as an anchor. A real session did the latter and sent the
+        # anchor twice, so this pins that the advice actually works.
+        result = self.call(
+            KB_PATCH_PROPOSAL_TOOL,
+            id="loc.vault",
+            patches=[{"start": {"target": "@@@end"}, "content": "\ngamma"}],
+        )
+        self.assertTrue(result.startswith("OK: patched"))
+        text = self.store.get_objects(["loc.vault"])["loc.vault"].text
+        self.assertTrue(text.rstrip().endswith("gamma"))
+        self.assertIn("alpha", text)
+        self.assertIn("beta", text)
+
 
 class TestKbTag(_ToolCase):
     def setUp(self) -> None:
