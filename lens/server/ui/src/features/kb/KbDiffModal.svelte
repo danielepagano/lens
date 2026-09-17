@@ -1,45 +1,6 @@
 <script lang="ts">
   import { kbDiffRequest } from '../../stores/ui'
-
-  type DiffLine = { kind: 'equal' | 'insert' | 'delete'; text: string }
-
-  function computeLineDiff(current: string, proposed: string): DiffLine[] {
-    const a = current.split('\n')
-    const b = proposed.split('\n')
-    const m = a.length
-    const n = b.length
-
-    // Build LCS table
-    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
-    for (let i = m - 1; i >= 0; i--) {
-      for (let j = n - 1; j >= 0; j--) {
-        if (a[i] === b[j]) {
-          dp[i][j] = 1 + dp[i + 1][j + 1]
-        } else {
-          dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1])
-        }
-      }
-    }
-
-    // Reconstruct
-    const result: DiffLine[] = []
-    let i = 0
-    let j = 0
-    while (i < m || j < n) {
-      if (i < m && j < n && a[i] === b[j]) {
-        result.push({ kind: 'equal', text: a[i] })
-        i++
-        j++
-      } else if (j < n && (i >= m || dp[i][j + 1] >= dp[i + 1][j])) {
-        result.push({ kind: 'insert', text: b[j] })
-        j++
-      } else {
-        result.push({ kind: 'delete', text: a[i] })
-        i++
-      }
-    }
-    return result
-  }
+  import { computeLineDiff } from '../../utils/lineDiff'
 
   let dialog: HTMLDialogElement | undefined
 

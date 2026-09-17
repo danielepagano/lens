@@ -190,3 +190,202 @@ class TestRegressionWorkflowBrowser:
         TestBrowser().test_transaction_diff_rendering(
             page, live_server_url, lens_project_dir, project_slug
         )
+
+
+class TestRegressionPendingKbBrowser:
+    """PW-09: a session's KB writes are visible to the person, not only the model.
+
+    Since the KB verbs replaced the fenced ``kb`` blocks, what a ``design`` or
+    ``advance`` beat changes lives in ``[kb-op …]: #`` markdown comments — which
+    every renderer in the stack hides on purpose.  The reader was left watching
+    the model *say* it updated an object with no way to check.  This walks the
+    places that answer that: the split chip where the block sits, the block
+    itself behind the chip's body half, the diff in the KB viewer, and the
+    bullets in the cursor footer.
+    """
+
+    _PROPOSALS = """
+[design
+  prompt: session zero
+]: #
+
+The warden now holds the ford, and Amy's file needs a line I cannot place.
+
+[kb-op
+  op: add
+  id: npc.warden
+  body: |
+    | # The Warden
+    | Grim, and fair.
+]: #
+
+[kb-op
+  op: patch
+  id: person.amy
+  patches: [{"start": {"target": "NO SUCH LINE IN AMY"}, "content": " x"}]
+]: #
+"""
+
+    # A closed session: the child keeps its blocks but the cursor has moved on,
+    # so there is no pending layer and no `pending_kb` in the payload.  The
+    # chips still have to work — that is the whole reason they are parsed from
+    # the block text rather than from the payload.
+    _HISTORY = """[
+  kb_pin: []
+]: #
+
+I set the warden at the ford.
+
+[kb-op
+  op: tag
+  id: npc.warden
+  tags:
+    - ford
+  remove-tags:
+    - draft
+]: #
+"""
+
+    def test_pw09_proposals_are_visible_in_all_three_places(
+        self,
+        page: "Page",
+        live_server_url: str,
+        lens_project_dir: Path | None,
+        project_slug: str,
+    ) -> None:
+        if lens_project_dir is None:
+            pytest.skip("Requires local project dir")
+
+        cursor_md = lens_project_dir / "narrative" / "story" / "_node.md"
+        original = cursor_md.read_text()
+        try:
+            cursor_md.write_text(original + self._PROPOSALS)
+
+            # The node route serves proposals only for the cursor, so this is
+            # also the check that the layer and the payload agree about where
+            # the cursor is.
+            with urllib.request.urlopen(
+                f"{live_server_url}/{project_slug}/narrative/node/story", timeout=10
+            ) as response:
+                payload = json.load(response)
+            pending = payload["pending_kb"]
+            assert [op["op"] for op in pending["ops"]] == ["add", "patch"]
+            assert pending["ops"][1]["status"] == "error"
+
+            page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
+            page.wait_for_selector(  # type: ignore[union-attr]
+                '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+            )
+
+            # 1. A chip per op, in place, where the block was consumed — and
+            #    none of the block's own text, which is what the model reads.
+            chips = page.locator(".kb-op-marker")  # type: ignore[union-attr]
+            chips.first.wait_for(timeout=_PAGE_TIMEOUT_MS)
+            assert chips.count() == 2
+            assert page.locator(".kb-op-marker--error").count() == 1  # type: ignore[union-attr]
+            body = page.inner_text('[data-testid="markdown-view"]')  # type: ignore[union-attr]
+            assert "patches:" not in body
+            assert "Grim, and fair." not in body
+
+            # 2. The footer lists the changed object beside the pins.
+            bullets = page.locator(  # type: ignore[union-attr]
+                '[data-testid="cursor-pending-kb-pills"] .pin-pill--pending'
+            )
+            bullets.first.wait_for(timeout=_PAGE_TIMEOUT_MS)
+            assert "npc.warden" in bullets.first.inner_text()
+
+            # 3. The body half opens the block as written — the intent, which
+            #    is readable whether or not there is still a diff to be had.
+            warden = page.locator(  # type: ignore[union-attr]
+                '.kb-op-marker:has([data-kb-open-id="npc.warden"]) .kb-op-marker-body'
+            )
+            warden.click()
+            page.wait_for_selector(".kb-op-dialog[open]", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+            modal = page.inner_text(".kb-op-dialog")  # type: ignore[union-attr]
+            assert "Grim, and fair." in modal
+            assert "npc.warden" in modal
+            # At the cursor it is still a proposal, so the modal may say so.
+            assert "PROPOSED" in modal.upper()
+            assert "hand-edit" in modal
+            page.keyboard.press("Escape")  # type: ignore[union-attr]
+            page.wait_for_selector(  # type: ignore[union-attr]
+                ".kb-op-dialog[open]", state="hidden", timeout=_PAGE_TIMEOUT_MS
+            )
+
+            # 4. The arrow half opens the object, with the proposed change
+            #    against its base shown inline — no modal in the path.
+            page.click('.kb-op-marker-open[data-kb-open-id="npc.warden"]')  # type: ignore[union-attr]
+            page.wait_for_selector(  # type: ignore[union-attr]
+                '[data-testid="kb-pending-diff"]', timeout=_PAGE_TIMEOUT_MS
+            )
+            diff = page.inner_text('[data-testid="kb-pending-diff"]')  # type: ignore[union-attr]
+            assert "Grim, and fair." in diff
+            assert page.locator(".kb-pending-line--insert").count() > 0  # type: ignore[union-attr]
+            assert page.locator(".kb-diff-dialog[open]").count() == 0  # type: ignore[union-attr]
+        finally:
+            cursor_md.write_text(original)
+
+    def test_pw09b_a_historical_node_still_shows_what_the_beat_asked_for(
+        self,
+        page: "Page",
+        live_server_url: str,
+        lens_project_dir: Path | None,
+        project_slug: str,
+    ) -> None:
+        if lens_project_dir is None:
+            pytest.skip("Requires local project dir")
+
+        aside = lens_project_dir / "narrative" / "story" / "aside.md"
+        try:
+            aside.write_text(self._HISTORY)
+
+            with urllib.request.urlopen(
+                f"{live_server_url}/{project_slug}/narrative/node/story/aside", timeout=10
+            ) as response:
+                payload = json.load(response)
+            assert "pending_kb" not in payload
+
+            page.goto(f"{live_server_url}#{project_slug}/story/aside")  # type: ignore[union-attr]
+            page.wait_for_selector(  # type: ignore[union-attr]
+                '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+            )
+            page.wait_for_selector(".kb-op-marker", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+            page.click(".kb-op-marker-body")  # type: ignore[union-attr]
+            page.wait_for_selector(".kb-op-dialog[open]", timeout=_PAGE_TIMEOUT_MS)  # type: ignore[union-attr]
+            modal = page.inner_text(".kb-op-dialog")  # type: ignore[union-attr]
+            assert "+ford" in modal
+            assert "-draft" in modal
+            # Nothing is pending here, so nothing may invite the reader to
+            # hand-edit a block that no longer feeds anything.
+            assert "WRITTEN" in modal.upper()
+            assert "hand-edit" not in modal
+            assert page.locator(".kb-op-marker--recorded").count() > 0  # type: ignore[union-attr]
+            assert page.locator(".kb-op-marker--pending").count() == 0  # type: ignore[union-attr]
+            page.keyboard.press("Escape")  # type: ignore[union-attr]
+
+            # No proposals here, so nothing that speaks for the pending layer.
+            assert page.locator('[data-testid="kb-pending-diff"]').count() == 0  # type: ignore[union-attr]
+            assert page.locator(  # type: ignore[union-attr]
+                '[data-testid="cursor-pending-kb-pills"]'
+            ).count() == 0
+        finally:
+            aside.unlink(missing_ok=True)
+
+    def test_pw09c_nothing_shows_without_proposals(
+        self,
+        page: "Page",
+        live_server_url: str,
+        lens_project_dir: Path | None,
+        project_slug: str,
+    ) -> None:
+        if lens_project_dir is None:
+            pytest.skip("Requires local project dir")
+
+        page.goto(f"{live_server_url}#{project_slug}/story")  # type: ignore[union-attr]
+        page.wait_for_selector(  # type: ignore[union-attr]
+            '[data-testid="markdown-view"]', timeout=_PAGE_TIMEOUT_MS
+        )
+        assert page.locator(".kb-op-marker").count() == 0  # type: ignore[union-attr]
+        assert page.locator(  # type: ignore[union-attr]
+            '[data-testid="cursor-pending-kb-pills"]'
+        ).count() == 0

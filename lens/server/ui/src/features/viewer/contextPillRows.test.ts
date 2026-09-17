@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import type { PendingKb } from '../../services/api'
 import {
   contextSummaryParts,
   cursorKbRows,
+  pendingKbRows,
+  pendingPillLabel,
   pillKey,
   pillLabel,
   pillTitle,
@@ -109,5 +112,132 @@ describe('contextSummaryParts', () => {
 
   it('omits empty groups', () => {
     expect(contextSummaryParts({ pins: 0, vars: 1, params: 0 })).toEqual(['1 var'])
+  })
+
+  it('appends the pending proposal count last, singular and plural', () => {
+    expect(contextSummaryParts({ pins: 0, vars: 0, params: 0, pending: 1 })).toEqual([
+      '1 proposal',
+    ])
+    expect(
+      contextSummaryParts({ pins: 1, vars: 0, params: 0, mentions: 1, pending: 2 }),
+    ).toEqual(['1 pin', '1 mention', '2 proposals'])
+  })
+
+  it('omits the proposal part at zero', () => {
+    expect(contextSummaryParts({ pins: 0, vars: 0, params: 0, pending: 0 })).toEqual([])
+  })
+})
+
+describe('pendingKbRows', () => {
+  function pending(overrides: Partial<PendingKb> = {}): PendingKb {
+    return {
+      node: 'chapter-1',
+      ops: [],
+      objects: [],
+      errors: [],
+      ...overrides,
+    }
+  }
+
+  it('returns nothing when there is no pending layer', () => {
+    expect(pendingKbRows(null)).toEqual([])
+  })
+
+  it('emits one row per changed object, in order, with no errors', () => {
+    const rows = pendingKbRows(
+      pending({
+        objects: [
+          { id: 'npc.amy', change: 'created', base: null, proposed: 'text', base_source: null },
+          {
+            id: 'front.siege',
+            change: 'updated',
+            base: 'old',
+            proposed: 'new',
+            base_source: 'dataset:rpg',
+          },
+          { id: 'loc.dungeon', change: 'removed', base: 'old', proposed: null, base_source: null },
+        ],
+      }),
+    )
+    expect(rows.map((r) => r.id)).toEqual(['npc.amy', 'front.siege', 'loc.dungeon'])
+    expect(rows.map((r) => r.error)).toEqual([false, false, false])
+    expect(rows.map(pendingPillLabel)).toEqual([
+      '+ npc.amy',
+      '⟲ front.siege',
+      '− loc.dungeon',
+    ])
+  })
+
+  it('flags a row only when one of ITS OWN ops errored, not another id’s', () => {
+    const rows = pendingKbRows(
+      pending({
+        ops: [
+          {
+            index: 0,
+            op: 'patch',
+            id: 'npc.amy',
+            line_start: 1,
+            line_end: 1,
+            summary: 'patch',
+            status: 'error',
+            error: 'anchor not found',
+          },
+          {
+            index: 1,
+            op: 'tag',
+            id: 'front.siege',
+            line_start: 2,
+            line_end: 2,
+            summary: 'tag',
+            status: 'ok',
+            error: '',
+          },
+        ],
+        objects: [
+          { id: 'npc.amy', change: 'updated', base: 'old', proposed: 'new', base_source: null },
+          {
+            id: 'front.siege',
+            change: 'updated',
+            base: 'old',
+            proposed: 'new',
+            base_source: null,
+          },
+        ],
+      }),
+    )
+    expect(rows.find((r) => r.id === 'npc.amy')?.error).toBe(true)
+    expect(rows.find((r) => r.id === 'front.siege')?.error).toBe(false)
+  })
+
+  it('builds the title from the change verb, base_source, and each op error', () => {
+    const rows = pendingKbRows(
+      pending({
+        ops: [
+          {
+            index: 0,
+            op: 'patch',
+            id: 'front.siege',
+            line_start: 1,
+            line_end: 1,
+            summary: 'patch',
+            status: 'error',
+            error: 'anchor not found',
+          },
+        ],
+        objects: [
+          {
+            id: 'front.siege',
+            change: 'updated',
+            base: 'old',
+            proposed: 'new',
+            base_source: 'dataset:rpg',
+          },
+        ],
+      }),
+    )
+    const title = rows[0].title
+    expect(title).toContain('Changed')
+    expect(title).toContain('over dataset:rpg')
+    expect(title).toContain('anchor not found')
   })
 })

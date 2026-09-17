@@ -362,6 +362,8 @@ function baseStats(over: Partial<Stats> = {}): Stats {
     state_pins_at_cursor: [],
     include_ids_at_cursor: [],
     mention_ids_at_cursor: [],
+    pending_kb_ops: 0,
+    pending_kb_errors: [],
     available_llms: ['fast'],
     image_backends: [],
     has_mount: false,

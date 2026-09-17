@@ -48,6 +48,11 @@
   // Saying which dataset, and what a project copy overrides, is the whole point.
   const sourceText = $derived.by(() => {
     if (!source) return ''
+    // A proposal shadows the project itself, so neither branch below fits: the
+    // body above is the *proposed* text and the label says what it stands over.
+    // `KbPendingDiff` shows the diff; this only has to stop claiming the text
+    // is on disk when it is not.
+    if (source.kind === 'pending') return `Proposed this session — ${source.label}`
     if (source.kind === 'dataset') return `From dataset ${source.dataset}`
     if (source.shadows.length > 0) {
       return `In this project · overrides ${source.shadows.join(', ')}`
@@ -105,7 +110,10 @@
       {#if sourceText}
         <div class="kb-meta-source-row">
           <span class="kb-meta-source-label">Source:</span>
-          <span class="kb-meta-source-value" class:kb-meta-source-dataset={source?.kind === 'dataset'}
+          <span
+            class="kb-meta-source-value"
+            class:kb-meta-source-dataset={source?.kind === 'dataset'}
+            class:kb-meta-source-pending={source?.kind === 'pending'}
             >{sourceText}</span
           >
         </div>

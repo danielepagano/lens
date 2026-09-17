@@ -7,6 +7,9 @@
  * more AI turn. Pure view logic, kept out of the component so it can be tested.
  */
 
+import type { PendingKb } from '../../services/api'
+import { KB_CHANGE_GLYPH, KB_CHANGE_VERB, opsForId, type PendingChange } from '../../utils/kbPending'
+
 export type PillScope = 'include' | 'mention'
 
 export type KbPillRow = { id: string; unpin: boolean; scope?: PillScope }
@@ -97,6 +100,7 @@ export function contextSummaryParts(counts: {
   params: number
   includes?: number
   mentions?: number
+  pending?: number
 }): string[] {
   const parts: string[] = []
   if (counts.pins) parts.push(plural(counts.pins, 'pin'))
@@ -105,5 +109,45 @@ export function contextSummaryParts(counts: {
   if (counts.params) parts.push(plural(counts.params, 'param'))
   if (counts.includes) parts.push(plural(counts.includes, 'include'))
   if (counts.mentions) parts.push(plural(counts.mentions, 'mention'))
+  if (counts.pending) parts.push(plural(counts.pending, 'proposal'))
   return parts
+}
+
+export type PendingPillRow = {
+  id: string
+  change: PendingChange
+  /** True when at least one op touching this id no longer resolves — a patch
+   * whose anchor a direct edit removed, surfaced here rather than only in the
+   * KB viewer, since the cursor footer is where a session-in-progress looks. */
+  error: boolean
+  /** Tooltip: what the change is, over what, and the failure if there is one. */
+  title: string
+}
+
+/**
+ * One bullet per *changed object*, not per op: ops stack (three patches to one
+ * object are three ops in the log but one proposed object), so the object
+ * list is what the footer summarizes and a bullet is a pointer into the KB
+ * viewer for the full diff, never a summary of the patch itself.
+ */
+export function pendingKbRows(pending: PendingKb | null): PendingPillRow[] {
+  if (!pending) return []
+  return pending.objects.map((obj) => {
+    const failingOps = opsForId(pending, obj.id).filter((op) => op.status === 'error')
+    const lines = [KB_CHANGE_VERB[obj.change]]
+    if (obj.base_source) lines.push(`over ${obj.base_source}`)
+    for (const op of failingOps) lines.push(op.error)
+    return {
+      id: obj.id,
+      change: obj.change,
+      error: failingOps.length > 0,
+      title: lines.join('\n'),
+    }
+  })
+}
+
+/** `+` created, `⟲` updated, `−` removed — same glyphs as the inline marker
+ * and the KB viewer, so the reader learns one legend, not three. */
+export function pendingPillLabel(row: PendingPillRow): string {
+  return `${KB_CHANGE_GLYPH[row.change]} ${row.id}`
 }

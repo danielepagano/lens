@@ -1,8 +1,29 @@
 import { writable } from 'svelte/store'
-import type { WorkflowStepSnapshot } from '../services/api'
+import type { NodeData, PendingKb, WorkflowStepSnapshot } from '../services/api'
 
 export const currentAddress = writable<string | null>(null)
 export const nodeContent = writable<string>('')
+/**
+ * Pending KB proposals for the node currently in `nodeContent`.
+ *
+ * The node route serves them only for the cursor, so this goes null the moment
+ * you navigate away and comes back when you navigate back — which is exactly
+ * how the layer itself behaves. Set it wherever `nodeContent` is set; use
+ * `applyNodeData` rather than doing the two by hand.
+ */
+export const pendingKb = writable<PendingKb | null>(null)
+
+/** Both halves of a fetched node, so neither can be refreshed without the other. */
+export function applyNodeData(data: NodeData): void {
+  nodeContent.set(data.content)
+  pendingKb.set(data.pending_kb ?? null)
+}
+
+/** Clear both: no node in view. */
+export function clearNodeData(): void {
+  nodeContent.set('')
+  pendingKb.set(null)
+}
 
 export interface StreamingPreviewState {
   targetNode: string

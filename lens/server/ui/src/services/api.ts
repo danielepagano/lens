@@ -135,6 +135,10 @@ export interface Stats {
   include_ids_at_cursor: string[] | null
   /** Mentions still expanding at the cursor — good for one more AI turn. */
   mention_ids_at_cursor: string[] | null
+  /** How many `[kb-op …]: #` proposals stand at the cursor, unwritten. */
+  pending_kb_ops: number
+  /** One string per op whose patch no longer resolves under a hand edit. */
+  pending_kb_errors: string[]
   available_llms: string[]
   image_backends: ImageBackendStats[]
   has_mount: boolean
@@ -201,10 +205,51 @@ export interface TreeNode {
   hasHiddenChildren?: boolean
 }
 
+/**
+ * Pending KB proposals at the cursor — see `core/commands/kb_pending_view.py`.
+ *
+ * The `[kb-op …]: #` blocks a `design` or `advance` session writes are markdown
+ * comments, so every renderer in the stack hides them on purpose. This payload
+ * is how a client gets them back: the ops with their line spans and validation
+ * state, and the base/proposed pair for each object they would change. Served
+ * only for the cursor node; elsewhere the proposals are not in effect.
+ */
+export interface PendingKbOp {
+  index: number
+  /** `add` | `patch` | `tag` | `remove` | `applied`. */
+  op: string
+  id: string
+  /** 1-based inclusive span of the block in the node text. */
+  line_start: number
+  line_end: number
+  summary: string
+  status: 'ok' | 'error'
+  error: string
+}
+
+export interface PendingKbObject {
+  id: string
+  change: 'created' | 'updated' | 'removed'
+  /** Text without the proposal; `null` when the session is creating the object. */
+  base: string | null
+  /** Text with the proposal folded in; `null` when the session removes it. */
+  proposed: string | null
+  base_source: string | null
+}
+
+export interface PendingKb {
+  node: string
+  ops: PendingKbOp[]
+  objects: PendingKbObject[]
+  errors: string[]
+}
+
 export interface NodeData {
   address: string
   content: string
   children: string[]
+  /** Absent when this node has no proposals (the usual case). */
+  pending_kb?: PendingKb
 }
 
 export const getStats = (): Promise<Stats> =>
@@ -952,7 +997,8 @@ export const runCompress = (
  *  dataset outside it. `shadows` names datasets holding the same id that lost
  *  the merge — so a project item that forks a dataset one says so. */
 export interface KbSource {
-  kind: 'project' | 'dataset'
+  /** `pending` = an uncommitted proposal shadows whatever `label` says it is over. */
+  kind: 'project' | 'dataset' | 'pending'
   dataset: string | null
   shadows: string[]
   label: string

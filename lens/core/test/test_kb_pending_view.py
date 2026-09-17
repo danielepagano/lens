@@ -22,6 +22,7 @@ from lens.core.commands.kb_pending_view import (
 )
 from lens.core.kb_pending import KbOp, render_kb_ops
 from lens.core.knowledge import KnowledgeStore
+from lens.core.narrative import NarrativeNode
 
 
 def _git(tmp: Path, *args: str) -> None:
@@ -190,6 +191,39 @@ class TestStaleStackIsVisible(_ViewCase):
         self.store.evict_pending()
         lines = format_pending_lines(pending_kb_view(self.root))
         self.assertTrue(any(line.startswith("!") for line in lines))
+
+
+class TestOnlyTheCursorSpeaks(_ViewCase):
+    """A node that is not the cursor has no proposals, whatever it holds.
+
+    A closed session keeps its ``[kb-op …]: #`` blocks — that is what makes
+    ``rewind`` able to report what a discarded region wrote — so the blocks
+    outlive the layer. Reading them somewhere else would validate them against
+    the cursor's fold, which is a different stack: the op indices would not
+    line up and the objects would belong to another session entirely.
+    """
+
+    def test_a_non_cursor_node_reports_nothing(self) -> None:
+        self.propose(KbOp(op="add", id="loc.vault", body="# The Vault\n"))
+        self.assertFalse(pending_kb_view(self.root).is_empty())
+
+        # Same blocks, different node: history, not proposals.
+        other = self.root / "narrative" / "story" / "aside.md"
+        other.write_text(self.cursor.read_text())
+        node = NarrativeNode(
+            narrative_root=self.root / "narrative" / "story", key_path=("aside",)
+        )
+        self.assertTrue(pending_kb_view(self.root, node).is_empty())
+
+    def test_passing_the_cursor_explicitly_is_the_same_view(self) -> None:
+        self.propose(KbOp(op="add", id="loc.vault", body="# The Vault\n"))
+        node = NarrativeNode(
+            narrative_root=self.root / "narrative" / "story", key_path=()
+        )
+        self.assertEqual(
+            pending_payload(pending_kb_view(self.root, node)),
+            pending_payload(pending_kb_view(self.root)),
+        )
 
 
 if __name__ == "__main__":

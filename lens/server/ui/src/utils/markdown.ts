@@ -1,6 +1,9 @@
 import MarkdownIt from 'markdown-it'
 import type { LinePickRowState } from '../features/editor/cmLinePick'
+import type { PendingKbOp } from '../services/api'
 import { findFileHunks } from './diff'
+import { kbOpTargetIds, parseKbOpBlocks, type ParsedKbOp } from './kbOpBlocks'
+import { kbOpGlyph, kbOpVerb } from './kbPending'
 
 // Mirrors Python's ANNOTATION_RE: single-line [op(:id)?(/)?]: #
 const ANNOTATION_RE =
@@ -30,6 +33,13 @@ const FRONT_MATTER_OPEN_RE = /^\s*\[\s*$/
 const COMMENT_END_RE = /\]:\s*#\s*$/
 const REFERENCE_LINK_RE = /\]:\s*(?!\s*#\s*$)/
 const COMMENT_BLOCK_OPEN_RE = /^\s*\[/
+
+// Opening line of a pending KB proposal block: `[kb-op` (see core/kb_pending.py).
+// Hyphenated precisely so it falls outside the annotation grammar above, which
+// also means the generic comment branch would swallow it — and then the reader
+// sees the model *say* it changed an object with no way to check that against
+// what it actually did.  That was the regression #185 is about.
+const KB_OP_OPEN_RE = /^\s*\[kb-op\b/
 
 // Blockquote line: `> [label] rest` (nested `> >` allowed). Label becomes a pill in HTML output.
 const BLOCKQUOTE_PILL_LINE_RE = /^(\s*(?:>\s*)+)\[([^\]]+)\]\s+(.*)$/
@@ -571,6 +581,56 @@ function isFenceCloser(line: string, marker: '`' | '~', length: number): boolean
  *
  * Returns the result lines to append and the new value of `i`.
  */
+/**
+ * Consume a run of `[kb-op` blocks starting at *start*.
+ *
+ * *lineOffset* is the 0-based index of `lines[0]` within the node, so a marker
+ * carries the same 1-based opener line the payload does however deep the slice
+ * it was read from. Consecutive blocks (one tool call each, blank-line
+ * separated) come back as one run because that is how they were made: one
+ * reply that touched several objects.
+ */
+function consumeKbOpRun(
+  lines: string[],
+  start: number,
+  lineOffset: number,
+): { markers: ParsedKbOp[]; next: number } {
+  let runEnd = start
+  while (runEnd < lines.length) {
+    let scan = runEnd
+    while (scan < lines.length && lines[scan]!.trim() === '') scan++
+    if (scan >= lines.length || !KB_OP_OPEN_RE.test(lines[scan]!)) break
+    let blockEnd = scan
+    while (blockEnd < lines.length && !COMMENT_END_RE.test(lines[blockEnd]!)) blockEnd++
+    runEnd = Math.min(blockEnd + 1, lines.length)
+  }
+  const markers = parseKbOpBlocks(lines.slice(start, runEnd).join('\n')).map((op) => ({
+    ...op,
+    lineStart: op.lineStart + lineOffset + start,
+    lineEnd: op.lineEnd + lineOffset + start,
+  }))
+  return { markers, next: runEnd }
+}
+
+/**
+ * Index after the markdown comment block at *start*, or `-1` if there is none.
+ *
+ * Deliberate divergence from Python: only a block that actually closes is
+ * consumed. The Python walk runs to EOF on an unterminated block, which is
+ * harmless when stripping for a prompt and destructive here — a stray `[`
+ * above an indented line would blank the rest of the reader's own text.
+ */
+function commentBlockEnd(lines: string[], start: number): number {
+  const line = lines[start]!
+  if (!COMMENT_BLOCK_OPEN_RE.test(line) || REFERENCE_LINK_RE.test(line)) return -1
+  if (COMMENT_END_RE.test(line)) return start + 1
+  const next = lines[start + 1]
+  if (next === undefined || !(ANNOTATION_END_RE.test(next) || /^[ \t]/.test(next))) return -1
+  let end = start + 1
+  while (end < lines.length && !COMMENT_END_RE.test(lines[end]!)) end++
+  return end < lines.length ? end + 1 : -1
+}
+
 function renderAnnotationWithBody(
   lines: string[],
   bodyStart: number,
@@ -582,6 +642,7 @@ function renderAnnotationWithBody(
   overlay: NodeTransactionOverlay | null,
   removedByLine: Map<number, RemovedGroup[]>,
   cursorAddress: string | null,
+  kbOpStatus: KbOpStatusByLine | null,
 ): { output: string[]; nextI: number } {
   const bodyLines: string[] = []
   let j = bodyStart
@@ -622,7 +683,24 @@ function renderAnnotationWithBody(
         k += 1
         continue
       }
-      const outLine = bodyLines[k]
+      const outLine = bodyLines[k]!
+      // The `applied` marker a session close writes lands in the *parent*,
+      // above the close tag — which puts it inside an annotation body, where
+      // this loop and not the main one is what sees it.  Without these two
+      // branches the block reaches markdown-it as prose.
+      if (KB_OP_OPEN_RE.test(outLine)) {
+        flushAddedTransactionRun(output, addedRun)
+        const { markers, next } = consumeKbOpRun(bodyLines, k, bodyStart)
+        output.push(...renderKbOpMarkers(markers, kbOpStatus))
+        k = next
+        continue
+      }
+      const commentEnd = commentBlockEnd(bodyLines, k)
+      if (commentEnd >= 0) {
+        flushAddedTransactionRun(output, addedRun)
+        k = commentEnd
+        continue
+      }
       const info = fenceInfo(outLine)
       if (info) {
         flushAddedTransactionRun(output, addedRun)
@@ -674,6 +752,85 @@ function renderAnnotationWithBody(
   }
 }
 
+/** Validation for one block, keyed by its 1-based opening line. */
+export type KbOpStatusByLine = Map<number, { status: string; error: string; summary: string }>
+
+/**
+ * Index the node route's `pending_kb.ops` by line so a marker can say whether
+ * its proposal still resolves.
+ *
+ * The marker itself is rendered from the block text alone — it has to be, since
+ * proposals are served only for the cursor while the blocks outlive them. This
+ * only *decorates*.
+ */
+export function buildKbOpStatusByLine(ops: PendingKbOp[] | null | undefined): KbOpStatusByLine {
+  const byLine: KbOpStatusByLine = new Map()
+  for (const op of ops ?? []) {
+    byLine.set(op.line_start, { status: op.status, error: op.error, summary: op.summary })
+  }
+  return byLine
+}
+
+/**
+ * One chip per block, split in two because the two halves answer different
+ * questions and only one of them always has an answer.
+ *
+ * The body half opens the block itself — what the beat *intended*, which is
+ * readable on any node in any state. The arrow half opens the KB object as it
+ * stands now. On a historical node that object has moved on and there is no
+ * diff to be had (the base is a git question), so the intent is the half that
+ * survives; making it the default click is the point of the split.
+ *
+ * Neither half renders the patch inline: ops stack, and a chip is a pointer.
+ */
+function renderKbOpMarkers(markers: ParsedKbOp[], byLine: KbOpStatusByLine | null): string[] {
+  const chips: string[] = []
+  for (const marker of markers) {
+    const status = byLine?.get(marker.lineStart)
+    const errored = status?.status === 'error'
+    // Still a proposal, or already history? The verb cannot answer it — an
+    // `add` on a closed session's node has landed just as surely as the
+    // `applied` record beside it. The payload can: it lists every op at the
+    // cursor and is absent everywhere else, which is exactly the question.
+    // `applied` is never pending; it is the record that a close wrote.
+    const pending = marker.op !== 'applied' && (byLine?.has(marker.lineStart) ?? false)
+    const targets = kbOpTargetIds(marker)
+    const label = marker.id || (targets.length > 0 ? `${targets.length} written` : marker.op)
+    const title = [
+      marker.id ? `${kbOpVerb(marker.op)} ${marker.id}` : kbOpVerb(marker.op),
+      status?.summary ?? '',
+      errored ? status!.error : '',
+      pending ? 'Proposed — not written yet' : 'Already written',
+      'Click to read the block as written',
+    ]
+      .filter(Boolean)
+      .join('\n')
+    const cls = [
+      'kb-op-marker',
+      pending ? 'kb-op-marker--pending' : 'kb-op-marker--recorded',
+      errored ? 'kb-op-marker--error' : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+    const parts = [
+      `<button type="button" class="kb-op-marker-body" data-kb-op-line="${marker.lineStart}"` +
+        ` title="${escapeHtmlTitleAttr(title)}">` +
+        `${escapeHtmlText(`${kbOpGlyph(marker.op)} ${label}`)}${errored ? ' ⚠' : ''}</button>`,
+    ]
+    // One unambiguous target earns the shortcut; a close that wrote four
+    // objects does not, and its list is in the block the other half opens.
+    if (targets.length === 1) {
+      parts.push(
+        `<button type="button" class="kb-op-marker-open" data-kb-open-id="${escapeHtmlText(targets[0]!)}"` +
+          ` title="${escapeHtmlTitleAttr(`Open ${targets[0]!} in the knowledge base`)}">→</button>`,
+      )
+    }
+    chips.push(`<span class="${cls}">${parts.join('')}</span>`)
+  }
+  if (chips.length === 0) return []
+  return ['', `<div class="kb-op-markers">${chips.join('')}</div>`, '']
+}
+
 /**
  * Pre-process raw Lens markdown before passing to markdown-it.
  *
@@ -693,6 +850,7 @@ export function preprocessAnnotations(
   baseAddress: string | null,
   overlay: NodeTransactionOverlay | null = null,
   cursorAddress: string | null = null,
+  kbOpStatus: KbOpStatusByLine | null = null,
  ): string {
   const lines = markdown.split('\n')
   const result: string[] = []
@@ -760,6 +918,7 @@ export function preprocessAnnotations(
           overlay,
           removedByLine,
           cursorAddress,
+          kbOpStatus,
         )
         result.push(...output)
         i = nextI
@@ -811,9 +970,23 @@ export function preprocessAnnotations(
         overlay,
         removedByLine,
         cursorAddress,
+        kbOpStatus,
       )
       result.push(...output)
       i = nextI
+      continue
+    }
+
+    // --- Pending KB proposal blocks: `[kb-op` … `]: #`
+    // Before the generic comment branch, which would drop them.  A run of
+    // consecutive blocks (one tool call each, blank-line separated) collapses
+    // into one row of markers, because that is how they were made: one reply
+    // that touched several objects.
+    if (KB_OP_OPEN_RE.test(line)) {
+      flushAddedTransactionRun(result, addedRun)
+      const { markers, next } = consumeKbOpRun(lines, i, 0)
+      result.push(...renderKbOpMarkers(markers, kbOpStatus))
+      i = next
       continue
     }
 
@@ -821,28 +994,11 @@ export function preprocessAnnotations(
     // Structural, matching Python.  Placed after the annotation branches so
     // recognised annotations keep their own rendering; this only catches blocks
     // no annotation grammar claims.
-    if (COMMENT_BLOCK_OPEN_RE.test(line) && !REFERENCE_LINK_RE.test(line)) {
-      if (COMMENT_END_RE.test(line)) {
-        flushAddedTransactionRun(result, addedRun)
-        i++
-        continue
-      }
-      const next = lines[i + 1]
-      if (next !== undefined && (ANNOTATION_END_RE.test(next) || /^[ \t]/.test(next))) {
-        // Deliberate divergence from Python: only consume a block that actually
-        // closes.  The Python walk runs to EOF on an unterminated block, which is
-        // harmless when stripping for a prompt but destructive here — a stray `[`
-        // above an indented line would blank the rest of the reader's own text.
-        let end = i + 1
-        while (end < lines.length && !COMMENT_END_RE.test(lines[end]!)) {
-          end++
-        }
-        if (end < lines.length) {
-          flushAddedTransactionRun(result, addedRun)
-          i = end + 1
-          continue
-        }
-      }
+    const commentEnd = commentBlockEnd(lines, i)
+    if (commentEnd >= 0) {
+      flushAddedTransactionRun(result, addedRun)
+      i = commentEnd
+      continue
     }
 
     // --- Regular content line: apply diff overlay if present
