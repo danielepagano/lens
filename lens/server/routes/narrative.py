@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from lens.core.exceptions import LensException
+from lens.core.commands.kb_pending_view import pending_kb_view, pending_payload
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession, is_dataset_root
 from lens.server.dependencies import get_session, get_stream_lock, get_tts_coordinator
@@ -138,8 +139,16 @@ def node(
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"node not found: {address}")
 
-    return {
+    payload: dict[str, Any] = {
         "address": str(addr.node_only()),
         "content": content,
         "children": node_obj.child_keys(),
     }
+    # Proposals are markdown comments, so `content` hides them exactly as it
+    # hides them from the model.  This is where a client gets them back — the
+    # ops, their line spans, their validation state, and the base/proposed pair
+    # for a diff.  Only for the cursor: elsewhere they are not in effect.
+    pending = pending_kb_view(session.project_root, node_obj)
+    if not pending.is_empty():
+        payload["pending_kb"] = pending_payload(pending)
+    return payload

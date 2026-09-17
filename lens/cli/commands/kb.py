@@ -514,6 +514,30 @@ def refs(
             typer.echo(format_ref_line(ref))
 
 
+@app.command("pending")
+def pending(
+    as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
+) -> None:
+    """Show KB changes the open session has proposed but not written."""
+    from lens.core.commands.kb_pending_view import (
+        format_pending_lines,
+        pending_kb_view,
+        pending_payload,
+    )
+    from lens.core.project import find_project_root
+
+    try:
+        view = pending_kb_view(find_project_root())
+    except (LensException, RuntimeError) as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
+    if as_json:
+        typer.echo(json.dumps(pending_payload(view), indent=2))
+        return
+    for line in format_pending_lines(view):
+        typer.echo(line)
+
+
 @app.command("list-tags")
 def list_tags(
     type_filter: str | None = typer.Option(None, "--type", "-t", help=ARG_TYPE_FILTER),
