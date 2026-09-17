@@ -36,7 +36,7 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "modalities.attributed_dialogue.rules": PromptSpec(
         "modalities.attributed_dialogue.rules", frozenset()
     ),
-    "modalities.kb_fence.rules": PromptSpec("modalities.kb_fence.rules", frozenset()),
+    "modalities.kb_ops.rules": PromptSpec("modalities.kb_ops.rules", frozenset()),
     "modalities.tool_fence_awareness.hint": PromptSpec(
         "modalities.tool_fence_awareness.hint", frozenset()
     ),

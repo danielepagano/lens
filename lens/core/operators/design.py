@@ -75,7 +75,7 @@ class DesignOperator(SessionOperator):
     expand_facets: ClassVar[bool] = True
     module_prefix: ClassVar[str] = "design."
     required_modalities: ClassVar[frozenset[str]] = frozenset(
-        {"kb_fence", "tool_fence_awareness"}
+        {"kb_ops", "tool_fence_awareness"}
     )
 
     @classmethod

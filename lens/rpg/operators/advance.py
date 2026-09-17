@@ -323,6 +323,9 @@ class AdvanceOperator(Operator):
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     use_command_tools: ClassVar[bool] = True
     supports_kb_ops: ClassVar[bool] = True
+    required_modalities: ClassVar[frozenset[str]] = frozenset(
+        {"kb_ops", "tool_fence_awareness"}
+    )
     expand_facets: ClassVar[bool] = True
 
     @property

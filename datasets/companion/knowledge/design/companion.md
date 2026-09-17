@@ -59,43 +59,16 @@ Each object has a distinct job. Do not repeat a detail across two of them.
 
 ## KB Output Rules
 
-Emit fenced `kb` blocks with YAML front matter (`id`, optional `tags`, optional `remove-tags`). Tags are additive; removing one needs `remove-tags`.
+Write each object with `kb_add`, then link it with `kb_tag`.
 
-```kb
----
-id: companion.<name>
-tags:
-  - psyche.<name>
-  - life.<name>
----
-# Companion Name
+- `kb_add companion.<name>` — the compact surface: address, voice, body, boundaries.
+  Then `kb_tag companion.<name> tags=["psyche.<name>", "life.<name>"]`.
+- `kb_add psyche.<name>` — the seeded depth.
+  Then `kb_tag psyche.<name> tags=["remember.psyche"]`.
+- `kb_add life.<name>` — the seeded continuity.
+  Then `kb_tag life.<name> tags=["remember.life"]`.
 
-...compact surface: address, voice, body, boundaries...
-```
-
-```kb
----
-id: psyche.<name>
-tags:
-  - remember.psyche
----
-# Companion Name
-
-...seeded depth...
-```
-
-```kb
----
-id: life.<name>
-tags:
-  - remember.life
----
-# Companion Name
-
-...seeded continuity...
-```
-
-To link objects to an existing companion without rewriting its body, emit a tag-only block: an empty body leaves the stored text alone and applies the tags.
+To link objects to a companion that already exists, call `kb_tag` on its own: it changes tags only and never touches the stored text.
 
 ## Failure Modes To Avoid
 
