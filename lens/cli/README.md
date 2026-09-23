@@ -88,6 +88,7 @@ lens explain /chapter-1 42          # as of line 42 of that node
 lens explain --operator play        # assemble as play (auto-pins and modalities differ)
 lens explain --sort size            # biggest components first, within each block
 lens explain --json                 # the full report, for tooling
+lens explain --messages             # the prompt text itself, one header per message
 ```
 
 Arguments: `[ADDRESS] [LINE]`
@@ -113,6 +114,7 @@ Options:
 - `-p` / `--prompt <text>` — include a prompt, as if passed to the operator.
 - `-s` / `--sort order|size|id` — order components within each block (default `order`).
 - `--json` — emit the full report instead of the table.
+- `--messages` — print the assembled `[system, user]` messages verbatim instead of the table: the exact text the operator would send, with every expansion, companion, in-place mention and state divert already applied. Each message is headed `===== <role> =====`; the context line and warnings go to stderr, so stdout is only the prompt. With `--json`, adds a `messages` array to the report.
 - `-v` / `--verbose` — show block-framing and message-separator rows so the columns visibly add up, list components that never reach the model (warnings, participants), and print the cache-position note.
 - `--chars-per-token <n>` — divisor for the token estimate (default 4).
 

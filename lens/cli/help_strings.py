@@ -294,6 +294,10 @@ OPT_EXPLAIN_OPERATOR = (
 OPT_EXPLAIN_PROMPT = "Prompt text to include, as if passed to the operator."
 OPT_EXPLAIN_SORT = "Order components within each block: order, size, or id."
 OPT_EXPLAIN_JSON = "Emit the full report as JSON instead of a table."
+OPT_EXPLAIN_MESSAGES = (
+    "Print the assembled messages verbatim, as the operator would send them, "
+    "instead of the table.  With --json, adds them to the report."
+)
 OPT_EXPLAIN_VERBOSE = (
     "Show block framing and separator rows so the columns add up, list "
     "components that never reach the model, and print the cache-position note."

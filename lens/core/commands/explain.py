@@ -227,9 +227,13 @@ class ExplainReport:
     pinned_ids: tuple[str, ...]
     in_place: tuple[ExplainInPlace, ...]
     warnings: tuple[str, ...]
+    # The assembled messages themselves, exactly as the operator would send
+    # them.  Kept out of ``to_dict`` by default: the report is a measurement,
+    # and the text can be most of a context window.
+    messages: tuple[dict[str, str], ...] = ()
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
+    def to_dict(self, *, include_messages: bool = False) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "address": self.address,
             "node": self.node,
             "operator": self.operator,
@@ -251,6 +255,9 @@ class ExplainReport:
             "in_place": [i.to_dict() for i in self.in_place],
             "warnings": list(self.warnings),
         }
+        if include_messages:
+            data["messages"] = [dict(m) for m in self.messages]
+        return data
 
 
 # ---------------------------------------------------------------------------
@@ -813,6 +820,7 @@ def _build_report(
         pinned_ids=tuple(crawl_result.pinned_ids),
         in_place=_in_place_from_rows(blocks),
         warnings=tuple(warnings),
+        messages=tuple(messages),
     )
 
 

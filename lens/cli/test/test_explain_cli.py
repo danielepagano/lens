@@ -60,6 +60,31 @@ class TestExplainCli(unittest.TestCase):
         self.assertIn("kb:person.amy", out)
         self.assertIn("TOTAL", out)
 
+    def test_messages_prints_the_prompt_text_verbatim(self) -> None:
+        result = _run(self.project_dir, "--messages")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = result.stdout
+        self.assertIn("===== system =====", out)
+        self.assertIn("===== user =====", out)
+        self.assertIn("Amy entered the wood.", out)
+        self.assertNotIn("TOTAL", out)
+        # The context header is for the reader, not part of the prompt.
+        self.assertNotIn("Context at", out)
+        self.assertIn("Context at", result.stderr)
+
+    def test_messages_text_matches_the_reported_sizes(self) -> None:
+        report = json.loads(_run(self.project_dir, "--json", "--messages").stdout)
+        messages = report["messages"]
+        self.assertEqual(len(messages), report["totals"]["messages"])
+        self.assertEqual(
+            [len(m["content"].encode("utf-8")) for m in messages],
+            report["totals"]["message_bytes"],
+        )
+
+    def test_json_omits_messages_unless_asked(self) -> None:
+        report = json.loads(_run(self.project_dir, "--json").stdout)
+        self.assertNotIn("messages", report)
+
     def test_default_table_omits_framing_noise(self) -> None:
         out = _strip_ansi(_run(self.project_dir).stdout)
         self.assertNotIn("(block framing)", out)

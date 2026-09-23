@@ -58,6 +58,15 @@ operator), and a module the *model* pulls in mid-reply is chosen at generation
 time — it becomes visible only afterwards, as the `[include: …]` annotation Lens
 persists for it.
 
+To see roughly the same input an operator gets, read the text instead of the
+listing: `lens explain -o <operator> --messages` prints the assembled `[system,
+user]` messages verbatim — pins, expansions, companions, in-place mentions and
+the `state` tail already applied, dataset and prompt layers already resolved.
+Add `-p "<prompt>"` to include what you would pass it. The context line and
+warnings go to stderr, so stdout is the prompt alone. What it cannot show: the tool
+definitions (they travel beside the messages), and any module the model chooses
+to load mid-reply.
+
 ## What fails silently
 
 **1. `knowledge/` is not the knowledge store.** The store is a merge of this
