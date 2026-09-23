@@ -327,13 +327,18 @@ class TestCliSkill:
         # The rpg dataset ships its own conventions layer.
         assert "Conventions of the `rpg` dataset" in r.stdout
 
-    def test_it_lists_the_design_modules_and_requestable_modules(
-        self, cli_project: Path
-    ) -> None:
-        r = _lens("skill", cwd=cli_project)
+    def test_stats_carries_the_inventory_skill_points_at(self, cli_project: Path) -> None:
+        r = _lens("stats", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
 
-        assert "### Design modules" in r.stdout
-        assert "rules.skirmish" in r.stdout
+        assert "design (" in r.stdout
+        assert "rules.skirmish (play)" in r.stdout
+
+    def test_the_rpg_topic_prints_what_the_gist_leaves_out(self, cli_project: Path) -> None:
+        r = _lens("skill", "rpg", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+
+        assert "Deltas only" in r.stdout
 
     def test_it_does_not_leak_the_guidance_into_the_committed_pointer(
         self, cli_project: Path

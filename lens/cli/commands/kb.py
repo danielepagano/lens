@@ -85,7 +85,13 @@ def add(
     content: str | None = typer.Argument(None, help=ARG_CONTENT_OPT),
     use_template: bool = typer.Option(False, "-t", "--use-template", help="Use template content"),
 ) -> None:
-    """Upsert a single knowledge object."""
+    """Upsert a single knowledge object.
+
+    CONTENT replaces the whole body. The write always lands in this project's
+    own ``knowledge/``: upserting an id that resolves from a dataset forks a
+    project-local copy, and the dataset's version is no longer read. Tags are
+    stored separately (``lens kb tag``).
+    """
     try:
         kb_add(id, content, use_template)
     except LensException as e:
@@ -518,7 +524,16 @@ def refs(
 def pending(
     as_json: bool = typer.Option(False, "--json", help=OPT_KB_JSON),
 ) -> None:
-    """Show KB changes the open session has proposed but not written."""
+    """Show KB changes the open session has proposed but not written.
+
+    While a ``design`` or ``advance`` session is open at the cursor, its KB
+    writes are proposals: every read (``kb get``, ``kb list``, ``kb search``,
+    ``+`` expansion, the crawl) sees them, stamped ``SOURCE=pending``, but
+    nothing reaches ``knowledge/`` or git until the session closes with
+    ``--end``. Lists each proposal, where it sits in the node, and whether it
+    still resolves. Moving the cursor elsewhere (``lens use``) turns the layer
+    off; nothing is written either way.
+    """
     from lens.core.commands.kb_pending_view import (
         format_pending_lines,
         pending_kb_view,

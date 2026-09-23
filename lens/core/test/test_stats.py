@@ -911,3 +911,36 @@ class TestStatsModalities(unittest.TestCase):
     finally:
       ChatOperator.required_modalities = frozenset()
 
+
+
+class TestStatsKnowledgeInventory(unittest.TestCase):
+  """The inventory an agent asks for by name, now that `lens skill` does not list it."""
+
+  def setUp(self) -> None:
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.module_requests import clear_module_registry
+
+    KnowledgeStore.clear_registry()
+    clear_module_registry()
+
+  def _project_with_testing_dataset(self, tmp: Path) -> ProjectSession:
+    session, _ = _make_project(_init_repo(tmp))
+    (tmp / "lens.toml").write_text('[project]\nnarrative = "test"\ndatasets = ["testing"]\n')
+    _add_kb(tmp, "person", "rowan", "ROWAN\nA ranger.\n")
+    return session
+
+  def test_types_are_counted_over_the_merged_store(self) -> None:
+    with tempfile.TemporaryDirectory() as td:
+      tmp = Path(td)
+      result = get_stats(self._project_with_testing_dataset(tmp))
+
+      self.assertGreaterEqual(result.kb_type_counts["person"], 2)
+      self.assertEqual(sum(result.kb_type_counts.values()), result.kb_count)
+      self.assertEqual(result.kb_project_owned, 1)
+
+  def test_registered_modules_are_reported_with_who_may_ask(self) -> None:
+    with tempfile.TemporaryDirectory() as td:
+      tmp = Path(td)
+      result = get_stats(self._project_with_testing_dataset(tmp))
+
+      self.assertIn(("rules.skirmish", ("play",)), result.requestable_modules)

@@ -314,12 +314,13 @@ class TestDiscoverySurfaces(_OverlayCase):
         entries = {entry.id: entry for entry in kb_list(store=self.store)}
         self.assertIn("The Vault", entries["loc.vault"].headline)
 
-    def test_skill_facts_ignore_the_cursor(self) -> None:
-        from lens.core.commands.skill import describe_project
+    def test_skill_output_ignores_pending_proposals(self) -> None:
+        """It describes the project on disk, not what an open session proposes."""
+        from lens.core.commands.skill import render_guidance
 
-        before = describe_project(self.root).object_count
+        before = render_guidance(self.root)
         self.propose(KbOp(op="add", id="loc.vault", body="Sealed"))
-        self.assertEqual(describe_project(self.root).object_count, before)
+        self.assertEqual(render_guidance(self.root), before)
 
 
 class TestOverlayErrorsAreVisible(_OverlayCase):

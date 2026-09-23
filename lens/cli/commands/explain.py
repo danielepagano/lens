@@ -15,6 +15,7 @@ from lens.cli.help_strings import (
     HELP_OPTS,
     OPT_EXPLAIN_CHARS_PER_TOKEN,
     OPT_EXPLAIN_JSON,
+    OPT_EXPLAIN_MESSAGES,
     OPT_EXPLAIN_OPERATOR,
     OPT_EXPLAIN_PROMPT,
     OPT_EXPLAIN_SORT,
@@ -51,6 +52,7 @@ def explain(
     prompt: str | None = typer.Option(None, "--prompt", "-p", help=OPT_EXPLAIN_PROMPT),
     sort: str = typer.Option(SORT_ORDER, "--sort", "-s", help=OPT_EXPLAIN_SORT),
     as_json: bool = typer.Option(False, "--json", help=OPT_EXPLAIN_JSON),
+    messages: bool = typer.Option(False, "--messages", help=OPT_EXPLAIN_MESSAGES),
     verbose: bool = typer.Option(False, "--verbose", "-v", help=OPT_EXPLAIN_VERBOSE),
     chars_per_token: int = typer.Option(
         DEFAULT_CHARS_PER_TOKEN,
@@ -74,10 +76,25 @@ def explain(
         raise typer.Exit(1)
 
     if as_json:
-        typer.echo(json.dumps(report.to_dict(), indent=2))
+        typer.echo(json.dumps(report.to_dict(include_messages=messages), indent=2))
+        return
+
+    if messages:
+        _print_messages(report)
         return
 
     _print_table(report, verbose=verbose)
+
+
+def _print_messages(report: ExplainReport) -> None:
+    """Print each message under a role header; header and warnings go to stderr
+    so stdout is exactly the text the model would receive."""
+    typer.echo(f"Context at {report.address} — operator: {report.operator}", err=True)
+    for message in report.messages:
+        typer.echo(f"===== {message.get('role', '?')} =====")
+        typer.echo(message.get("content", ""))
+    for warning in report.warnings:
+        typer.echo(f"warning: {warning}", err=True)
 
 
 def _percent(size: int, total: int) -> float:

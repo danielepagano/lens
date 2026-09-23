@@ -21,13 +21,14 @@ def resolve_report_target(
     """Resolve *address* (or the cursor) to a node, its address string, and a line.
 
     An explicit *line* wins over an ``@line`` suffix on the address, so
-    ``lens explain /ch1@4 7`` reports as of line 7.
+    ``lens explain /ch1@4 7`` reports as of line 7. ``.`` is the cursor, the
+    spelling anyone reaches for first.
     """
     narrative = session.active_narrative
     if narrative is None:
         raise LensException("no active narrative (run 'lens use <slug>' first)")
 
-    if address is None:
+    if address is None or address == ".":
         node = narrative.find_cursor()
         return node, str(node.to_address()), line
 

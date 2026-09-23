@@ -3,7 +3,13 @@
 This dataset models characters with more depth than a scene needs at a glance, and
 surfaces that as chat. Its features are opt-in **by construction**: creating the
 object is the on switch, not creating it is the off switch, and the granularity is
-per character. There is nothing to configure.
+per character. There is nothing to configure. Before creating or tagging a
+`psyche.*`, `life.*`, `companion.*` or `human.*` object, read the full conventions:
+depth attaches by tag and `+` is the switch, a character never gets a
+second surface, these objects are stored in the character's own voice, and only
+some of them may carry `remember.*` tags.
+
+<!-- more -->
 
 | Object | Holds | Grown by |
 |---|---|---|
@@ -39,10 +45,6 @@ a journal — and a surface is paid for on every turn the character appears.
 → surface. What someone wants from the person in front of them is needed only when
 the scene is about them → psyche. The test is not how interesting the fact is; it is
 how often it would be paid for.
-
-**`rules.psyche` arrives on its own.** It is the `rules.<type>` companion for
-`psyche.*` and is added whenever one is in scope. Tagging it anywhere is a second,
-staleable copy of a link the machinery already makes.
 
 **Skip `life.<key>` where continuity is already tracked.** It records what is
 currently true. Where a project keeps that in a schedule, a plan object, or a

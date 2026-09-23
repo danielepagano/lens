@@ -45,22 +45,24 @@ def stats(
     if result.dataset_name is not None:
         typer.echo(f"Dataset: {result.dataset_name}")
     typer.echo("Knowledge Store")
-    if result.kb_types:
-        typer.echo(f"  Types: {','.join(sorted(result.kb_types))}")
+    if result.kb_type_counts:
+        types = ", ".join(
+            f"{name} ({count})" for name, count in sorted(result.kb_type_counts.items())
+        )
+        typer.echo(f"  Types: {types}")
     else:
         typer.echo("  Types: (none)")
-    typer.echo(f"  Objects: {result.kb_count}")
+    typer.echo(f"  Objects: {result.kb_count} ({result.kb_project_owned} in this repository)")
+    if result.requestable_modules:
+        modules = ", ".join(
+            f"{kb_id} ({'/'.join(ops)})" for kb_id, ops in result.requestable_modules
+        )
+        typer.echo(f"  Model-requestable modules: {modules}")
     if result.dataset_name is None:
         if result.current_datasets:
             typer.echo(f"Current datasets: {','.join(result.current_datasets)}")
         else:
             typer.echo("Current datasets: (none)")
-
-    if result.dataset_configs:
-        for ds_name, cfg in result.dataset_configs.items():
-            typer.echo(f"Dataset config ({ds_name}):")
-            for key, value in cfg.items():
-                typer.echo(f"  {key} = {value}")
 
     if result.available_llms:
         typer.echo(f"Available LLMs: {','.join(result.available_llms)}")

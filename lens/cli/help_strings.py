@@ -17,9 +17,10 @@ HELP_OPTS = ["-h", "--help"]
 # ═══════════════════════════════════════════════════════════════════
 APP = (
     "Lens: narrative engine with fractal summarization.\n\n"
-    "New to this project — human or agent? Run `lens skill`: it prints how this\n"
-    "project is put together (datasets, types, tags, modules) and the conventions\n"
-    "that break silently, generated now rather than committed and left to go stale."
+    "New to this project — human or agent? Run `lens skill`: it prints how a\n"
+    "Lens project is put together, where this one's datasets live, and the\n"
+    "conventions that break silently, generated now rather than committed and\n"
+    "left to go stale. `lens stats` shows what the project holds."
 )
 
 # ═══════════════════════════════════════════════════════════════════
@@ -28,7 +29,10 @@ APP = (
 CMD_INIT = "Initialize a Lens project in the current git repo."
 CMD_USE = "Choose which narrative tree to work on (creates the folder structure if needed)."
 CMD_CHECK = "Verify lens.toml, API keys, mount, and paths."
-CMD_STATS = "Count knowledge objects and narrative nodes."
+CMD_STATS = (
+    "Show what the project holds and where the cursor is: knowledge types and "
+    "counts, model-requestable modules, datasets, narratives, pins at the cursor."
+)
 CMD_COMMIT = "Save pending work by staging all changes. Run 'lens checkpoint' to commit."
 CMD_CHECKPOINT = (
     "Commit all staged changes with a message and push to the remote. "
@@ -54,13 +58,22 @@ CMD_PIN = (
     "at a node. Pins tell the AI what facts are 'in frame' for a scene; "
     "they inherit from root to cursor."
 )
-CMD_PROMPT = "Manage operator prompts and project-local prompt overrides."
+CMD_PROMPT = (
+    "Manage operator prompts and project-local prompt overrides.\n\n"
+    "Prompt text layers like knowledge: bundled defaults, then each dataset's "
+    "`prompts/prompts.toml`, then a selected pack, then this project's "
+    "override, which `set` writes. `get` prints the winning layer. Guidance the whole "
+    "system needs belongs in an operator prompt; guidance one task needs "
+    "belongs in that task's module."
+)
 CMD_SKILL = (
     "Print what an agent needs to know about this project, generated now.\n\n"
-    "Composed from bundled invariants, this project's live shape, dataset\n"
-    "conventions, and project house rules in `skill/skill.md`. Use --install\n"
-    "to commit a thin pointer that tells an agent to run this command."
+    "Composed from bundled invariants, where this project's datasets live,\n"
+    "each dataset's gist, and project house rules in `skill/skill.md`.\n"
+    "`lens skill <dataset>` prints that dataset's full conventions. Use\n"
+    "--install to commit a thin pointer that tells an agent to run this command."
 )
+ARG_SKILL_TOPIC = "A dataset whose full conventions to print (the main output names them)."
 CMD_MEDIA = "Image generation, TTS, attachment, and related commands."
 CMD_MEDIA_COMPOSITE = "Background-removal / layering tools for Visual Novel compositing."
 CMD_RENAME = "Rename a narrative node."
@@ -291,9 +304,17 @@ OPT_EXPLAIN_OPERATOR = (
     "Assemble the prompt as this operator instead of the one detected at the "
     "cursor (auto-pins and required modalities differ per operator)."
 )
-OPT_EXPLAIN_PROMPT = "Prompt text to include, as if passed to the operator."
+OPT_EXPLAIN_PROMPT = (
+    "Prompt text to include, as if passed to the operator. Lands where that "
+    "operator puts it: the task for most, the player's line in the passage "
+    "for 'play'."
+)
 OPT_EXPLAIN_SORT = "Order components within each block: order, size, or id."
 OPT_EXPLAIN_JSON = "Emit the full report as JSON instead of a table."
+OPT_EXPLAIN_MESSAGES = (
+    "Print the assembled messages verbatim, as the operator would send them, "
+    "instead of the table.  With --json, adds them to the report."
+)
 OPT_EXPLAIN_VERBOSE = (
     "Show block framing and separator rows so the columns add up, list "
     "components that never reach the model, and print the cache-position note."
@@ -313,17 +334,19 @@ OPT_EXPLAIN_CHARS_PER_TOKEN = (
 )
 ARG_EXPLAIN_ADDR = (
     "Node address to report on.  Defaults to the current cursor.  "
-    "Use '/' for the narrative root or '/@cursor' for the cursor."
+    "Use '/' for the narrative root or '.' (or '/@cursor') for the cursor."
 )
 ARG_EXPLAIN_LINE = (
     "Line number within the node (1-based).  Reports the prompt as it would "
-    "be assembled with the current passage ending at that line."
+    "be assembled with the node ending at that line, conversation turns "
+    "included — pass the line above a beat's open tag to see the prompt that "
+    "beat was generated from, against the knowledge store as it is now."
 )
 
 # ── lens spine ────────────────────────────────────────────────────
 ARG_SPINE_ADDR = (
     "Node address to reconstruct the spine at.  Defaults to the current "
-    "cursor.  Use '/' for the narrative root or '/@cursor' for the cursor."
+    "cursor.  Use '/' for the narrative root or '.' (or '/@cursor') for the cursor."
 )
 ARG_SPINE_LINE = (
     "Line number within the node (1-based).  Truncates the cursor node's own "
@@ -674,6 +697,11 @@ DESC_EXPLAIN = (
     "its size in bytes and estimated tokens, its share of the total, and why "
     "it is there — a pin on a specific ancestor node, a '+' expansion, an "
     "'@' mention, a rules companion, a session module, or a modality.\n\n"
+    "Pass --operator: auto-pins differ, so the same cursor resolves a "
+    "different set for 'write' than for 'play'. Not shown: the tool "
+    "definitions, which travel beside the messages, and any module the model "
+    "loads mid-reply — that becomes visible afterwards, as the "
+    "'[include: …]' annotation Lens persists for it.\n\n"
     "Read-only: nothing is written, no transaction is opened, and no model is "
     "called, so it works with no LLM configured.\n\n"
     "Token counts are an estimate (bytes divided by a fixed divisor); byte "

@@ -227,9 +227,13 @@ class ExplainReport:
     pinned_ids: tuple[str, ...]
     in_place: tuple[ExplainInPlace, ...]
     warnings: tuple[str, ...]
+    # The assembled messages themselves, exactly as the operator would send
+    # them.  Kept out of ``to_dict`` by default: the report is a measurement,
+    # and the text can be most of a context window.
+    messages: tuple[dict[str, str], ...] = ()
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
+    def to_dict(self, *, include_messages: bool = False) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "address": self.address,
             "node": self.node,
             "operator": self.operator,
@@ -251,6 +255,9 @@ class ExplainReport:
             "in_place": [i.to_dict() for i in self.in_place],
             "warnings": list(self.warnings),
         }
+        if include_messages:
+            data["messages"] = [dict(m) for m in self.messages]
+        return data
 
 
 # ---------------------------------------------------------------------------
@@ -450,8 +457,15 @@ def _block_rendered_text(
     return wrap_block(prompts.get(title_key), body) or body
 
 
+def _node_text(node: NarrativeNode) -> str:
+    try:
+        return node.md_path().read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ""
+
+
 def _turn_components(
-    operator: Operator, crawl_result: CrawlResult
+    operator: Operator, crawl_result: CrawlResult, passage_raw: str | None
 ) -> list[tuple[str, str]]:
     """Re-derive the conversation turns the operator's prompt would use.
 
@@ -464,7 +478,9 @@ def _turn_components(
     node = crawl_result.current_node
     if node is None or not node.exists():
         return []
-    return parse_passage_turns(operator.passage_view(crawl_result, node))
+    return parse_passage_turns(
+        operator.passage_view(crawl_result, node, passage_raw=passage_raw)
+    )
 
 
 def _sorted(
@@ -533,22 +549,42 @@ def explain_context(
     if prompt is not None:
         params["prompt"] = prompt
 
-    spec_kwargs: dict[str, Any] = {"storage": storage}
-    if effective_line is not None:
-        spec_kwargs["current_passage_override"] = current_passage_override(
-            node, effective_line
-        )
-
-    spec = op_cls.crawl_spec(
-        node, params, session=session, narrative=narrative, **spec_kwargs
-    )
     from lens.core.context import crawl
 
-    crawl_result = crawl(spec)
+    def _crawl(passage: str | None) -> CrawlResult:
+        spec_kwargs: dict[str, Any] = {"storage": storage}
+        if passage is not None:
+            spec_kwargs["current_passage_override"] = passage
+        return crawl(
+            op_cls.crawl_spec(
+                node, params, session=session, narrative=narrative, **spec_kwargs
+            )
+        )
+
+    passage_raw = (
+        current_passage_override(node, effective_line)
+        if effective_line is not None
+        else None
+    )
+    crawl_result = _crawl(passage_raw)
+    if prompt is not None:
+        # An operator that persists the prompt into the node (`play`) never
+        # reads it from params; append its line where the real run would, then
+        # crawl again, as the run does after writing it.
+        line_block = op_cls.explain_prompt_line(prompt, crawl_result, params)
+        if line_block:
+            base = passage_raw if passage_raw is not None else _node_text(node)
+            sep = "" if not base.strip() else ("\n" if base.endswith("\n") else "\n\n")
+            passage_raw = base + sep + line_block
+            crawl_result = _crawl(passage_raw)
     operator_instance = op_cls(storage, narrative)
     try:
         messages = operator_instance.build_messages(
-            crawl_result, params, session=session, narrative=narrative
+            crawl_result,
+            params,
+            session=session,
+            narrative=narrative,
+            passage_raw=passage_raw,
         )
     except LensException:
         raise
@@ -556,6 +592,12 @@ def explain_context(
         raise LensException(
             f"could not assemble the {op_cls.name} prompt at {address_str}: {e}"
         ) from e
+
+    if prompt and not any(prompt in m.get("content", "") for m in messages):
+        warnings.append(
+            f"the -p text does not appear in the {op_cls.name} prompt as assembled "
+            "here; the operator may consume it some other way"
+        )
 
     graph = crawl_result.render_graph
     if graph is None:  # pragma: no cover - assemble_prompt always sets it
@@ -569,6 +611,7 @@ def explain_context(
         address_str=address_str,
         node=node,
         line=effective_line,
+        passage_raw=passage_raw,
         sort=sort,
         chars_per_token=chars_per_token,
         warnings=warnings,
@@ -613,6 +656,7 @@ def _build_report(
     address_str: str,
     node: NarrativeNode,
     line: int | None,
+    passage_raw: str | None,
     sort: str,
     chars_per_token: int,
     warnings: list[str],
@@ -697,7 +741,7 @@ def _build_report(
     if rendered_as_turns:
         turn_rows: list[ExplainComponent] = []
         for index, (role, content) in enumerate(
-            _turn_components(operator_instance, crawl_result)
+            _turn_components(operator_instance, crawl_result, passage_raw)
         ):
             for segment in _split_in_place(
                 f"turn:{index + 1}:{role}",
@@ -813,6 +857,7 @@ def _build_report(
         pinned_ids=tuple(crawl_result.pinned_ids),
         in_place=_in_place_from_rows(blocks),
         warnings=tuple(warnings),
+        messages=tuple(messages),
     )
 
 

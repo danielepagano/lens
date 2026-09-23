@@ -42,9 +42,15 @@ A dataset is the thing that knows its own conventions, and the ones that matter
 are the ones that break *silently* — a naming rule an operator keys off, a tag
 that must not be applied, a budget that is paid on every beat. Write those here
 and `lens skill` emits them to any agent working in a project that selects this
-dataset, after the bundled invariants and the project's live shape. Ordinary
-reference material belongs in the README instead: this text is read on every
-agent session, so it pays the same length discipline a rules booklet does.
+dataset, after the bundled invariants.
+
+Open with a **gist** and end it with a `<!-- more -->` line. The gist is all
+`lens skill` prints — it is read on every agent session, alongside every other
+selected dataset's — so it says what the dataset is and which kinds of work need
+the rest. Everything after the marker is printed by `lens skill <dataset>`, gist
+included, when an agent is about to write this dataset's kind of content. A file
+with no marker is printed whole every time. Ordinary reference material belongs in
+the README instead.
 
 The same path in a *project* holds house rules, and in a dataset checkout it is
 the layer being edited — `lens skill --sources` says which is which.

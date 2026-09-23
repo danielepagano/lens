@@ -17,17 +17,19 @@ import unittest
 from pathlib import Path
 
 from lens.core.commands.skill import (
+    GIST_BREAK,
     SKILL_RELPATH,
-    CommandEntry,
     check_skill,
     collect_layers,
     describe_project,
     install_skill,
     pointer_text,
     project_skill_file,
-    render_commands,
     render_guidance,
+    render_topic,
+    topic_names,
 )
+from lens.core.exceptions import LensException
 from lens.core.knowledge import KnowledgeStore
 from lens.core.module_requests import clear_module_registry
 
@@ -182,98 +184,90 @@ class TestGeneratedFacts(_ProjectCase):
         self.assertIsNotNone(detail.path)
         self.assertFalse(detail.inside_repo)
 
-    def test_it_counts_the_merged_store_not_the_checkout(self) -> None:
-        facts = describe_project(self.root)
-
-        self.assertGreater(facts.object_count, 0)
-        self.assertEqual(facts.project_owned, 0)
-
-    def test_a_project_copy_of_a_dataset_object_reports_as_a_fork(self) -> None:
-        store = KnowledgeStore.for_project(self.root)
-        store.ensure_local_copy("person.hero")
-        KnowledgeStore.clear_registry()
-
-        facts = describe_project(self.root)
-
-        self.assertIn("person.hero", facts.forks)
-        self.assertEqual(facts.overrides, [])
-
-    def test_type_names_are_not_repeated_as_tag_vocabulary(self) -> None:
-        """A type matches as a tag, and the type listing already said so."""
-        store = KnowledgeStore.for_project(self.root)
-        store.store_object("person.rowan", "ROWAN\nA ranger.\n")
-        store.add_tags("person.rowan", ["wounded"])
-        KnowledgeStore.clear_registry()
-
-        facts = describe_project(self.root)
-
-        self.assertIn("wounded", facts.plain_tags)
-        self.assertNotIn("person", facts.plain_tags)
-        self.assertNotIn("pc", facts.plain_tags)
-
-    def test_key_value_tags_are_reported_as_families_not_listed_out(self) -> None:
-        store = KnowledgeStore.for_project(self.root)
-        store.store_object("person.rowan", "ROWAN\nA ranger.\n")
-        store.add_tags("person.rowan", ["cr:1-4", "cr:2"])
-        KnowledgeStore.clear_registry()
-
-        facts = describe_project(self.root)
-
-        self.assertIn(("cr", 2), facts.tag_families)
-        self.assertNotIn("cr:1-4", facts.plain_tags)
-
-    def test_dot_tags_are_counted_not_listed(self) -> None:
-        before = describe_project(self.root).link_tag_count
-        store = KnowledgeStore.for_project(self.root)
-        store.store_object("person.rowan", "ROWAN\nA ranger.\n")
-        store.add_tags("person.rowan", ["location.thornwood"])
-        KnowledgeStore.clear_registry()
-
-        facts = describe_project(self.root)
-
-        self.assertEqual(facts.link_tag_count, before + 1)
-        self.assertNotIn("location.thornwood", facts.plain_tags)
-
-    def test_registered_modules_are_reported_with_who_may_ask(self) -> None:
-        facts = describe_project(self.root)
-
-        by_id = {m.id: m for m in facts.requestable_modules}
-        self.assertIn("rules.skirmish", by_id)
-        self.assertEqual(by_id["rules.skirmish"].operators, ("play",))
-        self.assertEqual(by_id["rules.skirmish"].dataset, "testing")
-
     def test_the_rendered_guidance_carries_the_live_shape(self) -> None:
         text = render_guidance(self.root)
 
         self.assertIn("## This project", text)
-        self.assertIn("testing", text)
-        self.assertIn("rules.skirmish", text)
+        self.assertIn("`testing`", text)
+
+    def test_it_names_the_cursor_so_an_agent_knows_where_work_lands(self) -> None:
+        narrative = self.root / "narrative" / "tale"
+        narrative.mkdir(parents=True)
+        (narrative / "_node.md").write_text("# Tale\n")
+        (self.root / "lens.toml").write_text(
+            '[project]\nnarrative = "tale"\ndatasets = ["testing"]\n'
+        )
+
+        facts = describe_project(self.root)
+        text = render_guidance(self.root)
+
+        self.assertEqual(facts.active_narrative, "tale")
+        self.assertIsNotNone(facts.cursor)
+        self.assertIn(f"the cursor is `{facts.cursor}`", text)
+
+    def test_no_narrative_says_how_to_get_one(self) -> None:
+        self.assertIn("lens use <slug>", render_guidance(self.root))
+
+    def test_inventories_are_left_to_the_commands_that_own_them(self) -> None:
+        """Read once, often truncated: a list another command prints is dead weight."""
+        text = render_guidance(self.root)
+
+        self.assertNotIn("rules.skirmish", text)
+        self.assertIn("lens stats", text)
+        self.assertIn("lens --help", text)
+
+    def test_a_dataset_file_without_a_gist_break_is_emitted_whole(self) -> None:
+        """A dataset that never adopted the split loses nothing."""
+        text = render_guidance(self.root)
+
+        self.assertIn("Fixtures only.", text)
+        self.assertNotIn("lens skill testing", text)
 
 
-class TestRpgDatasetLayer(_ProjectCase):
-    datasets = ["rpg"]
+class TestDatasetTopics(_ProjectCase):
+    """A dataset's gist is always emitted; its full conventions are one call away."""
 
-    def test_the_rpg_dataset_explains_its_own_conventions(self) -> None:
+    datasets = ["rpg", "companion"]
+
+    def test_the_gist_is_emitted_and_names_the_topic(self) -> None:
         text = render_guidance(self.root)
 
         self.assertIn("Conventions of the `rpg` dataset", text)
+        self.assertIn("Full conventions: `lens skill rpg`", text)
+        self.assertIn("Full conventions: `lens skill companion`", text)
+        self.assertNotIn("Deltas only", text)
+        self.assertNotIn(GIST_BREAK, text)
+
+    def test_the_topic_is_the_whole_file_gist_included(self) -> None:
+        text = render_topic(self.root, "rpg")
+
+        self.assertIn("Conventions of the `rpg` dataset", text)
+        self.assertIn("Deltas only", text)
         self.assertIn("rules.<type>", text)
+        self.assertNotIn(GIST_BREAK, text)
+        self.assertNotIn("Full conventions:", text)
 
-    def test_design_modules_are_listed_with_a_blurb_not_their_title_line(self) -> None:
-        facts = describe_project(self.root)
+    def test_topics_are_the_active_datasets_that_ship_a_skill_file(self) -> None:
+        self.assertEqual(topic_names(self.root), ["rpg", "companion"])
 
-        blurbs = dict(facts.design_modules)
-        self.assertIn("design.front", blurbs)
-        self.assertTrue(blurbs["design.front"])
-        self.assertFalse(blurbs["design.front"].startswith("#"))
+    def test_an_unknown_topic_names_the_ones_that_exist(self) -> None:
+        with self.assertRaises(LensException) as caught:
+            render_topic(self.root, "dnd")
+
+        self.assertIn("rpg, companion", str(caught.exception))
+
+    def test_the_main_output_fits_one_read(self) -> None:
+        """Truncation is the failure this guards: an agent reads the output once,
+        through a tool that cuts long results. Grow a topic, not this."""
+        self.assertLess(len(render_guidance(self.root)), 12_000)
 
 
 class TestDatasetCheckout(unittest.TestCase):
     """A dataset repo is a checkout an agent works in too, and a different one.
 
     `get_selected_datasets` is empty there, so everything keyed off "what did
-    this project opt into" reports nothing — including the module registrations
-    that make the first three lines of these very files load-bearing.
+    this project opt into" reports nothing, and the dataset's own skill file is
+    the project layer, emitted whole.
     """
 
     def setUp(self) -> None:
@@ -291,62 +285,7 @@ class TestDatasetCheckout(unittest.TestCase):
         self.assertTrue(facts.is_dataset)
         self.assertEqual(facts.datasets, [])
 
-    def test_it_reports_the_modules_the_dataset_registers_itself(self) -> None:
-        facts = describe_project(self.dataset_root)
-
-        self.assertIn("rules.skirmish", [m.id for m in facts.requestable_modules])
-
     def test_the_layer_being_edited_is_labelled_as_the_datasets_own(self) -> None:
         sources = [layer.source for layer in collect_layers(self.dataset_root)]
 
         self.assertEqual(sources, ["builtin", "generated", "dataset:self"])
-
-
-class TestCommandListing(_ProjectCase):
-    """Core renders the command surface; the CLI is what knows it.
-
-    The inversion matters: core must not import Typer to say what `lens kb` is,
-    so it takes plain entries and, given none, says nothing at all rather than
-    falling back on a list somebody typed once.
-    """
-
-    datasets = ["testing"]
-
-    _ENTRIES = (
-        CommandEntry(name="stats", summary="Count things.", panel="Project"),
-        CommandEntry(
-            name="kb",
-            summary="The knowledge store.",
-            panel="Knowledge",
-            subcommands=("add", "search", "refs"),
-        ),
-    )
-
-    def test_it_groups_by_the_panel_the_cli_reports(self) -> None:
-        text = render_commands(self._ENTRIES)
-
-        self.assertIn("**Project**", text)
-        self.assertIn("**Knowledge**", text)
-        self.assertLess(text.index("**Project**"), text.index("**Knowledge**"))
-
-    def test_subcommands_are_named_without_summaries(self) -> None:
-        """Enough to know they exist; `--help` owns the rest and cannot drift."""
-        text = render_commands(self._ENTRIES)
-
-        self.assertIn("`add`, `search`, `refs`", text)
-
-    def test_the_listing_is_omitted_when_no_caller_supplied_one(self) -> None:
-        text = render_guidance(self.root)
-
-        self.assertNotIn("### Commands available here", text)
-
-    def test_the_listing_lands_in_the_generated_section(self) -> None:
-        text = render_guidance(self.root, self._ENTRIES)
-
-        self.assertIn("### Commands available here", text)
-        self.assertLess(
-            text.index("## This project"), text.index("### Commands available here")
-        )
-        self.assertLess(
-            text.index("### Commands available here"), text.index("### Knowledge store")
-        )

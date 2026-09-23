@@ -196,6 +196,26 @@ class PlayOperator(SessionOperator):
         storage.write_file(md, current + sep + block)
 
     @classmethod
+    def explain_prompt_line(
+        cls, prompt: str, crawl_result: CrawlResult, params: dict[str, Any]
+    ) -> str | None:
+        """What ``_append_player_line`` would write, without writing it.
+
+        Storable transforms (vars, ``@roll``) are not applied: rolling dice
+        to report a prompt would show a result the real beat would not get.
+        """
+        marker = cls._speaker_marker(crawl_result, params.get("as_pc"))
+        line = f"> [{marker}] {prompt}\n"
+        if crawl_result.project_root is None:
+            return line
+        return append_mention_annotations(
+            line,
+            cls.mention_params(
+                prompt, None, None, project_root=crawl_result.project_root
+            ),
+        )
+
+    @classmethod
     def check_requirements(cls, crawl_result: CrawlResult) -> None:
         """Require ``rules.system``, ``rules.rpg``, and at least one ``pc.*`` pin.
 

@@ -559,6 +559,12 @@ class TestExplainOptions(ExplainTestCase):
         report = explain_context(self.session, address=address)
         self.assertEqual(report.address, address)
 
+    def test_dot_is_the_cursor(self) -> None:
+        self.assertEqual(
+            explain_context(self.session, address=".").address,
+            explain_context(self.session).address,
+        )
+
     def test_missing_node_is_rejected(self) -> None:
         with self.assertRaises(LensException):
             explain_context(self.session, address="/nope-does-not-exist")
@@ -970,3 +976,105 @@ class TestExplainStateBlock(unittest.TestCase):
         self.assertEqual(
             report.accounted_bytes + report.other_bytes, report.total_bytes
         )
+
+
+class TestLineCutsTheConversationToo(unittest.TestCase):
+    """`LINE` answers "what did the prompt look like before this beat".
+
+    An operator with completed turns at the cursor renders the node as
+    conversation turns, read from the file separately from the current
+    passage — so truncating only the passage left every later turn in place.
+    """
+
+    def setUp(self) -> None:
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        self.tmp = tempfile.mkdtemp(prefix="lens_explain_turns_")
+        self.session = setup_test_project(
+            Path(self.tmp), "http://127.0.0.1:1/v1", opening_write=False
+        )
+        narrative = self.session.active_narrative
+        assert narrative is not None
+        path = narrative.find_cursor().md_path()
+        base = path.read_text(encoding="utf-8")
+        first = "\n[write]: #\n\nThe first beat lands.\n\n[/write]: #\n"
+        second = "\n[write]: #\n\nThe second beat lands.\n\n[/write]: #\n"
+        path.write_text(base + first + second, encoding="utf-8")
+        self.line_before_second = len((base + first).split("\n"))
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmp, ignore_errors=True)
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+    def _sent(self, report: ExplainReport) -> str:
+        return "\n".join(m["content"] for m in report.messages)
+
+    def test_a_later_turn_is_not_in_the_prompt_as_of_an_earlier_line(self) -> None:
+        full = explain_context(self.session, operator="write")
+        cut = explain_context(self.session, operator="write", line=self.line_before_second)
+
+        self.assertIn("The second beat lands.", self._sent(full))
+        self.assertIn("The first beat lands.", self._sent(cut))
+        self.assertNotIn("The second beat lands.", self._sent(cut))
+
+    def test_the_conversation_block_shrinks_with_it(self) -> None:
+        full = _block(explain_context(self.session, operator="write"), BLOCK_CONVERSATION)
+        cut = _block(
+            explain_context(self.session, operator="write", line=self.line_before_second),
+            BLOCK_CONVERSATION,
+        )
+        assert full is not None
+        self.assertTrue(cut is None or cut.bytes < full.bytes)
+
+
+class TestPromptReachesWhereTheOperatorPutsIt(unittest.TestCase):
+    """`-p` is "what would the model see if I typed this".
+
+    `play` never reads its prompt from params: it writes the player's line into
+    the node and then generates. Explain has to put the line there too, or the
+    prompt silently vanishes from the report.
+    """
+
+    def setUp(self) -> None:
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+        self.tmp = tempfile.mkdtemp(prefix="lens_explain_prompt_")
+        self.session = setup_test_project(
+            Path(self.tmp), "http://127.0.0.1:1/v1", datasets=["rpg"], opening_write=False
+        )
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmp, ignore_errors=True)
+        KnowledgeStore.clear_registry()
+        MediaService.clear_registry()
+
+    def _sent(self, report: ExplainReport) -> str:
+        return "\n".join(m["content"] for m in report.messages)
+
+    def test_a_play_prompt_lands_as_the_players_line(self) -> None:
+        report = explain_context(self.session, operator="play", prompt="ZZTEST opens the door")
+
+        self.assertIn("> [Player] ZZTEST opens the door", self._sent(report))
+        self.assertFalse(any("-p text" in w for w in report.warnings))
+
+    def test_the_line_lands_after_a_line_cut(self) -> None:
+        narrative = self.session.active_narrative
+        assert narrative is not None
+        path = narrative.find_cursor().md_path()
+        base = path.read_text(encoding="utf-8")
+        path.write_text(base + "\n> [Player] LATER line\n", encoding="utf-8")
+        line = len(base.split("\n"))
+
+        report = explain_context(
+            self.session, operator="play", prompt="ZZTEST instead", line=line
+        )
+
+        self.assertIn("ZZTEST instead", self._sent(report))
+        self.assertNotIn("LATER line", self._sent(report))
+
+    def test_write_still_takes_its_prompt_into_the_task(self) -> None:
+        report = explain_context(self.session, operator="write", prompt="ZZTEST continue")
+
+        self.assertIn("ZZTEST continue", self._sent(report))
+        self.assertNotIn("> [Player] ZZTEST", self._sent(report))
