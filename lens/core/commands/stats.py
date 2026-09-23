@@ -34,6 +34,7 @@ from lens.core.project import (
 from lens.core.dataset_config import get_dataset_configs
 from lens.core.commands.kb_pending_view import PendingKbView, pending_kb_view
 from lens.core.knowledge import KnowledgeStore
+from lens.core.module_requests import dataset_modules, dataset_own_modules
 from lens.core.release.config import (
     parse_dataset_repo_configs,
     parse_release_config,
@@ -63,6 +64,14 @@ class StatsResult:
     has_staged: bool
     pending_owner: NarrativeAddress | None
     dataset_name: str | None = None
+    kb_type_counts: dict[str, int] = field(default_factory=dict[str, int])
+    """Objects per type; a type with only a template counts 0."""
+    kb_project_owned: int = 0
+    """Objects that resolve from this repository's own ``knowledge/``."""
+    requestable_modules: list[tuple[str, tuple[str, ...]]] = field(
+        default_factory=list[tuple[str, tuple[str, ...]]]
+    )
+    """``(kb id, operators)`` for every ``[[dataset.modules]]`` registration in effect."""
     current_datasets: list[str] = field(default_factory=list[str])
     pending_diff: str = field(default="")
     staged_diff: str = field(default="")
@@ -212,13 +221,21 @@ def _resolve_modalities_at_cursor(
 def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     root = session.project_root
     is_dataset = is_dataset_root(root)
-    kb_types: list[str] = []
-    kb_count = 0
     kb_store = KnowledgeStore.for_project(root)
     kb_types = kb_store.list_types()
-    # list_ids returns all canonical IDs (across project + datasets or dataset-only),
-    # excluding templates.
-    kb_count = len(kb_store.list_ids())
+    # The merged listing, templates excluded, precedence already applied.
+    index = kb_store.resolved_index()
+    kb_count = len(index)
+    kb_type_counts = dict.fromkeys(kb_types, 0)
+    kb_project_owned = 0
+    for entry in index.values():
+        kb_type_counts[entry.type] = kb_type_counts.get(entry.type, 0) + 1
+        if entry.source.kind == "project":
+            kb_project_owned += 1
+    # In a dataset checkout nothing is "selected"; what matters is what this
+    # dataset registers itself.
+    declared = dataset_own_modules(root) if is_dataset else dataset_modules(root)
+    requestable_modules = [(decl.kb_id, decl.operators) for decl in declared]
 
     narrative = root / "narrative"
     trees: list[tuple[str, int]] = []
@@ -342,6 +359,9 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         has_staged=storage.has_staged(),
         pending_owner=pending_owner,
         dataset_name=root.name if is_dataset else None,
+        kb_type_counts=kb_type_counts,
+        kb_project_owned=kb_project_owned,
+        requestable_modules=requestable_modules,
         current_datasets=current_datasets,
         pending_diff=pending_diff,
         staged_diff=staged_diff,

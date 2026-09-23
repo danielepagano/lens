@@ -196,48 +196,42 @@ class TestProjectCheckReportsDrift(_SkillCliCase):
         self.assertIn("warn", out.split("[agent skill]")[0].split("\n")[-1])
 
 
-class TestCommandInventory(_SkillCliCase):
-    """The command list is read off the running CLI, never described.
+class TestTopics(_SkillCliCase):
+    """`lens skill <dataset>` prints what the main output only summarises."""
 
-    That is the whole reason it is allowed to exist in a document whose thesis
-    is that descriptions go stale: this one cannot, because it is the same
-    object `--help` renders.
-    """
-
-    def test_the_listing_matches_what_help_would_print(self) -> None:
+    def test_a_dataset_topic_prints_its_full_conventions(self) -> None:
         self.init()
-
-        skill = self.run_lens("skill")
-        assert skill.returncode == 0, skill.stderr
-
-        listing = _strip_ansi(skill.stdout)
-        self.assertIn("### Commands available here", listing)
-        for name in ("lens kb", "lens explain", "lens write", "lens skill"):
-            self.assertIn(f"`{name}`", listing)
-
-    def test_it_names_subcommands_so_an_agent_knows_they_exist(self) -> None:
-        """`kb search` / `list` / `refs` are unreachable if nothing says they are there."""
-        self.init()
-
-        listing = _strip_ansi(self.run_lens("skill").stdout)
-
-        kb_line = [ln for ln in listing.split("\n") if ln.startswith("  - `add`")]
-        self.assertTrue(kb_line, listing)
-        for sub in ("search", "list", "refs", "with-tag", "list-tags"):
-            self.assertIn(f"`{sub}`", kb_line[0])
-
-    def test_dataset_gating_is_reflected_not_described(self) -> None:
-        """`play` exists only with the rpg dataset, and the listing follows."""
-        self.init()
-        listing_without = _strip_ansi(self.run_lens("skill").stdout)
-        self.assertNotIn("`lens play`", listing_without)
-
         (self.project_dir / "lens.toml").write_text(
             '[project]\ndatasets = ["rpg"]\n', encoding="utf-8"
         )
-        listing_with = _strip_ansi(self.run_lens("skill").stdout)
 
-        self.assertIn("`lens play`", listing_with)
+        main = self.run_lens("skill")
+        topic = self.run_lens("skill", "rpg")
+
+        self.assertEqual(topic.returncode, 0, topic.stderr)
+        self.assertIn("lens skill rpg", main.stdout)
+        self.assertNotIn("Deltas only", main.stdout)
+        self.assertIn("Deltas only", topic.stdout)
+
+    def test_an_unknown_topic_exits_nonzero_and_lists_the_real_ones(self) -> None:
+        self.init()
+
+        result = self.run_lens("skill", "nope")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("testing", result.stderr)
+
+    def test_a_topic_with_install_is_an_error_not_a_silent_pick(self) -> None:
+        self.init("--no-skill")
+
+        result = self.run_lens("skill", "testing", "--install")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertFalse((self.project_dir / _SKILL_PATH).exists())
+
+
+class TestHelpSurface(_SkillCliCase):
+    """`lens skill` points at `--help` for the command surface, so it must hold up."""
 
     def test_kb_group_help_names_the_discovery_commands(self) -> None:
         """`lens kb --help` is where somebody looks first; it must not lag."""

@@ -3,7 +3,13 @@
 This dataset models characters with more depth than a scene needs at a glance, and
 surfaces that as chat. Its features are opt-in **by construction**: creating the
 object is the on switch, not creating it is the off switch, and the granularity is
-per character. There is nothing to configure.
+per character. There is nothing to configure. Before creating or tagging a
+`psyche.*`, `life.*`, `companion.*` or `human.*` object, read the full conventions:
+depth attaches by tag and `+` is the switch, a character never gets a
+second surface, these objects are stored in the character's own voice, and only
+some of them may carry `remember.*` tags.
+
+<!-- more -->
 
 | Object | Holds | Grown by |
 |---|---|---|

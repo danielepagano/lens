@@ -151,7 +151,6 @@ Lens is a CLI-first system for AI-assisted narrative creation. A **Lens project*
 lens/
   cli/           # Typer CLI layer (argument parsing, error display)
     main.py      # Entry point + preflight callback + LensGroup (help panel order)
-    command_inventory.py # The live command surface, for `lens skill`
     commands/    # Non-AI commands (init, use, kb, pin, stats, explain, spine, skill, rollback, commit, checkpoint, rewind, refresh, media; dataset extensions may add more)
     operators/   # AI operator CLI adapters (write, edit, section, collate, compress, chat, play, design, advance)
     test/        # CLI unit tests
@@ -269,14 +268,18 @@ cannot be run at all. The pointer carries no project facts, which is what lets
 added an object. Emission composes four layers, appended rather than shadowed:
 bundled `lens/skill/guidance.md`, the generated `## This project` section, each
 active dataset's `skill/skill.md`, then the project's own `skill/skill.md` last so
-house rules win. The generated section includes the **command surface**, read off
-the live Typer app by `cli/command_inventory.py` and passed in as plain
-`CommandEntry` values — core renders it without importing Typer, and a caller that
-supplies none (the server, a core test) gets no listing rather than a written-down
-one. `lens init` installs the pointer by default (`--no-skill` opts out) and
-`lens check` warns on drift. Add material to the *bundled* layer only when
+house rules win. The output is read once, before work starts, usually through a
+tool that truncates long results — so it carries what fails *silently* and nothing
+a command already answers: no command listing (`lens --help`), no inventories
+(`lens stats`, `kb list-tags`, `kb list --type design`), and no how-to for one
+command (that goes in its `--help`). The generated section is only where the
+cursor is (and which session is open there) and where the active datasets live. A dataset's file is emitted up to its `<!-- more -->` line
+(its gist) plus a pointer to `lens skill <dataset>`, which prints the whole file;
+a file without the marker is emitted whole. `lens init` installs the pointer by
+default (`--no-skill` opts out) and `lens check` warns on drift. Add material to the *bundled* layer only when
 it is true in every Lens project; anything a dataset knows about itself goes in the
-dataset's file, where it is paid for only by projects that selected it.
+dataset's file — below its gist, where it is read only by an agent about to write
+that dataset's kind of content.
 
 **Where an object came from** (`KbSource`, `describe_source`, `source_index`): every object a resolving fetch returns is stamped with the store it won from — `project`, `dataset:<name>`, plus the `shadows` it overrode. The merge is invisible on disk (a dataset resolves outside the project, see `resolve_dataset_path`), so this is the only answer to "is editing this a copy-on-write fork". Surfaced by `lens kb get` / `with-tag` (a `SOURCE=` header field, and structured under `--json`), the `kb_get` command tool, and the KB routes/UI. **Never in the crawl**: `KnowledgeObject.format(include_source=…)` defaults off and `format_kb_prompt_block_from_normalized` — the variant crawl uses — takes no source at all. During generation a KB object is world truth; which tree it was stored in is not part of that.
 

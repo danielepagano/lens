@@ -2,8 +2,15 @@
 
 This project plays tabletop-style RPGs. The player directs; the AI authors.
 Prep happens in `design` sessions, play happens in `play` beats, and time passes
-in `advance`. Four kinds of object carry the weight of prep, and they are
-constantly confused with one another:
+in `advance`. Before writing prep, rules, fronts or anything else `play` consumes,
+read the full conventions: the four kinds of prep object and how they differ,
+deltas-only prep, `-` facets as the one way to keep secrets out of play, fronts
+as the only home of state, and which rules earn a registered module.
+
+<!-- more -->
+
+Four kinds of object carry the weight of prep, and they are constantly confused
+with one another:
 
 - **An artifact** is what prep produces: something named, with a shape you can
   check mid-beat and a tell the player can feel. "Two concessions, then he
@@ -24,7 +31,7 @@ constantly confused with one another:
 ### Rules that break silently
 
 **Rules objects must not tag each other**, or `--module` drags the whole shelf
-in. (`rules.<type>` companions need no tag at all; see the reserved names above.)
+in. (`rules.<type>` companions arrive by name and need no tag at all.)
 
 **Deltas only.** A prepared object states what is different about *this* case —
 the numbers, the triggers, the exceptions — and never restates how the mechanism

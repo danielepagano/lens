@@ -9,34 +9,58 @@ Git's unstaged area is the pending transaction. `lens commit` stages it (a
 transaction boundary, not a git commit); `lens checkpoint "message"` commits and
 pushes. Leave one coherent, reviewable change and say what you changed.
 
-The command list under *This project* is what `lens --help` prints here, dataset
-gating applied; options are behind `lens <command> --help`. The rest of this text
-is what no `--help` tells you: the conventions that fail *silently*.
+What follows is what no `--help` tells you: the conventions that fail
+*silently*. For everything else, ask the command that owns it:
+
+- what can run here — `lens --help` (dataset gating applied), then
+  `lens <command> --help`
+- types, counts, narratives, pins at the cursor, model-requestable modules —
+  `lens stats`
+- tags — `lens kb list-tags`; design modules — `lens kb list --type design`;
+  local forks of dataset objects — `lens kb list --shadowed --source project`
+- a dataset's full conventions — `lens skill <dataset>`, named below
 
 ## Reading what a model reads
 
 A node file is not the story. A model is given the **spine**: every node from the
 narrative root down to the cursor, each ancestor contributing its prose (its
 summary, once collated) and only the cursor node its live text. `lens spine`
-prints it as the prompt renders it — `--outline` for shape and sizes, `--text`
-for prose alone, an address argument to read elsewhere. Read it before adding
-anything: contradicting what an ancestor established is the expensive mistake.
+prints it as the prompt renders it. Read it before adding anything:
+contradicting what an ancestor established is the expensive mistake.
 
 `lens explain -o <operator>` assembles the prompt a cursor would get, without
-calling a model, and reports every component's size and provenance. `--json`
-names each KB object that reaches it and the route it took (pin, `+` expansion,
-companion, module, `state` tail, in-place include or mention); `--messages`
-prints the assembled messages verbatim, stdout only, with `-p "<prompt>"` for
-what you would pass. **Pass the operator**: auto-pins differ, so `write` and
-`play` resolve different sets at the same cursor. Neither shows the tool
-definitions, or a module the model loads mid-reply — that becomes visible only
-afterwards, as the `[include: …]` annotation Lens persists for it.
+calling a model: every component's size and the route it arrived by (`--json`
+answers "why is X in the prompt, or not"), or with `--messages` the text itself.
+**Pass the operator** — `write` and `play` resolve different sets at the same
+cursor. A line argument rebuilds the prompt as of that line: `lens explain -o
+play . <line above a beat's open tag>` is what that beat was generated from.
 
 That is how to check a change. **The diff is not the artifact; the assembled
 prompt is** — no test asserts on what a KB or prompt edit does to a model's
 input. Verify with a fresh `lens` command, not a process left running: the tag
 index is cached per process, and a stale one makes a `+` expansion silently
 resolve to nothing.
+
+## Node files
+
+A node is markdown the next beat reads back, and hand-editing its prose is
+fine. The rest of the file is not prose:
+
+- **`[op …]: #` and `[/op]: #` lines are operator tags.** The cursor is the last
+  unclosed one at the tail of the file, so moving or deleting one moves the
+  cursor, or closes or reopens a session.
+- **Every `[…]: #` line is invisible to models.** `[llm-trace …]: #` is
+  diagnostics and safe to delete; `[kb-op …]: #` is a pending KB proposal, and
+  deleting it withdraws it; `[include: <id>]: #` and `[mention: <id>]: #` add
+  scope (below).
+- **`<!-- … -->` comments are the opposite:** hidden when rendered, but read by
+  every later generation at that node — `ai:secret` ones decoded first.
+
+**Hand edits join the pending transaction, and `lens rollback` discards every
+unstaged change in the repository** — yours included, untracked files too. Run
+`lens commit` after your own edits to keep them. To redo a beat: `lens
+<operator> --retry` regenerates the last generation, `lens edit` rewrites a line
+range, and `lens rewind <address> <line>` deletes everything after a point.
 
 ## What fails silently
 
@@ -75,11 +99,9 @@ of a play prompt. Cut whole rules rather than diluting the ones you keep:
 numbers and thresholds must survive verbatim.
 
 **7. `lens kb get` can show what is not on disk.** While a `design` or `advance`
-session is open at the cursor, its proposed writes are a **pending layer** every
-read sees (`SOURCE=pending`, and the crawl too), but nothing reaches `knowledge/`
-or git until the session closes with `--end` — a clean `git diff` beside a
-changed store. `lens kb pending` lists the proposals and whether each still
-resolves; `lens use` elsewhere turns the layer off.
+session is open at the cursor, its proposed writes are a layer every read sees
+(`SOURCE=pending`), but nothing reaches `knowledge/` or git until `--end` — a
+clean `git diff` beside a changed store. `lens kb pending` lists them.
 
 ## Scope: what a model actually sees
 
@@ -118,10 +140,3 @@ simply never delivered:
 The reserved tags are `state` (above) and `inline` (an `@type.key` mention of the
 object is replaced by its body instead of a reference). Everything else —
 `rules.system`, `meta.*`, `pc.*` — belongs to a dataset.
-
-## Prompts
-
-Operator prose layers like knowledge: bundled, dataset `prompts/prompts.toml`,
-project override. `lens prompt list`, `get <key>` (prints the winning layer),
-`set <key> '<text>'`. Guidance the whole system needs belongs in the operator
-prompt; guidance one task needs belongs in its module.

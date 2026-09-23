@@ -1317,7 +1317,11 @@ class Operator(ABC):
         return prepared_ctx, resolved
 
     def passage_view(
-        self, crawl_result: CrawlResult, node: NarrativeNode
+        self,
+        crawl_result: CrawlResult,
+        node: NarrativeNode,
+        *,
+        passage_raw: str | None = None,
     ) -> NormalizedStorageText:
         """Cursor-node text as the model will see it, mentions expanded in place.
 
@@ -1328,8 +1332,16 @@ class Operator(ABC):
         expanded buffer is never written; feeding it back through
         ``normalize_raw_text`` keeps annotation line numbers and the disk-line
         map describing the same text, which is all ``parse_passage_turns`` needs.
+
+        *passage_raw* replaces the file's text, for the same reason: ``lens
+        explain`` renders the passage cut at a line, or with the line ``-p``
+        would write, and turns read from the file would disagree with it.
         """
-        normalized = self.storage.normalize_path_text(node.md_path())
+        normalized = (
+            self.storage.normalize_raw_text(passage_raw)
+            if passage_raw is not None
+            else self.storage.normalize_path_text(node.md_path())
+        )
         if crawl_result.project_root is None:
             return normalized
         expanded, _, _ = cursor_mention_renderer(
@@ -1343,6 +1355,18 @@ class Operator(ABC):
         return self.storage.normalize_raw_text(
             expanded, source_id=f"mentions:{node.path_str()}"
         )
+
+    @classmethod
+    def explain_prompt_line(
+        cls, prompt: str, crawl_result: CrawlResult, params: dict[str, Any]
+    ) -> str | None:
+        """The block this operator would write into the node for *prompt*, if any.
+
+        Most operators read the prompt from their params into the task. One
+        that persists it as a line of the passage instead (``play``) returns
+        that line here, so ``lens explain -p`` can show it where it lands.
+        """
+        return None
 
     def append_module_hint(self, crawl_result: CrawlResult, instruction: str) -> str:
         """Append the list of still-unloaded modules to this operator's task.
@@ -1378,7 +1402,9 @@ class Operator(ABC):
         session: ProjectSession | None = None,
         narrative: NarrativeNode | None = None,
         resolved_modalities: Any | None = None,
+        passage_raw: str | None = None,
     ) -> list[dict[str, str]]:
+        """*passage_raw* stands in for the cursor node's text (``lens explain``)."""
         from lens.core.turns import parse_passage_turns
 
         apply_transforms_to_result(
@@ -1394,7 +1420,9 @@ class Operator(ABC):
         turns: list[tuple[str, str]] | None = None
         node = crawl_result.current_node
         if node is not None:
-            result = parse_passage_turns(self.passage_view(crawl_result, node))
+            result = parse_passage_turns(
+                self.passage_view(crawl_result, node, passage_raw=passage_raw)
+            )
             if result:
                 turns = result
         messages = assemble_prompt(
