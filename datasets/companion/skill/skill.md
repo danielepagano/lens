@@ -40,10 +40,6 @@ a journal — and a surface is paid for on every turn the character appears.
 the scene is about them → psyche. The test is not how interesting the fact is; it is
 how often it would be paid for.
 
-**`rules.psyche` arrives on its own.** It is the `rules.<type>` companion for
-`psyche.*` and is added whenever one is in scope. Tagging it anywhere is a second,
-staleable copy of a link the machinery already makes.
-
 **Skip `life.<key>` where continuity is already tracked.** It records what is
 currently true. Where a project keeps that in a schedule, a plan object, or a
 hand-maintained timeline, a second copy will drift from the first — and both will be

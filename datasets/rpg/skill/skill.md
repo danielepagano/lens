@@ -23,11 +23,8 @@ constantly confused with one another:
 
 ### Rules that break silently
 
-**`rules.<type>` is a companion, reached by name, never by a tag.** Ship
-`rules.encounter` and it is added to any play beat where an `encounter.*` object
-is in scope, and to `design --module encounter` alongside the template. Tagging
-it anywhere is a second, staleable copy of a link the machinery already makes.
-Rules objects must not tag *each other*, or `--module` drags the whole shelf in.
+**Rules objects must not tag each other**, or `--module` drags the whole shelf
+in. (`rules.<type>` companions need no tag at all; see the reserved names above.)
 
 **Deltas only.** A prepared object states what is different about *this* case —
 the numbers, the triggers, the exceptions — and never restates how the mechanism

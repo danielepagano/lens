@@ -46,7 +46,6 @@ from lens.core.project import (
 )
 from lens.core.release.version import installed_version
 from lens.core.storage import Storage
-from lens.core.storage_text import kb_headline
 
 SKILL_RELPATH = Path(".claude") / "skills" / "lens" / "SKILL.md"
 """Where ``--install`` writes the pointer. Claude Code's convention; the body is
@@ -63,6 +62,11 @@ reference dataset carries thousands of tags; the useful signal is which
 
 _MAX_LISTED_IDS = 20
 """Same argument for id lists (forks, design modules)."""
+
+_NAMES_ONLY_PANELS = frozenset({"Serving & deploy"})
+"""Help panels listed by name alone. An agent working on content has no use for
+hosting commands, but saying they exist keeps the listing an honest answer to
+"what can run here"."""
 
 
 # ---------------------------------------------------------------------------
@@ -227,29 +231,10 @@ class ProjectFacts:
     plain_tags: list[str] = field(default_factory=_empty_str_list)
     tag_families: list[tuple[str, int]] = field(default_factory=_empty_counts)
     link_tag_count: int = 0
-    design_modules: list[tuple[str, str]] = field(default_factory=list[tuple[str, str]])
+    design_modules: list[str] = field(default_factory=_empty_str_list)
     requestable_modules: list[ModuleFact] = field(default_factory=list[ModuleFact])
     narratives: list[str] = field(default_factory=_empty_str_list)
     active_narrative: str | None = None
-
-
-_BLURB_CHARS = 160
-
-
-def _blurb(headline: str) -> str:
-    """One skimmable line out of an object's three-line self-description.
-
-    The first of those lines is almost always a title, which a listing keyed by
-    id has already said. What a reader is choosing between is the line after it,
-    truncated — the whole object is one `lens kb get` away.
-    """
-    lines = [ln.strip() for ln in headline.split("\n") if ln.strip()]
-    body = [ln for ln in lines if not ln.startswith("#")]
-    text = (body or lines or [""])[0]
-    if len(text) <= _BLURB_CHARS:
-        return text
-    cut = text[:_BLURB_CHARS].rsplit(" ", 1)[0]
-    return f"{cut}…"
 
 
 def describe_project(project_root: Path) -> ProjectFacts:
@@ -321,10 +306,7 @@ def describe_project(project_root: Path) -> ProjectFacts:
         facts.plain_tags.append(tag)
     facts.tag_families = sorted(families.items())
 
-    for cid in sorted(index):
-        if not cid.startswith("design."):
-            continue
-        facts.design_modules.append((cid, _blurb(kb_headline(_read(index[cid].path)))))
+    facts.design_modules = sorted(cid for cid in index if cid.startswith("design."))
 
     declared = (
         dataset_own_modules(project_root)
@@ -366,16 +348,15 @@ def render_commands(commands: Sequence[CommandEntry]) -> str:
     drift and it already reflects this project's dataset gating: an operator or
     an extension command that is not listed here does not exist here.
     """
-    out: list[str] = ["### Commands available here\n"]
-    out.append(
-        "Generated from the CLI that is installed, so it is what `lens --help` "
-        "would say. Options live behind `lens <command> --help`; sub-commands are "
-        "named without their summaries for the same reason."
-    )
+    out: list[str] = ["### Commands available here"]
     by_panel: dict[str, list[CommandEntry]] = {}
     for entry in commands:
         by_panel.setdefault(entry.panel or "Commands", []).append(entry)
     for panel, entries in by_panel.items():
+        if panel in _NAMES_ONLY_PANELS:
+            names = ", ".join(f"`lens {entry.name}`" for entry in entries)
+            out.append(f"\n**{panel}** (not needed for content work): {names}")
+            continue
         out.append(f"\n**{panel}**\n")
         for entry in entries:
             line = f"- `lens {entry.name}` — {entry.summary}" if entry.summary else f"- `lens {entry.name}`"
@@ -409,18 +390,16 @@ def render_facts(
         out.append("\n### Active datasets\n")
         out.append(
             "Later entries shadow earlier ones; this project's own `knowledge/` "
-            "beats all of them."
+            "beats all of them. Those outside this repository are invisible to "
+            "`grep` here."
         )
         for detail in facts.dataset_details:
             if detail.path is None:
                 out.append(f"- `{detail.name}` — **unresolved** (nothing to read)")
             elif detail.inside_repo:
-                out.append(f"- `{detail.name}` — `{detail.path}`")
+                out.append(f"- `{detail.name}` — `{detail.path}` (inside this repository)")
             else:
-                out.append(
-                    f"- `{detail.name}` — `{detail.path}` (outside this repository; "
-                    "`grep` here will not find it)"
-                )
+                out.append(f"- `{detail.name}` — `{detail.path}`")
     elif not facts.is_dataset:
         out.append("\n### Active datasets\n\nNone. Every object resolves from this repository.")
 
@@ -449,9 +428,11 @@ def render_facts(
             "the dataset's version is no longer read, and edits to it will not arrive."
         )
     if facts.overrides:
+        # The stack working as configured, not an edit anyone made: a count is
+        # the fact; the ids are one `--shadowed` away.
         out.append(
-            f"\nDataset-over-dataset overrides ({len(facts.overrides)}): "
-            f"{_capped(facts.overrides, _MAX_LISTED_IDS)}."
+            f"\n{len(facts.overrides)} objects are overridden by a later dataset "
+            "(`lens kb list --shadowed`)."
         )
 
     out.append("\n### Tag vocabulary\n")
@@ -470,30 +451,21 @@ def render_facts(
             f"\n{_plural(facts.link_tag_count, 'dot-tag')} link objects to each other; "
             "`lens kb refs <id>` reads them in both directions."
         )
-    out.append(
-        "\nType names also match as tags, so `lens kb with-tag <type>` finds every "
-        "object of a type without a tag anyone has to maintain."
-    )
 
     if facts.design_modules:
+        keys = [cid.split(".", 1)[1] for cid in facts.design_modules]
         out.append("\n### Design modules\n")
         out.append(
-            "Run one with `lens design --module <key>`; read the whole module with "
-            "`lens kb get design.<key>`."
+            f"{_capped([f'`{key}`' for key in keys], _MAX_LISTED_IDS)}. Run one with "
+            "`lens design --module <key>`; `lens kb list --type design` says what "
+            "each covers."
         )
-        for cid, headline in facts.design_modules[:_MAX_LISTED_IDS]:
-            key = cid.split(".", 1)[1]
-            out.append(f"- `{key}` — {headline}" if headline else f"- `{key}`")
-        if len(facts.design_modules) > _MAX_LISTED_IDS:
-            out.append(f"- … (+{len(facts.design_modules) - _MAX_LISTED_IDS} more)")
 
     if facts.requestable_modules:
         out.append("\n### Model-requestable modules\n")
         out.append(
             "Registered by a dataset (`[[dataset.modules]]`); the model pulls one "
-            "into scope mid-reply. The catalog entry is the object's own first three "
-            "lines, so an edit to the top of these files changes when they are asked "
-            "for."
+            "in mid-reply, choosing by its first three lines."
         )
         for module in facts.requestable_modules:
             ops = ", ".join(module.operators)

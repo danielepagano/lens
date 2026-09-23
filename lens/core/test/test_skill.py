@@ -26,6 +26,7 @@ from lens.core.commands.skill import (
     pointer_text,
     project_skill_file,
     render_commands,
+    render_facts,
     render_guidance,
 )
 from lens.core.knowledge import KnowledgeStore
@@ -259,13 +260,15 @@ class TestRpgDatasetLayer(_ProjectCase):
         self.assertIn("Conventions of the `rpg` dataset", text)
         self.assertIn("rules.<type>", text)
 
-    def test_design_modules_are_listed_with_a_blurb_not_their_title_line(self) -> None:
+    def test_design_modules_are_listed_by_key_not_by_headline(self) -> None:
+        """What each covers is `lens kb list --type design`; repeating it here
+        is the largest single block of the generated section."""
         facts = describe_project(self.root)
+        text = render_facts(facts)
 
-        blurbs = dict(facts.design_modules)
-        self.assertIn("design.front", blurbs)
-        self.assertTrue(blurbs["design.front"])
-        self.assertFalse(blurbs["design.front"].startswith("#"))
+        self.assertIn("design.front", facts.design_modules)
+        self.assertIn("`front`", text)
+        self.assertIn("lens kb list --type design", text)
 
 
 class TestDatasetCheckout(unittest.TestCase):
@@ -334,6 +337,17 @@ class TestCommandListing(_ProjectCase):
         text = render_commands(self._ENTRIES)
 
         self.assertIn("`add`, `search`, `refs`", text)
+
+    def test_hosting_commands_are_named_but_not_described(self) -> None:
+        """Not content work, but still an honest answer to "what exists here"."""
+        entries = (
+            *self._ENTRIES,
+            CommandEntry(name="serve", summary="Serve the bundle.", panel="Serving & deploy"),
+        )
+        text = render_commands(entries)
+
+        self.assertIn("`lens serve`", text)
+        self.assertNotIn("Serve the bundle.", text)
 
     def test_the_listing_is_omitted_when_no_caller_supplied_one(self) -> None:
         text = render_guidance(self.root)
