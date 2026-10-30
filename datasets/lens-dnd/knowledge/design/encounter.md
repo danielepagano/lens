@@ -34,7 +34,7 @@ Ask about:
 Participants include any given PCs, plus:
 - Named NPCs (recurring non-player characters) have `npc.*` objects
 - Factions have `faction.*` objects
-- Locations: if the encounter is in a specific, sufficiently complex, recurring place, it may have a `location.*` object. Its `Ground` is the scene's map; a scene played on ground that has none yet is a missing location object (below)
+- Locations: if the encounter is in a specific, sufficiently complex, recurring place, it may have a `location.*` object
 
 Missing an NPC, faction, or location object? If the request covers it, `kb_get design.<key>` and build it here alongside the encounter. If it is your idea rather than theirs, say what you would introduce and let the user decide.
 
@@ -49,13 +49,13 @@ Missing an NPC, faction, or location object? If the request covers it, `kb_get d
 - Also tag the encounter object with every **`stat.*`** that appears in **`## Prep and reference`**. This is not bookkeeping: the Prep roster is the human-readable script, and the **tags** are the only thing that puts those stat blocks in front of `play`, via `encounter.some-scene+`. `play` has no `kb_get` — it cannot fetch a block you forgot to tag. A roster line reading `4× KB['stat.bandit']` with no matching tag produces a GM that has been told to act from a stat block it cannot see, and it will improvise the creature instead.
 
 4: WRITE THE ENCOUNTER OBJECT
-**Part 1 — `## Situation`:** Situation, stakes, initial positions, scene rules, triggers, resolution. Name participants in prose or with dot-ids (`pc.*`, `faction.*`). No **`KB['…']`** tokens here. If combat is not a given, state how narratively it would be triggered or avoided. For combat/physical encounters, include **initial positions** as zone plus band, in `rules.encounter`'s thresholds — "archers on the Ledge, 90 ft up-gorge from the Stair" — never freehand feet; formations and who holds which chokepoint go with them. Light, cover, height and footing are the location's `Ground`, not repeated here. A change to the ground only this scene makes (a barricade, a cut rope) is a scene rule that names zones.
+**Part 1 — `## Situation`:** Situation, stakes, initial positions, scene rules, triggers, resolution. Name participants in prose or with dot-ids (`pc.*`, `faction.*`). No **`KB['…']`** tokens here. If combat is not a given, state how narratively it would be triggered or avoided. For physical scenes, include a **Ground**: the few zones the scene is played on, one line each — light, footing, cover (for whoever stands there, and against what when it depends on direction), height, how you get to the neighbouring zones (and any check), and the distances that matter, snapped to the thresholds in `rules.encounter`'s SPATIAL AWARENESS. The player is told these and plans against them, so they have to agree with each other. Then **initial positions**: who starts in which zone, and formations.
 
 **Part 2 — `## Running non-PC characters`:** Defaults are in the template (player runs the table; AI answers when asked, grounded in stats/objects). Add only encounter-specific tactics, priorities, morale, triggers.
 
 **Part 3 — `## Prep and reference`:** Combat encounters only, and then **mandatory**: a **`KB['stat.…']`** roster with counts (foes and allied **`stat.*`** that need blocks). A scene with no stat-backed creatures omits the section entirely — the template licenses it for combat and nothing else.
 
-**Tags on the encounter object:** Include story links as usual (`location.*` — the tag that brings its `Ground` — relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it.
+**Tags on the encounter object:** Include story links as usual (`location.*`, relevant `front.*`, `npc.*`, `faction.*`). In addition, tag every referenced **`stat.*`** so `encounter.*+` expands to the combatants. Note: `rules.encounter` auto-pins when any `encounter.*` is in play context — no need to tag it.
 
 **Tag the rules this scene needs.** `play` starts with only the base rules; a tag on the encounter is what puts a module in front of it *before* the scene turns, with no round trip and no chance the model fails to notice:
 - Tag **`rules.combat`** on any encounter where violence is possible — not only on set-piece fights, but on the negotiation that could go wrong and the heist that could be discovered.

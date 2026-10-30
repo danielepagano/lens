@@ -5,8 +5,9 @@ Encounter name
 
 - **Situation**: (what's happening — where, when, who is present — one or two tight paragraphs or short bullets)
 - **Stakes**: (what can go wrong, what's at risk)
-- **Initial positions**: (for combat/physical encounters: each group's zone in the location's `Ground` plus a band from a named zone — "archers on the Ledge, 90 ft up-gorge from the Stair" — never freehand feet; formations, chokepoints)
-- **Scene rules**: (changes to the ground only this scene makes, naming zones (a barricade, a cut rope); hazards, time pressure, social dynamics — keep short; the ground itself is the tagged `location.*`'s `Ground`)
+- **Ground**: (physical scenes: the few zones the scene is played on, one line each — light, footing, cover for whoever stands there, height, how you reach the neighbouring zones and any check, the distances that matter — in `rules.encounter`'s thresholds)
+- **Initial positions**: (who starts in which zone; formations)
+- **Scene rules**: (terrain, light, hazards, time pressure, social dynamics — keep short; link `location.*` if detail is large)
 - **Triggers**: (dialog escalates, timer, reinforcements, secret surfaces, phase change)
 - **Resolution**: (how it can end — fronts, attitudes, loot, intel)
 

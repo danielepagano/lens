@@ -26,9 +26,7 @@ EOF
 )"
 lens kb tag pc.senna --add "level:4"
 
-# The settlement the ravine belongs to. A settlement gets no Ground: the
-# location hierarchy covers it. The design step `ground_declined_settlement`
-# builds a sibling of this one and should decline Ground the same way.
+# The town the ravine belongs to: ordinary location prose, parent of the ravine.
 lens kb add location.eight-fates "$(cat <<'EOF'
 Eight Fates
 
@@ -40,10 +38,8 @@ Eight Fates
 EOF
 )"
 
-# The scene-scale place, with Ground written in rule terms. This is the object
-# under test on the play side: every spatial number is a threshold value, and
-# the three contradictions in the original freehand prep (see the scenario's
-# `reprep_ravine` step) cannot be written in this form.
+# The ravine as a location: durable prose only. The ground the scene is played
+# on lives in the encounter.
 lens kb add location.fates-ravine "$(cat <<'EOF'
 The Ravine of Eight Fates
 
@@ -51,22 +47,13 @@ The Ravine of Eight Fates
 - Sensory feel: the river loud enough to drown a shout; cold spray; carrion birds on the west wall.
 - Why it matters: the only way to the Gate, and the gnolls have taken the old den on the west wall.
 - What the place does: the floor never reaches the Gate. Whoever holds the Den sees every step of the descent.
-
-## Ground
-
-- **Rim**: trailhead on the east rim, 60 ft above the Floor; bright by day; open, half cover behind the waymark cairn. To **Ledge**: the cut stair, normal movement, single file. **Den** is beyond 120 ft, in plain sight.
-- **Ledge**: 5-ft stair on the east wall, 30 ft above the Floor; bright until mid-afternoon, then dim; no cover. To **Switchbacks**: climb, DC 10 Athletics, single file. **Den** is 120 ft across the gorge, in plain sight, with half cover. **Floor**: only by falling.
-- **Switchbacks**: goat track in the scree under the Ledge, 10 ft above the Floor; dim; difficult terrain; half cover behind boulders. To **Floor**: the last turn, difficult terrain. **Den** is 90 ft across, three-quarters cover from it.
-- **Floor**: shingle and shallow fast water; dim by day, darkness after sunset; difficult terrain. To **Den**: the gnolls' knotted rope, climb, DC 10 Athletics. To **Gate**: no way on foot; the Floor ends in the Sump, swim DC 12 Athletics, then climb DC 15 Athletics.
-- **Den**: cave mouth on the west wall, 30 ft above the Floor; dim at the lip, darkness inside; half cover at the lip. To **Gate**: the west shelf, normal movement, single file.
-- **Gate**: iron-bound door at the north end, 20 ft above the Floor; dim; total cover inside the arch. **Ledge** is 90 ft down-gorge, in plain sight.
 EOF
 )"
 lens kb tag location.fates-ravine --add "location.eight-fates"
 
-# The encounter that plays out there. Positions are zone plus band; the one
-# encounter-only change to the ground (the rope) is a scene rule naming zones.
-# Tagged with its location so `encounter.ravine-approach+` brings the Ground.
+# The encounter, carrying the reference Ground: every distance snapped to a
+# threshold, and the three contradictions in the original freehand prep (see
+# the scenario's `reprep_ravine` step) cannot be written in this form.
 lens kb add encounter.ravine-approach "$(cat <<'EOF'
 The Ravine Approach
 
@@ -74,8 +61,15 @@ The Ravine Approach
 
 - **Situation**: Early afternoon. The party starts down the Ravine of Eight Fates for the Gate, without a guide or a token. Gnolls hold the Den on the west wall and watch the descent.
 - **Stakes**: Reaching the Gate before dark, or being pinned on the east wall when the light goes.
-- **Initial positions**: Party on the Rim. Two gnoll warriors at the Den lip, in plain sight of the Ledge across the gorge. Two hyenas on the Floor below the Den, out of sight of the Rim. Nobody on the Switchbacks or at the Gate.
-- **Scene rules**: The Den rope: one action from the Den lip to haul it up; with it gone, the Floor to the Den is climb, DC 15 Athletics. The gnolls shoot at anyone on the Ledge or the Switchbacks and never at the Rim. At mid-afternoon the Ledge goes dim (see Ground).
+- **Ground**:
+  - **Rim**: trailhead on the east rim, 60 ft above the Floor; bright by day; open, half cover behind the waymark cairn. To **Ledge**: the cut stair, normal movement, single file. **Den** is beyond 120 ft, in plain sight.
+  - **Ledge**: 5-ft stair on the east wall, 30 ft above the Floor; bright until mid-afternoon, then dim; no cover. To **Switchbacks**: climb, DC 10 Athletics, single file. **Den** is 120 ft across the gorge, in plain sight. **Floor**: only by falling.
+  - **Switchbacks**: goat track in the scree under the Ledge, 10 ft above the Floor; dim; difficult terrain; half cover behind boulders, three-quarters against the Den. To **Floor**: the last turn, difficult terrain. **Den** is 90 ft across.
+  - **Floor**: shingle and shallow fast water; dim by day, darkness after sunset; difficult terrain. To **Den**: the gnolls' knotted rope, climb, DC 10 Athletics. To **Gate**: no way on foot; the Floor ends in the Sump, swim DC 12 Athletics, then climb DC 15 Athletics.
+  - **Den**: cave mouth on the west wall, 30 ft above the Floor; dim at the lip, darkness inside; half cover at the lip. To **Gate**: the west shelf, normal movement, single file.
+  - **Gate**: iron-bound door at the north end, 20 ft above the Floor; dim; total cover inside the arch. **Ledge** is 90 ft down-gorge, in plain sight.
+- **Initial positions**: Party on the Rim. Two gnoll warriors at the Den lip. Two hyenas on the Floor below the Den, out of sight of the Rim. Nobody on the Switchbacks or at the Gate.
+- **Scene rules**: The Den rope: one action from the Den lip to haul it up; with it gone, the Floor to the Den is climb, DC 15 Athletics. The gnolls shoot at anyone on the Ledge or the Switchbacks and never at the Rim.
 - **Triggers**: If anyone reaches the Switchbacks, the hyenas are loosed along the Floor. If a gnoll drops below half HP, the other hauls up the rope and holds the Den. If the party reaches the west shelf, both gnolls fall back inside.
 - **Resolution**: The party reaches the Gate, turns back to Eight Fates, or is pinned until dark. The Den taken or left holding changes who controls the descent for the next party.
 
