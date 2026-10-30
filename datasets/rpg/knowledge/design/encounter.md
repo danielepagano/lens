@@ -30,8 +30,8 @@ Write the encounter object like a playable script, not a story recap:
 - Situation: one or two sentences
 - Stakes: what can go wrong
 - Participants: links or inline descriptions of npc/faction/stat objects
-- Ground: when position matters. It is play material, not a description of a place: start from what the scene has to make possible — a lead to keep or lose, open ground to cross under fire — decide how long it should last, lay out the few zones that make it happen at the speeds in play, then dress them. One line per zone: light, footing, cover (for whoever stands there, and against what when it depends on direction), height, how you get to the zones next to it, and the distances that matter, in the ruleset's own terms. The player is told these and plans against them, so they have to agree with each other and with the scene rules.
-- Initial positions: who starts in which zone, leaving the outcome open
+- Ground: when position matters. It is play material, not a description of a place: start from what the place has to make possible in play — a sightline to break, open ground to cross under fire, a lead to keep or lose — lay out the few zones that do it, then dress them. One line per zone: light, footing, cover (for whoever stands there, and against what when it depends on direction), height, how you get to the zones next to it, and the distances that matter, in the ruleset's own terms. The player is told these and plans against them, so they have to agree with each other and with the scene rules.
+- Initial positions: who starts in which zone
 - Scene rules: the procedures this scene runs on (see below)
 - Triggers: what causes shifts (dialog to combat, timer expires, reinforcements, secret revealed). Write each as a condition, never as a mood: "if the party names the Guild", "at round 3" — not "if things get tense". A trigger into violence or pursuit is also where `play` loads the module that covers it, so make it unmistakable.
 - Resolution: how it ends and what changes
