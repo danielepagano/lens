@@ -22,7 +22,7 @@ Get the live shape of the situation:
 Assemble the participants cleanly. They include any given PCs, plus:
 - Named NPCs (recurring non-player characters) have `npc.*` objects
 - Factions, both as context and to control the rules of groups of creatures, have `faction.*` objects
-- Locations: if the encounter occurs in a specific, sufficiently complex, and recurring location, it will have a `location.*` object.
+- Locations: if the encounter occurs in a specific, sufficiently complex, and recurring location, it will have a `location.*` object. Its `Ground` is the scene's map; tag the location so `encounter.<key>+` brings it. A scene played on ground that has no `Ground` yet is a missing location object (below).
 
 Missing an NPC, faction, or location object? If the request covers it, `kb_get design.<key>` and build it here alongside the encounter. If it is your idea rather than theirs, say what you would introduce and let the user decide.
 
@@ -30,6 +30,7 @@ Write the encounter object like a playable script, not a story recap:
 - Situation: one or two sentences
 - Stakes: what can go wrong
 - Participants: links or inline descriptions of npc/faction/stat objects
+- Initial positions: each group's zone plus a band from a named zone, in the ruleset's terms — "archers on the Ledge, 90 ft up-gorge from the Stair" — never freehand distances. A change to the ground only this scene makes (a barricade, a cut rope) is a scene rule that names zones.
 - Scene rules: the procedures this scene runs on (see below)
 - Triggers: what causes shifts (dialog to combat, timer expires, reinforcements, secret revealed). Write each as a condition, never as a mood: "if the party names the Guild", "at round 3" — not "if things get tense". A trigger into violence or pursuit is also where `play` loads the module that covers it, so make it unmistakable.
 - Resolution: how it ends and what changes

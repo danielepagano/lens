@@ -3,9 +3,9 @@ Encounter name
 
 - Situation: (what's happening, in one or two sentences)
 - Stakes: (what can go wrong, what's at risk)
-- Initial positions: (for combat/physical encounters: starting distances, formations, terrain zones — enough for theater-of-mind)
+- Initial positions: (for combat/physical encounters: each group's zone in the location's `Ground` plus a band from a named zone — "archers on the Ledge, 90 ft up-gorge from the Stair" — never freehand distances; formations)
 - Participants: (who's involved; link npc/faction or stat block objects. For prepared combatants, also tag the encounter with the relevant `stat.*` so `encounter.*+` can expand them during play.)
-- Scene rules: (special mechanics for this situation — tactical features, environmental effects, conversation goals, chase rules, puzzle mechanics, time pressure. Keep short; link lore object if complex.)
+- Scene rules: (special mechanics for this situation — changes to the ground only this scene makes, naming zones (a barricade, a cut rope), environmental effects, conversation goals, chase rules, puzzle mechanics, time pressure. Keep short; link lore object if complex.)
 - Triggers: (what causes the situation to shift — dialog escalates, timer expires, reinforcements arrive, secret is revealed)
 - Resolution: (how it ends and what should change — front updates, NPC attitude shifts, loot, information revealed)
 

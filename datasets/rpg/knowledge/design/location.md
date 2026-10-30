@@ -1,6 +1,6 @@
 # [DESIGN MODULE]: LOCATION BUILD-OUT
 
-Build `location.*` objects: places the story keeps coming back to, linked into a map graph. Use for places with pressure, recurrence, secrets, or a real chance of anchoring play — not for every room the party walks through.
+Build `location.*` objects: places the story keeps coming back to, linked into a map graph, and, for a scene-scale place, the `Ground` it is played on. Use for places with pressure, recurrence, secrets, or a real chance of anchoring play — not for every room the party walks through: the rooms, ledges and stairs inside one place are zones in its `Ground`, not objects.
 
 Locations are fractal — continent to region to city to room. When invoked you will have a TASK to create or modify one or more locations; don't exceed the given mandate.
 
@@ -28,6 +28,22 @@ DO NOT write encyclopedic descriptions. The AI will work with what you give it �
 
 Sensory detail makes a location writable; it does not make it playable. Give every location at least one line that **acts on the scene** — a feature with a cost, an access rule, something that happens on a schedule. That line is the artifact this module produces, and it has to be one the party can notice and plan around, not a hidden condition that only ever ambushes them. "The tide takes the causeway for six hours a day; cross late and you swim or you wait." "The toll-keeper logs every name, so anyone who crosses is findable afterwards." "Only two ways out: the main stair, and a drop into the cistern nobody survives cleanly." One such line is worth a paragraph of atmosphere, because atmosphere can be improvised at the table and an access rule cannot.
 
+GROUND
+
+Map ground to the ruleset's decision boundaries, and say it plainly. A spatial fact is worth stating only where it changes a choice: reach it in one move, within range, a dash away, dim or dark, a climb. 170 ft and 200 ft are the same decision; 30 ft and 35 ft are not. Place things *at* the thresholds instead of measuring the space between them. `play` states these bones openly and the player may draw them on a grid, so they must be the rules' own values.
+
+Write a `## Ground` section only for a scene-scale place the party will explore, sneak through, chase across or fight in. A settlement or a travel route gets none — the location hierarchy covers it — and neither does a place where nobody moves.
+
+The thresholds belong to the system: before writing one, `kb_get rules.encounter` (SPATIAL AWARENESS) unless it is already in scope. A system without one uses close / near / far, bright / dim / dark, open / difficult / climb.
+
+Lay it out as the template says, 3–7 zones, one line each, and:
+- No number the ruleset does not distinguish — no widths, no route lengths.
+- State only the pairs that matter, and never a sum along a route: that is how one den ends up both 120 ft and 200 ft from the same stair.
+- Every adjacent pair says how to cross or why you can't.
+- A zone is a line, not an object. A sub-place gets its own `location.*` only if it recurs across scenes on its own.
+
+Example (D&D): **Ledge**: 5-ft stair on the east wall, 30 ft above the Floor; bright until mid-afternoon, then dim; no cover. To **Switchbacks**: climb, DC 10 Athletics, single file. **Den** is 120 ft across the gorge, in plain sight, with half cover. **Floor**: only by falling.
+
 Connect it to the live story:
 - Which fronts play out here? Link via tags.
 - Which NPCs are based here? They should tag back to this location.
@@ -39,7 +55,7 @@ A location rarely needs one, but when the place is a step in a longer plan — w
 
 GUIDELINES:
 - Fewer locations, better described, is always better than many objects we'll forget to pin.
-- If a location is only visited once and has no secrets, it probably doesn't need an object
+- If a location is only visited once, has no secrets and no `Ground` worth writing, it probably doesn't need an object
 - Parent links are REQUIRED — they're how the map works
 - Sensory details > historical details. The AI needs to describe what the PCs experience, not lecture about the founding.
 

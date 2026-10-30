@@ -21,7 +21,7 @@ datasets = ["rpg", "my-ruleset"]
 |-----------|----------|
 | `knowledge/pc/_template.md` | Player Character template (play surface — appearance, context, affiliations, problem-solving style; no power lists or backstory) |
 | `knowledge/npc/_template.md` | NPC template (appearance, affiliations, goals, status, and the limit that decides behaviour mid-scene) |
-| `knowledge/location/_template.md` | Location template (type, scale, sensory feel, history, tensions; links to parent location via tag) |
+| `knowledge/location/_template.md` | Location template (type, scale, sensory feel, history, tensions, `Ground` for scene-scale places; links to parent location via tag) |
 | `knowledge/faction/_template.md` | Faction template (beliefs, methods, territory, stance toward party, plans) |
 | `knowledge/front/_template.md` | Front template (problem, stakes, phases/beats, timeline anchors, resolution triggers) |
 | `knowledge/encounter/_template.md` | Encounter template (situation, stakes, participants, scene rules, triggers, resolution) |
@@ -30,7 +30,7 @@ datasets = ["rpg", "my-ruleset"]
 | `knowledge/design/planning.md` | Design module: story planning (setting frame, arcs, core questions, twists; produces material, not artifacts) |
 | `knowledge/design/pc.md` | Design module: player character (splits into `pc.*` + `lore.*` with core questions) |
 | `knowledge/design/npc.md` | Design module: NPC creation (recurring characters; story-service gated) |
-| `knowledge/design/location.md` | Design module: location build-out (few locations, well-described; sensory > historical) |
+| `knowledge/design/location.md` | Design module: location build-out (few locations, well-described; sensory > historical; `Ground` in the ruleset's thresholds) |
 | `knowledge/design/faction.md` | Design module: faction build-out (methods section is most important) |
 | `knowledge/design/front.md` | Design module: front grooming (schedules prepared pressure; makes each front move on its own) |
 | `knowledge/design/encounter.md` | Design module: encounter design (any prepared situation; scene rules quoted or invented, deltas only; arc-aware) |
