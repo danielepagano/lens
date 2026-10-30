@@ -1,8 +1,8 @@
-# Ground: a ravine mapped to the ruleset's thresholds
+# Ground: a ravine mapped in the terms its rules decide by
 
 Exercises #189: the ground a physical encounter is played on, written as a
-`Ground` in the encounter, with distances snapped to the thresholds the rules
-care about, and play holding to it. The case is the eight-fates ravine, whose
+`Ground` in the encounter, with distances placed against the speeds and ranges
+in play, and play holding to it. The case is the eight-fates ravine, whose
 original freehand prep contradicted itself three times — a floor "20–40 ft
 wide" next to a den "200 ft across" from the stair, three switchbacks gaining
 ~10 ft over 300 ft of ravine, and nothing saying why the floor can't be walked
@@ -13,7 +13,7 @@ to the gate — and whose play drifted on light and distance from beat to beat.
   feature with a mechanical consequence, and notes anything it adds in an
   `<!-- ai: -->` comment so later beats reuse it.
 - **Design** (`design.encounter`) writes a `Ground` whose zones agree with each
-  other, with distances on the thresholds in `rules.encounter`.
+  other, with distances placed against the speeds and ranges in play.
 
 ```config
 datasets:
@@ -95,31 +95,18 @@ comment.
 lens play "We wait in the boulders until the sun is off the east wall, then work along the floor toward the gate." --pass
 ```
 
-### `reprep_ravine`
+### `ground_gorge_invented`
 
-Closes play, resets the encounter's ground to the original freehand prep (the
-three contradictions included), and asks `design.encounter` to re-prep it. The
-reference `Ground` from Setup is the comparison.
+Design invents a ground from nothing. Closes play and unpins the reference
+encounter first, so no prepared `Ground` is in scope to copy. Tests that the
+zones fit together (a width, a height and a distance across the same gap
+agree), that distances sit where the speeds and ranges in play make them bite,
+and that every way in or out is stated or ruled out.
 
 ```bash
 lens play --end
-lens kb add encounter.ravine-approach "$(cat <<'EOF'
-The Ravine Approach
-
-## Situation
-
-- **Situation**: Early afternoon. The party starts down the Ravine of Eight Fates for the Gate, without a guide or a token. Gnolls hold the den on the west wall and watch the descent.
-- **Stakes**: Reaching the Gate before dark, or being pinned on the east wall when the light goes.
-- **Initial positions**: The floor is 20–40 ft wide, shingle and fast water. A narrow stair is cut into the east wall partway down; from the stair the gnoll den is 200 ft across, a cave mouth on the west wall. Below the stair, three switchbacks gain about 10 ft over 300 ft of ravine. The Gate is an iron-bound door at the north end, above the water. Two gnoll warriors at the den mouth; two hyenas on the floor.
-
-## Prep and reference
-
-- 2× KB['stat.gnoll-warrior']
-- 2× KB['stat.hyena']
-EOF
-)"
-lens commit
-lens design --module encounter "Re-prep encounter.ravine-approach so its ground holds up in a fight: the gnolls shoot from the den while the party descends the east wall."
+lens pin kb remove encounter.ravine-approach+ /
+lens design --module encounter "A gnoll ambush in a different gorge on the moor road: the party has to get down one wall, across the water and up the other while gnolls shoot from above."
 lens design --end
 ```
 
@@ -156,12 +143,12 @@ Score each step on a 1–5 scale:
 3. **Mechanics stated plainly** (play steps) — the player is told every
    distance, light level, cover and terrain feature with a mechanical
    consequence, with flavour on top, not buried in it
-4. **Thresholds** (design steps) — distances land on the thresholds in
-   `rules.encounter` unless something forces an exact figure
-5. **Consistency** (design steps) — the zones agree with each other; in
-   `reprep_ravine` the three original contradictions are gone: the den sits at
-   a stated distance from named zones, the switchbacks are a crossing with a
-   height step, and the floor-to-gate gap says why
+4. **Distances that bite** (design steps) — 5-ft steps, placed against the
+   speeds and ranges of the participants (just inside or past a move, a bow's
+   normal range)
+5. **Consistency** (design steps) — the zones agree with each other: widths,
+   heights and distances across the same gap fit together, and every
+   neighbouring zone says how you cross or why you can't
 6. **Scope** — a handful of zones, one line each, in the encounter; no new
    `location.*` objects for them
 
@@ -172,7 +159,7 @@ Score each step on a 1–5 scale:
 `encounter._template` (both datasets) for design.
 
 **Goal:** play reads `Ground` as the shared starting picture and never
-re-measures it; design lands distances on thresholds instead of measuring
+re-measures it; design places distances where they change a decision instead of measuring
 arbitrary space.
 
 **Anti-patterns:** restating `Ground` with new numbers ("about 150 ft");

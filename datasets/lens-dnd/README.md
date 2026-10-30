@@ -64,7 +64,7 @@ KB template for creating `encounter.*` objects. Three sections:
 
 Runtime procedures for the AI DM during play:
 
-- **Spatial awareness** — theater-of-mind tracking in 5-ft steps that snap to rule thresholds, scenes established from the encounter's `Ground`, restating after significant changes
+- **Spatial awareness** — theater-of-mind tracking in 5-ft steps placed against the speeds and ranges in play, scenes established from the encounter's `Ground`, restating after significant changes
 - **Initiative and turn structure** — the player runs all dice and tracks turn order; the AI controls creature choices when meaningful tactical decisions arise
 - **Encounter flow** — entry → mid-encounter triggers → resolution → post-encounter consequences
 
