@@ -7,7 +7,7 @@ Use these rules whenever someone is trying to get away and someone else is tryin
 STRUCTURE
 
 - Roll Initiative when the chase begins, as for combat.
-- Track the DISTANCE between quarry and pursuers, not exact positions. Distance changes; the map does not need to.
+- Track the DISTANCE between quarry and pursuers, not exact positions. Distance changes; the map does not need to. It is the distance `rules.encounter` tracks, read the same way: in reach, within a move, within a Dash, in sight. A `Ground` in scope is the map the chase crosses — the gap is counted across its zones.
 - Each round every participant moves and acts as normal. The distance closes or opens by the difference in what they actually covered.
 
 DASHING AND EXHAUSTION
@@ -18,7 +18,7 @@ Exhaustion is what ends most chases. A creature reduced to Exhaustion level 6 di
 
 COMPLICATIONS
 
-Each round, introduce one concrete obstacle drawn from the terrain — a cart across the alley, a crowded market, a locked gate, a low branch, a drop to the next roof, a stretch of scree. State what it costs: extra movement, a check to pass at speed, or a choice between a slow safe route and a fast risky one. A complication that is only scenery is not a complication.
+Each round, introduce one concrete obstacle drawn from the terrain — the `Ground`'s crossings first, if there is one — a cart across the alley, a crowded market, a locked gate, a low branch, a drop to the next roof, a stretch of scree. State what it costs: extra movement, a check to pass at speed, or a choice between a slow safe route and a fast risky one. A complication that is only scenery is not a complication.
 
 Complications should hit whoever reaches them, quarry and pursuer alike. A chase in which only the players face obstacles is a punishment, not a chase.
 

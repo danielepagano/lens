@@ -56,7 +56,7 @@ Encounter types covered: combat, social, chase/escape, puzzle/exploration, and m
 
 KB template for creating `encounter.*` objects. Three sections:
 
-- **`## Situation`** — what's happening, stakes, initial positions (distances, formations, cover), scene rules, triggers, resolution conditions
+- **`## Situation`** — what's happening, stakes, ground (zones, light, cover, distances — the place, not the scene), initial positions when the scene opens at a known moment, scene rules, triggers, resolution conditions
 - **`## Running non-PC characters`** — encounter-specific tactics, priorities, morale, flee thresholds (defaults: player runs dice, AI answers when asked, grounded in stat blocks)
 - **`## Prep and reference`** — combat-only `KB['stat.…']` roster with counts (foes and allied stat blocks). Every stat listed here must also appear as an object tag
 
@@ -64,7 +64,7 @@ KB template for creating `encounter.*` objects. Three sections:
 
 Runtime procedures for the AI DM during play:
 
-- **Spatial awareness** — theater-of-mind tracking at 5-ft resolution, zones, cover, elevation, restating after significant changes
+- **Spatial awareness** — theater-of-mind tracking in 5-ft steps placed against the speeds and ranges in play, scenes established from a `Ground` in scope, restating after significant changes
 - **Initiative and turn structure** — the player runs all dice and tracks turn order; the AI controls creature choices when meaningful tactical decisions arise
 - **Encounter flow** — entry → mid-encounter triggers → resolution → post-encounter consequences
 
