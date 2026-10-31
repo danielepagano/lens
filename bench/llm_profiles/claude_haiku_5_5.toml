@@ -1,0 +1,11 @@
+# Claude Haiku 5.5 (Anthropic)
+# The endpoint rejects temperature, so none is set (same as gpt_6_luna).
+[llm]
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPEN_ROUTER_API_KEY"
+model = "anthropic/claude-haiku-5.5"
+timeout_seconds = 300
+first_token_timeout_seconds = 60
+
+[llm.extra_payload]
+provider = { order = ["anthropic"], allow_fallbacks = false }

@@ -6,3 +6,6 @@ model = "minimax/minimax-m3"
 temperature = 0.9
 timeout_seconds = 600
 first_token_timeout_seconds = 120
+
+[llm.extra_payload]
+provider = { order = ["gmicloud/fp8"], allow_fallbacks = false }

@@ -267,6 +267,7 @@ We cleanly separate "Planning VS Play". The key insight: **play needs exactly on
 | `design` | Plan | Create/update KB objects via design modules | As needed |
 | `play` | Play | All narrative: prose, dialog, combat, chases, puzzles | Default during play |
 | `advance` | Plan | Updates `front` objects as time passes | Player explicitly passes time |
+| `test-play` | Plan | Reviews prepared content by reading and playing it as `play` would | When a draft is worth testing |
 
 ### Create and Refine Knowledge For Your Game with `design`
 
@@ -371,6 +372,18 @@ The original design proposed `converse` and `encounter` as separate operators. W
 `play` doesn't need the full campaign graph at every beat. The pinning system already handles this: a scene section pins what's relevant (the encounter, the location, the NPCs present) and unpins what isn't. A combat encounter naturally pins stat blocks and unpins distant lore. A campfire scene pins the location and the NPC present, nothing more. The fractal summarization ensures distant context is available at appropriate resolution.
 
 For particularly heavy encounters (a major boss fight with many stat blocks and environmental rules), the player can open a `section` to focus context. This is an existing mechanism, not a new operator — and it's the player's choice, not forced by the system.
+
+### Test prepared content with `test-play`
+
+Prepared content fails in ways its author cannot see. The author knows what a cover line meant; only a cold reader finds that it reads two ways. A 30-ft square can carry an escape rule that needs 40 ft of separation, a quarry with a bonus-action Dash can make a six-round clock irrelevant in round one, a bell can ring at round four in a chase that is over by round three. None of these is visible from the author's chair, and all of them are visible to a reader that plays the thing through.
+
+`lens test-play <id>` is that reader. It assembles exactly what `play` would see with the object pinned — the rules, the `+` expansion, the `rules.<type>` companions, the PCs, the story — states what the GM would establish at the opening beat, plays one or two approaches through, aimed at the line most likely to break, and reports at most five typed findings that quote the line they are about. It is generic: an encounter is the main case, but an NPC with a limit or a front with a clock is reviewed the same way, with no per-type harness.
+
+**It reviews for a GM, not for a script.** `play` is an AI GM that rules on anything prep leaves unstated, so a branch the object does not spell out — an unscripted reaction, an edge case, what happens if the player tries something — is not a defect. A finding has to clear one bar: two reasonable GMs would rule it oppositely, and the difference changes who wins or what it costs. That leaves contradictions between stated facts, missing facts play cannot make up consistently (mostly physical: distance, height, light, sightlines), triggers that cannot fire, and outcomes decided before play. The first real run showed why the bar matters: a reviewer that reports every unscripted branch, answered by an author who adds a rule per finding, grows the object into a flowchart — harder to run, with more edges for the next review to find, so the count never falls. `No findings.` is the expected result for prep that is ready, and the guidance to authors and to the next `design` turn is to run it once, fix contradictions, and cut or leave the rest to the GM.
+
+It is deliberately **not a gate**. An LLM reviewer with a veto invites edits that satisfy the reviewer rather than the scene; the user stays the only authority, as everywhere else in Lens. It never rewrites and never proposes story: the fiction is given, and it reports on mechanism.
+
+Inside a design session the draft is the session's proposals, and the review becomes a closed child of the session whose findings land on the session node, where the next `design` turn reads them. The full transcript stays in the child, costing the session nothing. The review is generated while the cursor is still on the session node — the pending layer folds from the cursor only — and the child is created, filled and closed only afterwards, so a cancelled review leaves nothing behind. Outside a session nothing is written at all: the review is full of secrets and must never land in a play narrative.
 
 ## Pass The Time with `advance`
 

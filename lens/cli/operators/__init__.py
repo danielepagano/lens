@@ -37,13 +37,17 @@ def register_operators(main_app: typer.Typer) -> None:
         limited = list(getattr(op_class, "limited_to_datasets", [])) if op_class else []
         if not operator_applies_to_session(selected, limited):
             continue
+        # Module names are Python identifiers; commands are dashed (`test-play`),
+        # matching the operator's persisted name with `_` (the annotation
+        # grammar has no `-`).
+        command = name.replace("_", "-")
         if not app.registered_commands and app.registered_callback:
             mod = importlib.import_module(f"lens.cli.operators.{name}")
             callback = getattr(mod, name)
             help_text = app.registered_callback.help
             if isinstance(help_text, str):
-                main_app.command(name, rich_help_panel="Operators", help=help_text)(callback)
+                main_app.command(command, rich_help_panel="Operators", help=help_text)(callback)
             else:
-                main_app.command(name, rich_help_panel="Operators")(callback)
+                main_app.command(command, rich_help_panel="Operators")(callback)
         else:
-            main_app.add_typer(app, name=name, rich_help_panel="Operators")
+            main_app.add_typer(app, name=command, rich_help_panel="Operators")

@@ -152,7 +152,7 @@ lens/
   cli/           # Typer CLI layer (argument parsing, error display)
     main.py      # Entry point + preflight callback + LensGroup (help panel order)
     commands/    # Non-AI commands (init, use, kb, pin, stats, explain, spine, skill, rollback, commit, checkpoint, rewind, refresh, media; dataset extensions may add more)
-    operators/   # AI operator CLI adapters (write, edit, section, collate, compress, chat, play, design, advance)
+    operators/   # AI operator CLI adapters (write, edit, section, collate, compress, chat, play, design, advance, test_play)
     test/        # CLI unit tests
   core/          # Business logic (no Typer dependency)
     project.py   # Git/project root discovery, active narrative resolution, dataset path resolution
@@ -182,7 +182,7 @@ lens/
     operators/   # Core AI operators (write, edit, section, collate, compress, chat, design)
     test/        # Core unit tests
       integration/  # Integration tests
-  rpg/           # Bundled rpg dataset operators (play, advance)
+  rpg/           # Bundled rpg dataset operators (play, advance, test_play)
     operators/
     test/
   server/        # FastAPI adapter + Svelte UI (lens/server/ui/)
@@ -300,6 +300,7 @@ that dataset's kind of content.
 | `design` | session | `core/operators/design.py` | Session Zero planning; uses command_tools; writes KB through the four verbs (proposals until `--end`) |
 | `play` | session | `rpg/operators/play.py` | GM-voice narrative; requires `rpg` dataset + pinned `pc.*` |
 | `advance` | session | `rpg/operators/advance.py` | Time pass / fronts; requires `rpg` dataset |
+| `test_play` | review | `rpg/operators/test_play.py` | `lens test-play`: one review of prepared content in play's context; inside a design session writes a closed child + findings on the session, elsewhere writes nothing; requires `rpg` dataset |
 
 ### LLM configuration
 

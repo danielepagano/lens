@@ -218,6 +218,40 @@ Rewind never touches side effects — KB objects a discarded session already wro
 
 In all cases, child nodes whose section annotations are no longer present are recursively deleted. Side effects such as KB objects created by `design` are never modified. The changes are left as a pending transaction; use `lens commit` or `lens checkpoint` to keep them.
 
+### `lens test-play`
+
+Reviews prepared content by reading and playing it as `play` would. One call, invoked when you judge a draft worth testing — never automatic, never a gate.
+
+```bash
+lens test-play encounter.plaza-chase                 # review one object; print the findings
+lens test-play encounter.plaza-chase -v              # stream the full review
+lens test-play encounter.ambush --prompt "night, two days after the siege, Rowan out of bolts"
+lens test-play encounter.ambush --prompt "they try stealth first"
+lens test-play encounter.ambush --no-spine           # fully hypothetical content
+lens test-play encounter.ambush --json               # findings as data, for an agent
+lens test-play                                       # inside a design session: its proposals
+```
+
+Arguments: `[ID]...` — KB ids to review. Inside an open `design` session the default is every object the session has proposals for, read **as proposed** (the pending layer, not disk). A session that has only discussed an object has nothing to test, and says so. Outside a session an id is required.
+
+Options:
+
+- `--prompt` — assumed circumstances, or an approach to try. The reviewer is told stated circumstances override the story where they conflict, which is what makes a review of content prepared for a later point in the story trustworthy.
+- `--no-spine` / `--spine` — drop the narrative entirely, or keep it over a pinned `params.test_play.no_spine`. Pinned `params.test_play` (`targets`, `prompt`, `no_spine`) fill whatever the call leaves out, for both the run and `lens explain -o test_play`.
+- `--verbose` / `-v` — stream the full review (cold read and playthroughs) instead of printing only the findings.
+- `--json` — print targets, typed findings, the full review and the review node as JSON.
+- `--llm`, `--reasoning` — as for any operator. The default profile is `[operator.play]`, because play's model is the reader under test; an `[operator.test_play]` section, if present, wins over it. Reasoning is always on.
+
+**What it reads:** exactly the play context with the targets pinned `+` — `rules.system`, `rules.rpg`, each target's linked objects, the `rules.<type>` companions, and the `pc.*` pins in scope — plus play's `load_module` catalog. No `-` facets, no KB writes. The story is the spine `play` would read: up to the design session's parent inside a session (the session's own text is prep talk and never reaches the reviewer), up to the cursor elsewhere. `lens explain -o test_play` shows the assembled prompt.
+
+**What it returns:** a cold read (what the GM would establish at the opening beat: positions, distances, light, cover, stakes), one or two playthroughs aimed at the line most likely to break, and at most five findings, worst first, each quoting the line it is about, typed as `contradiction`, `impossible` (cannot happen, or never matters), `decided` (settled before the player chooses), `ambiguous` (two readings that play out differently), `gap` (a missing fact, mostly physical, the GM cannot make up consistently), or `rules-error` (a quoted or relied-on rule stated wrong; a scene's deliberate own value is not one). A finding has to clear one bar — two reasonable GMs would rule it oppositely, and it changes who wins or what it costs — so a branch the GM can rule on is never one, and `No findings.` is the expected result for prep that is ready. It reviews mechanism only and never proposes rewrites.
+
+**How to use the findings:** run it once. Fix contradictions; for anything else, cut the line or leave it to the GM. Adding a rule per finding turns prep into a flowchart that is harder to run and gives the next review more to find. Inside a design session the findings carry that instruction for the next `design` turn.
+
+**Where it goes:** inside a design session, a child of the session, **closed in the same call**: the full review lands in the child, and the session node gets the canonical summary block whose body is the findings list. The next `lens design` turn reads those findings as part of its passage; each run is a sibling, so before-and-after reviews sit side by side, and an unwanted run is rewound like any node. Anywhere else nothing is written — not to the narrative, not to the KB — because the review is full of what the player must not read.
+
+The persisted operator name is `test_play` (the annotation grammar has no `-`). Requires the `rpg` dataset.
+
 ### `lens rollback`
 
 Discard the pending transaction. For inline operators (e.g. `write`), reverts unstaged changes. For mutation operators (`edit`), applies a compensating transaction (removes claim tags and restores original text). Prompts for confirmation unless `-y` / `--yes` is given.

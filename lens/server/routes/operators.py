@@ -80,6 +80,14 @@ class DesignBody(BaseModel):
     slug: str | None = None
 
 
+class TestPlayBody(BaseModel):
+    targets: list[str] = []
+    prompt: str | None = None
+    no_spine: bool | None = None  # None: pinned params.test_play decide
+    llm_id: str | None = None
+    reasoning: str | None = None
+
+
 class EditBody(BaseModel):
     address: str
     start_line: int
@@ -240,8 +248,16 @@ async def _run_operator_task(
     session: ProjectSession,
     *,
     extra_done_fields: dict[str, Any] | None = None,
+    rollback_on_error: bool = True,
 ) -> None:
-    """Wrapper that runs an operator coroutine and pushes events to the queue."""
+    """Wrapper that runs an operator coroutine and pushes events to the queue.
+
+    *rollback_on_error* discards the pending transaction when the operator
+    fails, which is right for an operator whose failure leaves its own half
+    write pending.  One that writes nothing until it has succeeded (test-play)
+    passes ``False``: the pending transaction on failure is the *user's*, and
+    rolling it back would throw away their last turn.
+    """
     progress = _make_on_llm_progress(event_queue)
     try:
         async with llm_progress_scope(progress):
@@ -275,6 +291,11 @@ async def _run_operator_task(
                             done_payload["rollback_pending"] = True
                     elif isinstance(result, Storage):
                         pass
+                    # test-play returns its review; findings are what the UI shows
+                    elif hasattr(result, "findings_text"):
+                        review = result.to_dict()
+                        done_payload["interrupted"] = bool(review.pop("interrupted"))
+                        done_payload.update(review)
                     # Design and advance return KbMaterializeResult
                     elif hasattr(result, "inserted"):
                         done_payload["inserted"] = result.inserted
@@ -289,11 +310,13 @@ async def _run_operator_task(
                 _log.warning("operator %s validation error: %s", operator_name, e)
                 await event_queue.put({"type": "error", "message": str(e)})
             except OperatorError as e:
-                execute_rollback(session)
+                if rollback_on_error:
+                    execute_rollback(session)
                 _log.warning("operator %s failed: %s", operator_name, e)
                 await event_queue.put({"type": "error", "message": str(e)})
             except LensException as e:
-                execute_rollback(session)
+                if rollback_on_error:
+                    execute_rollback(session)
                 _log.warning("operator %s lens error: %s", operator_name, e)
                 await event_queue.put({"type": "error", "message": str(e)})
             except asyncio.CancelledError:
@@ -370,6 +393,8 @@ def _start_operator_stream(
     node_address: str | Callable[[], str],
     coro_fn: Any,
     request: Request,
+    *,
+    rollback_on_error: bool = True,
 ) -> StreamingResponse:
     """Acquire the stream lock, launch operator task, return SSE response."""
     lock.acquire(operator_name)
@@ -390,6 +415,7 @@ def _start_operator_stream(
     task = asyncio.ensure_future(
         _run_operator_task(
             coro_fn, event_queue, operator_name, node_address, session,
+            rollback_on_error=rollback_on_error,
         )
     )
     lock.task = task
@@ -620,6 +646,51 @@ async def operator_design(
         lock, event_queue, session, "design", lambda: target_ref[0], coro_fn, request
     )
 
+
+
+@router.post("/operator/test-play")
+async def operator_test_play(
+    body: TestPlayBody,
+    project_slug: str,
+    request: Request,
+    session: ProjectSession = Depends(get_session),
+    lock: StreamLock = Depends(get_stream_lock),
+) -> StreamingResponse:
+    """One review of prepared content, as play would read it.
+
+    Inside a design session the review is written to a closed child of the
+    session and the findings to the session itself; anywhere else nothing is
+    written, and the ``done`` event carries the findings for the UI to show.
+    """
+    from lens.rpg.operators.test_play import TestPlayOperator
+
+    narrative, lock, event_queue, on_token, on_stream_event = _init_stream(request, session, lock)
+    targets = [t.strip().removesuffix("+") for t in body.targets if t.strip()]
+    _validate_pins(session, targets, [])
+    cursor = narrative.find_cursor()
+    node_addr = str(cursor.to_address())
+
+    def coro_fn() -> Any:
+        return TestPlayOperator.run_test_play(
+            session=session,
+            narrative=narrative,
+            targets=targets,
+            prompt=body.prompt,
+            no_spine=body.no_spine,
+            llm_id=body.llm_id,
+            reasoning=body.reasoning,
+            on_token=on_token,
+            on_stream_event=on_stream_event,
+            cancel_event=lock.cancel_event,
+        )
+
+    # Nothing is written until the review has succeeded, so a failure must not
+    # roll back the pending transaction: it is the user's (their last design
+    # turn, say), not this operator's.
+    return _start_operator_stream(
+        lock, event_queue, session, "test_play", node_addr, coro_fn, request,
+        rollback_on_error=False,
+    )
 
 
 @router.post("/operator/chat")

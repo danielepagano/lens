@@ -139,6 +139,20 @@ lens design --module encounter "A pickpocket chase through the pilgrims' square 
 lens design --end
 ```
 
+### `review_once`
+
+The reference encounter through `lens test-play`, once, as an author would
+after writing it. This is the regression for the first real run, where four
+reviews answered with a rule per finding grew the encounter into a flowchart.
+Tests the reviewer's bar: at most five findings, none of them a branch the GM
+rules on in a sentence (an unscripted reaction, resting on the stair), none
+about a stat block itself. Prep that held up in the play steps should come back
+with `No findings.` or close to it.
+
+```bash
+lens test-play encounter.ravine-approach -v
+```
+
 ## Evaluation criteria
 
 Score each step on a 1–5 scale:
@@ -160,8 +174,15 @@ Score each step on a 1–5 scale:
 6. **The place, not the scene** (design steps) — Ground names no one's
    position and nothing only this scene brings; those are scene rules naming
    zones. Initial positions appear only when the scene opens at a known moment
-7. **Scope** — a handful of zones, one line each, in the encounter; no new
-   `location.*` objects for them
+7. **Scope** — a handful of zones, one line each (sub-bullets for a zone that
+   needs more), in the encounter; no new `location.*` objects for them
+8. **One basis, timed light** (design steps) — every distance in a Ground is
+   straight-line or every one is walked, and it says which; light that changes
+   during the scene says when
+9. **Budget** (design steps) — a few scene rules the scene cannot work without,
+   no rule written to cover a branch the GM can rule on
+10. **Review bar** (`review_once`) — at most five findings, worst first, no
+   branch coverage, no dataset lint
 
 ## Prompt iteration guidance
 

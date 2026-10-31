@@ -305,7 +305,8 @@ def _resolve_operator(
     requested: str | None,
     warnings: list[str],
 ) -> type[Operator]:
-    name = requested or detect_operator_name(node) or FALLBACK_OPERATOR
+    # Commands are dashed (`test-play`); operators persist with `_` (`test_play`).
+    name = (requested or detect_operator_name(node) or FALLBACK_OPERATOR).replace("-", "_")
     op_cls = get_operator_class_for_name(name)
     if op_cls is None:
         if requested is not None:

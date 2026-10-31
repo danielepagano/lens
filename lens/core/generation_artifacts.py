@@ -320,7 +320,7 @@ def get_compose_policy(operator_name: str | None) -> ComposePolicy:
 
 
 register_compose_policy("kb_edit", ComposePolicy.PROSE_ONLY)
-for _inline_op in ("write", "play", "chat", "design", "edit", "advance"):
+for _inline_op in ("write", "play", "chat", "design", "edit", "advance", "test_play"):
     register_compose_policy(_inline_op, ComposePolicy.NARRATIVE)
 
 
@@ -466,7 +466,9 @@ def format_tool_event_for_log(
 # remember-like paths default to PROSE_ONLY (cleaner preview).
 register_stream_compose_policy("remember", StreamComposePolicy.PROSE_ONLY)
 register_stream_compose_policy("kb_edit", StreamComposePolicy.PROSE_ONLY)
-for _inline_op in ("write", "play", "chat", "edit", "advance", "compress", "collate", "section"):
+for _inline_op in (
+    "write", "play", "chat", "edit", "advance", "compress", "collate", "section", "test_play"
+):
     register_stream_compose_policy(_inline_op, StreamComposePolicy.INTERLEAVE)
 register_stream_compose_policy("design", StreamComposePolicy.STRUCTURED)
 def compose_tool_call_for_stream(

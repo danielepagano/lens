@@ -119,6 +119,10 @@ OP_CHAT = "Have the AI speak as a character in the current scene."
 OP_PLAY = "Narrate a player-agency moment in GM voice."
 OP_DESIGN = "Collaborative KB design session: think, look up, and propose changes."
 OP_ADVANCE = "Advance time, update fronts, resolve consequences."
+OP_TEST_PLAY = (
+    "Review prepared content by reading and playing it as play would; "
+    "reports typed findings, never rewrites."
+)
 
 # ═══════════════════════════════════════════════════════════════════
 #  Shared option help strings  (used across multiple commands)
@@ -392,6 +396,20 @@ ARG_PROMPT_PLAY = (
     "(e.g. what the player says or does)"
 )
 ARG_PROMPT_DESIGN = "Design task or question"
+ARG_IDS_TEST_PLAY = (
+    "KB ids to review (default inside a design session: every object it has "
+    "proposals for)"
+)
+OPT_PROMPT_TEST_PLAY = (
+    "Assumed circumstances, or an approach to try; overrides the story where "
+    "they conflict (e.g. 'night, two days after the siege, assume level 5')"
+)
+OPT_NO_SPINE_TEST_PLAY = (
+    "Review with no story context, for fully hypothetical content "
+    "(--spine restores it over a pinned params.test_play.no_spine)"
+)
+OPT_VERBOSE_TEST_PLAY = "Stream the full review (cold read and playthroughs), not just the findings"
+OPT_JSON_TEST_PLAY = "Print the result as JSON (targets, typed findings, full review, review node)"
 ARG_PROMPT_COMPRESS = (
     "What to extract into a child section "
     "(omit if using --aggressiveness)"
