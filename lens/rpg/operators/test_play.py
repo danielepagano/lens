@@ -383,7 +383,10 @@ class TestPlayOperator(Operator):
         session's proposals, so the report shows what a bare run would send.
         """
         story = story_node(node)
-        targets = target_ids(params)
+        # Normalized exactly as run_test_play normalizes, so explain matches the run.
+        targets = list(dict.fromkeys(
+            t.strip().removesuffix("+") for t in target_ids(params) if t.strip()
+        ))
         if not targets and story.key_path != node.key_path:
             store = (
                 session.kb
@@ -391,6 +394,7 @@ class TestPlayOperator(Operator):
                 else KnowledgeStore.for_project(narrative.narrative_root.parent.parent)
             )
             targets = proposed_ids(node.md_path().read_text(encoding="utf-8"), store)
+        if targets:
             params["targets"] = targets
         extra_pins = [*(kwargs.pop("extra_pins", None) or ()), *(f"{t}+" for t in targets)]
         if story.key_path != node.key_path:
@@ -525,6 +529,12 @@ class TestPlayOperator(Operator):
                     "nothing to test: this design session has not proposed any "
                     "object yet (an object it has only discussed is not a draft)"
                 )
+        modules = [i for i in ids if i.startswith(DESIGN_MODULE_PREFIX)]
+        if modules:
+            raise ValidationError(
+                "test-play reviews what play runs; a design module is instruction for "
+                "design, not playable content: " + ", ".join(modules)
+            )
         missing = [i for i in ids if not store.exists(i)]
         if missing:
             raise ValidationError("KB object(s) not found: " + ", ".join(missing))

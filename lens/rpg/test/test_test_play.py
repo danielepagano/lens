@@ -301,6 +301,25 @@ class TestTestPlay(unittest.TestCase):
         self.assertIn("ASSUMED CIRCUMSTANCES", recorder.prompt)
         self.assertIn("dawn", recorder.prompt)
 
+    def test_a_design_module_target_is_refused_plainly(self) -> None:
+        with self.assertRaisesRegex(ValidationError, "design module is instruction"):
+            self._test_play(_Recorder(), targets=["design.encounter"])
+
+    def test_explain_matches_the_run_for_a_pinned_plus_target(self) -> None:
+        from lens.core.commands.explain import explain_context
+
+        kb_add("encounter.plaza", PLAZA, False)
+        session = self._session()
+        param_set(session, "test_play", "targets", ["encounter.plaza+"], None, None)
+        Storage(self.project_dir).stage_all()
+        recorder = _Recorder()
+        self._test_play(recorder)
+        report = explain_context(self._session(), operator="test-play")
+        explained = "\n".join(
+            str(m.get("content", "")) for m in report.to_dict(include_messages=True)["messages"]
+        )
+        self.assertEqual(explained, recorder.prompt)
+
     def test_test_play_profile_wins_when_configured(self) -> None:
         toml = self.project_dir / "lens.toml"
         toml.write_text(

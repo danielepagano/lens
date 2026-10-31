@@ -203,6 +203,7 @@ test-play [id]
 
 - \`--prompt\` — Assumed circumstances, or an approach to try; overrides the story where they conflict
 - \`--no-spine\` — Review with no story context, for fully hypothetical content
+- \`--spine\` — Keep the story even when no-spine is pinned
 - \`--verbose\` — Show the full review (cold read and playthroughs), not just the findings
 - \`--llm\` — LLM ID to use (default: play's)
 - \`--reasoning\` — Reasoning effort

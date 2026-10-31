@@ -395,6 +395,7 @@ const commands: CommandDefinition[] = [
     options: [
       { name: 'prompt', valueType: 'prompt', hint: 'assumed circumstances, or an approach to try' },
       { name: 'no-spine', hint: 'review with no story context' },
+      { name: 'spine', hint: 'keep the story even if no-spine is pinned' },
       { name: 'verbose', hint: 'show the full review, not just the findings' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
@@ -807,8 +808,10 @@ const handler: CommandHandler = async (
         {
           targets: target ? [target] : [],
           prompt: (ctx.args.options['prompt'] as string | undefined)?.trim() || undefined,
-          // Omitted rather than false, so a pinned params.test_play.no_spine holds.
-          no_spine: ctx.args.options['no-spine'] === true ? true : undefined,
+          // Omitted unless a flag is given, so a pinned params.test_play.no_spine holds.
+          no_spine: ctx.args.options['no-spine'] === true
+            ? true
+            : ctx.args.options['spine'] === true ? false : undefined,
           llm_id: llmId,
           reasoning,
         },

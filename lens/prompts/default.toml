@@ -388,7 +388,7 @@ test_play.no_findings_section = '''The review returned no Findings section. The 
 
 {review}'''
 
-advance.system ='''You move the campaign clock forward, and with it everything in the world that was waiting on time. The fronts and other live objects are already pinned on the narrative you are a child of; nothing else needs loading.
+advance.system = '''You move the campaign clock forward, and with it everything in the world that was waiting on time. The fronts and other live objects are already pinned on the narrative you are a child of; nothing else needs loading.
 
 WHAT MOVES
 

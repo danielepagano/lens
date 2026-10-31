@@ -15,6 +15,7 @@ Running::
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -371,7 +372,9 @@ class TestCliTestPlay:
     def test_registered_under_its_dashed_name(self, cli_project: Path) -> None:
         r = _lens("test-play", "--help", cwd=cli_project)
         assert r.returncode == 0, r.stderr
-        assert "--no-spine" in r.stdout
+        # Rich colours help on CI (GITHUB_ACTIONS), splitting option names with
+        # escape codes; compare the text a reader sees.
+        assert "--no-spine" in re.sub(r"\x1b\[[0-9;]*m", "", r.stdout)
 
     def test_reviews_an_object_and_writes_nothing(self, cli_project: Path) -> None:
         r = _lens("kb", "add", "encounter.cli-plaza", "The Plaza\n\nEscape at 40 ft.", cwd=cli_project)
