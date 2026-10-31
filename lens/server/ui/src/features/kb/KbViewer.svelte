@@ -452,7 +452,6 @@
               onStartDeleteConfirm={startDeleteConfirm}
               onStartRename={startRename}
               onStartCopy={startCopy}
-              itemId={item.id}
               onRenameIdChange={(value) => (renameId = value)}
               onCopyTargetIdChange={(value) => (copyTargetId = value)}
               onActionInputKeydown={handleActionInputKeydown}
