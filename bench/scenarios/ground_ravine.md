@@ -13,7 +13,11 @@ to the gate — and whose play drifted on light and distance from beat to beat.
   feature with a mechanical consequence, and notes anything it adds in an
   `<!-- ai: -->` comment so later beats reuse it.
 - **Design** (`design.encounter`) writes a `Ground` whose zones agree with each
-  other, with distances placed against the speeds and ranges in play.
+  other, with distances chosen against the speeds and ranges in play. Ground
+  is the place, not the scene: no positions in it, and what only this scene
+  brings is a scene rule naming zones, so it holds whenever and from wherever
+  the party arrives. Initial positions only when the scene opens at a known
+  moment.
 
 ```config
 datasets:
@@ -32,8 +36,9 @@ include_testing: false
 
 Two level-4 PCs; `location.eight-fates` and its child `location.fates-ravine`
 (ordinary location prose); and `encounter.ravine-approach`, tagged with the
-ravine, carrying the reference `Ground` (six zones), positions by zone, and one
-ground change (the rope) as a scene rule naming zones. The root pins both PCs
+ravine, carrying the reference `Ground` (six zones) and one ground change (the
+gnolls' rope) as a scene rule naming zones. It gives no initial positions: the
+Situation and the first beat place everyone. The root pins both PCs
 and `encounter.ravine-approach+`, so `rules.encounter` (the encounter's
 companion) is in the play context with no module request.
 
@@ -56,9 +61,10 @@ poe prompt-lab -- --scenario bench/scenarios/ground_ravine.md -o design -m encou
 ### `set_the_scene`
 
 The first beat. Tests that play **establishes from `Ground`**: the zones it
-names, their heights, light and the Den's band from the Ledge are the ones
-written, stated plainly, with flavour on top. Nothing on the Rim is a freehand
-distance.
+names, their heights, light and the Den's distance from the Rim are the ones
+written, stated plainly, with flavour on top. With no initial positions given,
+it places the party at the cairn and the gnolls at the Den lip from the
+Situation, in Ground's zones. Nothing on the Rim is a freehand distance.
 
 ```bash
 lens play "We stand at the cairn and look down the ravine. What can we see, and where are the gnolls?" --pass
@@ -123,8 +129,10 @@ lens design --end
 ### `ground_plaza`
 
 An open plaza. Tests that the zones that matter get distances between them
-without a route to follow, that light changes with lamps and crowd, and that
-cover comes from stalls rather than walls.
+without a route to follow, that light changes with lamps and crowd, that
+cover comes from stalls rather than walls, and that the chase runs on the
+same distances: Ground's crossings are its complications, and the gap is read
+against the same speeds (a move, a Dash) Ground was built on.
 
 ```bash
 lens design --module encounter "A pickpocket chase through the pilgrims' square in Eight Fates on a market night."
@@ -149,7 +157,10 @@ Score each step on a 1–5 scale:
 5. **Consistency** (design steps) — the zones agree with each other: widths,
    heights and distances across the same gap fit together, and every
    neighbouring zone says how you cross or why you can't
-6. **Scope** — a handful of zones, one line each, in the encounter; no new
+6. **The place, not the scene** (design steps) — Ground names no one's
+   position and nothing only this scene brings; those are scene rules naming
+   zones. Initial positions appear only when the scene opens at a known moment
+7. **Scope** — a handful of zones, one line each, in the encounter; no new
    `location.*` objects for them
 
 ## Prompt iteration guidance
@@ -163,5 +174,8 @@ re-measures it; design places distances where they change a decision instead of 
 arbitrary space.
 
 **Anti-patterns:** restating `Ground` with new numbers ("about 150 ft");
+a distance nobody chose ("7 ft", "about 40 ft"); positions or scene props
+written into `Ground`; a chase that tracks its gap on a different scale
+from the `Ground` it runs across;
 reciting `Ground` wholesale instead of telling the player what matters now;
 zones that disagree with each other; a `location.*` built just to hold ground.
