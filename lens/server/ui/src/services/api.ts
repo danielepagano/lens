@@ -644,6 +644,14 @@ export interface OperatorDoneEvent {
   updated?: string[]
   errors?: string[]
   section_key?: string
+  /** test-play: the review's Findings section, verbatim (what the UI shows). */
+  findings_text?: string
+  findings?: { kind: string; text: string }[]
+  /** test-play: the full review (cold read, playthroughs, findings). */
+  review?: string
+  /** test-play: closed child holding the full review; absent outside a design session. */
+  review_node?: string | null
+  targets?: string[]
   workflow_outcome?: 'success' | 'partial' | 'failed' | 'cancelled'
   steps?: WorkflowStepSnapshot[]
 }
@@ -844,6 +852,22 @@ export const runDesign = (
   onEvent: (event: OperatorEvent) => void
 ): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
   runStreamingOp(projectPath('/operator/design'), params, onEvent)
+
+export interface TestPlayParams {
+  /** KB ids to review; empty inside a design session means its proposals. */
+  targets?: string[]
+  /** Assumed circumstances, or an approach to try. */
+  prompt?: string
+  no_spine?: boolean
+  llm_id?: string
+  reasoning?: string
+}
+
+export const runTestPlay = (
+  params: TestPlayParams,
+  onEvent: (event: OperatorEvent) => void
+): Promise<OperatorDoneEvent | OperatorErrorEvent> =>
+  runStreamingOp(projectPath('/operator/test-play'), params, onEvent)
 
 export interface AdvanceParams {
   days?: number

@@ -1,5 +1,5 @@
 import { get } from 'svelte/store'
-import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runChat, runSectionStart, runSectionEnd, runCollate, runCompress, runKbEdit, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type OperatorDoneEvent, type OperatorWorkflowEvent, type Stats } from '../services/api'
+import { runWrite, runWriteManual, runEdit, runPlay, runDesign, runAdvance, runTestPlay, runChat, runSectionStart, runSectionEnd, runCollate, runCompress, runKbEdit, renameNode, StreamBusyError, type OperatorEvent, type OperatorProgressEvent, type OperatorDoneEvent, type OperatorWorkflowEvent, type Stats } from '../services/api'
 import {
   cliOutput,
   treeRefreshTrigger,
@@ -378,6 +378,26 @@ const commands: CommandDefinition[] = [
           skipWhenPromptOrStringSlot: true,
         },
       },
+    ],
+  },
+  {
+    trigger: 'test-play',
+    group: 'rpg',
+    requiresDataset: 'rpg',
+    cursorTargeting: 'always',
+    positional: [
+      {
+        name: 'id',
+        valueType: 'kb-id',
+        hint: 'object to review (default in a design session: its proposals)',
+      },
+    ],
+    options: [
+      { name: 'prompt', valueType: 'prompt', hint: 'assumed circumstances, or an approach to try' },
+      { name: 'no-spine', hint: 'review with no story context' },
+      { name: 'verbose', hint: 'show the full review, not just the findings' },
+      { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
+      { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
     ],
   },
   {
@@ -781,6 +801,18 @@ const handler: CommandHandler = async (
         { prompt: designPrompt, module_id: moduleId, pins, unpins, mentions, includes, llm_id: llmId, reasoning, retry, end: endDesign, slug: designSlug },
         handleEvent
       )
+    } else if (command === 'test-play') {
+      const target = (ctx.args.positional['id'] as string | undefined) || undefined
+      result = await runTestPlay(
+        {
+          targets: target ? [target] : [],
+          prompt: (ctx.args.options['prompt'] as string | undefined)?.trim() || undefined,
+          no_spine: ctx.args.options['no-spine'] === true,
+          llm_id: llmId,
+          reasoning,
+        },
+        handleEvent
+      )
     } else if (command === 'chat') {
       const endChat = ctx.args.options['end'] === true
       const asKbId = (ctx.args.options['as'] as string | undefined) || undefined
@@ -1083,8 +1115,15 @@ const handler: CommandHandler = async (
     }
 
     if ('type' in result && result.type === 'done') {
-      const done = result as { inserted?: string[]; updated?: string[]; errors?: string[] }
-      if (done.inserted?.length) {
+      const done = result as OperatorDoneEvent
+      if (command === 'test-play') {
+        // The review is GM material; outside a design session it is shown here
+        // and written nowhere, inside one the findings are already on the node.
+        const verbose = ctx.args.options['verbose'] === true
+        const shown = (verbose ? done.review : done.findings_text) ?? ''
+        const where = done.review_node ? `\n\nFull review: ${done.review_node}` : ''
+        cliOutput.set({ output: shown + where, exitCode: 0, streaming: false })
+      } else if (done.inserted?.length) {
         cliOutput.set({ output: `KB: inserted ${done.inserted.join(', ')}`, exitCode: 0, streaming: false })
       } else if (done.updated?.length) {
         cliOutput.set({ output: `KB: updated ${done.updated.join(', ')}`, exitCode: 0, streaming: false })

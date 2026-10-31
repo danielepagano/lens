@@ -14,6 +14,7 @@ Running::
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -348,3 +349,45 @@ class TestCliSkill:
 
         assert "## This project" not in pointer
         assert "rules.skirmish" not in pointer
+
+    def test_the_rpg_topic_tells_an_agent_to_test_play(self, cli_project: Path) -> None:
+        r = _lens("skill", "rpg", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+
+        assert "lens test-play <id>" in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# test-play: what an agent in a content repo runs after writing prep
+# ---------------------------------------------------------------------------
+
+
+class TestCliTestPlay:
+    def _status(self, cli_project: Path) -> str:
+        return subprocess.run(
+            ["git", "status", "--porcelain"], cwd=cli_project, capture_output=True, text=True
+        ).stdout
+
+    def test_registered_under_its_dashed_name(self, cli_project: Path) -> None:
+        r = _lens("test-play", "--help", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        assert "--no-spine" in r.stdout
+
+    def test_reviews_an_object_and_writes_nothing(self, cli_project: Path) -> None:
+        r = _lens("kb", "add", "encounter.cli-plaza", "The Plaza\n\nEscape at 40 ft.", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        _lens("commit", cwd=cli_project)
+        before = self._status(cli_project)
+
+        r = _lens("test-play", "encounter.cli-plaza", "--json", cwd=cli_project)
+        assert r.returncode == 0, r.stderr
+        data = json.loads(r.stdout)
+        assert data["targets"] == ["encounter.cli-plaza"]
+        assert data["review_node"] is None
+        assert data["review"]
+        assert self._status(cli_project) == before
+
+    def test_needs_an_id_outside_a_design_session(self, cli_project: Path) -> None:
+        r = _lens("test-play", cwd=cli_project)
+        assert r.returncode == 1
+        assert "needs a KB id" in r.stderr

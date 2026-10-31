@@ -22,6 +22,8 @@
     onRenameIdChange: (value: string) => void
     onCopyTargetIdChange: (value: string) => void
     onActionInputKeydown: (event: KeyboardEvent, action: () => void) => void
+    /** Offered for prepared content (``encounter.*`` in an rpg project). */
+    onTestPlay?: () => void
   }
 
   let {
@@ -47,6 +49,7 @@
     onRenameIdChange,
     onCopyTargetIdChange,
     onActionInputKeydown,
+    onTestPlay,
   }: Props = $props()
 </script>
 
@@ -97,6 +100,9 @@
         </button>
         <button type="button" role="menuitem" onclick={onStartRename}>Rename</button>
         <button type="button" role="menuitem" onclick={onStartCopy}>Copy</button>
+        {#if onTestPlay}
+          <button type="button" role="menuitem" onclick={onTestPlay}>Test-play</button>
+        {/if}
       {/if}
       {#if actionError}
         <p class="kb-menu-error">{actionError}</p>

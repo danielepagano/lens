@@ -90,6 +90,19 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "play.summary_instruction_template": PromptSpec(
         "play.summary_instruction_template", frozenset({"content", "slug"})
     ),
+    "test_play.system": PromptSpec("test_play.system", frozenset()),
+    "test_play.instruction": PromptSpec("test_play.instruction", frozenset({"targets"})),
+    "test_play.circumstances_suffix": PromptSpec(
+        "test_play.circumstances_suffix", frozenset({"circumstances"})
+    ),
+    "test_play.no_spine_suffix": PromptSpec("test_play.no_spine_suffix", frozenset()),
+    "test_play.module_hint": PromptSpec("test_play.module_hint", frozenset({"catalog"})),
+    "test_play.summary_circumstances": PromptSpec(
+        "test_play.summary_circumstances", frozenset({"circumstances"})
+    ),
+    "test_play.no_findings_section": PromptSpec(
+        "test_play.no_findings_section", frozenset({"review"})
+    ),
     "advance.system": PromptSpec("advance.system", frozenset()),
     "advance.instruction_template": PromptSpec("advance.instruction_template", frozenset({"days", "current_day", "rolls_text"})),
     "session.summary_system": PromptSpec("session.summary_system", frozenset()),

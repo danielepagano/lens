@@ -218,6 +218,38 @@ Rewind never touches side effects — KB objects a discarded session already wro
 
 In all cases, child nodes whose section annotations are no longer present are recursively deleted. Side effects such as KB objects created by `design` are never modified. The changes are left as a pending transaction; use `lens commit` or `lens checkpoint` to keep them.
 
+### `lens test-play`
+
+Reviews prepared content by reading and playing it as `play` would. One call, invoked when you judge a draft worth testing — never automatic, never a gate.
+
+```bash
+lens test-play encounter.plaza-chase                 # review one object; print the findings
+lens test-play encounter.plaza-chase -v              # stream the full review
+lens test-play encounter.ambush --prompt "night, two days after the siege, Rowan out of bolts"
+lens test-play encounter.ambush --prompt "they try stealth first"
+lens test-play encounter.ambush --no-spine           # fully hypothetical content
+lens test-play encounter.ambush --json               # findings as data, for an agent
+lens test-play                                       # inside a design session: its proposals
+```
+
+Arguments: `[ID]...` — KB ids to review. Inside an open `design` session the default is every object the session has proposals for, read **as proposed** (the pending layer, not disk). A session that has only discussed an object has nothing to test, and says so. Outside a session an id is required.
+
+Options:
+
+- `--prompt` — assumed circumstances, or an approach to try. The reviewer is told stated circumstances override the story where they conflict, which is what makes a review of content prepared for a later point in the story trustworthy.
+- `--no-spine` — drop the narrative entirely.
+- `--verbose` / `-v` — stream the full review (cold read and playthroughs) instead of printing only the findings.
+- `--json` — print targets, typed findings, the full review and the review node as JSON.
+- `--llm`, `--reasoning` — as for any operator. The default profile is `[operator.play]`, because play's model is the reader under test; an `[operator.test_play]` section, if present, wins over it. Reasoning is always on.
+
+**What it reads:** exactly the play context with the targets pinned `+` — `rules.system`, `rules.rpg`, each target's linked objects, the `rules.<type>` companions, and the `pc.*` pins in scope — plus play's `load_module` catalog. No `-` facets, no KB writes. The story is the spine `play` would read: up to the design session's parent inside a session (the session's own text is prep talk and never reaches the reviewer), up to the cursor elsewhere. `lens explain -o test_play` shows the assembled prompt.
+
+**What it returns:** a cold read (what the GM would establish at the opening beat: positions, distances, light, cover, stakes), three or four playthroughs, and findings, each quoting the line it is about, typed as `contradiction`, `impossible` (cannot happen, or never matters), `decided` (settled before the player chooses), `ambiguous`, `gap` (the GM would have to invent it), or `rules-error`. It reviews mechanism only and never proposes rewrites.
+
+**Where it goes:** inside a design session, a child of the session, **closed in the same call**: the full review lands in the child, and the session node gets the canonical summary block whose body is the findings list. The next `lens design` turn reads those findings as part of its passage; each run is a sibling, so before-and-after reviews sit side by side, and an unwanted run is rewound like any node. Anywhere else nothing is written — not to the narrative, not to the KB — because the review is full of what the player must not read.
+
+The persisted operator name is `test_play` (the annotation grammar has no `-`). Requires the `rpg` dataset.
+
 ### `lens rollback`
 
 Discard the pending transaction. For inline operators (e.g. `write`), reverts unstaged changes. For mutation operators (`edit`), applies a compensating transaction (removes claim tags and restores original text). Prompts for confirmation unless `-y` / `--yes` is given.

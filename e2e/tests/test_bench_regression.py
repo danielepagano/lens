@@ -21,6 +21,7 @@ BENCH_SCENARIOS: list[tuple[str, bool]] = [
     ("design_kb_ops", True),
     ("model_gate", True),
     ("model_rank", True),
+    ("test_play_flaws", True),
 ]
 
 

@@ -307,3 +307,71 @@ class TestOperatorStreamWorkflow:
         )
 
         assert r.status_code == 400
+
+
+class TestTestPlayOperatorStream:
+    """`POST /operator/test-play`: outside a session the findings ride the done event."""
+
+    def test_findings_in_done_event_and_nothing_written(
+        self, rpg_play_client: TestClient, tmp_path: Path
+    ) -> None:
+        from lens.core.test.llm_run_mock import run_llm_from_text
+
+        enc = tmp_path / "knowledge" / "encounter"
+        enc.mkdir(parents=True)
+        (enc / "plaza.md").write_text("The Plaza\n\n- escape at 40 ft in a 30-ft square\n")
+        subprocess.run(["git", "add", "-A"], cwd=tmp_path, capture_output=True, check=True)
+        subprocess.run(["git", "commit", "-m", "enc"], cwd=tmp_path, capture_output=True, check=True)
+        review = (
+            "## Cold read\n\nx\n\n## Playthroughs\n\ny\n\n## Findings\n\n"
+            '- **impossible** `encounter.plaza` — "40 ft": the square is 30 ft.\n'
+        )
+        with patch("lens.rpg.operators.test_play.run_llm", run_llm_from_text(review)):
+            events = _drain_sse_events(
+                rpg_play_client, "/test/operator/test-play", {"targets": ["encounter.plaza"]}
+            )
+        done = [e for e in events if e.get("type") == "done"]
+        assert done, events
+        assert done[0]["operator"] == "test_play"
+        assert done[0]["findings"] == [
+            {"kind": "impossible", "text": '- **impossible** `encounter.plaza` — "40 ft": the square is 30 ft.'}
+        ]
+        assert done[0]["review_node"] is None
+        status = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=tmp_path, capture_output=True, text=True, check=True
+        ).stdout
+        assert status == ""
+
+    def test_a_failed_review_keeps_the_users_pending_turn(
+        self, rpg_play_client: TestClient, tmp_path: Path
+    ) -> None:
+        enc = tmp_path / "knowledge" / "encounter"
+        enc.mkdir(parents=True)
+        (enc / "plaza.md").write_text("The Plaza\n")
+        subprocess.run(["git", "add", "-A"], cwd=tmp_path, capture_output=True, check=True)
+        subprocess.run(["git", "commit", "-m", "enc"], cwd=tmp_path, capture_output=True, check=True)
+        node = tmp_path / "narrative" / "story" / "_node.md"
+        node.write_text(node.read_text() + "\nUNSAVED USER TURN\n")
+
+        async def _fail(*_a: Any, **_k: Any) -> Any:
+            raise OperatorError("provider down")
+
+        with patch("lens.rpg.operators.test_play.run_llm", _fail):
+            events = _drain_sse_events(
+                rpg_play_client, "/test/operator/test-play", {"targets": ["encounter.plaza"]}
+            )
+        assert any(e.get("type") == "error" for e in events)
+        assert "UNSAVED USER TURN" in node.read_text()
+
+    def test_unknown_target_is_400(self, rpg_play_client: TestClient) -> None:
+        r = rpg_play_client.post("/test/operator/test-play", json={"targets": ["encounter.nope"]})
+        assert r.status_code == 400
+
+    def test_no_target_outside_a_session_is_an_error_event(
+        self, rpg_play_client: TestClient
+    ) -> None:
+        events = _drain_sse_events(rpg_play_client, "/test/operator/test-play", {})
+        assert any(
+            e.get("type") == "error" and "needs a KB id" in (e.get("message") or "")
+            for e in events
+        )

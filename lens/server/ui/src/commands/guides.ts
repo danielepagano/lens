@@ -189,6 +189,32 @@ play [prompt]
 - Requires at least one player character (KB object tagged \`pc\`) to be pinned.
 - Requires the \`rpg\` dataset.
 `,
+  'test-play': `## test-play
+
+Review prepared content by reading and playing it as play would. Reports typed findings; never rewrites.
+
+### Usage
+
+\`\`\`
+test-play [id]
+\`\`\`
+
+### Options
+
+- \`--prompt\` — Assumed circumstances, or an approach to try; overrides the story where they conflict
+- \`--no-spine\` — Review with no story context, for fully hypothetical content
+- \`--verbose\` — Show the full review (cold read and playthroughs), not just the findings
+- \`--llm\` — LLM ID to use (default: play's)
+- \`--reasoning\` — Reasoning effort
+
+### Notes
+
+- The reviewer reads what play would with the object pinned: the rules, the object's linked objects and rules companions, the pinned PCs, and the story so far.
+- Findings are typed: contradiction, impossible, decided, ambiguous, gap, rules-error — each quoting the line it is about.
+- Inside a design session, with no id it tests every object the session has proposed. The full review goes into a closed child of the session; only the findings reach the session, where the next design turn reads them.
+- Anywhere else nothing is written: the findings are shown here.
+- Requires the \`rpg\` dataset.
+`,
   advance: `## advance
 
 Advance time, update fronts, resolve consequences.

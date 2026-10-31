@@ -68,3 +68,15 @@ registered module costs a catalog line on every beat, whether or not it is used.
 character has tempts the model to make them use it. NPCs get their stat block;
 players activate their own abilities and report the result, and `@spell.fly`
 mid-prompt is how the full text reaches the model when it matters.
+
+**Test-play prepared content before calling it done.** After writing or
+changing an encounter, an NPC with a limit, a front with a clock — anything
+`play` will run — run `lens test-play <id>`. It reads the object the way `play`
+would (rules, `+` links, `rules.<type>` companions, the pinned PCs, the story
+so far), states what the GM would establish at the opening beat, plays three or
+four approaches through, and prints typed findings: contradiction, impossible,
+decided, ambiguous, gap, rules-error. Nothing is written outside a design
+session. Fix or dismiss each finding yourself; the review never rewrites and is
+not a gate. `--prompt` states the circumstances when the object is prepared for
+a later point in the story than the cursor, `--no-spine` drops the story for
+fully hypothetical content, and `--json` gives the findings as data.
