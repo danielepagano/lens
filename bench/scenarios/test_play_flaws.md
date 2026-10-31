@@ -19,13 +19,17 @@ contradiction and impossible findings.
 ```config
 datasets:
   - rpg
+  - lens-dnd
 include_testing: false
 ```
 
-`include_testing: false` keeps `rules.skirmish` off play's module menu, so the
-reviewer is not offered a module none of these scenes needs. The falling rule
-lives in a project-local `rules.hazards`, so the scenario needs no system
-dataset.
+The objects are written in D&D 5e terms (Dash, bonus actions, AC, cover), so the
+reviewer needs that system in front of it: with `rpg` alone, `rules.system` is
+the bundled Lasers & Feelings stub, and an honest reviewer flags every object as
+a rules error against it, drowning the planted defects. `include_testing: false`
+keeps `rules.skirmish` off play's module menu. The falling rule the `fall_damage`
+step is judged against is the project-local `rules.hazards`, tagged on the
+encounter, so the expected answer does not depend on how `lens-dnd` phrases it.
 
 **Prompt keys exercised:** `test_play.system`, `test_play.instruction`,
 `test_play.circumstances_suffix`, `test_play.no_spine_suffix`; in the design
