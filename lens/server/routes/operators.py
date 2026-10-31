@@ -83,7 +83,7 @@ class DesignBody(BaseModel):
 class TestPlayBody(BaseModel):
     targets: list[str] = []
     prompt: str | None = None
-    no_spine: bool = False
+    no_spine: bool | None = None  # None: pinned params.test_play decide
     llm_id: str | None = None
     reasoning: str | None = None
 

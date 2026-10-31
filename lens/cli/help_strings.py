@@ -404,7 +404,10 @@ OPT_PROMPT_TEST_PLAY = (
     "Assumed circumstances, or an approach to try; overrides the story where "
     "they conflict (e.g. 'night, two days after the siege, assume level 5')"
 )
-OPT_NO_SPINE_TEST_PLAY = "Review with no story context, for fully hypothetical content"
+OPT_NO_SPINE_TEST_PLAY = (
+    "Review with no story context, for fully hypothetical content "
+    "(--spine restores it over a pinned params.test_play.no_spine)"
+)
 OPT_VERBOSE_TEST_PLAY = "Stream the full review (cold read and playthroughs), not just the findings"
 OPT_JSON_TEST_PLAY = "Print the result as JSON (targets, typed findings, full review, review node)"
 ARG_PROMPT_COMPRESS = (

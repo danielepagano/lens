@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { cliInputRequest } from '../../stores/ui'
+  import { stats } from '../../stores/stats'
+
   type Props = {
     actionsOpen: boolean
     deleteConfirm: boolean
@@ -22,8 +25,7 @@
     onRenameIdChange: (value: string) => void
     onCopyTargetIdChange: (value: string) => void
     onActionInputKeydown: (event: KeyboardEvent, action: () => void) => void
-    /** Offered for prepared content (``encounter.*`` in an rpg project). */
-    onTestPlay?: () => void
+    itemId: string
   }
 
   let {
@@ -49,8 +51,19 @@
     onRenameIdChange,
     onCopyTargetIdChange,
     onActionInputKeydown,
-    onTestPlay,
+    itemId,
   }: Props = $props()
+
+  // Prepared content gets a review action. It fills the command bar rather than
+  // running, so the user can add --prompt circumstances first.
+  const testPlayable = $derived(
+    itemId.startsWith('encounter.') && !!$stats?.current_datasets?.includes('rpg')
+  )
+
+  function startTestPlay() {
+    onToggleMenu()
+    cliInputRequest.set(`test-play ${itemId} `)
+  }
 </script>
 
 <div class="kb-viewer-menu-wrap">
@@ -100,8 +113,8 @@
         </button>
         <button type="button" role="menuitem" onclick={onStartRename}>Rename</button>
         <button type="button" role="menuitem" onclick={onStartCopy}>Copy</button>
-        {#if onTestPlay}
-          <button type="button" role="menuitem" onclick={onTestPlay}>Test-play</button>
+        {#if testPlayable}
+          <button type="button" role="menuitem" onclick={startTestPlay}>Test-play</button>
         {/if}
       {/if}
       {#if actionError}

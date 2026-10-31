@@ -807,7 +807,8 @@ const handler: CommandHandler = async (
         {
           targets: target ? [target] : [],
           prompt: (ctx.args.options['prompt'] as string | undefined)?.trim() || undefined,
-          no_spine: ctx.args.options['no-spine'] === true,
+          // Omitted rather than false, so a pinned params.test_play.no_spine holds.
+          no_spine: ctx.args.options['no-spine'] === true ? true : undefined,
           llm_id: llmId,
           reasoning,
         },
@@ -1119,10 +1120,14 @@ const handler: CommandHandler = async (
       if (command === 'test-play') {
         // The review is GM material; outside a design session it is shown here
         // and written nowhere, inside one the findings are already on the node.
-        const verbose = ctx.args.options['verbose'] === true
-        const shown = (verbose ? done.review : done.findings_text) ?? ''
-        const where = done.review_node ? `\n\nFull review: ${done.review_node}` : ''
-        cliOutput.set({ output: shown + where, exitCode: 0, streaming: false })
+        if (done.interrupted) {
+          cliOutput.set({ output: 'test-play: interrupted; nothing written', exitCode: 1, streaming: false })
+        } else {
+          const verbose = ctx.args.options['verbose'] === true
+          const shown = (verbose ? done.review : done.findings_text) ?? ''
+          const where = done.review_node ? `\n\nFull review: ${done.review_node}` : ''
+          cliOutput.set({ output: shown + where, exitCode: 0, streaming: false })
+        }
       } else if (done.inserted?.length) {
         cliOutput.set({ output: `KB: inserted ${done.inserted.join(', ')}`, exitCode: 0, streaming: false })
       } else if (done.updated?.length) {

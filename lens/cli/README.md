@@ -237,7 +237,7 @@ Arguments: `[ID]...` — KB ids to review. Inside an open `design` session the d
 Options:
 
 - `--prompt` — assumed circumstances, or an approach to try. The reviewer is told stated circumstances override the story where they conflict, which is what makes a review of content prepared for a later point in the story trustworthy.
-- `--no-spine` — drop the narrative entirely.
+- `--no-spine` / `--spine` — drop the narrative entirely, or keep it over a pinned `params.test_play.no_spine`. Pinned `params.test_play` (`targets`, `prompt`, `no_spine`) fill whatever the call leaves out, for both the run and `lens explain -o test_play`.
 - `--verbose` / `-v` — stream the full review (cold read and playthroughs) instead of printing only the findings.
 - `--json` — print targets, typed findings, the full review and the review node as JSON.
 - `--llm`, `--reasoning` — as for any operator. The default profile is `[operator.play]`, because play's model is the reader under test; an `[operator.test_play]` section, if present, wins over it. Reasoning is always on.

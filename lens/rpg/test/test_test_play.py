@@ -122,6 +122,21 @@ class TestExtractFindings(unittest.TestCase):
     def test_missing_section(self) -> None:
         self.assertEqual(extract_findings("just prose"), (None, []))
 
+    def test_sub_headings_stay_inside_the_section(self) -> None:
+        section, findings = extract_findings(
+            "## Findings\n\n- **gap** `a.b` — \"x\": y\n\n### Findings for c.d\n\n"
+            "- **decided** `c.d` — \"z\": w\n"
+        )
+        assert section is not None
+        self.assertEqual([f.kind for f in findings], ["gap", "decided"])
+
+    def test_sub_bullets_continue_their_finding(self) -> None:
+        _, findings = extract_findings(
+            "## Findings\n- **gap** `a.b` — \"x\": y\n  - gap remains if the rope is up\n"
+        )
+        self.assertEqual(len(findings), 1)
+        self.assertIn("rope is up", findings[0].text)
+
     def test_rules_error_kind(self) -> None:
         _, findings = extract_findings(
             "## Findings\n- **rules-error** `encounter.x` — \"2d6\": a 15-ft fall is 1d6.\n"
@@ -262,6 +277,17 @@ class TestTestPlay(unittest.TestCase):
         self.assertIn("night, two days after the siege", recorder.prompt)
         self.assertIn("these win", recorder.prompt)
 
+    def test_spine_overrides_a_pinned_no_spine(self) -> None:
+        kb_add("encounter.plaza", PLAZA, False)
+        param_set(self._session(), "test_play", "no_spine", ["true"], None, None)
+        Storage(self.project_dir).stage_all()
+        pinned = _Recorder()
+        self._test_play(pinned, targets=["encounter.plaza"])
+        self.assertNotIn(STORY_MARKER, pinned.prompt)
+        restored = _Recorder()
+        self._test_play(restored, targets=["encounter.plaza"], no_spine=False)
+        self.assertIn(STORY_MARKER, restored.prompt)
+
     def test_pinned_params_fill_what_the_caller_left_out(self) -> None:
         kb_add("encounter.plaza", PLAZA, False)
         session = self._session()
@@ -391,6 +417,51 @@ class TestTestPlay(unittest.TestCase):
             [k for k in design_node.child_keys() if k.startswith("test-play")],
             ["test-play-plaza", "test-play-plaza-1"],
         )
+
+    def test_design_modules_are_not_default_targets(self) -> None:
+        session = self._session()
+        _run(DesignOperator.run_design(
+            session=session,
+            narrative=self._narrative(),
+            prompt=f"{KB_OP_TRIGGER} " + json.dumps([
+                {"tool": "kb_add", "arguments": {"id": "design.chase", "body": "Make chases.\n"}},
+                {"tool": "kb_add", "arguments": {"id": "encounter.plaza", "body": PLAZA}},
+            ]),
+            module_ids=None, pins=[], unpins=[], llm_id="mock", slug="plaza",
+        ))
+        result = self._test_play(_Recorder())
+        self.assertEqual(result.targets, ["encounter.plaza"])
+
+    def test_a_cursor_deep_in_a_design_session_never_crawls_its_text(self) -> None:
+        design_node = self._open_design_with_proposal()
+        kb_add("encounter.alley", PLAZA, False)
+        Storage(self.project_dir).stage_all()
+        from lens.core.operators.section import SectionOperator
+
+        _run(SectionOperator.run_start(
+            session=self._session(), narrative=self._narrative(), id="aside"
+        ))
+        cursor = self._narrative().find_cursor()
+        self.assertEqual(cursor.key_path[:-1], design_node.key_path)
+        self.assertEqual(story_node(cursor).key_path, ())
+        recorder = _Recorder()
+        self._test_play(recorder, targets=["encounter.alley"])
+        self.assertIn(STORY_MARKER, recorder.prompt)
+        self.assertNotIn("DESIGN-TALK", recorder.prompt)
+
+    def test_a_failed_write_rolls_back_only_the_review(self) -> None:
+        design_node = self._open_design_with_proposal()
+        before = design_node.md_path().read_text(encoding="utf-8")
+        with mock.patch.object(
+            TestPlayOperator, "close_subnode", side_effect=OSError("disk full")
+        ), self.assertRaises(OSError):
+            self._test_play(_Recorder())
+
+        # The session is as it was: no open [test_play] tag, no child, and the
+        # user's last design turn (with its proposal) intact.
+        self.assertEqual(design_node.md_path().read_text(encoding="utf-8"), before)
+        self.assertNotIn("test-play-plaza", design_node.child_keys())
+        self.assertTrue(is_design_session_node(self._narrative().find_cursor()))
 
     def test_interrupted_review_writes_nothing(self) -> None:
         design_node = self._open_design_with_proposal()

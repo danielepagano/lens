@@ -36,7 +36,9 @@ async def _print_token(chunk: str) -> None:
 def test_play(
     ids: list[str] = typer.Argument(None, help=ARG_IDS_TEST_PLAY),
     prompt: str | None = typer.Option(None, "--prompt", help=OPT_PROMPT_TEST_PLAY),
-    no_spine: bool = typer.Option(False, "--no-spine", help=OPT_NO_SPINE_TEST_PLAY),
+    no_spine: bool | None = typer.Option(
+        None, "--no-spine/--spine", help=OPT_NO_SPINE_TEST_PLAY
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help=OPT_VERBOSE_TEST_PLAY),
     as_json: bool = typer.Option(False, "--json", help=OPT_JSON_TEST_PLAY),
     llm: str | None = typer.Option(None, "--llm", "-l", help=OPT_LLM),

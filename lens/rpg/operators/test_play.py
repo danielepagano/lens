@@ -29,7 +29,7 @@ only tool is play's own ``load_module`` catalog.  No KB writes.
 The story is the spine ``play`` would read: up to the design session's parent
 inside a session, up to the cursor outside one.  The design session's own text
 is prep talk, not story, and is never crawled — :func:`story_node` walks out of
-every enclosing design session.  ``--no-spine`` drops the narrative entirely;
+every enclosing design session, however deep the cursor sits inside it.  ``--no-spine`` drops the narrative entirely;
 ``--prompt`` states assumed circumstances, which the reviewer is told override
 the spine where they conflict.
 
@@ -96,6 +96,7 @@ PLAY_OPERATOR = "play"
 """The reader under test.  Its module catalog and LLM profile are the defaults."""
 
 DESIGN_OPERATOR = "design"
+DESIGN_MODULE_PREFIX = "design."
 
 FINDING_KINDS: tuple[str, ...] = (
     "contradiction",
@@ -108,12 +109,15 @@ FINDING_KINDS: tuple[str, ...] = (
 """Finding types, in the order the prompt lists them.  ``impossible`` covers
 "impossible or dead": a rule or trigger that cannot happen, or never matters."""
 
-_FINDINGS_HEADING = re.compile(r"^(#{1,6})\s*findings\b.*$", re.IGNORECASE)
+_FINDINGS_HEADING = re.compile(r"^(#{1,6})\s*\**findings\**\s*:?\s*$", re.IGNORECASE)
+"""Exactly the ``Findings`` heading: a sub-heading *about* findings is content."""
 _ANY_HEADING = re.compile(r"^(#{1,6})\s+\S")
 _FINDING_BULLET = re.compile(
-    r"^\s*[-*]\s+[*_`\[]*\s*(" + "|".join(re.escape(k) for k in FINDING_KINDS) + r")\b",
+    r"^ ?[-*]\s+[*_`\[]*\s*(" + "|".join(re.escape(k) for k in FINDING_KINDS) + r")\b",
     re.IGNORECASE,
 )
+"""A top-level typed bullet.  Indented lines, sub-bullets included, continue the
+finding above them rather than starting one."""
 
 MAX_TITLE_IDS = 3
 """Summary titles name up to this many targets; more are counted instead."""
@@ -167,9 +171,10 @@ class TestPlayResult:
 def extract_findings(review: str) -> tuple[str | None, list[Finding]]:
     """The review's ``Findings`` section, verbatim, and the typed bullets in it.
 
-    The section runs from its heading to the next heading of the same or a
-    higher level.  ``None`` when the review has no such heading; a section that
-    says there is nothing to report returns its text and an empty list.
+    The section runs from the first heading that *is* ``Findings`` to the next
+    heading of the same or a higher level, so sub-headings inside it stay in it.
+    ``None`` when the review has no such heading; a section that says there is
+    nothing to report returns its text and an empty list.
     """
     lines = review.split("\n")
     start: int | None = None
@@ -178,6 +183,7 @@ def extract_findings(review: str) -> tuple[str | None, list[Finding]]:
         m = _FINDINGS_HEADING.match(line.strip())
         if m:
             start, level = i + 1, len(m.group(1))
+            break
     if start is None:
         return None, []
     end = len(lines)
@@ -250,9 +256,18 @@ def is_design_session_node(node: NarrativeNode) -> bool:
 
 
 def story_node(node: NarrativeNode) -> NarrativeNode:
-    """The node whose spine is the story: *node*, outside every open design session."""
-    while is_design_session_node(node):
-        node = _parent(node)
+    """The node whose spine is the story: *node*, outside every open design session.
+
+    Walks from the root down, so a cursor *anywhere* inside a session — a
+    section opened in it, a nested session — lands on the parent of the
+    outermost open design session, and none of the prep talk reaches the crawl.
+    """
+    for depth in range(1, len(node.key_path) + 1):
+        ancestor = NarrativeNode(
+            narrative_root=node.narrative_root, key_path=node.key_path[:depth]
+        )
+        if is_design_session_node(ancestor):
+            return _parent(ancestor)
     return node
 
 
@@ -260,7 +275,9 @@ def proposed_ids(text: str, store: KnowledgeStore) -> list[str]:
     """Objects a design session node proposes, in the order it first touched them.
 
     An id the session later removed is dropped, and so are ``_template``-style
-    keys: a template is the shape of an object, not something play runs.
+    keys and ``design.*`` modules: a template is the shape of an object and a
+    module is instruction for making one, and play runs neither (it refuses a
+    pinned ``design.*`` outright).
     """
     layer = store.pending_layer()
     live = (set(layer.objects) | set(layer.tags)) - layer.removed
@@ -269,7 +286,12 @@ def proposed_ids(text: str, store: KnowledgeStore) -> list[str]:
         ids = [op.id] if op.id else list(op.ids)
         for cid in ids:
             key = cid.partition(".")[2]
-            if cid in live and cid not in out and not key.startswith("_"):
+            if (
+                cid in live
+                and cid not in out
+                and not key.startswith("_")
+                and not cid.startswith(DESIGN_MODULE_PREFIX)
+            ):
                 out.append(cid)
     return out
 
@@ -333,7 +355,9 @@ class TestPlayOperator(Operator):
 
     @classmethod
     def check_requirements(cls, crawl_result: CrawlResult) -> None:
-        design_pins = sorted(p for p in crawl_result.pinned_ids if p.startswith("design."))
+        design_pins = sorted(
+            p for p in crawl_result.pinned_ids if p.startswith(DESIGN_MODULE_PREFIX)
+        )
         if design_pins:
             raise ValidationError(
                 "test-play reads what play reads, and play refuses to run with design "
@@ -449,14 +473,19 @@ class TestPlayOperator(Operator):
         narrative: NarrativeNode,
         targets: Sequence[str] = (),
         prompt: str | None = None,
-        no_spine: bool = False,
+        no_spine: bool | None = None,
         llm_id: str | None = None,
         reasoning: str | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
         on_stream_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None,
         cancel_event: asyncio.Event | None = None,
     ) -> TestPlayResult:
-        """Review *targets* (or the open design session's proposals) once."""
+        """Review *targets* (or the open design session's proposals) once.
+
+        Each argument left at its default (no targets, ``prompt=None``,
+        ``no_spine=None``) is filled from pinned ``params.test_play``; an explicit
+        value always wins, so ``no_spine=False`` puts the story back for one run.
+        """
         if not operator_applies_to_session(
             get_selected_datasets(session.project_root), cls.limited_to_datasets
         ):
@@ -479,7 +508,8 @@ class TestPlayOperator(Operator):
             targets = target_ids(pinned)
         if prompt is None and isinstance(pinned.get("prompt"), str):
             prompt = pinned["prompt"]
-        no_spine = no_spine or pinned.get("no_spine") is True
+        if no_spine is None:
+            no_spine = pinned.get("no_spine") is True
 
         ids = [t.strip().removesuffix("+") for t in targets if t.strip()]
         ids = list(dict.fromkeys(ids))
@@ -623,22 +653,16 @@ class TestPlayOperator(Operator):
         findings_text: str,
         module_sink: ModuleRequestSink,
     ) -> str:
-        """Child with the full review, closed at once; findings on the session node."""
+        """Child with the full review, closed at once; findings on the session node.
+
+        All or nothing.  Everything that can fail on content is built before the
+        first write; the user's pending transaction (their last design turn) is
+        staged first, as a design turn would stage it, so a write that fails
+        part-way rolls back only this review's own files and never leaves an
+        unclosed ``[test_play:…]`` tag holding the cursor.
+        """
         targets = target_ids(params)
         child_id = cls.review_node_id(targets, design_node)
-        rel_path = str(design_node.md_path().relative_to(session.git_root))
-        storage = session.new_storage(owner=cls.owner_id(child_id, rel_path))
-        op = cls(storage, narrative)
-
-        child = op.create_subnode(design_node, child_id)
-        block_params = {k: v for k, v in params.items() if k != "reasoning"}
-        op.write_start(
-            child,
-            op.build_open_tag(None, block_params),
-            artifacts=artifacts,
-            pre_tag_text=module_sink.include_annotations(),
-        )
-
         body = findings_text
         circumstances = str(params.get("prompt") or "").strip()
         if circumstances:
@@ -646,5 +670,24 @@ class TestPlayOperator(Operator):
                 "test_play.summary_circumstances", circumstances=circumstances
             ) + "\n\n" + body
         summary = format_summary_block(child_id, f"{summary_title(targets)}\n\n{body}")
-        op.close_subnode(design_node, child_id, summary)
+        block_params = {k: v for k, v in params.items() if k != "reasoning"}
+
+        probe = session.new_storage()
+        if probe.has_pending():
+            probe.stage_all()
+        rel_path = str(design_node.md_path().relative_to(session.git_root))
+        storage = session.new_storage(owner=cls.owner_id(child_id, rel_path))
+        op = cls(storage, narrative)
+        try:
+            child = op.create_subnode(design_node, child_id)
+            op.write_start(
+                child,
+                op.build_open_tag(None, block_params),
+                artifacts=artifacts,
+                pre_tag_text=module_sink.include_annotations(),
+            )
+            op.close_subnode(design_node, child_id, summary)
+        except BaseException:
+            storage.rollback()
+            raise
         return str(child.to_address())

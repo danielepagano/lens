@@ -29,7 +29,7 @@
     toggleKbDetailsFlag,
   } from './kbViewerMarkdown'
   import type { KbLinkHandler, DiceRollMode } from './kbViewerMarkdown'
-  import { cliInputAppend, cliInputRequest } from '../../stores/ui'
+  import { cliInputAppend } from '../../stores/ui'
   import { attachKbEditableControls, scanControlPositions, buildQuoteLinePattern } from './kbEditableControls'
   import type { KbEditMeta } from './kbEditableControls'
   import KbViewerActionsMenu from './KbViewerActionsMenu.svelte'
@@ -385,18 +385,6 @@
     renameId = item ? `${item.type}.` : ''
   }
 
-  // Prepared content gets a review action; it fills the command bar rather than
-  // running, so the user can add --prompt circumstances first.
-  const testPlayable = $derived(
-    !!item?.id.startsWith('encounter.') && !!$stats?.current_datasets?.includes('rpg')
-  )
-
-  function startTestPlay() {
-    if (!item) return
-    closeActions()
-    cliInputRequest.set(`test-play ${item.id} `)
-  }
-
   function startCopy() {
     showCopyInput = true
     copyTargetId = item ? `${item.type}.` : ''
@@ -464,7 +452,7 @@
               onStartDeleteConfirm={startDeleteConfirm}
               onStartRename={startRename}
               onStartCopy={startCopy}
-              onTestPlay={testPlayable ? startTestPlay : undefined}
+              itemId={item.id}
               onRenameIdChange={(value) => (renameId = value)}
               onCopyTargetIdChange={(value) => (copyTargetId = value)}
               onActionInputKeydown={handleActionInputKeydown}
