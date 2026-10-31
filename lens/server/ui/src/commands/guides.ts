@@ -211,7 +211,8 @@ test-play [id]
 ### Notes
 
 - The reviewer reads what play would with the object pinned: the rules, the object's linked objects and rules companions, the pinned PCs, and the story so far.
-- Findings are typed: contradiction, impossible, decided, ambiguous, gap, rules-error — each quoting the line it is about.
+- At most five findings, typed: contradiction, impossible, decided, ambiguous, gap, rules-error — each quoting the line it is about. Only what the GM could not rule around counts; no findings is the usual result for ready prep.
+- Run it once: fix contradictions, and cut or leave the rest to the GM rather than adding rules.
 - Inside a design session, with no id it tests every object the session has proposed. The full review goes into a closed child of the session; only the findings reach the session, where the next design turn reads them.
 - Anywhere else nothing is written: the findings are shown here.
 - Requires the \`rpg\` dataset.

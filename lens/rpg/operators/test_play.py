@@ -3,9 +3,12 @@
 ``lens test-play [ID…]`` hands one or more KB objects to a reviewer that sees
 exactly what ``play`` would see with them pinned, and asks it for two things in
 one call: a **cold read** of what the GM would establish at the opening beat,
-and **playthroughs** of three or four distinct approaches against the objects'
-own rules.  It reports typed findings, each citing the line it is about.  It
-never rewrites and never gates anything: the user decides what happens next.
+and **playthroughs** of one or two approaches aimed at the line most likely to
+break.  It reports at most five typed findings, each citing the line it is
+about, and only those two reasonable GMs would rule oppositely in a way that
+changes the outcome: a branch the GM can rule on is not a defect, and ``No
+findings.`` is the expected result for prep that is ready.  It never rewrites
+and never gates anything: the user decides what happens next.
 
 The operator persists as ``test_play`` because the annotation grammar has no
 ``-`` in operator names; the CLI command and the UI say ``test-play``.
@@ -619,6 +622,7 @@ class TestPlayOperator(Operator):
                 params=params,
                 artifacts=artifacts,
                 findings_text=result.findings_text,
+                has_findings=bool(result.findings),
                 module_sink=module_sink,
             )
         return result
@@ -661,6 +665,7 @@ class TestPlayOperator(Operator):
         params: dict[str, Any],
         artifacts: GenerationArtifacts,
         findings_text: str,
+        has_findings: bool,
         module_sink: ModuleRequestSink,
     ) -> str:
         """Child with the full review, closed at once; findings on the session node.
@@ -673,10 +678,15 @@ class TestPlayOperator(Operator):
         """
         targets = target_ids(params)
         child_id = cls.review_node_id(targets, design_node)
+        prompts = PromptStore(session.project_root)
         body = findings_text
+        if has_findings:
+            # Read by the next design turn: without it, every finding gets a
+            # rule added, and the prep grows into a flowchart.
+            body = prompts.format("test_play.findings_preamble").strip() + "\n\n" + body
         circumstances = str(params.get("prompt") or "").strip()
         if circumstances:
-            body = PromptStore(session.project_root).format(
+            body = prompts.format(
                 "test_play.summary_circumstances", circumstances=circumstances
             ) + "\n\n" + body
         summary = format_summary_block(child_id, f"{summary_title(targets)}\n\n{body}")

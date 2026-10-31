@@ -49,9 +49,12 @@ def test_play(
     The reviewer sees what play would see with the objects pinned: the rules,
     each object's + expansion and rules.<type> companions, the pinned PCs, and
     the story so far. It states what the GM would establish at the opening
-    beat, plays three or four approaches through, and reports typed findings
-    (contradiction, impossible, decided, ambiguous, gap, rules-error), each
-    quoting the line it is about. It never rewrites anything.
+    beat, plays one or two approaches through, and reports at most five typed
+    findings (contradiction, impossible, decided, ambiguous, gap, rules-error),
+    each quoting the line it is about. Only what the GM could not rule around
+    counts; no findings is the usual result for prep that is ready. Run it once:
+    fix contradictions, and cut or leave the rest to the GM rather than adding
+    rules. It never rewrites anything.
 
     Inside a design session, with no ids it tests every object the session has
     proposals for, as proposed. The full review is written to a closed child of

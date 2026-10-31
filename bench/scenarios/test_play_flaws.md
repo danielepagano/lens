@@ -110,9 +110,10 @@ lens test-play encounter.quarry-ledge -v
 
 ### `reference_clean`
 
-The corrected plaza. Tests that the reviewer does not manufacture defects: no
-`contradiction` or `impossible` finding. `gap` and `ambiguous` findings are
-allowed but each must quote a real line and survive a reread.
+The corrected plaza. Tests that the reviewer does not manufacture defects: the
+expected result is `No findings.`, and a `contradiction` or `impossible` finding
+fails the step outright. Any `gap` or `ambiguous` finding must quote a real
+line, survive a reread, and clear the bar — not a branch the GM rules on.
 
 ```bash
 lens test-play encounter.plaza-chase-fixed -v
@@ -143,16 +144,16 @@ lens test-play encounter.quarry-ledge --no-spine
 Inside a design session: the draft is the session's proposals, the review lands
 in a closed child, only the findings reach the session, and the next design
 turn addresses them. Tests that `lens test-play` with no id finds the proposed
-encounter, that the session node carries a `### Test-play findings: …` block and
-no playthrough text, that the next `lens design` turn answers each finding (fix
-or dismiss, with a reason), and that a second `test-play` after the fix is a
-sibling with fewer findings.
+encounter, that the session node carries a `### Test-play findings: …` block,
+led by the instruction to fix contradictions and cut or defer the rest, and no
+playthrough text, and that the next `lens design` turn follows it: contradictions
+fixed, everything else cut or left to the GM, and the encounter no longer than
+before. One review is the loop; there is no second run to chase the count down.
 
 ```bash
 lens design --module encounter "A pickpocket chase through the pilgrims' square on a market night: the cutpurse has Cunning Action, the party are Rowan and Senna."
 lens test-play
-lens design "Address the test-play findings: fix what is wrong, and say why for any you dismiss."
-lens test-play
+lens design "Address the test-play findings."
 lens design --end
 ```
 
@@ -169,13 +170,16 @@ Score each step on a 1–5 scale:
 4. **Cold read useful** — the opening beat states positions, distances, light,
    cover and stakes from the text alone, and names a choice where the text
    leaves one instead of making it silently
-5. **Playthroughs real** — three or four distinct approaches, each followed
-   round by round with the PCs' and creatures' actual speeds and actions, to a
-   stated resolution
-6. **Mechanism only** — never rewrites the object, never proposes new fiction
-7. **Loop mechanics** (`design_loop`) — proposals tested as proposed, review in
-   a closed child, findings only on the session node, next design turn answers
-   each finding
+5. **Playthroughs real** — one or two approaches, aimed at the line most likely
+   to break, each followed round by round with the PCs' and creatures' actual
+   speeds and actions, to a stated resolution
+6. **Bar held** — at most five findings, worst first, each one something two
+   reasonable GMs would rule oppositely with a different winner or cost
+7. **Mechanism only** — never rewrites the object, never proposes new fiction
+8. **Loop mechanics** (`design_loop`) — proposals tested as proposed, review in
+   a closed child, findings only on the session node, next design turn fixes
+   contradictions and cuts or defers the rest instead of adding a rule per
+   finding
 
 ## Prompt iteration guidance
 
@@ -196,5 +200,10 @@ finds something trains the author to stop reading it.
   or distances
 - **Gap inflation** — reporting every detail a GM would naturally improvise
   (the weather, a stall-keeper's name) as a `gap`
+- **Branch coverage as finding** — "what does the hyena do if the party
+  retreats", "nothing about resting on the stair": a GM rules on these in a
+  sentence, and a reviewer that reports them turns prep into a flowchart
+- **Dataset lint** — a finding about a stat block or rules booklet itself
+  rather than the object under test
 - **Story leak** — treating the story's noon against a `--prompt` midnight as a
   contradiction

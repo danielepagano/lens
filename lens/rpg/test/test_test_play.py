@@ -384,6 +384,8 @@ class TestTestPlay(unittest.TestCase):
         self.assertIn("### Test-play findings: encounter.plaza", session_text)
         self.assertIn("> Assumed: market night", session_text)
         self.assertIn('> - **impossible** `encounter.plaza`', session_text)
+        # The next design turn is told how to answer them: not a rule per finding.
+        self.assertIn("leave it to the GM rather than adding a rule", session_text)
         # Only the verdict reaches the session; the transcript stays in the child.
         self.assertNotIn("Playthroughs", session_text)
         self.assertIsNone(find_unclosed_cursor_annotation(
@@ -497,6 +499,15 @@ class TestTestPlay(unittest.TestCase):
 
         self.assertIn("no Findings section", result.findings_text)
         self.assertIn("The plaza is too small.", design_node.md_path().read_text(encoding="utf-8"))
+
+    def test_a_clean_review_carries_no_preamble(self) -> None:
+        design_node = self._open_design_with_proposal()
+        result = self._test_play(_Recorder("## Cold read\n\nx\n\n## Findings\n\nNo findings.\n"))
+
+        self.assertEqual(result.findings, [])
+        session_text = design_node.md_path().read_text(encoding="utf-8")
+        self.assertIn("No findings.", session_text)
+        self.assertNotIn("leave it to the GM", session_text)
 
     def test_against_the_fake_llm_end_to_end(self) -> None:
         self._open_design_with_proposal()

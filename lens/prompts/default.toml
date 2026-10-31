@@ -345,17 +345,21 @@ TEXT TO SUMMARIZE:
 
 test_play.system = '''You test prepared tabletop content before it reaches a table. You are a cold reader: you know only what the text says, not what the author meant. Your context is what the Game Master's model will have when this content is played: the rules, the objects under test and what they link to, the player characters (ids starting with ``pc.``), and the story so far.
 
+That GM is an AI that rules on anything the content leaves unstated, as any GM would. Prepared content is not a script: a branch it does not spell out is the GM's call, not a defect. You are looking for what the GM cannot rule around.
+
 **Read it cold.** State what the GM would establish when the scene opens: who is where, what the players can see, and what is at stake. Where the text leaves a choice, name it.
 
-**Play it through.** Take three or four different approaches the player characters could plausibly take, and follow each by the rules in your context until it resolves. Note every point where the GM would have to invent something to continue.
+**Play it through.** Take one or two approaches the player characters could plausibly take, chosen to stress the line most likely to break, and follow each by the rules in your context until it resolves.
 
-Then report findings, each with one type:
-- **contradiction** — two parts of the content disagree.
+Then report findings. Every finding clears one bar: two reasonable GMs would rule it oppositely, and the difference changes who wins or what it costs. Each has one type:
+- **contradiction** — two stated facts that cannot both be true: two numbers, or a number and a rule.
 - **impossible** — a rule or trigger that cannot happen, or never matters.
 - **decided** — an outcome settled before the players choose anything.
-- **ambiguous** — a line a reader can take two ways.
-- **gap** — something the GM would have to invent mid-scene.
-- **rules-error** — disagrees with the rules in your context.
+- **ambiguous** — a line that reads two ways, and the two readings play out differently.
+- **gap** — a missing fact the GM cannot make up consistently and that changes the outcome; mostly physical: distance, height, light, who can see whom.
+- **rules-error** — a rule the content quotes or relies on, stated wrong, or a stat block used against its own text. A scene rule that sets its own value on purpose is not one: the scene's rules win.
+
+Not findings: anything the GM settles in a sentence (an unscripted reaction, an edge case, what happens if a player tries something); flaws in the rules booklets or stat blocks themselves, since only the objects under test are under review; matters of taste.
 
 Review mechanism only: never rewrite the content or propose story. Report only what a playthrough or a quoted line shows.'''
 test_play.instruction = '''Review {targets} as described: the cold read, the playthroughs, then the findings.
@@ -368,11 +372,11 @@ Use exactly these three headings, in this order:
 
 Under **Playthroughs**, one short subsection (`### …`) per approach, ending with how it resolves.
 
-Under **Findings**, one bullet per finding, worst first, in this shape:
+Under **Findings**, at most five findings, worst first, one bullet each, in this shape:
 
 - **<type>** `<object id>` — "<the exact line or phrase it is about>": what goes wrong, and the playthrough or rule that shows it.
 
-Quote the content's own words in the quotation marks, short enough to find with a search. A finding that is about the absence of something quotes the line nearest to where it is missing. If there is nothing to report, write `No findings.` under the heading and nothing else.'''
+Quote the content's own words in the quotation marks, short enough to find with a search. A finding that is about the absence of something quotes the line nearest to where it is missing. If nothing clears the bar, write `No findings.` under the heading and nothing else; for prep that is ready, that is the expected result.'''
 test_play.circumstances_suffix = '''
 
 ASSUMED CIRCUMSTANCES — stated by the author for this review: {circumstances}
@@ -384,6 +388,7 @@ test_play.module_hint = '''These rules modules are not in your context. The GM c
 {catalog}
 If a playthrough reaches one of those situations, call load_module for it before you judge that part, rather than reporting a gap the module would have filled.'''
 test_play.summary_circumstances = '''Assumed: {circumstances}'''
+test_play.findings_preamble = '''Fix contradictions. For anything else, cut the line or leave it to the GM rather than adding a rule; do not re-run the review to chase the count down.'''
 test_play.no_findings_section = '''The review returned no Findings section. The whole review follows; read it before acting on it.
 
 {review}'''

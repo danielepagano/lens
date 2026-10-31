@@ -69,7 +69,7 @@ datasets = ["rpg", "my-ruleset"]
 
 7. Add locations, NPCs, or fronts from dataset templates (`location.*`, `npc.*`, …) the same way. Initial fronts can be created with `lens design --module front`, which schedules and mechanises the material from step 6 rather than inventing new story.
 
-8. Before playing prepared content, **test it**: `lens test-play encounter.<key>` reads it the way `play` would, plays a few approaches through and prints typed findings (contradictions, dead triggers, outcomes decided before play, ambiguous lines, gaps, rules errors). Inside a design session, `lens test-play` with no id tests what the session has proposed and records the findings in the session.
+8. Before playing prepared content, **test it**: `lens test-play encounter.<key>` reads it the way `play` would, plays one or two approaches through and prints at most five typed findings (contradictions, dead triggers, outcomes decided before play, ambiguous lines, gaps, rules errors) — only what the GM could not rule around. Run it once; fix contradictions and cut or leave the rest to the GM. Inside a design session, `lens test-play` with no id tests what the session has proposed and records the findings in the session.
 
 9. Open a **play** session at the cursor (first call creates a sub-node and auto-pins `rules.system` and `rules.rpg`):
 

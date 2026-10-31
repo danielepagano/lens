@@ -69,12 +69,15 @@ character has tempts the model to make them use it. NPCs get their stat block;
 players activate their own abilities and report the result, and `@spell.fly`
 mid-prompt is how the full text reaches the model when it matters.
 
-**Test-play prepared content before calling it done.** After writing or
+**Test-play prepared content once before calling it done.** After writing or
 changing an encounter, an NPC with a limit, a front with a clock — anything
 `play` will run — run `lens test-play <id>`. Prep fails in ways its author
 cannot see (a line that reads two ways, a map too small for its own rule, an
 outcome settled before play), and this is the cold reader that finds them. It
-writes nothing outside a design session and is not a gate: fix or dismiss each
-finding yourself. When the object is prepared for a later point in the story
-than the cursor, state those circumstances, or the review tests the wrong scene
-(`lens test-play --help`).
+writes nothing outside a design session and is not a gate. Fix contradictions;
+for anything else, cut the line or leave it to the GM — `play` rules on what
+prep leaves unstated, and a rule added per finding turns the object into a
+flowchart that is harder to run and gives the next review more to find. Never
+re-run it to drive the findings toward zero. When the object is prepared for a
+later point in the story than the cursor, state those circumstances, or the
+review tests the wrong scene (`lens test-play --help`).

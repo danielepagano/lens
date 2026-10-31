@@ -100,6 +100,7 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "test_play.summary_circumstances": PromptSpec(
         "test_play.summary_circumstances", frozenset({"circumstances"})
     ),
+    "test_play.findings_preamble": PromptSpec("test_play.findings_preamble", frozenset()),
     "test_play.no_findings_section": PromptSpec(
         "test_play.no_findings_section", frozenset({"review"})
     ),

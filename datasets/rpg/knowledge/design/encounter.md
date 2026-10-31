@@ -29,7 +29,7 @@ Missing an NPC, faction, or location object? If the request covers it, `kb_get d
 Write the encounter object like a playable script, not a story recap:
 - Situation: one or two sentences
 - Stakes: what can go wrong
-- Ground: when position matters, unless the encounter's `location.*` already has one. It is play material, not a description of a place: start from what the place has to make possible in play — a sightline to break, open ground to cross under fire, a lead to keep or lose — lay out the few zones that do it, then dress them. One line per zone: light, footing, cover (for whoever stands there, and against what when it depends on direction), height, how you get to the zones next to it, and the distances that matter, chosen in the ruleset's own terms where they change a decision. The player is told these and plans against them, so they have to agree with each other and with the scene rules. It is the place, not this scene: no one's position, and nothing only this scene brings — that is a scene rule naming the zones it changes.
+- Ground: when position matters. It is play material, not a description of a place: start from what the place has to make possible in play — a sightline to break, open ground to cross under fire, a lead to keep or lose — lay out the few zones that do it, then dress them. One line per zone: light, footing, cover (for whoever stands there, and against what when it depends on direction), height, how you get to the zones next to it, and the distances that matter, chosen in the ruleset's own terms where they change a decision. Light that changes during the scene says when, by the scene's clock ("bright until about three"). Every distance is on one basis — straight-line or walked — and the Ground says which. A zone that needs more than a line gets sub-bullets, not a longer line. The player is told these and plans against them, so they have to agree with each other and with the scene rules. It is the place, not this scene: no one's position, and nothing only this scene brings — that is a scene rule naming the zones it changes.
 - Initial positions: only when the scene opens at a known moment (an ambush sprung, a door kicked in): who starts in which zone. Otherwise `play` places everyone from where the fiction has them.
 - Participants: links or inline descriptions of npc/faction/stat objects
 - Scene rules: the procedures this scene runs on (see below)
@@ -43,6 +43,10 @@ SCENE RULES: DELTAS, AND KEEP THE NUMBERS
 Two ways to get a scene rule, both fine:
 - **Quote** an existing rule verbatim, with its numbers, when one applies. Never soften it into description — "Slick planks: Difficult Terrain; crossing at a run is DC 10 Acrobatics or fall Prone" is a rule; "the planks are treacherous when wet" is not, and nobody will notice the rule went missing.
 - **Invent** one when nothing fits. This is encouraged: a fast model with a little structure behaves far better than one improvising a subsystem mid-beat. An invented rule must look like a rule — name the trigger, the check, the difficulty, and what happens on success and failure — and it must have a cost or a clock so it can end. Add procedure; never overturn how the system's basic resolution works.
+
+A BUDGET, BECAUSE `play` IS A GM
+
+The object is not a flowchart. `play` rules on anything it leaves unstated, as any GM would, so write only the scene rules the scene cannot work without — usually one to three — and stop. Invent the procedure the scene runs on; never add a rule to cover a branch (what if they retreat, what the scout does if spotted, whether they can rest on the stair): that is a call the GM makes in a sentence at the table. A scene that seems to need more than about three bespoke rules is two scenes, or over-designed — split it or cut it. Answering a test-play review works the same way: fix contradictions; cut or leave the rest to the GM.
 
 WHAT THE PLAYER MUST NOT READ YET
 
