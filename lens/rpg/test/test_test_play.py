@@ -490,3 +490,25 @@ class TestTestPlay(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSystemOverride(unittest.TestCase):
+    """rpg ships the system-neutral review prompt; lens-dnd overrides it."""
+
+    def test_lens_dnd_overrides_the_review_prompt(self) -> None:
+        from lens.core.prompts import PromptStore
+
+        with FakeLLMServer() as llm:
+            for datasets, opening in (
+                (["rpg"], "You test prepared tabletop content"),
+                (["rpg", "lens-dnd"], "You test prepared D&D 5e content"),
+            ):
+                project = Path(tempfile.mkdtemp(prefix="lens_test_play_ds_"))
+                try:
+                    setup_test_project(project, llm.base_url, datasets=datasets, opening_write=False)
+                    self.assertTrue(
+                        PromptStore(project).get("test_play.system").startswith(opening), datasets
+                    )
+                finally:
+                    KnowledgeStore.clear_registry()
+                    shutil.rmtree(project, ignore_errors=True)
