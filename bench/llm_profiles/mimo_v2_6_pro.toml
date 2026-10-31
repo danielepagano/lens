@@ -1,0 +1,11 @@
+# MiMo V2.6 Pro (Xiaomi), served fp8 by Xiaomi itself
+[llm]
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPEN_ROUTER_API_KEY"
+model = "xiaomi/mimo-v2.6-pro"
+temperature = 0.9
+timeout_seconds = 300
+first_token_timeout_seconds = 60
+
+[llm.extra_payload]
+provider = { order = ["xiaomi/fp8"], allow_fallbacks = false }
