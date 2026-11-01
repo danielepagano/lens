@@ -16,12 +16,22 @@ applied before anything is read: one hit per id, from the file that wins.
 No ranking. Results come back in id order, then line order — the order an IDE
 or ``grep -r`` would print them in, which is the order a reader can predict and
 a pipeline can rely on.
+
+The caller this is shaped for is usually an agent checking a fact ("is there an
+inn in the Graysteps?"), and the defaults lean that way. Case is smart — a
+pattern is case-insensitive unless it spells an uppercase letter. Several
+patterns are ANDed *per object*, since "which object mentions both the twin and
+the grave" is the question, and an alternation only answers "either, anywhere".
+And a miss is never silent: :func:`format_no_match` says what was searched and,
+when the query looks like a keyword search that turned into a phrase match,
+how to ask for what was meant.
 """
 
 from __future__ import annotations
 
 import os
 import re
+import shlex
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from dataclasses import field as dc_field
@@ -31,7 +41,9 @@ from lens.core.commands.kb import get_store, kb_source_payload
 from lens.core.exceptions import LensException
 from lens.core.kb_scan import (
     FileMatches,
+    ScanPattern,
     build_pattern,
+    has_uppercase,
     pattern_flags,
     scan_files,
     scan_text,
@@ -40,6 +52,10 @@ from lens.core.knowledge import KbSource, KnowledgeStore, ResolvedObject
 from lens.core.storage_text import kb_headline
 
 MatchField = Literal["id", "type", "tag", "body"]
+
+CaseMode = Literal["smart", "ignore", "sensitive"]
+"""``smart`` (the default): case-insensitive unless the pattern has an uppercase
+letter, as ``rg --smart-case`` does. Decided per pattern."""
 
 SourceFilter = str
 """Which store an object must resolve from.
@@ -96,12 +112,23 @@ class SearchHit:
 
 
 @dataclass(frozen=True)
-class SearchResult:
+class SearchPattern:
+    """One pattern as it was actually matched."""
+
     pattern: str
+    case_sensitive: bool
+
+
+@dataclass(frozen=True)
+class SearchResult:
+    patterns: list[SearchPattern]
+    """Every pattern an object had to match; more than one means AND."""
     hits: list[SearchHit]
     scanned: int
     """Objects considered after the type/tag/source filters — the denominator
     for "3 hits" and the honest answer to "did my filter exclude everything"."""
+    fixed_string: bool = False
+    case: CaseMode = "smart"
 
 
 @dataclass(frozen=True)
@@ -194,7 +221,7 @@ def _worker_count(file_count: int) -> int:
 
 
 def _scan_bodies(
-    entries: list[ResolvedObject], source: str, flags: int, context: int
+    entries: list[ResolvedObject], patterns: list[ScanPattern], context: int
 ) -> dict[str, FileMatches]:
     """Body matches per id, fanned across processes when there is enough to do.
 
@@ -208,9 +235,9 @@ def _scan_bodies(
     pending = [entry for entry in entries if entry.text is not None]
     found_pending: dict[str, FileMatches] = {}
     for entry in pending:
-        matched, line_texts = scan_text(entry.text or "", source, flags, context)
+        matched, line_texts, seen = scan_text(entry.text or "", patterns, context)
         if matched:
-            found_pending[entry.id] = (entry.id, matched, line_texts)
+            found_pending[entry.id] = (entry.id, matched, line_texts, seen)
 
     specs = [(entry.id, str(entry.path)) for entry in entries if entry.text is None]
     workers = _worker_count(len(specs))
@@ -225,8 +252,7 @@ def _scan_bodies(
                     pool.map(
                         scan_files,
                         chunks,
-                        [source] * len(chunks),
-                        [flags] * len(chunks),
+                        [patterns] * len(chunks),
                         [context] * len(chunks),
                     )
                 )
@@ -238,34 +264,49 @@ def _scan_bodies(
             pass
     return {
         **found_pending,
-        **{found[0]: found for found in scan_files(specs, source, flags, context)},
+        **{found[0]: found for found in scan_files(specs, patterns, context)},
     }
 
 
 def _identity_matches(
-    entry: ResolvedObject, tags: list[str], pattern: re.Pattern[str]
-) -> list[SearchMatch]:
+    entry: ResolvedObject, tags: list[str], patterns: list[re.Pattern[str]]
+) -> tuple[list[SearchMatch], set[int]]:
     """Matches on what an object *is* rather than what it says.
 
     An id match subsumes a type match — the type is the id's prefix — so the
     type is only reported when the id itself did not match, which keeps
-    ``kb search rules`` from printing the same news twice per object.
+    ``kb search rules`` from printing the same news twice per object. Returns
+    the indexes of the patterns that matched, for the per-object AND.
     """
+    id_hit = type_hit = False
+    tag_hits: set[str] = set()
+    seen: set[int] = set()
+    for position, pattern in enumerate(patterns):
+        if pattern.search(entry.id):
+            id_hit = True
+            seen.add(position)
+        elif pattern.search(entry.type):
+            type_hit = True
+            seen.add(position)
+        for tag in tags:
+            if pattern.search(tag):
+                tag_hits.add(tag)
+                seen.add(position)
     matches: list[SearchMatch] = []
-    if pattern.search(entry.id):
+    if id_hit:
         matches.append(SearchMatch(field="id", line=0, text=entry.id))
-    elif pattern.search(entry.type):
+    elif type_hit:
         matches.append(SearchMatch(field="type", line=0, text=entry.type))
-    for tag in tags:
-        if pattern.search(tag):
-            matches.append(SearchMatch(field="tag", line=0, text=tag))
-    return matches
+    matches.extend(
+        SearchMatch(field="tag", line=0, text=tag) for tag in tags if tag in tag_hits
+    )
+    return matches, seen
 
 
 def _body_matches(found: FileMatches | None, context: int) -> list[SearchMatch]:
     if found is None:
         return []
-    _cid, matched_lines, line_texts = found
+    _cid, matched_lines, line_texts, _seen = found
     matched_set = set(matched_lines)
     out: list[SearchMatch] = []
     for lineno in matched_lines:
@@ -291,10 +332,30 @@ def _body_matches(found: FileMatches | None, context: int) -> list[SearchMatch]:
     return out
 
 
+def _search_patterns(
+    patterns: list[str], case: CaseMode, fixed_string: bool
+) -> list[SearchPattern]:
+    if not patterns or any(not pattern for pattern in patterns):
+        raise LensException("a search pattern is required")
+    return [
+        SearchPattern(
+            pattern=pattern,
+            case_sensitive=(
+                case == "sensitive"
+                or (
+                    case == "smart"
+                    and has_uppercase(pattern, fixed_string=fixed_string)
+                )
+            ),
+        )
+        for pattern in patterns
+    ]
+
+
 def kb_search(
-    pattern: str,
+    pattern: str | list[str],
     *,
-    ignore_case: bool = False,
+    case: CaseMode = "smart",
     fixed_string: bool = False,
     word: bool = False,
     type_filter: str | None = None,
@@ -307,18 +368,27 @@ def kb_search(
 ) -> SearchResult:
     """Regex over the ids, types, tags and bodies of the merged store.
 
+    *pattern* may be a list: an object is a hit only when every pattern matches
+    somewhere in it — its id, type, tags or any line of its body, not
+    necessarily the same one — and every line any of them matched is reported.
+
     *headlines* reads the first three lines of each hit, which costs a second
     pass over the matched bodies only — off by default because the ``id:line:text``
     output does not use them.
     """
-    if not pattern:
-        raise LensException("a search pattern is required")
-    source_re = build_pattern(pattern, fixed_string=fixed_string, word=word)
-    flags = pattern_flags(ignore_case=ignore_case)
-    try:
-        compiled = re.compile(source_re, flags)
-    except re.error as e:
-        raise LensException(f"invalid pattern {pattern!r}: {e}") from e
+    wanted = _search_patterns(
+        [pattern] if isinstance(pattern, str) else list(pattern), case, fixed_string
+    )
+    scan: list[ScanPattern] = []
+    compiled: list[re.Pattern[str]] = []
+    for item in wanted:
+        source_re = build_pattern(item.pattern, fixed_string=fixed_string, word=word)
+        flags = pattern_flags(ignore_case=not item.case_sensitive)
+        try:
+            compiled.append(re.compile(source_re, flags))
+        except re.error as e:
+            raise LensException(f"invalid pattern {item.pattern!r}: {e}") from e
+        scan.append((source_re, flags))
 
     kb = _resolve_store(store)
     entries = _filtered_index(
@@ -328,15 +398,18 @@ def kb_search(
         source=source,
         include_templates=include_templates,
     )
-    body_hits = _scan_bodies(entries, source_re, flags, context)
+    body_hits = _scan_bodies(entries, scan, context)
 
     hits: list[SearchHit] = []
     for entry in entries:
         obj_tags = kb.get_tags(entry.id)
-        matches = _identity_matches(entry, obj_tags, compiled)
-        matches.extend(_body_matches(body_hits.get(entry.id), context))
-        if not matches:
+        matches, seen = _identity_matches(entry, obj_tags, compiled)
+        found = body_hits.get(entry.id)
+        if found is not None:
+            seen.update(found[3])
+        if len(seen) < len(compiled):
             continue
+        matches.extend(_body_matches(found, context))
         headline = ""
         if headlines:
             try:
@@ -353,7 +426,13 @@ def kb_search(
                 matches=matches,
             )
         )
-    return SearchResult(pattern=pattern, hits=hits, scanned=len(entries))
+    return SearchResult(
+        patterns=wanted,
+        hits=hits,
+        scanned=len(entries),
+        fixed_string=fixed_string,
+        case=case,
+    )
 
 
 def kb_list(
@@ -459,10 +538,56 @@ def format_hit_lines(hit: SearchHit) -> list[str]:
     return out
 
 
+def _describe_pattern(item: SearchPattern) -> str:
+    return f"/{item.pattern}/" if item.case_sensitive else f"/{item.pattern}/i"
+
+
+def format_no_match(result: SearchResult) -> list[str]:
+    """What a miss prints to stderr: the query as it was run, plus hints.
+
+    Silence on a miss reads as "the tool is broken" as easily as "no", and an
+    agent that reads it that way falls back to ``kb get | grep``. So the miss
+    restates the query as matched — ``/i`` marks a case-insensitive pattern,
+    since smart case decides that silently — and how many objects were searched,
+    which separates "nothing says this" from "the filters excluded everything".
+    """
+    mode = "fixed string" if result.fixed_string else "regex"
+    described = ", ".join(_describe_pattern(item) for item in result.patterns)
+    noun = "object" if result.scanned == 1 else "objects"
+    if len(result.patterns) == 1:
+        head = f"0 matches for {described}"
+    else:
+        head = f"0 objects match all of {described}"
+    lines = [f"{head} ({mode}; {result.scanned} {noun} searched)"]
+
+    if len(result.patterns) == 1:
+        only = result.patterns[0].pattern
+        terms = only.split()
+        if len(terms) > 1:
+            suggestion = " ".join(f"-e {shlex.quote(term)}" for term in terms)
+            lines.append(
+                f"hint: the pattern is one {mode}, matched as that whole phrase on "
+                f"one line; to find objects that mention every term, pass each "
+                f"with -e: lens kb search {suggestion}"
+            )
+    sensitive = [item for item in result.patterns if item.case_sensitive]
+    if sensitive and result.case == "smart":
+        lines.append(
+            "hint: a pattern with an uppercase letter is case-sensitive "
+            f"({', '.join(_describe_pattern(item) for item in sensitive)}); "
+            "-i ignores case"
+        )
+    return lines
+
+
 def search_payload(result: SearchResult) -> dict[str, Any]:
     """``lens kb search --json`` body."""
     return {
-        "pattern": result.pattern,
+        "patterns": [
+            {"pattern": item.pattern, "case_sensitive": item.case_sensitive}
+            for item in result.patterns
+        ],
+        "fixed_string": result.fixed_string,
         "scanned": result.scanned,
         "count": len(result.hits),
         "items": [

@@ -27,7 +27,11 @@ from lens.cli.help_strings import (
     OPT_KB_JSON,
     OPT_KB_REFS_IN,
     OPT_KB_REFS_OUT,
+    OPT_KB_SEARCH_CASE_SENSITIVE,
     OPT_KB_SEARCH_CONTEXT,
+    OPT_KB_SEARCH_IGNORE_CASE,
+    OPT_KB_SEARCH_PATTERN,
+    OPT_KB_SEARCH_REGEXP,
     OPT_KB_SEARCH_SOURCE,
     OPT_KB_SEARCH_TAG,
     OPT_KB_SEARCH_TYPE,
@@ -59,8 +63,10 @@ from lens.core.commands.kb import (
 )
 from lens.core.commands.kb_refs import format_ref_line, kb_refs, refs_payload
 from lens.core.commands.kb_search import (
+    CaseMode,
     SourceFilter,
     format_hit_lines,
+    format_no_match,
     kb_list,
     kb_search,
     list_payload,
@@ -363,8 +369,10 @@ def _source_filter(value: str) -> SourceFilter:
 
 @app.command(no_args_is_help=True)
 def search(
-    pattern: str = typer.Argument(..., help="Regex (or fixed string with -F) to match"),
-    ignore_case: bool = typer.Option(False, "-i", "--ignore-case", help="Case-insensitive match"),
+    pattern: str | None = typer.Argument(None, help=OPT_KB_SEARCH_PATTERN),
+    regexp: list[str] = typer.Option([], "-e", "--regexp", help=OPT_KB_SEARCH_REGEXP),
+    ignore_case: bool = typer.Option(False, "-i", "--ignore-case", help=OPT_KB_SEARCH_IGNORE_CASE),
+    case_sensitive: bool = typer.Option(False, "-s", "--case-sensitive", help=OPT_KB_SEARCH_CASE_SENSITIVE),
     fixed_string: bool = typer.Option(False, "-F", "--fixed-string", help="Treat PATTERN as a literal, not a regex"),
     word: bool = typer.Option(False, "-w", "--word", help="Match whole words only"),
     type_filter: str | None = typer.Option(None, "--type", "-t", help=OPT_KB_SEARCH_TYPE),
@@ -383,14 +391,31 @@ def search(
     computation, not a directory. This searches what an operator would actually
     read: one hit per id, from the store that wins, in id then line order.
 
+    PATTERN is one regex, so ``'twin blade grave'`` is a phrase on one line. To
+    find objects that mention several terms anywhere, pass each with ``-e``:
+    every pattern must match the same object, and every line any of them
+    matched is printed. Case is smart: lowercase patterns ignore case, a
+    pattern with an uppercase letter is case-sensitive.
+
     Output is ``id:line:text``, so it pipes into the tools you already use.
     Identity matches (on an id, a type, or a tag) report line ``0`` and name the
-    field they matched, since they have no line of their own.
+    field they matched, since they have no line of their own. No match prints
+    what was searched to stderr and exits 1, as grep does.
     """
+    patterns = [*([pattern] if pattern is not None else []), *regexp]
+    if not patterns:
+        typer.echo("Error: give a PATTERN, or one or more -e PATTERN", err=True)
+        raise typer.Exit(1)
+    if ignore_case and case_sensitive:
+        typer.echo("Error: pass -i or -s, not both", err=True)
+        raise typer.Exit(1)
+    case: CaseMode = (
+        "ignore" if ignore_case else "sensitive" if case_sensitive else "smart"
+    )
     try:
         result = kb_search(
-            pattern,
-            ignore_case=ignore_case,
+            patterns,
+            case=case,
             fixed_string=fixed_string,
             word=word,
             type_filter=type_filter,
@@ -406,6 +431,11 @@ def search(
 
     if as_json:
         typer.echo(json.dumps(search_payload(result), indent=2))
+    if not result.hits:
+        for line in format_no_match(result):
+            typer.echo(line, err=True)
+        raise typer.Exit(1)
+    if as_json:
         return
 
     if ids_only:

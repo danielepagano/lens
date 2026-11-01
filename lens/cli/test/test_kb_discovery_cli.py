@@ -70,7 +70,8 @@ class TestSearchOutput(_KbCliCase):
         self.assertEqual(lines, ["person.rowan:4:She grapples the guard."])
 
     def test_an_identity_match_prints_line_zero_and_the_field(self) -> None:
-        lines = self.lines("search", "rowan", "-t", "person")
+        # `-s`: smart case would also match the body's `ROWAN` heading.
+        lines = self.lines("search", "rowan", "-s", "-t", "person")
 
         self.assertEqual(lines, ["person.rowan:0:[id] person.rowan"])
 
@@ -120,11 +121,70 @@ class TestSearchOutput(_KbCliCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("invalid pattern", result.stderr)
 
-    def test_no_match_is_a_quiet_success(self) -> None:
+    def test_no_match_says_so_on_stderr_and_exits_one(self) -> None:
+        """Silence read as "the tool is broken" and sent agents to get + grep (#193)."""
         result = self.run_kb("search", "no-such-text-anywhere")
 
-        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.returncode, 1)
         self.assertEqual(result.stdout.strip(), "")
+        self.assertRegex(
+            result.stderr,
+            r"^0 matches for /no-such-text-anywhere/i \(regex; \d+ objects searched\)",
+        )
+
+    def test_a_multi_word_miss_suggests_e_per_term(self) -> None:
+        result = self.run_kb("search", "grapples guard")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("lens kb search -e grapples -e guard", result.stderr)
+
+    def test_e_patterns_are_anded_per_object(self) -> None:
+        lines = self.lines("search", "-e", "grapples", "-e", "ranger")
+
+        self.assertEqual(
+            lines,
+            [
+                "person.rowan:2:A ranger.",
+                "--",
+                "person.rowan:4:She grapples the guard.",
+                "person.rowan:5:She grapples again.",
+            ],
+        )
+
+    def test_a_positional_pattern_joins_the_e_patterns(self) -> None:
+        lines = self.lines("search", "grapples", "-e", "ranger", "-l")
+
+        self.assertEqual(lines, ["person.rowan"])
+
+    def test_smart_case_ignores_case_in_a_lowercase_pattern(self) -> None:
+        lines = self.lines("search", "rowan", "-t", "person", "-l")
+
+        self.assertEqual(lines, ["person.rowan"])
+        self.assertEqual(self.run_kb("search", "ROWAN", "-s", "-l").returncode, 0)
+        self.assertEqual(
+            self.run_kb("search", "a RANGER", "-t", "person").returncode, 1
+        )
+        self.assertEqual(
+            self.lines("search", "a RANGER", "-i", "-l"), ["person.rowan"]
+        )
+
+    def test_no_pattern_at_all_is_an_error(self) -> None:
+        result = self.run_kb("search", "-t", "person")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("-e PATTERN", result.stderr)
+
+    def test_ignore_and_sensitive_together_is_an_error(self) -> None:
+        result = self.run_kb("search", "x", "-i", "-s")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("-i or -s", result.stderr)
+
+    def test_a_json_miss_still_prints_the_payload(self) -> None:
+        result = self.run_kb("search", "no-such-text-anywhere", "--json")
+
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(json.loads(result.stdout)["count"], 0)
 
 
 class TestListOutput(_KbCliCase):

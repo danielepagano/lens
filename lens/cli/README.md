@@ -364,7 +364,9 @@ These three commands close it. All are read-only, need no `[[llm]]` configured, 
 Regex over the ids, types, tags and bodies of the **merged** store, shadowing applied — one hit per id, from the file that wins.
 
 ```bash
-lens kb search 'grappl' -i                  # id:line:matched-text
+lens kb search 'grappl'                     # id:line:matched-text
+lens kb search -e twin -e grave             # objects mentioning both, anywhere
+lens kb search -l -e graysteps -e inn | xargs lens kb get   # fact-check: find, then read
 lens kb search 'advantage' -t rules -C 2    # type filter, context lines
 lens kb search 'exhaust' --tag state -l     # tag-filtered, ids only
 lens kb search 'front' --source dataset:rpg # project | dataset | dataset:<name> | pending | all
@@ -373,6 +375,20 @@ lens kb search 'grappl' -l | xargs lens kb get
 ```
 
 Output is `id:line:text`, so it pipes into the tools you already use. **Results are in id order, then line order** — predictable grep order, no ranking.
+
+**PATTERN is one regex, not keywords.** `'twin blade grave'` matches only that phrase on one line. Pass each term with `-e` (repeatable) and every pattern must match somewhere in the *same object* — its id, a tag, or any line, not necessarily one line — with every line any of them matched printed. For OR, use one alternation (`'twin|grave'`). A positional PATTERN and `-e` patterns combine.
+
+**Case is smart**, as `rg --smart-case`: a pattern is case-insensitive unless it has an uppercase letter (an escape like `\S` does not count), decided per pattern. `-i` always ignores case, `-s` always matches it.
+
+**A miss is never silent.** No match exits `1`, like grep, and prints the query as it ran to stderr — `/i` marks a case-insensitive pattern:
+
+```
+0 matches for /Salt blade grave/ (regex; 412 objects searched)
+hint: the pattern is one regex, matched as that whole phrase on one line; to find objects that mention every term, pass each with -e: lens kb search -e Salt -e blade -e grave
+hint: a pattern with an uppercase letter is case-sensitive (/Salt blade grave/); -i ignores case
+```
+
+The object count separates "nothing says this" from "the filters excluded everything". `--json` still prints its payload (`count: 0`) on a miss.
 
 A match on what an object *is* rather than what it says has no line of its own, so it reports line `0` and names the field:
 
@@ -386,7 +402,8 @@ An id match subsumes the type match (the type is the id's prefix), so `kb search
 
 Options:
 
-- `-i` / `--ignore-case`, `-F` / `--fixed-string` (literal, not regex), `-w` / `--word` (whole words only).
+- `-e` / `--regexp` — a pattern; repeatable, ANDed per object.
+- `-i` / `--ignore-case`, `-s` / `--case-sensitive` (default: smart case), `-F` / `--fixed-string` (literal, not regex), `-w` / `--word` (whole words only).
 - `-t` / `--type` — one object type.
 - `--tag` — repeatable and ANDed. A bare type name works as a tag, as everywhere else.
 - `-C` / `--context N` — lines either side of each body match.
