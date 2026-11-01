@@ -985,6 +985,19 @@ PIN_EXTRA_IDS = "Additional ID(s) (repeatable)"
 PIN_NODE_OPT = "Target node address (use the positional argument instead)"
 
 # ── lens kb search / list / refs ──────────────────────────────────
+OPT_KB_SEARCH_PATTERN = (
+    "Regex (or fixed string with -F) to match. One pattern: 'twin blade grave' "
+    "is a phrase on one line, not three keywords."
+)
+OPT_KB_SEARCH_REGEXP = (
+    "A pattern; repeatable. Every pattern must match somewhere in the same "
+    "object (AND); for OR, use one regex with an alternation ('twin|grave')."
+)
+OPT_KB_SEARCH_IGNORE_CASE = "Ignore case, even in a pattern with uppercase letters."
+OPT_KB_SEARCH_CASE_SENSITIVE = (
+    "Match case exactly. Default is smart case: a pattern is case-insensitive "
+    "unless it has an uppercase letter."
+)
 OPT_KB_SEARCH_TYPE = "Only objects of this type (e.g. --type rules)."
 OPT_KB_SEARCH_TAG = (
     "Only objects carrying this tag; repeatable and ANDed. A bare type name "

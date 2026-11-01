@@ -23,12 +23,14 @@ from lens.core.commands.kb_search import (
     SearchResult,
     format_hit_lines,
     format_match_line,
+    format_no_match,
     kb_list,
     kb_search,
     list_payload,
     search_payload,
 )
 from lens.core.exceptions import LensException
+from lens.core.kb_scan import has_uppercase
 from lens.core.knowledge import KnowledgeStore
 from lens.core.module_requests import clear_module_registry
 
@@ -85,7 +87,7 @@ class _ProjectCase(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
-    def search(self, pattern: str, **kwargs: Any) -> SearchResult:
+    def search(self, pattern: str | list[str], **kwargs: Any) -> SearchResult:
         return kb_search(pattern, store=self.store, **kwargs)
 
     def refs(self, canonical_id: str, **kwargs: Any) -> RefsResult:
@@ -97,7 +99,7 @@ class _ProjectCase(unittest.TestCase):
 class TestSearchFindsWhatGrepCannot(_ProjectCase):
     def test_it_reaches_bodies_that_live_outside_the_checkout(self) -> None:
         """The whole reason the command exists: datasets are not in the repo."""
-        result = self.search("skirmish", ignore_case=True)
+        result = self.search("skirmish", case="ignore")
 
         self.assertIn("rules.skirmish", [hit.id for hit in result.hits])
 
@@ -181,12 +183,37 @@ class TestSearchMatching(_ProjectCase):
         hit = next(h for h in result.hits if h.id == "person.rowan")
         self.assertEqual([(m.field, m.text) for m in hit.matches], [("tag", "pc")])
 
-    def test_ignore_case(self) -> None:
-        self.assertEqual(self.search("ROWAN, a ranger").hits, [])
+    def test_a_lowercase_pattern_ignores_case_by_default(self) -> None:
+        """Agents search for `murgin`, not `Murgin`; smart case meets them there."""
+        result = self.search("a ranger")
+
+        self.assertEqual([h.id for h in result.hits], ["person.rowan"])
+        self.assertFalse(result.patterns[0].case_sensitive)
+
+    def test_an_uppercase_letter_makes_the_pattern_case_sensitive(self) -> None:
+        result = self.search("A RANGER")
+
+        self.assertEqual(result.hits, [])
+        self.assertTrue(result.patterns[0].case_sensitive)
+
+    def test_ignore_overrides_smart_case(self) -> None:
         self.assertEqual(
-            [h.id for h in self.search("A RANGER", ignore_case=True).hits],
+            [h.id for h in self.search("A RANGER", case="ignore").hits],
             ["person.rowan"],
         )
+
+    def test_sensitive_overrides_smart_case(self) -> None:
+        self.assertEqual(self.search("a ranger", case="sensitive").hits, [])
+
+    def test_an_escape_is_not_an_uppercase_letter(self) -> None:
+        """`\\S` is a class; it must not turn the rest of the pattern sensitive."""
+        result = self.search(r"\Sowan", type_filter="person")
+
+        self.assertEqual([h.id for h in result.hits], ["person.rowan"])
+
+    def test_smart_case_reads_a_fixed_string_literally(self) -> None:
+        self.assertTrue(has_uppercase(r"\S", fixed_string=True))
+        self.assertFalse(has_uppercase(r"\S"))
 
     def test_a_fixed_string_is_not_a_regex(self) -> None:
         self.store.store_object("person.dot", "Cost: 1.5 gold\n")
@@ -231,6 +258,104 @@ class TestSearchMatching(_ProjectCase):
     def test_an_empty_pattern_is_refused(self) -> None:
         with self.assertRaises(LensException):
             self.search("")
+        with self.assertRaises(LensException):
+            self.search([])
+
+
+class TestSearchAllPatterns(_ProjectCase):
+    """Several patterns are ANDed per object, not per line."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.store.store_object(
+            "lore.blade",
+            "THE SALT BLADE\nThe Salt blade.\n\nIts twin lies in a grave.\n",
+        )
+        self.store.store_object("lore.grave", "A grave on the hill.\n")
+        self.store.add_tags("lore.grave", ["haunted"])
+
+    def test_an_object_must_match_every_pattern(self) -> None:
+        result = self.search(["twin", "grave"])
+
+        self.assertEqual([h.id for h in result.hits], ["lore.blade"])
+
+    def test_the_patterns_may_match_different_lines(self) -> None:
+        result = self.search(["salt", "twin"], type_filter="lore")
+
+        self.assertEqual([h.id for h in result.hits], ["lore.blade"])
+        self.assertEqual([m.line for m in result.hits[0].matches], [1, 2, 4])
+
+    def test_a_missing_pattern_drops_the_object(self) -> None:
+        self.assertEqual(self.search(["twin", "dragon"]).hits, [])
+
+    def test_identity_and_body_matches_combine(self) -> None:
+        """One pattern on the id, one on the body: the object has both."""
+        result = self.search(["^lore\\.grave$", "hill"])
+
+        self.assertEqual([h.id for h in result.hits], ["lore.grave"])
+        self.assertEqual(
+            [(m.field, m.line) for m in result.hits[0].matches],
+            [("id", 0), ("body", 1)],
+        )
+
+    def test_a_tag_satisfies_a_pattern(self) -> None:
+        result = self.search(["haunted", "hill"])
+
+        self.assertEqual([h.id for h in result.hits], ["lore.grave"])
+
+    def test_case_is_decided_per_pattern(self) -> None:
+        result = self.search(["Salt", "twin"], type_filter="lore")
+
+        self.assertEqual(
+            [p.case_sensitive for p in result.patterns], [True, False]
+        )
+        # `Salt` matches line 2 only; `SALT` on line 1 is another case.
+        self.assertEqual([m.line for m in result.hits[0].matches], [2, 4])
+
+
+class TestSearchMisses(_ProjectCase):
+    """A miss must say what was searched, or it reads as a broken tool."""
+
+    def test_a_miss_restates_the_pattern_and_the_count(self) -> None:
+        result = self.search("no-such-text", type_filter="person")
+
+        lines = format_no_match(result)
+        self.assertEqual(
+            lines,
+            [
+                f"0 matches for /no-such-text/i (regex; {result.scanned} objects "
+                "searched)"
+            ],
+        )
+
+    def test_a_multi_word_miss_suggests_one_pattern_per_term(self) -> None:
+        lines = format_no_match(self.search("twin blade grave"))
+
+        self.assertIn(
+            "lens kb search -e twin -e blade -e grave", lines[1]
+        )
+
+    def test_a_smart_case_sensitive_miss_says_so(self) -> None:
+        lines = format_no_match(self.search("Nowhere"))
+
+        self.assertIn("/Nowhere/", lines[0])
+        self.assertTrue(any("-i ignores case" in line for line in lines))
+
+    def test_an_explicit_case_sensitive_miss_needs_no_case_hint(self) -> None:
+        lines = format_no_match(self.search("nowhere", case="sensitive"))
+
+        self.assertEqual(len(lines), 1)
+
+    def test_a_multi_pattern_miss_names_every_pattern(self) -> None:
+        lines = format_no_match(self.search(["twin", "dragon"]))
+
+        self.assertTrue(lines[0].startswith("0 objects match all of /twin/i, /dragon/i"))
+        self.assertEqual(len(lines), 1)
+
+    def test_a_fixed_string_miss_says_fixed_string(self) -> None:
+        lines = format_no_match(self.search("a.b", fixed_string=True))
+
+        self.assertIn("(fixed string;", lines[0])
 
 
 class TestSearchFilters(_ProjectCase):
@@ -260,13 +385,13 @@ class TestSearchFilters(_ProjectCase):
         self.assertEqual(self.search("front", tags=["pc", "place"]).hits, [])
 
     def test_the_source_filter_keeps_only_project_objects(self) -> None:
-        result = self.search("the", ignore_case=True, source="project")
+        result = self.search("the", case="ignore", source="project")
 
         self.assertTrue(result.hits)
         self.assertTrue(all(h.source.kind == "project" for h in result.hits))
 
     def test_the_source_filter_keeps_only_dataset_objects(self) -> None:
-        result = self.search("the", ignore_case=True, source="dataset")
+        result = self.search("the", case="ignore", source="dataset")
 
         self.assertTrue(result.hits)
         self.assertTrue(all(h.source.kind == "dataset" for h in result.hits))
@@ -295,12 +420,19 @@ class TestSearchParallelism(_ProjectCase):
         for index in range(120):
             self.store.store_object(f"note.n{index:03d}", f"Note {index}\nkeyword\n")
 
-    def _ids(self, workers: str) -> list[str]:
+    def _ids(self, workers: str, pattern: str | list[str] = "keyword") -> list[str]:
         with patch.dict(os.environ, {"LENS_KB_SEARCH_WORKERS": workers}):
-            return [hit.id for hit in self.search("keyword").hits]
+            return [hit.id for hit in self.search(pattern).hits]
 
     def test_the_parallel_scan_returns_exactly_the_serial_scan(self) -> None:
         self.assertEqual(self._ids("4"), self._ids("1"))
+
+    def test_the_parallel_scan_ands_patterns_like_the_serial_scan(self) -> None:
+        patterns = ["keyword", "^Note 1[0-9]$"]
+
+        serial = self._ids("1", patterns)
+        self.assertEqual(len(serial), 10)
+        self.assertEqual(self._ids("4", patterns), serial)
 
     def test_it_falls_back_to_a_serial_scan_when_no_pool_can_start(self) -> None:
         with patch(
@@ -405,7 +537,7 @@ class TestNamedDatasetFilter(_ProjectCase):
 
     def test_search_takes_the_named_dataset_too(self) -> None:
         result = kb_search(
-            "the", ignore_case=True, source="dataset:rpg", store=self.store
+            "the", case="ignore", source="dataset:rpg", store=self.store
         )
 
         self.assertTrue(result.hits)
@@ -657,6 +789,9 @@ class TestRendering(_ProjectCase):
         self.assertEqual(item["id"], "person.rowan")
         self.assertEqual(item["source"]["kind"], "project")
         self.assertEqual(item["matches"][0]["line"], 4)
+        self.assertEqual(
+            payload["patterns"], [{"pattern": "She waits", "case_sensitive": True}]
+        )
 
     def test_the_list_payload_carries_ids_and_items(self) -> None:
         payload = list_payload(kb_list(store=self.store, type_filter="person"))

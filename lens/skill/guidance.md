@@ -70,6 +70,14 @@ so `grep -r` misses them. Use `lens kb search PATTERN` (regex over ids, types,
 tags and bodies; `id:line:text`), `lens kb list`, and `lens kb get <id>`. Their
 `SOURCE=` field says which store won and what it shadowed.
 
+To check a fact ("is there an inn in the Graysteps?"), search, then read what it
+found: `lens kb search -l -e graysteps -e inn | xargs lens kb get`. PATTERN is
+one regex, so `'twin blade grave'` is a phrase on one line; each `-e` is a term
+that must appear somewhere in the same object. Lowercase ignores case, an
+uppercase letter makes a pattern case-sensitive. A miss exits 1 and says on
+stderr what it searched — that is "no", not a broken tool, so do not fall back
+to `kb get | grep`.
+
 **2. Editing a dataset file edits it for every project using that dataset.**
 Write through `lens kb add <id> '<content>'` (an upsert of the whole body): it
 always writes into *this* project, forking a local copy on first write. Only a
