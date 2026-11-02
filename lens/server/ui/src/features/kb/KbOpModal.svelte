@@ -103,6 +103,18 @@
             <dt>session</dt>
             <dd>{op.session}</dd>
           {/if}
+          {#if op.slug}
+            <dt>trigger</dt>
+            <dd>{op.slug}</dd>
+          {/if}
+          {#if op.when}
+            <dt>when</dt>
+            <dd>{op.when}</dd>
+          {/if}
+          {#if op.op === 'trigger'}
+            <dt>run</dt>
+            <dd>{#if op.run}<code>{op.run}</code>{:else}(empty — removes the trigger){/if}</dd>
+          {/if}
           <dt>node line</dt>
           <dd>
             {op.lineStart} —

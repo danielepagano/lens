@@ -37,6 +37,7 @@ from lens.core.crawl_transforms import (
     is_state_tags,
 )
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
+from lens.core.triggers import kb_trigger_metadata
 from lens.core.narrative import NarrativeNode
 from lens.core.pinning import KB_PIN, KB_UNPIN
 from lens.core.project import find_git_root_from
@@ -453,6 +454,7 @@ BLOCK_PREVIOUS = "previous_events_summary"
 BLOCK_CURRENT = "current_passage"
 BLOCK_EXTRA = "extra"
 BLOCK_STATE = "live_state"
+BLOCK_HELD_BACK = "held_back"
 BLOCK_TASK = "task"
 
 _KIND_TO_BLOCK: dict[str, str] = {
@@ -460,6 +462,7 @@ _KIND_TO_BLOCK: dict[str, str] = {
     "knowledge": BLOCK_KNOWLEDGE,
     "reference": BLOCK_KNOWLEDGE,
     "state": BLOCK_STATE,
+    "held_back": BLOCK_HELD_BACK,
     "narrative_summary": BLOCK_PREVIOUS,
     "current_narrative": BLOCK_CURRENT,
     "extra": BLOCK_EXTRA,
@@ -657,6 +660,7 @@ def _resolve_pins_for_ancestors(
                     metadata={
                         "kb_id": cid,
                         "tags": ",".join(obj.tags),
+                        **kb_trigger_metadata(obj.text),
                         "expansion_policy": expansion_policy_from_tags(obj.tags).mode,
                         **pin_origin.get(cid, {}),
                     },
@@ -787,6 +791,7 @@ def _add_mention_state_components(
                 metadata={
                     "kb_id": obj.id,
                     "tags": ",".join(obj.tags),
+                    **kb_trigger_metadata(obj.text),
                     "expansion_policy": "reference",
                     "mention_scope": "state",
                 },
@@ -1265,6 +1270,8 @@ def _prepare_render_graph(
     system_prompt: str,
     instruction: str,
     extra_sections: list[str] | None = None,
+    held_back: bool = False,
+    held_back_key: str = "play.held_back",
 ) -> CrawlGraph:
     graph = _clone_graph(result.graph)
     graph.add_component(
@@ -1318,8 +1325,77 @@ def _prepare_render_graph(
         graph = SecretDecodeTransform().apply(graph)
         graph = StripStandaloneMountEmbedsTransform().apply(graph)
     _divert_state_components(graph)
+    if held_back:
+        _add_held_back_component(graph, result, held_back_key)
     _log_render_effects_if_verbose(graph)
     return graph
+
+
+def _add_held_back_component(
+    graph: CrawlGraph, result: CrawlResult, prompt_key: str = "play.held_back"
+) -> None:
+    """Add the tail ``[HELD BACK]`` block when at least one trigger is open.
+
+    One pass over the finished render graph, the same shape as
+    :func:`_divert_state_components` and for the same reason: it runs after id
+    dedup, so it sees every way a KB object entered scope exactly once, and it
+    reads triggers off component metadata already in memory.  The only I/O is
+    :func:`~lens.core.triggers.fired_slugs` — a walk over node *names*.
+
+    Tail, not prefix: which triggers are open changes whenever a node is created
+    or rewound, and in the prefix that would invalidate the cache from the KB
+    onward.  No open trigger means no block at all, instructions included.
+    """
+    from lens.core.triggers import (
+        TRIGGERS_METADATA_KEY,
+        fired_slugs,
+        triggers_from_metadata,
+    )
+
+    found: dict[str, tuple[str, str]] = {}
+    for component in graph.components:
+        if component.kind not in {"knowledge", "reference", "state"}:
+            continue
+        if "llm" not in component.visibility:
+            continue
+        declared = triggers_from_metadata(component.metadata.get(TRIGGERS_METADATA_KEY))
+        kb_id = component.metadata.get("kb_id", component.id)
+        for slug, when in declared.items():
+            found.setdefault(slug, (when, kb_id))
+    if not found:
+        return
+    node = result.current_node
+    fired: set[str] = fired_slugs(node.narrative_root) if node is not None else set()
+    open_items = [(slug, when) for slug, (when, _) in found.items() if slug not in fired]
+    if not open_items:
+        return
+    listing = "\n".join(f"- {slug}: {when}" for slug, when in open_items)
+    text = PromptStore(graph.project_root).format(prompt_key, triggers=listing)
+    graph.add_component(
+        CrawlComponent(
+            id="render-held-back",
+            kind="held_back",
+            text=text,
+            role="user",
+            source=ComponentSource(kind="operator", identifier="held_back"),
+            priority=90,
+            metadata={
+                "triggers": ",".join(slug for slug, _ in open_items),
+                "declared_on": ",".join(
+                    sorted({found[slug][1] for slug, _ in open_items})
+                ),
+            },
+        )
+    )
+    for slug, _ in open_items:
+        graph.add_effect(
+            RenderEffect(
+                kind="held-back",
+                token=slug,
+                result=BLOCK_HELD_BACK,
+                source_component_id=found[slug][1],
+            )
+        )
 
 
 def _divert_state_components(graph: CrawlGraph) -> None:
@@ -1436,10 +1512,25 @@ def _sections_from_graph(graph: CrawlGraph, prompts: PromptStore) -> list[str]:
         if component.kind == "extra" and "llm" in component.visibility
     ]
     sections.extend(component.text for component in extras if component.text)
-    state_block = _state_block_from_graph(graph, prompts)
-    if state_block:
-        sections.append(state_block)
+    sections.extend(_tail_blocks_from_graph(graph, prompts))
     return sections
+
+
+def _tail_blocks_from_graph(graph: CrawlGraph, prompts: PromptStore) -> list[str]:
+    """``[LIVE STATE]`` then ``[HELD BACK]``, whichever exist, for just before the task."""
+    blocks = [_state_block_from_graph(graph, prompts), _held_back_block_from_graph(graph, prompts)]
+    return [block for block in blocks if block]
+
+
+def _held_back_block_from_graph(graph: CrawlGraph, prompts: PromptStore) -> str:
+    held = [
+        component
+        for component in graph.components
+        if component.kind == "held_back" and "llm" in component.visibility
+    ]
+    if not held:
+        return ""
+    return _block_from_components(prompts.get("shared.block.held_back"), held)
 
 
 def _state_block_from_graph(graph: CrawlGraph, prompts: PromptStore) -> str:
@@ -1505,6 +1596,7 @@ def crawl_result_from_pins(
                     metadata={
                         "kb_id": cid,
                         "tags": ",".join(obj.tags),
+                        **kb_trigger_metadata(obj.text),
                         "expansion_policy": expansion_policy_from_tags(obj.tags).mode,
                     },
                 )
@@ -1604,13 +1696,25 @@ def assemble_prompt(
     instruction: str,
     extra_sections: list[str] | None = None,
     turns: list[tuple[str, str]] | None = None,
+    held_back: bool = False,
+    held_back_key: str = "play.held_back",
 ) -> list[dict[str, str]]:
+    """Render *result* into ``[system, user, …]`` messages.
+
+    *held_back* opts the operator into the tail ``[HELD BACK]`` block listing
+    open triggers (see :func:`_add_held_back_component`), and *held_back_key*
+    is the instruction around the list.  What to do at the moment differs by
+    operator: ``play`` (and ``test-play``) stop at the threshold, while
+    ``advance`` cuts the jump there and suggests the trigger for its close.
+    """
     prompts = PromptStore(result.project_root)
     graph = _prepare_render_graph(
         result,
         system_prompt=system_prompt,
         instruction=instruction,
         extra_sections=extra_sections,
+        held_back=held_back,
+        held_back_key=held_back_key,
     )
     result.render_graph = graph
     if turns:
@@ -1631,9 +1735,9 @@ def assemble_prompt(
 
     # State objects render after the last turn rather than in the prefix, so
     # they travel with the task block wherever it ends up below.
-    state_block = _state_block_from_graph(graph, prompts)
-    if state_block:
-        task_block = f"{state_block}\n\n{task_block}"
+    tail_blocks = _tail_blocks_from_graph(graph, prompts)
+    if tail_blocks:
+        task_block = "\n\n".join([*tail_blocks, task_block])
 
     prefix_parts: list[str] = []
     knowledge = [

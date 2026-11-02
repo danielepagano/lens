@@ -52,6 +52,7 @@ def stats(project_slug: str, session: ProjectSession = Depends(get_session)) -> 
         "tts_available": result.tts_available,
         "active_session_operator": result.active_session_operator,
         "pending_kb_ops": result.pending_kb_ops,
+        "offers_at_cursor": result.offers_at_cursor,
         "pending_kb_errors": result.pending_kb_errors,
         "registered_modality_ids": result.registered_modality_ids,
         "modalities_at_cursor": result.modalities_at_cursor,

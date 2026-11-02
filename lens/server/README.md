@@ -68,7 +68,7 @@ The UI consumes this route from `features/explain/` (context modal, opened by th
 |--------|------|-------------|
 | POST | `/{slug}/narrative/narratives/active` | Switch the active narrative (`{"narrative": "<slug>"}`). |
 | GET | `/{slug}/narrative/tree` | Recursive tree of narrative nodes (address, key, children). |
-| GET | `/{slug}/narrative/node/{address}` | Node content by address. Returns `address`, `content`, `children`, plus `pending_kb` **at the cursor only** (the proposals a `design`/`advance` session has not written yet — ops with line spans and status, and a `base`/`proposed` pair per object). 404 if not found. |
+| GET | `/{slug}/narrative/node/{address}` | Node content by address. Returns `address`, `content`, `children`, plus `pending_kb` **at the cursor only** (the proposals a `design`/`advance` session has not written yet — ops with line spans and status, and a `base`/`proposed` pair per object) and `offers` (open trigger offers in the cursor's passage, also cursor only). 404 if not found. |
 
 ### Pinning
 
@@ -122,6 +122,8 @@ Direct-edit routes build their own `KnowledgeStore`, so any route that mutates t
 |--------|------|-------------|
 | POST | `/{slug}/stream/cancel` | Stop the active stream. Completed workflow steps remain in the pending transaction; use rollback to discard the preview. |
 | POST | `/{slug}/stream/workflow/action` | Retry or skip a paused workflow step, or cancel a running step-scoped one. Body: `{"step_id": "<id>", "action": "retry"\|"skip"\|"cancel"}`. `cancel` is only valid for steps whose plan entry carries `cancel_scope: "step"` (refine passes) — it stops that step alone and the workflow continues; 400 otherwise. |
+
+`POST /{slug}/operator/play` and `/operator/design` accept `trigger` in the body: fire that declared trigger, opening a fresh `<trigger>-tr` session at the cursor (`run_session(trigger=…)`). The UI sends it the way the CLI's offer prompt does — the trigger's stored `run` is submitted as an ordinary command line, and `trigger` only names the session. The cursor's open offers (`[{slug, when, run, declared_on}]`) come back as `offers` on the cursor's node payload and as `offers_at_cursor` on `/stats`. A `design`/`advance` `--end` `done` event carries `offered` and `offer_errors`.
 
 `POST /{slug}/operator/test-play` (body: `targets`, `prompt`, `no_spine`, `llm_id`, `reasoning`) is the one operator route whose output may be written nowhere: outside a design session its `done` event carries the review itself — `targets`, `findings` (`[{kind, text}]`), `findings_text`, `review` — and `review_node` is `null`. Inside a session `review_node` is the closed child holding the full review. Unknown target ids are a 400 before the stream opens.
 

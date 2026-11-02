@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Generator, Iterable, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -61,6 +64,7 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "shared.block.previous_events_summary": PromptSpec("shared.block.previous_events_summary", frozenset()),
     "shared.block.current_passage": PromptSpec("shared.block.current_passage", frozenset()),
     "shared.block.live_state": PromptSpec("shared.block.live_state", frozenset()),
+    "shared.block.held_back": PromptSpec("shared.block.held_back", frozenset()),
     "shared.block.task": PromptSpec("shared.block.task", frozenset()),
     "shared.block.instructions": PromptSpec("shared.block.instructions", frozenset()),
     "shared.block.current_text": PromptSpec("shared.block.current_text", frozenset()),
@@ -86,6 +90,8 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "design.instruction": PromptSpec("design.instruction", frozenset({"prompt"})),
     "play.system": PromptSpec("play.system", frozenset()),
     "play.instruction_continue": PromptSpec("play.instruction_continue", frozenset()),
+    "play.held_back": PromptSpec("play.held_back", frozenset({"triggers"})),
+    "advance.held_back": PromptSpec("advance.held_back", frozenset({"triggers"})),
     "play.summary_system": PromptSpec("play.summary_system", frozenset()),
     "play.summary_instruction_template": PromptSpec(
         "play.summary_instruction_template", frozenset({"content", "slug"})
@@ -108,6 +114,10 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "advance.instruction_template": PromptSpec("advance.instruction_template", frozenset({"days", "current_day", "rolls_text"})),
     "session.summary_system": PromptSpec("session.summary_system", frozenset()),
     "session.summary_instruction_template": PromptSpec("session.summary_instruction_template", frozenset({"content", "slug"})),
+    "session.trigger_opened": PromptSpec("session.trigger_opened", frozenset({"when"})),
+    "design.trigger_opened": PromptSpec(
+        "design.trigger_opened", frozenset({"when", "slug", "declared_on"})
+    ),
     "session.summary_guidance_suffix": PromptSpec(
         "session.summary_guidance_suffix", frozenset({"guidance"})
     ),
@@ -275,6 +285,9 @@ class PromptStore:
 
     def resolve(self, key: str) -> ResolvedPrompt:
         self.validate_key(key)
+        run = _RUN_OVERRIDES.get()
+        if key in run:
+            return ResolvedPrompt(key=key, value=run[key], source="run")
         if key in self._project:
             return ResolvedPrompt(key=key, value=self._project[key], source="project")
         if key in self._pack:
@@ -333,3 +346,69 @@ class PromptStore:
             lines.append(f"{item_key} = '''{escaped}'''")
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         self._project = current
+
+
+# ---------------------------------------------------------------------------
+# Run-scoped overrides
+# ---------------------------------------------------------------------------
+
+_RUN_OVERRIDES: ContextVar[Mapping[str, str]] = ContextVar("lens_run_prompt_overrides", default={})
+"""Prompt text for one run only, winning over every layer.
+
+A project override (``lens prompt set``) is shared state: every run started while
+it is set, from any terminal or the UI, picks it up, and it stays until someone
+clears it. An A/B test of a prompt needs the opposite. This is scoped to the
+running coroutine, so it ends with the run and cannot leak into a parallel one.
+"""
+
+
+@contextmanager
+def run_prompt_overrides(overrides: Mapping[str, str] | None) -> Generator[None]:
+    """Serve *overrides* to every :class:`PromptStore` read inside the block."""
+    if not overrides:
+        yield
+        return
+    token = _RUN_OVERRIDES.set({**_RUN_OVERRIDES.get(), **overrides})
+    try:
+        yield
+    finally:
+        _RUN_OVERRIDES.reset(token)
+
+
+def load_prompt_override_files(
+    specs: Iterable[str], base: Path, project_root: Path | None
+) -> dict[str, str]:
+    """Parse ``KEY=FILE`` specs into run overrides, checking each one first.
+
+    *FILE* is relative to *base*. The key must exist, and the text must still
+    format with the key's own placeholders, so a typo fails here rather than
+    mid-run with a ``KeyError`` from deep in prompt assembly.
+    """
+    store = PromptStore(project_root)
+    out: dict[str, str] = {}
+    for spec in specs:
+        key, sep, raw_path = spec.partition("=")
+        key, raw_path = key.strip(), raw_path.strip()
+        if not sep or not key or not raw_path:
+            raise ValueError(f"expected KEY=FILE, got {spec!r}")
+        try:
+            store.validate_key(key)
+        except ValueError as e:
+            raise ValueError(f"{e} (in {spec!r})") from e
+        path = Path(raw_path)
+        if not path.is_absolute():
+            path = base / path
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as e:
+            raise ValueError(f"cannot read {path}: {e}") from e
+        variables = _all_prompt_specs().get(key)
+        try:
+            text.format(**{v: "" for v in (variables.variables if variables else ())})
+        except (KeyError, IndexError, ValueError) as e:
+            names = ", ".join(sorted(variables.variables)) if variables else "none"
+            raise ValueError(
+                f"{path}: does not format as {key} (placeholders: {names}): {e}"
+            ) from e
+        out[key] = text.rstrip("\n")
+    return out

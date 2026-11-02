@@ -114,6 +114,11 @@ def stats(
                 )
             for error in result.pending_kb_errors:
                 typer.echo(f"  ! {error}")
+            for offer in result.offers_at_cursor:
+                typer.echo(
+                    f"Offer: {offer['slug']} — when {offer['when']} "
+                    f"(run it with 'lens trigger {offer['slug']}')"
+                )
         else:
             typer.echo("Active narrative cursor:  (no active narrative)")
 

@@ -143,8 +143,14 @@ def slug_for_summary_prompt(slug: str) -> str:
 
     The HTML ``<!-- section:<slug> -->`` comment always uses the full storage
     slug; prompts pass this shortened value as ``{slug}`` so the model titles
-    the meaningful segment (e.g. ``play-amy-dream`` → ``amy-dream``).
+    the meaningful segment (e.g. ``play-amy-dream`` → ``amy-dream``).  The
+    reserved trigger suffix goes too, or a fired ``design-cellar-tr`` would be
+    titled "Cellar Tr".
     """
+    from lens.core.triggers import TRIGGER_NODE_SUFFIX
+
+    if slug.endswith(TRIGGER_NODE_SUFFIX):
+        slug = slug[: -len(TRIGGER_NODE_SUFFIX)]
     for prefix in _SLUG_OPERATOR_PREFIXES:
         if slug.startswith(prefix):
             return slug[len(prefix) :]
@@ -694,7 +700,13 @@ class SessionOperator(Operator):
         when a sub-node with that name already exists.  Every active module key
         appears, so a two-module session is legible from its id alone
         (``design-encounter-clock-the-bridge``).
+
+        Never ends in the reserved trigger suffix ``-tr``: a prompt whose last
+        word is "tr" falls through to ``-N`` like a name already taken, because
+        only firing a trigger may create such a node.
         """
+        from lens.core.triggers import is_reserved_node_name
+
         parts = [cls.name]
         for key in module_key_list(module_ids):
             if key not in parts:
@@ -705,7 +717,7 @@ class SessionOperator(Operator):
                 parts.append(slug)
         base = "-".join(parts)
         existing = set(parent.child_keys())
-        if base not in existing:
+        if base not in existing and not is_reserved_node_name(base):
             return base
         n = 1
         while f"{base}-{n}" in existing:
@@ -830,15 +842,62 @@ class SessionOperator(Operator):
         unpins: list[str],
         on_stream_target: Callable[[str], Awaitable[None]] | None,
         slug: str | None = None,
+        trigger: str | None = None,
     ) -> tuple[NarrativeNode, Storage]:
         """Create a sub-node, pin auto_pins + module, stage setup.
 
         Returns ``(child_node, storage)`` so the caller can create inline
         storage keyed to the child.
+
+        *trigger* fires a declared trigger: the node is named ``<trigger>-tr``
+        exactly, with no further prefixing, and the trigger's slug, ``when`` and
+        declaring object are recorded on the open annotation — that is what the
+        session's task reads back, and what ``kb_set_trigger`` defaults its
+        ``id`` from.  The node always opens at the cursor, nesting under
+        whatever session is open there.
         """
+        from lens.core.triggers import (
+            ANN_TRIGGER,
+            ANN_TRIGGER_FROM,
+            ANN_TRIGGER_WHEN,
+            TRIGGER_NODE_SUFFIX,
+            declared_triggers,
+            fired_slugs,
+            is_reserved_node_name,
+            trigger_node_name,
+        )
+
         module_keys = cls._validated_module_keys(module_ids, session)
         cursor = narrative.find_cursor()
-        if slug is not None:
+        trigger_params: dict[str, Any] = {}
+        if trigger is not None:
+            if slug is not None:
+                raise ValidationError("a trigger names its own node; drop --slug")
+            fired_slug = trigger.strip().lower()
+            if not fired_slug.startswith(f"{cls.name}-"):
+                raise ValidationError(
+                    f"trigger '{fired_slug}' does not run {cls.name} "
+                    f"(its slug must start with '{cls.name}-')"
+                )
+            declared = declared_triggers(session.kb).get(fired_slug)
+            if declared is None:
+                raise ValidationError(f"no trigger '{fired_slug}' is declared")
+            if fired_slug in fired_slugs(narrative.narrative_root):
+                raise ValidationError(
+                    f"trigger '{fired_slug}' is already done "
+                    f"({trigger_node_name(fired_slug)} exists in this narrative)"
+                )
+            session_id = trigger_node_name(fired_slug)
+            if session_id in set(cursor.child_keys()):
+                raise ValidationError(
+                    f"a node named '{session_id}' already exists here"
+                )
+            trigger_params = {
+                ANN_TRIGGER: fired_slug,
+                ANN_TRIGGER_FROM: declared.declared_on,
+                ANN_TRIGGER_WHEN: declared.when,
+            }
+        elif slug is not None:
             if not validate_slug(slug):
                 raise ValidationError(
                     f"invalid slug '{slug}' (alphanumeric, underscores, hyphens only)"
@@ -848,6 +907,11 @@ class SessionOperator(Operator):
             prefix = f"{cls.name}-"
             if not slug.startswith(prefix):
                 slug = prefix + slug
+            if is_reserved_node_name(slug):
+                raise ValidationError(
+                    f"slug '{slug}' ends in '{TRIGGER_NODE_SUFFIX}', which is "
+                    "reserved for nodes opened by a trigger"
+                )
             if slug in set(cursor.child_keys()):
                 raise ValidationError(
                     f"a node named '{slug}' already exists here"
@@ -869,6 +933,7 @@ class SessionOperator(Operator):
             ann_params["module"] = (
                 module_keys[0] if len(module_keys) == 1 else module_keys
             )
+        ann_params.update(trigger_params)
 
         child_node = op.create_subnode(
             cursor, session_id, params=ann_params or None
@@ -1085,6 +1150,7 @@ class SessionOperator(Operator):
         retry: bool = False,
         end: bool = False,
         slug: str | None = None,
+        trigger: str | None = None,
         mentions: list[str] | None = None,
         includes: list[str] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
@@ -1098,8 +1164,13 @@ class SessionOperator(Operator):
         """Run a session (create, continue, or end).
 
         Routes to :meth:`run_session_end`, :meth:`_run_inside`, or
-        :meth:`_run_fresh` depending on state.
+        :meth:`_run_fresh` depending on state.  *trigger* (a declared trigger's
+        slug) always opens a fresh ``<slug>-tr`` sub-node at the cursor — see
+        :mod:`lens.core.triggers`.  It is a core parameter, not a CLI flag:
+        callers parse the trigger's stored ``run`` into the other arguments.
         """
+        if trigger is not None and (end or retry):
+            raise ValidationError("a trigger opens a new session; it cannot --end or --retry")
         focus = narrative.find_cursor()
         kwargs_dict = dict(kwargs)
         ep_raw = kwargs_dict.get("extra_params")
@@ -1140,7 +1211,7 @@ class SessionOperator(Operator):
 
         session_node, _ = cls.find_active_session(narrative)
 
-        if session_node is not None and slug is None:
+        if session_node is not None and slug is None and trigger is None:
             return await cls._run_inside(
                 session=session,
                 narrative=narrative,
@@ -1168,6 +1239,7 @@ class SessionOperator(Operator):
                 unpins=unpins,
                 on_stream_target=on_stream_target,
                 slug=slug,
+                trigger=trigger,
             )
             return await cls._run_fresh(
                 session=session,

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 if TYPE_CHECKING:
+    from lens.core.narrative import NarrativeNode
     from lens.core.text_select import Patch
 
 import yaml
@@ -1215,6 +1216,10 @@ class KbMaterializeResult:
     updated: list[str] = field(default_factory=list[str])
     removed: list[str] = field(default_factory=list[str])
     errors: list[str] = field(default_factory=list[str])
+    offered: list[str] = field(default_factory=list[str])
+    """Trigger slugs the close offered to the player (``suggest`` ops that held)."""
+    offer_errors: list[str] = field(default_factory=list[str])
+    """``suggest`` ops that failed the re-check at close, with the reason."""
 
     def touched(self) -> list[str]:
         return [*self.inserted, *self.updated, *self.removed]
@@ -1367,3 +1372,34 @@ def applied_marker(
             removed=tuple(result.removed),
         )
     )
+
+
+def session_end_offer_markers(
+    child_text: str,
+    project_root: Path,
+    storage: Storage,
+    parent: NarrativeNode,
+    result: KbMaterializeResult,
+) -> str:
+    """``<!-- suggest:… -->`` lines a session close writes after its close tag.
+
+    Each ``suggest`` op in the closing node is re-checked against the KB **as
+    just written** (disk truth, so call this after :func:`materialize_session_kb`)
+    and the narrative tree.  What holds is recorded on *result* and returned as
+    marker text for the parent; what does not is reported in
+    ``result.offer_errors`` rather than dropped silently.
+
+    After the close tag, not before: the tail scan reads the last non-empty
+    line, an HTML comment is not an annotation, so the cursor still lands on the
+    parent — and the next play turn there sees the marker in its passage and
+    does not offer the same thing again.
+    """
+    from lens.core.triggers import session_end_offers
+
+    kb = KnowledgeStore.for_project(project_root, storage=storage, pending=False)
+    offers = session_end_offers(child_text, kb, parent)
+    result.offered.extend(offers.offered)
+    result.offer_errors.extend(offers.rejected)
+    for reason in offers.rejected:
+        logger.warning("session end: not offered — %s", reason)
+    return offers.markers

@@ -23,6 +23,7 @@ from lens.core.mount_embed_strip import strip_standalone_lens_mount_attachment_l
 from lens.core.context import (
     BLOCK_CURRENT,
     BLOCK_EXTRA,
+    BLOCK_HELD_BACK,
     BLOCK_KNOWLEDGE,
     BLOCK_PREVIOUS,
     BLOCK_STATE,
@@ -75,6 +76,7 @@ _BLOCK_CACHE: dict[str, str] = {
     BLOCK_CONVERSATION: _CACHE_VOLATILE,
     BLOCK_EXTRA: _CACHE_VOLATILE,
     BLOCK_STATE: _CACHE_VOLATILE,
+    BLOCK_HELD_BACK: _CACHE_VOLATILE,
     BLOCK_TASK: _CACHE_VOLATILE,
 }
 
@@ -86,6 +88,7 @@ _BLOCK_ORDER: tuple[str, ...] = (
     BLOCK_CONVERSATION,
     BLOCK_EXTRA,
     BLOCK_STATE,
+    BLOCK_HELD_BACK,
     BLOCK_TASK,
 )
 
@@ -97,6 +100,7 @@ _BLOCK_ROLE: dict[str, str] = {
     BLOCK_CONVERSATION: "user/assistant",
     BLOCK_EXTRA: "user",
     BLOCK_STATE: "user",
+    BLOCK_HELD_BACK: "user",
     BLOCK_TASK: "user",
 }
 
@@ -105,6 +109,7 @@ _BLOCK_TITLE_KEY: dict[str, str] = {
     BLOCK_PREVIOUS: "shared.block.previous_events_summary",
     BLOCK_CURRENT: "shared.block.current_passage",
     BLOCK_STATE: "shared.block.live_state",
+    BLOCK_HELD_BACK: "shared.block.held_back",
     BLOCK_TASK: "shared.block.task",
 }
 
@@ -376,6 +381,14 @@ def component_provenance(
         return "operator", f"{operator_name} extra section", detail
     if cid == "current-override":
         return "operator", "current passage override", detail
+    if cid == "render-held-back":
+        slugs = meta.get("triggers", "")
+        declared = meta.get("declared_on", "")
+        return (
+            "triggers",
+            f"open triggers {slugs} declared on {declared}",
+            detail,
+        )
 
     if cid.startswith("mention-kb:"):
         # The only mentions that reach the graph: `state`-tagged objects, which

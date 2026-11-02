@@ -179,3 +179,28 @@ describe('unquoteYamlScalar', () => {
     expect(unquoteYamlScalar("'12'")).toBe('12')
   })
 })
+
+describe('trigger and suggest blocks', () => {
+  // Verbatim `render_kb_op` output (core/kb_pending.py) — the parser mirrors it.
+  it('reads slug, when and run off a trigger', () => {
+    const [op] = parseKbOpBlocks(
+      '[kb-op\n  op: trigger\n  id: prep.store\n  slug: design-cellar\n  when: "Enso: opens the hatch"\n  run: "design --pin prep.store \\"build it\\""\n]: #\n',
+    )
+    expect(op!.op).toBe('trigger')
+    expect(op!.id).toBe('prep.store')
+    expect(op!.slug).toBe('design-cellar')
+    expect(op!.when).toBe('Enso: opens the hatch')
+    expect(op!.run).toBe('design --pin prep.store "build it"')
+  })
+
+  it('an empty run is the removal', () => {
+    const [op] = parseKbOpBlocks('[kb-op\n  op: trigger\n  id: prep.store\n  slug: design-cellar\n  run: ""\n]: #\n')
+    expect(op!.run).toBe('')
+  })
+
+  it('a suggest names no object', () => {
+    const [op] = parseKbOpBlocks('[kb-op\n  op: suggest\n  slug: play-cellar\n]: #\n')
+    expect(op!.slug).toBe('play-cellar')
+    expect(kbOpTargetIds(op!)).toEqual([])
+  })
+})

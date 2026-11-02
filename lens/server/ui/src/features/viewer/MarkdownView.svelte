@@ -28,6 +28,7 @@
   import { getKbItem } from '../../services/api'
   import CodeMirrorEditor from '../editor/CodeMirrorEditor.svelte'
   import ViewerContextPills from './ViewerContextPills.svelte'
+  import OfferPills from './OfferPills.svelte'
   import type { LinePickRowState } from '../editor/cmLinePick'
   import { tick } from 'svelte'
   import { fromAction } from 'svelte/attachments'
@@ -255,6 +256,9 @@
         rememberPins={rememberPins}
         onOpenKb={openKbItem}
       />
+      {#if isCursorNode}
+        <OfferPills offers={$stats?.offers_at_cursor ?? []} />
+      {/if}
       {#if isStreamingToCurrentNode && $streamingPreview}
         <div class="transaction-added streaming-preview" data-testid="streaming-preview">
           <code>{$streamingPreview.text}</code>

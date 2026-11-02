@@ -62,7 +62,7 @@ from __future__ import annotations
 import asyncio
 import re
 import tomllib
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar, cast
@@ -88,7 +88,7 @@ from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation
 from lens.core.operator import Operator
 from lens.core.operator_params import apply_pinned_invocation
 from lens.core.operators.session import format_summary_block, prompt_to_slug
-from lens.core.prompts import PromptStore
+from lens.core.prompts import PromptStore, run_prompt_overrides
 from lens.core.project import (
     ProjectSession,
     get_selected_datasets,
@@ -328,6 +328,7 @@ class TestPlayOperator(Operator):
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     required_modalities: ClassVar[frozenset[str]] = frozenset({"rpg_play_context"})
+    renders_held_back: ClassVar[bool] = True
     # The hint lists play's catalog; the tool is built in :meth:`_tools` for the
     # same reason, since the base helpers key the catalog on ``cls.name``.
     supports_module_requests: ClassVar[bool] = True
@@ -463,9 +464,16 @@ class TestPlayOperator(Operator):
         if resolved_modalities is not None:
             resolved = resolved_modalities
         apply_modality_crawl(crawl_result, resolved, ctx)
-        instruction = self.append_module_hint(crawl_result, self.build_instruction(params))
+        instruction = self.append_module_hint(
+            crawl_result,
+            self.append_trigger_context(crawl_result, self.build_instruction(params)),
+        )
         return assemble_prompt(
-            crawl_result, system_prompt=self.system_prompt, instruction=instruction
+            crawl_result,
+            system_prompt=self.system_prompt,
+            instruction=instruction,
+            held_back=self.renders_held_back,
+            held_back_key=self.held_back_prompt_key,
         )
 
     # ------------------------------------------------------------------
@@ -474,6 +482,37 @@ class TestPlayOperator(Operator):
 
     @classmethod
     async def run_test_play(
+        cls,
+        *,
+        session: ProjectSession,
+        narrative: NarrativeNode,
+        targets: Sequence[str] = (),
+        prompt: str | None = None,
+        no_spine: bool | None = None,
+        llm_id: str | None = None,
+        reasoning: str | None = None,
+        on_token: Callable[[str], Awaitable[None]] | None = None,
+        on_stream_event: Callable[[str, dict[str, Any]], Awaitable[None]] | None = None,
+        cancel_event: asyncio.Event | None = None,
+        prompt_overrides: Mapping[str, str] | None = None,
+    ) -> TestPlayResult:
+        """Review once, with *prompt_overrides* in force for this run only."""
+        with run_prompt_overrides(prompt_overrides):
+            return await cls._run_test_play(
+                session=session,
+                narrative=narrative,
+                targets=targets,
+                prompt=prompt,
+                no_spine=no_spine,
+                llm_id=llm_id,
+                reasoning=reasoning,
+                on_token=on_token,
+                on_stream_event=on_stream_event,
+                cancel_event=cancel_event,
+            )
+
+    @classmethod
+    async def _run_test_play(
         cls,
         *,
         session: ProjectSession,

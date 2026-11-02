@@ -44,11 +44,12 @@ from lens.core.commands.kb import (
     KbMaterializeResult,
     applied_marker,
     materialize_session_kb,
+    session_end_offer_markers,
 )
 from lens.core.context import crawl
 from lens.core.exceptions import ValidationError, OperatorError
 from lens.core.generation_artifacts import GenerationArtifacts
-from lens.core.kb_op_tools import KB_OP_TOOLS, render_kb_op_persist
+from lens.core.kb_op_tools import KB_OP_TOOLS, kb_op_persist_renderer
 from lens.core.kb_pending import KbOpSink, inflight_ops
 from lens.core.command_tools import build_media_search_tool_entry
 from lens.core.llm import CommandToolsBundle, LLMError, build_command_tools_bundle
@@ -74,6 +75,7 @@ class DesignOperator(SessionOperator):
     supports_kb_ops: ClassVar[bool] = True
     expand_facets: ClassVar[bool] = True
     module_prefix: ClassVar[str] = "design."
+    trigger_opened_prompt_key: ClassVar[str] = "design.trigger_opened"
     required_modalities: ClassVar[frozenset[str]] = frozenset(
         {"kb_ops", "tool_fence_awareness"}
     )
@@ -199,7 +201,7 @@ class DesignOperator(SessionOperator):
                         on_stream_event=on_stream_event,
                         operator_name=cls.name,
                         unlogged_tool_names=KB_OP_TOOLS,
-                        tool_persist_renderer=render_kb_op_persist,
+                        tool_persist_renderer=kb_op_persist_renderer(session.project_root),
                     ),
                 )
         except LLMError as e:
@@ -499,7 +501,11 @@ class DesignOperator(SessionOperator):
         )
         marker = applied_marker(result, session=id)
         suffix = f"{marker}\n" if marker else ""
-        op.append_to_node(parent, suffix + op.build_close_tag(id) + "\n")
+        offers = session_end_offer_markers(
+            child_text, session.project_root, storage, parent, result
+        )
+        tail = f"{offers}\n" if offers else ""
+        op.append_to_node(parent, suffix + op.build_close_tag(id) + "\n" + tail)
         return result
 
     # ------------------------------------------------------------------
@@ -521,6 +527,7 @@ class DesignOperator(SessionOperator):
         retry: bool = False,
         end: bool = False,
         slug: str | None = None,
+        trigger: str | None = None,
         mentions: list[str] | None = None,
         includes: list[str] | None = None,
         on_token: Callable[[str], Awaitable[None]] | None = None,
@@ -544,6 +551,7 @@ class DesignOperator(SessionOperator):
             retry=retry,
             end=end,
             slug=slug,
+            trigger=trigger,
             mentions=mentions,
             includes=includes,
             on_token=on_token,

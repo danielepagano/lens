@@ -45,15 +45,24 @@ from lens.core.knowledge import KnowledgeStore, is_valid_tag, parse_id
 from lens.core.text_select import SelectionError, apply_kb_patches
 
 if TYPE_CHECKING:
-    from lens.core.llm import CommandToolsBundle
+    from lens.core.llm import CommandToolsBundle, ToolPersistRenderer
 
 KB_ADD_TOOL = "kb_add"
 KB_PATCH_PROPOSAL_TOOL = "kb_patch"
 KB_TAG_TOOL = "kb_tag"
 KB_REMOVE_TOOL = "kb_remove"
+KB_SET_TRIGGER_TOOL = "kb_set_trigger"
+KB_SUGGEST_TRIGGER_TOOL = "suggest_trigger"
 
 KB_OP_TOOLS = frozenset(
-    {KB_ADD_TOOL, KB_PATCH_PROPOSAL_TOOL, KB_TAG_TOOL, KB_REMOVE_TOOL}
+    {
+        KB_ADD_TOOL,
+        KB_PATCH_PROPOSAL_TOOL,
+        KB_TAG_TOOL,
+        KB_REMOVE_TOOL,
+        KB_SET_TRIGGER_TOOL,
+        KB_SUGGEST_TRIGGER_TOOL,
+    }
 )
 """Tool names whose persisted record is the ``[kb-op]`` block, not a fence.
 
@@ -236,6 +245,70 @@ def build_kb_op_bundle(sink: KbOpSink, project_root: Path) -> CommandToolsBundle
             )
         return f"OK: removing {canonical}. {_NOT_WRITTEN}"
 
+    async def _kb_set_trigger(args: dict[str, Any], root: Path) -> str:
+        del root
+        kb = _store()
+        resolved = _resolve_trigger_args(args, project_root, kb)
+        if isinstance(resolved, str):
+            return resolved
+        op = resolved
+        if op.run:
+            from lens.core.triggers import declared_triggers, fired_slugs
+
+            declared = declared_triggers(kb)
+            existing = declared.get(op.slug)
+            if existing is not None and existing.declared_on != op.id:
+                return (
+                    f"(error: trigger {op.slug} is already declared on "
+                    f"{existing.declared_on}. A slug names one node, so it must be "
+                    "unique; pick another slug, or update it there.)"
+                )
+            if existing is None:
+                narrative_root = _narrative_root(project_root)
+                if narrative_root is not None and op.slug in fired_slugs(narrative_root):
+                    return (
+                        f"(error: a {op.slug}-tr node already exists in this "
+                        "narrative, so a new trigger with that slug would be born "
+                        "done. Pick another slug.)"
+                    )
+            sink.record(op)
+            verb = "updated" if existing is not None else "declared"
+            return (
+                f"OK: {verb} trigger {op.slug} on {op.id} (when: {op.when}). "
+                f"{_NOT_WRITTEN}"
+            )
+        sink.record(op)
+        return f"OK: removing trigger {op.slug} from {op.id}. {_NOT_WRITTEN}"
+
+    async def _suggest_trigger(args: dict[str, Any], root: Path) -> str:
+        del root
+        from lens.core.triggers import (
+            check_suggestion,
+            declared_triggers,
+            fired_slugs,
+            session_parent,
+        )
+
+        raw = args.get("slug")
+        if not isinstance(raw, str) or not raw.strip():
+            return "(error: 'slug' is required)"
+        slug = raw.strip().lower()
+        kb = _store()
+        narrative_root = _narrative_root(project_root)
+        reason = check_suggestion(
+            slug,
+            declared=declared_triggers(kb),
+            fired=fired_slugs(narrative_root) if narrative_root is not None else set(),
+            parent=session_parent(project_root),
+        )
+        if reason is not None:
+            return f"(error: {reason})"
+        sink.record(KbOp(op="suggest", slug=slug))
+        return (
+            f"OK: {slug} will be offered to the player as soon as this session "
+            "ends."
+        )
+
     tools: list[dict[str, Any]] = [
         _tool_spec(
             KB_ADD_TOOL,
@@ -307,14 +380,163 @@ def build_kb_op_bundle(sink: KbOpSink, project_root: Path) -> CommandToolsBundle
                 "required": ["id"],
             },
         ),
+        _tool_spec(
+            KB_SET_TRIGGER_TOOL,
+            "Declare, update or remove a trigger on a KB object: a stored "
+            "suggestion to run a session operator when a moment arrives in play. "
+            "Use it when prep deliberately holds a part back — because it may "
+            "never come up, or because it should be built against the state at "
+            "that point — instead of writing that part now. Play is shown the "
+            "trigger's 'when' and offers the 'run' to the player when the "
+            "moment arrives; firing it creates the node '<slug>-tr', and that "
+            "node existing is what makes the trigger done. Declare it on an "
+            "object in scope where the moment will be played (pinned there, or "
+            "reached through a '+' pin; usually the prep object or its hub), "
+            "so play has it in scope.",
+            {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": (
+                            "Object to hold the trigger. Defaults to the object "
+                            "whose trigger opened this session, when one did."
+                        ),
+                    },
+                    "slug": {
+                        "type": "string",
+                        "description": (
+                            "Short name, starting with the operator 'run' uses "
+                            "('design-cellar', 'play-cellar'); the prefix is added "
+                            "when missing. Unique across the KB."
+                        ),
+                    },
+                    "when": {
+                        "type": "string",
+                        "description": (
+                            "The moment, as play would see it happen: one short "
+                            "line naming an observable event ('Enso opens the "
+                            "store cellar hatch'), not a state or a plan."
+                        ),
+                    },
+                    "run": {
+                        "type": "string",
+                        "description": (
+                            "The command to run, operator first: e.g. 'design "
+                            "--module encounter --pin prep.village-store \"design "
+                            "the cellar encounter\"' or 'play --pass --pin "
+                            "encounter.cellar'. Allowed flags: --module, --pin, "
+                            "--unpin, --mention, --include, --llm, --reasoning, "
+                            "and --pass for play. An empty string removes the "
+                            "trigger."
+                        ),
+                    },
+                },
+                "required": ["slug", "when", "run"],
+            },
+        ),
+        _tool_spec(
+            KB_SUGGEST_TRIGGER_TOOL,
+            "Offer a trigger to the player as soon as this session ends. The "
+            "trigger must exist (one you declared earlier in this session "
+            "counts), must not be done yet, and must be declared on an object "
+            "in scope where the session returns to (pinned, or via a '+' pin). Rule: when THIS session was "
+            "opened by a trigger, the player is standing at that moment right "
+            "now — declare the follow-up (e.g. the 'play-…' trigger that plays "
+            "what you built) on the object whose trigger opened this session, "
+            "and suggest it. When this is a prep session, declare follow-ups "
+            "but do not suggest them; play offers them when their moment comes.",
+            {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "description": "The trigger's slug (e.g. 'play-cellar').",
+                    },
+                },
+                "required": ["slug"],
+            },
+        ),
     ]
     handlers = {
         KB_ADD_TOOL: _kb_add,
         KB_PATCH_PROPOSAL_TOOL: _kb_patch,
         KB_TAG_TOOL: _kb_tag,
         KB_REMOVE_TOOL: _kb_remove,
+        KB_SET_TRIGGER_TOOL: _kb_set_trigger,
+        KB_SUGGEST_TRIGGER_TOOL: _suggest_trigger,
     }
     return CommandToolsBundle(tools=tools, handlers=cast(Any, handlers))
+
+
+def _narrative_root(project_root: Path) -> Path | None:
+    from lens.core.project import get_active_narrative
+
+    try:
+        narrative = get_active_narrative(project_root)
+    except (OSError, ValueError):
+        return None
+    return narrative.narrative_root if narrative is not None else None
+
+
+def _resolve_trigger_args(
+    args: dict[str, Any], project_root: Path, kb: KnowledgeStore | None = None
+) -> KbOp | str:
+    """The ``trigger`` op for a ``kb_set_trigger`` call, or an error string.
+
+    Shared by the handler and the persist renderer so the block on disk names
+    exactly the object and slug the handler validated — in particular the
+    default ``id``, which is derived from the session the cursor is in.
+    """
+    from lens.core.triggers import (
+        TriggerError,
+        cursor_session_trigger,
+        normalize_trigger_run,
+        normalize_trigger_slug,
+        run_operator_name,
+    )
+
+    raw_id = args.get("id")
+    if isinstance(raw_id, str) and raw_id.strip():
+        bad = _bad_id(raw_id)
+        if bad:
+            return bad
+        canonical = _canonical(raw_id)
+    else:
+        origin = cursor_session_trigger(project_root)
+        if origin is None or not origin.declared_on:
+            return (
+                "(error: 'id' is required — this session was not opened by a "
+                "trigger, so there is no default object)"
+            )
+        canonical = origin.declared_on
+    run = args.get("run")
+    if not isinstance(run, str):
+        return "(error: 'run' is required (an empty string removes the trigger))"
+    run = run.strip()
+    when = args.get("when")
+    when = when.strip() if isinstance(when, str) else ""
+    if run and not when:
+        return "(error: 'when' is required: the moment play should recognise)"
+    if "\n" in when or "\n" in run:
+        return "(error: 'when' and 'run' must each be one line)"
+    raw_slug = args.get("slug")
+    if not isinstance(raw_slug, str) or not raw_slug.strip():
+        return "(error: 'slug' is required)"
+    operator = run_operator_name(run) if run else raw_slug.strip().split("-", 1)[0]
+    try:
+        slug = normalize_trigger_slug(raw_slug, operator)
+    except TriggerError as e:
+        return f"(error: {e})"
+    if run:
+        try:
+            run = normalize_trigger_run(run)
+        except TriggerError as e:
+            return f"(error: {e})"
+    store = kb or KnowledgeStore.for_project(project_root)
+    if not store.exists(canonical):
+        return f"(error: {canonical} does not exist, so it cannot hold a trigger)"
+    return KbOp(op="trigger", id=canonical, slug=slug, when=when, run=run)
 
 
 def _tool_spec(name: str, description: str, parameters: dict[str, Any]) -> dict[str, Any]:
@@ -335,7 +557,27 @@ def _string_list(value: Any) -> list[str]:
     return [str(v).strip() for v in items if isinstance(v, str) and str(v).strip()]
 
 
-def render_kb_op_persist(name: str, args: dict[str, Any], result: str) -> str | None:
+def kb_op_persist_renderer(project_root: Path) -> ToolPersistRenderer:
+    """:func:`render_kb_op_persist` bound to *project_root*.
+
+    ``kb_set_trigger`` resolves a default ``id`` from the session the cursor is
+    in; the block on disk has to name that same object, so the renderer needs
+    the project to resolve it the way the handler did.
+    """
+
+    def _render(name: str, args: dict[str, Any], result: str) -> str | None:
+        return render_kb_op_persist(name, args, result, project_root=project_root)
+
+    return _render
+
+
+def render_kb_op_persist(
+    name: str,
+    args: dict[str, Any],
+    result: str,
+    *,
+    project_root: Path | None = None,
+) -> str | None:
     """The ``[kb-op …]: #`` block to persist for one call, or ``""`` for none.
 
     A pure function of the call arguments, gated on the result: a failed call
@@ -349,7 +591,7 @@ def render_kb_op_persist(name: str, args: dict[str, Any], result: str) -> str | 
         return None
     if not result.startswith("OK:"):
         return ""
-    op = _op_from_args(name, args)
+    op = _op_from_args(name, args, project_root=project_root)
     if op is None:
         return ""
     if name == KB_PATCH_PROPOSAL_TOOL and (
@@ -364,7 +606,19 @@ def render_kb_op_persist(name: str, args: dict[str, Any], result: str) -> str | 
     return "\n" + render_kb_op(op) + "\n"
 
 
-def _op_from_args(name: str, args: dict[str, Any]) -> KbOp | None:
+def _op_from_args(
+    name: str, args: dict[str, Any], *, project_root: Path | None = None
+) -> KbOp | None:
+    if name == KB_SUGGEST_TRIGGER_TOOL:
+        raw = args.get("slug")
+        if not isinstance(raw, str) or not raw.strip():
+            return None
+        return KbOp(op="suggest", slug=raw.strip().lower())
+    if name == KB_SET_TRIGGER_TOOL:
+        if project_root is None:
+            return None
+        resolved = _resolve_trigger_args(args, project_root)
+        return resolved if isinstance(resolved, KbOp) else None
     raw_id = args.get("id")
     if not isinstance(raw_id, str) or not raw_id.strip():
         return None

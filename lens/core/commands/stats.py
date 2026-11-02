@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from lens.core.triggers import open_offers
 from lens.core.address import NarrativeAddress
 from lens.core.context import CrawlSpec, collect_vars, crawl
 from lens.core.crawl_transforms import is_state_tags
@@ -91,6 +92,8 @@ class StatsResult:
     """KB changes proposed at the cursor and not yet written."""
     pending_kb_errors: list[str] = field(default_factory=list[str])
     """Proposals that no longer resolve — a stale stack must not be silent."""
+    offers_at_cursor: list[dict[str, str]] = field(default_factory=list[dict[str, str]])
+    """Open trigger offers in the cursor's passage (``slug``/``when``/``run``/``declared_on``)."""
     effective_vars_at_cursor: dict[str, str] = field(default_factory=dict[str, str])
     effective_params_at_cursor: dict[str, str] = field(default_factory=dict[str, str])
     registered_modality_ids: list[str] = field(default_factory=list[str])
@@ -278,6 +281,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
     include_ids_at_cursor: list[str] = []
     mention_ids_at_cursor: list[str] = []
     active_session_operator: str | None = None
+    offers_at_cursor: list[dict[str, str]] = []
     effective_vars_at_cursor: dict[str, str] = {}
     effective_params_at_cursor: dict[str, str] = {}
     modalities_at_cursor: dict[str, dict[str, Any]] = {}
@@ -316,6 +320,9 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
             # modality resolution wants whatever would actually run here —
             # including a ``play`` turn that has already closed.
             active_session_operator = detect_open_session_operator(node)
+            offers_at_cursor = [
+                offer.as_dict() for offer in open_offers(kb_store, active)
+            ] if active is not None else []
             modalities_at_cursor = _resolve_modalities_at_cursor(
                 session,
                 node,
@@ -379,6 +386,7 @@ def get_stats(session: ProjectSession, *, verbose: bool = False) -> StatsResult:
         active_session_operator=active_session_operator,
         pending_kb_ops=len(pending_kb.ops),
         pending_kb_errors=list(pending_kb.errors),
+        offers_at_cursor=offers_at_cursor,
         effective_vars_at_cursor=effective_vars_at_cursor,
         effective_params_at_cursor=effective_params_at_cursor,
         registered_modality_ids=registered_modality_ids,

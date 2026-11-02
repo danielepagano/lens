@@ -84,14 +84,18 @@ export function parseCliInput(raw: string, def: CommandDefinition | null): Parse
         // Value-taking: only consume next token if it isn't itself a --flag
         const nextTok = completeTokens[i + 1]
         if (nextTok !== undefined && !nextTok.startsWith('--')) {
+          // A quoted value spans tokens up to its closing quote, as in a shell:
+          // `--prompt "night, two days later"` is one value, as the CLI reads it.
+          const quoted = quotedSpan(completeTokens, i + 1)
+          const value = quoted ? quoted.value : nextTok
           if (opt.repeatable) {
             const arr = (completedOptions[optName] as string[] | undefined) ?? []
-            arr.push(nextTok)
+            arr.push(value)
             completedOptions[optName] = arr
           } else {
-            completedOptions[optName] = nextTok
+            completedOptions[optName] = value
           }
-          i += 2
+          i = quoted ? quoted.next : i + 2
           continue
         }
         // --option at end without a value (the value is the typing token — handled below)
@@ -258,5 +262,53 @@ export function buildArgs(state: ParseState, def: CommandDefinition | null = nul
     }
   }
 
+  for (const pos of def?.positional ?? []) {
+    const vt = pos.valueType ?? 'flag'
+    const value = positional[pos.name]
+    if ((vt === 'string' || vt === 'prompt') && typeof value === 'string') {
+      positional[pos.name] = unquoteShellWord(value)
+    }
+  }
+
   return { positional, options }
+}
+
+/**
+ * Strip one pair of wrapping quotes from a prompt, as a shell would.
+ *
+ * `lens design "build the cellar"` reaches the CLI unquoted, and the UI must
+ * read the same line the same way, including a trigger's stored `run` replayed
+ * from the offer button. Left alone when the inner text holds another
+ * unescaped quote of the same kind: `"Hi," she said "bye"` is prose that
+ * happens to start and end with a quote, not one quoted word.
+ */
+/**
+ * If ``tokens[start]`` opens a quote, the unquoted value up to the token that
+ * closes it and the index after; otherwise ``null``. An unclosed quote is not a
+ * span (the user is still typing it), so the token is taken as it stands.
+ */
+function quotedSpan(tokens: string[], start: number): { value: string; next: number } | null {
+  const first = tokens[start]
+  if (first === undefined) return null
+  const q = first[0]
+  if (q !== '"' && q !== "'") return null
+  for (let j = start; j < tokens.length; j++) {
+    const tok = tokens[j]!
+    const closes = j === start ? tok.length > 1 && tok.endsWith(q) : tok.endsWith(q)
+    if (closes) {
+      return { value: unquoteShellWord(tokens.slice(start, j + 1).join(' ')), next: j + 1 }
+    }
+  }
+  return null
+}
+
+export function unquoteShellWord(value: string): string {
+  const v = value.trim()
+  if (v.length < 2) return value
+  const q = v[0]
+  if ((q !== '"' && q !== "'") || v[v.length - 1] !== q) return value
+  const inner = v.slice(1, -1)
+  if (q === "'") return inner.includes("'") ? value : inner
+  if (/(^|[^\\])"/.test(inner)) return value
+  return inner.replace(/\\(["\\])/g, '$1')
 }

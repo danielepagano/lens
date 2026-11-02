@@ -313,6 +313,24 @@ class Operator(ABC):
     write loop that can fire on every beat taxes every beat.
     """
 
+    trigger_opened_prompt_key: ClassVar[str] = "session.trigger_opened"
+    """Task line for a session a trigger opened (see :meth:`append_trigger_context`).
+
+    ``play`` uses the generic one; ``design`` has its own, because a design
+    session opened by a trigger also owes the follow-up trigger and its offer.
+    """
+
+    renders_held_back: ClassVar[bool] = False
+    held_back_prompt_key: ClassVar[str] = "play.held_back"
+    """The instructions wrapped around the held-back list, per operator."""
+    """Whether this operator's prompt carries the tail ``[HELD BACK]`` block.
+
+    The block lists the open triggers declared by KB objects in scope and tells
+    the model to stop at the threshold and emit ``<!-- suggest:<slug> -->``
+    (see :mod:`lens.core.triggers`).  ``play`` renders it; design sees
+    triggers as data through ``kb_get`` instead.
+    """
+
     supports_module_requests: ClassVar[bool] = False
     """Whether this operator can be given model-requested modules.
 
@@ -1368,6 +1386,31 @@ class Operator(ABC):
         """
         return None
 
+    def append_trigger_context(self, crawl_result: CrawlResult, instruction: str) -> str:
+        """Say why the session was opened, when a trigger opened it.
+
+        The trigger's ``when`` was recorded on the session's open annotation
+        when it fired, so this reads that rather than the KB: the declaring
+        object may have moved on since (a design session often rewrites the
+        very trigger that opened it).
+        """
+        node = crawl_result.current_node
+        if node is None or crawl_result.project_root is None:
+            return instruction
+        from lens.core.prompts import PromptStore
+        from lens.core.triggers import session_trigger
+
+        origin = session_trigger(node, self.name)
+        if origin is None or not origin.when:
+            return instruction
+        line = PromptStore(crawl_result.project_root).format(
+            self.trigger_opened_prompt_key,
+            when=origin.when,
+            slug=origin.slug,
+            declared_on=origin.declared_on or "the object that declared it",
+        )
+        return f"{instruction.rstrip()}\n\n{line}"
+
     def append_module_hint(self, crawl_result: CrawlResult, instruction: str) -> str:
         """Append the list of still-unloaded modules to this operator's task.
 
@@ -1416,7 +1459,10 @@ class Operator(ABC):
         if resolved_modalities is not None:
             resolved = resolved_modalities
         apply_modality_crawl(crawl_result, resolved, ctx)
-        instruction = self.append_module_hint(crawl_result, self.build_instruction(params))
+        instruction = self.append_module_hint(
+            crawl_result,
+            self.append_trigger_context(crawl_result, self.build_instruction(params)),
+        )
         turns: list[tuple[str, str]] | None = None
         node = crawl_result.current_node
         if node is not None:
@@ -1430,6 +1476,8 @@ class Operator(ABC):
             system_prompt=self.system_prompt,
             instruction=instruction,
             turns=turns,
+            held_back=self.renders_held_back,
+            held_back_key=self.held_back_prompt_key,
         )
         return apply_modality_prompt_addenda(messages, resolved, ctx)
 

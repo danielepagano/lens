@@ -37,6 +37,12 @@ Special triggers
     Empty by default; with ``tokens=…`` streams visible placeholder text so you
     can exercise cancel/skip on the remember step in the UI.
 
+``REPLY_TRIGGER`` — ``EMIT_REPLY "json string"``
+    Streams exactly that text as the reply, for tests that need the model to
+    say something specific (a ``<!-- suggest:<slug> -->`` marker, say).  The
+    last occurrence in the request wins, so a player line can override cue text
+    planted further up the prompt.
+
 ``KB_OP_TRIGGER`` — ``EMIT_KB_OP {json}`` or ``EMIT_KB_OP [{json}, …]``
     Streams the described calls as OpenAI ``tool_calls`` deltas instead of
     prose, so the KB verbs can be exercised without a real model.  Each entry is
@@ -80,6 +86,7 @@ _MEDIA_ATTACH_CURRENT_MARKER = "Currently selected facets"
 
 # Tool-call test support (the KB verbs).
 KB_OP_TRIGGER = "EMIT_KB_OP"
+REPLY_TRIGGER = "EMIT_REPLY"
 
 # Secret-encoding test support.
 FAKE_SECRET_TRIGGER = "EMIT_FAKE_SECRET"
@@ -145,6 +152,19 @@ def _sse_chunk(content: str) -> bytes:
         "choices": [{"delta": {"content": content}, "finish_reason": None}]
     })
     return f"data: {payload}\n\n".encode()
+
+
+def _planned_reply(msg_text: str) -> str | None:
+    """The text an ``EMIT_REPLY "…"`` cue asks for, or ``None``."""
+    start = msg_text.rfind(REPLY_TRIGGER)
+    if start < 0:
+        return None
+    rest = msg_text[start + len(REPLY_TRIGGER):].lstrip()
+    try:
+        value, _end = json.JSONDecoder().raw_decode(rest)
+    except ValueError:
+        return None
+    return value if isinstance(value, str) else None
 
 
 def _stream_words(
@@ -298,6 +318,15 @@ class _FakeLLMHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
                 self.wfile.write(b"data: [DONE]\n\n")
                 self.wfile.flush()
+                return
+
+            reply = _planned_reply(msg_text)
+            if reply is not None:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.end_headers()
+                _stream_words(self.wfile, [], delay=0.0, prefix=reply)
                 return
 
             chunk_delay, default_tokens, default_tps = _server_defaults(self)

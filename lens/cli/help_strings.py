@@ -40,6 +40,7 @@ CMD_CHECKPOINT = (
 )
 CMD_REFRESH = "Fetch from remote and fast-forward the current branch."
 CMD_REWIND = "Move the cursor backward in the narrative tree, discarding all content that comes after."
+CMD_TRIGGER = "List the held-back parts offered at the cursor, or run one."
 CMD_EXPLAIN = "Show what is in the prompt at a cursor: size and provenance, component by component."
 CMD_SPINE = "Show the story so far: the narrative from the root down to the cursor."
 CMD_ROLLBACK = "Undo the last AI operation and restore the narrative to its previous state."
@@ -410,6 +411,28 @@ OPT_NO_SPINE_TEST_PLAY = (
 )
 OPT_VERBOSE_TEST_PLAY = "Stream the full review (cold read and playthroughs), not just the findings"
 OPT_JSON_TEST_PLAY = "Print the result as JSON (targets, typed findings, full review, review node)"
+OPT_TRIGGER_TEST_PLAY = (
+    "Rehearse a trigger instead of reviewing: run real play beats at the cursor "
+    "(in memory, nothing written) with --prompt as the player's line, the ids "
+    "pinned + in memory, and --at as the scene; report whether play wrote its "
+    "suggest marker"
+)
+OPT_AT_TEST_PLAY = (
+    "With --trigger: the scene the beat starts in, rendered as the GM's last "
+    "passage (e.g. 'Day 7, before first light, at the foot of the elder's "
+    "street'), so play is at the moment rather than narrating its way there"
+)
+OPT_THEN_TEST_PLAY = (
+    "With --trigger: a neutral player line ('I go on.' fits more stops than 'Yes.') for one more beat "
+    "whenever a beat ends with no marker, so play stopping one step short of the "
+    "moment reads apart from play going past it. Leave it off for near-misses"
+)
+OPT_PROMPT_FILE_TEST_PLAY = (
+    "KEY=FILE: use FILE as prompt KEY for this run only (repeatable), e.g. "
+    "play.held_back=old.txt. Unlike 'lens prompt set' it changes nothing shared, "
+    "so an A/B arm cannot leak into another run or be left behind"
+)
+OPT_REPEAT_TEST_PLAY = "With --trigger: how many beats to run (1-10); one sample says little"
 ARG_PROMPT_COMPRESS = (
     "What to extract into a child section "
     "(omit if using --aggressiveness)"
@@ -740,6 +763,36 @@ DESC_SPINE = (
     "Read-only: nothing is written, no transaction is opened, and no model is "
     "called. For what else is in the prompt \u2014 knowledge, task framing, "
     "sizes per component \u2014 use 'lens explain'."
+)
+
+DESC_TRIGGER = (
+    "Run a trigger: a prep-declared suggestion to build or play a held-back "
+    "part when its moment arrives.\n\n"
+    "With no SLUG, list the open offers at the cursor \u2014 triggers the play "
+    "model (or a closing design session) suggested in the current passage that "
+    "have not run yet.  --all lists every open trigger declared in the KB.\n\n"
+    "With a SLUG, run that trigger's stored command, opening a fresh "
+    "'<slug>-tr' session at the cursor.  --edit opens the command in $EDITOR "
+    "first; the edit applies to this run only.  A trigger is done once its "
+    "'<slug>-tr' node exists in the narrative; rewind it and the trigger "
+    "reopens.\n\n"
+    "Writing one by hand: a 'triggers:' map in the front matter of a KB object "
+    "in scope where the moment is played (pinned there or above, or reached "
+    "through a '+' pin).  The [ ... ]: # block must be the very first thing in "
+    "the file, before the body and any other comment.  A 'design' session "
+    "writes the same thing with kb_set_trigger:\n\n"
+    "\b\n"
+    "    [\n"
+    "        triggers:\n"
+    "          design-cellar:\n"
+    "            when: Enso opens the store cellar hatch\n"
+    "            run: design --module encounter --pin prep.store \"build the cellar\"\n"
+    "    ]: #\n\n"
+    "The slug starts with the operator its run uses (play or design) and never "
+    "ends in '-tr'.  'when' is one observable event.  'run' takes --module, "
+    "--pin, --unpin, --mention, --include, --llm, --reasoning, a prompt, and "
+    "--pass for play.  A broken entry is skipped by play, so check what you "
+    "wrote: 'lens trigger --all' and 'lens check' report it."
 )
 
 DESC_REWIND = (

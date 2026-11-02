@@ -5,6 +5,7 @@ from typing import Any
 import typer
 
 from lens.cli.async_cancel import run_with_cancel
+from lens.cli.offers import offer_after_turn
 from lens.cli.help_strings import (
     ARG_PROMPT_PLAY,
     OP_PLAY,
@@ -200,3 +201,4 @@ def play(
     except LensException as e:
         typer.echo(f"lens play: {e}", err=True)
         raise typer.Exit(1)
+    offer_after_turn(session, who="lens play")

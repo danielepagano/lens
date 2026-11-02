@@ -114,6 +114,15 @@ export interface MediaPreviewState {
 
 export const mediaPreviewSession = writable<MediaPreviewState | null>(null)
 export const cliInputRequest = writable<string | null>(null)
+/** Set a command line and submit it, as if typed and Enter pressed. */
+export const cliSubmitRequest = writable<string | null>(null)
+
+/**
+ * The trigger the next command-bar submission fires. Set by the offer button
+ * together with the trigger's stored `run` (submitted, or put in the bar to
+ * edit); read and cleared by that one submission, whatever it turns out to be.
+ */
+export const pendingTrigger = writable<string | null>(null)
 export const cliInputAppend = writable<string | null>(null)
 
 /** Overrides the user has typed for a chromakey preview/save request (blank = auto). */

@@ -102,8 +102,34 @@ def format_objects_for_model(objects: dict[str, KnowledgeObject]) -> str:
     a dataset's changes what editing it means (see
     :class:`~lens.core.knowledge.KbSource`).
     """
-    parts = [obj.format(include_source=True) for obj in objects.values()]
+    parts = [_with_triggers(obj.format(include_source=True), obj.text) for obj in objects.values()]
     return decode_ai_secrets("\n\n".join(parts)) if parts else ""
+
+
+def _with_triggers(formatted: str, text: str) -> str:
+    section = _triggers_section(text)
+    return formatted.rstrip("\n") + section if section else formatted
+
+
+def _triggers_section(text: str) -> str:
+    """The object's ``triggers:`` front matter, shown to an exploring model.
+
+    Front matter is a markdown comment, so ``format`` strips it with every other
+    comment — which is right for the crawl, where a ``run`` must never reach the
+    play model, and wrong here: design has to *see* an existing trigger to
+    update it instead of guessing a slug.  Only this browsing path adds it.
+    """
+    from lens.core.triggers import triggers_from_text
+
+    found = triggers_from_text(text, "")
+    if not found:
+        return ""
+    lines = ["", "TRIGGERS (front matter; change with kb_set_trigger):"]
+    for slug, trig in found.items():
+        lines.append(f"- {slug}")
+        lines.append(f"    when: {trig.when}")
+        lines.append(f"    run: {trig.run}")
+    return "\n".join(lines) + "\n"
 
 
 # ---------------------------------------------------------------------------

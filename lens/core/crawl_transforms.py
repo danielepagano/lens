@@ -19,6 +19,7 @@ from lens.core.crawl_graph import (
 )
 from lens.core.dice import DiceError, substitute_rolls
 from lens.core.knowledge import KnowledgeObject, KnowledgeStore
+from lens.core.triggers import kb_trigger_metadata
 from lens.core.mount_embed_strip import strip_standalone_lens_mount_attachment_lines
 from lens.core.now import substitute_now
 from lens.core.project import resolve_address
@@ -537,6 +538,7 @@ class RulesCompanionTransform:
                     metadata={
                         "kb_id": obj.id,
                         "tags": ",".join(obj.tags),
+                        **kb_trigger_metadata(obj.text),
                         "expansion_policy": "reference",
                     },
                 )
@@ -678,6 +680,7 @@ class ModuleTransform:
                 metadata={
                     "kb_id": obj.id,
                     "tags": ",".join(obj.tags),
+                    **kb_trigger_metadata(obj.text),
                     "module_role": role,
                     **({"module_linked_from": linked_from} if linked_from else {}),
                     **({"facet_of": facet_of} if facet_of else {}),

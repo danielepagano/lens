@@ -18,8 +18,9 @@ import type {
   CommandHandler,
   CommandModule,
 } from './common'
-import { normalizeAddress, addressToNavAddress, normalizePromptNodeSliceMentions } from './common'
+import { normalizeAddress, addressToNavAddress, normalizePromptNodeSliceMentions, moduleKeys } from './common'
 import { currentProject } from '../stores/project'
+import { formatRehearsal } from '../utils/rehearsal'
 import { stats } from '../stores/stats'
 
 function scrollMarkdownViewElToBottom(): void {
@@ -195,8 +196,8 @@ const commands: CommandDefinition[] = [
       {
         name: 'module',
         valueType: 'kb-id',
-        repeatable: false,
-        hint: 'design module to use',
+        repeatable: true,
+        hint: 'design module to use (repeat for several)',
         default: 'design.',
         availability: {
           hideWhen: { anyOf: [{ anyOptionsTrue: ['end', 'retry'] }] },
@@ -301,8 +302,8 @@ const commands: CommandDefinition[] = [
       {
         name: 'module',
         valueType: 'kb-id',
-        repeatable: false,
-        hint: 'rules module to use',
+        repeatable: true,
+        hint: 'rules module to use (repeat for several)',
         default: 'rules.',
         exclude: ['rules.system', 'rules.rpg'],
         availability: {
@@ -397,6 +398,11 @@ const commands: CommandDefinition[] = [
       { name: 'no-spine', hint: 'review with no story context' },
       { name: 'spine', hint: 'keep the story even if no-spine is pinned' },
       { name: 'verbose', hint: 'show the full review, not just the findings' },
+      { name: 'trigger', valueType: 'slug', hint: 'rehearse this trigger: real play beats, nothing written' },
+      { name: 'repeat', valueType: 'int', hint: 'with --trigger: beats to run (1-10)' },
+      { name: 'at', valueType: 'string', hint: "with --trigger: the scene, as the GM's last passage" },
+      { name: 'then', valueType: 'string', hint: 'with --trigger: neutral line for one more beat after a miss (e.g. "I go on.")' },
+      { name: 'prompt-file', valueType: 'string', repeatable: true, hint: 'KEY=FILE: prompt override for this run only (FILE in the project)' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
     ],
@@ -522,6 +528,12 @@ const commands: CommandDefinition[] = [
     ],
   },
 ]
+
+/** The submission's trigger, when it fires one for this operator. */
+function triggerFor(operator: string, ctx: CommandContext): string | undefined {
+  const slug = ctx.trigger?.trim()
+  return slug && slug.startsWith(`${operator}-`) ? slug : undefined
+}
 
 const handler: CommandHandler = async (
   command,
@@ -734,24 +746,14 @@ const handler: CommandHandler = async (
       if (!endPlay && !retry && !passPlay && prompt === undefined) {
         throw new Error(`Play requires a prompt (unless using --end, --retry, or --pass)`)
       }
-      const rawPlayModule = (ctx.args.options['module'] as string | undefined) || undefined
-      let playModuleId: string | undefined
-      if (!endPlay && rawPlayModule) {
-        if (!rawPlayModule.startsWith('rules.')) {
-          throw new Error(`Play module must start with 'rules.': ${rawPlayModule}`)
-        }
-        playModuleId = rawPlayModule.slice('rules.'.length)
-        if (!playModuleId) {
-          throw new Error(`Play module must include a key after 'rules.': ${rawPlayModule}`)
-        }
-      }
+      const playModuleIds = endPlay ? [] : moduleKeys(ctx.args.options['module'], 'rules.')
       const playSlug = (!endPlay && !retry)
         ? ((ctx.args.options['slug'] as string | undefined) || undefined)
         : undefined
       result = await runPlay(
         {
           prompt,
-          module_id: playModuleId,
+          module_ids: playModuleIds.length ? playModuleIds : undefined,
           pins,
           unpins,
           mentions,
@@ -763,6 +765,7 @@ const handler: CommandHandler = async (
           as_pc,
           do_pass: passPlay,
           slug: playSlug,
+          trigger: triggerFor('play', ctx),
         },
         handleEvent
       )
@@ -784,22 +787,25 @@ const handler: CommandHandler = async (
     } else if (command === 'design') {
       const endDesign = ctx.args.options['end'] === true
       const designPrompt = (ctx.args.positional['prompt'] as string | undefined) || undefined
-      const rawModule = (ctx.args.options['module'] as string | undefined) || undefined
-      let moduleId: string | undefined
-      if (!endDesign && rawModule) {
-        if (!rawModule.startsWith('design.')) {
-          throw new Error(`Design module must start with 'design.': ${rawModule}`)
-        }
-        moduleId = rawModule.slice('design.'.length)
-        if (!moduleId) {
-          throw new Error(`Design module must include a key after 'design.': ${rawModule}`)
-        }
-      }
+      const designModuleIds = endDesign ? [] : moduleKeys(ctx.args.options['module'], 'design.')
       const designSlug = (!endDesign && !retry)
         ? ((ctx.args.options['slug'] as string | undefined) || undefined)
         : undefined
       result = await runDesign(
-        { prompt: designPrompt, module_id: moduleId, pins, unpins, mentions, includes, llm_id: llmId, reasoning, retry, end: endDesign, slug: designSlug },
+        {
+          prompt: designPrompt,
+          module_ids: designModuleIds.length ? designModuleIds : undefined,
+          pins,
+          unpins,
+          mentions,
+          includes,
+          llm_id: llmId,
+          reasoning,
+          retry,
+          end: endDesign,
+          slug: designSlug,
+          trigger: triggerFor('design', ctx),
+        },
         handleEvent
       )
     } else if (command === 'test-play') {
@@ -814,6 +820,11 @@ const handler: CommandHandler = async (
             : ctx.args.options['spine'] === true ? false : undefined,
           llm_id: llmId,
           reasoning,
+          trigger: (ctx.args.options['trigger'] as string | undefined)?.trim() || undefined,
+          at: (ctx.args.options['at'] as string | undefined)?.trim() || undefined,
+          then: (ctx.args.options['then'] as string | undefined)?.trim() || undefined,
+          prompt_files: (ctx.args.options['prompt-file'] as string[] | undefined) ?? [],
+          repeat: ctx.args.options['repeat'] ? parseInt(ctx.args.options['repeat'] as string, 10) : undefined,
         },
         handleEvent
       )
@@ -1125,12 +1136,21 @@ const handler: CommandHandler = async (
         // and written nowhere, inside one the findings are already on the node.
         if (done.interrupted) {
           cliOutput.set({ output: 'test-play: interrupted; nothing written', exitCode: 1, streaming: false })
+        } else if (done.rehearsal) {
+          const verbose = ctx.args.options['verbose'] === true
+          cliOutput.set({ output: formatRehearsal(done.rehearsal, verbose), exitCode: 0, streaming: false })
         } else {
           const verbose = ctx.args.options['verbose'] === true
           const shown = (verbose ? done.review : done.findings_text) ?? ''
           const where = done.review_node ? `\n\nFull review: ${done.review_node}` : ''
           cliOutput.set({ output: shown + where, exitCode: 0, streaming: false })
         }
+      } else if (done.offer_errors?.length) {
+        const kb = done.inserted?.length
+          ? `KB: inserted ${done.inserted.join(', ')}\n`
+          : done.updated?.length ? `KB: updated ${done.updated.join(', ')}\n` : ''
+        const notOffered = done.offer_errors.map((e) => `not offered: ${e}`).join('\n')
+        cliOutput.set({ output: kb + notOffered, exitCode: 0, streaming: false })
       } else if (done.inserted?.length) {
         cliOutput.set({ output: `KB: inserted ${done.inserted.join(', ')}`, exitCode: 0, streaming: false })
       } else if (done.updated?.length) {
