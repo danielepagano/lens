@@ -411,6 +411,28 @@ OPT_NO_SPINE_TEST_PLAY = (
 )
 OPT_VERBOSE_TEST_PLAY = "Stream the full review (cold read and playthroughs), not just the findings"
 OPT_JSON_TEST_PLAY = "Print the result as JSON (targets, typed findings, full review, review node)"
+OPT_TRIGGER_TEST_PLAY = (
+    "Rehearse a trigger instead of reviewing: run real play beats at the cursor "
+    "(in memory, nothing written) with --prompt as the player's line, the ids "
+    "pinned + in memory, and --at as the scene; report whether play wrote its "
+    "suggest marker"
+)
+OPT_AT_TEST_PLAY = (
+    "With --trigger: the scene the beat starts in, rendered as the GM's last "
+    "passage (e.g. 'Day 7, before first light, at the foot of the elder's "
+    "street'), so play is at the moment rather than narrating its way there"
+)
+OPT_THEN_TEST_PLAY = (
+    "With --trigger: a neutral player line ('I go on.' fits more stops than 'Yes.') for one more beat "
+    "whenever a beat ends with no marker, so play stopping one step short of the "
+    "moment reads apart from play going past it. Leave it off for near-misses"
+)
+OPT_PROMPT_FILE_TEST_PLAY = (
+    "KEY=FILE: use FILE as prompt KEY for this run only (repeatable), e.g. "
+    "play.held_back=old.txt. Unlike 'lens prompt set' it changes nothing shared, "
+    "so an A/B arm cannot leak into another run or be left behind"
+)
+OPT_REPEAT_TEST_PLAY = "With --trigger: how many beats to run (1-10); one sample says little"
 ARG_PROMPT_COMPRESS = (
     "What to extract into a child section "
     "(omit if using --aggressiveness)"

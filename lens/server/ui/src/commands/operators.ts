@@ -20,6 +20,7 @@ import type {
 } from './common'
 import { normalizeAddress, addressToNavAddress, normalizePromptNodeSliceMentions, moduleKeys } from './common'
 import { currentProject } from '../stores/project'
+import { formatRehearsal } from '../utils/rehearsal'
 import { stats } from '../stores/stats'
 
 function scrollMarkdownViewElToBottom(): void {
@@ -397,6 +398,11 @@ const commands: CommandDefinition[] = [
       { name: 'no-spine', hint: 'review with no story context' },
       { name: 'spine', hint: 'keep the story even if no-spine is pinned' },
       { name: 'verbose', hint: 'show the full review, not just the findings' },
+      { name: 'trigger', valueType: 'slug', hint: 'rehearse this trigger: real play beats, nothing written' },
+      { name: 'repeat', valueType: 'int', hint: 'with --trigger: beats to run (1-10)' },
+      { name: 'at', valueType: 'string', hint: "with --trigger: the scene, as the GM's last passage" },
+      { name: 'then', valueType: 'string', hint: 'with --trigger: neutral line for one more beat after a miss (e.g. "I go on.")' },
+      { name: 'prompt-file', valueType: 'string', repeatable: true, hint: 'KEY=FILE: prompt override for this run only (FILE in the project)' },
       { name: 'llm', valueType: 'slug', slugSource: '[stats.available_llms]', hint: 'LLM to use' },
       { name: 'reasoning', valueType: 'slug', slugSource: 'none,low,medium,high' },
     ],
@@ -814,6 +820,11 @@ const handler: CommandHandler = async (
             : ctx.args.options['spine'] === true ? false : undefined,
           llm_id: llmId,
           reasoning,
+          trigger: (ctx.args.options['trigger'] as string | undefined)?.trim() || undefined,
+          at: (ctx.args.options['at'] as string | undefined)?.trim() || undefined,
+          then: (ctx.args.options['then'] as string | undefined)?.trim() || undefined,
+          prompt_files: (ctx.args.options['prompt-file'] as string[] | undefined) ?? [],
+          repeat: ctx.args.options['repeat'] ? parseInt(ctx.args.options['repeat'] as string, 10) : undefined,
         },
         handleEvent
       )
@@ -1125,6 +1136,9 @@ const handler: CommandHandler = async (
         // and written nowhere, inside one the findings are already on the node.
         if (done.interrupted) {
           cliOutput.set({ output: 'test-play: interrupted; nothing written', exitCode: 1, streaming: false })
+        } else if (done.rehearsal) {
+          const verbose = ctx.args.options['verbose'] === true
+          cliOutput.set({ output: formatRehearsal(done.rehearsal, verbose), exitCode: 0, streaming: false })
         } else {
           const verbose = ctx.args.options['verbose'] === true
           const shown = (verbose ? done.review : done.findings_text) ?? ''

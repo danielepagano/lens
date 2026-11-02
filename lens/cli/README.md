@@ -250,6 +250,19 @@ Options:
 
 **Where it goes:** inside a design session, a child of the session, **closed in the same call**: the full review lands in the child, and the session node gets the canonical summary block whose body is the findings list. The next `lens design` turn reads those findings as part of its passage; each run is a sibling, so before-and-after reviews sit side by side, and an unwanted run is rewound like any node. Anywhere else nothing is written — not to the narrative, not to the KB — because the review is full of what the player must not read.
 
+**Rehearsing a trigger:** `lens test-play [ID]... --trigger <slug> [--at "scene"] [--prompt "player line"] [--then "I go on."] [--prompt-file KEY=FILE] [-n 3] [-v]`. A review only shows that a reader recognises a held-back moment. A rehearsal runs real play beats at the cursor (play's prompt, model and tools) and reports whether play wrote `<!-- suggest:<slug> -->`, per run and as a rate. Nothing is written.
+- **Ids** are pinned `+` in memory, as in a review, so prep can be rehearsed before the scene is pinned in the narrative.
+- **`--at`** is the scene, rendered as the GM's last passage, so the beat starts at the moment. Without it, a miss can mean play never got there.
+- **`--prompt`** is the player's line. Without it the line is the trigger's own `when`, which only checks that play writes the marker at all.
+- **`--then "I go on."`**: when a beat ends with no marker, play one more beat with that neutral line ("I go on." fits more stops than "Yes."). A marker there means play had stopped one step short, offering the moment as the player's choice, which is correct. Only a miss on both beats counts as a miss. Leave it off for near-misses, which are judged on their first beat.
+- **`--prompt-file play.held_back=b.txt`** uses that file as the prompt for this run only. It's repeatable, and the placeholders are checked before the run. Unlike `lens prompt set`, it changes nothing shared, so an A/B arm can't leak into a parallel run or the UI, or be left behind.
+
+How to read the result:
+- A hit doesn't show that play *stopped* at the threshold: read the beats with `-v`.
+- A high rate doesn't rule out spurious offers: pair each rehearsal with a near-miss line, which should score zero.
+- A miss on both beats is either play never getting there, or play playing past the moment without the marker, which is the one that matters. Always read those with `-v`.
+- Read a stopped-short ✓ with `-v` too: the first beat should end one step before the moment, and the follow-up should stop at the threshold.
+
 The persisted operator name is `test_play` (the annotation grammar has no `-`). Requires the `rpg` dataset.
 
 ### `lens trigger`

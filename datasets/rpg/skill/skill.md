@@ -114,10 +114,26 @@ comment, because front matter is only read from the very top:
   `--reasoning`, `--pass` (play) and a prompt. A `design` run should say what
   to build *and for what moment*.
 
+**What a trigger costs.** Every open trigger is listed on every beat that has its
+object in scope, and it pulls play toward its moment, so declare few: only parts
+that are genuinely unwritten. A `when` inside one continuous action (walking a
+street, opening a door) gets narrated straight through, or turns into a "do you
+step forward?" question. If the held-back part is only an observable fact, such
+as what is behind the door, write it as prep instead, behind the threshold
+where play can reveal it.
+
 `play` lists open triggers in `[HELD BACK]`, stops at the threshold and writes
 `<!-- suggest:<slug> -->`; the CLI and UI then offer the `run`. The `<slug>-tr`
 node that firing creates is what makes the trigger done, so never create, rename
-or copy a `-tr` node by hand. A broken entry is **skipped by play without a
+or copy a `-tr` node by hand. To check that play really offers a trigger at its moment, not
+just that a reader would notice it, rehearse it during prep:
+`lens test-play <scene id> --trigger <slug> --at "<the scene, as the GM last
+left it>" --prompt "<the player's line>" --then "I go on." -n 3`. It runs real play
+beats in memory and writes nothing; `--then` plays one more beat after a miss, so
+play stopping one step short (correct) reads apart from play going past the
+moment. Pair it with a near-miss line, without `--then`, which should score zero, and
+read the hits with `-v`: a marker after a paragraph describing what lies past
+the threshold is still a failure. A broken entry is **skipped by play without a
 word**, so after editing run `lens trigger --all` (lists what parsed, and
 reports what didn't) or `lens check`. `lens kb get <id>` prints the front
 matter, triggers included.

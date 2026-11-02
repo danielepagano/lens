@@ -671,6 +671,8 @@ export interface OperatorDoneEvent {
   section_key?: string
   /** test-play: the review's Findings section, verbatim (what the UI shows). */
   findings_text?: string
+  /** test-play --trigger: the rehearsal result. */
+  rehearsal?: TriggerRehearsal
   findings?: { kind: string; text: string }[]
   /** test-play: the full review (cold read, playthroughs, findings). */
   review?: string
@@ -894,6 +896,40 @@ export interface TestPlayParams {
   no_spine?: boolean
   llm_id?: string
   reasoning?: string
+  /** Rehearse this trigger instead of reviewing (`lens test-play --trigger`). */
+  trigger?: string
+  /** Beats to run when rehearsing (1-10). */
+  repeat?: number
+  /** With `trigger`: the scene, rendered as the GM's last passage. */
+  at?: string
+  /** With `trigger`: a neutral player line for one more beat after a miss. */
+  then?: string
+  /** `KEY=FILE` prompt overrides for this run only; FILE is in the project. */
+  prompt_files?: string[]
+}
+
+/** One rehearsal: real play beats at the cursor, in memory, read back for markers. */
+export interface TriggerRehearsal {
+  slug: string
+  when: string
+  node: string
+  player_line: string
+  at: string
+  targets: string[]
+  then: string
+  hits: number
+  /** Beats with no marker whose follow-up beat wrote it: play had stopped short. */
+  hits_after: number
+  runs: {
+    suggested: boolean
+    markers: string[]
+    other_markers: string[]
+    interrupted: boolean
+    outcome: 'suggested' | 'stopped-short' | 'missed' | 'interrupted'
+    text: string
+    then_text: string | null
+    then_markers: string[]
+  }[]
 }
 
 export const runTestPlay = (

@@ -91,3 +91,46 @@ def test_design_body_module_ids_like_the_cli(client: TestClient, tmp_path: Path)
     assert len(opened) == 1
     assert opened[0].params["module"] == "person"
     assert opened[0].params["trigger"] == "design-loft"
+
+
+def test_test_play_trigger_rehearses_and_writes_nothing(fake_llm: FakeLLMServer, tmp_path: Path) -> None:
+    import json
+    import subprocess
+
+    from lens.core.pinning import pin
+    from lens.core.project import ProjectSession
+    from lens.server.main import create_app
+    from lens.testing.fake_llm import REPLY_TRIGGER
+    from lens.testing.regression_fixtures import setup_rpg_play_pins
+
+    session = setup_rpg_play_pins(tmp_path, fake_llm.base_url)
+    (tmp_path / "knowledge" / "prep").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "knowledge" / "prep" / "store.md").write_text(PREP)
+    narrative = session.active_narrative
+    assert narrative is not None
+    storage = session.new_storage()
+    pin(narrative, ["prep.store"], storage)
+    storage.stage_all()
+    subprocess.run(["git", "commit", "-qm", "prep"], cwd=tmp_path, check=True)
+    app = create_app({"test": ProjectSession(tmp_path, tmp_path)})
+    cue = f"I open the hatch. {REPLY_TRIGGER} {json.dumps('Up.\\n<!-- suggest:design-cellar -->')}"
+    with TestClient(app) as c:
+        r = c.post(
+            "/test/operator/test-play",
+            json={
+                "trigger": "design-cellar",
+                "targets": ["prep.store"],
+                "at": "Night, at the hatch",
+                "prompt": cue,
+                "repeat": 2,
+            },
+        )
+        assert r.status_code == 200
+        done = [json.loads(line[6:]) for line in r.text.splitlines() if line.startswith("data: ") and '"done"' in line]
+        assert done
+        rehearsal = done[-1]["rehearsal"]
+        assert rehearsal["hits"] == 2
+        assert rehearsal["targets"] == ["prep.store"]
+        assert rehearsal["at"] == "Night, at the hatch"
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=tmp_path, capture_output=True, text=True)
+    assert status.stdout == ""

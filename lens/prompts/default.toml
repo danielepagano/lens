@@ -281,7 +281,9 @@ Not every part of prep should be written now. Hold a part back when it may never
 - ``when`` is one observable event as play would see it happen ("Enso opens the store cellar hatch"), not a state or a condition to evaluate.
 - ``run`` is the command that builds or plays the part, operator first: ``design --module encounter --pin <prep id> "<what to build, and for what moment>"``, or ``play --pass --pin <id>`` once the part exists.
 
-Play is shown the open triggers, stops at the threshold, and offers the ``run`` to the player. Nothing else is needed for the part to come up at the right time. A trigger fires once: when its session exists, it is done. Existing triggers appear under ``TRIGGERS`` when you ``kb_get`` an object; update one by its slug rather than adding a near-duplicate.
+Play is shown the open triggers, stops at the threshold, and offers the ``run`` to the player. Nothing else is needed for the part to come up at the right time. A trigger fires once: when its session exists, it is done.
+
+Triggers are not free. Each open one is listed on every play beat that has its object in scope, and pulls play toward its moment, so declare few. Hold back only what really cannot be written yet. A ``when`` inside one continuous action (walking a street, opening a door) gets narrated through, or turns into a "do you step forward?" question. If the held-back part is only an observable fact, write it as prep instead. Existing triggers appear under ``TRIGGERS`` when you ``kb_get`` an object; update one by its slug rather than adding a near-duplicate.
 
 SCOPE IS THE REQUEST, NOT THE MODULE LIST
 
@@ -331,7 +333,9 @@ Degrees of success are yours to use, especially on search, investigation, or stu
 This is a game, not a "yes, and" improv session. When an outcome is uncertain and both success and failure matter, name the check and its difficulty and stop for the player's report.'''
 play.held_back = '''Prep has deliberately not written these parts. Each is built in its own session when its moment arrives.
 {triggers}
-When your reply reaches one of these moments, narrate up to the threshold and stop: do not describe what lies past it or invent what prep held back. End with <!-- suggest:<slug> --> on its own line, unless the passage already shows that suggestion. Never emit one for a moment that has not happened.'''
+These moments arrive only through what the player chooses, or through what prep already sets in motion. Do not steer toward them: no NPC volunteers one, no route bends toward one, and no part of one shows up early. You do not know what lies past a threshold, so anything of it you show on the way there is invented.
+
+When your reply reaches one of these moments, narrate up to the threshold and stop: do not describe what lies past it or invent what prep held back. Then hand the turn to the player as usual, and after that, as the very last line of the reply, write <!-- suggest:<slug> --> on its own line. The marker comes after everything, including the question you end on. Stopping at the threshold without it is a failed beat, however good the question. Skip it only if the passage already shows that suggestion. Never emit one for a moment that has not happened.'''
 
 play.instruction_continue = '''Continue the scene from the current passage and any newly appended player or character lines. Write in present tense — the events are happening now, not being recounted later. Follow the script of any encounter KB that is present, but do not let procedure flatten the scene into a template.
 

@@ -90,6 +90,15 @@ class TestPlayBody(BaseModel):
     no_spine: bool | None = None  # None: pinned params.test_play decide
     llm_id: str | None = None
     reasoning: str | None = None
+    trigger: str | None = None
+    """Rehearse this trigger instead of reviewing (``lens test-play --trigger``)."""
+    repeat: int = 1
+    at: str | None = None
+    """With ``trigger``: the scene, rendered as the GM's last passage."""
+    then: str | None = None
+    """With ``trigger``: a neutral player line for one more beat after a miss."""
+    prompt_files: list[str] = []
+    """``KEY=FILE`` run-only prompt overrides; FILE is relative to the project."""
 
 
 class EditBody(BaseModel):
@@ -296,6 +305,9 @@ async def _run_operator_task(
                     elif isinstance(result, Storage):
                         pass
                     # test-play returns its review; findings are what the UI shows
+                    # test-play --trigger returns a rehearsal: beats and markers
+                    elif hasattr(result, "hits") and hasattr(result, "runs"):
+                        done_payload["rehearsal"] = result.to_dict()
                     elif hasattr(result, "findings_text"):
                         review = result.to_dict()
                         done_payload["interrupted"] = bool(review.pop("interrupted"))
@@ -656,6 +668,21 @@ async def operator_design(
 
 
 
+def _prompt_file_overrides(session: ProjectSession, specs: list[str]) -> dict[str, str]:
+    """``KEY=FILE`` overrides for one run; FILE must resolve inside the project."""
+    from lens.core.prompts import load_prompt_override_files
+
+    root = session.project_root.resolve()
+    for spec in specs:
+        _key, _sep, raw = spec.partition("=")
+        if raw.strip() and not (root / raw.strip()).resolve().is_relative_to(root):
+            raise HTTPException(status_code=400, detail=f"prompt file outside the project: {raw}")
+    try:
+        return load_prompt_override_files(specs, root, session.project_root)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/operator/test-play")
 async def operator_test_play(
     body: TestPlayBody,
@@ -677,6 +704,33 @@ async def operator_test_play(
     _validate_pins(session, targets, [])
     cursor = narrative.find_cursor()
     node_addr = str(cursor.to_address())
+    overrides = _prompt_file_overrides(session, body.prompt_files)
+    if body.trigger:
+        from lens.rpg.trigger_rehearsal import rehearse_trigger
+
+        trigger = body.trigger
+
+        def rehearse_fn() -> Any:
+            return rehearse_trigger(
+                session=session,
+                narrative=narrative,
+                slug=trigger,
+                prompt=body.prompt,
+                targets=targets,
+                at=body.at,
+                then=body.then,
+                prompt_overrides=overrides,
+                repeat=body.repeat,
+                llm_id=body.llm_id,
+                reasoning=body.reasoning,
+                on_token=on_token,
+                cancel_event=lock.cancel_event,
+            )
+
+        return _start_operator_stream(
+            lock, event_queue, session, "test_play", node_addr, rehearse_fn, request,
+            rollback_on_error=False,
+        )
 
     def coro_fn() -> Any:
         return TestPlayOperator.run_test_play(
@@ -690,6 +744,7 @@ async def operator_test_play(
             on_token=on_token,
             on_stream_event=on_stream_event,
             cancel_event=lock.cancel_event,
+            prompt_overrides=overrides,
         )
 
     # Nothing is written until the review has succeeded, so a failure must not
