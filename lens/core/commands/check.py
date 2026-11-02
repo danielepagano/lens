@@ -234,6 +234,16 @@ def run_project_check(project_root: Path, *, skip_network: bool = False) -> Proj
     # check` is the thing already wired into CI.  A warning, never an error: an
     # agent pointer that lags a Lens upgrade is a stale document, not a broken
     # project.
+    from lens.core.knowledge import KnowledgeStore
+    from lens.core.triggers import trigger_problems
+
+    try:
+        problems = trigger_problems(KnowledgeStore.for_project(project_root))
+    except (OSError, ValueError) as e:
+        problems = [f"could not read triggers: {e}"]
+    if problems:
+        for problem in problems:
+            result.add("warn", "triggers", problem)
     skill_state = check_skill(project_root)
     result.add(
         "ok" if skill_state.ok else "warn", "agent skill", skill_state.message()

@@ -17,6 +17,7 @@ from lens.cli.help_strings import (
     OPT_UNPIN,
     HELP_OPTS,
 )
+from lens.cli.offers import offer_after_turn, report_offer_errors
 from lens.cli.options import pin_option, unpin_option
 from lens.core.exceptions import OperatorError, LensException
 from lens.core.knowledge import validate_ids_exist
@@ -104,7 +105,7 @@ def advance(
         raise typer.Exit(1)
 
     try:
-        asyncio.run(
+        result = asyncio.run(
             AdvanceOperator.run_advance(
                 session=session,
                 narrative=narrative,
@@ -120,6 +121,7 @@ def advance(
             )
         )
         print()  # ensure final newline
+        report_offer_errors(result)
     except OperatorError as e:
         typer.echo(f"lens advance: {e}", err=True)
         raise typer.Exit(1)
@@ -129,3 +131,4 @@ def advance(
     except KeyboardInterrupt:
         print()
         raise typer.Exit(1)
+    offer_after_turn(session, who="lens advance")

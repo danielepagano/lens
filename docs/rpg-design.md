@@ -373,6 +373,38 @@ The original design proposed `converse` and `encounter` as separate operators. W
 
 For particularly heavy encounters (a major boss fight with many stat blocks and environmental rules), the player can open a `section` to focus context. This is an existing mechanism, not a new operator — and it's the player's choice, not forced by the system.
 
+### Held-back parts: triggers
+
+Prep holds parts back on purpose: either the part may never come up (the cellar under the store), or how it should be built depends on the state at that point (a finale whose cast depends on what the player did). A **trigger** records that boundary, so the player does not have to know the prep to find it, and the play model does not improvise past it.
+
+A trigger is a stored suggestion to run a session operator. It lives in a KB object's front matter, keyed by **slug**:
+
+```
+[
+    triggers:
+      design-cellar:
+        when: Enso opens the store cellar hatch
+        run: design --module encounter --pin prep.village-store "design the cellar encounter"
+]: #
+```
+
+- **The slug names the node it creates, `<slug>-tr`, and that node existing anywhere in the active narrative is what "done" means.** Nothing else tracks state. Detection is one directory walk over node *names* (`fired_slugs`); collate keeps names when it moves a node, and rewind or rollback delete it, so the trigger reopens for free. Done is per narrative, so a second playthrough of the same prep gets fresh triggers.
+- **A slug starts with its operator** (`design-cellar`, `play-cellar`), so designing and playing the same part never collide. The `-tr` suffix is reserved: `--slug` rejects it, auto-generated session names never produce it, and only firing a trigger creates such a node.
+- **Front matter is a markdown comment**, so the crawl and `kb_headline` strip it and the `run` never reaches the play model. It is only read from the very top of the file. A `triggers:` block placed anywhere else is ignored, and `lens check` / `lens trigger --all` flag it. Operators write triggers with `kb_set_trigger`; people may edit them by hand. `kb_get` shows the map to design so it can update a trigger instead of guessing.
+
+**Play.** Triggers declared by objects in scope travel as component metadata, the way tags do. One pass over the final render graph drops the done ones, and if any are still open it renders one tail `[HELD BACK]` block (beside `[LIVE STATE]`, before `[TASK]`) listing `slug: when` with the instruction that matters: *narrate up to the threshold and stop*, then end with `<!-- suggest:<slug> -->`. No open trigger means no block at all. It sits at the tail because which triggers are open changes whenever a node is created or rewound. The marker stays in the passage, so the model can see it has already offered. An **offer** is a marker in the cursor's current passage whose trigger is still open.
+
+**Running it.** Firing is a core parameter (`run_session(trigger=…)`), not a CLI flag. After a turn that leaves an offer, the CLI asks `Run design-cellar? [Y/n/e]`, where `e` edits the stored `run` for that one firing. `lens trigger` lists the offers at the cursor and runs one; off a terminal the CLI prints that command as a hint instead of prompting. The UI shows the offers under the cursor with Run and Edit. A fired session always opens fresh at the cursor, nesting under whatever session is open there, and its task says *"Opened because <when>; the player is at that threshold now."*
+
+**Chaining.** `design` and `advance` write triggers through two kb-op verbs, so retry, rewind, the pending-op display and in-turn validation come for free:
+
+- `kb_set_trigger(id?, slug, when, run)` upserts the trigger into front matter at `--end` (an empty `run` removes it). It refuses a slug declared on another object, and a *new* slug whose `-tr` node already exists, since that trigger would be born done. `id` defaults to the object whose trigger opened the session.
+- `suggest_trigger(slug)` means "offer this as soon as the session ends". It is checked when called (the trigger exists, is open, and its object is in scope where the session returns: pinned there or above, or reached through a `+` pin, the same scope play renders triggers from) and checked again at close. The close then writes `<!-- suggest:<slug> -->` into the parent **after** the close tag.
+
+A session opened by a trigger is building for the moment the player is standing in, so it declares the follow-up on the opener's object and suggests it. A prep session declares follow-ups and does not suggest them. Declaring on the opener's object is what makes a declined offer safe: that object is in scope where the moment is played, so the follow-up stays in `[HELD BACK]` and play offers it again at the real moment. The full chain: prep declares `design-cellar` → play stops at the hatch and suggests it → `design-cellar-tr` builds `encounter.cellar`, declares `play-cellar` on the prep object and suggests it → `--end` offers it in the parent play session → `play-cellar-tr` plays the encounter. The parent's prep never needs to know about the later steps.
+
+**Advance suggests, but is never run by a trigger.** Advance also sees `[HELD BACK]`, with its own instruction. A moment the elapsed time brings about counts as an interruption: advance cuts the jump there, describes the situation up to the threshold, and calls `suggest_trigger`, and its `--end` offers it like a design close does. That is how a held-back moment arrives off-screen ("the night Phent moves"). The reverse, a trigger whose `run` is `advance` ("when he sleeps, suggest advance"), would be a recurring trigger. That is out of scope, because a `-tr` node existing is a one-shot rule by design, and only `play` and `design` can be fired.
+
 ### Test prepared content with `test-play`
 
 Prepared content fails in ways its author cannot see. The author knows what a cover line meant; only a cold reader finds that it reads two ways. A 30-ft square can carry an escape rule that needs 40 ft of separation, a quarry with a bonus-action Dash can make a six-round clock irrelevant in round one, a bell can ring at round four in a chase that is over by round three. None of these is visible from the author's chair, and all of them are visible to a reader that plays the thing through.

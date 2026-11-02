@@ -9,6 +9,7 @@ from lens.core.exceptions import LensException
 from lens.core.commands.kb_pending_view import pending_kb_view, pending_payload
 from lens.core.narrative import NarrativeNode
 from lens.core.project import ProjectSession, is_dataset_root
+from lens.core.triggers import open_offers
 from lens.server.dependencies import get_session, get_stream_lock, get_tts_coordinator
 from lens.server.routes.narrative_playback import (
     lens_tts_http_exception,
@@ -151,4 +152,18 @@ def node(
     pending = pending_kb_view(session.project_root, node_obj)
     if not pending.is_empty():
         payload["pending_kb"] = pending_payload(pending)
+    # Offers are the cursor's too: a suggest marker in a passage the story has
+    # moved past is history, not an invitation.
+    offers = _offers_for(session, node_obj)
+    if offers:
+        payload["offers"] = offers
     return payload
+
+
+def _offers_for(session: ProjectSession, node_obj: NarrativeNode) -> list[dict[str, str]]:
+    narrative = session.active_narrative
+    if narrative is None:
+        return []
+    if narrative.find_cursor().path_str() != node_obj.path_str():
+        return []
+    return [offer.as_dict() for offer in open_offers(session.kb, narrative)]

@@ -95,6 +95,12 @@ export interface CommandContext {
   /** Update URL (and exit inline edit) without fetching — used during SSE target so stale GETs cannot overwrite post-op refresh. */
   syncLocation?: (addr: string) => void
   args: ParsedArgs
+  /**
+   * A trigger this one submission fires (set by the offer button, consumed by
+   * the next submit). The operator still runs from the typed line; the slug
+   * only names the session `<trigger>-tr`, exactly as the CLI's offer prompt does.
+   */
+  trigger?: string
 }
 
 export interface CommandResult {
@@ -154,4 +160,23 @@ export function normalizePromptNodeSliceMentions(prompt: string | undefined): st
     if (!address) return _match
     return `${prefix}@${address}@${start}:${end}`
   })
+}
+
+/**
+ * Repeated `--module` values as bare keys — `module_keys` in `lens/cli/options.py`.
+ *
+ * Accepts the key (`encounter`) or the canonical id (`design.encounter`), drops
+ * blanks and collapses duplicates, so a line typed for the CLI means the same
+ * thing here.
+ */
+export function moduleKeys(raw: unknown, prefix: string): string[] {
+  const values = Array.isArray(raw) ? raw : typeof raw === 'string' ? [raw] : []
+  const keys: string[] = []
+  for (const value of values) {
+    if (typeof value !== 'string') continue
+    let key = value.trim()
+    if (key.startsWith(prefix)) key = key.slice(prefix.length)
+    if (key && !keys.includes(key)) keys.push(key)
+  }
+  return keys
 }

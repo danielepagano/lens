@@ -3,6 +3,7 @@ from __future__ import annotations
 import typer
 
 from lens.cli.async_cancel import run_with_cancel
+from lens.cli.offers import offer_after_turn, report_offer_errors
 
 from lens.cli.help_strings import (
     ARG_PROMPT_DESIGN,
@@ -149,9 +150,11 @@ def design(
         if result.errors:
             for err in result.errors:
                 typer.echo(f"lens design: kb error: {err}", err=True)
+        report_offer_errors(result)
     except OperatorError as e:
         typer.echo(f"lens design: {e}", err=True)
         raise typer.Exit(1)
     except LensException as e:
         typer.echo(f"lens design: {e}", err=True)
         raise typer.Exit(1)
+    offer_after_turn(session, who="lens design")

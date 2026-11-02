@@ -258,5 +258,33 @@ export function buildArgs(state: ParseState, def: CommandDefinition | null = nul
     }
   }
 
+  for (const pos of def?.positional ?? []) {
+    const vt = pos.valueType ?? 'flag'
+    const value = positional[pos.name]
+    if ((vt === 'string' || vt === 'prompt') && typeof value === 'string') {
+      positional[pos.name] = unquoteShellWord(value)
+    }
+  }
+
   return { positional, options }
+}
+
+/**
+ * Strip one pair of wrapping quotes from a prompt, as a shell would.
+ *
+ * `lens design "build the cellar"` reaches the CLI unquoted, and the UI must
+ * read the same line the same way, including a trigger's stored `run` replayed
+ * from the offer button. Left alone when the inner text holds another
+ * unescaped quote of the same kind: `"Hi," she said "bye"` is prose that
+ * happens to start and end with a quote, not one quoted word.
+ */
+export function unquoteShellWord(value: string): string {
+  const v = value.trim()
+  if (v.length < 2) return value
+  const q = v[0]
+  if ((q !== '"' && q !== "'") || v[v.length - 1] !== q) return value
+  const inner = v.slice(1, -1)
+  if (q === "'") return inner.includes("'") ? value : inner
+  if (/(^|[^\\])"/.test(inner)) return value
+  return inner.replace(/\\(["\\])/g, '$1')
 }

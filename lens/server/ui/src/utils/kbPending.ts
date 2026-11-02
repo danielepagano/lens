@@ -5,7 +5,7 @@
  * `[kb-op …]: #` block sits, the diff in the KB viewer, and the bullets in the
  * cursor footer — and they have to agree about what an op is called and which
  * glyph stands for it, or the reader has to learn three legends. The op verbs
- * are the five in `core/kb_pending.py`; the change kinds are the three in
+ * are the seven in `core/kb_pending.py`; the change kinds are the three in
  * `core/commands/kb_pending_view.py`.
  */
 
@@ -18,6 +18,8 @@ export const KB_OP_GLYPH: Record<string, string> = {
   tag: '#',
   remove: '−',
   applied: '✔',
+  trigger: '⚑',
+  suggest: '▶',
 }
 
 /** Heading form: names the op, where a sentence would read as a caption. */
@@ -27,6 +29,8 @@ export const KB_OP_LABEL: Record<string, string> = {
   tag: 'Retag',
   remove: 'Remove',
   applied: 'Written at close',
+  trigger: 'Trigger',
+  suggest: 'Offered on end',
 }
 
 /** Sentence form, for a tooltip that has to stand on its own. */
@@ -36,6 +40,8 @@ export const KB_OP_VERB: Record<string, string> = {
   tag: 'Retags',
   remove: 'Removes',
   applied: 'Written at close',
+  trigger: 'Sets a trigger on',
+  suggest: 'Offered to the player when the session ends',
 }
 
 export type PendingChange = PendingKbObject['change']

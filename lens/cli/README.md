@@ -252,6 +252,21 @@ Options:
 
 The persisted operator name is `test_play` (the annotation grammar has no `-`). Requires the `rpg` dataset.
 
+### `lens trigger`
+
+Lists or runs **triggers**: suggestions that prep declared, to build or play a held-back part when its moment arrives. See "Held-back parts: triggers" in [docs/rpg-design.md](../../docs/rpg-design.md).
+
+```bash
+lens trigger                         # open offers at the cursor
+lens trigger --all                   # every open trigger declared in the KB
+lens trigger design-cellar           # run its stored command: opens design-cellar-tr at the cursor
+lens trigger design-cellar --edit    # edit the command in $EDITOR first (this run only)
+```
+
+After any `play`, `design` or `advance` call that leaves an open offer at the cursor, Lens asks `Run <slug>? [Y/n/e]`; `e` edits the stored `run` for that one firing. Off a terminal it prints the `lens trigger <slug>` command instead, so scripts never block. A trigger always opens a fresh `<slug>-tr` session at the cursor, and is done once that node exists. Node names ending in `-tr` are reserved, so `--slug` rejects them.
+
+**Writing one by hand:** `lens trigger --help` shows the front-matter shape. Play skips a malformed entry silently, so check with `lens trigger --all` (or `lens check`), which reports every entry that won't work.
+
 ### `lens rollback`
 
 Discard the pending transaction. For inline operators (e.g. `write`), reverts unstaged changes. For mutation operators (`edit`), applies a compensating transaction (removes claim tags and restores original text). Prompts for confirmation unless `-y` / `--yes` is given.

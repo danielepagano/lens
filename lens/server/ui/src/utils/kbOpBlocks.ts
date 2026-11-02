@@ -29,11 +29,17 @@ export type KbOpPatch = {
 }
 
 export type ParsedKbOp = {
-  /** `add` | `patch` | `tag` | `remove` | `applied`. */
+  /** `add` | `patch` | `tag` | `remove` | `applied` | `trigger` | `suggest`. */
   op: string
   id: string
   at: string
   session: string
+  /** `trigger` / `suggest`: the trigger's slug. */
+  slug: string
+  /** `trigger`: the moment play should recognise. */
+  when: string
+  /** `trigger`: the stored command; empty means the trigger is removed. */
+  run: string
   /** Decoded body text for `add`; null when the block carries none. */
   body: string | null
   patches: KbOpPatch[]
@@ -109,6 +115,9 @@ function parseBlock(lines: string[], start: number, end: number): ParsedKbOp | n
     id: '',
     at: '',
     session: '',
+    slug: '',
+    when: '',
+    run: '',
     body: null,
     patches: [],
     tags: [],
@@ -164,6 +173,9 @@ function parseBlock(lines: string[], start: number, end: number): ParsedKbOp | n
     else if (key === 'id') op.id = unquoteYamlScalar(value).toLowerCase()
     else if (key === 'at') op.at = unquoteYamlScalar(value)
     else if (key === 'session') op.session = unquoteYamlScalar(value)
+    else if (key === 'slug') op.slug = unquoteYamlScalar(value).toLowerCase()
+    else if (key === 'when') op.when = unquoteYamlScalar(value)
+    else if (key === 'run') op.run = unquoteYamlScalar(value)
     else if (key === 'patches') op.patches = parsePatches(value)
     i++
   }

@@ -328,6 +328,7 @@ class TestPlayOperator(Operator):
     requires_id: ClassVar[bool] = True
     limited_to_datasets: ClassVar[list[str]] = ["rpg"]
     required_modalities: ClassVar[frozenset[str]] = frozenset({"rpg_play_context"})
+    renders_held_back: ClassVar[bool] = True
     # The hint lists play's catalog; the tool is built in :meth:`_tools` for the
     # same reason, since the base helpers key the catalog on ``cls.name``.
     supports_module_requests: ClassVar[bool] = True
@@ -463,9 +464,16 @@ class TestPlayOperator(Operator):
         if resolved_modalities is not None:
             resolved = resolved_modalities
         apply_modality_crawl(crawl_result, resolved, ctx)
-        instruction = self.append_module_hint(crawl_result, self.build_instruction(params))
+        instruction = self.append_module_hint(
+            crawl_result,
+            self.append_trigger_context(crawl_result, self.build_instruction(params)),
+        )
         return assemble_prompt(
-            crawl_result, system_prompt=self.system_prompt, instruction=instruction
+            crawl_result,
+            system_prompt=self.system_prompt,
+            instruction=instruction,
+            held_back=self.renders_held_back,
+            held_back_key=self.held_back_prompt_key,
         )
 
     # ------------------------------------------------------------------

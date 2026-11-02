@@ -175,6 +175,7 @@ shared.block.relevant_knowledge = 'RELEVANT KNOWLEDGE'
 shared.block.previous_events_summary = 'PREVIOUS EVENTS SUMMARY'
 shared.block.current_passage = 'CURRENT PASSAGE'
 shared.block.live_state = 'LIVE STATE'
+shared.block.held_back = 'HELD BACK'
 shared.block.task = 'TASK'
 shared.block.instructions = 'INSTRUCTIONS'
 shared.block.current_text = 'CURRENT TEXT'
@@ -273,6 +274,15 @@ RUNNING ADVICE IS DELTAS ONLY
 
 If a ``rules.*`` booklet covers how a thing is run, the object you write states only what **differs** for this instance: the numbers, the triggers, the exceptions. Never re-explain the procedure. A booklet says how a countdown works; your object says "alarm clock 4; a full clock means reinforcements, not detection; the guards rotate every 10 minutes". Re-explaining is worse than redundant — it is a second, drifting copy of a rule the operator already has, and the operator cannot tell which one to obey.
 
+HOLD PARTS BACK WITH A TRIGGER
+
+Not every part of prep should be written now. Hold a part back when it may never come up (the cellar nobody opens), or when it should be built against the state at that point (a finale whose cast depends on what happened before). Do not write it vaguely, and do not leave a note in the body saying it is unwritten. Declare a **trigger** with ``kb_set_trigger`` on an object in scope where the moment will be played (pinned there, or reached through a ``+`` pin), usually the scene's prep object or its hub:
+
+- ``when`` is one observable event as play would see it happen ("Enso opens the store cellar hatch"), not a state or a condition to evaluate.
+- ``run`` is the command that builds or plays the part, operator first: ``design --module encounter --pin <prep id> "<what to build, and for what moment>"``, or ``play --pass --pin <id>`` once the part exists.
+
+Play is shown the open triggers, stops at the threshold, and offers the ``run`` to the player. Nothing else is needed for the part to come up at the right time. A trigger fires once: when its session exists, it is done. Existing triggers appear under ``TRIGGERS`` when you ``kb_get`` an object; update one by its slug rather than adding a near-duplicate.
+
 SCOPE IS THE REQUEST, NOT THE MODULE LIST
 
 What you were asked for is the job. A module is instruction for one kind of artifact, not a fence around the session: "build the ambush, with a boss you make and guards from the book" is a single request that spans two types, and the answer is to build both — not to deliver half of it and file the rest as a suggestion.
@@ -319,6 +329,10 @@ Your ruleset may be deliberately partial: the rules for a situation the scene ha
 Degrees of success are yours to use, especially on search, investigation, or study: a marginal success gives a limited finding or a finding with a consequence; a solid success gives the full answer; an exceptional success gives everything plus extra insight or a follow-up the player can ask. Where the band edges fall depends on the system in play — take them from the pinned rules, do not invent a ladder.
 
 This is a game, not a "yes, and" improv session. When an outcome is uncertain and both success and failure matter, name the check and its difficulty and stop for the player's report.'''
+play.held_back = '''Prep has deliberately not written these parts. Each is built in its own session when its moment arrives.
+{triggers}
+When your reply reaches one of these moments, narrate up to the threshold and stop: do not describe what lies past it or invent what prep held back. End with <!-- suggest:<slug> --> on its own line, unless the passage already shows that suggestion. Never emit one for a moment that has not happened.'''
+
 play.instruction_continue = '''Continue the scene from the current passage and any newly appended player or character lines. Write in present tense — the events are happening now, not being recounted later. Follow the script of any encounter KB that is present, but do not let procedure flatten the scene into a template.
 
 Treat the player's reported mechanics as the authoritative current state. Do not recompute or override them. In combat, state non-PC intent and visible consequences, then stop when player-side mechanics or uncertain outcomes need to be resolved. If a needed mechanic is not present in pinned knowledge, an @mentioned KB item, or a module you can load, ask the player rather than assuming.
@@ -469,6 +483,10 @@ What NOT to do:
 - Do not resolve a scheduled trigger (dream, vision, event requiring a check) inline in the summary. Treat it as an interruption so the player plays it out.
 '''
 
+advance.held_back = '''Prep has deliberately not written these parts. Each is built in its own session when its moment arrives.
+{triggers}
+If the time you are advancing brings one of these moments about, treat it as a beat under INTERRUPTIONS. Cut the jump there, and describe the situation up to the threshold without resolving it or inventing what prep held back. Then call ``suggest_trigger`` with its slug, so the player is offered it as soon as this advance closes. Never suggest a moment the elapsed time does not bring about.'''
+
 advance.instruction_template = '''The player ends the day. Advance time by up to {days} day(s).
 Current day counter: {current_day}.
 
@@ -504,6 +522,10 @@ Output only the title, a blank line, and the summary body — no preamble, no me
 
 TEXT TO SUMMARIZE:
 {content}'''
+
+session.trigger_opened = '''Opened because {when}; the player is at that threshold now.'''
+
+design.trigger_opened = '''This session was opened by the trigger {slug}: {when}. The player is standing at that moment right now, so build for it — what they meet the instant it happens, against the story as it stands — not general prep. Before you finish, declare the follow-up with ``kb_set_trigger`` (usually a ``play-…`` slug whose ``run`` pins what you built; ``id`` defaults to {declared_on}, which is in scope where the player is) and call ``suggest_trigger`` for it, so the player is offered it the moment this session ends.'''
 
 session.summary_guidance_suffix = '''
 ---

@@ -795,7 +795,8 @@ function renderKbOpMarkers(markers: ParsedKbOp[], byLine: KbOpStatusByLine | nul
     // `applied` is never pending; it is the record that a close wrote.
     const pending = marker.op !== 'applied' && (byLine?.has(marker.lineStart) ?? false)
     const targets = kbOpTargetIds(marker)
-    const label = marker.id || (targets.length > 0 ? `${targets.length} written` : marker.op)
+    // Trigger ops are about the slug, not the object holding it.
+    const label = marker.slug || marker.id || (targets.length > 0 ? `${targets.length} written` : marker.op)
     const title = [
       marker.id ? `${kbOpVerb(marker.op)} ${marker.id}` : kbOpVerb(marker.op),
       status?.summary ?? '',

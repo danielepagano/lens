@@ -16,6 +16,7 @@ import {
   cliOutput,
   linePickMode,
   linePickSelection,
+  pendingTrigger,
   scrollContentToBottom,
   transactionResult,
 } from '../../stores/ui'
@@ -121,12 +122,15 @@ export async function submitCliCommand(deps: CliSubmitDeps): Promise<void> {
   const definition = COMMAND_DEFINITIONS.find((item) => item.trigger === command) ?? null
   const state = parseCliInput(raw, definition)
   const args = buildArgs(state, definition)
+  const trigger = get(pendingTrigger) ?? undefined
+  pendingTrigger.set(null)
   const ctx: CommandContext = {
     setBusyMessage: deps.setBusyMessage,
     onDone: deps.onCliDone,
     navigate: deps.navigate,
     syncLocation: deps.syncLocation,
     args,
+    trigger,
   }
 
   try {

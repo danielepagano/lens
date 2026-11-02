@@ -139,6 +139,8 @@ export interface Stats {
   pending_kb_ops: number
   /** One string per op whose patch no longer resolves under a hand edit. */
   pending_kb_errors: string[]
+  /** Open trigger offers in the cursor's passage (absent on older servers). */
+  offers_at_cursor?: TriggerOffer[]
   available_llms: string[]
   image_backends: ImageBackendStats[]
   has_mount: boolean
@@ -216,7 +218,7 @@ export interface TreeNode {
  */
 export interface PendingKbOp {
   index: number
-  /** `add` | `patch` | `tag` | `remove` | `applied`. */
+  /** `add` | `patch` | `tag` | `remove` | `applied` | `trigger` | `suggest`. */
   op: string
   id: string
   /** 1-based inclusive span of the block in the node text. */
@@ -244,12 +246,31 @@ export interface PendingKb {
   errors: string[]
 }
 
+/**
+ * An open trigger offered at the cursor — see `core/triggers.py`.
+ *
+ * Prep declares triggers on KB objects; the play model (or a closing design
+ * session) offers one by writing `<!-- suggest:<slug> -->` into the passage.
+ * Firing it opens a `<slug>-tr` session at the cursor, which is what makes the
+ * trigger done.
+ */
+export interface TriggerOffer {
+  slug: string
+  /** The moment, as play would see it happen. */
+  when: string
+  /** The stored command; editable for one firing. */
+  run: string
+  declared_on: string
+}
+
 export interface NodeData {
   address: string
   content: string
   children: string[]
   /** Absent when this node has no proposals (the usual case). */
   pending_kb?: PendingKb
+  /** Open offers; only ever set on the cursor node. */
+  offers?: TriggerOffer[]
 }
 
 export const getStats = (): Promise<Stats> =>
@@ -641,6 +662,10 @@ export interface OperatorDoneEvent {
   node: string
   interrupted: boolean
   inserted?: string[]
+  /** Trigger slugs a session close offered (design / advance `--end`). */
+  offered?: string[]
+  /** `suggest` ops a session close could not honour, with the reason. */
+  offer_errors?: string[]
   updated?: string[]
   errors?: string[]
   section_key?: string
@@ -814,6 +839,8 @@ export const runWriteManual = withStats((
 export interface PlayParams {
   prompt?: string
   module_id?: string
+  /** Every `--module` key, as the CLI sends them (merged after `module_id`). */
+  module_ids?: string[]
   pins?: string[]
   unpins?: string[]
   mentions?: string[]
@@ -825,6 +852,8 @@ export interface PlayParams {
   as_pc?: string
   do_pass?: boolean
   slug?: string
+  /** Fire this declared trigger (a fresh `<trigger>-tr` session). */
+  trigger?: string
 }
 
 export const runPlay = (
@@ -836,6 +865,8 @@ export const runPlay = (
 export interface DesignParams {
   prompt?: string
   module_id?: string
+  /** Every `--module` key, as the CLI sends them (merged after `module_id`). */
+  module_ids?: string[]
   pins?: string[]
   unpins?: string[]
   mentions?: string[]
@@ -845,6 +876,8 @@ export interface DesignParams {
   retry?: boolean
   end?: boolean
   slug?: string
+  /** Fire this declared trigger (a fresh `<trigger>-tr` session). */
+  trigger?: string
 }
 
 export const runDesign = (

@@ -61,6 +61,7 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "shared.block.previous_events_summary": PromptSpec("shared.block.previous_events_summary", frozenset()),
     "shared.block.current_passage": PromptSpec("shared.block.current_passage", frozenset()),
     "shared.block.live_state": PromptSpec("shared.block.live_state", frozenset()),
+    "shared.block.held_back": PromptSpec("shared.block.held_back", frozenset()),
     "shared.block.task": PromptSpec("shared.block.task", frozenset()),
     "shared.block.instructions": PromptSpec("shared.block.instructions", frozenset()),
     "shared.block.current_text": PromptSpec("shared.block.current_text", frozenset()),
@@ -86,6 +87,8 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "design.instruction": PromptSpec("design.instruction", frozenset({"prompt"})),
     "play.system": PromptSpec("play.system", frozenset()),
     "play.instruction_continue": PromptSpec("play.instruction_continue", frozenset()),
+    "play.held_back": PromptSpec("play.held_back", frozenset({"triggers"})),
+    "advance.held_back": PromptSpec("advance.held_back", frozenset({"triggers"})),
     "play.summary_system": PromptSpec("play.summary_system", frozenset()),
     "play.summary_instruction_template": PromptSpec(
         "play.summary_instruction_template", frozenset({"content", "slug"})
@@ -108,6 +111,10 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "advance.instruction_template": PromptSpec("advance.instruction_template", frozenset({"days", "current_day", "rolls_text"})),
     "session.summary_system": PromptSpec("session.summary_system", frozenset()),
     "session.summary_instruction_template": PromptSpec("session.summary_instruction_template", frozenset({"content", "slug"})),
+    "session.trigger_opened": PromptSpec("session.trigger_opened", frozenset({"when"})),
+    "design.trigger_opened": PromptSpec(
+        "design.trigger_opened", frozenset({"when", "slug", "declared_on"})
+    ),
     "session.summary_guidance_suffix": PromptSpec(
         "session.summary_guidance_suffix", frozenset({"guidance"})
     ),

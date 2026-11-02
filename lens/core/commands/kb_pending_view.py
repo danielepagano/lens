@@ -95,6 +95,12 @@ def _summarize(op: KbOp) -> str:
     if op.op == "applied":
         written = ", ".join((*op.ids, *op.removed))
         return f"written at close: {written}" if written else "written at close"
+    if op.op == "trigger":
+        if not op.run:
+            return f"remove trigger {op.slug}"
+        return f"trigger {op.slug} — when {op.when}"
+    if op.op == "suggest":
+        return f"offered on end: {op.slug}"
     return ""
 
 

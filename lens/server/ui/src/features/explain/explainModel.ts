@@ -45,6 +45,8 @@ const BLOCK_SLOT: Record<string, string> = {
   conversation: 'series-3',
   extra: 'series-4',
   live_state: 'series-5',
+  // The other tail block; it shares live state's slot (only five series exist).
+  held_back: 'series-5',
   task: 'chrome-2',
 }
 
@@ -56,6 +58,7 @@ const BLOCK_SHORT_LABEL: Record<string, string> = {
   current_passage: 'Passage',
   conversation: 'Turns',
   live_state: 'Live state',
+  held_back: 'Held back',
   extra: 'Extra',
   task: 'Task',
 }

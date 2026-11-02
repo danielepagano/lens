@@ -40,6 +40,7 @@ CMD_CHECKPOINT = (
 )
 CMD_REFRESH = "Fetch from remote and fast-forward the current branch."
 CMD_REWIND = "Move the cursor backward in the narrative tree, discarding all content that comes after."
+CMD_TRIGGER = "List the held-back parts offered at the cursor, or run one."
 CMD_EXPLAIN = "Show what is in the prompt at a cursor: size and provenance, component by component."
 CMD_SPINE = "Show the story so far: the narrative from the root down to the cursor."
 CMD_ROLLBACK = "Undo the last AI operation and restore the narrative to its previous state."
@@ -740,6 +741,36 @@ DESC_SPINE = (
     "Read-only: nothing is written, no transaction is opened, and no model is "
     "called. For what else is in the prompt \u2014 knowledge, task framing, "
     "sizes per component \u2014 use 'lens explain'."
+)
+
+DESC_TRIGGER = (
+    "Run a trigger: a prep-declared suggestion to build or play a held-back "
+    "part when its moment arrives.\n\n"
+    "With no SLUG, list the open offers at the cursor \u2014 triggers the play "
+    "model (or a closing design session) suggested in the current passage that "
+    "have not run yet.  --all lists every open trigger declared in the KB.\n\n"
+    "With a SLUG, run that trigger's stored command, opening a fresh "
+    "'<slug>-tr' session at the cursor.  --edit opens the command in $EDITOR "
+    "first; the edit applies to this run only.  A trigger is done once its "
+    "'<slug>-tr' node exists in the narrative; rewind it and the trigger "
+    "reopens.\n\n"
+    "Writing one by hand: a 'triggers:' map in the front matter of a KB object "
+    "in scope where the moment is played (pinned there or above, or reached "
+    "through a '+' pin).  The [ ... ]: # block must be the very first thing in "
+    "the file, before the body and any other comment.  A 'design' session "
+    "writes the same thing with kb_set_trigger:\n\n"
+    "\b\n"
+    "    [\n"
+    "        triggers:\n"
+    "          design-cellar:\n"
+    "            when: Enso opens the store cellar hatch\n"
+    "            run: design --module encounter --pin prep.store \"build the cellar\"\n"
+    "    ]: #\n\n"
+    "The slug starts with the operator its run uses (play or design) and never "
+    "ends in '-tr'.  'when' is one observable event.  'run' takes --module, "
+    "--pin, --unpin, --mention, --include, --llm, --reasoning, a prompt, and "
+    "--pass for play.  A broken entry is skipped by play, so check what you "
+    "wrote: 'lens trigger --all' and 'lens check' report it."
 )
 
 DESC_REWIND = (

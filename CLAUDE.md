@@ -1,358 +1,103 @@
 # CLAUDE.md
 
-Agent-oriented grounding for this repository. User-facing docs start at [README.md](README.md); product design at [docs/design.md](docs/design.md).
+Agent-oriented grounding for this repository. It holds what you need before touching anything, and the invariants that **fail silently** when broken. Everything descriptive lives in the docs below. Read the one for the area you are about to change.
 
 ## Documentation map
 
-| Topic | Location |
-|-------|----------|
-| Getting started, project layout | [README.md](README.md) |
-| Architecture, operators, workflow | [docs/design.md](docs/design.md) |
-| `lens.toml`, LLM, mounts, validation | [docs/configuration.md](docs/configuration.md) |
-| Testing layers, fake LLM, sandbox, prompt lab, bench | [docs/testing.md](docs/testing.md) |
-| CLI commands and operators | [lens/cli/README.md](lens/cli/README.md) |
-| Agent onboarding (`lens skill`) | [lens/cli/README.md](lens/cli/README.md#agent-onboarding-lens-skill) |
-| Datasets, extensions, sibling layout | [datasets/README.md](datasets/README.md) |
-| RPG play (`play`, `advance`, fronts) | [docs/rpg-design.md](docs/rpg-design.md), [datasets/rpg/README.md](datasets/rpg/README.md) |
-| Companion chat | [datasets/companion/README.md](datasets/companion/README.md) |
-| Server routes, SSE, workflow actions | [lens/server/README.md](lens/server/README.md) |
-| Cloud deploy (Fly.io reference), Caddy auth | [deploy/README.md](deploy/README.md) |
-| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Quality runs against real models | [bench/README.md](bench/README.md) |
-| Picking a model for `play`, and re-picking as the field moves | [bench/model-rating.md](bench/model-rating.md) |
+| Before you… | Read |
+|---|---|
+| change anything architectural (stores, crawl, pending KB, mentions, live state, workflows) | [docs/design.md](docs/design.md) |
+| touch `lens.toml`, LLM config, mounts, datasets, modules, validation | [docs/configuration.md](docs/configuration.md) |
+| write or change a test, use the fake LLM, sandbox, prompt lab, bench | [docs/testing.md](docs/testing.md) |
+| add or change a CLI command or operator flag | [lens/cli/README.md](lens/cli/README.md) |
+| touch RPG play, `advance`, fronts, triggers, prep content | [docs/rpg-design.md](docs/rpg-design.md), [datasets/rpg/README.md](datasets/rpg/README.md) |
+| touch a route, SSE, workflow actions | [lens/server/README.md](lens/server/README.md) |
+| touch the Svelte UI | [lens/server/ui/CLAUDE.md](lens/server/ui/CLAUDE.md) (hard constraints) |
+| touch datasets, extensions, sibling layout | [datasets/README.md](datasets/README.md) |
+| touch companion chat | [datasets/companion/README.md](datasets/companion/README.md) |
+| run quality checks against real models | [bench/README.md](bench/README.md), [bench/model-rating.md](bench/model-rating.md) |
+| deploy | [deploy/README.md](deploy/README.md) |
+| work *in a content project* (not this repo) | run `lens skill` there |
 
 ## Commands
 
-Locally, `poetry` and `poe` are on PATH — use directly. In the cloud
-environment (`/home/claude/.ssh/commit_signing_key.pub` exists), `poe` may
-not be on PATH; fall back to the full invocation below.
+`poetry` and `poe` are on PATH locally. In the cloud environment (`/home/claude/.ssh/commit_signing_key.pub` exists) use `/root/.local/share/uv/tools/poetry/bin/poetry run poe …`.
 
 ```bash
-# Preferred (local dev)
-poe check              # lint + types + unit + integration + UI unit + build-ui + e2e
-poe lint               # ruff (auto-fix) + eslint + svelte-check + pyright
-poe test               # pytest unit tests (core, cli, server, rpg)
-poe test-integration   # core integration tests only
-poe test-e2e           # full-stack e2e (no browser required for most tests)
-poe test-ui            # Vitest (lens/server/ui)
-poe build-ui           # vite build → lens/server/static/
-poe e2e-sandbox        # manual browser sandbox (temp project + fake LLM)
-poe mock-llm           # standalone controllable fake LLM on :18765
-poe prompt-lab         # assemble + measure real operator prompts (see below)
-poe lens <command>     # run the CLI locally
-
-# Cloud fallback (poe not on PATH)
-POETRY=/root/.local/share/uv/tools/poetry/bin/poetry
-$POETRY run poe check
-
-# Run a single test module
-python -m pytest lens/core/test/test_annotations.py -v
-
-# Run a single test method
-python -m pytest lens/core/test/test_annotations.py -v -k test_method_name
-
-# Manual dependency install (done automatically by session-start hook)
-poetry install
-cd lens/server/ui && npm install
-  # also run by poe build-ui / poe test-ui
-playwright install chromium          # once, for browser e2e
+poe check              # lint + types + unit + integration + UI unit + build-ui + e2e — the definition of done
+poe lint               # ruff + eslint + svelte-check + pyright
+poe test               # pytest unit tests
+poe test-integration   # core integration tests
+poe test-e2e           # full stack (Playwright tests skip without Chromium + built UI)
+poe test-ui            # Vitest
+poe build-ui           # vite build → lens/server/static/ (browser e2e runs against this)
+poe prompt-lab --scenario bench/scenarios/<s>.md -o play   # measure an assembled prompt
+poe lens <command>     # run the CLI from this checkout
+poetry run python -m pytest path/to/test.py -k name        # one test
 ```
 
 ## Definition of done
 
-Always run `poe check` before considering a task complete. It runs lint, typecheck, unit tests, integration tests, UI unit tests, UI build, and e2e tests in sequence — all must pass.
+`poe check` passes. All of it: lint, types, unit, integration, UI unit, UI build, e2e.
 
 ## Editing prompts and KB content
 
-`lens/prompts/default.toml`, `datasets/*/knowledge/design/*`, `datasets/*/knowledge/rules/*`, and every `_template.md` are **LLM prompts**, not documentation. The diff is not the artifact — the *assembled context* is, and no test asserts on it. Measure with `poe prompt-lab` (full guide in [docs/testing.md](docs/testing.md#prompt-lab-poe-prompt-lab)):
+`lens/prompts/default.toml`, `datasets/*/knowledge/design/*`, `datasets/*/knowledge/rules/*`, and every `_template.md` are **LLM prompts**, not documentation. The diff is not the artifact. The *assembled context* is, and no test asserts on it. Measure with `poe prompt-lab` before and after ([docs/testing.md](docs/testing.md#prompt-lab-poe-prompt-lab)):
 
 ```bash
-poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play --out /tmp/before
+poe prompt-lab --scenario bench/scenarios/play_dnd_rules_split.md -o play --out /tmp/before
 #  …edit…
-poe prompt-lab -- --scenario bench/scenarios/play_dnd_rules_split.md -o play --baseline /tmp/before
+poe prompt-lab --scenario bench/scenarios/play_dnd_rules_split.md -o play --baseline /tmp/before
 ```
 
-It sweeps `lens explain` over a project bench built, and reports which objects arrived by which route and what each costs. It owns no content: material comes from datasets and bench scenarios. If a sweep needs material that does not exist, **add a bench scenario** — never a fixture inside the tool.
+It owns no content. If a sweep needs material that does not exist, **add a bench scenario**, never a fixture inside the tool.
 
-Rules of thumb learned the hard way:
+- **Never assemble in-process right after writing KB objects.** `KnowledgeStore` caches its tag index per project, so a fresh tag can read stale and a `+` expansion silently resolves to nothing. Shell out to the CLI, or verify anything surprising through it.
+- **Check the play side after any design-side edit.** They share `rules.*` objects. `rules.<type>` companions are resolved by `crawl()` for every operator, so a booklet edited for `design` lands in every beat that has an object of that type in scope.
+- **Budget asymmetry.** Guidance in a design module is paid once per design session. Guidance in a `rules.*` booklet or `rules.rpg` is paid on *every* beat that has one of its objects in scope.
+- **Whole-system guidance goes in the operator prompt; one task's guidance goes in its module.** If the same text has to go into two modules, it belongs in the prompt, or it is a module that does not exist yet (#152).
+- **A KB object is already the artifact.** `design.*` modules make their object *actionable* (a limit, an access rule, a break condition `play` can check) by improving the object's guidance and its `_template` together.
+- **Content conventions are machinery.** The first-three-lines self-description, type-as-tag discovery, `rules.<type>` companions and trigger front matter are described in [docs/rpg-design.md](docs/rpg-design.md) and [docs/configuration.md](docs/configuration.md). Breaking them fails silently.
 
-- **Never assemble in-process right after writing KB objects.** `KnowledgeStore` caches its tag index per project; a fresh tag can read stale and a `+` expansion silently resolves to nothing, which is indistinguishable from a real bug. Shell out to the CLI, or verify anything surprising through it before believing it.
-- **Check the play side after any design-side edit.** They share `rules.*` objects, so a booklet edited for `design` lands in every play beat too — and in every `write`, `chat` or `edit` beat that has an object of that type in scope, since `rules.<type>` companions are resolved by `crawl()` for every operator.
-- **Budget asymmetry.** Guidance added to a design module is paid once per design session; guidance added to a `rules.*` booklet or `rules.rpg` is paid on *every* beat that has one of its objects in scope, where booklets are already the large majority of a play prompt.
-- **Guidance the whole system needs goes in the operator prompt; guidance one task needs goes in its module.** If the same text has to be written into two modules, it belongs in the prompt — or it is a module that does not exist yet (see #152). An appendix of thin per-case guidance is the worst of both: too light to produce good content, and paid for on every session that does not need it.
-- **A KB object is already the artifact.** `design.*` modules should make their object *actionable* — a limit, an access rule, a break condition, something `play` can check mid-beat — by improving the object's own guidance and its `_template` in step. Do not bolt a section labelled "the artifact" onto a type that is one.
-- Content conventions that machinery depends on — the first-three-lines policy, type-as-tag discovery, `rules.<type>` companions — are in [docs/rpg-design.md](docs/rpg-design.md) and [docs/configuration.md](docs/configuration.md). Breaking them fails silently, never loudly.
-
-## End-to-end test infrastructure
-
-Full testing map (bench, sandbox, mock LLM, regression fixtures): [docs/testing.md](docs/testing.md).
-
-Everything under `e2e/` exercises the full stack against a real (but
-throwaway) Lens project.
-
-```bash
-poe test-e2e          # runs all e2e tests (no browser required for most)
-pytest e2e/ -n 0 -v   # same, verbose
-```
-
-### Building blocks
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `FakeLLMServer` | `lens/testing/fake_llm.py` | In-process HTTP server that streams Lorem Ipsum as OpenAI-compatible SSE. Start with `.start()`, use `.base_url` in `lens.toml`. Supports stream speed controls (`tokens=`, `tps=`) and special triggers. |
-| `setup_test_project()` | `lens/testing/project.py` | Creates a full throwaway Lens project (git repo + `lens.toml` + KB objects + opening passage). Accepts `dataset=` or `datasets=` for `[project] datasets`. Returns a live `ProjectSession`. |
-| Regression fixtures | `lens/testing/regression_fixtures.py` | Pre-built project shapes for workflow UI tests (remember, auto-compress, play pins, …). See [e2e/fixtures/README.md](e2e/fixtures/README.md). |
-| `e2e/conftest.py` | session fixtures | Wires `fake_llm_server` → `lens_project_dir` → `live_server_url` (uvicorn on a free port). Also sets `base_url` for Playwright. Supports `LENS_DEV_SERVER_URL` env override to test against a running dev server. |
-
-### Test files
-
-- **`e2e/tests/test_api_smoke.py`** — API tests using plain `urllib.request`. Covers `/health`, `/stats`, `/narrative/tree`, `/narrative/node/<name>`.
-- **`e2e/tests/test_cli.py`** — CLI tests with `rpg` dataset. Runs `lens stats`, `lens kb get/with-tag`, and `lens write` as subprocesses.
-- **`e2e/tests/test_browser.py`** — Playwright UI tests. Auto-skipped when Chromium is not installed.
-- **`e2e/tests/test_regression_cli.py`** — CLI+git regression cases (transactions, auto-compress, `@var` / `@roll`).
-- **`e2e/tests/test_regression_browser.py`** — Workflow UI regression (step strip, skip/retry, transaction diff).
-- **`e2e/tests/test_bench_regression.py`** — Bench scenario file contract smoke.
-
-### Using `setup_test_project` in new tests
-
-```python
-from lens.testing.fake_llm import FakeLLMServer
-from lens.testing.project import setup_test_project
-
-with FakeLLMServer() as llm:
-    project_dir = Path(tempfile.mkdtemp())
-    session = setup_test_project(project_dir, llm.base_url, datasets=["rpg"])
-    # project_dir is a real git repo with lens.toml, narrative, KB, written passage
-```
-
-The fake LLM always responds with Lorem Ipsum followed by `[input:<N>]` where N
-is the total character count of the messages sent — useful for verifying context
-assembly.
-
-## Cloud environment (Claude Code on claude.ai)
-
-Cloud sessions enforce signed git commits via a hook that calls an external
-API (`/tmp/code-sign`).  `poe test` and `poe check` work correctly because
-`lens/conftest.py` detects the environment at session start and injects
-`GIT_CONFIG_COUNT` overrides that disable signing for all subprocess git calls
-made during the pytest session.
-
-**How to detect a cloud session**: `/home/claude/.ssh/commit_signing_key.pub`
-exists.  Alternatively: `git config --global commit.gpgsign` returns `true`
-with `gpg.ssh.program` pointing to `/tmp/code-sign`.
-
-## Architecture
-
-Lens is a CLI-first system for AI-assisted narrative creation. A **Lens project** is a Git repository with a `lens.toml`, `narrative/`, and `knowledge/` directory. Optional binary assets live on a **media mount** outside git (see [docs/configuration.md](docs/configuration.md)).
-
-### Package layout
+## Layout
 
 ```
 lens/
-  cli/           # Typer CLI layer (argument parsing, error display)
-    main.py      # Entry point + preflight callback + LensGroup (help panel order)
-    commands/    # Non-AI commands (init, use, kb, pin, stats, explain, spine, skill, rollback, commit, checkpoint, rewind, refresh, media; dataset extensions may add more)
-    operators/   # AI operator CLI adapters (write, edit, section, collate, compress, chat, play, design, advance, test_play)
-    test/        # CLI unit tests
-  core/          # Business logic (no Typer dependency)
-    project.py   # Git/project root discovery, active narrative resolution, dataset path resolution
-    narrative.py # NarrativeNode tree model, NodeSegment, parse_segments()
-    annotations.py # Markdown comment-style annotation parsing
-    operator.py  # Operator base class + ContextAwareOperator (LLM flow + tool use)
-    context.py   # crawl() + assemble_prompt() for LLM context assembly
-    llm_run.py   # LlmRun envelope: gather → transform → generate → persist
-    prompt_transforms.py # @ prompt orchestration (STORABLE / FLAT); graph transforms in crawl_transforms.py
-    mentions.py  # mention/include annotations: parse, lifetime, in-place render
-    workflow_runner.py # Multi-step operator scheduling (generate→auto_compress, summarize→remember)
-    hooks.py     # post_inline (auto-compress), summarize_close (remember)
-    knowledge.py # KnowledgeStore + KnowledgeObject (filesystem KB)
-    kb_scan.py   # stdlib-only body scanner for `kb search` (process-pool worker)
-    pinning.py   # Front matter kb_pin/kb_unpin manipulation
-    storage.py   # Storage: git-backed transactional file writes
-    address.py   # NarrativeAddress: typed path + line + operator location
-    llm.py       # OpenAI-compatible LLM client (streaming + tool calls)
-    llm_trace.py # Per-generation diagnostics persisted as `[llm-trace …]: #`
-    tools.py     # OperatorToolDef + tool registry (operators as LLM tools)
-    command_tools.py # Inline KB lookup tools callable mid-LLM-generation (design uses these)
-    dataset_extensions.py # Load optional Python from active datasets ([dataset] extension)
-    prompts.py   # Prompt pack resolution (default.toml, dataset prompts.toml, project overrides)
-    chain.py     # ChainSpec: deferred operator chaining within a transaction
-    exceptions.py # Shared exception types
-    commands/    # Core implementations for non-operator commands (incl. skill.py: `lens skill`)
-    operators/   # Core AI operators (write, edit, section, collate, compress, chat, design)
-    test/        # Core unit tests
-      integration/  # Integration tests
-  rpg/           # Bundled rpg dataset operators (play, advance, test_play)
-    operators/
-    test/
-  server/        # FastAPI adapter + Svelte UI (lens/server/ui/)
-    test/
-  testing/       # Fake LLM, setup_test_project, e2e sandbox, regression fixtures
-  skill/         # Bundled `lens skill` text: guidance.md (emitted), pointer.md (committed)
-datasets/
-  testing/       # Minimal dataset for integration tests (+ lens_testing_ext extension fixture)
-  rpg/           # Core RPG bundle (rules.rpg, rules.system stub, templates, design/*)
-  companion/     # Companion chat bundle (see datasets/companion/README.md)
-docs/            # Design, configuration, testing, rpg-design
-bench/           # Quality runs against real LLMs
-e2e/             # Full-stack tests
+  cli/        Typer adapters: commands/ (non-AI), operators/ (AI), offers.py (trigger offer prompt)
+  core/       all business logic (no Typer): operators/, commands/, context.py (crawl + assembly),
+              knowledge.py (KnowledgeStore), kb_pending.py + kb_op_tools.py (proposed KB writes),
+              triggers.py, storage.py (git transactions), annotations.py, narrative.py, llm*.py
+  rpg/        bundled rpg operators: play, advance, test_play
+  server/     FastAPI adapter + Svelte UI (lens/server/ui/)
+  testing/    fake LLM, setup_test_project, sandbox, regression fixtures, prompt lab
+  skill/      `lens skill` text (guidance.md emitted, pointer.md committed into content repos)
+datasets/     testing/, rpg/, companion/ (others resolve from a sibling repo; see datasets/README.md)
+bench/        real-model quality runs;  e2e/  full-stack tests;  docs/  design docs
 ```
 
-Every command/operator has a parallel `cli/` adapter (Typer plumbing) and a `core/` implementation (reusable logic). Always put business logic in `core/`.
+Every command has a `cli/` adapter and a `core/` implementation. **Business logic goes in `core/`.** The server imports only from `core/`, never from `cli/`. Core is synchronous and raises exceptions; it never calls `sys.exit()` or `print()`.
 
-### Key data model
+## Invariants that fail silently
 
-**NarrativeNode** (`narrative.py`): a node in the tree, backed by either a leaf file (`narrative/<name>/<key>.md`) or a folder node (`narrative/<name>/<key>/_node.md`). The cursor position is tracked by the last unclosed single-line annotation at the tail of a node file.
+Each is one line here, with the full story in the linked doc or the module docstring. Read that before changing the area.
 
-**Annotations** (`annotations.py`): operator state is stored as markdown reference-style comments. Single-line: `[operator:id]: #`. Multi-line (with YAML params):
-```
-[write
-  prompt: continue the story
-  steps: 1
-]: #
-```
-Closing tags: `[/section:ch1]: #`. Self-closing: `[section:ch1/]: #`.
+- **Surfaces have parity.** The CLI, the server routes and the UI command bar accept the same command lines with the same meaning. When one lacks something another has, that is a bug: fix it, don't route around it.
+- **The cursor is derived, never stored.** `find_cursor()` descends tail annotations. Anything appended at a node's tail must be skipped by the tail scan or be outside the annotation grammar: markdown comments with a hyphenated token (`[kb-op …]`, `[llm-trace …]`), `[mention:/include:]` lines, HTML comments. Otherwise the cursor silently jumps out of an open session. (`annotations.py`)
+- **Git's unstaged area is the one pending transaction.** Every write goes through `Storage` with an owner. `StorageMode.DIRECT` is for direct user edits only, never for generated content. ([docs/design.md](docs/design.md), "Git-backed storage", "Direct user edits")
+- **Proposed KB writes are an overlay, not writes.** `design`/`advance` persist `[kb-op …]: #` blocks inside the operator's block. `fold()` serves them as a pending layer at the store's *read primitives*. **Writers must call the `_base` methods.** Materialization re-reads the node at `--end`. ([docs/design.md](docs/design.md), "Pending KB layer"; `kb_pending.py`)
+- **Anything users update mid-session renders at the tail.** `state`-tagged objects go to `[LIVE STATE]`, and open triggers go to `[HELD BACK]` for play and advance. Both sit just before `[TASK]`. In the prefix they would invalidate the cache on every change. New context sources must set component metadata rich enough for `lens explain` to attribute them. ([docs/design.md](docs/design.md), "Live state")
+- **Triggers are done by node name.** A `<slug>-tr` node existing in the narrative is the only state, and the `-tr` suffix is reserved. ([docs/rpg-design.md](docs/rpg-design.md), "Held-back parts: triggers"; `triggers.py`)
+- **The crawl never shows where an object came from.** `KbSource` is for browsing surfaces only. During generation a KB object is world truth.
+- **A type is a tag; an object's first three lines are its description.** `design` discovers modules and `load_module` builds its catalog this way, so a stale tag or a badly shaped opening hides an object rather than mislabelling it.
+- **"What would run here" and "is a session open" are different questions.** Use `detect_operator_name()` for the first and `detect_open_session_operator()` for the second; the second is only for `--end` affordances. (`core/operator_detect.py`)
+- **Reasoning is replayed within a generation.** Tool rounds carry `reasoning_details` back verbatim, because a tool round is the same reply resumed. Providers name the field differently, so `_reasoning_from_delta` takes the first hit only. (`llm.py`)
+- **Nothing descriptive is committed into a content repo.** `lens skill --install` writes a pointer only, and the guidance is generated by the installed Lens. ([lens/cli/README.md](lens/cli/README.md#agent-onboarding-lens-skill))
 
-**Storage + transactions** (`storage.py`): every write goes through `Storage`, which is instantiated with an owner `NarrativeAddress`. On the first write, if unstaged changes exist from a *different* owner, they are auto-staged first. This enforces single-pending-transaction semantics. Git's unstaged area = pending transaction; `git add -A` = commit transaction.
+## Testing notes
 
-`StorageMode` splits the old `owner=None` sentinel in two: `SYSTEM` (non-operator machinery — stages any pending transaction first) and `DIRECT` (`Storage.for_direct_edit` / `session.new_direct_edit_storage()`), for direct user edits to KB objects and config. `DIRECT` never stages anyone else's work — it stages just the files it writes, unless the pending transaction already touches them, in which case the edit merges into that transaction. Never use it for generated content. See "Direct user edits" in [docs/design.md](docs/design.md).
+The full map is in [docs/testing.md](docs/testing.md). The facts you need first:
 
-**Operator** (`operator.py`): abstract base for LLM operators. Operating modes:
-- *Inline* (`write`, `play`, one-shot `chat`): open tag + streamed content + close tag appended to cursor node
-- *Sub-node / session* (`section`, `chat --with`, `play`, `design`, `advance`): creates a child node until `--end` summarizes back
-- *Mutation* (`edit`): wraps a line range in staged claim tags; proposes replacement as unstaged diff
-- *Structure* (`collate`, `compress`): refactor prose into hierarchy or AI-select a collate range
-
-Operators can register themselves as **LLM tools** via `tools.py` (`register_operator_tool`, `OperatorToolDef`). When the active session includes a dataset that unlocks an operator-tool, the LLM can invoke other operators as tool calls mid-response. Tool calls are dispatched by the `operator.py` loop and share the same storage transaction.
-
-**Command tools ≠ operators.** Small helpers the model may call *inside* one generation loop — read-only KB lookups during `design` (`kb_get`, `kb_list_tags`, `kb_with_tag`), the four KB write verbs for `design` / `advance` (see **Pending KB layer**), or whitelisted `kb_patch` during remember. They do not spawn other operators.
-
-**Model-requested modules** (`core/module_requests.py`): the one tool speed-first operators do get, because it *latches*. A dataset registers KB objects in its own `lens.toml` (`[[dataset.modules]]`: `id`, `operators` — no description; the catalog entry is the object's own first three lines, see `storage_text.kb_headline`); the per-invocation catalog offers only those not already in scope (`CrawlResult.scoped_kb_ids()`); `load_module` takes one id, returns the content for the current reply, and the operator persists `[include: <id>]: #` **above** the open tag (`write_start(pre_tag_text=…)`) so `write_discard` on retry cannot drop it. The call itself persists nothing — `UNLOGGED_MODULE_TOOLS` suppresses the `tool-call` fence, since the include is the record. Ceiling is one round trip per module per node. No unload tool — `collate` / `--end` handle that.
-
-**Pending KB layer** (`core/kb_pending.py`, `core/kb_op_tools.py`): `design` and `advance` no longer emit fenced ` ```kb ` blocks. The model calls `kb_add` / `kb_patch` / `kb_tag` / `kb_remove`, and each successful call is persisted into the cursor node as a `[kb-op …]: #` markdown comment — the `llm-trace` trick, so the hyphen keeps it outside the annotation grammar while `strip_markdown_comments` still removes it. **Nothing reaches `knowledge/` during the session.** The node's ops are an ordered log; `fold()` over them is a `PendingLayer` that `KnowledgeStore` serves as one more precedence layer above project-local, stamped `KbSource(kind="pending")`.
-
-That layer is in at the **primitives** — `_fetch_one`, `exists`, `_local_id_paths`, `list_types`, `list_facet_ids`, `describe_source`, and a read-only `_tags_view()` — not only in `resolved_index()`, because the crawl, `+` expansion, `rules.<type>` companions and type-as-tag discovery each reach the store by a different route. Every read primitive splits: `_x_base` is disk, `x` folds. **Writers must call `_base`**: `store_object` decides copy-on-write from `exists() and not _is_local()`, and `_load_tags` is the read half of `_save_tags`. `_is_local` is never overlaid. `KnowledgeStore.for_project(root, pending=False)` is the disk truth, used by materialization and `lens skill`.
-
-The layer is derived, never stored: `find_cursor()` derives the cursor from tail annotations, so it is a pure function of disk state and every process computes the same one. It is cached against a fingerprint of the cursor file plus the in-flight sink, with **no time-based expiry** — the stale-tag-index warning above is about exactly this shape. During a generation, `inflight_ops()` scopes a `KbOpSink` so a `kb_get` after a `kb_add` in the same turn sees the new object.
-
-Blocks land **inside** the operator's block (unlike module `include` annotations, which go above it), so `write_discard` drops them on retry. Materialization happens at `--end` and **re-reads the node at that instant** — never a cached sink, which is what makes `rewind` correct for free. It writes one `[kb-op op: applied …]: #` marker into the *parent*, and `rewind` scans every region it discards for these, so objects a removed session already wrote are reported rather than silently left behind. Proposals are surfaced as data (ops, line spans, per-op validation, base/proposed diff pair) by `core/commands/kb_pending_view.py`, `lens kb pending`, the node route and `lens stats` — and, in the UI, as a split chip where each block was consumed (`utils/markdown.ts`), an inline diff in the KB viewer (`KbPendingDiff.svelte`), and bullets in the cursor footer. The chip is split because its halves have different lifetimes: the body opens the block itself (`utils/kbOpBlocks.ts` parses it client-side, mirroring `render_kb_op` field for field) and works on any node however old, while the arrow opens the KB object, which on a historical node has long since moved on — there the *intent* is all that survives, and no diff is recoverable without git. The node route serves them **for the cursor only**: a closed session keeps its blocks, but there they are history, and validating them against the cursor's fold would line the wrong ops up with the wrong objects. A direct user edit to a KB object is a **rebase**: the ops replay onto the new text, and a patch whose anchor is gone becomes a `KbOpError` on the next read.
-
-**Generation diagnostics** (`llm_trace.py`): what a generation cost is knowable only from the provider's own response, and it used to be logged at INFO and dropped. Each generation now appends an `[llm-trace …]: #` block — model, elapsed, rounds, tool calls, and the provider's `usage` including `cached_tokens`; `llm_trace = "full"` adds the thinking stream. It is a **markdown** comment, so `strip_markdown_comments` removes it from `[CURRENT PASSAGE]` and no model ever sees it, and the hyphen in `llm-trace` keeps it outside the annotation grammar so cursor detection cannot mistake it for an open block. It lives *inside* the operator's block so `write_discard` drops it with the attempt it measures. Nothing is written when the provider reports neither usage nor reasoning — absent is not zero. This is the ground truth behind `lens explain`, which estimates tokens from character counts and labels blocks `prefix`/`volatile` by position; `cached_tokens` is the only way to tell whether the prefix is actually being cached.
-
-**Reasoning is captured and replayed.** Providers disagree on the field name — OpenRouter sends `reasoning` plus a structured `reasoning_details`, DeepSeek-native/vLLM/LM Studio send `reasoning_content` — so `_reasoning_from_delta` reads them in that order and stops at the first hit (taking both would double-count). Within a generation, the assistant message replayed on each tool round carries `reasoning_details` back verbatim: a tool round is the same reply resumed, not a new turn, so withholding the thinking makes the model re-derive it every round and pay for it twice. `verbose_llm` now logs **only** the reasoning stream — the prompt is reconstructible with `lens explain` and the response lands in the narrative, but the thinking exists nowhere else.
-
-**Multi-step workflows** (`workflow_runner.py`): session close, auto-compress, and remember are follow-up LLM passes under one user invocation. The runner exposes a step plan (generate → auto_compress, summarize → remember → close). **Skip** declines optional tail steps; **Abort/Cancel** rolls back dirty in-flight steps. See [docs/design.md](docs/design.md) for skip vs abort semantics.
-
-**Context assembly** (`context.py`): `crawl()` collects `kb_pin`/`kb_unpin` from ancestor front matters (walking from root to cursor), resolves linked KB objects, then passes everything to `assemble_prompt()` which formats `[RELEVANT KNOWLEDGE]`, `[PREVIOUS EVENTS SUMMARY]`, `[CURRENT PASSAGE]`, and `[TASK]` blocks into `[system, user]` messages. KB pins resolve on the full ancestor chain; narrative slices follow the lineage spine (fractal summaries).
-
-**Mentions and includes** (`mentions.py`): scope added *mid-node* and expanded **in place**, at the annotation's own line, instead of in `[RELEVANT KNOWLEDGE]`. Written as one-id markdown comments (`[mention: spell.aid]: #`, `[include: rules.grappling]: #`) by `--mention` / `--include`, by `lens pin kb mention|include`, or by a `@type.key` in a prompt (one annotation per distinct id). An include lasts the rest of the node; a mention lasts one assistant turn, computed from distance to the cursor and never stored — so retry does not consume it and rewind restores it. Never inherited by sub-nodes. A `@` left in prose is inert: only the annotation adds scope. `state`-tagged objects are the one exception — they are handed to the tail divert instead of inlined. Expansion is render-time only; nothing is ever written into the node.
-
-KB objects tagged **`state`** are diverted out of `[RELEVANT KNOWLEDGE]` and rendered at the tail, immediately before `[TASK]` — one pass (`_divert_state_components`) over the finished render graph, so it applies to every scope (pin, module, rules companion, `@` mention) and runs after id dedup. Anything the user updates mid-session belongs there: in the prefix it would invalidate the cache on every edit. See "Live state" in [docs/design.md](docs/design.md).
-
-`assemble_prompt()` stores the final post-transform graph on `CrawlResult.render_graph`. `lens explain` (`core/commands/explain.py`) is a read-only renderer over it: it assembles the prompt exactly as the operator would, then reports per-component size, block, and provenance instead of calling a model. Any new source of context must set component metadata rich enough to explain itself (see `_pin_origin_fields` in `context.py`).
-
-**Operator detection** (`core/operator_detect.py`): which operator owns a cursor, shared by `explain` and `stats` so the two cannot drift. `detect_operator_name()` answers *what would run here* (open ancestor session → own unclosed annotation → most recent completed narrating block); `detect_open_session_operator()` answers *is a session still open* and goes `None` the moment it closes. Use the second only for session-close affordances (`--end`); everything else wants the first.
-
-**KnowledgeStore** (`knowledge.py`): flat key-value store at `knowledge/{type}/{key}.md`. IDs are dot-separated lowercase (`person.amy`). Tags stored in `knowledge/tags.toml` with bidirectional index. The `+` suffix on an ID in a pin expands to linked objects (those sharing a dot-tag pointing to another KB object).
-
-**Finding things** (`core/commands/kb_search.py`, `core/commands/kb_refs.py`, `core/kb_scan.py`): `kb search` / `kb list` / `kb refs`, the read-only surface an agent uses when it does not already know an id. All three read `KnowledgeStore.resolved_index()` — the merged store as a listing, id → winning file + `KbSource`, one glob per store with precedence already applied — so shadowing is resolved before anything is read. `source_index` is a view over it; anything that enumerates should come here rather than probing `describe_source` per id. `kb search` is shaped for an agent checking a fact: smart case per pattern, repeated `-e` patterns ANDed *per object* (identity and body matches both count, so the worker returns partial matches and the AND happens in the parent), and a miss exits 1 with the query restated on stderr (`format_no_match`) — silence read as a broken tool and sent agents back to `kb get | grep` (#193). It fans body matching across processes above `_PARALLEL_MIN_FILES` and falls back to serial when no pool starts; the worker callable lives in `core/kb_scan.py`, a stdlib-only leaf module so a spawned worker does not re-import Lens. No index is built or written. `kb refs --in` is the part a `grep` cannot replace: it reports the *route* for references that never name the id (a `person.hero+` pin, a `-` facet, a `rules.<type>` companion, a `[[dataset.modules]]` registration in a manifest outside the repo).
-
-**Teaching an agent the project** (`core/commands/skill.py`): the tool and a
-content project move on different clocks, so nothing descriptive may be committed
-into a content repo — it is wrong the moment Lens moves, and wrong silently.
-`lens skill` emits guidance generated by the installed Lens against the project in
-front of it; `lens skill --install` commits only a **pointer** (`.claude/skills/lens/SKILL.md`)
-that says to run it, plus the two or three invariants worth stating when `lens`
-cannot be run at all. The pointer carries no project facts, which is what lets
-`--check` compare it byte for byte — drift means Lens changed, never that someone
-added an object. Emission composes four layers, appended rather than shadowed:
-bundled `lens/skill/guidance.md`, the generated `## This project` section, each
-active dataset's `skill/skill.md`, then the project's own `skill/skill.md` last so
-house rules win. The output is read once, before work starts, usually through a
-tool that truncates long results — so it carries what fails *silently* and nothing
-a command already answers: no command listing (`lens --help`), no inventories
-(`lens stats`, `kb list-tags`, `kb list --type design`), and no how-to for one
-command (that goes in its `--help`). The generated section is only where the
-cursor is (and which session is open there) and where the active datasets live. A dataset's file is emitted up to its `<!-- more -->` line
-(its gist) plus a pointer to `lens skill <dataset>`, which prints the whole file;
-a file without the marker is emitted whole. `lens init` installs the pointer by
-default (`--no-skill` opts out) and `lens check` warns on drift. Add material to the *bundled* layer only when
-it is true in every Lens project; anything a dataset knows about itself goes in the
-dataset's file — below its gist, where it is read only by an agent about to write
-that dataset's kind of content.
-
-**Where an object came from** (`KbSource`, `describe_source`, `source_index`): every object a resolving fetch returns is stamped with the store it won from — `project`, `dataset:<name>`, plus the `shadows` it overrode. The merge is invisible on disk (a dataset resolves outside the project, see `resolve_dataset_path`), so this is the only answer to "is editing this a copy-on-write fork". Surfaced by `lens kb get` / `with-tag` (a `SOURCE=` header field, and structured under `--json`), the `kb_get` command tool, and the KB routes/UI. **Never in the crawl**: `KnowledgeObject.format(include_source=…)` defaults off and `format_kb_prompt_block_from_normalized` — the variant crawl uses — takes no source at all. During generation a KB object is world truth; which tree it was stored in is not part of that.
-
-**A type is a tag** (`get_ids_with_tag`): a bare token naming a type matches every object of that type, unioned with the explicit index, and types are listed by `list_unique_tags`. That is how `design` discovers modules and rulesets (`kb_with_tag ["design"]`) without a hand-maintained tag that would go stale — and a stale discovery tag is worse than none, since the objects missing from it are invisible rather than merely unlabelled. Dot-tags and `key:value` tags never take this path.
-
-**First three lines** (`storage_text.kb_headline`, `KnowledgeObject.headline()`): an object's opening three lines are read as its self-description. `kb_with_tag`, `kb list` and `kb search --headline` print them under every match (not on `--expand`, where bodies are already shown), and `[[dataset.modules]]` uses them as the `load_module` catalog entry instead of a `description` in the manifest — so a registered module must open with what it covers and when to load it, or it is not offered. Annotation blocks are stripped before counting and a whole-line HTML comment is unwrapped. Nothing enforces it anywhere else; a differently-shaped object is just harder to skim in a search.
-
-### Operators (implemented)
-
-| Operator | Shape | Location | Notes |
-|----------|-------|----------|-------|
-| `write` | inline | `core/operators/write.py` | General prose at cursor |
-| `edit` | mutation | `core/operators/edit.py` | LLM rewrite of a line range |
-| `section` | sub-node | `core/operators/section.py` | Start/end section; `--end` summarizes to parent |
-| `collate` | structure | `core/operators/collate.py` | Create section from completed prose range |
-| `compress` | structure | `core/operators/compress.py` | AI-select collate range from natural-language prompt |
-| `chat` | inline / session | `core/operators/chat.py` | In-character speech (`--as`, optional `--with` session) |
-| `design` | session | `core/operators/design.py` | Session Zero planning; uses command_tools; writes KB through the four verbs (proposals until `--end`) |
-| `play` | session | `rpg/operators/play.py` | GM-voice narrative; requires `rpg` dataset + pinned `pc.*` |
-| `advance` | session | `rpg/operators/advance.py` | Time pass / fronts; requires `rpg` dataset |
-| `test_play` | review | `rpg/operators/test_play.py` | `lens test-play`: one review of prepared content in play's context; inside a design session writes a closed child + findings on the session, elsewhere writes nothing; requires `rpg` dataset |
-
-### LLM configuration
-
-Configured in the content repo's `lens.toml`, not in this repo. Full reference: [docs/configuration.md](docs/configuration.md) (`[[llm]]`, `extra_headers` / `extra_payload`, `[operator.*]`, image/speech, compress, params, deployment). Uses OpenAI-compatible API. First `[[llm]]` entry is the default; others require explicit `--llm <id>`. The `api_key_env` field names an environment variable holding the key (never stored in toml).
-
-Prompt text is layered: bundled defaults (`lens/prompts/default.toml`), dataset `prompts/prompts.toml`, project overrides (`prompts/prompts.toml`, copy-on-write). Operators reference keys via `prompts.py`, not hardcoded prose.
-
-### Datasets
-
-Read-only knowledge stores bundled with the Lens tool, declared in `lens.toml` under `[project] datasets = [...]`. Later entries shadow earlier ones; project-local items always win. Mutating a dataset object creates a project-local copy (copy-on-write).
-
-- `datasets/testing/` — minimal test fixtures + `lens_testing_ext` extension for unit tests
-- `datasets/rpg/` — Core RPG bundle: `rules.rpg`, `rules.system` stub, templates, `design/*`; operators `play`/`advance` live in `lens/rpg/`
-- `datasets/companion/` — Companion chat templates and meta pins
-- Other dataset names resolve from a sibling repo or `lens.local.toml` — see [datasets/README.md](datasets/README.md)
-
-**Dataset extensions** (`dataset_extensions.py`): when a dataset's `lens.toml` declares `[dataset] extension = "pkg"` (or `pkg:register`), Lens loads that Python package from the dataset directory on CLI/server startup. Extensions can register CLI command groups and LLM command tools. Example: private `lens-dnd` repo with `lens dnd balance` — not bundled in Lens. Bundled `rpg` operators remain in `lens/rpg/`, not via extension.
-
-### Server (`lens/server/`)
-
-The server is a FastAPI adapter over `lens/core/`. CLI and server are sibling interfaces — both are thin adapters; all business logic lives in `core/`.
-
-**Critical rules:**
-- Routes validate input (Pydantic), call core functions, and map domain exceptions to HTTP errors. No business logic in routes.
-- `server/` imports only from `core/`, never from `cli/`.
-- Core is synchronous. Do not make core code async. Use `run_in_threadpool` only at the route boundary if truly needed. Async is contagious — contain it at the edges.
-- Core must raise explicit exceptions, not call `sys.exit()` or `print()`.
-- Routes must catch domain exceptions and return HTTP 400/500. Stack traces must not leak to clients.
-- One SSE stream at a time per project (enforced via `app.state.stream_locks`). New streaming routes must acquire the same lock.
-- Workflow actions: `POST /{slug}/stream/workflow/action` with `{step_id, action: "skip"|"retry"|"cancel"}`. `cancel` is step-scoped and only valid for steps declaring `cancel_scope="step"` (refine passes): it stops that step, keeps the pre-step result, and the workflow continues.
-
-**Authentication:** Handled entirely at the Caddy reverse proxy layer. FastAPI trusts all incoming requests as authenticated. Do not add auth logic to routes. If Caddy is removed, the server must not be exposed to the public internet.
-
-**Static frontend:** In production, `vite build` output is served by FastAPI from `server/static/`. Frontend and API share the same origin — no CORS needed.
-
-### Frontend (`lens/server/ui/`)
-
-Svelte + Vite + Pico.css + CodeMirror 6 + markdown-it. No additional frameworks or UI libraries.
-
-**Hard constraints (architecture violations must be rejected):**
-1. No component should grow without bound: ~300 lines is the usual target; **split when a file passes ~450 lines** or mixes unrelated concerns. Single-purpose components in the ~300–450 range are acceptable.
-2. CodeMirror is configured only in the editor component — nowhere else.
-3. Network logic (fetch, EventSource) lives only in `services/` — never in components.
-4. Global state lives only in `stores/` — never derived or duplicated in components.
-5. Layout structure is defined in `MainLayout.svelte` and must not be redefined by feature code.
-6. No inline `innerHTML` manipulation outside the markdown renderer (`MarkdownView.svelte`).
-7. No feature may reach into another feature's internal implementation.
-8. Always use narrative address paths (e.g. `/chapter-1`) for node identification — never internal IDs.
-
-**UX rules:**
-- No git terminology in the UI. Use "Checkpoint" not "Push", "Save" not "Commit", "Discard" not "Rollback".
-- Unstaged changes must be visually distinct (badge, border, or background indicator).
-- On page load/refresh, fetch current project state (including cursor) from the backend — do not rely on client-side routing or cached state.
-- During generation, show workflow step plan with Skip on optional steps and Retry/Skip on retryable failures — not a single "streaming…" label.
-- If a 401 is received, treat it as fatal; let the browser re-authenticate via HTTP Basic challenge. Do not implement login UI or handle 401 programmatically.
+- `FakeLLMServer` streams Lorem Ipsum followed by `[input:<N>]`, the total input chars, so tests can assert context assembly. It can also emit tool calls on cue (`EMIT_KB_OP`).
+- `setup_test_project(dir, llm.base_url, datasets=[…])` builds a real throwaway project (git repo, `lens.toml`, KB, narrative).
+- A browser e2e test that changes the cursor gets its own project and server (see `e2e/tests/test_trigger_offer_browser.py`), not the shared session fixture.
+- In the cloud, `lens/conftest.py` disables commit signing for every git call made during a pytest session.

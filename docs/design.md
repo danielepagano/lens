@@ -300,7 +300,7 @@ The same storage, crawl, and generation pipeline supports three modes that alter
 
 Create or refine **objects and structure**, not live scene prose.
 
-- **`design`** — conversational KB workspace; swappable modules (`design.encounter`, `design.companion`, …). The model explores the KB with tool calls and writes it with four more (`kb_add`, `kb_patch`, `kb_tag`, `kb_remove`). Nothing is written during the session: each call is a **proposal**, persisted into the narrative node as a `[kb-op …]: #` comment and folded into a pending layer every reader sees. `--end` materializes them. See [Pending KB layer](#pending-kb-layer-proposals-not-writes).
+- **`design`** — conversational KB workspace; swappable modules (`design.encounter`, `design.companion`, …). The model explores the KB with tool calls and writes it with four more (`kb_add`, `kb_patch`, `kb_tag`, `kb_remove`), plus `kb_set_trigger` / `suggest_trigger` for held-back parts. Nothing is written during the session: each call is a **proposal**, persisted into the narrative node as a `[kb-op …]: #` comment and folded into a pending layer every reader sees. `--end` materializes them. See [Pending KB layer](#pending-kb-layer-proposals-not-writes).
 - **Direct KB work** — manual edit, tag, template, bulk extract. This can be done directly in the file system, or via CLI or web UI.
 - Specialized: **`advance`** (RPG) — calendar and `front` updates when time passes outside play
 

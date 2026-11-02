@@ -227,6 +227,60 @@ def pop_front_matter_key(text: str, key: str) -> tuple[Any, str]:
     return fm[key], "\n".join(new_lines)
 
 
+def render_front_matter_block(data: dict[str, Any]) -> str:
+    """The ``[`` … ``]: #`` front-matter block for *data*, or ``""`` when empty.
+
+    Falsy values are dropped, matching how node front matter has always been
+    written (:mod:`lens.core.pinning`), so an emptied key disappears instead of
+    leaving ``key: []`` behind.
+    """
+    payload = {k: v for k, v in data.items() if v}
+    if not payload:
+        return ""
+    yaml_text = yaml.safe_dump(
+        payload,
+        default_flow_style=False,
+        sort_keys=False,
+        allow_unicode=True,
+        # One line per scalar: a folded value is harder to hand-edit, and a
+        # line it happens to end in ``]: #`` would close the block early.
+        width=1_000_000,
+    ).rstrip("\n")
+    indented = "\n".join("    " + line for line in yaml_text.split("\n"))
+    return f"[\n{indented}\n]: #"
+
+
+def set_front_matter_key(text: str, key: str, value: Any) -> str:
+    """Return *text* with front-matter *key* set to *value* — text to text.
+
+    A falsy *value* removes the key, and the whole block goes when nothing else
+    is left in it.  Other keys keep their values (the block is re-rendered, so
+    their formatting may normalise).  Text after the block is untouched.
+    """
+    span = find_front_matter_span(text)
+    data = dict(parse_front_matter(text)) if span is not None else {}
+    if value:
+        data[key] = value
+    else:
+        data.pop(key, None)
+    block = render_front_matter_block(data)
+    lines = text.split("\n")
+    if span is not None:
+        before, after = lines[: span[0]], lines[span[1] :]
+        if not block:
+            while after and not after[0].strip():
+                after = after[1:]
+            return "\n".join(before + after)
+        return "\n".join(before + [block] + after)
+    if not block:
+        return text
+    i = 0
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    rest = lines[i:]
+    return "\n".join([block, ""] + rest) if rest else block + "\n"
+
+
 def iter_kept_storage_lines(raw: str) -> list[tuple[str, int]]:
     """Lines kept by :func:`strip_markdown_comments` with 1-based physical line numbers.
 

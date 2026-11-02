@@ -80,6 +80,7 @@ class PlayOperator(SessionOperator):
     )
 
     supports_module_requests: ClassVar[bool] = True
+    renders_held_back: ClassVar[bool] = True
     module_prefix: ClassVar[str] = "rules."
     auto_pins: ClassVar[list[str]] = []
     summarize_on_end: ClassVar[bool] = True

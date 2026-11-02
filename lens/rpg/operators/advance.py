@@ -31,11 +31,12 @@ from lens.core.commands.kb import (
     KbMaterializeResult,
     applied_marker,
     materialize_session_kb,
+    session_end_offer_markers,
 )
 from lens.core.context import CrawlResult, SliceAnchor, crawl
 from lens.core.knowledge import KnowledgeStore
 from lens.core.llm import LLMError
-from lens.core.kb_op_tools import KB_OP_TOOLS, render_kb_op_persist
+from lens.core.kb_op_tools import KB_OP_TOOLS, kb_op_persist_renderer
 from lens.core.kb_pending import KbOpSink, inflight_ops
 from lens.core.llm_run import LlmRunRequest, run_llm
 from lens.core.narrative import NarrativeNode, find_unclosed_cursor_annotation, parse_segments
@@ -327,6 +328,12 @@ class AdvanceOperator(Operator):
         {"kb_ops", "tool_fence_awareness"}
     )
     expand_facets: ClassVar[bool] = True
+    # Advance decides what the elapsed time brings about, so it is how a
+    # held-back moment arrives off-screen: it sees the open triggers, cuts the
+    # jump at one, and suggests it for its close to offer. (Triggers never
+    # *run* advance — that would be a recurring trigger, which is out of scope.)
+    renders_held_back: ClassVar[bool] = True
+    held_back_prompt_key: ClassVar[str] = "advance.held_back"
 
     @property
     def system_prompt(self) -> str:
@@ -471,7 +478,7 @@ class AdvanceOperator(Operator):
                         on_token=on_token,
                         operator_name=cls.name,
                         unlogged_tool_names=KB_OP_TOOLS,
-                        tool_persist_renderer=render_kb_op_persist,
+                        tool_persist_renderer=kb_op_persist_renderer(session.project_root),
                     ),
                 )
         except LLMError as e:
@@ -586,7 +593,12 @@ class AdvanceOperator(Operator):
         marker = applied_marker(result, session=session_id)
         if marker:
             op.append_to_node(parent, marker)
+        offers = session_end_offer_markers(
+            child_text, session.project_root, storage, parent, result
+        )
         op.close_subnode(parent, session_id, summary_block)
+        if offers:
+            op.append_to_node(parent, offers + "\n")
         return result
 
     @classmethod

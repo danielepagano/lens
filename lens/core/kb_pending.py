@@ -96,7 +96,11 @@ __all__ = [
 KB_OP_TAG = "kb-op"
 """Block token. Hyphenated so it stays outside the annotation grammar."""
 
-KbVerb = Literal["add", "patch", "tag", "remove", "applied"]
+KbVerb = Literal["add", "patch", "tag", "remove", "applied", "trigger", "suggest"]
+
+_VERBS: frozenset[str] = frozenset(
+    {"add", "patch", "tag", "remove", "applied", "trigger", "suggest"}
+)
 
 _BLOCK_BREAKER = re.compile(r"\]:\s*#\s*$")
 """A line matching this ends the comment block — see the module docstring."""
@@ -183,6 +187,9 @@ class KbOp:
     removed: tuple[str, ...] = ()
     at: str = ""
     session: str = ""
+    slug: str = ""
+    when: str = ""
+    run: str = ""
     line_start: int = 0
     line_end: int = 0
 
@@ -271,6 +278,13 @@ def render_kb_op(op: KbOp) -> str:
         add(f"{_INDENT}at: {_scalar(op.at)}")
     if op.session:
         add(f"{_INDENT}session: {_scalar(op.session)}")
+    if op.slug:
+        add(f"{_INDENT}slug: {_scalar(op.slug)}")
+    if op.when:
+        add(f"{_INDENT}when: {_scalar(op.when)}")
+    if op.op == "trigger":
+        # Always written, even empty: an empty ``run`` is the removal.
+        add(f"{_INDENT}run: {_scalar(op.run) if op.run else json.dumps('')}")
     if op.body is not None:
         add(f"{_INDENT}body: |")
         for encoded in encode_body(op.body):
@@ -363,9 +377,9 @@ def _decode_body_field(raw: str) -> str:
 
 def _op_from_mapping(data: dict[str, Any], start: int, end: int) -> KbOp | None:
     raw_op = data.get("op")
-    if raw_op not in ("add", "patch", "tag", "remove", "applied"):
+    if raw_op not in _VERBS:
         return None
-    verb: KbVerb = raw_op
+    verb = cast(KbVerb, raw_op)
     raw_id = data.get("id")
     body = data.get("body")
     patches_raw = data.get("patches")
@@ -380,9 +394,16 @@ def _op_from_mapping(data: dict[str, Any], start: int, end: int) -> KbOp | None:
         removed=_str_tuple(data.get("removed")),
         at=_timestamp(data.get("at")),
         session=str(data.get("session", "")) if data.get("session") is not None else "",
+        slug=_plain_str(data.get("slug")).lower(),
+        when=_plain_str(data.get("when")),
+        run=_plain_str(data.get("run")),
         line_start=start + 1,
         line_end=end,
     )
+
+
+def _plain_str(value: Any) -> str:
+    return str(value).strip() if value is not None else ""
 
 
 def _str_tuple(value: Any) -> tuple[str, ...]:
@@ -492,9 +513,14 @@ class PendingLayer:
     created: set[str] = field(default_factory=set[str])
     errors: list[KbOpError] = field(default_factory=list[KbOpError])
     applied: list[KbOp] = field(default_factory=list[KbOp])
+    suggestions: list[KbOp] = field(default_factory=list[KbOp])
+    """``suggest`` ops, in call order.  They change no object; a session close
+    re-checks each one and offers the ones that still hold."""
 
     def is_empty(self) -> bool:
-        return not (self.objects or self.tags or self.removed or self.errors)
+        return not (
+            self.objects or self.tags or self.removed or self.errors or self.suggestions
+        )
 
     def touched_ids(self) -> set[str]:
         return set(self.objects) | set(self.tags) | set(self.removed)
@@ -518,10 +544,19 @@ def fold(ops: Sequence[KbOp], base: PendingBase) -> PendingLayer:
     because that is what a whole-body write means; ``remove`` then ``add``
     re-creates, ``add`` then ``remove`` leaves nothing; tag ops accumulate, with
     ``remove-tags`` applied after ``tags`` within one op.
+
+    ``trigger`` ops are **keyed, not anchored**: each one upserts (or, with an
+    empty ``run``, removes) one slug of the object's ``triggers:`` front matter,
+    and all of them are applied *after* the text ops, over the final text.  So a
+    later ``kb_add`` cannot silently drop a trigger set earlier in the session,
+    and a direct user edit to the body never strands one.  ``suggest`` ops
+    change no object and are only collected.
     """
     from lens.core.text_select import SelectionError, apply_kb_patches
+    from lens.core.triggers import with_trigger
 
     layer = PendingLayer()
+    trigger_edits: list[tuple[int, KbOp]] = []
 
     def current_text(cid: str) -> str | None:
         if cid in layer.objects:
@@ -553,6 +588,12 @@ def fold(ops: Sequence[KbOp], base: PendingBase) -> PendingLayer:
         if op.op == "applied":
             layer.applied.append(op)
             continue
+        if op.op == "suggest":
+            if not op.slug:
+                fail(index, op, "suggest requires a slug")
+                continue
+            layer.suggestions.append(op)
+            continue
         if not op.id:
             fail(index, op, "missing id")
             continue
@@ -580,6 +621,13 @@ def fold(ops: Sequence[KbOp], base: PendingBase) -> PendingLayer:
                 fail(index, op, str(e))
                 continue
             layer.objects[op.id] = new_text
+            continue
+
+        if op.op == "trigger":
+            if not op.slug:
+                fail(index, op, "trigger requires a slug")
+                continue
+            trigger_edits.append((index, op))
             continue
 
         if op.op == "tag":
@@ -610,6 +658,17 @@ def fold(ops: Sequence[KbOp], base: PendingBase) -> PendingLayer:
             layer.objects.pop(op.id, None)
             layer.tags.pop(op.id, None)
             layer.removed.add(op.id)
+
+    for index, op in trigger_edits:
+        text = current_text(op.id)
+        if text is None:
+            fail(
+                index,
+                op,
+                f"{op.id} does not exist, so it cannot hold trigger {op.slug}",
+            )
+            continue
+        layer.objects[op.id] = with_trigger(text, op.slug, op.when, op.run)
 
     return layer
 

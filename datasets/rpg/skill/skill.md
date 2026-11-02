@@ -7,6 +7,10 @@ read the full conventions: the four kinds of prep object and how they differ,
 deltas-only prep, `-` facets as the one way to keep secrets out of play, fronts
 as the only home of state, and which rules earn a registered module.
 
+Prep that deliberately leaves a part unwritten declares a **trigger** for it
+(front matter, `lens trigger --help`), so `play` stops at that moment and offers
+to build it, instead of improvising past it.
+
 <!-- more -->
 
 Four kinds of object carry the weight of prep, and they are constantly confused
@@ -81,3 +85,39 @@ flowchart that is harder to run and gives the next review more to find. Never
 re-run it to drive the findings toward zero. When the object is prepared for a
 later point in the story than the cursor, state those circumstances, or the
 review tests the wrong scene (`lens test-play --help`).
+
+**Hold parts back with triggers, not with prose.** Hold a part back when it
+may never come up (the cellar nobody opens), or when it should be built against
+the state at that point (a finale whose cast depends on what happened). Don't
+describe the gap in the body. Declare a trigger in the front matter of an object
+**in scope where the moment will be played**: pinned there or above, or reached
+through a `+` pin (a hub such as `location.graysteps+` works). The `[ … ]: #`
+block must be the **first thing in the file**, before the body and any other
+comment, because front matter is only read from the very top:
+
+```
+[
+    triggers:
+      design-cellar:
+        when: Enso opens the store cellar hatch
+        run: design --module encounter --pin prep.village-store "Build the cellar. Enso is opening the hatch now."
+]: #
+```
+
+- **slug**: starts with the operator `run` uses (`design-…` to build the part
+  then, `play-…` to play a part that already exists) and never ends in `-tr`.
+  It must be unique across the KB.
+- **when**: one observable event, as `play` would see it happen. Not a state,
+  and not a condition to evaluate.
+- **run**: an ordinary `lens design …` / `lens play …` line without `lens`.
+  It takes `--module`, `--pin`, `--unpin`, `--mention`, `--include`, `--llm`,
+  `--reasoning`, `--pass` (play) and a prompt. A `design` run should say what
+  to build *and for what moment*.
+
+`play` lists open triggers in `[HELD BACK]`, stops at the threshold and writes
+`<!-- suggest:<slug> -->`; the CLI and UI then offer the `run`. The `<slug>-tr`
+node that firing creates is what makes the trigger done, so never create, rename
+or copy a `-tr` node by hand. A broken entry is **skipped by play without a
+word**, so after editing run `lens trigger --all` (lists what parsed, and
+reports what didn't) or `lens check`. `lens kb get <id>` prints the front
+matter, triggers included.

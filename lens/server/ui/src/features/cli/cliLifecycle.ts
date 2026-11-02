@@ -7,6 +7,7 @@ import { currentProject } from '../../stores/project'
 import {
   cliInputAppend,
   cliInputRequest,
+  cliSubmitRequest,
   linePickSelection,
   mountCacheRefreshTrigger,
   treeRefreshTrigger,
@@ -33,6 +34,8 @@ export type CliLifecycleCtx = {
   setLastAutoFilledCommand: (cmd: string | null) => void
   getPrevCliNavAddress: () => string | null | undefined
   setPrevCliNavAddress: (addr: string | null | undefined) => void
+  /** Submit the current input (Enter). Optional so older callers keep working. */
+  submit?: () => Promise<void>
 }
 
 export function handleCliNavigationTracking(ctx: CliLifecycleCtx, addr: string | null, nextStats: Stats | null = get(stats)): void {
@@ -61,6 +64,15 @@ export function setupCliLifecycle(ctx: CliLifecycleCtx): () => void {
         ctx.updateCommandState()
         ctx.focusCliInput()
         ctx.resizeCliInput()
+      })
+    }),
+    cliSubmitRequest.subscribe((value) => {
+      if (value === null) return
+      cliSubmitRequest.set(null)
+      ctx.setInput(value)
+      void tick().then(async () => {
+        ctx.updateCommandState()
+        if (ctx.submit) await ctx.submit()
       })
     }),
     cliInputAppend.subscribe((value) => {

@@ -63,6 +63,8 @@ class PlayBody(BaseModel):
     as_pc: str | None = None
     do_pass: bool = False
     slug: str | None = None
+    trigger: str | None = None
+    """Fire this declared trigger: a fresh ``<trigger>-tr`` session at the cursor."""
 
 
 class DesignBody(BaseModel):
@@ -78,6 +80,8 @@ class DesignBody(BaseModel):
     retry: bool = False
     end: bool = False
     slug: str | None = None
+    trigger: str | None = None
+    """Fire this declared trigger: a fresh ``<trigger>-tr`` session at the cursor."""
 
 
 class TestPlayBody(BaseModel):
@@ -302,6 +306,8 @@ async def _run_operator_task(
                         done_payload["updated"] = result.updated
                         done_payload["removed"] = getattr(result, "removed", [])
                         done_payload["errors"] = result.errors
+                        done_payload["offered"] = getattr(result, "offered", [])
+                        done_payload["offer_errors"] = getattr(result, "offer_errors", [])
                     # Section end returns key string
                     elif isinstance(result, str):
                         done_payload["section_key"] = result
@@ -540,6 +546,7 @@ async def operator_play(
             retry=body.retry,
             end=body.end,
             slug=body.slug if not body.end and not body.retry else None,
+            trigger=body.trigger or None,
             on_token=on_token,
             on_stream_target=on_stream_target,
             cancel_event=lock.cancel_event,
@@ -636,6 +643,7 @@ async def operator_design(
             retry=body.retry,
             end=body.end,
             slug=body.slug if not body.end and not body.retry else None,
+            trigger=body.trigger or None,
             on_token=on_token,
             on_stream_target=on_stream_target,
             on_stream_event=on_stream_event,

@@ -231,6 +231,7 @@
       setPrevCliNavAddress: (addr) => {
         prevCliNavAddress = addr
       },
+      submit,
     })
     const teardownViewport = setupIosViewportHandler()
     void tick().then(() => resizeCliInput())
