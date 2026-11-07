@@ -37,6 +37,7 @@ from lens.core.workflow_runner import (
     WorkflowStepDef,
     finalize_workflow_outcome,
 )
+from lens.core.operators.session import summary_prompt_keys_for
 from lens.core.workflow_summarize import SummarizeRememberState, build_summarize_remember_steps
 
 # After the fact, session-style operators (see :mod:`lens.core.commands.rewind`)
@@ -279,6 +280,7 @@ class CollateOperator(Operator):
             cancel_event=cancel_event,
             on_status=on_status,
         )
+        summary_keys = summary_prompt_keys_for(target_node)
         steps = build_summarize_remember_steps(
             sr_state,
             session=session,
@@ -289,8 +291,8 @@ class CollateOperator(Operator):
             on_token=on_token,
             cancel_event=cancel_event,
             storage=self.storage,
-            system_key="session.summary_system",
-            instruction_key="session.summary_instruction_template",
+            system_key=summary_keys[0],
+            instruction_key=summary_keys[1],
             summary_guidance=summary_guidance,
             summarize_should_run=lambda: bool(child_clean),
             prepare_crawl=prepare_crawl,

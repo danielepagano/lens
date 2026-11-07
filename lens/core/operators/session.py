@@ -45,7 +45,11 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, ClassVar, cast
 
-from lens.core.annotations import parse_annotations, strip_markdown_comments
+from lens.core.annotations import (
+    parse_annotations,
+    strip_html_comments,
+    strip_markdown_comments,
+)
 from lens.core.context import CrawlResult, assemble_prompt, session_module_ids
 from lens.core.exceptions import ValidationError
 from lens.core.knowledge import KnowledgeStore
@@ -191,6 +195,22 @@ def _blockquote_body(lines: list[str]) -> list[str]:
     return out
 
 
+_AI_NOTE_RE = re.compile(r"^[ \t>]*<!--\s*ai:[\s\S]*?-->[ \t]*$", re.MULTILINE)
+
+
+def _split_ai_notes(text: str) -> tuple[str, list[str]]:
+    """Lift ``<!-- ai: … -->`` notes out of a summary before it is quoted.
+
+    The play summary may carry forward GM notes still in force.  They go after
+    the blockquote at column 0, where they are ordinary ``ai:`` comments: the
+    next generation reads them, the rendered recap does not show them.
+    """
+    notes = [m.group(0).strip().lstrip(">").strip() for m in _AI_NOTE_RE.finditer(text)]
+    if not notes:
+        return text, []
+    return _AI_NOTE_RE.sub("", text), notes
+
+
 def format_summary_block(slug: str, raw_summary: str) -> str:
     """Format raw summary text into the canonical Lens summary block.
 
@@ -202,6 +222,8 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
 
         > body line 1
         > body line 2
+
+        <!-- ai: notes still in force -->
 
         [llm-trace …]: #
 
@@ -221,6 +243,8 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
       ``strip_markdown_comments`` — which anchors on ``^\\s*\\[`` — so the
       summary's own telemetry would ride into ``[CURRENT PASSAGE]`` for every
       descendant of the collated node, on every generation.
+    - **Notes**: ``<!-- ai: … -->`` comments are lifted out the same way and
+      re-emitted after the blockquote (see :func:`_split_ai_notes`).
     - Exactly one blank line sits between the HTML comment and the ``###``
       header, and between the header and the body.
 
@@ -228,6 +252,7 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
     :func:`slug_for_summary_prompt` for the ``{slug}`` template field only.
     """
     body_text, trace_blocks = split_trace_blocks(raw_summary or "")
+    body_text, ai_notes = _split_ai_notes(body_text)
     text = body_text.strip()
     lines = text.split("\n") if text else []
 
@@ -265,6 +290,8 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
         "",
         *quoted,
     ]
+    for note in ai_notes:
+        parts.extend(["", note])
     for block in trace_blocks:
         parts.extend(["", block.rstrip("\n")])
     return "\n".join(parts)
@@ -273,6 +300,52 @@ def format_summary_block(slug: str, raw_summary: str) -> str:
 # ---------------------------------------------------------------------------
 # Shared summary generation
 # ---------------------------------------------------------------------------
+
+SESSION_SUMMARY_KEYS: tuple[str, str] = (
+    "session.summary_system",
+    "session.summary_instruction_template",
+)
+
+
+def summary_prompt_keys_for(node: NarrativeNode) -> tuple[str, str]:
+    """``(system_key, instruction_key)`` for summarizing passages at *node*.
+
+    A summary is written for whoever narrates there next, so the operator that
+    owns the node picks the prompts: a ``play`` node gets ``play.summary_*``,
+    whether it is closed by ``play --end``, ``section --end`` or ``collate``.
+    "What would run here" (:func:`detect_operator_name`), not "is a session
+    open": a play passage still gets play's summary after its turn closed.
+    Anything without its own summary prompts gets the general narrative ones.
+    """
+    from lens.core.operator_detect import detect_operator_name
+    from lens.core.operators import get_operator_class_for_name
+
+    try:
+        name = detect_operator_name(node)
+    except (OSError, ValueError):
+        return SESSION_SUMMARY_KEYS
+    op_cls = get_operator_class_for_name(name) if name else None
+    if op_cls is None or not issubclass(op_cls, SessionOperator):
+        return SESSION_SUMMARY_KEYS
+    return (op_cls.summary_system_prompt_key, op_cls.summary_instruction_prompt_key)
+
+
+SUMMARY_MIN_WORDS = 40
+"""Floor for :func:`summary_target_words`: a short scene still needs a sentence or three."""
+
+
+def summary_target_words(content: str) -> str:
+    """A 10–20% word range for summarizing *content*, e.g. ``"120–240"``.
+
+    Counted in code because a model cannot measure a ratio of its own input.
+    Comments are not story and do not count.  Every summary template receives
+    it; one that does not use ``{target_words}`` simply ignores it.
+    """
+    words = len(strip_markdown_comments(strip_html_comments(content)).split())
+    low = max(SUMMARY_MIN_WORDS, round(words * 0.10))
+    high = max(low + SUMMARY_MIN_WORDS // 2, round(words * 0.20))
+    return f"{low}–{high}"
+
 
 def build_summary_messages(
     crawl_result: CrawlResult,
@@ -292,10 +365,18 @@ def build_summary_messages(
     """
     from lens.core.context import assemble_prompt
 
+    from lens.core.triggers import SUGGEST_RE
+
     prompts = PromptStore(crawl_result.project_root)
     prompt_slug = slug_for_summary_prompt(slug)
+    # Offer markers are machinery for the cursor, not story: a summary that
+    # copied one would re-offer it from wherever the summary lands.
+    content = SUGGEST_RE.sub("", content)
     instruction = prompts.format(
-        instruction_key, content=content, slug=prompt_slug
+        instruction_key,
+        content=content,
+        slug=prompt_slug,
+        target_words=summary_target_words(content),
     )
     guidance_stripped = (summary_guidance or "").strip()
     if guidance_stripped:

@@ -24,6 +24,7 @@ from lens.core.pinning import pin as pin_to_node, unpin as unpin_at_node
 from lens.core.project import ProjectSession, validate_slug
 from lens.core.prompts import PromptStore
 from lens.core.workflow_runner import StepResult, WorkflowOutcome, WorkflowRunner, WorkflowStepDef, finalize_workflow_outcome
+from lens.core.operators.session import summary_prompt_keys_for
 from lens.core.workflow_summarize import SummarizeRememberState, build_summarize_remember_steps
 
 
@@ -121,6 +122,7 @@ class SectionOperator(Operator):
             cancel_event=cancel_event,
             on_status=on_status,
         )
+        summary_keys = summary_prompt_keys_for(cursor)
         steps = build_summarize_remember_steps(
             sr_state,
             session=session,
@@ -131,8 +133,8 @@ class SectionOperator(Operator):
             on_token=on_token,
             cancel_event=cancel_event,
             storage=self.storage,
-            system_key="session.summary_system",
-            instruction_key="session.summary_instruction_template",
+            system_key=summary_keys[0],
+            instruction_key=summary_keys[1],
             summary_guidance=summary_guidance,
             summarize_empty=True,
             operator=type(self),
