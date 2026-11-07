@@ -253,6 +253,9 @@ export interface PendingKb {
  * session) offers one by writing `<!-- suggest:<slug> -->` into the passage.
  * Firing it opens a `<slug>-tr` session at the cursor, which is what makes the
  * trigger done.
+ *
+ * `kind: 'advance'` is the one built-in offer: play reached a time skip and
+ * offers `advance`. It is not a trigger, so it must not tag the submission.
  */
 export interface TriggerOffer {
   slug: string
@@ -261,6 +264,8 @@ export interface TriggerOffer {
   /** The stored command; editable for one firing. */
   run: string
   declared_on: string
+  /** Absent on older servers, which only ever sent declared triggers. */
+  kind?: 'trigger' | 'advance'
 }
 
 export interface NodeData {

@@ -91,6 +91,7 @@ PROMPT_SPECS: dict[str, PromptSpec] = {
     "play.system": PromptSpec("play.system", frozenset()),
     "play.instruction_continue": PromptSpec("play.instruction_continue", frozenset()),
     "play.held_back": PromptSpec("play.held_back", frozenset({"triggers"})),
+    "play.time_skip": PromptSpec("play.time_skip", frozenset()),
     "advance.held_back": PromptSpec("advance.held_back", frozenset({"triggers"})),
     "play.summary_system": PromptSpec("play.summary_system", frozenset()),
     "play.summary_instruction_template": PromptSpec(

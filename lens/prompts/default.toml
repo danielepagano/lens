@@ -337,6 +337,8 @@ These moments arrive only through what the player chooses, or through what prep 
 
 When your reply reaches one of these moments, narrate up to the threshold and stop: do not describe what lies past it or invent what prep held back. Then hand the turn to the player as usual, and after that, as the very last line of the reply, write <!-- suggest:<slug> --> on its own line. The marker comes after everything, including the question you end on. Stopping at the threshold without it is a failed beat, however good the question. Skip it only if the passage already shows that suggestion. Never emit one for a moment that has not happened.'''
 
+play.time_skip = '''When this reply stops at a time skip (see TIME in the Rules of Engagement), write <!-- suggest:advance --> on its own line as the very last line of the reply, after everything, including the question you end on. Never emit it before the fiction has reached that threshold.'''
+
 play.instruction_continue = '''Continue the scene from the current passage and any newly appended player or character lines. Write in present tense — the events are happening now, not being recounted later. Follow the script of any encounter KB that is present, but do not let procedure flatten the scene into a template.
 
 Treat the player's reported mechanics as the authoritative current state. Do not recompute or override them. In combat, state non-PC intent and visible consequences, then stop when player-side mechanics or uncertain outcomes need to be resolved. If a needed mechanic is not present in pinned knowledge, an @mentioned KB item, or a module you can load, ask the player rather than assuming.

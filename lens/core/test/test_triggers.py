@@ -39,12 +39,14 @@ from lens.core.operators.design import DesignOperator
 from lens.core.operators.session import slug_for_summary_prompt
 from lens.core.project import ProjectSession
 from lens.core.triggers import (
+    ADVANCE_OFFER_SLUG,
     TriggerError,
     declared_triggers,
     fired_slugs,
     normalize_trigger_run,
     normalize_trigger_slug,
     open_offers,
+    parse_advance_run,
     parse_trigger_run,
     pins_at_or_above,
     session_trigger,
@@ -322,6 +324,82 @@ class TestDeclaredAndOffers(_ProjectCase):
         self.open_session_node("design-x")
         node = NarrativeNode(narrative_root=self.story, key_path=("design-x",))
         self.assertEqual(pins_at_or_above(node), {"prep.store"})
+
+
+class TestAdvanceOffer(_ProjectCase):
+    """The built-in ``advance`` offer: play stopped at a time skip."""
+
+    MARKER = "<!-- suggest:advance -->"
+
+    def _pin_timeline(self) -> None:
+        (self.root / "knowledge" / "timeline").mkdir()
+        (self.root / "knowledge" / "timeline" / "main.md").write_text("Main timeline.\n- Day: 3\n")
+        root_md = self.story / "_node.md"
+        root_md.write_text(root_md.read_text().replace("- prep.store\n", "- prep.store\n    - timeline.main+\n"))
+
+    def _append(self, text: str) -> None:
+        root_md = self.story / "_node.md"
+        root_md.write_text(root_md.read_text() + text)
+
+    def _slugs(self) -> list[str]:
+        return [o.slug for o in open_offers(self.session().kb, self.narrative())]
+
+    def test_offered_at_the_tail_with_a_timeline(self) -> None:
+        self._pin_timeline()
+        self._append("\nYou bank the fire and turn in.\n\n" + self.MARKER + "\n[/play]: #\n")
+        offers = open_offers(self.session().kb, self.narrative())
+        self.assertEqual([o.slug for o in offers], [ADVANCE_OFFER_SLUG])
+        self.assertEqual(offers[0].run, "advance")
+        self.assertEqual(offers[0].as_dict()["kind"], "advance")
+
+    def test_not_offered_without_a_timeline(self) -> None:
+        # advance would refuse to run, so the offer must not appear.
+        self._append("\nYou turn in.\n\n" + self.MARKER + "\n")
+        self.assertEqual(self._slugs(), [])
+
+    def test_dies_once_the_story_moves_on(self) -> None:
+        self._pin_timeline()
+        self._append("\nYou turn in.\n\n" + self.MARKER + "\n\n> [Player] Actually, I keep watch.\n")
+        self.assertEqual(self._slugs(), [])
+
+    def test_dies_once_advance_has_run(self) -> None:
+        self._pin_timeline()
+        self._append("\nYou turn in.\n\n" + self.MARKER + "\n\n[advance:advance-day-3]: #\n")
+        self.assertEqual(self._slugs(), [])
+
+    def test_a_later_marker_revives_it(self) -> None:
+        self._pin_timeline()
+        self._append(
+            "\nNight one.\n" + self.MARKER + "\n\n> [Player] We go on.\n\nNight two.\n" + self.MARKER + "\n"
+        )
+        self.assertEqual(self._slugs(), [ADVANCE_OFFER_SLUG])
+
+    def test_sits_beside_a_declared_offer(self) -> None:
+        self._pin_timeline()
+        self._append("\n<!-- suggest:design-cellar -->\n" + self.MARKER + "\n")
+        self.assertEqual(self._slugs(), ["design-cellar", ADVANCE_OFFER_SLUG])
+
+    def test_play_asks_for_the_marker_only_with_a_timeline(self) -> None:
+        from lens.rpg.operators.play import PlayOperator
+
+        def task() -> str:
+            session = self.session()
+            op = PlayOperator(session.new_storage(), self.narrative())
+            root = NarrativeNode(narrative_root=self.story, key_path=())
+            return op.append_trigger_context(crawl(CrawlSpec.of(root)), "TASK")
+
+        self.assertEqual(task(), "TASK")
+        self._pin_timeline()
+        self.assertIn(self.MARKER, task())
+
+    def test_parse_advance_run(self) -> None:
+        self.assertEqual(parse_advance_run("advance")["days"], 1)
+        parsed = parse_advance_run("lens advance --days 3 --pin front.x -l fast")
+        self.assertEqual((parsed["days"], parsed["pins"], parsed["llm_id"]), (3, ["front.x"], "fast"))
+        self.assertEqual(parse_advance_run("advance -d=2")["days"], 2)
+        for bad in ("play", "advance --end", "advance --days two", "advance feedback"):
+            with self.assertRaises(TriggerError, msg=bad):
+                parse_advance_run(bad)
 
 
 class TestVerbs(_ProjectCase):
