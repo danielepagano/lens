@@ -1,6 +1,6 @@
 import type { CommandDefinition } from '../../commands/common'
 
-export const MAX_CLI_HISTORY = 50
+export const MAX_CLI_HISTORY = 200
 /** Command token after `/`; with the CLI's leading slash this spells `/@cursor`. */
 export const GO_CURSOR_CHIP = '@cursor'
 

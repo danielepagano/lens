@@ -25,7 +25,15 @@
   import { submitCliCommand } from './cliSubmit'
   import { setupCliLifecycle } from './cliLifecycle'
   import { computeCliHint, computeCliInputAttrs, scheduleCliResize, setupIosViewportHandler } from './cliInputHints'
-  import { cliHistory, cliOutput, linePickMode, linePickSelection, guideModalCommand } from '../../stores/ui'
+  import {
+    cliHistory,
+    cliHistoryNav,
+    cliOutput,
+    linePickMode,
+    linePickSelection,
+    guideModalCommand,
+  } from '../../stores/ui'
+  import { historyJump, IDLE_HISTORY_NAV } from '../../utils/cliHistoryNav'
   import { currentAddress } from '../../stores/document'
   import { stats } from '../../stores/stats'
 
@@ -90,17 +98,6 @@
       const maxHeightPx = window.innerHeight ? Math.round(window.innerHeight * 0.4) : 240
       cliInputEl.style.height = `${Math.min(cliInputEl.scrollHeight + 3, maxHeightPx)}px`
     })
-  }
-
-  function inputIsMultiLine(): boolean {
-    const el = cliInputEl
-    if (!el) return false
-    const prev = el.style.height
-    el.style.height = '0px'
-    const naturalHeight = el.scrollHeight
-    el.style.height = prev
-    const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || 20
-    return naturalHeight > lineHeight * 1.5
   }
 
   function focusCliInput() {
@@ -190,7 +187,6 @@
       dataSources,
       updateCommandState,
       focusCliInput,
-      inputIsMultiLine,
       navigate,
       onCliDone,
       syncLocation,
@@ -317,14 +313,21 @@
     <CliHistoryDrawer
       open={historyOpen}
       history={$cliHistory}
-      onSelect={(entry) => {
-        input = entry
+      activeIndex={$cliHistoryNav.index}
+      onSelect={(index) => {
+        // Same as browsing there with Up: the draft and any edits are kept.
+        const step = historyJump($cliHistory, $cliHistoryNav, input, index)
+        if (step) {
+          cliHistoryNav.set(step.nav)
+          input = step.value
+        }
         historyOpen = false
         updateCommandState()
         focusCliInput()
       }}
       onClear={() => {
         input = ''
+        cliHistoryNav.set(IDLE_HISTORY_NAV)
         historyOpen = false
         updateCommandState()
         focusCliInput()
