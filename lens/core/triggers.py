@@ -49,6 +49,8 @@ from lens.core.annotations import (
     parse_annotations,
     parse_front_matter,
     set_front_matter_key,
+    strip_html_comments,
+    strip_markdown_comments,
 )
 from lens.core.exceptions import ValidationError
 
@@ -57,6 +59,7 @@ if TYPE_CHECKING:
     from lens.core.narrative import NarrativeNode
 
 __all__ = [
+    "ADVANCE_OFFER_SLUG",
     "TRIGGERS_KEY",
     "TRIGGER_NODE_SUFFIX",
     "Trigger",
@@ -94,6 +97,19 @@ SUGGEST_RE = re.compile(r"<!--\s*suggest:\s*([a-z0-9][a-z0-9_-]*)\s*-->")
 """The marker the play model (or a session close) writes to offer a trigger."""
 
 
+ADVANCE_OFFER_SLUG = "advance"
+"""The one built-in offer: ``<!-- suggest:advance -->``, written by play at a time skip.
+
+Not a trigger.  Nothing declares it, firing it runs ``advance`` (which names its
+own ``advance-day-*`` node, never a ``-tr`` one), and it recurs every night, so
+"done" cannot be a node name.  It is live only while the marker is still the
+last thing in the passage (:func:`_advance_offer`).  A declared slug always
+carries a hyphen after its operator, so it can never collide with this one.
+"""
+
+ADVANCE_OFFER_WHEN = "the fiction has reached a time skip"
+
+
 class TriggerError(ValidationError):
     """A slug, ``run`` or trigger lookup that cannot be honoured."""
 
@@ -106,6 +122,9 @@ class Trigger:
     when: str
     run: str
     declared_on: str
+    kind: str = "trigger"
+    """``"trigger"`` for a declared one; ``"advance"`` for the built-in offer,
+    which clients must not tag as a trigger (it opens no ``-tr`` session)."""
 
     @property
     def operator(self) -> str:
@@ -117,6 +136,7 @@ class Trigger:
             "when": self.when,
             "run": self.run,
             "declared_on": self.declared_on,
+            "kind": self.kind,
         }
 
 
@@ -370,9 +390,48 @@ def open_offers(kb: KnowledgeStore, narrative: NarrativeNode) -> list[Trigger]:
     slugs = suggested_slugs(text)
     if not slugs:
         return []
-    declared = declared_triggers(kb)
-    fired = fired_slugs(narrative.narrative_root)
-    return [declared[s] for s in slugs if s in declared and s not in fired]
+    out: list[Trigger] = []
+    declared_slugs = [s for s in slugs if s != ADVANCE_OFFER_SLUG]
+    if declared_slugs:
+        declared = declared_triggers(kb)
+        fired = fired_slugs(narrative.narrative_root)
+        out = [declared[s] for s in declared_slugs if s in declared and s not in fired]
+    if ADVANCE_OFFER_SLUG in slugs:
+        advance = _advance_offer(cursor, text)
+        if advance is not None:
+            out.append(advance)
+    return out
+
+
+def _advance_offer(cursor: NarrativeNode, text: str) -> Trigger | None:
+    """The built-in ``advance`` offer, if its marker is still live at *cursor*.
+
+    Live means nothing has happened since the marker: after the last one there
+    is no prose (a player line, a GM reply) and no opening annotation (an
+    ``advance`` that ran, a new play block).  A closing tag is fine — play's own
+    ``[/play]: #`` lands after the reply.  And a timeline must be in scope,
+    because ``advance`` refuses to run without one.
+    """
+    last = None
+    for m in SUGGEST_RE.finditer(text):
+        if m.group(1) == ADVANCE_OFFER_SLUG:
+            last = m
+    if last is None:
+        return None
+    tail = text[last.end():]
+    if strip_markdown_comments(strip_html_comments(tail)).strip():
+        return None
+    if any(not ann.closing for ann in parse_annotations(tail)):
+        return None
+    if not any(pid.startswith("timeline.") for pid in ids_in_scope_at(cursor)):
+        return None
+    return Trigger(
+        slug=ADVANCE_OFFER_SLUG,
+        when=ADVANCE_OFFER_WHEN,
+        run="advance",
+        declared_on="",
+        kind="advance",
+    )
 
 
 def open_triggers(kb: KnowledgeStore, narrative: NarrativeNode) -> list[Trigger]:
@@ -728,6 +787,10 @@ async def fire_trigger(
     from lens.core.operators import get_operator_class_for_name
     from lens.core.operators.session import SessionOperator
 
+    if slug.strip().lower() == ADVANCE_OFFER_SLUG:
+        return await _fire_advance(
+            session=session, narrative=narrative, run=run or "advance", **callbacks
+        )
     trig = find_trigger(session.kb, slug)
     inv = parse_trigger_run(run if run is not None else trig.run)
     if not trig.slug.startswith(f"{inv.operator}-"):
@@ -763,6 +826,87 @@ async def fire_trigger(
         reasoning=inv.reasoning,
         trigger=trig.slug,
         **callbacks,
+    )
+
+
+_ADVANCE_RUN_FLAGS: Mapping[str, str] = {
+    "--days": "days",
+    "-d": "days",
+    "--pin": "pins",
+    "--unpin": "unpins",
+    "--llm": "llm_id",
+    "-l": "llm_id",
+    "--reasoning": "reasoning",
+}
+
+
+def parse_advance_run(run: str) -> dict[str, Any]:
+    """Parse the ``advance`` offer's run (as edited): ``advance [--days N] …``.
+
+    The subset of ``lens advance`` that starts one: ``--days/-d``, ``--pin``,
+    ``--unpin``, ``--llm/-l``, ``--reasoning``.  ``--end``/``--retry`` and a
+    feedback argument are refused, because accepting the offer always starts a
+    fresh advance.
+    """
+    try:
+        tokens = shlex.split(run or "")
+    except ValueError as e:
+        raise TriggerError(f"cannot parse run: {e}") from e
+    if tokens and tokens[0] == "lens":
+        tokens = tokens[1:]
+    if not tokens or tokens[0] != "advance":
+        raise TriggerError("the advance offer must run 'advance'")
+    out: dict[str, Any] = {"days": 1, "pins": [], "unpins": [], "llm_id": None, "reasoning": None}
+    i = 1
+    while i < len(tokens):
+        flag, eq, inline = tokens[i].partition("=")
+        key = _ADVANCE_RUN_FLAGS.get(flag)
+        if key is None:
+            raise TriggerError(f"unsupported in the advance offer: {tokens[i]}")
+        if eq:
+            value = inline
+        else:
+            i += 1
+            if i >= len(tokens):
+                raise TriggerError(f"{flag} needs a value")
+            value = tokens[i]
+        if key == "days":
+            try:
+                out["days"] = int(value)
+            except ValueError as e:
+                raise TriggerError(f"--days needs a number, got '{value}'") from e
+        elif key in ("pins", "unpins"):
+            out[key].append(value)
+        else:
+            out[key] = value
+        i += 1
+    return out
+
+
+async def _fire_advance(
+    *, session: Any, narrative: NarrativeNode, run: str, **callbacks: Any
+) -> Any:
+    """Accept the ``advance`` offer: start ``advance`` as ``lens advance`` would."""
+    from lens.core.operators import get_operator_class_for_name
+
+    parsed = parse_advance_run(run)
+    op_cls = get_operator_class_for_name("advance")
+    if op_cls is None:
+        raise TriggerError("'advance' is not available (is the rpg dataset listed?)")
+    passthrough = {
+        k: v
+        for k, v in callbacks.items()
+        if k in ("on_token", "on_stream_target", "cancel_event")
+    }
+    return await getattr(op_cls, "run_advance")(
+        session=session,
+        narrative=narrative,
+        increment=parsed["days"],
+        pins=parsed["pins"],
+        unpins=parsed["unpins"],
+        llm_id=parsed["llm_id"],
+        reasoning=parsed["reasoning"],
+        **passthrough,
     )
 
 

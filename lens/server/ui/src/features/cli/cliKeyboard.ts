@@ -6,7 +6,7 @@ import { currentAddress } from '../../stores/document'
 import { vnModeFromParsed, vnPlayback } from '../../stores/visualNovel'
 import {
   cliHistory,
-  cliHistoryIndex,
+  cliHistoryNav,
   cliInputRequest,
   cliOutput,
   scrollContentToBottom,
@@ -22,6 +22,13 @@ import type { Suggestion } from './CliAutocomplete'
 import { completeSuggestion, type SuggestionApplyDeps } from './cliSuggestionApply'
 import { parseCommandAndPayload } from './cliParseHelpers'
 import { shouldSpaceSubmit } from './cliSubmitRules'
+import { caretLineInfo, positionOnLine } from './cliCaretLines'
+import {
+  historyNewer,
+  historyOlder,
+  historyToDraft,
+  type HistoryStep,
+} from '../../utils/cliHistoryNav'
 
 export type CliKeyboardDeps = {
   getInput: () => string
@@ -31,7 +38,6 @@ export type CliKeyboardDeps = {
   setSessionFillSuppressed: (value: boolean) => void
   suggestions: Suggestion[]
   getCliInputEl: () => HTMLTextAreaElement | null
-  inputIsMultiLine: () => boolean
   updateCommandState: () => void
   focusCliInput: () => void
   submit: () => void
@@ -155,39 +161,57 @@ export function handleCliKeydown(event: KeyboardEvent, deps: CliKeyboardDeps): v
     return
   }
 
-  if (event.key === 'ArrowUp') {
-    if (deps.inputIsMultiLine()) return
-    event.preventDefault()
-    const history = get(cliHistory)
-    const historyIndex = get(cliHistoryIndex)
-    if (history.length === 0) return
-    if (historyIndex === -1) {
-      cliHistoryIndex.set(history.length - 1)
-      deps.setInput(history[history.length - 1] ?? '')
-    } else if (historyIndex > 0) {
-      cliHistoryIndex.set(historyIndex - 1)
-      deps.setInput(history[historyIndex - 1] ?? '')
+  if (event.key === 'Escape' && get(cliHistoryNav).index !== -1) {
+    const step = historyToDraft(get(cliHistory), get(cliHistoryNav), input)
+    if (step) {
+      event.preventDefault()
+      applyHistoryStep(step, null, deps)
     }
-    deps.updateCommandState()
     return
   }
 
-  if (event.key === 'ArrowDown') {
-    if (deps.inputIsMultiLine()) return
-    event.preventDefault()
+  if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+    if (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey || event.isComposing) return
+    const el = deps.getCliInputEl()
+    if (!el) return
+    // A selection collapses natively; inside a wrapped or multi-line value the
+    // caret moves natively until it is on the first (Up) or last (Down) line.
+    const where = caretLineInfo(el)
+    if (!where) return
+    const older = event.key === 'ArrowUp'
+    if (older ? !where.onFirstLine : !where.onLastLine) return
     const history = get(cliHistory)
-    const historyIndex = get(cliHistoryIndex)
-    if (historyIndex === -1) {
-      deps.setInput('')
-    } else if (historyIndex < history.length - 1) {
-      cliHistoryIndex.set(historyIndex + 1)
-      deps.setInput(history[historyIndex + 1] ?? '')
-    } else {
-      cliHistoryIndex.set(-1)
-      deps.setInput('')
-    }
-    deps.updateCommandState()
+    const nav = get(cliHistoryNav)
+    const step = older ? historyOlder(history, nav, input) : historyNewer(history, nav, input)
+    // Nothing further: the native move takes the caret to the line's start/end.
+    if (!step) return
+    event.preventDefault()
+    applyHistoryStep(step, { line: older ? 'last' : 'first', x: where.x }, deps)
   }
+}
+
+type CaretLanding = { line: 'first' | 'last'; x: number }
+
+/**
+ * Show a history slot. Browsing reads like one continuous text, as in a shell
+ * or Claude Code: Up lands on the older entry's last line and Down on the newer
+ * entry's first line, both at the caret's horizontal position, so every press
+ * moves exactly one line. Without a landing (Escape) the caret goes to the end.
+ */
+function applyHistoryStep(step: HistoryStep, landing: CaretLanding | null, deps: CliKeyboardDeps): void {
+  const apply = deps.suggestionApplyDeps
+  cliHistoryNav.set(step.nav)
+  deps.setInput(step.value)
+  apply.setPendingCliCaretHi(step.value.length)
+  deps.updateCommandState()
+  deps.afterTick(() => {
+    const el = deps.getCliInputEl()
+    const pos = el && landing ? positionOnLine(el, landing.line, landing.x) : step.value.length
+    el?.setSelectionRange(pos, pos)
+    apply.setCliCaretHi(pos)
+    apply.setPendingCliCaretHi(null)
+    deps.updateCommandState()
+  })
 }
 
 export function isFocusCliShortcut(event: KeyboardEvent): boolean {

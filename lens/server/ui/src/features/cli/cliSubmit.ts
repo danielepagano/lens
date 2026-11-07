@@ -12,7 +12,7 @@ import { playbackTailTextId } from '../../utils/vnCursorCli'
 import { vnNavigableIndices } from '../../utils/vnPlaybackNav'
 import {
   cliHistory,
-  cliHistoryIndex,
+  cliHistoryNav,
   cliOutput,
   linePickMode,
   linePickSelection,
@@ -20,6 +20,7 @@ import {
   scrollContentToBottom,
   transactionResult,
 } from '../../stores/ui'
+import { appendHistory, IDLE_HISTORY_NAV } from '../../utils/cliHistoryNav'
 import { GO_CURSOR_CHIP, MAX_CLI_HISTORY, parseCommandAndPayload } from './cliParseHelpers'
 
 export type CliSubmitDeps = {
@@ -41,8 +42,8 @@ export type CliSubmitDeps = {
 
 function pushHistory(command: string): void {
   if (!command) return
-  cliHistory.update((history) => [...history, command].slice(-MAX_CLI_HISTORY))
-  cliHistoryIndex.set(-1)
+  cliHistory.update((history) => appendHistory(history, command, MAX_CLI_HISTORY))
+  cliHistoryNav.set(IDLE_HISTORY_NAV)
 }
 
 function flashInvalidInput(deps: CliSubmitDeps): void {

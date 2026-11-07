@@ -4,12 +4,14 @@
   type Props = {
     open: boolean
     history: string[]
-    onSelect: (entry: string) => void
+    /** The entry Up/Down is currently showing, `-1` for none. */
+    activeIndex?: number
+    onSelect: (index: number) => void
     onClear: () => void
     onClose: () => void
   }
 
-  let { open, history, onSelect, onClear, onClose }: Props = $props()
+  let { open, history, activeIndex = -1, onSelect, onClear, onClose }: Props = $props()
 
   let drawerEl: HTMLDivElement | null = $state(null)
 
@@ -38,10 +40,10 @@
     {#each history as entry, i (i)}
       <button
         type="button"
-        class="cli-history-entry"
+        class={['cli-history-entry', { active: i === activeIndex }]}
         role="option"
-        aria-selected={false}
-        onclick={() => { onSelect(entry); onClose() }}
+        aria-selected={i === activeIndex}
+        onclick={() => { onSelect(i); onClose() }}
       >
         <span class="cli-history-text">{entry}</span>
       </button>
@@ -90,6 +92,11 @@
   .cli-history-entry:hover,
   .cli-history-clear:hover {
     background: var(--pico-muted-border-color);
+  }
+
+  .cli-history-entry.active {
+    background: var(--pico-muted-border-color);
+    font-weight: bold;
   }
 
   .cli-history-text {

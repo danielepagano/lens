@@ -33,7 +33,6 @@ export type CliComponentRefs = {
   dataSources: CliDataSources
   updateCommandState: () => void
   focusCliInput: () => void
-  inputIsMultiLine: () => boolean
   navigate: ((addr: string) => Promise<void>) | undefined
   onCliDone: (() => Promise<void>) | undefined
   syncLocation: ((addr: string) => void) | undefined
@@ -117,7 +116,6 @@ export function handleCliInputKeydown(event: KeyboardEvent, refs: CliComponentRe
     setSessionFillSuppressed: refs.setSessionFillSuppressed,
     suggestions: refs.getSuggestions(),
     getCliInputEl: refs.getCliInputEl,
-    inputIsMultiLine: refs.inputIsMultiLine,
     updateCommandState: refs.updateCommandState,
     focusCliInput: refs.focusCliInput,
     submit: () => void refs.submit(),

@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store'
 import type { ParsedKbOp } from '../utils/kbOpBlocks'
+import { IDLE_HISTORY_NAV, type CliHistoryNav } from '../utils/cliHistoryNav'
 import type {
   MediaGenerateParams,
   MediaStartEvent,
@@ -36,8 +37,8 @@ _cliHistory.subscribe((value) => {
   }
 })
 export const cliHistory = _cliHistory
-/** `-1` means not currently browsing history. */
-export const cliHistoryIndex = writable(-1)
+/** Where Up/Down browsing stands, plus the draft and any edited entries; see `cliHistoryNav.ts`. */
+export const cliHistoryNav = writable<CliHistoryNav>(IDLE_HISTORY_NAV)
 
 export const treeRefreshTrigger = writable(0)
 

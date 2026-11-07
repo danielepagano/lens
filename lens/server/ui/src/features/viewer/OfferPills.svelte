@@ -8,6 +8,9 @@
    * the command bar exactly as the CLI's `Run <slug>? [Y/n/e]` does: **Run**
    * submits it, **Edit** puts it in the bar to change first. Either way the
    * next submission carries the slug, which names the session `<slug>-tr`.
+   *
+   * The built-in `advance` offer (play reached a time skip) is the exception:
+   * it is a plain `/advance`, so it never sets `pendingTrigger`.
    */
   import type { TriggerOffer } from '../../services/api'
   import { cliInputRequest, cliSubmitRequest, pendingTrigger } from '../../stores/ui'
@@ -19,13 +22,21 @@
     return run.startsWith('/') ? run : `/${run}`
   }
 
+  function isAdvance(offer: TriggerOffer): boolean {
+    return offer.kind === 'advance'
+  }
+
+  function tag(offer: TriggerOffer): void {
+    pendingTrigger.set(isAdvance(offer) ? null : offer.slug)
+  }
+
   function run(offer: TriggerOffer): void {
-    pendingTrigger.set(offer.slug)
+    tag(offer)
     cliSubmitRequest.set(commandLine(offer))
   }
 
   function edit(offer: TriggerOffer): void {
-    pendingTrigger.set(offer.slug)
+    tag(offer)
     cliInputRequest.set(commandLine(offer))
   }
 </script>
@@ -34,9 +45,13 @@
   <div class="offer-pills" data-testid="cursor-offer-pills">
     {#each offers as offer (offer.slug)}
       <div class="offer" data-testid="cursor-offer">
-        <span class="offer-label" title={`declared on ${offer.declared_on}`}>
-          Held back: <strong>{offer.slug}</strong> — {offer.when}
-        </span>
+        {#if isAdvance(offer)}
+          <span class="offer-label">Time skip: run <strong>advance</strong>?</span>
+        {:else}
+          <span class="offer-label" title={`declared on ${offer.declared_on}`}>
+            Held back: <strong>{offer.slug}</strong> — {offer.when}
+          </span>
+        {/if}
         <button type="button" class="offer-btn" title={offer.run} onclick={() => run(offer)}>Run</button>
         <button
           type="button"

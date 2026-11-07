@@ -64,7 +64,8 @@ def trigger(
                 _report_problems(session)
             return
         for item in items:
-            typer.echo(f"{item.slug}  (on {item.declared_on})")
+            origin = f"  (on {item.declared_on})" if item.declared_on else ""
+            typer.echo(f"{item.slug}{origin}")
             typer.echo(f"  when: {item.when}")
             typer.echo(f"  run:  {item.run}")
         if show_all:
@@ -73,10 +74,14 @@ def trigger(
 
     run: str | None = None
     if edit:
-        from lens.core.triggers import TriggerError, find_trigger
+        from lens.core.triggers import ADVANCE_OFFER_SLUG, TriggerError, find_trigger
 
         try:
-            stored = find_trigger(session.kb, slug).run
+            stored = (
+                "advance"
+                if slug.strip().lower() == ADVANCE_OFFER_SLUG
+                else find_trigger(session.kb, slug).run
+            )
         except TriggerError as e:
             typer.echo(f"lens trigger: {e}", err=True)
             raise typer.Exit(1)

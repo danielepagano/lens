@@ -337,6 +337,8 @@ These moments arrive only through what the player chooses, or through what prep 
 
 When your reply reaches one of these moments, narrate up to the threshold and stop: do not describe what lies past it or invent what prep held back. Then hand the turn to the player as usual, and after that, as the very last line of the reply, write <!-- suggest:<slug> --> on its own line. The marker comes after everything, including the question you end on. Stopping at the threshold without it is a failed beat, however good the question. Skip it only if the passage already shows that suggestion. Never emit one for a moment that has not happened.'''
 
+play.time_skip = '''When this reply stops at a time skip (see TIME in the Rules of Engagement), write <!-- suggest:advance --> on its own line as the very last line of the reply, after everything, including the question you end on. Never emit it before the fiction has reached that threshold.'''
+
 play.instruction_continue = '''Continue the scene from the current passage and any newly appended player or character lines. Write in present tense — the events are happening now, not being recounted later. Follow the script of any encounter KB that is present, but do not let procedure flatten the scene into a template.
 
 Treat the player's reported mechanics as the authoritative current state. Do not recompute or override them. In combat, state non-PC intent and visible consequences, then stop when player-side mechanics or uncertain outcomes need to be resolved. If a needed mechanic is not present in pinned knowledge, an @mentioned KB item, or a module you can load, ask the player rather than assuming.
@@ -344,19 +346,33 @@ Treat the player's reported mechanics as the authoritative current state. Do not
 Do not repeat rule text. Never write PC decisions, thoughts, or feelings. When a character attempts something uncertain, call for a check — name the skill and difficulty — and wait for the player to report the result before narrating consequences. Stop at decision points and yield to the player.
 '''
 
-play.summary_system = '''Boil finished tabletop play down to the part the fiction keeps. The transcript is raw — full of dice, turns, and table-talk — but your summary will be read by a writing AI as context for future scenes. Carry forward what endures in the fiction and let everything else fall away.'''
+play.summary_system = '''Boil finished tabletop play down to the part the fiction keeps. The transcript is raw — full of dice, turns, and table-talk — and your summary replaces it for good. Two readers depend on it: the Game Master running the next scenes, who reads it as the record of what happened and what is still in play, and the player, who reads it as the recap of their session. Write prose the player enjoys, exact enough that the GM can run from it.'''
 
-play.summary_instruction_template = '''Summarize this play session for a reader who will use it as context to write what comes next.
+play.summary_instruction_template = '''Summarize this play session for the GM who runs what comes next, and for the player who lived it.
 
-**First line — TITLE.** Begin your response with a single-line title of **no more than ten words**. The passage label in this prompt is `{slug}` so by default your title should be a natural, readable version of that label if it is appropriate and reasonably matches the content summarized (for example, `amy-dream` → `Amy's Dream`; `battle-of-glenhaven` → `The Battle of Glenhaven`). Keep it short and evocative. Do not bold or prefix the title with `#`, `>`, or any other markdown marker — plain text only. In summary: produce one title line (max 10 words), a blank line, and then the summary (however many lines or paragraph are rquired).
+Title. Begin your response with a single-line title of no more than ten words. The passage label in this prompt is `{slug}`, so by default your title should be a natural, readable version of that label if it reasonably matches the content (for example, `amy-dream` → `Amy's Dream`; `battle-of-glenhaven` → `The Battle of Glenhaven`). Keep it short and evocative, plain text only: no `#`, `>`, bold or other markdown marker. Then a blank line, then the summary.
 
-For the summary, focus on the very key beats and what endures beyond this session: relationships shifted, alliances formed or broken, secrets revealed or still hidden, promises and debts incurred, places reached or left behind, emotional stakes that will color future scenes, and threads left open. So, if you are summarizing a dinner date, briefly mention it was a dinner and where, but focus on what the people dating learned about each other and felt, not what they ate and smalltalk; if you are summarizing a battle, the main strategies used and outomes, not the turn-by-turn tactics and incremental changes. 
+Length. Aim for {target_words} words of summary, about a tenth to a fifth of the transcript. Spend them on what endures, not on retelling.
 
-**Omit entirely** (even when the transcript is full of them): dice, rolls, modifiers, DCs, checks, saves, HP, damage, initiative, turns, action economy, spell slots, rules citations, or any blow-by-blow of how a moment was resolved mechanically. Collapse combat and skill challenges into what ended up true in the fiction — who won, what was lost, what changed — not how it was played at the table.
+What to keep: the key beats and what endures beyond this session — where relationships now stand, secrets revealed or still hidden, promises and debts, places reached or left behind, what the characters learned. If you are summarizing a dinner, briefly say it was a dinner and where, then what the people at the table learned about each other, not what they ate; if a battle, the strategies and the outcome, not the turn-by-turn.
 
-Write in the voice of the surrounding narrative — match its person and tense — not telegraphic notes, not a bulleted debrief, but fluid prose a future scene can lean against without a quality drop. Shorter is better, but never at the cost of sounding like a synopsis.
+The record. Smooth prose sands off exactly the distinctions the GM needs. These are not style choices; breaking one silently changes the story:
 
-Output only the title, a blank line, and the summary body — no preamble, no meta-commentary, no markdown fencing, no blockquotes (they are added automatically).
+- An offer stays an offer. Keep offered, planned, threatened and promised apart from what actually happened. "She offered to show you the sites" must not become "she showed you" or "she told you where they are".
+- Every named character who mattered keeps their name. Anyone who said or did something that bears on what comes next gets at least a clause, by name, even if they appeared once.
+- Quote only what binds: an NPC's terms, conditions, promises and offers, in their own words, as a short quote woven into the prose. Paraphrase everything else.
+- Keep what the player characters said they want: their stated intents, refusals and deferrals, paraphrased faithfully. "Not yet" is a deferral, not a decision, and not a secret.
+- Never strengthen what was shown. Warming is not trust, help is not alliance, a hint is not a reveal, suspicion is not proof. If something moved a little, say it moved a little.
+
+Omit entirely, even when the transcript is full of them: dice, rolls, modifiers, DCs, checks, saves, HP, damage, initiative, turns, action economy, spell slots, rules citations, or any blow-by-blow of how a moment was resolved mechanically. Collapse combat and skill challenges into what ended up true in the fiction — who won, what was lost, what changed.
+
+The last paragraph is the open items and nothing else: what is scheduled (when, where, with whom), what was offered and not yet taken up, what is unresolved, and what the characters hold but have not used. Only what the transcript establishes; no guesses about what will happen. Same voice, one paragraph, no list.
+
+GM notes. The transcript may contain ``<!-- ai: … -->`` notes the GM left for itself: who knows what, what an NPC is waiting on, what must not be revealed yet. The summary replaces the transcript, so a note dropped here is lost. Carry forward the notes still in force after this session, merged and brief, at the end: at most one ``<!-- ai: … -->`` comment, plus at most one ``<!-- ai:secret: … -->`` comment for notes that were secret (a secret never goes into the plain note). You may merge, shorten and drop; never add a claim the notes and the transcript do not already make. Drop notes the session settled, leave a comment out when nothing of its kind is still in force, and never copy any other kind of comment.
+
+Write in the voice of the surrounding narrative — match its person and tense — not telegraphic notes, not a bulleted debrief, but plain prose a future scene can lean against without a quality drop. No bold, italics or headings.
+
+Output only the title, a blank line, the summary body, and the optional note comments — no preamble, no meta-commentary, no markdown fencing, no blockquotes (they are added automatically).
 
 TEXT TO SUMMARIZE:
 {content}'''

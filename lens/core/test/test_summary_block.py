@@ -10,12 +10,16 @@ from pathlib import Path
 from lens.core.annotations import strip_markdown_comments
 from lens.core.context import CrawlResult
 from lens.core.llm_trace import split_trace_blocks
+from lens.core.narrative import NarrativeNode
 from lens.core.operators.session import (
     MAX_SUMMARY_TITLE_WORDS,
+    SESSION_SUMMARY_KEYS,
     SummaryTitleError,
     build_summary_messages,
     format_summary_block,
     slug_for_summary_prompt,
+    summary_prompt_keys_for,
+    summary_target_words,
 )
 
 
@@ -85,7 +89,131 @@ class TestBuildSummaryMessages(unittest.TestCase):
         self.assertIn(guidance_token, msgs_with[1]["content"])
 
 
+class TestSummaryPromptKeysFor(unittest.TestCase):
+    """Collate and section --end summarize with the prompts of the node's operator."""
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="lens_summary_keys_"))
+        self.root = self.tmp / "narrative" / "story"
+        (self.root / "sess").mkdir(parents=True)
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _node(self, *keys: str) -> NarrativeNode:
+        return NarrativeNode(narrative_root=self.root, key_path=tuple(keys))
+
+    def test_play_session_gets_play_prompts(self) -> None:
+        (self.root / "_node.md").write_text("# story\n\n[play:sess]: #\n", encoding="utf-8")
+        (self.root / "sess" / "_node.md").write_text("> [Player] we go in\n", encoding="utf-8")
+        self.assertEqual(
+            summary_prompt_keys_for(self._node("sess")),
+            ("play.summary_system", "play.summary_instruction_template"),
+        )
+
+    def test_section_inside_play_gets_play_prompts(self) -> None:
+        (self.root / "_node.md").write_text("# story\n\n[play:sess]: #\n", encoding="utf-8")
+        (self.root / "sess" / "_node.md").write_text(
+            "> [Player] we go in\n\n[section:vault]: #\n", encoding="utf-8"
+        )
+        (self.root / "sess" / "vault.md").write_text("Dust.\n", encoding="utf-8")
+        self.assertEqual(summary_prompt_keys_for(self._node("sess", "vault"))[0], "play.summary_system")
+
+    def test_plain_narrative_gets_session_prompts(self) -> None:
+        (self.root / "_node.md").write_text("# story\n\nPlain.\n\n[write]: #\n", encoding="utf-8")
+        self.assertEqual(summary_prompt_keys_for(self._node()), SESSION_SUMMARY_KEYS)
+        (self.root / "_node.md").write_text("# story\n\nNo history.\n", encoding="utf-8")
+        self.assertEqual(summary_prompt_keys_for(self._node()), SESSION_SUMMARY_KEYS)
+
+
+class TestSummaryTargetWords(unittest.TestCase):
+    def test_ten_to_twenty_percent_of_the_story(self) -> None:
+        self.assertEqual(summary_target_words("word " * 2000), "200–400")
+
+    def test_comments_do_not_count(self) -> None:
+        body = "word " * 1000
+        noisy = body + "\n<!-- ai: " + "note " * 500 + "-->\n[llm-trace x]: #\n"
+        self.assertEqual(summary_target_words(noisy), summary_target_words(body))
+
+    def test_short_scene_has_a_floor(self) -> None:
+        self.assertEqual(summary_target_words("a few words"), "40–60")
+
+    def test_play_template_receives_it(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            (tmp / "lens.toml").write_text('[project]\nnarrative = "story"\n', encoding="utf-8")
+            crawl = CrawlResult.from_text_fields(
+                project_root=tmp, knowledge=[], previous_summaries=[], current_content=None
+            )
+            user = build_summary_messages(
+                crawl,
+                "word " * 1000,
+                slug="x",
+                system_key="play.summary_system",
+                instruction_key="play.summary_instruction_template",
+            )[-1]["content"]
+            self.assertIn("Aim for 100–200 words", user)
+            self.assertNotIn("**", user.split("TEXT TO SUMMARIZE")[0])
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+class TestSummaryInputDropsOfferMarkers(unittest.TestCase):
+    def test_suggest_markers_never_reach_the_summarizer(self) -> None:
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            (tmp / "lens.toml").write_text('[project]\nnarrative = "story"\n', encoding="utf-8")
+            crawl = CrawlResult.from_text_fields(
+                project_root=tmp, knowledge=[], previous_summaries=[], current_content=None
+            )
+            msgs = build_summary_messages(
+                crawl,
+                "You turn in.\n<!-- suggest:advance -->\n<!-- ai: Enso has not opened the bag -->",
+                slug="x",
+            )
+            user = msgs[-1]["content"]
+            self.assertNotIn("suggest:", user)
+            self.assertIn("<!-- ai: Enso has not opened the bag -->", user)
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class TestFormatSummaryBlock(unittest.TestCase):
+    def test_ai_note_is_lifted_out_of_the_quote(self) -> None:
+        raw = (
+            "Night at the Inn\n\nYou turn in.\n\nCrumm's offer stands.\n"
+            "<!-- ai: Patcher watches Enso; do not reveal why yet -->\n"
+        )
+        block = format_summary_block("section-night", raw)
+        lines = block.split("\n")
+        self.assertIn("<!-- ai: Patcher watches Enso; do not reveal why yet -->", lines)
+        self.assertNotIn("> <!-- ai:", block)
+        quoted = [ln for ln in lines if ln.startswith(">")]
+        self.assertEqual(quoted[-1], "> Crumm's offer stands.")
+        self.assertGreater(
+            block.index("<!-- ai:"), block.index("> Crumm's offer stands.")
+        )
+
+    def test_encoded_secret_note_is_lifted_intact(self) -> None:
+        from lens.core.annotations import decode_ai_secrets, encode_ai_secrets_for_persist
+
+        # LLM output is encoded on the way in, before the block is formatted.
+        raw = encode_ai_secrets_for_persist(
+            "T\n\nBody.\n<!-- ai: Crumm waits for an answer -->\n"
+            "<!-- ai:secret: the wolf lied about the ford -->"
+        )
+        block = format_summary_block("s", raw)
+        self.assertNotIn("the wolf lied", block)
+        self.assertNotIn("> <!--", block)
+        self.assertEqual([ln for ln in block.split("\n") if ln.startswith(">")], ["> Body."])
+        self.assertIn("the wolf lied about the ford", decode_ai_secrets(block))
+
+    def test_quoted_ai_note_is_unquoted(self) -> None:
+        raw = "T\n\nBody.\n> <!-- ai: still in force -->"
+        block = format_summary_block("s", raw)
+        self.assertTrue(block.rstrip().endswith("<!-- ai: still in force -->"))
+        self.assertNotIn("> <!-- ai", block)
+
     def test_happy_path_with_plain_title_first_line(self) -> None:
         raw = "Amy's Dream\n\nShe wakes in an unfamiliar room. The door is locked."
         block = format_summary_block("amy-dream", raw)

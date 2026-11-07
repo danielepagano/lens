@@ -112,6 +112,23 @@ class PlayOperator(SessionOperator):
         # newly appended player/character line(s).
         return PromptStore(self.project_root).get("play.instruction_continue")
 
+    def append_trigger_context(self, crawl_result: CrawlResult, instruction: str) -> str:
+        """Also ask for the ``advance`` marker when a timeline is in scope.
+
+        ``rules.rpg`` tells the GM to stop at a time skip; this adds the line
+        that turns that stop into an offer to run ``advance``.  Gated the way
+        ``advance`` gates itself, so the play model is never asked to offer a
+        command that would refuse to run.  In ``[TASK]``, not the system
+        prompt: pinning a timeline mid-campaign must not invalidate the cache.
+        """
+        instruction = super().append_trigger_context(crawl_result, instruction)
+        if crawl_result.project_root is None:
+            return instruction
+        if not any(pid.startswith("timeline.") for pid in crawl_result.pinned_ids):
+            return instruction
+        line = PromptStore(crawl_result.project_root).get("play.time_skip")
+        return f"{instruction.rstrip()}\n\n{line}"
+
     def content_prefix_for_fresh(self, params: dict[str, Any]) -> str:
         # Player/character lines are persisted outside the annotation block.
         return ""
